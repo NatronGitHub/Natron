@@ -1,0 +1,378 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{636482de-3ae2-49ca-b8e9-aca76376287c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Gui">
+      <UniqueIdentifier>{6ea8e688-aaad-4650-98e4-f800d9bfa277}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reader">
+      <UniqueIdentifier>{36a81a67-a0bb-4eb4-9b4c-bf2e076ff115}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Superviser">
+      <UniqueIdentifier>{cb8417f0-58a0-4a1a-80d8-8b58f5bb163b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Core\Box.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\channels.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\DataBuffer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\diskcache.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\displayFormat.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\flowOP.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\hash.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\imgOP.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\inputnode.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\lookUpTables.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\mappedfile.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\metadata.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\model.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\node.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\OP.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\outputnode.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\row.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\settings.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\Timer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\VideoEngine.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\viewerNode.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Core\workerthread.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\arrowGUI.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\DAG.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\DAGQuickNode.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\dockableSettings.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\FeedbackSpinBox.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\GLViewer.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\InfoViewerWidget.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\inputnode_ui.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\knob.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\knob_callback.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\mainGui.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\node_ui.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\operatornode_ui.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\outputnode_ui.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\ScaleSlider.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\textRenderer.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\timeline.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Gui\viewerTab.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Superviser\controler.cpp">
+      <Filter>Superviser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Reader\Read.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Reader\Reader.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Reader\readExr.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Reader\readffmpeg.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Reader\readQt.cpp">
+      <Filter>Reader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\DAG_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\DAGQuickNode_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\dockableSettings_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\FeedbackSpinBox_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\GLViewer_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\InfoViewerWidget_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\knob_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\mainGui_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\node_ui_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\ScaleSlider_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\timeline_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\model_moc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\VideoEngine_moc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Core\Box.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\channels.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\DataBuffer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\diskcache.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\displayFormat.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\flowOP.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\hash.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\imgOP.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\inputnode.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\lookUpTables.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\lutclasses.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\mappedfile.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\metadata.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\node.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\OP.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\outputnode.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\referenceCountedObj.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\row.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\settings.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\singleton.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\sleeper.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\Timer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\viewerNode.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\workerthread.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\arrowGUI.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\inputnode_ui.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\knob_callback.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\operatornode_ui.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\outputnode_ui.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\shaders.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\textRenderer.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\viewerTab.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\controler.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\Enums.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\gl_OsDependent.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\MemoryInfo.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\powiterFn.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\Read.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\Reader.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\readerInfo.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\readExr.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\readffmpeg.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Reader\readQt.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Superviser\PwStrings.h">
+      <Filter>Superviser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\comboBox.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\Core\model.h">
+      <Filter>Core</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Core\VideoEngine.h">
+      <Filter>Core</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\DAG.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\DAGQuickNode.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\dockableSettings.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\FeedbackSpinBox.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\GLViewer.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\InfoViewerWidget.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\knob.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\mainGui.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\node_ui.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\ScaleSlider.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\timeline.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

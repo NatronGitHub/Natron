@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C0553443-B2DB-41C0-B482-7F246B849198}</ProjectGuid>
+    <RootNamespace>PowiterLauncher</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/include;$(ProjectDir)../../../../libs/Qt_win32/include/;$(ProjectDir)../../../../;$(ProjectDir)../../../../libs/freetype2_win32/include;$(ProjectDir)../../../../libs/;$(ProjectDir)../../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>OPENEXR_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <CompileAsManaged>false</CompileAsManaged>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Iex.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Half.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Imath.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/IlmThread.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/IlmImf.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avcodec.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avdevice.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avfilter.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avformat.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avutil.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/swscale.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtCore4.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtGui4.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtOpenGL4.lib;$(ProjectDir)../../../../libs/Nvidia_win32/lib/Debug/glew32.lib;$(ProjectDir)../../../../libs/freetype2_win32/lib/freetype242MT_D.lib;$(ProjectDir)../../../../libs/ftgl_win32/lib/ftgl_static_D.lib;$(TargetDir)Powiter_win32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/include;$(ProjectDir)../../../../libs/Qt_win32/include/;$(ProjectDir)../../../../;$(ProjectDir)../../../../libs/freetype2_win32/include;$(ProjectDir)../../../../libs/;$(ProjectDir)../../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Iex.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Imath.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/IlmThread.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/IlmImf.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Half.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avcodec.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avdevice.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avfilter.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avformat.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avutil.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/swscale.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtCore4.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtGui4.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtOpenGL4.lib;$(ProjectDir)../../../../libs/Nvidia_win32/lib/Release/glew32.lib;$(ProjectDir)../../../../libs/ftgl_win32/lib/ftgl_static.lib;$(TargetDir)Powiter_win32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/bin/Release/</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\Superviser\main.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

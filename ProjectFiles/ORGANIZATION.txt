@@ -1,0 +1,13 @@
+This folder should contain all the project files necessary to compile Powiter on every platform. 
+
+It should be arranged as such :
+
+ProjectFiles/
+	PowiterOsX/
+	PowiterWin/
+	PowiterLinux/
+	CmakeProject/
+	.
+	.
+	.
+	etc

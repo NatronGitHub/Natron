@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PowiterLib", "Powiter.vcxproj", "{8083E36F-3954-446F-A265-137431615DBF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PowiterLauncher", "PowiterLauncher\PowiterLauncher.vcxproj", "{C0553443-B2DB-41C0-B482-7F246B849198}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8083E36F-3954-446F-A265-137431615DBF} = {8083E36F-3954-446F-A265-137431615DBF}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8083E36F-3954-446F-A265-137431615DBF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8083E36F-3954-446F-A265-137431615DBF}.Debug|Win32.Build.0 = Debug|Win32
+		{8083E36F-3954-446F-A265-137431615DBF}.Release|Win32.ActiveCfg = Release|Win32
+		{8083E36F-3954-446F-A265-137431615DBF}.Release|Win32.Build.0 = Release|Win32
+		{C0553443-B2DB-41C0-B482-7F246B849198}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C0553443-B2DB-41C0-B482-7F246B849198}.Debug|Win32.Build.0 = Debug|Win32
+		{C0553443-B2DB-41C0-B482-7F246B849198}.Release|Win32.ActiveCfg = Release|Win32
+		{C0553443-B2DB-41C0-B482-7F246B849198}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
