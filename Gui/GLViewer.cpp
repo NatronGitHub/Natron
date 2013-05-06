@@ -354,6 +354,8 @@ void ViewerGL::initAndCheckGlExtensions(){
 		_hasHW = false;
 	}
 	
+    //_hasHW =false; < decomment to debug
+    
 #ifdef __POWITER_WIN32__
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -760,7 +762,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     }
     
     if(_drawing && frameData)
-        memcpy(copyBuf,output, nbBytesOutput);
+        memcpy(copyBuf,output, nbBytesOutput*4);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     
     
@@ -1193,11 +1195,10 @@ void ViewerGL::updateColorSpace(QString str){
     }
     
     
-    if(!_byteMode && _hasHW)
-        updateGL();
-    else{
+    if(_byteMode==1 || !_hasHW)
         vengine->startEngineWithOption(1,false);
-    }
+    updateGL();
+    
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;

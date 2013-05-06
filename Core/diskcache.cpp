@@ -384,7 +384,7 @@ std::pair<char*,FrameID> DiskCache::mapNewFrame(int frameNB,char* filename,int w
     FrameID _info(gl_viewer->currentBuiltInZoom,gl_viewer->exposure,gl_viewer->_lut,0,treeVers,name_,width,
                   height,filename,gl_viewer->_byteMode);
     size_t sizeNeeded;
-    if(gl_viewer->_byteMode == 1.0){
+    if(gl_viewer->_byteMode == 1.0 || !gl_viewer->_hasHW){
         sizeNeeded = width * sizeof(U32) * height;
     }else{
         sizeNeeded = width * sizeof(float) * height * 4;
