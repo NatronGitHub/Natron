@@ -154,7 +154,7 @@
 			outputFiles = (
 				"${INPUT_FILE_DIR}/../ProjectFiles/GeneratedFiles/${INPUT_FILE_BASE}_moc.cpp",
 			);
-			script = "${QT_DIR}/bin/moc ${INPUT_FILE_PATH} -f -o ${INPUT_FILE_DIR}/../ProjectFiles/GeneratedFiles/${INPUT_FILE_BASE}_moc.cpp";
+			script = "${QT_MOC_PATH}/moc ${INPUT_FILE_PATH} -f -o ${INPUT_FILE_DIR}/../ProjectFiles/GeneratedFiles/${INPUT_FILE_BASE}_moc.cpp";
 		};
 /* End PBXBuildRule section */
 
@@ -773,7 +773,7 @@
 					"\"$(SRCROOT)/../../\"",
 					"\"$(BOOST_INCLUDES)\"",
 					"\"$(SRCROOT)/../../libs\"",
-					"\"$(QT_DIR)/include\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",
 				);
 				LIBRARY_SEARCH_PATHS = "";
@@ -811,7 +811,7 @@
 					"\"$(SRCROOT)/../../\"",
 					"\"$(BOOST_INCLUDES)\"",
 					"\"$(SRCROOT)/../../libs\"",
-					"\"$(QT_DIR)/include\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",
 				);
 				LIBRARY_SEARCH_PATHS = "";
@@ -827,7 +827,7 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
-				FRAMEWORK_SEARCH_PATHS = "\"$(QT_DIR)/lib\"";
+				FRAMEWORK_SEARCH_PATHS = "\"$(QT_LIB)\"";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
@@ -837,7 +837,7 @@
 					"\"$(OPENEXR_INCLUDES)\"",
 					"\"$(FFMPEG_INCLUDES)\"",
 					"\"$(FREETYPE_INCLUDES)\"",
-					"\"$(QT_DIR)/INCLUDES\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FREETYPE2_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",
 				);
@@ -852,7 +852,7 @@
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
 				EXECUTABLE_PREFIX = lib;
-				FRAMEWORK_SEARCH_PATHS = "\"$(QT_DIR)/lib\"";
+				FRAMEWORK_SEARCH_PATHS = "\"$(QT_LIB)\"";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
@@ -862,7 +862,7 @@
 					"\"$(OPENEXR_INCLUDES)\"",
 					"\"$(FFMPEG_INCLUDES)\"",
 					"\"$(FREETYPE_INCLUDES)\"",
-					"\"$(QT_DIR)/INCLUDES\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FREETYPE2_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",
 				);
@@ -879,7 +879,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(QT_DIR)/lib\"",
+					"\"$(QT_LIB)\"",
 				);
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
@@ -890,7 +890,7 @@
 					"\"$(BOOST_INCLUDES)\"",
 					"\"$(SRCROOT)/../../libs\"",
 					"\"$(OPENEXR_INCLUDES)\"",
-					"\"$(QT_DIR)/include\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FREETYPE_INCLUDES)\"",
 					"\"$(FREETYPE2_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",
@@ -914,7 +914,7 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(QT_DIR)/lib\"",
+					"\"$(QT_LIB)\"",
 				);
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
@@ -924,7 +924,7 @@
 					"\"$(BOOST_INCLUDES)\"",
 					"\"$(SRCROOT)/../../libs\"",
 					"\"$(OPENEXR_INCLUDES)\"",
-					"\"$(QT_DIR)/include\"",
+					"\"$(QT_INCLUDES)\"",
 					"\"$(FREETYPE_INCLUDES)\"",
 					"\"$(FREETYPE2_INCLUDES)\"",
 					"\"$(FTGL_INCLUDES)\"",

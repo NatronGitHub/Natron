@@ -70,7 +70,9 @@ FTGL_INCLUDES
 FTGL_LIB
 OPENEXR_INCLUDES
 OPENEXR_LIB
-QT_DIR
+QT_LIB
+QT_INCLUDES
+QT_MOC_PATH
 
 You'll need to change the path of these variable accordingly to the locations of the includes/libraries on your computer. 
 
@@ -78,8 +80,7 @@ You'll need to change the path of these variable accordingly to the locations of
 
 A few notes:
 
-*QT_DIR is the base directory of your qt installation (if you downloaded it yourself). If you used macports to get qt, it will be a "fragmented" installation, that is, the executables will be under bin/, headers under includes/ etc…
-This is not supported by this project file version. You should then either add two environment variables , e.g QT_INCLUDES, QT_LIBS to point respectively to the the includes and the libraries; or you should pack Qt libraries,executables and headers into one "Qt" folder.
+*QT_MOC_PATH is the path to the moc tool so the script can find it when compiling
 
 *All XXX_INCLUDES variables reference the place where the include files can be found for the library XXX.
 
