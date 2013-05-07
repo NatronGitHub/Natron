@@ -62,6 +62,7 @@ void ViewerGL::initConstructor(){
     _firstTime = true;
 	shaderLC=NULL;
 	shaderRGB=NULL;
+    shaderBlack=NULL;
     _overlay=true;
     _fullscreen = false;
     _channelsToDraw = Mask_RGBA;
@@ -130,7 +131,7 @@ void ViewerGL::updateGL(){
 }
 
 void ViewerGL::resizeGL(int width, int height){
-    if(height == 0)// prevent divide by 0
+    if(height == 0)// prevent division by 0
         height=1;
     float ap = _readerInfo->displayWindow().pixel_aspect();
     if(ap > 1.f)
@@ -171,11 +172,8 @@ void ViewerGL::paintGL()
         glScalef(zoomFactor, zoomFactor, 1);
         glTranslatef(-zoomX, -zoomY, 0);
         
-        
+        glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texId[0]);
-        
-//        GLfloat db;
-//        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &db);
         
         if(rgbMode())
             activateShaderRGB();
@@ -185,34 +183,24 @@ void ViewerGL::paintGL()
         glClear (GL_COLOR_BUFFER_BIT);
 		glBegin (GL_POLYGON);
         //mapping the texture with a vertical flip
-		glTexCoord2f (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
-		glTexCoord2f (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
-		glTexCoord2f (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
-		glTexCoord2f (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
+		glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
+		glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
+		glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+		glTexCoord2i (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
 		glEnd ();
-        
-        
+        glBindTexture(GL_TEXTURE_2D, 0);
         if(_hasHW && rgbMode() && shaderRGB){
             shaderRGB->release();
         }else if (_hasHW &&  !rgbMode() && shaderLC){
             shaderLC->release();
         }
-        
 	}else{
         if(_firstTime){
             _firstTime = false;
             initViewer();
             initBlackTex();
         }
-        if(_hasHW && !shaderBlack->bind()){
-            cout << qPrintable(shaderBlack->log()) << endl;
-        }
-        if(_hasHW)
-            shaderBlack->setUniformValue("Tex", 1);
         drawBlackTex();
-        if(_hasHW)
-            shaderBlack->release();
-        
     }
     if(_overlay){
         drawOverlay();
@@ -221,7 +209,7 @@ void ViewerGL::paintGL()
 }
 
 void ViewerGL::drawOverlay(){
-    
+    glDisable(GL_TEXTURE_2D);
     _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
     
     QPoint topRight(displayWindow().w(),displayWindow().h());
@@ -279,6 +267,8 @@ void ViewerGL::drawOverlay(){
         
     }
     vengine->drawOverlay();
+    //reseting color for next pass
+    glColor4f(1, 1, 1, 1);
 }
 
 void ViewerGL::paintEvent(QPaintEvent* event){
@@ -306,7 +296,6 @@ void ViewerGL::initializeGL(){
             cout << qPrintable(shaderBlack->log()) << endl;
         }
     }
-    glEnable (GL_TEXTURE_2D);
     
 }
 
@@ -354,9 +343,7 @@ void ViewerGL::initAndCheckGlExtensions(){
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
-	
-    //_hasHW =false; < decomment to debug
-    
+	    
 #ifdef __POWITER_WIN32__
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -531,7 +518,7 @@ void ViewerGL::initBlackTex(){
     while( y < displayWindow().top()){
         for(int k = y; k<incrementNew+y;k++){
             convertRowToFitTextureBGRA(NULL, NULL, NULL,  w,rowy,NULL);
-                        
+            
             //glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
             rowy++;
         }
@@ -545,7 +532,7 @@ void ViewerGL::initBlackTex(){
                      GL_BGRA,			// format
                      GL_UNSIGNED_INT_8_8_8_8_REV,		// type
                      0);
-
+    
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     
 }
@@ -579,13 +566,24 @@ void ViewerGL::drawBlackTex(){
     glTranslatef(-zoomX, -zoomY, 0);
     
     glClear (GL_COLOR_BUFFER_BIT);
+    glEnable (GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
+    
+    if(_hasHW && !shaderBlack->bind()){
+        cout << qPrintable(shaderBlack->log()) << endl;
+    }
+    if(_hasHW)
+        shaderBlack->setUniformValue("Tex", 0);
     glBegin (GL_POLYGON);
-    glTexCoord2f (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
-    glTexCoord2f (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
-    glTexCoord2f (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
-    glTexCoord2f (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
+    glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
+    glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
+    glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+    glTexCoord2i (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
     glEnd ();
+    if(_hasHW)
+        shaderBlack->release();
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void ViewerGL::drawRow(Row* row,ROW_RANK rank){
@@ -624,7 +622,7 @@ void ViewerGL::preProcess(int nbFrameHint){
         
         /*initializing the pbo that will hold the rendered frame*/
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-        if(_byteMode == 1 && _hasHW)
+        if(_byteMode == 1 || !_hasHW)
             glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
         else
             glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(float)*4, NULL, GL_DYNAMIC_DRAW_ARB);
@@ -636,6 +634,8 @@ void ViewerGL::postProcess(){
     
     int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
     int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    glEnable (GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texId[0]);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     if(_byteMode==1 || !_hasHW){
@@ -661,8 +661,8 @@ void ViewerGL::postProcess(){
         
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-   
+    
+    
     vengine->_cache->appendFrame(frameInfo);
     _makeNewFrame = true;
     
@@ -695,7 +695,6 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     unsigned error_r = 0x80;
     unsigned error_g = 0x80;
     unsigned error_b = 0x80;
-    unsigned error_a = 0x80;
     /* go fowards from starting point to end of line: */
     while(itNew < end){
         U32* kept = itNew;
@@ -714,15 +713,21 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
                 }
                 _r*=_a;_g*=_a;_b*=_a;
                 _r*=exposure;_g*=exposure;_b*=exposure;
-                error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
-                error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
-                error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
-                if(alpha!=NULL)
-                    error_a = (error_a&0xff) + _colorSpace->lookup_toByteLUT(_a);
-                r_ = error_r >> 8;
-                g_ = error_g >> 8;
-                b_ = error_b >> 8;
-                alpha!=NULL ? a_ = error_a >> 8 : a_ = 255;
+                if(!_colorSpace->linear()){
+                    error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
+                    error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
+                    error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
+                    a_ = _a*255;
+                    r_ = error_r >> 8;
+                    g_ = error_g >> 8;
+                    b_ = error_b >> 8;
+                }else{
+                    a_ = _a*255;
+                    r_ = _r*255;
+                    g_ = _g*255;
+                    b_ = _b*255;
+                }
+                
             }else{
                 r_ = g_ = b_ = 0;
                 a_ = 255;
@@ -737,12 +742,11 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     }
     
     /* go backwards from starting point to start of line: */
-    itOld =  start-fullSizeIncrement;
-    itNew = output + ((incrementCount-1)*downScaleIncrement);
+    itOld =  start;
+    itNew = output + ((incrementCount)*downScaleIncrement);
     error_r = 0x80;
     error_g = 0x80;
     error_b = 0x80;
-    error_a = 0x80;
     
     while(itNew >= output){
         U32* kept = itNew;
@@ -761,15 +765,22 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
                 }
                 _r*=_a;_g*=_a;_b*=_a;
                 _r*=exposure;_g*=exposure;_b*=exposure;
-                error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
-                error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
-                error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
-                if(alpha!=NULL)
-                    error_a = (error_a&0xff) + _colorSpace->lookup_toByteLUT(_a);
-                r_ = error_r >> 8;
-                g_ = error_g >> 8;
-                b_ = error_b >> 8;
-                alpha!=NULL ? a_ = error_a >> 8 : a_ = 255;
+                if(!_colorSpace->linear()){
+                    error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
+                    error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
+                    error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
+                    a_ = _a*255;
+                    r_ = error_r >> 8;
+                    g_ = error_g >> 8;
+                    b_ = error_b >> 8;
+                }else{
+                    a_ = _a*255;
+                    r_ = _r*255;
+                    g_ = _g*255;
+                    b_ = _b*255;
+                }
+
+                
             }else{
                 r_ = g_ = b_ = 0;
                 a_ = 255;
@@ -1216,11 +1227,9 @@ void ViewerGL::updateColorSpace(QString str){
 void ViewerGL::updateExposure(double d){
     exposure = d;
     
-    if(!_byteMode && _hasHW)
-        updateGL();
-    else{
+    if(_byteMode==1 || !_hasHW)
         vengine->startEngineWithOption(1,false);
-    }
+    updateGL();
     
 }
 

@@ -12,19 +12,8 @@ using namespace std;
  Does nothing if called a second time. */
 void Lut::fillToTable(){
    // float increment = 1.f /65535.f;
+    if(init_) return;
     bool linearTrue = true;
-   
-//	for(float i=0;i<=1.f;i+=increment){
-//        float to = to_byte(i);
-//        U16* toU16 = reinterpret_cast<U16*>(&to);
-//		to_byte_table[floatToInt(i)/65536]= *toU16;
-//        if(!isEqual_float(to, i*255.f, 10000))
-//            linearTrue = false;
-//        if(i == 0 && to <= 0.f)
-//            zero_ = true;
-//	}
-    /*****/
-    
     for (int i = 0; i < 0x10000; i++) {
         float inp = index_to_float(i);
         float f = to_byte(inp);
@@ -45,6 +34,7 @@ void Lut::fillToTable(){
  Does nothing if called a second time. */
 void Lut::fillFromTable()
 {
+    if(init_) return;
     int i;
     for (int b = 0; b <= 255; b++) {
         float f[1]; f[0] = from_byte((float)b);

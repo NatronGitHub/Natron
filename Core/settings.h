@@ -11,7 +11,7 @@ public:
         maxCacheMemoryPercent=0.5;
         maxPlayBackMemoryPercent = 0.14;
         maxDiskCache = 9000000000;
-        byte_mode=0;
+        byte_mode=1;
         stereo_mode=false;
     }
     
