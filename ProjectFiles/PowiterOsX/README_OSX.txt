@@ -88,7 +88,7 @@ A few notes:
 
 ##Configure project schemes
 
-Still in Xcode, in the Product menu, got into the Scheme sub-menus click Edit scheme. . .(cmd <). In the left menu, select "Run Powiter". 
+Still in Xcode, in the Product menu, go into the Scheme sub-menu, click Edit scheme. . .(cmd <). In the left menu and select "Run Powiter". 
 In the info tab , change the executable to Powiter. Then go to the option tab and select "Working directory". You need to put for working directory the base of Powiter_Core: e.g
  
 /Users/blabla/Dev/Powiter_Core
