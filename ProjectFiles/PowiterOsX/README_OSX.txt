@@ -18,7 +18,7 @@ In order to have Powiter compiling, first you need to install the required libra
 ###Qt 4.8
 
 You'll need to install Qt 4.8 libraries from [Qt download](http://qt-project.org/downloads). Select the "Qt libraries 4.8.4 for Mac (185 MB)"
-Powiter will most likely upgrade to Qt5 soon, but for now it's not compatible with Qt5 fully. Once download, remember the path where you install it as we will need it into Xcode.
+Powiter will most likely upgrade to Qt5 soon, but for now it's not compatible with Qt5 fully. Once downloaded, remember the path where you install it as we will need it into Xcode.
 
 ###FFMPEG
 
@@ -96,6 +96,12 @@ In the info tab , change the executable to Powiter. Then go to the option tab an
 
 That should be all, you can select the target "Powiter" and compile. 
 
+
+
+##Adding QT classes using signals/slots
+
+You'll have to define the Q_OBJECT macro in the declaration of the class so the moc tool will actually "moc" it.
+In order to make it work with XCode  you'll have to add your header to the compiled sources of the target PowiterOsX ( in the tab Build Phases ).
 
 
 

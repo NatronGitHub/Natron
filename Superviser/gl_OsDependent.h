@@ -46,7 +46,7 @@ using std::endl;
 
 
 #ifdef _WIN32
-	#include <Nvidia_win32/include/GL/glew.h>
+	#include <GL/glew.h>
 #else
     #define GL_GLEXT_PROTOTYPES
 #endif

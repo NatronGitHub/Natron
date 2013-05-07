@@ -41,7 +41,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/include;$(ProjectDir)../../../../libs/Qt_win32/include/;$(ProjectDir)../../../../;$(ProjectDir)../../../../libs/freetype2_win32/include;$(ProjectDir)../../../../libs/;$(ProjectDir)../../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_INCLUDES);$(GLEW_INCLUDES);$(OPENEXR_INCLUDES);$(QT_INCLUDES);$(FREETYPE_INCLUDES);$(ProjectDir)../../../../;$(FREETYPE2_INCLUDES);$(FTGL_INCLUDES);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PreprocessorDefinitions>OPENEXR_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -53,9 +53,33 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Iex.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Half.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/Imath.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/IlmThread.lib;$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/IlmImf.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avcodec.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avdevice.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avfilter.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avformat.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/avutil.lib;$(ProjectDir)../../../../libs/ffmpeg_win32/lib/swscale.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtCore4.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtGui4.lib;$(ProjectDir)../../../../libs/Qt_win32/lib/QtOpenGL4.lib;$(ProjectDir)../../../../libs/Nvidia_win32/lib/Debug/glew32.lib;$(ProjectDir)../../../../libs/freetype2_win32/lib/freetype242MT_D.lib;$(ProjectDir)../../../../libs/ftgl_win32/lib/ftgl_static_D.lib;$(TargetDir)Powiter_win32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\QtCore4.lib;$(QT_LIB)\QtGui4.lib;$(QT_LIB)\QtOpenGL4.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl_static_D.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <CustomBuildStep>
+      <Command>xcopy "$(GLEW_BIN)\glew32.dll" "$(OutDir)" /R /Y 
+xcopy "$(OPENEXR_BIN)\zlibwapi.dll" "$(OutDir)" /R /Y
+xcopy "$(OPENEXR_BIN)\Half.dll" "$(OutDir)" /R /Y
+xcopy  "$(OPENEXR_BIN)\Iex.dll"  "$(OutDir)" /R /Y
+xcopy "$(OPENEXR_BIN)\Imath.dll" "$(OutDir)" /R /Y
+xcopy "$(OPENEXR_BIN)\IlmImf.dll"  "$(OutDir)" /R /Y
+xcopy "$(OPENEXR_BIN)\IlmThread.dll" "$(OutDir)" /R /Y
+xcopy  "$(FFMPEG_BIN)\avdevice-54.dll"  "$(OutDir)" /R /Y
+xcopy "$(FFMPEG_BIN)\avcodec-54.dll"  "$(OutDir)" /R /Y
+xcopy "$(FFMPEG_BIN)\avfilter-3.dll" "$(OutDir)" /R /Y
+xcopy "$(FFMPEG_BIN)\avformat-54.dll" "$(OutDir)" /R /Y  
+xcopy "$(FFMPEG_BIN)\avutil-52.dll"  "$(OutDir)" /R /Y
+xcopy "$(FFMPEG_BIN)\swscale-2.dll" "$(OutDir)" /R /Y
+xcopy "$(QT_MOC_PATH)\QtCore4.dll" "$(OutDir)" /R /Y
+xcopy "$(QT_MOC_PATH)\QtGui4.dll" "$(OutDir)" /R /Y
+xcopy "$(QT_MOC_PATH)\QtOpenGL4.dll" "$(OutDir)" /R /Y
+ </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Copying required dll's to current directory</Message>
+      <Outputs>glew32.dll zlibwapi.dll half.dll IlmThread.dll Iex.dll Imath.dll IlmImf.dll avdevice-54.dll avfilter-3.dll avcodec-54.dll;avutil-52.dll swscale-2.dll avformat-54.dll;QtCore4.dll QtGui4.dll QtOpenGL4.dll</Outputs>
+      <Inputs>$(GLEW_BIN)\glew32.dll;$(OPENEXR_BIN)\zlibwapi.dll;$(OPENEXR_BIN)\Half.dll;$(OPENEXR_BIN)\Iex.dll;$(OPENEXR_BIN)\Imath.dll;$(OPENEXR_BIN)\IlmImf.dll;$(OPENEXR_BIN)\IlmThread.dll;$(FFMPEG_BIN)\avdevice-54.dll;$(FFMPEG_BIN)\avcodec-54.dll;$(FFMPEG_BIN)\avfilter-3.dll;$(FFMPEG_BIN)\avformat-54.dll;$(FFMPEG_BIN)\avutil-52.dll;$(FFMPEG_BIN)\swscale-2.dll;$(QT_MOC_PATH)\QtCore4.dll;$(QT_MOC_PATH)\QtGui4.dll;$(QT_MOC_PATH)\QtOpenGL4.dll</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -63,15 +87,21 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/include;$(ProjectDir)../../../../libs/Qt_win32/include/;$(ProjectDir)../../../../;$(ProjectDir)../../../../libs/freetype2_win32/include;$(ProjectDir)../../../../libs/;$(ProjectDir)../../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_INCLUDES);$(GLEW_INCLUDES);$(OPENEXR_INCLUDES);$(QT_INCLUDES);$(FREETYPE_INCLUDES);$(ProjectDir)../../../../;$(FREETYPE2_INCLUDES);$(FTGL_INCLUDES);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Iex.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Imath.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/IlmThread.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/IlmImf.lib;$(ProjectDir)../../../../../libs/OpenExr_win32/lib/Release/Half.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avcodec.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avdevice.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avfilter.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avformat.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/avutil.lib;$(ProjectDir)../../../../../libs/ffmpeg_win32/lib/swscale.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtCore4.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtGui4.lib;$(ProjectDir)../../../../../libs/Qt_win32/lib/QtOpenGL4.lib;$(ProjectDir)../../../../libs/Nvidia_win32/lib/Release/glew32.lib;$(ProjectDir)../../../../libs/ftgl_win32/lib/ftgl_static.lib;$(TargetDir)Powiter_win32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\QtCore4.lib;$(QT_LIB)\QtGui4.lib;$(QT_LIB)\QtOpenGL4.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl_static.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/bin/Release/</AdditionalLibraryDirectories>
     </Link>
+    <CustomBuildStep>
+      <Command>xcopy "$(GLEW_BIN)\glew32.dll" "$(OutDir)" /R /Y </Command>
+      <Message>Copying required dll's to current directory</Message>
+      <Outputs>glew32.dll zlibwapi.dll half.dll IlmThread.dll Iex.dll Imath.dll IlmImf.dll avdevice-54.dll avfilter-3.dll avcodec-54.dll;avutil-52.dll swscale-2.dll avformat-54.dll;QtCore4.dll QtGui4.dll QtOpenGL4.dll</Outputs>
+      <Inputs>$(GLEW_BIN)\glew32.dll;$(OPENEXR_BIN)\zlibwapi.dll;$(OPENEXR_BIN)\Half.dll;$(OPENEXR_BIN)\Iex.dll;$(OPENEXR_BIN)\Imath.dll;$(OPENEXR_BIN)\IlmImf.dll;$(OPENEXR_BIN)\IlmThread.dll;$(FFMPEG_BIN)\avdevice-54.dll;$(FFMPEG_BIN)\avcodec-54.dll;$(FFMPEG_BIN)\avfilter-3.dll;$(FFMPEG_BIN)\avformat-54.dll;$(FFMPEG_BIN)\avutil-52.dll;$(FFMPEG_BIN)\swscale-2.dll;$(QT_MOC_PATH)\QtCore4.dll;$(QT_MOC_PATH)\QtGui4.dll;$(QT_MOC_PATH)\QtOpenGL4.dll</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\Superviser\main.cpp" />

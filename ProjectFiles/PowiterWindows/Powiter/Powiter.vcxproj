@@ -43,7 +43,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../libs/;$(ProjectDir)../../../libs/ffmpeg_win32/include;$(ProjectDir)../../../libs/OpenExr_win32/include;$(ProjectDir)../../../;$(ProjectDir)../../../libs/Qt_win32/include/;$(ProjectDir)../../../libs/Nvidia_win32/include;$(ProjectDir)../../../libs/freetype2_win32/include;$(ProjectDir)../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_INCLUDES);$(GLEW_INCLUDES);$(ProjectDir)../../../libs/;$(FFMPEG_INCLUDES);$(OPENEXR_INCLUDES);$(ProjectDir)../../../;$(QT_INCLUDES);$(FREETYPE_INCLUDES);$(FREETYPE2_INCLUDES);$(FTGL_INCLUDES);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <PreprocessorDefinitions>OPENEXR_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -65,7 +65,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../../libs/;$(ProjectDir)../../../libs/ffmpeg_win32/include;$(ProjectDir)../../../libs/OpenExr_win32/include;$(ProjectDir)../../../;$(ProjectDir)../../../libs/Qt_win32/include/;$(ProjectDir)../../../libs/Nvidia_win32/include;$(ProjectDir)../../../libs/freetype2_win32/include;$(ProjectDir)../../../libs/ftgl_win32/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_INCLUDES);$(GLEW_INCLUDES);$(ProjectDir)../../../libs/;$(FFMPEG_INCLUDES);$(OPENEXR_INCLUDES);$(ProjectDir)../../../;$(QT_INCLUDES);$(FREETYPE_INCLUDES);$(FREETYPE2_INCLUDES);$(FTGL_INCLUDES);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -154,14 +154,14 @@
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
     <ClInclude Include="..\..\..\Superviser\PwStrings.h" />
     <CustomBuild Include="..\..\..\Core\model.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  $(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Core\node.h" />
     <ClInclude Include="..\..\..\Core\OP.h" />
@@ -173,133 +173,133 @@
     <ClInclude Include="..\..\..\Core\sleeper.h" />
     <ClInclude Include="..\..\..\Core\Timer.h" />
     <CustomBuild Include="..\..\..\Core\VideoEngine.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Core\viewerNode.h" />
     <ClInclude Include="..\..\..\Core\workerthread.h" />
     <ClInclude Include="..\..\..\Gui\arrowGUI.h" />
     <CustomBuild Include="..\..\..\Gui\DAG.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o   C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\DAGQuickNode.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\dockableSettings.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o   C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o   C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o   C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o   C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\FeedbackSpinBox.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe ;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  C:\%(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe ;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  C:\%(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe ;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe ;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\GLViewer.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\InfoViewerWidget.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\inputnode_ui.h" />
     <CustomBuild Include="..\..\..\Gui\knob.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\knob_callback.h" />
     <CustomBuild Include="..\..\..\Gui\mainGui.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\node_ui.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -oC:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\operatornode_ui.h" />
     <ClInclude Include="..\..\..\Gui\outputnode_ui.h" />
     <CustomBuild Include="..\..\..\Gui\ScaleSlider.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe %(FullPath) -f -o  C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\shaders.h" />
     <ClInclude Include="..\..\..\Gui\textRenderer.h" />
     <CustomBuild Include="..\..\..\Gui\timeline.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\libs\Qt_win32\bin\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\viewerTab.h" />
     <ClInclude Include="..\..\..\Reader\Read.h" />
