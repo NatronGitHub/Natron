@@ -132,8 +132,10 @@ public:
 	void fileType(File_Type f){_filetype=f;}
 	File_Type fileType(){return _filetype;}
     
-    void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,size_t nbBytesOutput,const float* alpha=NULL);
-    void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,size_t nbBytesOutput,const float* alpha=NULL);
+    void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
+                                    size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
+    void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
+                                       size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
 
     
     static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
@@ -215,6 +217,7 @@ private:
     
     GLuint texBuffer[2];
     GLuint texId[1];
+    void* _renderingBuffer;
     std::pair<int,int> _textureSize;
     GLuint texBlack[1];
     QGLShaderProgram* shaderRGB;

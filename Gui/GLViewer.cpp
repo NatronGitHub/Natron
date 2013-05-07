@@ -55,6 +55,7 @@ void ViewerGL::initConstructor(){
     zoomX =0; zoomY=0;
 	_drawing=false;
 	exposure = 1;
+    _renderingBuffer = 0;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
     fillBuiltInZooms();
@@ -518,28 +519,34 @@ void ViewerGL::initBlackTex(){
                   GL_BGRA,		// format
                   GL_UNSIGNED_INT_8_8_8_8_REV,	// type
                   0);			// pixels
-    float nbBytes = floorf((float)(_readerInfo->displayWindow().w()) * currentBuiltInZoom);
     float incrementNew = builtInZooms[zf].first;
     float incrementFullsize = builtInZooms[zf].second;
     setZoomIncrement(make_pair(incrementNew,incrementFullsize));
     int y = displayWindow().y();
     int rowy = displayWindow().y();
+    
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+    _renderingBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     while( y < displayWindow().top()){
         for(int k = y; k<incrementNew+y;k++){
-            convertRowToFitTextureBGRA(NULL, NULL, NULL,  nbBytes,NULL);
-            glTexSubImage2D (GL_TEXTURE_2D,
-                             0,				// level
-                             0,rowy ,				// xoffset, yoffset
-                             nbBytes, 1,
-                             GL_BGRA,			// format
-                             GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                             0);
-            
-            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+            convertRowToFitTextureBGRA(NULL, NULL, NULL,  w,rowy,NULL);
+                        
+            //glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
             rowy++;
         }
         y+=incrementFullsize;
     }
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    glTexSubImage2D (GL_TEXTURE_2D,
+                     0,				// level
+                     0,0 ,				// xoffset, yoffset
+                     w, h,
+                     GL_BGRA,			// format
+                     GL_UNSIGNED_INT_8_8_8_8_REV,		// type
+                     0);
+
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     
 }
 
@@ -591,33 +598,12 @@ void ViewerGL::drawRow(Row* row,ROW_RANK rank){
     
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                      w*sizeof(float),(*row)[Channel_alpha]);
+                                      w*sizeof(float),to_draw->zoomedY(),(*row)[Channel_alpha]);
     }
     else{
-        convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],  w,(*row)[Channel_alpha]);
+        convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
+                                   w,to_draw->zoomedY(),(*row)[Channel_alpha]);
     }
-    if(_byteMode==1 || !_hasHW){
-        glTexSubImage2D (GL_TEXTURE_2D,
-                         0,				// level
-                         0, row->zoomedY() ,				// xoffset, yoffset
-                         w, 1,
-                         GL_BGRA,			// format
-                         GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                         0);
-    }else if(_byteMode ==0 && _hasHW){
-        checkGLErrors();
-        glTexSubImage2D (GL_TEXTURE_2D,
-                         0,				// level
-                         0, row->zoomedY() ,				// xoffset, yoffset
-                         w, 1,
-                         GL_RGBA,			// format
-                         GL_FLOAT,		// type
-                         0);
-        checkGLErrors();
-        
-    }
-    
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     
 #ifdef __POWITER_WIN32__
     doneCurrent();  //< NEEDED FOR MULTI THREADING
@@ -635,16 +621,54 @@ void ViewerGL::preProcess(int nbFrameHint){
         frameData = p.first;
         frameInfo = p.second;
         _makeNewFrame = false;
+        
+        /*initializing the pbo that will hold the rendered frame*/
+        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
+        if(_byteMode == 1 && _hasHW)
+            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+        else
+            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(float)*4, NULL, GL_DYNAMIC_DRAW_ARB);
+        _renderingBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     }
 }
 
 void ViewerGL::postProcess(){
+    
+    int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
+    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    if(_byteMode==1 || !_hasHW){
+        glTexSubImage2D (GL_TEXTURE_2D,
+                         0,				// level
+                         0, 0,				// xoffset, yoffset
+                         w, h,
+                         GL_BGRA,			// format
+                         GL_UNSIGNED_INT_8_8_8_8_REV,		// type
+                         0);
+        memcpy(frameData, _renderingBuffer, w*h*sizeof(U32));
+        
+    }else if(_byteMode ==0 && _hasHW){
+        glTexSubImage2D (GL_TEXTURE_2D,
+                         0,				// level
+                         0, 0 ,				// xoffset, yoffset
+                         w, h,
+                         GL_RGBA,			// format
+                         GL_FLOAT,		// type
+                         0);
+        checkGLErrors();
+        memcpy(frameData, _renderingBuffer, w*h*sizeof(float)*4);
+        
+    }
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+
+   
     vengine->_cache->appendFrame(frameInfo);
     _makeNewFrame = true;
     
 }
 
-void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,size_t nbBytesOutput,const float* alpha){
+void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,size_t nbBytesOutput,int yOffset,const float* alpha){
     
     /*Converting one row (float32) to 8bit BGRA texture. We apply a dithering algorithm based on error diffusion.
      This error diffusion will produce stripes in any image that has identical scanlines.
@@ -652,14 +676,12 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      and it proceeds in both directions away from this point.*/
     
     U32* copyBuf = reinterpret_cast<U32*>(frameData);
-    int yOffset =  0;
-    if(_drawing)
-        yOffset=to_draw->zoomedY()*nbBytesOutput;
+    yOffset*=nbBytesOutput;
     copyBuf+=yOffset;
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, nbBytesOutput*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
-    U32* output = reinterpret_cast<U32*>(glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
+    U32* output = reinterpret_cast<U32*>(_renderingBuffer); //(glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
+    output+=yOffset;
     U32* end = output + nbBytesOutput;
     
     int downScaleIncrement = (int)zoomIncrement.first; // number of pixels to keep in the scan
@@ -761,26 +783,20 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         itOld -= (fullSizeIncrement-downScaleIncrement);
     }
     
-    if(_drawing && frameData)
-        memcpy(copyBuf,output, nbBytesOutput*4);
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    
-    
-    
 }
 // nbbytesoutput is the size in bytes of 1 channel for the row
-void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,size_t nbBytesOutput,const float* alpha){
+void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
+                                             size_t nbBytesOutput,int yOffset,const float* alpha){
     float* copyBuf = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
-    int yOffset = to_draw->zoomedY()*nbBytesOutput;
+    yOffset *=nbBytesOutput;
     if(_drawing)
         copyBuf+=yOffset;
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, nbBytesOutput*4, NULL, GL_DYNAMIC_DRAW_ARB);
-    void *gpuMemory = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    float* output = reinterpret_cast<float*>(gpuMemory);
     
+    float* output = reinterpret_cast<float*>(_renderingBuffer);
+    output+=yOffset;
     float downScaleIncrement = zoomIncrement.first; // number of rows to keep in the scan
     float fullSizeIncrement = zoomIncrement.second; // number of rows to scan per cycle
     
@@ -800,9 +816,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
         itNew+= downScaleIncrement*4;
         itOld += (fullSizeIncrement - downScaleIncrement);
     }
-    if(_drawing && frameData)
-        memcpy(copyBuf,output,nbBytesOutput*4);
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     
 }

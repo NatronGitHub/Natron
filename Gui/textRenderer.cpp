@@ -18,6 +18,12 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+//Bitstream Vera Fonts Copyright
+//------------------------------
+//
+//Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is
+//a trademark of Bitstream, Inc.
+
 #include <QtGui/QPainter>
 #include "Gui/GLViewer.h"
 #include "Gui/textRenderer.h"
@@ -26,7 +32,7 @@ using namespace std;
 TextRenderer::TextRenderer(ViewerGL *glwidget)
 {
 	m_glwidget = glwidget;
-    m_font = new FTTextureFont(ROOT"/libs/fonts/arial.ttf");
+    m_font = new FTTextureFont(ROOT"/libs/fonts/DejaVuSans.ttf");
     if(m_font->Error())
         cout << "error loading font " << endl;
     m_font->FaceSize(14);
