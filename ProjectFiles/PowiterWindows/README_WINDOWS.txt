@@ -51,7 +51,7 @@ We're done here for libraries.
 
 ##Setting the environment variables
 
-We'll need to set a few windows environment variables so that the solution file recognises the path to the libraries.
+We'll need to set a few windows environment variables so that the solution file recognises the path to the libraries. 
 
 Here they are:
 
@@ -64,6 +64,7 @@ FFMPEG_INCLUDES
 FFMPEG_LIB
 FREETYPE2_INCLUDES
 FREETYPE_INCLUDES
+FREETYPE2_LIB
 FTGL_INCLUDES
 FTGL_LIB
 OPENEXR_BIN

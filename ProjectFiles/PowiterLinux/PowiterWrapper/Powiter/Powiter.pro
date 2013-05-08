@@ -7,16 +7,19 @@ SOURCES += \
     ../../../../Superviser/main.cpp
 
 INCLUDEPATH += $$PWD/../../../../
-INCLUDEPATH += /usr/include/freetype2
-
-INCLUDEPATH +=$$PWD/../../../../libs/OpenExr_linux/include
-DEPENDPATH += $$PWD/../../../../libs/OpenExr_linux/include
-
-
-
-INCLUDEPATH += /usr/include
-DEPENDPATH += /usr/include
-
+INCLUDEPATH += $(QT_INCLUDES)
+INCLUDEPATH += $(BOOST_INCLUDES)
+INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $(OPENEXR_INCLUDES)
+INCLUDEPATH += $(FREETYPE2_INCLUDES)
+INCLUDEPATH += $(FREETYPE_INCLUDES)
+INCLUDEPATH += $(FTGL_INCLUDES)
+DEPENDPATH += $(OPENEXR_INCLUDE)
+DEPENDPATH += $(QT_INCLUDES)
+DEPENDPATH += $(FREETYPE2_INCLUDES)
+DEPENDPATH += $(FREETYPE_INCLUDES)
+DEPENDPATH += $(BOOST_INCLUDES)
+DEPENDPATH += $(FTGL_INCLUDES)
 
 unix: PRE_TARGETDEPS += $$PWD/../../build/PowiterLib/libPowiterLib.a
 LIBS += -L$$PWD/../../build/PowiterLib/ -lPowiterLib

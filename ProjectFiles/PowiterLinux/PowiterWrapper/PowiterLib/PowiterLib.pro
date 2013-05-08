@@ -123,33 +123,38 @@ HEADERS += \
 INSTALLS += target
 
 
-INCLUDEPATH += /usr/local/Trolltech/Qt-4.8.4/include
-INCLUDEPATH += $$PWD/../../../../libs/boost
+INCLUDEPATH += $(QT_INCLUDES)
+INCLUDEPATH += $(BOOST_INCLUDES)
 INCLUDEPATH += $$PWD/../../../../
-INCLUDEPATH += $$PWD/../../../../libs/OpenExr_linux/include
-INCLUDEPATH += /usr/include/freetype2
-DEPENDPATH += $$PWD/../../../../libs/OpenExr_linux/include
-INCLUDEPATH += /usr/include
-DEPENDPATH += /usr/include
+INCLUDEPATH += $(OPENEXR_INCLUDES)
+INCLUDEPATH += $(FREETYPE2_INCLUDES)
+INCLUDEPATH += $(FREETYPE_INCLUDES)
+INCLUDEPATH += $(FTGL_INCLUDES)
+DEPENDPATH += $(OPENEXR_INCLUDE)
+DEPENDPATH += $(QT_INCLUDES)
+DEPENDPATH += $(FREETYPE2_INCLUDES)
+DEPENDPATH += $(FREETYPE_INCLUDES)
+DEPENDPATH += $(BOOST_INCLUDES)
+DEPENDPATH += $(FTGL_INCLUDES)
 
 
-unix:!macx: PRE_TARGETDEPS +=$$PWD/../../../../libs/OpenExr_linux/lib/libHalf.a
-unix:!macx: PRE_TARGETDEPS +=$$PWD/../../../../libs/OpenExr_linux/lib/libIex.a
-unix:!macx: PRE_TARGETDEPS +=$$PWD/../../../../libs/OpenExr_linux/lib/libImath.a
-unix:!macx: PRE_TARGETDEPS +=$$PWD/../../../../libs/OpenExr_linux/lib/libIlmThread.a
-unix:!macx: PRE_TARGETDEPS +=$$PWD/../../../../libs/OpenExr_linux/lib/libIlmImf.a
+unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libHalf.a
+unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIex.a
+unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libImath.a
+unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIlmThread.a
+unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIlmImf.a
 
-unix:!macx: LIBS += -L$$PWD/../../../../libs/OpenExr_linux/lib/ -lHalf -lIex -lImath -lIlmImf -lIlmThread
-
-
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libavcodec.a
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libavformat.a
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libavdevice.a
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libavutil.a
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libavfilter.a
-unix: PRE_TARGETDEPS +=/usr/lib/i386-linux-gnu/libswscale.a
-unix: LIBS += -L/usr/lib/i386-linux-gnu/ -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+unix:!macx: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread
 
 
-unix: PRE_TARGETDEPS += /usr/lib/libftgl.a
-unix: LIBS += -L/usr/lib/ -lftgl
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavcodec.a
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavformat.a
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavdevice.a
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavutil.a
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavfilter.a
+unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libswscale.a
+unix: LIBS += -L$(FFMPEG_LIB) -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+
+
+unix: PRE_TARGETDEPS += $(FTGL_LIB)/libftgl.a
+unix: LIBS += -L$(FTGL_LIB) -lftgl

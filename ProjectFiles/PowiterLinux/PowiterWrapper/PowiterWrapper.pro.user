@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 2.7.0, 2013-05-05T10:30:28. -->
+<!-- Written by QtCreator 2.7.0, 2013-05-08T12:15:31. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -108,7 +108,19 @@
     </valuemap>
     <value type="int" key="ProjectExplorer.BuildConfiguration.BuildStepListCount">2</value>
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
-    <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges"/>
+    <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges">
+     <value type="QString">BOOST_INCLUDES=/usr/include</value>
+     <value type="QString">OPENEXR_INCLUDES=/usr/local/include/OpenEXR</value>
+     <value type="QString">OPENEXR_LIB=/usr/local/lib</value>
+     <value type="QString">FTGL_INCLUDES=/usr/include</value>
+     <value type="QString">FTGL_LIB=/usr/lib</value>
+     <value type="QString">FREETYPE2_INCLUDES=/usr/include</value>
+     <value type="QString">FREETYPE_INCLUDES=/usr/include/freetype2</value>
+     <value type="QString">FREETYPE_LIB=/usr/lib/i386-linux-gnu</value>
+     <value type="QString">FFMPEG_INCLUDES=/usr/include</value>
+     <value type="QString">FFMPEG_LIB=/usr/lib/i386-linux-gnu</value>
+     <value type="QString">QT_INCLUDES=/usr/local/Trolltech/Qt-4.8.4/include</value>
+    </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Debug</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4BuildConfiguration</value>
