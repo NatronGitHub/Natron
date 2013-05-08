@@ -1,10 +1,14 @@
 //
-//  scene.cpp
+//  GLViewer.cpp
 //  Powiter
 //
 //  Created by Alexandre on 10/28/12.
 //  Copyright (c) 2012 Alexandre. All rights reserved.
 //
+
+/*This class is the the core of the viewer : what displays images, overlays, etc...
+ Everything related to OpenGL will (almost always) be in this class */
+
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
@@ -343,7 +347,7 @@ void ViewerGL::initAndCheckGlExtensions(){
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
-	    
+    
 #ifdef __POWITER_WIN32__
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -695,45 +699,52 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     unsigned error_r = 0x80;
     unsigned error_g = 0x80;
     unsigned error_b = 0x80;
+    /*This boolean is here to avoid computing 2 times the starting pixel.
+     The first pass we just skip the starting pixel*/
+    bool skipStartingPixel = true;
     /* go fowards from starting point to end of line: */
     while(itNew < end){
         U32* kept = itNew;
         while(kept < downScaleIncrement+itNew && kept<end){
-            float _r,_g,_b,_a;
-            U32 r_,g_,b_,a_;
-            if(_drawing){
-                r!=NULL? _r=r[itOld] : _r=0.f;
-                g!=NULL? _g=g[itOld] : _g=0.f;
-                b!=NULL? _b=b[itOld] : _b=0.f;
-                alpha!=NULL? _a=alpha[itOld] : _a=1.f;
-                
-                if(!rgbMode()){
-                    _r = (_r + 1.0)*_r;
-                    _g = _r; _b = _r;
-                }
-                _r*=_a;_g*=_a;_b*=_a;
-                _r*=exposure;_g*=exposure;_b*=exposure;
-                if(!_colorSpace->linear()){
-                    error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
-                    error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
-                    error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
-                    a_ = _a*255;
-                    r_ = error_r >> 8;
-                    g_ = error_g >> 8;
-                    b_ = error_b >> 8;
+            if(!skipStartingPixel){
+                float _r,_g,_b,_a;
+                U32 r_,g_,b_,a_;
+                if(_drawing){
+                    r!=NULL? _r=r[itOld] : _r=0.f;
+                    g!=NULL? _g=g[itOld] : _g=0.f;
+                    b!=NULL? _b=b[itOld] : _b=0.f;
+                    alpha!=NULL? _a=alpha[itOld] : _a=1.f;
+                    
+                    if(!rgbMode()){
+                        _r = (_r + 1.0)*_r;
+                        _g = _r; _b = _r;
+                    }
+                    _r*=_a;_g*=_a;_b*=_a;
+                    _r*=exposure;_g*=exposure;_b*=exposure;
+                    if(!_colorSpace->linear()){
+                        error_r = (error_r&0xff) + _colorSpace->lookup_toByteLUT(_r);
+                        error_g = (error_g&0xff) + _colorSpace->lookup_toByteLUT(_g);
+                        error_b = (error_b&0xff) + _colorSpace->lookup_toByteLUT(_b);
+                        a_ = _a*255;
+                        r_ = error_r >> 8;
+                        g_ = error_g >> 8;
+                        b_ = error_b >> 8;
+                    }else{
+                        a_ = _a*255;
+                        r_ = _r*255;
+                        g_ = _g*255;
+                        b_ = _b*255;
+                    }
+                    
                 }else{
-                    a_ = _a*255;
-                    r_ = _r*255;
-                    g_ = _g*255;
-                    b_ = _b*255;
+                    r_ = g_ = b_ = 0;
+                    a_ = 255;
                 }
                 
+                *kept = toBGRA(r_,g_,b_,a_);
             }else{
-                r_ = g_ = b_ = 0;
-                a_ = 255;
+                skipStartingPixel = false;
             }
-            
-            *kept = toBGRA(r_,g_,b_,a_);
             kept++;
             itOld++;
         }
@@ -779,7 +790,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
                     g_ = _g*255;
                     b_ = _b*255;
                 }
-
+                
                 
             }else{
                 r_ = g_ = b_ = 0;

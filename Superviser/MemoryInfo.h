@@ -191,7 +191,7 @@ static size_t getCurrentRSS( )
 	return (size_t)0L;			/* Unsupported. */
 #endif
 }
-
+/*return the endianness of the CPU*/
 static bool isBigEndian()
 {
     union {
