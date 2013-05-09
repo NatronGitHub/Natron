@@ -12,6 +12,9 @@
 #include "Core/inputnode.h"
 #include "Core/settings.h"
 
+/*This is the core class of Powiter. It is where the plugins get loaded.
+ *This class is the front-end of the core (processing part) of the software.
+ **/
 using namespace Powiter_Enums;
 
 #ifdef __POWITER_WIN32__
@@ -79,40 +82,59 @@ public:
     Model(QObject* parent=0);
     virtual ~Model();
     
-    void LoadPluginsAndInitNameList();
+    void loadPluginsAndInitNameList();
 
-    
+    /*utility functions used to parse*/
     std::string removePrefixSpaces(std::string str);
     std::string getNextWord(std::string str);
-	//void video_sequence_engine(OutputNode *output,std::vector<InputNode*> inputs);
-    
+	
+	/*fills the inputs vector with the InputNodes found
+	 *upstream of output.*/
 	void getGraphInput(std::vector<InputNode*> &inputs,Node* output);
-    //   int getProgression(){return progression;}
+
+	/*set pointer to the controler*/
     void setControler(Controler* ctrl);
+
+	/*Create a new node internally*/
     UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
+
+	/*Return a list of the name of all nodes available currently in Powiter*/
     QStringList& getNodeNameList(){return nodeNameList;}
+
+	/*this is the general mutex used by all the nodes in the graph*/
 	QMutex* mutex(){return _mutex;}
-    // debug
+    
+	/*output to the console the name of the loaded plugins*/
     void displayLoadedPlugins();
     
-    
+    /*starts the videoEngine for nbFrames. It will re-init the viewer so the
+     *frame fit in the viewer.*/
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
+
+	/*Set the inputs and output of the graph used by the videoEngine.*/
     void setVideoEngineRequirements(std::vector<InputNode*> inputs,OutputNode* output);
+
+
     VideoEngine* getVideoEngine(){return vengine;}
     
     Controler* getControler(){return ctrl;}
     
+	/*add a new built-in format to the default ones*/
     void addFormat(DisplayFormat* frmt);
-    DisplayFormat* find_existing_format(int w, int h, double pixel_aspect = 1.0);
+
+	/*Find a builtin format with the same resolution and aspect ratio*/
+    DisplayFormat* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
-    void qdebugAllNodes();
-    
-    Settings* getCurrentProject(){return _powiterSettings;}
+    /*Get the current settings of Powiter*/
+    Settings* getCurrentPowiterSettings(){return _powiterSettings;}
 signals:
     void vengineNeeded(int nbFrames);
     
     
 private:
+	/*used internally to set an appropriate name to the Node.
+	 *It also read the string returned by Node::description()
+	 *to know whether it is an outputNode,InputNode or an operator.*/
     UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
 
     
@@ -122,6 +144,8 @@ private:
     std::vector<CounterID*> counters;
     std::vector<PluginID*> plugins;
     QStringList nodeNameList;
+
+	/*All nodes currently active in the node graph*/
     std::vector<Node*> allNodes;
     
     Settings* _powiterSettings;

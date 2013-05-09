@@ -31,7 +31,7 @@ DiskCache::DiskCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize) :
     this->gl_viewer = gl_viewer;
     restoreCache();
     
-    MAX_PLAYBACK_CACHE_SIZE = gl_viewer->getControler()->getModel()->getCurrentProject()->maxPlayBackMemoryPercent * MAX_RAM_CACHE;
+    MAX_PLAYBACK_CACHE_SIZE = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->maxPlayBackMemoryPercent * MAX_RAM_CACHE;
     _playbackCacheSize = 0;
 }
 

@@ -648,14 +648,14 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
     float* b = out->writable(Channel_blue);
     float * a =NULL;
     if(autoAlpha()){
-        out->turn_on(Channel_alpha);
+        out->turnOn(Channel_alpha);
         fromA =(*out)[Channel_alpha] +X;
         a =out->writable(Channel_alpha);
     }
     from_float(r, g, b, fromR, fromG, fromB,R - X,1,fromA,a);
  	
 }
-void ReadExr::create_Knob_after_init(){
+void ReadExr::createKnobDynamically(){
     
 }
 

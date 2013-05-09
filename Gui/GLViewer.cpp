@@ -240,14 +240,14 @@ void ViewerGL::drawOverlay(){
         
         
         
-        _textRenderer.print(dataWindow().range(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
+        _textRenderer.print(dataWindow().right(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
         _textRenderer.print(dataWindow().x(), dataWindow().y(), _btmLeftBBOXoverlay, QColor(150,150,150));
         
         
-        QPoint topRight2(dataWindow().range(), dataWindow().top());
+        QPoint topRight2(dataWindow().right(), dataWindow().top());
         QPoint topLeft2(dataWindow().x(),dataWindow().top());
         QPoint btmLeft2(dataWindow().x(),dataWindow().y() );
-        QPoint btmRight2(dataWindow().range(),dataWindow().y() );
+        QPoint btmRight2(dataWindow().right(),dataWindow().y() );
         glPushAttrib(GL_LINE_BIT);
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
@@ -1166,7 +1166,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
     
     _readerInfo = info;
-    DisplayFormat* df=ctrl->getModel()->find_existing_format(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+    DisplayFormat* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());
     updateDataWindowAndDisplayWindowInfo();
@@ -1196,7 +1196,7 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     _btmLeftBBOXoverlay.append(",");
     _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().y()));
     _topRightBBOXoverlay.clear();
-    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().range()));
+    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().right()));
     _topRightBBOXoverlay.append(",");
     _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().top()));
     

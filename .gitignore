@@ -9,10 +9,6 @@ ProjectFiles/PowiterOsX/PowiterOsX.xcodeproj/*.perspectivev3
 ProjectFiles/PowiterOsX/PowiterOsX.xcodeproj/*.pbxuser
 ProjectFiles/PowiterWindows/Powiter/Debug
 ProjectFiles/PowiterWindows/Powiter/Release
-ProjectFiles/PowiterWindows/*ipch
-ProjectFiles/PowiterWindows/*.opensdf
-ProjectFiles/PowiterWindows/*.vcxproj.user
-ProjectFiles/PowiterWindows/*.suo
 ProjectFiles/PowiterWindows/Powiter/PowiterLauncher/Debug
 ProjectFiles/PowiterWindows/Powiter/PowiterLauncher/Release
 Cache

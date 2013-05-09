@@ -36,7 +36,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>Powiter</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>Powiter</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -54,7 +59,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\QtCore4.lib;$(QT_LIB)\QtGui4.lib;$(QT_LIB)\QtOpenGL4.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl_static_D.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CustomBuildStep>
       <Command>xcopy "$(GLEW_BIN)\glew32.dll" "$(OutDir)" /R /Y 
@@ -94,7 +99,9 @@ xcopy "$(QT_MOC_PATH)\QtOpenGL4.dll" "$(OutDir)" /R /Y
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\QtCore4.lib;$(QT_LIB)\QtGui4.lib;$(QT_LIB)\QtOpenGL4.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl_static.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)../../../../libs/OpenExr_win32/bin/Release/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <CustomBuildStep>
       <Command>xcopy "$(GLEW_BIN)\glew32.dll" "$(OutDir)" /R /Y </Command>

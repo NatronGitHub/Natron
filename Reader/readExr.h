@@ -61,7 +61,7 @@ public:
 		int                 r,
 		int                 R);
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
-    virtual void create_Knob_after_init();
+    virtual void createKnobDynamically();
     virtual void open();
     virtual bool supports_stereo(){return true;}
     virtual void make_preview();

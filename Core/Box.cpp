@@ -4,64 +4,64 @@
 void IntegerBox::merge(const IntegerBox b){
 	int x=b.x();
 	int y=b.y();
-	int r=b.range();
+	int r=b.right();
 	int t=b.top();
 
 	if(x<this->x())
-		x_=x;
+		_x=x;
 	if(y<this->y())
-		y_=y;
-	if(r>this->range())
-		r_=r;
+		_y=y;
+	if(r>this->right())
+		_r=r;
 	if(t>this->top())
-		t_=t;
+		_t=t;
 }
 
 void IntegerBox::merge(int x, int y){
 	if(x<this->x())
-		x_=x;
+		_x=x;
 	if(y<this->y())
-		y_=y;
+		_y=y;
 }
 
 void IntegerBox::merge(int x, int y, int r, int t){
 	if(x<this->x())
-		x_=x;
+		_x=x;
 	if(y<this->y())
-		y_=y;
-	if(r>this->range())
-		r_=r;
+		_y=y;
+	if(r>this->right())
+		_r=r;
 	if(t>this->top())
-		t_=t;
+		_t=t;
 }
 
 void IntegerBox::intersect(const IntegerBox b){
 	int x=b.x();
 	int y=b.y();
 	int t=b.top();
-	int r=b.range();
+	int r=b.right();
 
-	if(x>x_)
-		x_=x;
-	if(y>y_)
-		y_=y;
-	if(r<r_)
-		r_=r;
-	if(t<t_)
-		t_=t;
+	if(x>_x)
+		_x=x;
+	if(y>_y)
+		_y=y;
+	if(r<_r)
+		_r=r;
+	if(t<_t)
+		_t=t;
 }
 
 
 
 void IntegerBox::intersect(int x, int y, int r, int t){
-	if(x>x_)
-		x_=x;
-	if(y>y_)
-		y_=y;
-	if(r<r_)
-		r_=r;
-	if(t<t_)
-		t_=t;
+	if(x>_x)
+		_x=x;
+	if(y>_y)
+		_y=y;
+	if(r<_r)
+		_r=r;
+	if(t<_t)
+		_t=t;
 }
 
 bool IntegerBox::isContained(int x,int y,int r,int t){
@@ -70,7 +70,7 @@ bool IntegerBox::isContained(int x,int y,int r,int t){
 		stillgood=false;
 	if(y<this->y())
 		stillgood=false;
-	if(r>this->range())
+	if(r>this->right())
 		stillgood=false;
 	if(t>this->top())
 		stillgood=false;
@@ -82,13 +82,13 @@ bool IntegerBox::isContained(const IntegerBox b){
 	int x=b.x();
 	int y=b.y();
 	int t=b.top();
-	int r=b.range();
+	int r=b.right();
 	bool stillgood=true;
 	if(x<this->x())
 		stillgood=false;
 	if(y<this->y())
 		stillgood=false;
-	if(r>this->range())
+	if(r>this->right())
 		stillgood=false;
 	if(t>this->top())
 		stillgood=false;

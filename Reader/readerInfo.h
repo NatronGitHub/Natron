@@ -28,8 +28,8 @@ public:
                int lastFrame=0):
     _channels(channels),_Ydirection(Ydirection),_rgbMode(rgb),
     _currentFrame(currentFrame),_lastFrame(lastFrame),_firstFrame(firstFrame),
-    _displayWindow(dispW.x(), dispW.y(), dispW.range(), dispW.top(),""),
-    _dataWindow(dataW.x(), dataW.y(), dataW.range(), dataW.top()),_currentFrameName(currentFrameName)
+    _displayWindow(dispW.x(), dispW.y(), dispW.right(), dispW.top(),""),
+    _dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top()),_currentFrameName(currentFrameName)
     {
         
         _displayWindow.name(dispW.name());

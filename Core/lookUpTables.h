@@ -14,7 +14,6 @@ class Lut{
 	float from_byte_table[256]; // values between 0-1.f.
 	bool init_;
 	bool linear_;
-	bool zero_; // << ??
     bool _bigEndian;
 protected:
     
@@ -23,39 +22,30 @@ protected:
     
     
 public:
-    Lut() : init_(false), linear_(false), zero_(false) { _bigEndian = isBigEndian();}
+    Lut() : init_(false), linear_(false) { _bigEndian = isBigEndian();}
     virtual ~Lut() {}
     
     bool linear() {  return linear_; }
     void linear(bool b){linear_=b;}
-    bool zero()  { return zero_; }
+  
     
     void validate();
     
     //takes in input a float clamped to [0 - 1.f] and  return
     // the value after color-space conversion is in [0 - 255.f]
     virtual float to_byte(float)  = 0;
-//    void to_byte(uchar*, const float*, int W, int delta = 1) ;
-//    void to_byte(uchar*, const float*, const float* alpha, int W, int delta = 1) ;
-//    void to_short(U16*, const float*, int W, int bits = 16, int delta = 1) ;
-//    void to_short(U16*, const float*, const float* alpha, int W, int bits = 16, int delta = 1) ;
     
     // takes in input a float clamped to [0 - 255.f] and do the math to convert it
     // to have the opposite effect of to_byte(float), returns it between [0-1f]
     virtual float from_byte(float)  = 0;
-//    void from_byte(float*, const uchar*, int W, int delta = 1) ;
-//    void from_byte(float*, const uchar*, const uchar* alpha, int W, int delta = 1) ;
+
+
     void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, bool premult,bool autoAlpha,int W, int delta ,float* a,bool qtbuf=true);
     
-//    void from_short(float*, const U16*, int W, int bits = 16, int delta = 1) ;
-//    void from_short(float*, const U16*, const U16* alpha, int W, int bits = 16, int delta = 1) ;
+
     void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta = 1,float* a=NULL); // < NOT IMPLEMENTED YET
 
     
-//    void to_float(float*, const float*, int W, int delta = 1) ;
-//    void to_float(float*, const float*, const float* alpha, int W, int delta = 1) ;
-//    void from_float(float*, const float*, int W, int delta = 1) ;
-//    void from_float(float*, const float*, const float* alpha, int W, int delta = 1) ;
     void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
                     bool premult,bool autoAlpha, int W, int delta = 1,const float* fromA=NULL,float* a=NULL);
 
@@ -72,17 +62,14 @@ public:
         *b = *(ptr+2);
     }
     
+	/*used to fill the to_byte lut*/
     float index_to_float(const U16 i);
+
     static U16 highFloatPart(float *f){return *((unsigned short*)f + 1);}
+
     static U16 lowFloatPart(float *f){return *((unsigned short*)f);}
     
-    //routine used for indexing the to_byte LUT
-//    static int floatToInt(float v){
-//        int out = 0x0;
-//        unsigned int *c = reinterpret_cast<unsigned int*>(&v);
-//        out |= *c;
-//        return out;
-//    }
+
     static float clamp(float v, float min = 0.f, float max= 1.f){
         if(v > max) v = max;
         if(v < min) v = min;
@@ -129,7 +116,7 @@ public:
     // default : monitor = srgb,8bit :srgb, 16 bit:srgb, log :cineon,float : linear
      enum DataType { MONITOR = 0, VIEWER, INT8, INT16, LOG, FLOAT, GAMMA1_8, GAMMA2_2,
          PANALOG, REDLOG, VIPERLOG, ALEXAV3LOGC, PLOGLIN, SLOG, TYPES_END };
-//     //! Return a LUT to use for a data type.
+//     // Return a LUT associated to the datatype
      static Lut* getLut(DataType);
 //     //! Modify above table
 //     static void setLut(DataType, Lut*);
@@ -141,19 +128,16 @@ public:
 
 	// OPTIMIZATION : Make similar functions but taking out ptrs to r,g,b,a so copy is done all at once
 	static float from_byte(float f) { return f * (1.0f / 255.0f); }
-	//static void from_byte(float*, const uchar*, int W, int delta = 1);
+
     static void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, bool premult,bool autoAlpha,int W, int delta ,float* a,bool qtbuf=true);
 
-	//static void from_short(float*, const U16*, int W, int bits = 16, int delta = 1);
     static void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta = 1,float* a=NULL); // < NOT IMPLEMENTED YET
-	//static void from_float(float*, const float*, int W, int delta = 1);
+
+
     static void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
                     bool premult,bool autoAlpha, int W, int delta = 1,const float* fromA=NULL,float* a=NULL); 
     
 	static float to_byte(float f) { return f * 255.0f; }
-//	static void to_byte(uchar*, const float*, int W, int delta = 1);
-//	static void to_short(U16*, const float*, int W, int bits = 16, int delta = 1);
-//	static void to_float(float*, const float*, int W, int delta = 1);
     
 	static float fromFloat(float v) { return v; }
     static float fromFloatFast(float v) { return v; }

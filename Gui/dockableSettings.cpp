@@ -90,7 +90,7 @@ void SettingsPanel::initialize_knobs(){
     }
 
 }
-void SettingsPanel::add_knob_after_init(Knob* knob){
+void SettingsPanel::addKnobDynamically(Knob* knob){
 	layout_settings->addWidget(knob);
 }
 

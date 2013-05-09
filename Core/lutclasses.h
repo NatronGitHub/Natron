@@ -44,15 +44,10 @@ public:
     }
     float to_byte(float v){
         //to Rec709 :
-//        v= 4.500*linear if linear < 0.018
-//        v= 1.099* linear ^0.45 - 0.099 if linear>=0.018
-        return v < 0.018 ? v*4.500*255.f : (1.099*powf(v,0.45) - 0.099)*255.f;
-        
+        return v < 0.018 ? v*4.500*255.f : (1.099*powf(v,0.45) - 0.099)*255.f;   
     }
     float from_byte(float v){
         //to linear
-//        v= v709/4.5 if  E709 <= 0.081
-//        v = powf((v709+0.099)/1.099,1.f/0.45);
         return v <= 0.081 ? (v/4.5)*255.f : powf((v+0.099)/1.099,1.f/0.45)*255.f;
     }
 };

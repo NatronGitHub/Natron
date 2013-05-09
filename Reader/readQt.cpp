@@ -33,7 +33,7 @@ void ReadJPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 	float* b = out->writable(Channel_blue) + offset;
 	float* a = channels &Channel_alpha ? out->writable(Channel_alpha) + offset : NULL;
     if(autoAlpha() && a==NULL){
-        out->turn_on(Channel_alpha);
+        out->turnOn(Channel_alpha);
         a =out->writable(Channel_alpha)+offset;
     }
     int depth = 4; 

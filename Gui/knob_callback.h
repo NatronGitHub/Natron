@@ -17,7 +17,7 @@ public:
     void initNodeKnobsVector();
     Knob_Callback(SettingsPanel* panel,Node* node);
 	Node* getNode(){return node;}
-	void create_Knob_after_init();
+	void createKnobDynamically();
 
 private:
     Node* node;

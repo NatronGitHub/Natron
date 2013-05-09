@@ -135,7 +135,7 @@ ViewerTab::ViewerTab(Controler* ctrl,QVBoxLayout*& viewer_tabLayout,QWidget* par
 	/*=============================================*/
     
 	/*openGL viewer*/
-	viewer=new ViewerGL(ctrl,ctrl->getModel()->getCurrentProject()->byte_mode,this);
+	viewer=new ViewerGL(ctrl,ctrl->getModel()->getCurrentPowiterSettings()->byte_mode,this);
 	viewer->setObjectName(QString::fromUtf8("viewer"));
     viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	viewer_tabLayout->addWidget(viewer);

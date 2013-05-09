@@ -28,8 +28,9 @@ class Node_ui;
 class Node
 {
 public:
+	/*Per-node infos. This class is used to pass infos along the graph
+	 *and to know what we can request from a node.*/
 	class Info:public IntegerBox{
-	
 	public:
 		Info(int first_frame,int last_frame,int ydirection,DisplayFormat full_size_format,ChannelMask _channels):
 		  first_frame(first_frame),
@@ -91,7 +92,7 @@ public:
     std::vector<Knob*> getKnobs() const;
     void add_knob_to_vector(Knob* knob);
     virtual void initKnobs(Knob_Callback *cb);
-	virtual void create_Knob_after_init();
+	virtual void createKnobDynamically();
 	Knob_Callback* getKnobCallBack(){return knob_cb;}
 	void setNodeUi(Node_ui* ui){node_gui=ui;}
 	Node_ui* getNodeUi(){return node_gui;}
@@ -112,8 +113,8 @@ public:
 	void merge_info();
 	void copy_info();
 	void clear_info();
-	ChannelMask& get_output_channels(){return output_channels;}
-	ChannelMask& get_requested_channels(){return requested_channels;}
+	ChannelMask& getOutputChannels(){return output_channels;}
+	ChannelMask& getRequestedChannels(){return requested_channels;}
 	IntegerBox& get_requested_box(){return requested_box;}
     int width(){return _info->getFull_size_format().w();}
     int height(){return _info->getFull_size_format().h();}

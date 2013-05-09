@@ -6,6 +6,8 @@
 #include <vector>
 #include "Superviser/powiterFn.h"
 
+/*The workthread is a task launched by the threadpool. It executes the graph
+ *for one row and then stops.*/
 using Powiter_Enums::ROW_RANK;
 
 class OutputNode;
@@ -30,7 +32,7 @@ public:
 
     
 private:
-	void meta_engine_recursive(std::vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row);
+	void metaEngineRecursive(std::vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row);
     OutputNode* output;
     InputNode* input;
 	Row* row;

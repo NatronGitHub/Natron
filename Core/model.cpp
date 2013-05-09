@@ -24,7 +24,7 @@ Model::Model(QObject* parent):QObject(parent)
     
     _mutex = new QMutex();
     _powiterSettings = new Settings;
-    LoadPluginsAndInitNameList();
+    loadPluginsAndInitNameList();
     displayLoadedPlugins();
     
 	
@@ -97,7 +97,7 @@ Model::~Model(){
 
 
 
-void Model::LoadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
+void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
     QDir d(PLUGINS_PATH);
     if (d.isReadable())
     {
@@ -341,7 +341,7 @@ void Model::displayLoadedPlugins(){
 
 void Model::addFormat(DisplayFormat* frmt){formats_list.push_back(frmt);}
 
-DisplayFormat* Model::find_existing_format(int w, int h, double pixel_aspect){
+DisplayFormat* Model::findExistingFormat(int w, int h, double pixel_aspect){
 
 	for(int i =0;i< formats_list.size();i++){
 		DisplayFormat* frmt = formats_list[i];
@@ -351,9 +351,3 @@ DisplayFormat* Model::find_existing_format(int w, int h, double pixel_aspect){
 	}
 	return NULL;
 }
-void Model::qdebugAllNodes(){
-    foreach(Node* n,allNodes){
-        cout << *n << endl;
-    }
-}
-

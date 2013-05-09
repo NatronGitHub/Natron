@@ -19,7 +19,7 @@ public:
 	Read(const QStringList& file_list,Reader* op,ViewerGL* ui_context);
 	virtual ~Read();
 	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out)=0;
-	virtual void create_Knob_after_init();
+	virtual void createKnobDynamically();
 	virtual bool isVideoSequence(){return video_sequence;}
 	virtual bool supports_stereo()=0;
     virtual void open()=0;

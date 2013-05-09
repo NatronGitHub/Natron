@@ -4,6 +4,7 @@
 #include <QtCore/qglobal.h>
 #include "Core/metadata.h"
 
+/*The current settings of Powiter in the preferences menu.*/
 class Settings
 {
 public:

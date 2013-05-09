@@ -44,7 +44,7 @@ using Powiter_Enums::ROW_RANK;
  first time we ran the engine for this frame
  - _runTasks is true when the call has not been made by a task itself.
  */
-void VideoEngine::video_sequence_engine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,
+void VideoEngine::videoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,
                                         bool initViewer,bool sameFrame,bool _runTasks){
     _working=true; // flagging that the engine is currently working
     //cout << "video engine working..." << endl;
@@ -164,7 +164,7 @@ void VideoEngine::video_sequence_engine(OutputNode *output,std::vector<InputNode
             }
         }
         int frameCount = gl_viewer->getCurrentReaderInfo()->lastFrame() - gl_viewer->getCurrentReaderInfo()->firstFrame()+1;
-        cached_video_engine(frameCount==1,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames,true,true);
+        cachedVideoEngine(frameCount==1,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames,true,true);
         consecutiveCachedFrames = fileNames.size();
     }
     
@@ -233,7 +233,7 @@ void VideoEngine::video_sequence_engine(OutputNode *output,std::vector<InputNode
                     k++;
                 }
             }
-            cached_video_engine(false,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, false,true);
+            cachedVideoEngine(false,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, false,true);
             consecutiveCachedFrames = fileNames.size();
         }
         
@@ -266,7 +266,7 @@ void VideoEngine::video_sequence_engine(OutputNode *output,std::vector<InputNode
     
 }
 
-void VideoEngine::backward_video_sequence_engine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,bool _runTasks){
+void VideoEngine::backwardsVideoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,bool _runTasks){
     _working=true; // flagging that the engine is currently working
     
     if(nbFrames==-1)
@@ -372,7 +372,7 @@ void VideoEngine::backward_video_sequence_engine(OutputNode *output,std::vector<
             }
         }
         int frameCount = gl_viewer->getCurrentReaderInfo()->lastFrame() - gl_viewer->getCurrentReaderInfo()->firstFrame()+1;
-        cached_video_engine(frameCount==1,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, true,false);
+        cachedVideoEngine(frameCount==1,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, true,false);
         consecutiveCachedFrames=fileNames.size();
     }
     
@@ -440,7 +440,7 @@ void VideoEngine::backward_video_sequence_engine(OutputNode *output,std::vector<
                     k--;
                 }
             }
-            cached_video_engine(false,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, false,false);
+            cachedVideoEngine(false,gl_viewer->getCurrentReaderInfo()->currentFrame(),fileNames, false,false);
             consecutiveCachedFrames=fileNames.size();
         }
         
@@ -479,7 +479,7 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
 	int y=renderBox.y(); // bottom
     
     // REQUEST THE CHANNELS CONTAINED IN THE VIEWER TAB COMBOBOX IN THE GUI !!
-    output->request(y,renderBox.top(),0,renderBox.range(),gl_viewer->displayChannels());
+    output->request(y,renderBox.top(),0,renderBox.right(),gl_viewer->displayChannels());
     
 	
     // AT THIS POINT EVERY OPERATOR HAS ITS INFO SET!! AS WELL AS REQUESTED_BOX AND REQUESTED_CHANNELS
@@ -510,9 +510,9 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
 #endif
     
     // selecting the right anchor of the row
-    int range = 0;
-    gl_viewer->dataWindow().range() > gl_viewer->displayWindow().range() ?
-    range = gl_viewer->dataWindow().range() : range = gl_viewer->displayWindow().range();
+    int right = 0;
+    gl_viewer->dataWindow().right() > gl_viewer->displayWindow().right() ?
+    right = gl_viewer->dataWindow().right() : right = gl_viewer->displayWindow().right();
     
     // selection the left anchor of the row
 	int offset=0;
@@ -533,12 +533,12 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
                 
                 bool cached = false;
                 Row* row ;
-                map<int,Row*>::iterator foundCached = contained_in_cache(k);
+                map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
                 if(foundCached!=row_cache.end()){
                     row= foundCached->second;
                     cached = true;
                 }else{
-                    row=new Row(offset,k,range,outChannels);
+                    row=new Row(offset,k,right,outChannels);
                     addToRowCache(row);
                 }
                 row->zoomedY(rowY);
@@ -567,12 +567,12 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
                 if(_aborted){
                     _abort();
                 }
-                map<int,Row*>::iterator foundCached = contained_in_cache(k);
+                map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
                 if(foundCached!=row_cache.end()){
                     row= foundCached->second;
                     cached = true;
                 }else{
-                    row=new Row(offset,k,range,outChannels);
+                    row=new Row(offset,k,right,outChannels);
                     addToRowCache(row);
                 }
                 row->zoomedY(rowY);
@@ -615,7 +615,7 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::computeFrameRequest(){
-    video_sequence_engine(output, inputs, 1,false,true);
+    videoSequenceEngine(output, inputs, 1,false,true);
 }
 
 void VideoEngine::updateProgressBar(){
@@ -627,10 +627,10 @@ void VideoEngine::updateDisplay(){
 }
 
 void VideoEngine::startEngineWithOption(int nbFrames,bool initViewer){
-    video_sequence_engine(output, inputs,nbFrames,initViewer);
+    videoSequenceEngine(output, inputs,nbFrames,initViewer);
 }
 void VideoEngine::startEngine(int nbFrames){
-    video_sequence_engine(output, inputs,nbFrames,true, nbFrames == 1);
+    videoSequenceEngine(output, inputs,nbFrames,true, nbFrames == 1);
 }
 
 VideoEngine::VideoEngine(ViewerGL *gl_viewer,Model* engine,QMutex* lock):
@@ -665,8 +665,8 @@ QObject(engine),_working(false),_aborted(false),_paused(true),_readerInfoHasChan
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumber, SLOT(setValue(int)));
     QObject::connect(frameNumber, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
-    qint64 maxDiskCacheSize = engine->getCurrentProject()->maxDiskCache;
-    qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() * engine->getCurrentProject()->maxCacheMemoryPercent;
+    qint64 maxDiskCacheSize = engine->getCurrentPowiterSettings()->maxDiskCache;
+    qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() * engine->getCurrentPowiterSettings()->maxCacheMemoryPercent;
     _cache = new DiskCache(gl_viewer,maxDiskCacheSize, maxMemoryCacheSize);
     QObject::connect(engine->getControler()->getGui()->actionClearDiskCache, SIGNAL(triggered()),this,SLOT(clearDiskCache()));
     QObject::connect(engine->getControler()->getGui()->actionClearPlayBackCache, SIGNAL(triggered()),this,SLOT(clearPlayBackCache()));
@@ -742,7 +742,7 @@ void VideoEngine::addToRowCache(Row* row){
 	row_cache[row->y()]=row;
 }
 
-std::map<int,Row*>::iterator VideoEngine::contained_in_cache(int rowIndex){
+std::map<int,Row*>::iterator VideoEngine::isRowContainedInCache(int rowIndex){
     QMutexLocker lock(_lock);
 	return row_cache.find(rowIndex);
 }
@@ -832,7 +832,7 @@ void VideoEngine::startBackward(bool c){
         return;
     }
     if(c && output && inputs.size()>0){
-        backward_video_sequence_engine(output, inputs, -1);
+        backwardsVideoSequenceEngine(output, inputs, -1);
     }else if(!output || inputs.size()==0){
         _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
         _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
@@ -944,7 +944,7 @@ void VideoEngine::_previousFrame(int frameNB,int frameCount,bool initViewer){
                     }
                 }
             }
-            backward_video_sequence_engine(output, inputs, frameCount,false);
+            backwardsVideoSequenceEngine(output, inputs, frameCount,false);
         }
         
     }
@@ -967,7 +967,7 @@ void VideoEngine::_nextFrame(int frameNB,int frameCount,bool initViewer){
                     }
                 }
             }
-            video_sequence_engine(output, inputs, frameCount,initViewer,false,false);
+            videoSequenceEngine(output, inputs, frameCount,initViewer,false,false);
         }
     }
     
@@ -992,7 +992,7 @@ void VideoEngine::_previousIncrement(int frameNB,int frameCount,bool initViewer)
                 inp->setup_for_next_frame();
 			}
 		}
-        backward_video_sequence_engine(output, inputs, frameCount,false);
+        backwardsVideoSequenceEngine(output, inputs, frameCount,false);
     }
     
 }
@@ -1016,7 +1016,7 @@ void VideoEngine::_nextIncrement(int frameNB,int frameCount,bool initViewer){
                 inp->setup_for_next_frame();
 			}
 		}
-        video_sequence_engine(output, inputs, frameCount,initViewer,false,false);
+        videoSequenceEngine(output, inputs, frameCount,initViewer,false,false);
     }
     
 }
@@ -1032,7 +1032,7 @@ void VideoEngine::_firstFrame(int frameNB,int frameCount,bool initViewer){
                 static_cast<Reader*>(currentInput)->setup_for_next_frame();
 			}
 		}
-        backward_video_sequence_engine(output, inputs, frameCount,false);
+        backwardsVideoSequenceEngine(output, inputs, frameCount,false);
     }
     
 }
@@ -1049,7 +1049,7 @@ void VideoEngine::_lastFrame(int frameNB,int frameCount,bool initViewer){
                 
 			}
 		}
-        video_sequence_engine(output, inputs, frameCount,initViewer,false,false);
+        videoSequenceEngine(output, inputs, frameCount,initViewer,false,false);
     }
     
 }
@@ -1068,7 +1068,7 @@ void VideoEngine::_seekRandomFrame(int frameNB,int frameCount,bool initViewer){
                 inp->setup_for_next_frame();
             }
 		}
-        video_sequence_engine(output, inputs, frameCount,initViewer,false,false);
+        videoSequenceEngine(output, inputs, frameCount,initViewer,false,false);
         
     }
     
@@ -1120,7 +1120,7 @@ void VideoEngine::seekRandomFrameWithStart(int f){
                 
             }
 		}
-        video_sequence_engine(output, inputs, -1,false);
+        videoSequenceEngine(output, inputs, -1,false);
     }
 }
 
@@ -1175,7 +1175,7 @@ char* VideoEngine::currentFrameName(){
     return 0;
 }
 
-void VideoEngine::cached_video_engine(bool oneFrame,int startNb,std::vector<std::pair<char *,FramesIterator> > fileNames,bool firstFrame,bool forward){
+void VideoEngine::cachedVideoEngine(bool oneFrame,int startNb,std::vector<std::pair<char *,FramesIterator> > fileNames,bool firstFrame,bool forward){
     int index =0;
     int nextIndex = 0;
     bool first_time = true;

@@ -22,8 +22,12 @@ int main(int argc, char *argv[])
     QSplashScreen* splashScreen = new QSplashScreen(pixmap,Qt::WindowStaysOnTopHint);
     splashScreen->show();
     
+	/*instanciating the core*/
     Model* coreEngine=new Model();
+
+	/*instancating the controler, that will in turn create the GUI*/
     Controler* ctrl=new Controler(coreEngine,&app);
+	/*we create the GUI in the initControler function*/
     ctrl->initControler(coreEngine,splashScreen);
     return app.exec();
 

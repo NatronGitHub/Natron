@@ -3,13 +3,16 @@
 
 #include <map>
 #include "Core/Box.h"
-
+/*This class is used to hold the format of a frame (its resolution).
+ *Some formats have a name , e.g : 1920*1080 is full HD, etc...
+ *It also holds a pixel aspect ratio so the viewer can display the
+ *frame accordingly*/
 class DisplayFormat:public IntegerBox{
 	
 	
 public:
 	DisplayFormat(int x,int y,int r,int t,const char* name,double pa=1.0);
-    DisplayFormat(const DisplayFormat& other):IntegerBox(other.x(),other.y(),other.range(),other.top()),_name(other.name()),_pixel_aspect(other.pixel_aspect()){}
+    DisplayFormat(const DisplayFormat& other):IntegerBox(other.x(),other.y(),other.right(),other.top()),_name(other.name()),_pixel_aspect(other.pixel_aspect()){}
   
     DisplayFormat();
     virtual ~DisplayFormat(){
@@ -21,7 +24,7 @@ public:
     void pixel_aspect( float p) ;
 	
 	DisplayFormat& operator=(const DisplayFormat& other){
-        set(other.x(), other.y(), other.range(), other.top());
+        set(other.x(), other.y(), other.right(), other.top());
         name(other.name());
         pixel_aspect(other.pixel_aspect());
         return *this;
@@ -30,7 +33,7 @@ public:
         return _pixel_aspect == other.pixel_aspect() &&
         x() == other.x() &&
         y() == other.y() &&
-        range() == other.range() &&
+        right() == other.right() &&
         top() == other.top();
     }
     

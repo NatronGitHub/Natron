@@ -28,7 +28,7 @@ ostream& operator<< (ostream &out, Node &node){
     out << "Infos: " << endl;
     out << "info box: " << " x:" << node.getInfo()->x()
     << " y:" << node.getInfo()->y()
-    << " r:" << node.getInfo()->range()
+    << " r:" << node.getInfo()->right()
     << " t:" << node.getInfo()->top() << endl;
     out << "info channels: " << endl;
     ChannelSet infoset = node.getInfo()->channels();
@@ -37,7 +37,7 @@ ostream& operator<< (ostream &out, Node &node){
     }
     out << endl;
     out << "------------------------------" << endl;
-    ChannelSet outset = node.get_output_channels();
+    ChannelSet outset = node.getOutputChannels();
     out << "Output Channels:" << endl;
     foreachChannels( z, outset){
         out << getChannelName(z) << "\t";
@@ -46,11 +46,11 @@ ostream& operator<< (ostream &out, Node &node){
     out << "------------------------------" << endl;
     out << "Requested box: " << " x:" << node.get_requested_box().x()
     << " y:" << node.get_requested_box().y()
-    << " r:" << node.get_requested_box().range()
+    << " r:" << node.get_requested_box().right()
     << " t:" << node.get_requested_box().top() << endl;
     out << "------------------------------" << endl;
     out << "Requested Channels:" << endl;
-    ChannelSet requestedSet = node.get_requested_channels();
+    ChannelSet requestedSet = node.getRequestedChannels();
     foreachChannels( z, requestedSet){
         out << getChannelName(z) << "\t";
     }
@@ -98,7 +98,7 @@ void Node::clear_info(){
 	_info->set_channels(Mask_None);
     _info->x(0);
     _info->y(0);
-    _info->range(0);
+    _info->right(0);
     _info->top(0);
     requested_channels=Mask_None;
     requested_box.set(0, 0, 0, 0);
@@ -382,9 +382,9 @@ void Node::initKnobs(Knob_Callback *cb){
 	this->knob_cb=cb;
     cb->initNodeKnobsVector();
 }
-void Node::create_Knob_after_init(){
+void Node::createKnobDynamically(){
 
-	knob_cb->create_Knob_after_init();
+	knob_cb->createKnobDynamically();
 }
 
 const char* Node::description(){

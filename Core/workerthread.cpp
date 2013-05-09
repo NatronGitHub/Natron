@@ -23,32 +23,32 @@ WorkerThread::~WorkerThread(){
 
 void WorkerThread::run(){
 	vector<char*> alreadyComputedNodes;
-    meta_engine_recursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
+    metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
     
 }
 
-void WorkerThread::meta_engine_recursive(vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row){
+void WorkerThread::metaEngineRecursive(vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row){
 //    for(int i =0;i<alreadyComputedNodes.size();i++){
 //        if(!strcmp(node->getName().toStdString().c_str(),alreadyComputedNodes[i]))
 //            return;
 //    }
     
-    if((node->get_output_channels() & node->getInfo()->channels())){
+    if((node->getOutputChannels() & node->getInfo()->channels())){
     
         if(!cached){
             if( !strcmp(node->class_name(),"Viewer")){
-                static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->range(),
-                                                   node->get_requested_channels() & node->getInfo()->channels(),row,_rank);
+                static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
+                                                   node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
             }else{
-                node->engine(row->y(),row->offset(),row->range(),node->get_requested_channels() & node->getInfo()->channels(),row);
+                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
             }
         }else{
             if(node == output){
                 if( !strcmp(node->class_name(),"Viewer")){
-                    static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->range(),
-                                                       node->get_requested_channels() & node->getInfo()->channels(),row,_rank);
+                    static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
+                                                       node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
                 }else{
-                    node->engine(row->y(),row->offset(),row->range(),node->get_requested_channels() & node->getInfo()->channels(),row);
+                    node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
                 }
             }
         }
@@ -60,7 +60,7 @@ void WorkerThread::meta_engine_recursive(vector<char*> &alreadyComputedNodes,Nod
 //    name=strcpy(name, node->getName().toStdString().c_str());
 //	alreadyComputedNodes.push_back(name);
     foreach(Node* child,node->getChildren()){
-			meta_engine_recursive(alreadyComputedNodes,child,output,row);
+			metaEngineRecursive(alreadyComputedNodes,child,output,row);
     }    
 }
 

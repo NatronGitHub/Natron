@@ -14,7 +14,7 @@ void Knob_Callback::initNodeKnobsVector(){
     }
 
 }
-void Knob_Callback::create_Knob_after_init(){
+void Knob_Callback::createKnobDynamically(){
 	std::vector<Knob*> node_knobs=node->getKnobs();
 	foreach(Knob* knob,knobs){
 		bool already_exists=false;
@@ -25,7 +25,7 @@ void Knob_Callback::create_Knob_after_init(){
 		}
 		if(!already_exists){
 			node_knobs.push_back(knob);
-			panel->add_knob_after_init(knob);
+			panel->addKnobDynamically(knob);
 		}
 	}
 }

@@ -38,7 +38,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false
     sprintf(tmp, "%i",viewer->dataWindow().y());
     bbox.append(tmp);
     bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().range());
+    sprintf(tmp, "%i",viewer->dataWindow().right());
     bbox.append(tmp);
     bbox.append(" ");
     sprintf(tmp, "%i",viewer->dataWindow().top());

@@ -15,6 +15,9 @@
 #include "Core/hash.h"
 #include "Core/row.h"
 
+/*The class associated to a Frame in cache.
+ *Two frames with the same FrameID will be considered
+ *the same.*/
 class FrameID{
 public:
     
@@ -37,8 +40,6 @@ public:
     FrameID(const FrameID& other);
     
     ~FrameID(){
-    //    free(_cacheIndex);
-       // delete _filename;
     }
     
 bool operator==(const FrameID& other){
@@ -50,7 +51,7 @@ bool operator==(const FrameID& other){
 
 
 
-
+/*A comparison class used by the cache internally*/
 class FramesCompare { 
 public:
     bool operator()(const char* x,const char* y) const { return strcmp(x,y)<0; }
@@ -67,11 +68,11 @@ class DiskCache
     
     friend class VideoEngine;
     
-    qint64 MAX_DISK_CACHE;
-    qint64 MAX_RAM_CACHE;
-    qint64 newCacheBlockIndex;
-    qint64 cacheSize;
-    ViewerGL* gl_viewer;
+    qint64 MAX_DISK_CACHE; // total disk cache space allowed
+    qint64 MAX_RAM_CACHE; // total ram cache space allowed
+    qint64 newCacheBlockIndex; // the number in cache of the new frame
+    qint64 cacheSize; // current cache size
+    ViewerGL* gl_viewer; // pointer to the viewer
 public:
     
     // multimap : each filename  may have several match 

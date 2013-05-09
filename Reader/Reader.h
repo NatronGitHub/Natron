@@ -46,7 +46,7 @@ public:
 	File_Type fileType(){return filetype;}
 	
 	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
-	virtual void create_Knob_after_init();
+	virtual void createKnobDynamically();
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
 private:

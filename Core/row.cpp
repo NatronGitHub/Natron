@@ -5,7 +5,7 @@ Row::Row(){
     buffers = 0;
 }
 
-void Row::turn_on(Channel c){
+void Row::turnOn(Channel c){
     _channels += c;
     buffers[c] = (float*)malloc((r-x)*sizeof(float));
 }
@@ -28,7 +28,7 @@ void Row::init(){
     }    
 }
 
-void Row::changeSize(int offset,int range){
+void Row::range(int offset,int range){
     //TODO : change the name of the function to reflect its behaviour
     if((range-offset) < (r-x)) // don't changeSize if the range is smaller
         return;
@@ -63,10 +63,10 @@ float* Row::writable(Channel c){
     }
 }
 void Row::copy(const Row *source,ChannelSet channels,int o,int r){
-    changeSize(o, r); // does nothing if the range is smaller
+    range(o, r); // does nothing if the range is smaller
     foreachChannels(z, channels){
         if(!buffers[z]){
-            turn_on(z);
+            turnOn(z);
         }
         const float* sourcePtr = (*source)[z] + o;
         float* to = buffers[z] -x + o;

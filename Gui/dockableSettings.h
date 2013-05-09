@@ -21,7 +21,7 @@ public:
 
     SettingsPanel(Node_ui* NodeUi, QWidget *parent=0);
     virtual ~SettingsPanel();
-	void add_knob_after_init(Knob* knob);
+	void addKnobDynamically(Knob* knob);
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);

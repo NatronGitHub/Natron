@@ -251,7 +251,7 @@ void Read::convertSubSampledBufferToFullSize(float *buf, int samplingFactor,int 
 }
 
 
-void Read::create_Knob_after_init(){
+void Read::createKnobDynamically(){
     
 }
 

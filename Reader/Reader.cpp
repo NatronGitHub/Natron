@@ -122,7 +122,7 @@ void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
 	
 }
 
-void Reader::create_Knob_after_init(){
-	readHandle->create_Knob_after_init();
-	Node::create_Knob_after_init();
+void Reader::createKnobDynamically(){
+	readHandle->createKnobDynamically();
+	Node::createKnobDynamically();
 }

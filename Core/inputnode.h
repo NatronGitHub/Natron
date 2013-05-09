@@ -7,10 +7,6 @@ public:
 
     InputNode(Node* node );
     InputNode(InputNode& ref);
-
-
-
-
     virtual ~InputNode();
     virtual int inputs(){return 0;}
    

@@ -93,7 +93,7 @@ const ChannelSet& operator=(ChannelSetInit source) ;
 const ChannelSet& operator=(Channel z);
 
 void clear() { mask = 0; _size = 0;}
-operator bool() const { return mask ; }
+operator bool() const { return mask ; }// allow to do stuff like if(channelsA & channelsB)
 bool empty() const { return !mask; }
 
 bool operator==(const ChannelSet& source) const;
@@ -103,10 +103,14 @@ bool operator==(ChannelSetInit v) const { return mask == U32(v); }
 bool operator!=(ChannelSetInit v) const { return !(*this == v); }
 bool operator==(Channel z) const;
 bool operator!=(Channel z) const { return !(*this == z); }
+
+/*add a channel with +=*/
 void operator+=(const ChannelSet& source);
 void operator+=(ChannelSetInit source);
 void operator+=(Channel z);
 void insert(Channel z) { *this += z; }
+
+/*turn off a channel with -=*/
 void operator-=(const ChannelSet& source);
 void operator-=(ChannelSetInit source);
 void operator-=(Channel z);
@@ -116,22 +120,7 @@ void operator&=(const ChannelSet& source);
 void operator&=(ChannelSetInit source) ;
 void operator&=(Channel z);
 
-//    template<class Type> ChannelSet operator+(Type z) const {
-//        ChannelSet tmp = *this;
-//        tmp += z;
-//        return tmp;
-//    }
-//
-//    template<class Type> ChannelSet operator-(Type z) const {
-//        ChannelSet tmp = *this;
-//        tmp -= z;
-//        return tmp;
-//    }
-//    template<class Type> ChannelSet intersection(Type z) const {
-//        ChannelSet tmp = *this;
-//        tmp &= z;
-//        return tmp;
-//    }
+
 ChannelSet operator&(const ChannelSet& c) const;
 ChannelSet operator&(ChannelSetInit c) const;
 ChannelSet operator&(Channel z) const;
@@ -154,17 +143,20 @@ iterator end(){
 }
 
 
-#define foreachChannels(VAR, CHANNELS) \
-for (Channel VAR = CHANNELS.first(); VAR; VAR = CHANNELS.next(VAR))
+#define foreachChannels(CUR, CHANNELS) \
+for (Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))
 
 };
 typedef ChannelSet ChannelMask;
 
 
-
+/*returns the channel of name "name"*/
 Channel getChannelByName(const char *name);
+
+/*Return a cstring with the name of the channel c*/
 const char* getChannelName(Channel c);
 
+/*useful function to check whether alpha is on in the mask*/
 bool hasAlpha(ChannelMask mask);
 
 
