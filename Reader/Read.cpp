@@ -13,7 +13,7 @@ Read::Read(const QStringList& file_list,Reader* op,ViewerGL* ui_context):file_na
 	_lut=NULL;
     this->ui_context = ui_context;
 	this->op=op;
-	determine_if_part_of_a_sequence();
+	getVideoSequenceFromFilesList();
     
 }
 Read::~Read(){ delete _lut; }
@@ -48,7 +48,7 @@ void Read::setup_for_next_frame(bool makePreview){
         make_preview();
 }
 
-void Read::determine_if_part_of_a_sequence(){
+void Read::getVideoSequenceFromFilesList(){
 	
 	if(file_name_list.size() > 1 ){
 		video_sequence=true;
@@ -59,7 +59,7 @@ void Read::determine_if_part_of_a_sequence(){
     bool first_time=true;
     QString originalName;
     foreach(QString Qfilename,file_name_list)
-    {
+    {	if(Qfilename.at(0) == QChar('.')) continue;
         QString const_qfilename=Qfilename;
         //		bool extension = Qfilename.right(4)==".exr" || Qfilename.right(4)==".dpx" ||  Qfilename.right(4)==".jpg" || Qfilename.right(4)==".bmp";
         if(first_time){

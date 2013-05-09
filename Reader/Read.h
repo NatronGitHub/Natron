@@ -95,7 +95,7 @@ protected:
     
     void convertSubSampledBufferToFullSize(float* buf,int samplingFactor,int offset,int range);
     
-	void determine_if_part_of_a_sequence();
+	void getVideoSequenceFromFilesList();
 	bool is_stereo;
 	bool video_sequence;
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
