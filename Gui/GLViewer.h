@@ -303,7 +303,7 @@ private:
     
     GLuint texBuffer[2];
     GLuint texId[1];
-    void* _renderingBuffer; // the frame currently computed (mapped PBO handle)
+  //  void* _renderingBuffer; // the frame currently computed (mapped PBO handle)
     std::pair<int,int> _textureSize;
     GLuint texBlack[1];
     QGLShaderProgram* shaderRGB;
