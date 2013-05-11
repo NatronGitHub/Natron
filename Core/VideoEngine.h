@@ -14,6 +14,7 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
+#include <QtCore/QtConcurrentRun>
 #include <map>
 #include "Core/diskcache.h"
 #include "Core/hash.h"
@@ -81,14 +82,25 @@ class VideoEngine :public QObject{
 
     Hash _treeVersion;// the hash key associated to the current graph
     
+    int _frameRequestsCount;
+    
+    int _frameRequestIndex;
+    
+    bool _forward;
+    
+    bool _loopMode;
+    
+    int _pboIndex;
+    
+    QFutureWatcher<void>* _engineLoopWatcher;
+    QFuture<void>* _enginePostProcessResults;
+    
     
 public slots:
 	/*starts the engine with initialisation of the viewer so the frame fits in.
 	 *If nbFrames = -1, the engine cycles through all remaining frames*/
     void startEngine(int nbFrames =-1);
 
-	/*starts the engine with or without the viewer initialisation so the frame fits in*/
-    void startEngineWithOption(int nbFrames =-1,bool initViewer=true);
     void updateProgressBar();
     void setDesiredFPS(double d);
     void _abort();
@@ -110,11 +122,12 @@ public slots:
     void clearPlayBackCache();
 
 	/*clears the ROW CACHE*/
-    void clearCache(){
+    void clearRowCache(){
         std::map<int,Row*>::iterator it = row_cache.begin();
         for(;it!=row_cache.end();it++) delete it->second;
         row_cache.clear();
     }
+    void engineLoop();
     
 signals:
     void fpsChanged(double d);
@@ -128,10 +141,6 @@ public:
     
 	/*Executes the tree for one frame*/
     void computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb,bool initTexture);
-
-	/*starts the engine so it executes the tree for the SAME FRAME as the last
-	 *execution of the engine. This is used by the zoom so it uses the rowCache.*/
-    void computeFrameRequest();
     
 	/*utility functions to get builtinzooms for the downscaling algorithm*/
     float closestBuiltinZoom(float v);
@@ -171,25 +180,23 @@ public:
 	/*Close the LRU frame in the disk cache*/
     void closeMappedFile();
     
+    /*starts the videoEngine.
+     *frameCount is the number of frame you want to cycle. For all the sequence frameCount = -1
+     *fitFrameToViewer is true if you want the first frame that will be played to fit to the viewer.
+     *forward is true if you want the engine to go forward when cycling through frames. It goes backwards otherwise
+     *sameFrame is true if the engine will play the same frame as before. It is exclusively used when zooming.*/
+    void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    
+    /*used internally by the zoom or the videoEngine, do not call this*/
+    void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer);
+    
+    
+    
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();
     void _drawOverlay(Node *output);
 
-	/*Calls the video engine for the graph represented by output and inputs for nbFrames.
-	 *initViewer is on if this is a new sequence (make the frame fit into the viewer).
-	 *SameFrame is on if we call the engine for the sameFrame(for zoom purpose)
-	 *RunTasks is on if we'd like run the waiting events (seek, previous, last;etc..)
-	 *at the end of this run*/
-    void videoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,
-                               int nbFrames,bool initViewer=true,bool sameFrame=false,bool _runTasks=true);
-
-	/*Same as videoSequenceEngine but in reverse*/
-    void backwardsVideoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,bool _runTasks=true);
-
-	/*This function is called by videoSequenceEngine internally when it recognises that the frames to render are present in the cache*/
-    void cachedVideoEngine(bool oneFrame,int startNb,std::vector<std::pair<char *,FramesIterator> > fileNames,bool firstFrame,bool forward);
-    
     void fillBuilInZoomsLut();
     
     /*Row cache related functions*/
@@ -214,6 +221,12 @@ private:
     /*functions handling tasks*/
     void appendTask(int frameNB,int frameCount,bool initViewer,VengineFunction func);
     void runTasks();
+    
+    /*Used internally by the computeFrameRequest func for cached frames*/
+    void cachedFrameEngine(FramesIterator frame);
+    
+    /*reset variables used by the videoEngine*/
+    void stopEngine();
     
 };
 

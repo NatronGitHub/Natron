@@ -31,7 +31,7 @@ MMAPfile::MMAPfile( const std::string path,Powiter_Enums::MMAPfile_mode mode,siz
 }
 
 
-MMAPfile::MMAPfile():_handle(0),_data(0){}
+MMAPfile::MMAPfile():_handle(0),_data(0),_size(0),_path(0){}
 
 void MMAPfile::open(const std::string path,Powiter_Enums::MMAPfile_mode mode, size_t length,int offset,size_t newFileSize,char* hint){
     _mode = mode;

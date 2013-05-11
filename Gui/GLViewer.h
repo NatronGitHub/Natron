@@ -127,7 +127,7 @@ public:
      according to the current level of zooom*/
     void initTextures();
     /*init the RGB texture*/
-    void initTexturesRgb();
+    void initTexturesRgb(int w,int h);
     /*width and height of the display texture*/
     std::pair<int,int> textureSize(){return _textureSize;}
     
@@ -258,8 +258,11 @@ public:
     /*called by the main thread to init specific variables per frame*/
     void preProcess(int nbFrameHint); // safe place to do things before any computation for the frame is started. Avoid heavy computations here.
 
-    /*called by the main thread after the computations.*/
-    void postProcess(); // safe place to do things after the frame has been processed and before it is displayed
+    std::pair<int,int> getTextureSize(){return _textureSize;}
+    std::pair<void*,size_t> allocatePBO(int w,int h);
+    void fillComputePBO(void* dst,size_t byteCount);
+    void fillCachedPBO(const char* src,void* dst,size_t byteCount);
+    void copyPBOtoTexture(int w,int h);
     
     void doEmitFrameChanged(int f){
         emit frameChanged(f);

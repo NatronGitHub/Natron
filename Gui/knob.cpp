@@ -196,7 +196,7 @@ void File_Knob::open_file(){
                 if(static_cast<Reader*>(node)->hasFrames()){
                     ctrlPTR->getModel()->getVideoEngine()->abort();
                     ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
-                    ctrlPTR->getModel()->getVideoEngine()->clearCache();
+                    //ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
                     ctrlPTR->getModel()->setVideoEngineRequirements(
                                                                     ctrlPTR->getModel()->getVideoEngine()->getInputNodes(),
                                                                     ctrlPTR->getModel()->getVideoEngine()->getOutputNode());

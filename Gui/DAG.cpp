@@ -147,7 +147,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         arrow_dragged->initLine();
         scene()->update();
-        ctrl->getModel()->getVideoEngine()->clearCache();
+        ctrl->getModel()->getVideoEngine()->clearRowCache();
         ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
             /*if it is a viewer*/

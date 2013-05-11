@@ -1,6 +1,7 @@
 #include <QtCore/QDir>
 #include <QtCore/qtextstream.h>
 #include <QtCore/qdebug.h>
+#include <QtGui/QVector2D>
 #include <cassert>
 #include "Core/diskcache.h"
 #include "Superviser/controler.h"
@@ -273,7 +274,7 @@ void DiskCache::appendFrame(FrameID _info){
 }
 
 /* get the frame*/
-std::pair<int,int> DiskCache::retrieveFrame(int frameNb,FramesIterator it,int texBuffer){
+std::pair<char*,std::pair<int,int> > DiskCache::retrieveFrame(int frameNb,FramesIterator it){
     
     FrameID _id = it->second;
     string filename(CACHE_ROOT_PATH);
@@ -303,26 +304,14 @@ std::pair<int,int> DiskCache::retrieveFrame(int frameNb,FramesIterator it,int te
         // also adding the feedback on the timeline for this frame
         gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNb);
         
-        
     }
-    
     
     if(cacheFile->is_open()){
         if(!cacheFile->data())
-            return make_pair(0, 0);
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,gl_viewer->texBuffer[texBuffer]);
-        
-        glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-        // output contains the whole image with BGRA format
-        void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-        
-        memcpy(output, cacheFile->data(), dataSize);
-        
-        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-        return make_pair(_id._rowWidth,_id._nbRows);
-        
+            return make_pair((char*)0, make_pair(0,0));
+        return make_pair(cacheFile->data(),make_pair(_id._rowWidth,_id._nbRows));
     }
-    return make_pair(0, 0);
+    return make_pair((char*)0, make_pair(0,0));
 }
 
 

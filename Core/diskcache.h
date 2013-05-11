@@ -111,10 +111,8 @@ public:
      returned by mapNew<Frame*/
     void appendFrame(FrameID _info);
     
-    /* Bind the PBO referenced by the unit texBuffer and fill it with the frame data 
-     pointed to by it. frameNB is here to know how many frame will be retrieved 
-     thus to optimize the freeing algorithm.*/
-    std::pair<int,int> retrieveFrame(int frameNb,FramesIterator it,int texBuffer);
+    
+    std::pair<char*,std::pair<int,int> > retrieveFrame(int frameNb,FramesIterator it);
     
     /*Restores the cache from the disk(from the settings file)*/
     void restoreCache();
