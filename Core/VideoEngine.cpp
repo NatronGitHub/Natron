@@ -391,6 +391,7 @@ void VideoEngine::updateProgressBar(){
     //update progress bar
 }
 void VideoEngine::updateDisplay(){
+    gl_viewer->resizeEvent(new QResizeEvent(gl_viewer->size(),gl_viewer->size()));
     gl_viewer->updateGL();
 }
 

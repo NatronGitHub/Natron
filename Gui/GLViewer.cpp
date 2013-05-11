@@ -180,8 +180,8 @@ void ViewerGL::paintGL()
         glBindTexture(GL_TEXTURE_2D, texId[0]);
         
         // debug
-        GLfloat d;
-        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        //GLfloat d;
+        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
