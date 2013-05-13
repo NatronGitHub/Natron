@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 Alexandre. All rights reserved.
 //
 
-#include <QtGui/qlayout.h>
+#include <QtWidgets/qlayout.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 

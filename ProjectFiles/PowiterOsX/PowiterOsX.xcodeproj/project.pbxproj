@@ -7,9 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D700323E171366ED00DF7E88 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101D170F5D57000182E8 /* QtCore.framework */; };
-		D700323F171366ED00DF7E88 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101E170F5D57000182E8 /* QtGui.framework */; };
-		D7003240171366ED00DF7E88 /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101F170F5D57000182E8 /* QtOpenGL.framework */; };
+		D75667A71741189A002DCBA8 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A31741189A002DCBA8 /* QtConcurrent.framework */; };
+		D75667A81741189A002DCBA8 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A41741189A002DCBA8 /* QtCore.framework */; };
+		D75667A91741189A002DCBA8 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A51741189A002DCBA8 /* QtGui.framework */; };
+		D75667AA1741189A002DCBA8 /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A61741189A002DCBA8 /* QtWidgets.framework */; };
+		D75667AC17411D45002DCBA8 /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667AB17411D45002DCBA8 /* QtOpenGL.framework */; };
 		D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D78C15F51737E6510011B5FD /* libftgl.a */; };
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
@@ -181,6 +183,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D75667A31741189A002DCBA8 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtConcurrent.framework; sourceTree = "<group>"; };
+		D75667A41741189A002DCBA8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtCore.framework; sourceTree = "<group>"; };
+		D75667A51741189A002DCBA8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtGui.framework; sourceTree = "<group>"; };
+		D75667A61741189A002DCBA8 /* QtWidgets.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtWidgets.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtWidgets.framework; sourceTree = "<group>"; };
+		D75667AB17411D45002DCBA8 /* QtOpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtOpenGL.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtOpenGL.framework; sourceTree = "<group>"; };
 		D76ED161170E2C0900AB21D7 /* libPowiterOsX_x86_64.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPowiterOsX_x86_64.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D76ED196170E351300AB21D7 /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = ../../libs/ffmpeg_Osx/lib/libavcodec.a; sourceTree = "<group>"; };
 		D76ED197170E351300AB21D7 /* libavdevice.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavdevice.a; path = ../../libs/ffmpeg_Osx/lib/libavdevice.a; sourceTree = "<group>"; };
@@ -319,10 +326,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D75667AC17411D45002DCBA8 /* QtOpenGL.framework in Frameworks */,
+				D75667A71741189A002DCBA8 /* QtConcurrent.framework in Frameworks */,
+				D75667A81741189A002DCBA8 /* QtCore.framework in Frameworks */,
+				D75667A91741189A002DCBA8 /* QtGui.framework in Frameworks */,
+				D75667AA1741189A002DCBA8 /* QtWidgets.framework in Frameworks */,
 				D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */,
-				D700323E171366ED00DF7E88 /* QtCore.framework in Frameworks */,
-				D700323F171366ED00DF7E88 /* QtGui.framework in Frameworks */,
-				D7003240171366ED00DF7E88 /* QtOpenGL.framework in Frameworks */,
 				D7F417B4170F8816000182E8 /* libHalf.a in Frameworks */,
 				D7F417B5170F8816000182E8 /* libIex.a in Frameworks */,
 				D7F417B6170F8816000182E8 /* libIexMath.a in Frameworks */,
@@ -368,7 +377,12 @@
 		D76ED1A2170E351F00AB21D7 /* libs */ = {
 			isa = PBXGroup;
 			children = (
+				D75667A31741189A002DCBA8 /* QtConcurrent.framework */,
+				D75667A41741189A002DCBA8 /* QtCore.framework */,
+				D75667A51741189A002DCBA8 /* QtGui.framework */,
+				D75667A61741189A002DCBA8 /* QtWidgets.framework */,
 				D78C15F51737E6510011B5FD /* libftgl.a */,
+				D75667AB17411D45002DCBA8 /* QtOpenGL.framework */,
 				D7F417AE170F8816000182E8 /* libHalf.a */,
 				D7F417AF170F8816000182E8 /* libIex.a */,
 				D7F417B0170F8816000182E8 /* libIexMath.a */,
@@ -750,7 +764,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -791,7 +805,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;

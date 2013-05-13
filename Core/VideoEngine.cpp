@@ -7,7 +7,7 @@
 //
 #include <QtCore/QMutex>
 #include <QtCore/qcoreapplication.h>
-#include <QtGui/QPushButton>
+#include <QtWidgets/QPushButton>
 #include <QtGui/QVector2D>
 #include <iterator>
 #include <cassert>

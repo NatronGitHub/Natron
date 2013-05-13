@@ -9,8 +9,8 @@
 
 /*Just a wrapper around QComboBox to make the default style the QWindowsStyle*/
 
-#include <QtGui/QComboBox>
-#include <QtGui/QWindowsStyle>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QStyleFactory>
 #ifndef PowiterOsX_comboBox_h
 #define PowiterOsX_comboBox_h
 
@@ -18,7 +18,7 @@ class ComboBox : public QComboBox
 {
 public:
     ComboBox(QWidget* parent = 0):QComboBox(parent){
-        setStyle(new QWindowsStyle);
+        setStyle(QStyleFactory::create("windows"));
     }
     
 };

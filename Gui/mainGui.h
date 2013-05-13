@@ -1,7 +1,7 @@
 #ifndef GUI_H
 #define GUI_H
 #include <QtCore/QVariant>
-#include <QtGui/QtGui>
+#include <QtWidgets/QtWidgets>
 #include "Gui/DAG.h"
 #include "Gui/viewerTab.h"
 #include "Superviser/powiterFn.h"

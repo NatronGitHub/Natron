@@ -377,7 +377,7 @@ void TimeSlider::mousePressEvent(QMouseEvent* e){
 }
 void TimeSlider::mouseMoveEvent(QMouseEvent* e){
     _alphaCursor=true;
-    _Mouse = e->posF();
+    _Mouse = e->pos();
     if(_state==DRAGGING_CURSOR){
         int c = getScalePosition(e->x());
         if(c >= _first && c <=_last){

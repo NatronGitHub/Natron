@@ -71,10 +71,7 @@ public:
     The rank just hold the information of the order at which the row computations
     have started.*/
 	void drawRow(Row *row,ROW_RANK rank);
-	void setRow(Row* row,ROW_RANK rank){
-		to_draw=row;
-		drawRow(to_draw,rank);
-    }
+	
 	
     
 	void initializeGL();
@@ -333,7 +330,6 @@ private:
     Controler* ctrl;
     
 
-	Row* to_draw;
     bool _drawing;
     bool _firstTime;
 	File_Type _filetype;

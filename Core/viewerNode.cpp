@@ -20,23 +20,10 @@ const char* Viewer::description(){
 
 void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out,ROW_RANK rank){
 	
-	// single threaded: engine protected with a mutex to avoid corruption on the display
-
-	QMutexLocker lock(_mutex); // mutex
-    
-    ui_context()->makeCurrent(); // make display widget context the current OpenGL context
-    
-    
 	if(_firstTime) {  // if this is the first engine for this frame we initialize the display widget settings
-//        if(!ui_context()->drawing()){
-//            ui_context()->initTextures();
-//        }
 		ui_context()->drawing(true); // activating the drawing of our rows
 		_firstTime=false;
 	}
-	
-	ui_context()->setRow(out,rank); // we set the display widget current row to display, and ask for a redraw
-	
-
+	ui_context()->drawRow(out,rank); // we set the display widget current row to display, and ask for a redraw
 }
 

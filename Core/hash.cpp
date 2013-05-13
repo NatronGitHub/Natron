@@ -34,7 +34,7 @@ void Hash::appendKnobToHash(Knob* knob){
 
 void Hash::appendQStringToHash(QString str){
     for(int i =0 ; i< str.size();i++){
-        node_values.push_back((U32)str.at(i).toAscii());
+        node_values.push_back((U32)str.at(i).unicode());
     }
 }
 

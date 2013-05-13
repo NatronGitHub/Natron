@@ -8,7 +8,7 @@ using namespace Powiter_Enums;
 
 class Model;
 class Gui;
-class QSplashScreen;
+class QLabel;
 class Controler : public QObject
 {
 
@@ -21,7 +21,7 @@ public:
     QStringList& getNodeNameList();
     Gui* getGui(){return graphicalInterface;}
 	Model* getModel(){return coreEngine;}
-    void initControler(Model* coreEngine,QSplashScreen* loadingScreen);
+    void initControler(Model* coreEngine,QLabel* loadingScreen);
     void exit();
 private:
 

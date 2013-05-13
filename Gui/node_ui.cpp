@@ -1,5 +1,5 @@
 
-#include <QtGui/QtGui>
+#include <QtWidgets/QtWidgets>
 #include "Gui/node_ui.h"
 #include "Gui/arrowGUI.h"
 #include "Gui/dockableSettings.h"
@@ -8,7 +8,7 @@
 #include "Superviser/controler.h"
 int Node_ui::nodeNumber=0;
 const qreal pi=3.14159265358979323846264338327950288419717;
-Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent,scene),QObject(parentObj)
+Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
 {
     
 	this->ctrl = ctrl;
@@ -102,7 +102,7 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
     QWidget* pr=dockContainer->parentWidget();
     pr->setMinimumSize(dockContainer->sizeHint());
 
-    
+    scene->addItem(this);
 
 
 

@@ -2,7 +2,7 @@
 #define SETTINGSPANEL_H
 
 
-#include <QtGui/QFrame>
+#include <QtWidgets/QFrame>
 #include "Core/node.h"
 #include "Gui/knob.h"
 

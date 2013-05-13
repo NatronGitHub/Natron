@@ -10,9 +10,9 @@
 #define __PowiterOsX__InfoViewerWidget__
 
 #include <iostream>
-#include <QtGui/QWidget>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QLabel>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 #include <QtCore/qpoint.h>
 #include <QtGui/qvector4d.h>
 #include "Core/displayFormat.h"

@@ -613,11 +613,11 @@ void ViewerGL::drawRow(Row* row,ROW_RANK rank){
     
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                      w*sizeof(float),to_draw->zoomedY(),(*row)[Channel_alpha]);
+                                      w*sizeof(float),row->zoomedY(),(*row)[Channel_alpha]);
     }
     else{
         convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                   w,to_draw->zoomedY(),(*row)[Channel_alpha]);
+                                   w,row->zoomedY(),(*row)[Channel_alpha]);
     }
     
 #ifdef __POWITER_WIN32__
@@ -712,11 +712,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=nbBytesOutput;
     output+=yOffset;
-    
-  //  glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-//     U32* output = reinterpret_cast<U32*>(_renderingBuffer); //(glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
-//     output+=yOffset;
-     U32* end = output + nbBytesOutput;
+    U32* end = output + nbBytesOutput;
     
     int downScaleIncrement = (int)zoomIncrement.first; // number of pixels to keep in the scan
     int fullSizeIncrement = (int)zoomIncrement.second; // number of pixels to scan per cycle
@@ -844,10 +840,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     yOffset *=nbBytesOutput;
     output+=yOffset;
     
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-    
-//     float* output = reinterpret_cast<float*>(_renderingBuffer);
-//     output+=yOffset;
     float downScaleIncrement = zoomIncrement.first; // number of rows to keep in the scan
     float fullSizeIncrement = zoomIncrement.second; // number of rows to scan per cycle
     
@@ -868,7 +860,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
         itOld += (fullSizeIncrement - downScaleIncrement);
     }
     checkGLErrors();
-    
 }
 
 
@@ -902,7 +893,7 @@ void ViewerGL::keyPressEvent ( QKeyEvent * event ){
     
 }
 void ViewerGL::mousePressEvent(QMouseEvent *event){
-    old_pos = event->posF();
+    old_pos = event->pos();
     if(event->button() != Qt::MiddleButton ){
         _ms = DRAGGING;
     }
@@ -910,7 +901,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
-    old_pos = event->posF();
+    old_pos = event->pos();
     QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
@@ -934,7 +925,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        new_pos = event->posF();
+        new_pos = event->pos();
         float dx = new_pos.x() - old_pos.x();
         float dy = new_pos.y() - old_pos.y();
         transX += dx;

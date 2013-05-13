@@ -5,7 +5,7 @@
 //#include <inputarrow.h>
 #include "Superviser/powiterFn.h"
 #include <QtCore/QRectF>
-#include <QtGui/QGraphicsItem>
+#include <QtWidgets/QGraphicsItem>
 
 static const int NODE_LENGTH=80;
 static const int NODE_HEIGHT=30;

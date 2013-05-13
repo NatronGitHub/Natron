@@ -1,4 +1,4 @@
-#include <QtGui/QtGui>
+#include <QtWidgets/QtWidgets>
 #include "Gui/dockableSettings.h"
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"

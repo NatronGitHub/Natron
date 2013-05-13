@@ -1,5 +1,5 @@
 
-#include <QtGui/QtGui>
+#include <QtWidgets/QtWidgets>
 #include <climits>
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"

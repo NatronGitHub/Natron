@@ -10,8 +10,7 @@
 #define __PowiterOsX__FeedbackSpinBox__
 
 #include <iostream>
-#include <QtGui/qlineedit.h>
-#include <QtGui/qvalidator.h>
+#include <QtWidgets/qlineedit.h>
 #include <QtGui/qevent.h>
 
 class FeedBackSpinBox : public QLineEdit

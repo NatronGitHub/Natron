@@ -14,7 +14,7 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
-#include <QtCore/QtConcurrentRun>
+#include <QtConcurrent/QtConcurrentRun>
 #include <map>
 #include "Core/diskcache.h"
 #include "Core/hash.h"

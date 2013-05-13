@@ -10,7 +10,7 @@
 #define __PowiterOsX__timeline__
 
 #include <iostream>
-#include <QtGui/QWidget>
+#include <QtWidgets/QWidget>
 #include <QtGui/qevent.h>
 #include "Superviser/powiterFn.h"
 #define BORDER_HEIGHT_ 10

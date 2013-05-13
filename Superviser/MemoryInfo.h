@@ -97,7 +97,7 @@ static const char* printAsRAM(size_t v){
     }
     char* outchr = (char*)malloc(outStr.size()+1);
     for(int i =0 ; i< outStr.size();i++){
-        outchr[i]=outStr.at(i).toAscii();
+        outchr[i]=outStr.at(i).toLatin1();
     }
     outchr[outStr.size()]='\0';
     return outchr;

@@ -1,7 +1,7 @@
 #ifndef __VIEWER_TAB_H_
 #define __VIEWER_TAB_H_ 
 
-#include <QtGui/QWidget>
+#include <QtWidgets/QWidget>
 
 
 

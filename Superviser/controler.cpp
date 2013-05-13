@@ -1,4 +1,4 @@
-#include <QtGui/qsplashscreen.h>
+#include <QtWidgets/QLabel>
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
 #include "Core/model.h"
@@ -9,7 +9,7 @@
 Controler::Controler(Model* coreEngine,QObject* parent) : QObject(parent)
 { 
 }
-void Controler::initControler(Model *coreEngine,QSplashScreen* loadingScreen){
+void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     this->coreEngine=coreEngine;
     graphicalInterface=new Gui();
     graphicalInterface->setControler(this);
@@ -22,7 +22,7 @@ void Controler::initControler(Model *coreEngine,QSplashScreen* loadingScreen){
 	graphicalInterface->showMaximized();
 #endif
 
-    loadingScreen->finish(graphicalInterface);
+    loadingScreen->hide();
     delete loadingScreen;
 
     try{

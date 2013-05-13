@@ -1,11 +1,11 @@
 #ifndef SMARTINPUTDIALOG_H
 #define SMARTINPUTDIALOG_H
 
-#include <QtGui/QFrame>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QLabel>
-#include <QtGui/QComboBox>
-#include <QtGui/QLineEdit>
+#include <QtWidgets/QFrame>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QLineEdit>
 #include "Superviser/controler.h"
 #include "QtCore/QStringList"
 #include <QtCore/QEvent>

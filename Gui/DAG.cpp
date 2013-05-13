@@ -1,4 +1,4 @@
-#include <QtGui/QGraphicsProxyWidget>
+#include <QtWidgets/QGraphicsProxyWidget>
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
 #include "Gui/arrowGUI.h"

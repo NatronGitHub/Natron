@@ -1,7 +1,8 @@
 #include <iostream>
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 #include <QtCore/QObject>
-#include <QtGui/qsplashscreen.h>
+#include <QtCore/QString>
+#include <QtWidgets/QLabel>
 #include <QtGui/qpixmap.h>
 
 //#include <vld.h> //< visual studio memory leaks finder header
@@ -15,13 +16,14 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     /*Display a splashscreen while we wait for the engine to load*/
-    std::string filename(ROOT);
+    QString filename("");
     filename.append(IMAGES_PATH"splashscreen.png");
-    QPixmap pixmap(filename.c_str());
+    QPixmap pixmap(filename);
     pixmap=pixmap.scaled(640, 400);
-    QSplashScreen* splashScreen = new QSplashScreen(pixmap,Qt::WindowStaysOnTopHint);
+    QLabel* splashScreen = new QLabel(0,Qt::WindowStaysOnTopHint | Qt::SplashScreen);
+    splashScreen->setPixmap(pixmap);
     splashScreen->show();
-    
+    QCoreApplication::processEvents();
 	/*instanciating the core*/
     Model* coreEngine=new Model();
 
