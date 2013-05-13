@@ -73,7 +73,7 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
 			prev_pix->setY(y+20);
 			prev_pix->setParentItem(this);
 		}else{
-			QImage prev(60,40,QImage::Format_Mono);
+			QImage prev(60,40,QImage::Format_ARGB32);
 			prev.fill(Qt::black);
 			QPixmap prev_pixmap=QPixmap::fromImage(prev);
 			prev_pix=scene->addPixmap(prev_pixmap);

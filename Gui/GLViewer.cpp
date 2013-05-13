@@ -138,10 +138,11 @@ void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
     float ap = _readerInfo->displayWindow().pixel_aspect();
-    if(ap > 1.f)
+    if(ap > 1.f){
         glViewport (0, 0, width*ap, height);
-    else
+    }else{
         glViewport (0, 0, width, height/ap);
+    }
 	if(transX!=0 || transY!=0){
 		_ms = DRAGGING;
 	}
@@ -169,7 +170,6 @@ void ViewerGL::paintGL()
         
         glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity();
-        
         
         glTranslatef(transX, -transY, 0);
         glTranslatef(zoomX, zoomY, 0);
@@ -1151,8 +1151,8 @@ void ViewerGL::zoomIn(){
             vengine->videoEngine(1,false,true,true);
         }
         
-    }else
-        updateGL();
+    }
+    updateGL();
     
 }
 void ViewerGL::zoomOut(){
@@ -1169,8 +1169,8 @@ void ViewerGL::zoomOut(){
             vengine->_cache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
         }
-    }else
-        updateGL();
+    }
+    updateGL();
 }
 
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
