@@ -40,6 +40,35 @@
 
 using Powiter_Enums::ROW_RANK;
 
+/* Here's a drawing that represents how the video Engine works: 
+                                            [thread pool]                       [OtherThread]
+   [main thread]                                |                                   |
+    -videoEngine(...)                           |                                   |
+      >-computeFrameRequest(...)                |                                   |
+     |    if(!cached)                           |                                   |
+     |       -computeTreeForFrame------------>start worker threads                  |
+     |          waitForDone();                  |                                   |
+     |              |             <--notify----finished()                           |
+     |       -allocatePBO                                                           |
+     |       -fillPBO -------------QtConcurrent::Run-------------------------> copy frame data to PBO...
+     |           |                                                                  |
+     |       -engineLoop <-----------------------------------------------notify---finished()
+     |           |
+     |           |
+     ------------...
+     |     else
+     |        -cachedFrameEngine(...)
+     |          -retrieveFrame(...)
+     |          -allocatePBO
+     |          -fillPBO -------------QtConcurrent::Run-------------------------> copy frame data to PBO...
+     |              |                                                               |
+     ----------engineLoop <---------------------------------------------notify---finished()
+
+ 
+    Might improve the engine to remove the waitForDone() after computeTreeForFrame with a notification 
+    system instead as for other QtConcurrent calls. The improvment will be done using QtConcurrent::map.
+ */
+
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
     if (_working || !_enginePostProcessResults->isFinished()) {
         return;
@@ -250,10 +279,7 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
     
     // REQUEST THE CHANNELS CONTAINED IN THE VIEWER TAB COMBOBOX IN THE GUI !!
     output->request(y,renderBox.top(),0,renderBox.right(),gl_viewer->displayChannels());
-    
-	
     // AT THIS POINT EVERY OPERATOR HAS ITS INFO SET!! AS WELL AS REQUESTED_BOX AND REQUESTED_CHANNELS
-	
 	if(gl_viewer->Ydirection()<0){ // Ydirection < 0 means we cycle from top to bottom
         y=renderBox.top()-1;
 	}

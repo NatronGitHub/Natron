@@ -914,7 +914,8 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
-    QPoint pos = openGLpos(event->x(), event->y());
+    QPoint pos;
+    pos = openGLpos((float)event->x(), event->y());
     if(pos.x() >= _readerInfo->displayWindow().x() && pos.x() <= _readerInfo->displayWindow().w() && pos.y() >=_readerInfo->displayWindow().y() && pos.y() <= _readerInfo->displayWindow().h()){
         if(!_infoViewer->colorAndMouseVisible()){
             _infoViewer->showColorAndMouseInfo();
