@@ -410,8 +410,8 @@ void VideoEngine::_drawOverlay(Node *output){
 void VideoEngine::metaEnginePerRow(Row* row, InputNode* input, OutputNode* output){
     if(!row->cached())
         row->allocate();
-    vector<char*> alreadyComputedNodes;
-    WorkerThread::metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
+
+    WorkerThread::metaEngineRecursive(dynamic_cast<Node*>(output),output,row);
 }
 
 void VideoEngine::updateProgressBar(){

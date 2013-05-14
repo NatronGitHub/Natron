@@ -19,8 +19,7 @@ class WorkerThread
     
 public:
 	
-    static void metaEngineRecursive(std::vector<char*> &alreadyComputedNodes,
-                                    Node* node,OutputNode* output,Row *row);
+    static void metaEngineRecursive(Node* node,OutputNode* output,Row *row);
 
 };
 

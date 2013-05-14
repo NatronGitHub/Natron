@@ -9,30 +9,26 @@
 
 using namespace std;
 
-void WorkerThread::metaEngineRecursive(vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row){
-//    for(int i =0;i<alreadyComputedNodes.size();i++){
-//        if(!strcmp(node->getName().toStdString().c_str(),alreadyComputedNodes[i]))
-//            return;
-//    }
+void WorkerThread::metaEngineRecursive(Node* node,OutputNode* output,Row *row){
+
+    foreach(Node* parent,node->getParents()){
+        metaEngineRecursive(parent,output,row);
+    }
     if((node->getOutputChannels() & node->getInfo()->channels())){
-    
+        
         if(!row->cached()){
             node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
         }else{
             if(node == output){
                 node->engine(row->y(),row->offset(),row->right(),
-                            node->getRequestedChannels() & node->getInfo()->channels(),row);
+                             node->getRequestedChannels() & node->getInfo()->channels(),row);
             }
         }
     }else{
         cout << qPrintable(node->getName()) << " doesn't output any channel " << endl;
     }
-//    char* name = (char*)malloc(node->getName().size());
-//    name=strcpy(name, node->getName().toStdString().c_str());
-//	alreadyComputedNodes.push_back(name);
-    foreach(Node* child,node->getChildren()){
-			metaEngineRecursive(alreadyComputedNodes,child,output,row);
-    }    
+    
+    
 }
 
 
