@@ -10,8 +10,8 @@
 using namespace std;
 using Powiter_Enums::ROW_RANK;
 
-WorkerThread::WorkerThread(Row* row,InputNode* input,OutputNode* output,ROW_RANK rank,bool cachedTask):QRunnable(),
-cached(cachedTask),_rank(rank){
+WorkerThread::WorkerThread(Row* row,InputNode* input,OutputNode* output,bool cachedTask):
+cached(cachedTask){
     this->input = input;
     this->output = output;
     this->row=row;
@@ -32,27 +32,16 @@ void WorkerThread::metaEngineRecursive(vector<char*> &alreadyComputedNodes,Node*
 //        if(!strcmp(node->getName().toStdString().c_str(),alreadyComputedNodes[i]))
 //            return;
 //    }
-    
     if((node->getOutputChannels() & node->getInfo()->channels())){
     
-        if(!cached){
-            if( !strcmp(node->class_name(),"Viewer")){
-                static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
-                                                   node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
-            }else{
+        if(!row->cached()){
                 node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-            }
         }else{
             if(node == output){
-                if( !strcmp(node->class_name(),"Viewer")){
-                    static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
-                                                       node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
-                }else{
-                    node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-                }
+                    node->engine(row->y(),row->offset(),row->right(),
+                                                       node->getRequestedChannels() & node->getInfo()->channels(),row);
             }
         }
-        
     }else{
         cout << qPrintable(node->getName()) << " doesn't output any channel " << endl;
     }
@@ -65,3 +54,8 @@ void WorkerThread::metaEngineRecursive(vector<char*> &alreadyComputedNodes,Node*
 }
 
 
+void WorkerThread::metaEnginePerRow(Row* row, InputNode* input, OutputNode* output){
+    row->allocate();
+    vector<char*> alreadyComputedNodes;
+    WorkerThread::metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
+}

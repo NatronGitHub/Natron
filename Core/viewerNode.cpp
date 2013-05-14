@@ -18,12 +18,12 @@ const char* Viewer::description(){
     return "OutputNode";
 }
 
-void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out,ROW_RANK rank){
+void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 	
 	if(_firstTime) {  // if this is the first engine for this frame we initialize the display widget settings
 		ui_context()->drawing(true); // activating the drawing of our rows
 		_firstTime=false;
 	}
-	ui_context()->drawRow(out,rank); // we set the display widget current row to display, and ask for a redraw
+	ui_context()->drawRow(out); // we set the display widget current row to display, and ask for a redraw
 }
 

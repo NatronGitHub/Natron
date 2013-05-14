@@ -15,13 +15,13 @@ class InputNode;
 class Node;
 class Row;
 class VideoEngine;
-class WorkerThread : public QRunnable
+class WorkerThread 
 {
     //Q_OBJECT
 public:
 	
  
-    WorkerThread(Row* row, InputNode* input,OutputNode* output,ROW_RANK rank,bool cachedTask = false);
+    WorkerThread(Row* row, InputNode* input,OutputNode* output,bool cachedTask = false);
     virtual ~WorkerThread();
     void run();
     Row* getRow(){return row;}
@@ -30,14 +30,16 @@ public:
 // signals:
 //     void finishedTask();
 
-    
+    static void metaEnginePerRow(Row* row, InputNode* input, OutputNode* output);
+    static void metaEngineRecursive(std::vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,
+                                    Row *row);
 private:
-	void metaEngineRecursive(std::vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row);
+	
     OutputNode* output;
     InputNode* input;
 	Row* row;
     bool cached;
-    Powiter_Enums::ROW_RANK _rank;
+   // Powiter_Enums::ROW_RANK _rank;
 };
 
 #endif // WORKERTHREAD_H

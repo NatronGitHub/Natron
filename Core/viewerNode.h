@@ -19,7 +19,7 @@ public:
 	ViewerGL* ui_context(){return _ui_context;}
     virtual const char* class_name(){return "Viewer";}
     virtual const char* description();
-    void engine(int y,int offset,int range,ChannelMask channels,Row* out,ROW_RANK rank);
+    void engine(int y,int offset,int range,ChannelMask channels,Row* out);
 protected:
 	
 	

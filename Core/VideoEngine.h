@@ -14,7 +14,8 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
-#include <QtConcurrent/QtConcurrentRun>
+#include <QtConcurrent/QtConcurrent>
+#include <boost/bind.hpp>
 #include <map>
 #include "Core/diskcache.h"
 #include "Core/hash.h"
@@ -51,6 +52,22 @@ class VideoEngine :public QObject{
         _func(func){}
         
     };
+    /*Class holding informations about src and dst 
+     for gpu memory transfer*/
+    class GPUTransferInfo{
+    public:
+        GPUTransferInfo():src(0),dst(0),byteCount(0){}
+        GPUTransferInfo(char* s,void* d,size_t size):src(s),dst(d),byteCount(size){}
+        void set(char* s,void* d,size_t size){
+            src=s;
+            dst=d;
+            byteCount=size;
+        }
+        char* src;
+        void* dst;
+        size_t byteCount;
+    };
+    
     std::vector<Task> _waitingTasks;
     
     DiskCache* _cache ; // disk cache (physically stored, saved between 2 runs).    
@@ -92,9 +109,19 @@ class VideoEngine :public QObject{
     
     int _pboIndex;
     
+    bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
+    
     QFutureWatcher<void>* _engineLoopWatcher;
     QFuture<void>* _enginePostProcessResults;
     
+    /*computing engine results*/
+    QFutureWatcher<void>* _workerThreadsWatcher;
+    QFuture<void>* _workerThreadsResults;
+    /*The sequence of rows to process*/
+    std::vector<Row*> _sequenceToWork;
+    
+    /*infos used by the engine when filling PBO's*/
+    GPUTransferInfo _gpuTransferInfo;
     
 public slots:
 	/*starts the engine with initialisation of the viewer so the frame fits in.
@@ -128,6 +155,9 @@ public slots:
         row_cache.clear();
     }
     void engineLoop();
+    
+    /*called internally by computeTreeForFrame*/
+    void finishComputeFrameRequest();
     
 signals:
     void fpsChanged(double d);
@@ -190,7 +220,8 @@ public:
     /*used internally by the zoom or the videoEngine, do not call this*/
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer);
     
-    
+    /*the function calling the engine for one scan-line*/
+    static void metaEnginePerRow(Row* row, InputNode* input, OutputNode* output);
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
@@ -227,6 +258,7 @@ private:
     
     /*reset variables used by the videoEngine*/
     void stopEngine();
+    
     
 };
 

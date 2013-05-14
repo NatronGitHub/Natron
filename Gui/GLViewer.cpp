@@ -603,11 +603,8 @@ void ViewerGL::drawBlackTex(){
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void ViewerGL::drawRow(Row* row,ROW_RANK rank){
+void ViewerGL::drawRow(Row* row){
     
-	//makeCurrent();
-	
-    //glBindTexture (GL_TEXTURE_2D, texId[0]);
     int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
     
     
@@ -620,9 +617,9 @@ void ViewerGL::drawRow(Row* row,ROW_RANK rank){
                                    w,row->zoomedY(),(*row)[Channel_alpha]);
     }
     
-#ifdef __POWITER_WIN32__
-    doneCurrent();  //< NEEDED FOR MULTI THREADING
-#endif
+//#ifdef __POWITER_WIN32__
+//    doneCurrent();  //< NEEDED FOR MULTI THREADING
+//#endif
     
 }
 
@@ -661,10 +658,8 @@ std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
     return make_pair(gpuBuffer,dataSize);
         
 }
-void ViewerGL::fillComputePBO(void* dst,size_t byteCount){
-    memcpy(dst,frameData,byteCount);
-}
-void ViewerGL::fillCachedPBO(const char *src, void *dst, size_t byteCount){
+
+void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);    
 }
 void ViewerGL::copyPBOtoTexture(int w,int h){

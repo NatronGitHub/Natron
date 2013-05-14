@@ -47,7 +47,7 @@ using Powiter_Enums::ROW_RANK;
       >-computeFrameRequest(...)                |                                   |
      |    if(!cached)                           |                                   |
      |       -computeTreeForFrame------------>start worker threads                  |
-     |          waitForDone();                  |                                   |
+     |              |                           |                                   |
      |              |             <--notify----finished()                           |
      |       -allocatePBO                                                           |
      |       -fillPBO -------------QtConcurrent::Run-------------------------> copy frame data to PBO...
@@ -65,8 +65,7 @@ using Powiter_Enums::ROW_RANK;
      ----------engineLoop <---------------------------------------------notify---finished()
 
  
-    Might improve the engine to remove the waitForDone() after computeTreeForFrame with a notification 
-    system instead as for other QtConcurrent calls. The improvment will be done using QtConcurrent::map.
+   
  */
 
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
@@ -88,12 +87,14 @@ void VideoEngine::stopEngine(){
     _aborted = false;
     _paused = false;
     _enginePostProcessResults->waitForFinished();
+    _workerThreadsResults->waitForFinished();
     _timer->playState=PAUSE;
     
 }
 
 void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer){
     _working = true;
+    _sameFrame = sameFrame;
     if(!sameFrame && _aborted){
         stopEngine();
         return;
@@ -172,24 +173,31 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
             frameCountHint = _frameRequestsCount+_frameRequestIndex;
         }
         computeTreeForFrame(output,inputs[0],ceil((double)frameCountHint/10.0),initTexture);
-        
-        int w = floorf(gl_viewer->displayWindow().w() * gl_viewer->currentBuiltinZoom());
-        int h = floorf(gl_viewer->displayWindow().h() * gl_viewer->currentBuiltinZoom());
-        
-        std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);
-        *_enginePostProcessResults = QtConcurrent::run(gl_viewer,&ViewerGL::fillComputePBO,pbo.first,pbo.second);
-        _engineLoopWatcher->setFuture(*_enginePostProcessResults);
-        
+        //computeTreeForFrame automatically calls finishComputeFrameRequest via a signal/slot mechanism
+    
     }else{
         cachedFrameEngine(iscached.first);
+        finishComputeFrameRequest();
     }
-    if(_frameRequestIndex == 0 && _frameRequestsCount == 1 && !sameFrame){
+    
+}
+void VideoEngine::finishComputeFrameRequest(){
+    _sequenceToWork.clear();
+    *_enginePostProcessResults = QtConcurrent::run(gl_viewer,
+                                                   &ViewerGL::fillPBO,_gpuTransferInfo.src,_gpuTransferInfo.dst,_gpuTransferInfo.byteCount);
+    _engineLoopWatcher->setFuture(*_enginePostProcessResults);
+  
+    if(_frameRequestIndex == 0 && _frameRequestsCount == 1 && !_sameFrame){
         _frameRequestsCount = 0;
         _frameRequestIndex = 1;
         return;
     }
-    if(!sameFrame){
-        if(forward){
+    TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+    int firstFrame = frameSeeker->firstFrame();
+    int lastFrame = frameSeeker->lastFrame();
+    int currentFrame = gl_viewer->getCurrentReaderInfo()->currentFrame();
+    if(!_sameFrame){
+        if(_forward){
             currentFrame = gl_viewer->getCurrentReaderInfo()->currentFrame()+1;
             if(currentFrame > lastFrame){
                 if(_loopMode)
@@ -218,12 +226,13 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
                 inp->setup_for_next_frame();
             }
         }
-       
+        
     }
     if(_frameRequestsCount!=-1){ // if the frameRequestCount is defined (i.e: not indefinitely running)
         _frameRequestsCount--;
     }
     _frameRequestIndex++;
+
 }
 
 void VideoEngine::cachedFrameEngine(FramesIterator frame){
@@ -254,9 +263,9 @@ void VideoEngine::cachedFrameEngine(FramesIterator frame){
 
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
-    *_enginePostProcessResults = QtConcurrent::run(gl_viewer,&ViewerGL::fillCachedPBO,cachedFrame.first,output,dataSize);
-    _engineLoopWatcher->setFuture(*_enginePostProcessResults);
-
+    
+    _gpuTransferInfo.set(cachedFrame.first, output, dataSize);
+    
 }
 
 void VideoEngine::engineLoop(){
@@ -330,29 +339,20 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
                     return;
                 }
                 
-                bool cached = false;
+               // bool cached = false;
                 Row* row ;
                 map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
                 if(foundCached!=row_cache.end()){
                     row= foundCached->second;
-                    cached = true;
+                    row->cached(true);
                 }else{
                     row=new Row(offset,k,right,outChannels);
                     addToRowCache(row);
                 }
                 row->zoomedY(rowY);
-                WorkerThread* task;
-                if((k==renderBox.y() || rowY==0) && !strcmp(output->class_name(),"Viewer")){
-                    task =new WorkerThread(row,input,output,LAST,cached);
-                }else if(k==(renderBox.top()-1) && !strcmp(output->class_name(),"Viewer")){
-                    task =new WorkerThread(row,input,output,FIRST,cached);
-                }else{
-                    task =new WorkerThread(row,input,output,ND,cached);
-                }
+                _sequenceToWork.push_back(row);
                 rowY--;
-                k--;
-                pool->start(task);
-                
+                k--;                
             }
             y-=incrementFullsize;
         }
@@ -361,7 +361,7 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
         int rowY = renderBox.y(); // zoomed index
         while(y<renderBox.top()){ // y = full size index
             for(int k = y; k<incrementNew+y;k++){
-                bool cached = false;
+                //bool cached = false;
                 Row* row ;
                 if(_aborted){
                     _abort();
@@ -372,23 +372,13 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
                 map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
                 if(foundCached!=row_cache.end()){
                     row= foundCached->second;
-                    cached = true;
+                    row->cached(true);
                 }else{
                     row=new Row(offset,k,right,outChannels);
                     addToRowCache(row);
                 }
                 row->zoomedY(rowY);
-                WorkerThread* task;
-                if(k==(renderBox.top()-1) && !strcmp(output->class_name(),"Viewer")){
-                    task =new WorkerThread(row,input,output,LAST,cached);
-                }else if(k==renderBox.y() && !strcmp(output->class_name(),"Viewer")){
-                    task =new WorkerThread(row,input,output,FIRST,cached);
-                }
-                else{
-                    task =new WorkerThread(row,input,output,ND,cached);
-                }
-                pool->start(task);
-                
+                _sequenceToWork.push_back(row);                
                 rowY++;
             }
             y+=incrementFullsize;
@@ -396,7 +386,14 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
         
         
     }
-    pool->waitForDone();
+    int w = floorf(gl_viewer->displayWindow().w() * gl_viewer->currentBuiltinZoom());
+    int h = floorf(gl_viewer->displayWindow().h() * gl_viewer->currentBuiltinZoom());
+    
+    std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);
+    _gpuTransferInfo.set(gl_viewer->getFrameData(), pbo.first, pbo.second);
+    
+    *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,_1,input,output));
+    _workerThreadsWatcher->setFuture(*_workerThreadsResults);    
     
 }
 void VideoEngine::drawOverlay(){
@@ -412,6 +409,11 @@ void VideoEngine::_drawOverlay(Node *output){
     
 }
 
+void VideoEngine::metaEnginePerRow(Row* row, InputNode* input, OutputNode* output){
+    row->allocate();
+    vector<char*> alreadyComputedNodes;
+    WorkerThread::metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
+}
 
 void VideoEngine::updateProgressBar(){
     //update progress bar
@@ -427,10 +429,13 @@ void VideoEngine::startEngine(int nbFrames){
 
 VideoEngine::VideoEngine(ViewerGL *gl_viewer,Model* engine,QMutex* lock):
 QObject(engine),_working(false),_aborted(false),_paused(true),_readerInfoHasChanged(false),
-_forward(true),_frameRequestsCount(0),_pboIndex(0),_frameRequestIndex(0),_loopMode(true){
+_forward(true),_frameRequestsCount(0),_pboIndex(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false){
     
     _engineLoopWatcher = new QFutureWatcher<void>;
     _enginePostProcessResults = new QFuture<void>;
+    _workerThreadsResults = new QFuture<void>;
+    _workerThreadsWatcher = new QFutureWatcher<void>;
+    connect(_workerThreadsWatcher,SIGNAL(finished()),this,SLOT(finishComputeFrameRequest()));
     connect(_engineLoopWatcher, SIGNAL(finished()), this, SLOT(engineLoop()));
     this->_coreEngine = engine;
     this->_lock= lock;
@@ -476,6 +481,9 @@ void VideoEngine::clearDiskCache(){
 VideoEngine::~VideoEngine(){
     clearRowCache();
     _enginePostProcessResults->waitForFinished();
+    _workerThreadsResults->waitForFinished();
+    delete _workerThreadsResults;
+    delete _workerThreadsWatcher;
     delete _engineLoopWatcher;
     delete _enginePostProcessResults;
     delete _cache;

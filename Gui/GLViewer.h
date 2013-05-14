@@ -70,7 +70,7 @@ public:
     it is : the first, the last or ND ( any row between first and last).
     The rank just hold the information of the order at which the row computations
     have started.*/
-	void drawRow(Row *row,ROW_RANK rank);
+	void drawRow(Row *row);
 	
 	
     
@@ -257,13 +257,14 @@ public:
 
     std::pair<int,int> getTextureSize(){return _textureSize;}
     std::pair<void*,size_t> allocatePBO(int w,int h);
-    void fillComputePBO(void* dst,size_t byteCount);
-    void fillCachedPBO(const char* src,void* dst,size_t byteCount);
+    void fillPBO(const char* src,void* dst,size_t byteCount);
     void copyPBOtoTexture(int w,int h);
     
     void doEmitFrameChanged(int f){
         emit frameChanged(f);
     }
+    
+    char* getFrameData(){return frameData;}
     
 public slots:
     virtual void updateGL();

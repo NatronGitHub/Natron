@@ -19,6 +19,10 @@ public:
     Row(int x,int y,int right,ChannelSet channels);
     ~Row();
 	
+    /*Must be called explicitly after the constructor and BEFORE any usage
+     of the Row object. This allocates all the active channels of the row*/
+    void allocate();
+    
 	/*Returns a writable pointer to the channel c.
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
@@ -68,6 +72,9 @@ public:
     
     ChannelMask channels(){return _channels;}
     
+    bool cached(){return _cached;}
+    void cached(bool c){_cached = c;}
+    
 private:
     int _y; // the line index in the fullsize image
     int _zoomedY; // the line index in the zoomed version on the viewer
@@ -75,8 +82,8 @@ private:
     int x; // starting point of the row
     int r; // end of the row
     float** buffers; // channels array
+    bool _cached;// whether it is already present in the previous buffer
     
-    void init();
     
     
 };
