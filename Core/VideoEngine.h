@@ -78,7 +78,6 @@ class VideoEngine :public QObject{
     std::vector<InputNode*> inputs; // the inputs of the current graph
     OutputNode* output; // the output of the current graph
     Timer* _timer; // fps timer
-    QThreadPool* pool; // thread pool used by the workerthreads
     
     std::map<int,Row*> row_cache; // buffer cache : for zoom 
     
@@ -99,15 +98,15 @@ class VideoEngine :public QObject{
 
     Hash _treeVersion;// the hash key associated to the current graph
     
-    int _frameRequestsCount;
+    int _frameRequestsCount; // total frames in the current videoEngine
     
-    int _frameRequestIndex;
+    int _frameRequestIndex;//counter of the frames computed
     
-    bool _forward;
+    bool _forward; // forwards/backwards video engine
     
-    bool _loopMode;
+    bool _loopMode; //on if the player will loop
     
-    int _pboIndex;
+    int _pboIndex; // the pboindex used by the cached engine
     
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
     
@@ -170,7 +169,7 @@ public:
     OutputNode* getOutputNode(){return output;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb,bool initTexture);
+    void computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb);
     
 	/*utility functions to get builtinzooms for the downscaling algorithm*/
     float closestBuiltinZoom(float v);

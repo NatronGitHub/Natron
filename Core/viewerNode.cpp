@@ -1,6 +1,5 @@
 #include "Core/viewerNode.h"
 #include "Gui/GLViewer.h"
-using Powiter_Enums::ROW_RANK;
 
 Viewer::Viewer(Node* node,ViewerGL* v):OutputNode(node)
 {

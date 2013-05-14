@@ -30,9 +30,6 @@
 #include "Gui/textRenderer.h"
 #include "Core/diskcache.h"
 
-using Powiter_Enums::ROW_RANK;
-
-
 class Lut;
 class InfoViewerWidget;
 class Controler;

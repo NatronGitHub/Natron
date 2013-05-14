@@ -227,6 +227,7 @@ void ReadExr::open(){
     std::map<Imf::PixelType, int> pixelTypes;
     
     try {
+        
         QString filename = files[frame()];
        
         
@@ -247,11 +248,11 @@ void ReadExr::open(){
         inputStdStream = new Imf::StdIFStream(*inputStr,ba.data());
         inputfile = new Imf::InputFile(*inputStdStream);
 #else
-		 std::string stringFilename= filename.toStdString();
+        QByteArray ba = filename.toLatin1();
         if(inputfile){
             delete inputfile;
         }
-        inputfile = new Imf::InputFile(stringFilename.c_str());
+        inputfile = new Imf::InputFile(ba.constData());
 #endif
         
         //int view = r->view_for_reader();
@@ -298,7 +299,7 @@ void ReadExr::open(){
         Imf::ChannelList::ConstIterator chan;
         
         for (chan = imfchannels.begin(); chan != imfchannels.end(); chan++) {
-            
+            if(!strcmp(chan.name(),"")) continue;
             pixelTypes[chan.channel().type]++;
             ChannelName cName(chan.name(), views);
             std::set<Channel> channels;

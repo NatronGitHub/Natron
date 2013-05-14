@@ -5,7 +5,6 @@
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
 
-using Powiter_Enums::ROW_RANK;
 
 class  Viewer: public OutputNode
 {

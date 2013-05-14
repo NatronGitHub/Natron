@@ -15,10 +15,9 @@ If you're planning on writing a CMAKE based project file, and that you succeed i
 
 In order to have Powiter compiling, first you need to install the required libraries.
 
-###Qt 4.8
+###Qt 5
 
-You'll need to install Qt 4.8 libraries from [Qt download](http://qt-project.org/downloads). Select the "Qt libraries 4.8.4 for Mac (185 MB)"
-Powiter will most likely upgrade to Qt5 soon, but for now it's not compatible with Qt5 fully. Once downloaded, remember the path where you install it as we will need it into Xcode.
+You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads).Once downloaded, remember the path where you install it as we will need it into Xcode.
 
 ###FFMPEG
 

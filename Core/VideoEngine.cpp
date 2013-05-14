@@ -38,9 +38,8 @@
 #include "Superviser/PwStrings.h"
 
 
-using Powiter_Enums::ROW_RANK;
-
 /* Here's a drawing that represents how the video Engine works: 
+ 
                                             [thread pool]                       [OtherThread]
    [main thread]                                |                                   |
     -videoEngine(...)                           |                                   |
@@ -158,9 +157,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     // check the presence of the frame in the cache
     pair<FramesIterator,bool> iscached = _cache->isCached(currentFrameName,_treeVersion.getHashValue(),gl_viewer->currentBuiltinZoom(),
                                                           gl_viewer->getExposure(),gl_viewer->lutType(),gl_viewer->_byteMode);
-    bool initTexture = true;
-    if(sameFrame) initTexture = false;
-    
+   
     if(!iscached.second){
         int frameCountHint = 0;
         if(_frameRequestsCount==-1){
@@ -172,7 +169,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         }else{
             frameCountHint = _frameRequestsCount+_frameRequestIndex;
         }
-        computeTreeForFrame(output,inputs[0],ceil((double)frameCountHint/10.0),initTexture);
+        computeTreeForFrame(output,inputs[0],ceil((double)frameCountHint/10.0));
         //computeTreeForFrame automatically calls finishComputeFrameRequest via a signal/slot mechanism
     
     }else{
@@ -276,12 +273,13 @@ void VideoEngine::engineLoop(){
     if((_frameRequestIndex%24)==0){
         emit fpsChanged(_timer->actualFrameRate());
     }
+    
     updateDisplay();
     computeFrameRequest(false, _forward ,false);
 }
 
 
-void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb,bool initTexture){
+void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb){
     IntegerBox renderBox = gl_viewer->displayWindow(); // the display window held by the data
     
 	int y=renderBox.y(); // bottom
@@ -306,12 +304,11 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
     float incrementFullsize = builtInZooms[builtinZoom].second;
     gl_viewer->setZoomIncrement(make_pair(incrementNew,incrementFullsize));
     
-    if(initTexture)
-        gl_viewer->initTextures();
     
-#ifdef __POWITER_WIN32__
-	gl_viewer->doneCurrent(); // windows only, openGL needs this to deal with concurrency
-#endif
+    gl_viewer->initTextures();
+//#ifdef __POWITER_WIN32__
+//	gl_viewer->doneCurrent(); // windows only, openGL needs this to deal with concurrency
+//#endif
     
     // selecting the right anchor of the row
     int right = 0;
@@ -335,7 +332,8 @@ void VideoEngine::computeTreeForFrame(OutputNode *output,InputNode* input,int fo
                     _abort();
                     return;
                 }else if(_paused){
-                    pool->waitForDone();
+                    _workerThreadsWatcher->cancel();
+                    _workerThreadsResults->waitForFinished();
                     return;
                 }
                 
@@ -410,7 +408,8 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, InputNode* input, OutputNode* output){
-    row->allocate();
+    if(!row->cached())
+        row->allocate();
     vector<char*> alreadyComputedNodes;
     WorkerThread::metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
 }
@@ -442,8 +441,6 @@ _forward(true),_frameRequestsCount(0),_pboIndex(0),_frameRequestIndex(0),_loopMo
     this->gl_viewer = gl_viewer;
     gl_viewer->setVideoEngine(this);
     _timer=new Timer();
-    pool = new QThreadPool(this);
-    (QThread::idealThreadCount()) > 1 ? pool->setMaxThreadCount((QThread::idealThreadCount())) : pool->setMaxThreadCount(1);
     fillBuilInZoomsLut();
     output = 0;
     foreach(InputNode* i,inputs){ i = 0; }
@@ -487,7 +484,6 @@ VideoEngine::~VideoEngine(){
     delete _engineLoopWatcher;
     delete _enginePostProcessResults;
     delete _cache;
-    delete pool;
     delete _timer;
 }
 
@@ -597,7 +593,8 @@ void VideoEngine::setDesiredFPS(double d){
 }
 
 void VideoEngine::_abort(){
-    pool->waitForDone(); // stopping worker threads
+    _workerThreadsWatcher->cancel();
+    _workerThreadsResults->waitForFinished(); // stopping worker threads
     clearRowCache(); // clearing row cache
     // QCoreApplication::processEvents(); // load events that may have been ignored
 }

@@ -88,8 +88,6 @@ namespace Powiter_Enums{
     
     enum MMAPfile_mode{ReadOnly,ReadWrite,Priv};
     
-    enum ROW_RANK{FIRST,LAST,ND};
-
     
 }
 

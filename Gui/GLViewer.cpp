@@ -33,7 +33,6 @@
 using namespace Imf;
 using namespace Imath;
 using namespace std;
-using Powiter_Enums::ROW_RANK;
 
 
 void ViewerGL::blankInfoForViewer(bool onInit){
@@ -1146,8 +1145,8 @@ void ViewerGL::zoomIn(){
             vengine->videoEngine(1,false,true,true);
         }
         
-    }
-    updateGL();
+    }else
+        updateGL();
     
 }
 void ViewerGL::zoomOut(){
@@ -1164,8 +1163,8 @@ void ViewerGL::zoomOut(){
             vengine->_cache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
         }
-    }
-    updateGL();
+    }else
+        updateGL();
 }
 
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
