@@ -61,8 +61,8 @@ public:
     }
     
     const ChannelMask channels() const {return _channels;}
-    const DisplayFormat& displayWindow() const {return _displayWindow;}
-    const IntegerBox& dataWindow() const {return _dataWindow;}
+    const DisplayFormat displayWindow() const {return _displayWindow;}
+    const IntegerBox dataWindow() const {return _dataWindow;}
     const int Ydirection() const {return _Ydirection;}
     const bool rgbMode() const {return _rgbMode;}
     const int firstFrame() const {return _firstFrame;}

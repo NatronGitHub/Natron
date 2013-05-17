@@ -26,6 +26,7 @@
 
 using namespace Powiter_Enums;
 
+class ReaderInfo;
 class ChannelName
 {
 public:
@@ -44,7 +45,7 @@ class ReadExr : public Read{
 public:
 	
 
-	ReadExr(const QStringList& fileList,Reader* op,ViewerGL* ui_context);
+	ReadExr(Reader* op,ViewerGL* ui_context);
 	virtual ~ReadExr();
     
 	void lookupChannels(std::set<Channel>& channel, const char* name);
@@ -62,17 +63,17 @@ public:
 		int                 R);
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual void createKnobDynamically();
-    virtual void open();
+    virtual void open(const QString filename,bool openBothViews = false);
     virtual bool supports_stereo(){return true;}
-    virtual void make_preview();
+    virtual void make_preview(const char* filename);
 
 private:
 	Imf::InputFile* inputfile;
-	QMutex* C_lock;
 	std::map<Channel, const char*> channel_map;
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;
+    std::vector< std::vector<float*> > _img;
     
    // Imath::V3f yWeights; // for luminance, not used anymore. Left out in comment in case we'd like to introduce it again
 

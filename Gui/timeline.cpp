@@ -405,12 +405,13 @@ void TimeSlider::mouseMoveEvent(QMouseEvent* e){
 }
 void TimeSlider::enterEvent(QEvent* e){
     _alphaCursor = true;
-    
+    grabMouse();
     QWidget::enterEvent(e);
 };
 void TimeSlider::leaveEvent(QEvent* e){
     _alphaCursor = false;
     repaint();
+    releaseMouse();
     QWidget::leaveEvent(e);
 }
 
@@ -421,7 +422,7 @@ void TimeSlider::mouseReleaseEvent(QMouseEvent* e){
 
 void TimeSlider::addCachedFrame(int f){
     _cached.push_back(f);
-    //repaint();
+    repaint();
 }
 void TimeSlider::removeCachedFrame(){
     _cached.erase(_cached.begin());

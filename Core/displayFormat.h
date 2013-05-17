@@ -23,7 +23,7 @@ public:
     const double pixel_aspect() const;
     void pixel_aspect( float p) ;
 	
-	DisplayFormat& operator=(const DisplayFormat& other){
+	DisplayFormat operator=(const DisplayFormat& other){
         set(other.x(), other.y(), other.right(), other.top());
         name(other.name());
         pixel_aspect(other.pixel_aspect());

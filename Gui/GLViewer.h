@@ -249,8 +249,10 @@ public:
     void turn_off_overlay(){_overlay=false;}
     
 
-    /*called by the main thread to init specific variables per frame*/
-    void preProcess(int nbFrameHint); // safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+    /*called by the main thread to init specific variables per frame
+     * safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+     */
+    void preProcess(std::string filename,int nbFrameHint);
 
     std::pair<int,int> getTextureSize(){return _textureSize;}
     std::pair<void*,size_t> allocatePBO(int w,int h);
@@ -261,7 +263,7 @@ public:
         emit frameChanged(f);
     }
     
-    char* getFrameData(){return frameData;}
+    const char* getFrameData(){return frameData;}
     
 public slots:
     virtual void updateGL();

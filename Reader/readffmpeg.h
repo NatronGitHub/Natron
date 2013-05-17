@@ -283,12 +283,12 @@ class ReadFFMPEG : public Read
     
     
 public:
-    ReadFFMPEG(const QStringList& file_list,Reader* op,ViewerGL* ui_context);
+    ReadFFMPEG(Reader* op,ViewerGL* ui_context);
     virtual ~ReadFFMPEG();
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual bool supports_stereo(){return false;}
-    virtual void open();
-    virtual void make_preview();
+    virtual void open(const QString filename,bool openBothViews = false);
+    virtual void make_preview(const char* filename);
 
     bool fillBuffer();
     
@@ -297,6 +297,7 @@ private:
     DataBuffer::Ptr _data;    // decoding buffer
     size_t _memNeeded;                // memory needed for decoding a single frame
     int  _numFrames;                  // number of frames in the selected stream
+    QString _file;
 	QMutex _lock;
     
 };

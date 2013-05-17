@@ -29,6 +29,13 @@ static char* stdStrCpy(std::string str){
 	return dest;
 }
 
+static std::string QStringToStdString(QString str){
+    std::string from = str.toStdString();
+    std::string out;
+    out.assign(from);
+    return out;
+}
+
 static int strcmp(const char* str1,QString str2){
 	QByteArray ba = str2.toLocal8Bit();
 	return strcmp(str1,ba.data());

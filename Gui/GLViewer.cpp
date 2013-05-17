@@ -397,14 +397,13 @@ void ViewerGL::initShaderGLSL(){
         if(!shaderRGB->addShaderFromSourceCode(QGLShader::Fragment,fragRGB))
             cout << qPrintable(shaderRGB->log()) << endl;
         
-        if(fileType()==EXR){
             shaderLC = new QGLShaderProgram(context());
             if (!shaderLC->addShaderFromSourceCode(QGLShader::Vertex, vertLC)){
                 cout << qPrintable(shaderLC->log()) << endl;
             }
             if(!shaderLC->addShaderFromSourceCode(QGLShader::Fragment,fragLC))
                 cout << qPrintable(shaderLC->log())<< endl;
-        }
+        
         
         if(!shaderRGB->link()){
             cout << qPrintable(shaderRGB->log()) << endl;
@@ -622,13 +621,13 @@ void ViewerGL::drawRow(Row* row){
     
 }
 
-void ViewerGL::preProcess(int nbFrameHint){
-    // init mmaped file if first row
+void ViewerGL::preProcess(std::string filename,int nbFrameHint){
+    // init mmaped file 
     if(_makeNewFrame){
         int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
         int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        pair<char*,FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),vengine->currentFrameName(), w, h, nbFrameHint);
+        pair<char*,FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),filename, w, h, nbFrameHint);
         frameData = p.first;
         frameInfo = p.second;
         _makeNewFrame = false;

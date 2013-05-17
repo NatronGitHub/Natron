@@ -19,6 +19,7 @@
 #include <map>
 #include "Core/diskcache.h"
 #include "Core/hash.h"
+#include "Reader/Reader.h"
 
 class OutputNode;
 class InputNode;
@@ -57,13 +58,13 @@ class VideoEngine :public QObject{
     class GPUTransferInfo{
     public:
         GPUTransferInfo():src(0),dst(0),byteCount(0){}
-        GPUTransferInfo(char* s,void* d,size_t size):src(s),dst(d),byteCount(size){}
-        void set(char* s,void* d,size_t size){
+        GPUTransferInfo(const char* s,void* d,size_t size):src(s),dst(d),byteCount(size){}
+        void set(const char* s,void* d,size_t size){
             src=s;
             dst=d;
             byteCount=size;
         }
-        char* src;
+        const char* src;
         void* dst;
         size_t byteCount;
     };
@@ -169,7 +170,7 @@ public:
     OutputNode* getOutputNode(){return output;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb);
+    void computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb);
     
 	/*utility functions to get builtinzooms for the downscaling algorithm*/
     float closestBuiltinZoom(float v);
@@ -200,11 +201,9 @@ public:
 	/*Tell all the nodes in the grpah to draw overlays*/
     void drawOverlay();
 	
-	/*Get the name of the current frame*/
-	char* currentFrameName();
     
 	/*Inserts a new frame in the disk cache*/
-    std::pair<char*,FrameID> mapNewFrame(int frameNb,char* filename,int width,int height,int nbFrameHint);
+    std::pair<char*,FrameID> mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint);
 
 	/*Close the LRU frame in the disk cache*/
     void closeMappedFile();
@@ -217,10 +216,13 @@ public:
     void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /*used internally by the zoom or the videoEngine, do not call this*/
-    void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer);
+    void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
     
     /*the function calling the engine for one scan-line*/
-    static void metaEnginePerRow(Row* row, InputNode* input, OutputNode* output);
+    static void metaEnginePerRow(Row* row,OutputNode* output);
+    
+    std::vector< std::pair<Reader::Buffer::DecodedFrameIterator,FramesIterator > >
+    startReading(std::vector<Reader*> readers,bool useMainThread,int otherThreadCount = 1);
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
@@ -253,7 +255,7 @@ private:
     void runTasks();
     
     /*Used internally by the computeFrameRequest func for cached frames*/
-    void cachedFrameEngine(FramesIterator frame);
+    void cachedFrameEngine(FramesIterator fram);
     
     /*reset variables used by the videoEngine*/
     void stopEngine();

@@ -14,6 +14,9 @@
 
 #include "Core/hash.h"
 #include "Core/row.h"
+#include "Reader/readerInfo.h"
+
+
 
 /*The class associated to a Frame in cache.
  *Two frames with the same FrameID will be considered
@@ -27,38 +30,52 @@ public:
     int _rank;
     float _zoom;
     U32 _treeVers;
-    int _nbRows;
-    char* _filename;
-    char* _cacheIndex;
-    int _rowWidth;
+    ReaderInfo* _frameInfo; //bbox,format,channels,frame name,ydirection
+    std::string _cacheIndex;
     float _byteMode;
-    FrameID():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_nbRows(0),_cacheIndex(0),
-    _rowWidth(0),_filename(0),_byteMode(0) {}
+    int _actualH,_actualW; // zoomed H&W
+    FrameID():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualH(0),_actualW(0){
+        _frameInfo = new ReaderInfo;
+    }
     FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
-            char* cacheIndex,int rowWidth,int nbRows,
-            char* fileName,float byteMode);
+            std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH);
     FrameID(const FrameID& other);
     
     ~FrameID(){
+        delete _frameInfo;
     }
-    
-bool operator==(const FrameID& other){
-    return _exposure == other._exposure && _lut == other._lut && _zoom == other._zoom && _treeVers == other._treeVers
-    && _byteMode == other._byteMode && !strcmp(_filename,other._filename);
+    void operator=(const FrameID& other){
+        _exposure=other._exposure;
+        _lut = other._lut;
+        _rank = other._rank;
+        _zoom = other._zoom;
+        _treeVers = other._treeVers;
+        _frameInfo->copy(other._frameInfo);
+        _actualW = other._actualW;
+        _actualH = other._actualH;
+    _cacheIndex=other._cacheIndex;
+    _byteMode=other._byteMode;
 }
 
+bool operator==(const FrameID& other){
+    return _exposure == other._exposure &&
+    _lut == other._lut &&
+    _zoom == other._zoom &&
+    _treeVers == other._treeVers &&
+     _byteMode == other._byteMode &&
+    _frameInfo->channels() == other._frameInfo->channels() &&
+    _frameInfo->dataWindow() == other._frameInfo->dataWindow() &&
+    _frameInfo->displayWindow() == other._frameInfo->displayWindow() &&
+    _frameInfo->currentFrameName() == other._frameInfo->currentFrameName() &&
+    _actualH == other._actualH &&
+    _actualW == other._actualW;
+}
+
+
 };
 
-
-
-/*A comparison class used by the cache internally*/
-class FramesCompare { 
-public:
-    bool operator()(const char* x,const char* y) const { return strcmp(x,y)<0; }
-};
-
-typedef std::multimap<char*, FrameID,FramesCompare>::iterator FramesIterator;
-typedef std::multimap<char*, FrameID,FramesCompare>::reverse_iterator ReverseFramesIterator;
+typedef std::multimap<std::string, FrameID>::iterator FramesIterator;
+typedef std::multimap<std::string, FrameID>::reverse_iterator ReverseFramesIterator;
 
 class VideoEngine;
 class ViewerGL;
@@ -75,11 +92,11 @@ class DiskCache
     ViewerGL* gl_viewer; // pointer to the viewer
 public:
     
-    // multimap : each filename  may have several match 
+    // multimap : each filename  may have several match
     // depending on the following variables : current tree version(hash value), current builtin zoom, exposure , viewer LUT
     // the FrameID represents then : < zoomLvl, exp , LUT , rank >   ranking is for LRU removal when cache is full
     //This map is an outpost that prevents Powiter to look into the disk whether the frame is already present
-    std::multimap<char*,FrameID,FramesCompare> _frames;
+    std::multimap<std::string,FrameID> _frames;
     
     std::map<int,FrameID> _rankMap; // storing rank into a map to make freeing algorithm efficient
     
@@ -91,11 +108,14 @@ public:
     
     qint64 MAX_PLAYBACK_CACHE_SIZE;
     
+    FramesIterator end(){return _frames.end();}
+    FramesIterator begin(){return _frames.begin();}
+    
     /* add the frame to the cache if there's enough space, otherwise some free space is made (LRU) to insert it
      It appends the frame with rank 0 (remove last) and increments all the other frame present in cache
      The nbFrameHint is to know how many frame will be actually used in this sequence and how many should we free
      */
-    std::pair<char*,FrameID> mapNewFrame(int frameNB,char* filename,int width,int height,int nbFrameHint,U32 treeVers);
+    std::pair<char*,FrameID> mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers);
     
     /*Close the last file in the queue*/
     void closeMappedFile();
@@ -105,14 +125,21 @@ public:
     
     /*checks whether the frame is present or not.
      Returns a FramesIterator pointing to the frame if it found it other wise the boolean returns false.*/
-    std::pair<FramesIterator,bool> isCached(char* filename,U32 treeVersion,float builtinZoom,float exposure,float lut ,bool byteMode );
+    std::pair<FramesIterator,bool> isCached(std::string filename,
+                                            U32 treeVersion,
+                                            float builtinZoom,
+                                            float exposure,
+                                            float lut ,
+                                            bool byteMode,
+                                            DisplayFormat format,
+                                            IntegerBox bbox);
     
     /*This is the function called to finilize caching once the frame has been written to the pointer
      returned by mapNew<Frame*/
     void appendFrame(FrameID _info);
     
     
-    std::pair<char*,std::pair<int,int> > retrieveFrame(int frameNb,FramesIterator it);
+    const char* retrieveFrame(int frameNb,FramesIterator it);
     
     /*Restores the cache from the disk(from the settings file)*/
     void restoreCache();
@@ -122,7 +149,9 @@ public:
     
     /*Clears all the disk cache even the playback cache.*/
     void clearCache();
-
+    
+    
+    void debugCache();
     
     DiskCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize);
     
