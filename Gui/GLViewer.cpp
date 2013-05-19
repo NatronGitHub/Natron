@@ -59,7 +59,6 @@ void ViewerGL::initConstructor(){
     zoomX =0; zoomY=0;
 	_drawing=false;
 	exposure = 1;
-   // _renderingBuffer = 0;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
     fillBuiltInZooms();
@@ -598,9 +597,6 @@ void ViewerGL::drawBlackTex(){
 
 void ViewerGL::drawRow(Row* row,ROW_RANK rank){
     
-	//makeCurrent();
-	
-    //glBindTexture (GL_TEXTURE_2D, texId[0]);
     int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
     
     
@@ -630,13 +626,6 @@ void ViewerGL::preProcess(int nbFrameHint){
         frameInfo = p.second;
         _makeNewFrame = false;
         
-//         /*initializing the pbo that will hold the rendered frame*/
-//         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-//         if(_byteMode == 1 || !_hasHW)
-//             glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
-//         else
-//             glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(float)*4, NULL, GL_DYNAMIC_DRAW_ARB);
-//         _renderingBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     }
 }
 
@@ -699,11 +688,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=nbBytesOutput;
     output+=yOffset;
-    
-  //  glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-//     U32* output = reinterpret_cast<U32*>(_renderingBuffer); //(glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB));
-//     output+=yOffset;
-     U32* end = output + nbBytesOutput;
+    U32* end = output + nbBytesOutput;
     
     int downScaleIncrement = (int)zoomIncrement.first; // number of pixels to keep in the scan
     int fullSizeIncrement = (int)zoomIncrement.second; // number of pixels to scan per cycle
@@ -831,10 +816,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     yOffset *=nbBytesOutput;
     output+=yOffset;
     
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-    
-//     float* output = reinterpret_cast<float*>(_renderingBuffer);
-//     output+=yOffset;
     float downScaleIncrement = zoomIncrement.first; // number of rows to keep in the scan
     float fullSizeIncrement = zoomIncrement.second; // number of rows to scan per cycle
     

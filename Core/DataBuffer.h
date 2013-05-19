@@ -52,7 +52,7 @@ public:
 
 	bool isZero(){
 		bool res=true;
-		int i=0;
+		unsigned int i=0;
 		while(i<_size){
 			if((int)_buffer[i] != 0) res = false;
 			i++;

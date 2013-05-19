@@ -61,7 +61,7 @@ void Reader::randomFrame(int f){readHandle->randomFrame(f);}
 
 void Reader::setup_for_next_frame(){readHandle->setup_for_next_frame();}
 
-void Reader::setFileExtension(){
+void Reader::createReadHandle(){
 	if(readHandle){
         ui_context->clearViewer();
         Controler* ctrlPTR= node_gui->getControler();

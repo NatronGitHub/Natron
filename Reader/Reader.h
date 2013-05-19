@@ -22,7 +22,7 @@ public:
 
     Reader(Node* node,ViewerGL* ui_context);
     Reader(Reader& ref);
-	virtual void setFileExtension();
+	virtual void createReadHandle();
 	bool isImageSequence();	
 	bool hasFrames(){return fileNameList.size()>0;}
 	void incrementCurrentFrameIndex();

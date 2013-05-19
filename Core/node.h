@@ -179,7 +179,7 @@ public:
     virtual void drawOverlay(){}
 
 	/*Readers only function*/
-	virtual void setFileExtension(){}
+	virtual void createReadHandle(){}
 	/*============================*/
     friend ostream& operator<< (ostream &out, Node &Node);
     

@@ -143,7 +143,7 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 			const char* className=knob->getCallBack()->getNode()->class_name();
 			if(!strcmp(className,"Reader")){
 				Node* node=knob->getCallBack()->getNode();
-				node->setFileExtension();
+				node->createReadHandle();
                 Node_ui* readerUi = knob->getCallBack()->getNode()->getNodeUi();
                 Node_ui* output =NULL;
                 if(readerUi->hasOutputNodeConnected(output)){
@@ -187,7 +187,7 @@ void File_Knob::open_file(){
         const char* className=getCallBack()->getNode()->class_name();
         if(!strcmp(className,"Reader")){
             Node* node=getCallBack()->getNode();
-            node->setFileExtension();
+            node->createReadHandle();
             Node_ui* readerUi = getCallBack()->getNode()->getNodeUi();
             Node_ui* output =NULL;
             if(readerUi->hasOutputNodeConnected(output)){
