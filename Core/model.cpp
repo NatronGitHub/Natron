@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include <QtCore/QMutex>
 #include <QtCore/QDir>
 #include <cassert>
@@ -268,7 +273,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node,ctrl->getGui()->viewer_tab->viewer);
+		node=new Reader(node,ctrl->getGui()->viewer_tab->viewer,vengine->getDiskCache());
         node->setMutex(m);
         node->_inputs();
 		type=initCounterAndGetDescription(node);

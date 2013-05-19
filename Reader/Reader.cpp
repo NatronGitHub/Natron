@@ -1,3 +1,9 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+#include <cassert>
 #include "Reader/Reader.h"
 #include "Reader/readffmpeg.h"
 #include "Reader/readExr.h"
@@ -22,8 +28,9 @@
 
 using namespace std;
 
-Reader::Reader(Node* node,ViewerGL* ui_context):InputNode(node),current_frame(0),video_sequence(0),
-readHandle(0),has_preview(false),ui_context(ui_context){}
+
+Reader::Reader(Node* node,ViewerGL* ui_context,DiskCache* cache):InputNode(node),current_frame(0),video_sequence(0),
+readHandle(0),has_preview(false),ui_context(ui_context),_cache(cache),_pboIndex(0){}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
 
@@ -53,15 +60,15 @@ void Reader::seekFirstFrame(){current_frame=firstFrame();}
 void Reader::seekLastFrame(){current_frame=lastFrame();}
 void Reader::randomFrame(int f){if(f>=firstFrame() && f<=lastFrame()) current_frame=f;}
 
-Reader::Buffer::DecodedFrameIterator Reader::open(QString filename,DecodeMode mode,bool startNewThread){
+Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode mode,bool startNewThread){
     QByteArray ba = filename.toLatin1();
     const char* filename_cstr=ba.constData();
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr);
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOTCACHED_SEARCH);
     if(found !=_buffer.end()){
-        if(found->second.first && !found->second.first->isFinished()){
-            found->second.first->waitForFinished();
+        if(found->_asynchTask && !found->_asynchTask->isFinished()){
+            found->_asynchTask->waitForFinished();
         }
-        return found;
+        return *found;
     }
     QFuture<void> *future = 0;
     Read* _read = 0;
@@ -83,58 +90,104 @@ Reader::Buffer::DecodedFrameIterator Reader::open(QString filename,DecodeMode mo
     }else if(extension.at(0) == QChar('t') && extension.at(1) == QChar('i') && extension.at(2) == QChar('f') && extension.at(3) == QChar('f') ){
     }else{
     }
-    if(_read == 0) return _buffer.end();
+    
+    if(_read == 0){
+        Reader::Buffer::DecodedFrameDescriptor desc;
+        return desc;
+    }
     bool openStereo = false;
     if(_read->supports_stereo() && mode == STEREO_DECODE) openStereo = true;
     pair<Reader::Buffer::DecodedFrameIterator,bool> ret;
     if(startNewThread){
         future = new QFuture<void>;
         *future = QtConcurrent::run(_read,&Read::open,filename,openStereo);
-        ret = _buffer.insert(filename, future, NULL , _read);
+        return _buffer.insert(filename, future, NULL , _read,NULL);
     }else{
         _read->open(filename,openStereo);
-        ret = _buffer.insert(filename, NULL, _read->getReaderInfo(), _read);
+        return _buffer.insert(filename, NULL, _read->getReaderInfo(), _read,NULL);
     }
-    return ret.first;
+    
 }
 
-Reader::Buffer::DecodedFrameIterator Reader::openCachedFrame(FramesIterator frame){
+Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FramesIterator frame,int frameNb,bool startNewThread){
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first, Buffer::BOTH_SEARCH);
+    if(found !=_buffer.end()){
+        if(found->_cacheWatcher || found->_cachedFrame){
+            if(found->_cacheWatcher){
+                if(!found->_cacheWatcher->isFinished())
+                    found->_cacheWatcher->waitForFinished();
+                found->_cachedFrame = found->_cacheWatcher->result();
+            }
+            return *found;
+        }else{
+            /*if the frame is already present in the buffer but was not a cached frame, override it*/
+            _buffer.erase(found);
+        }
+    }
+    removeCachedFramesFromBuffer();
+    
     ReaderInfo *info = new ReaderInfo;
     info->copy(frame->second._frameInfo);
-    return _buffer.insert(info->currentFrameName(), 0, info, 0).first;
+    int w = frame->second._actualW ;
+    int h = frame->second._actualH ;
+    size_t dataSize = 0;
+    if(frame->second._byteMode==1.0){
+        dataSize  = w * h * sizeof(U32) ;
+    }else{
+        dataSize  = w * h  * sizeof(float) * 4;
+    }
+    /*allocating pbo*/
+    
+    
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,ui_context->getPBOId(_pboIndex));
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
+    void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    _pboIndex = (_pboIndex+1)%2;
+    QFutureWatcher<const char*>* watcher = 0;
+    QFuture<const char*>* future = 0;
+    const char* cachedFrame = 0 ;
+    if(!startNewThread){
+        cachedFrame =  _cache->retrieveFrame(frameNb,frame);
+        ui_context->fillPBO(cachedFrame, output, dataSize);
+        return _buffer.insert(info->currentFrameName(), 0 , info, 0 , cachedFrame,watcher);
+    }else{
+        future = new QFuture<const char*>;
+        watcher = new QFutureWatcher<const char*>;
+        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(info->currentFrameName(), 0 , info, 0 , cachedFrame,watcher);
+        *future = QtConcurrent::run(this,&Reader::retrieveCachedFrame,frame,frameNb,output,dataSize);
+        watcher->setFuture(*future);
+        return newFrame;
+    }
 }
 
-
-std::vector<Reader::Buffer::DecodedFrameIterator>
-Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,int otherThreadCount,bool forward){
-    std::vector<Reader::Buffer::DecodedFrameIterator> out;
+const char* Reader::retrieveCachedFrame(FramesIterator frame,int frameNb,void* dst,size_t dataSize){
+    const char* cachedFrame =  _cache->retrieveFrame(frameNb,frame);
+    ui_context->fillPBO(cachedFrame, dst, dataSize);
+    return cachedFrame;
+}
+std::vector<Reader::Buffer::DecodedFrameDescriptor>
+Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
+    
+    std::vector<Reader::Buffer::DecodedFrameDescriptor> out;
     if(useCurrentThread){
-        Buffer::DecodedFrameIterator ret = open(files[current_frame], mode , false);
+        Buffer::DecodedFrameDescriptor ret = open(files[current_frame], mode , false);
         out.push_back(ret);
-        int followingFrame = current_frame;
-        for(int i =0 ;i < otherThreadCount;i++){
-            forward ? followingFrame++ : followingFrame--;
-            ret = open(files[followingFrame],mode,true);
-            out.push_back(ret);
-        }
     }else{
-        Buffer::DecodedFrameIterator ret = open(files[current_frame], mode ,true);
-        out.push_back(ret);
-        int followingFrame = current_frame;
-       // while(!_buffer.isFull()){
-            for(int i =0 ;i < otherThreadCount - 1;i++){
-                forward ? followingFrame++ : followingFrame--;
-                if(followingFrame > lastFrame()) followingFrame = firstFrame();
-                if(followingFrame < firstFrame()) followingFrame = lastFrame();
-                if(_buffer.isFull()) break;
-                ret = open(files[followingFrame],mode,true);
-                out.push_back(ret);
-            }
-        //    if(_buffer.isFull()) break;
-       //}
-        
+        if(useOtherThread){
+            int followingFrame = current_frame;
+            forward ? followingFrame++ : followingFrame--;
+            if(followingFrame > lastFrame()) followingFrame = firstFrame();
+            if(followingFrame < firstFrame()) followingFrame = lastFrame();
+            Buffer::DecodedFrameDescriptor ret = open(files[followingFrame], mode ,true);
+            out.push_back(ret);
+            // must review this part
+        }
     }
     return out;
+}
+void Reader::removeCurrentFrameFromBuffer(){
+    _buffer.remove(getCurrentFrameName());
 }
 
 void Reader::setFileExtension(){
@@ -161,14 +214,30 @@ void Reader::setFileExtension(){
     
 }
 
+void Reader::removeCachedFramesFromBuffer(){
+    _buffer.removeAllCachedFrames();
+}
+void Reader::Buffer::removeAllCachedFrames(){
+    bool recursive = false;
+    for(DecodedFrameIterator it = _buffer.begin();it != _buffer.end();it++){
+        if(it->_cachedFrame || it->_cacheWatcher){
+            _buffer.erase(it);
+            recursive = true;
+            break;
+        }
+    }
+    if(recursive)
+        removeAllCachedFrames();
+}
+
 bool Reader::makeCurrentDecodedFrame(){
     QString currentFile = files[current_frame];
-    Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString());
-    if(frame == _buffer.end() || (frame->second.first && !frame->second.first->isFinished())) return false;
+    Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),Buffer::BOTH_SEARCH);
+    if(frame == _buffer.end() || (frame->_asynchTask && !frame->_asynchTask->isFinished())) return false;
     
-    readHandle = frame->second.second.second;
-    ReaderInfo* readInfo = frame->second.second.first;
-    if(!readInfo && frame->second.first){
+    readHandle = frame->_readHandle;
+    ReaderInfo* readInfo = frame->_frameInfo;
+    if(!readInfo && frame->_asynchTask){
         readInfo = readHandle->getReaderInfo();
     }
     readInfo->currentFrame(currentFrame());
@@ -197,75 +266,127 @@ void Reader::createKnobDynamically(){
 }
 
 
-std::pair<Reader::Buffer::DecodedFrameIterator,bool> Reader::Buffer::insert(
-                                                                            QString filename,QFuture<void> *future,ReaderInfo* info,Read* readHandle){
+Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
+                                                              QFuture<void> *future,
+                                                              ReaderInfo* info,
+                                                              Read* readHandle,
+                                                              const char* cachedFrame,
+                                                              QFutureWatcher<const char*>* cacheWatcher){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == _bufferSize){
-        DecodedFrameIterator it = _buffer.begin();
-        for(;it!=_buffer.end();it++){
-            QFuture<void>* future = it->second.first;
-            if(!future || (future  && future->isFinished())){
-                if(it->second.first)
-                    delete it->second.first;//delete future
-                if(it->second.second.first)
-                    delete it->second.second.first; // delete readerInfo
-                if(it->second.second.second)
-                    delete it->second.second.second; // delete readHandle
-                _buffer.erase(it);
+        for(U32 i = 0 ; i < _buffer.size() ;i++){
+            DecodedFrameDescriptor frameToRemove = _buffer[i];
+            if((!frameToRemove._asynchTask && !frameToRemove._cacheWatcher) ||
+               (frameToRemove._asynchTask && frameToRemove._asynchTask->isFinished()) ||
+               (frameToRemove._cacheWatcher && frameToRemove._cacheWatcher->isFinished())){
+                _buffer.erase(_buffer.begin()+i);
                 break;
             }
         }
     }
     std::string _name  = QStringToStdString(filename);
-    DecodedFrameDescriptor desc = make_pair(future,make_pair(info,readHandle));
-    return _buffer.insert(make_pair(_name,desc));
+    DecodedFrameDescriptor desc(future,readHandle,info,cachedFrame,cacheWatcher,_name);
+    _buffer.push_back(desc);
+    
+    return desc;
 }
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(std::string filename){
+    for(U32 i = 0; i < _buffer.size() ; i++){
+        if(_buffer[i]._filename==filename) return _buffer.begin()+i;
+    }
+    return _buffer.end();
+}
+
 void Reader::Buffer::remove(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
+    DecodedFrameIterator it = find(filename);
     if(it!=_buffer.end()){
-        if(it->second.first)
-            delete it->second.first;//delete future
-        if(it->second.second.first)
-            delete it->second.second.first; // delete readerInfo
-        if(it->second.second.second)
-            delete it->second.second.second; // delete readHandle
+        if(it->_asynchTask)
+            delete it->_asynchTask;//delete future
+        if(it->_cacheWatcher)
+            delete it->_cacheWatcher;//delete watcher for cached frame
+        if(it->_frameInfo)
+            delete it->_frameInfo; // delete readerInfo
+        if(it->_readHandle)
+            delete it->_readHandle; // delete readHandle
         _buffer.erase(it);
     }
 }
 
 QFuture<void>* Reader::Buffer::getFuture(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
-    return it->second.first;
+    Buffer::DecodedFrameIterator it = find(filename);
+    if(it->_asynchTask)
+        return it->_asynchTask;
+    else
+        return NULL;
 }
 bool Reader::Buffer::decodeFinished(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
-    return it->second.first->isFinished();
+    Buffer::DecodedFrameIterator it = find(filename);
+    return (it->_asynchTask && it->_asynchTask->isFinished())
+    || (it->_cacheWatcher && it->_cacheWatcher->isFinished());
 }
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename){
-    return _buffer.find(filename);
+void Reader::Buffer::debugBuffer(){
+    cout << "=========BUFFER DUMP=============" << endl;
+    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++){
+        if(it->_cachedFrame || it->_cacheWatcher)
+            cout << it->_filename << " (cached) " << endl;
+        else
+            cout << it->_filename << endl;
+    }
+    cout << "=================================" << endl;
 }
-ReaderInfo* Reader::Buffer::getInfos(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
-    return it->second.second.first;
+
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode){
+    if(searchMode == CACHED_SEARCH){
+        DecodedFrameIterator ret = find(filename);
+        if(ret != _buffer.end()){
+            if(ret->_cachedFrame || ret->_cacheWatcher){
+                return ret;
+            }else{
+                return _buffer.end();
+            }
+        }else{
+            return _buffer.end();
+        }
+    }else if(searchMode == NOTCACHED_SEARCH){
+        DecodedFrameIterator ret = find(filename);
+        if(ret != _buffer.end()){
+            if(!ret->_cachedFrame){
+                return ret;
+            }else{
+                return _buffer.end();
+            }
+        }else{
+            return _buffer.end();
+        }
+    }else{
+        return find(filename);
+    }
 }
-Read* Reader::Buffer::getReadHandle(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
-    return it->second.second.second;
-}
-Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::getDescriptor(std::string filename){
-    DecodedFrameIterator it = _buffer.find(filename);
-    return it->second;
-}
+
 void Reader::Buffer::clear(){
-    DecodedFrameReverseIterator it = _buffer.rbegin();
-    for(;it!=_buffer.rend();it++){
-        delete it->second.first;//delete future
-        delete it->second.second.first; // delete readerInfo
-        delete it->second.second.second; // delete readHandle
+    DecodedFrameIterator it = _buffer.begin();
+    for(;it!=_buffer.end();it++){
+        if(it->_asynchTask)
+            delete it->_asynchTask;//delete future
+        if(it->_cacheWatcher)
+            delete it->_cacheWatcher;//delete watcher for cached frame
+        if(it->_frameInfo)
+            delete it->_frameInfo; // delete readerInfo
+        if(it->_readHandle)
+            delete it->_readHandle; // delete readHandle
     }
     _buffer.clear();
 }
-
+void Reader::Buffer::erase(DecodedFrameIterator it){
+    if(it->_asynchTask)
+        delete it->_asynchTask;//delete future
+    if(it->_cacheWatcher)
+        delete it->_cacheWatcher;//delete watcher for cached frame
+    if(it->_frameInfo)
+        delete it->_frameInfo; // delete readerInfo
+    if(it->_readHandle)
+        delete it->_readHandle; // delete readHandle
+    _buffer.erase(it);}
 
 void Reader::getVideoSequenceFromFilesList(){
     files.clear();

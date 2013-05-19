@@ -1,10 +1,8 @@
-//
-//  GLViewer.cpp
 //  Powiter
 //
-//  Created by Alexandre on 10/28/12.
-//  Copyright (c) 2012 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
@@ -122,8 +120,12 @@ ViewerGL::~ViewerGL(){
 	glDeleteTextures(1,&texId[0]);
     glDeleteTextures(1,&texBlack[0]);
     glDeleteBuffers(2, &texBuffer[0]);
-	
-    delete _readerInfo;
+	if(_readerInfo != blankReaderInfo){
+        delete _readerInfo;
+        delete blankReaderInfo;
+    }else{
+        delete _readerInfo;
+    }
 	delete blankReaderInfo;
 	delete _infoViewer;
 }
@@ -636,7 +638,7 @@ void ViewerGL::preProcess(std::string filename,int nbFrameHint){
 }
 
 std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
-    makeCurrent();
+    //makeCurrent();
     
     size_t dataSize = 0;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
@@ -661,13 +663,11 @@ void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);    
 }
 void ViewerGL::copyPBOtoTexture(int w,int h){
-    makeCurrent();
+    //makeCurrent();
     glEnable (GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texId[0]);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_byteMode==1 || !_hasHW){
-        checkGLErrors();
-        
+    if(_byteMode==1 || !_hasHW){        
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0,				// xoffset, yoffset
@@ -688,11 +688,8 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
         
         
     }
-	checkGLErrors();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    
-    
-
+    checkGLErrors();
 }
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,size_t nbBytesOutput,int yOffset,const float* alpha){
@@ -1177,8 +1174,10 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
 }
 void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
-    
-    _readerInfo = info;
+    if(info != blankReaderInfo)
+        _readerInfo->copy(info);
+    else
+        _readerInfo = info;
     DisplayFormat* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());

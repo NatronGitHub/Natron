@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  ReadQt.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 1/15/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #ifndef __PowiterOsX__ReadQt__
 #define __PowiterOsX__ReadQt__

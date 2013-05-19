@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  timeline.cpp
-//  PowiterOsX
-//
-//  Created by Alexandre on 3/5/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include <QtGui/QPainter>
 #include "Gui/timeline.h"
 
@@ -422,7 +420,7 @@ void TimeSlider::mouseReleaseEvent(QMouseEvent* e){
 
 void TimeSlider::addCachedFrame(int f){
     _cached.push_back(f);
-    repaint();
+   // repaint();
 }
 void TimeSlider::removeCachedFrame(){
     _cached.erase(_cached.begin());

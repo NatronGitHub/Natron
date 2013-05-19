@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef __INTEGER_BOX_H__
 #define __INTEGER_BOX_H__
 
@@ -62,7 +67,7 @@ public:
     
     IntegerBox(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) {}
     
-    IntegerBox(const IntegerBox &b) { *this = b; }
+    IntegerBox(const IntegerBox &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t){}
     
     int x() const { return _x; }
     void x(int v) { _x = v; }

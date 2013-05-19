@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef GL_VIEWER_HEADER__
 #define GL_VIEWER_HEADER__
 
@@ -256,14 +261,21 @@ public:
 
     std::pair<int,int> getTextureSize(){return _textureSize;}
     std::pair<void*,size_t> allocatePBO(int w,int h);
+    
+    /*Fill the mapped PBO represented by dst with byteCount of src*/
     void fillPBO(const char* src,void* dst,size_t byteCount);
+    
+    /*Unmap the current mapped PBO and copies it to the display texture*/
     void copyPBOtoTexture(int w,int h);
     
     void doEmitFrameChanged(int f){
         emit frameChanged(f);
     }
     
+    /*Returns a pointer to the data of the current frame.*/
     const char* getFrameData(){return frameData;}
+    
+    GLuint getPBOId(int index){return texBuffer[index];}
     
 public slots:
     virtual void updateGL();

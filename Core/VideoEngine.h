@@ -1,11 +1,8 @@
+//  Powiter
 //
-//  VideoEngine.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 1/16/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
-
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef __PowiterOsX__VideoEngine__
 #define __PowiterOsX__VideoEngine__
 
@@ -106,9 +103,7 @@ class VideoEngine :public QObject{
     bool _forward; // forwards/backwards video engine
     
     bool _loopMode; //on if the player will loop
-    
-    int _pboIndex; // the pboindex used by the cached engine
-    
+        
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
     
     QFutureWatcher<void>* _engineLoopWatcher;
@@ -221,8 +216,12 @@ public:
     /*the function calling the engine for one scan-line*/
     static void metaEnginePerRow(Row* row,OutputNode* output);
     
-    std::vector< std::pair<Reader::Buffer::DecodedFrameIterator,FramesIterator > >
-    startReading(std::vector<Reader*> readers,bool useMainThread,int otherThreadCount = 1);
+    std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,FramesIterator > >
+    startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
+    
+    void resetReadingBuffers();
+    
+    DiskCache* getDiskCache(){return _cache;}
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
