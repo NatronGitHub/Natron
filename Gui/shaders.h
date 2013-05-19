@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  shaders.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 2/3/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #ifndef PowiterOsX_shaders_h
 #define PowiterOsX_shaders_h

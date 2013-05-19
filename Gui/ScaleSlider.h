@@ -1,20 +1,18 @@
+//  Powiter
 //
-//  ScaleSlider.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 3/3/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #ifndef __PowiterOsX__ScaleSlider__
 #define __PowiterOsX__ScaleSlider__
 
 #include <iostream>
 #include <QtCore/QObject>
-#include <QtGui/qwidget.h>
+#include <QtWidgets/QWidget>
 #include <cmath>
 #include <QtGui/QImage>
-#include <QtGui/QLabel>
+#include <QtWidgets/QLabel>
 #include "Superviser/powiterFn.h"
 
 #define BORDER_HEIGHT 10

@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef GL_VIEWER_HEADER__
 #define GL_VIEWER_HEADER__
 
@@ -29,9 +34,6 @@
 #include "Core/displayFormat.h"
 #include "Gui/textRenderer.h"
 #include "Core/diskcache.h"
-
-using Powiter_Enums::ROW_RANK;
-
 
 class Lut;
 class InfoViewerWidget;
@@ -70,11 +72,8 @@ public:
     it is : the first, the last or ND ( any row between first and last).
     The rank just hold the information of the order at which the row computations
     have started.*/
-	void drawRow(Row *row,ROW_RANK rank);
-	void setRow(Row* row,ROW_RANK rank){
-		to_draw=row;
-		drawRow(to_draw,rank);
-    }
+	void drawRow(Row *row);
+	
 	
     
 	void initializeGL();
@@ -127,7 +126,7 @@ public:
      according to the current level of zooom*/
     void initTextures();
     /*init the RGB texture*/
-    void initTexturesRgb();
+    void initTexturesRgb(int w,int h);
     /*width and height of the display texture*/
     std::pair<int,int> textureSize(){return _textureSize;}
     
@@ -255,15 +254,28 @@ public:
     void turn_off_overlay(){_overlay=false;}
     
 
-    /*called by the main thread to init specific variables per frame*/
-    void preProcess(int nbFrameHint); // safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+    /*called by the main thread to init specific variables per frame
+     * safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+     */
+    void preProcess(std::string filename,int nbFrameHint);
 
-    /*called by the main thread after the computations.*/
-    void postProcess(); // safe place to do things after the frame has been processed and before it is displayed
+    std::pair<int,int> getTextureSize(){return _textureSize;}
+    std::pair<void*,size_t> allocatePBO(int w,int h);
+    
+    /*Fill the mapped PBO represented by dst with byteCount of src*/
+    void fillPBO(const char* src,void* dst,size_t byteCount);
+    
+    /*Unmap the current mapped PBO and copies it to the display texture*/
+    void copyPBOtoTexture(int w,int h);
     
     void doEmitFrameChanged(int f){
         emit frameChanged(f);
     }
+    
+    /*Returns a pointer to the data of the current frame.*/
+    const char* getFrameData(){return frameData;}
+    
+    GLuint getPBOId(int index){return texBuffer[index];}
     
 public slots:
     virtual void updateGL();
@@ -330,7 +342,6 @@ private:
     Controler* ctrl;
     
 
-	Row* to_draw;
     bool _drawing;
     bool _firstTime;
 	File_Type _filetype;

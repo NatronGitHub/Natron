@@ -1,14 +1,19 @@
-#include <QtGui/QApplication>
-#include <QtGui/QSlider>
-#include <QtGui/QComboBox>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QSpacerItem>
-#include <QtGui/QGridLayout>
-#include <QtGui/QGroupBox>
-#include <QtGui/QLabel>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QPushButton>
-#include <QtGui/QAbstractItemView>
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QSlider>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QSpacerItem>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QAbstractItemView>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
 #include "Gui/InfoViewerWidget.h"

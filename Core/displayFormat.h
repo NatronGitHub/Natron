@@ -1,3 +1,9 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+
 #ifndef __DISPLAY_FORMAT_H__
 #define __DISPLAY_FORMAT_H__
 
@@ -23,7 +29,7 @@ public:
     const double pixel_aspect() const;
     void pixel_aspect( float p) ;
 	
-	DisplayFormat& operator=(const DisplayFormat& other){
+	DisplayFormat operator=(const DisplayFormat& other){
         set(other.x(), other.y(), other.right(), other.top());
         name(other.name());
         pixel_aspect(other.pixel_aspect());

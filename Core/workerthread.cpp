@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 #include "Core/workerthread.h"
@@ -8,60 +13,28 @@
 #include "Core/viewerNode.h"
 
 using namespace std;
-using Powiter_Enums::ROW_RANK;
 
-WorkerThread::WorkerThread(Row* row,InputNode* input,OutputNode* output,ROW_RANK rank,bool cachedTask):QRunnable(),
-cached(cachedTask),_rank(rank){
-    this->input = input;
-    this->output = output;
-    this->row=row;
-}
-WorkerThread::~WorkerThread(){
-    
-}
-    
+void WorkerThread::metaEngineRecursive(Node* node,OutputNode* output,Row *row){
 
-void WorkerThread::run(){
-	vector<char*> alreadyComputedNodes;
-    metaEngineRecursive(alreadyComputedNodes,dynamic_cast<Node*>(input),output,row);
-    
-}
-
-void WorkerThread::metaEngineRecursive(vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row){
-//    for(int i =0;i<alreadyComputedNodes.size();i++){
-//        if(!strcmp(node->getName().toStdString().c_str(),alreadyComputedNodes[i]))
-//            return;
-//    }
-    
+    foreach(Node* parent,node->getParents()){
+        metaEngineRecursive(parent,output,row);
+    }
     if((node->getOutputChannels() & node->getInfo()->channels())){
-    
-        if(!cached){
-            if( !strcmp(node->class_name(),"Viewer")){
-                static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
-                                                   node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
-            }else{
-                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-            }
+        
+        if(!row->cached()){
+            node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
         }else{
             if(node == output){
-                if( !strcmp(node->class_name(),"Viewer")){
-                    static_cast<Viewer*>(node)->engine(row->y(),row->offset(),row->right(),
-                                                       node->getRequestedChannels() & node->getInfo()->channels(),row,_rank);
-                }else{
-                    node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-                }
+                node->engine(row->y(),row->offset(),row->right(),
+                             node->getRequestedChannels() & node->getInfo()->channels(),row);
             }
         }
-        
     }else{
         cout << qPrintable(node->getName()) << " doesn't output any channel " << endl;
     }
-//    char* name = (char*)malloc(node->getName().size());
-//    name=strcpy(name, node->getName().toStdString().c_str());
-//	alreadyComputedNodes.push_back(name);
-    foreach(Node* child,node->getChildren()){
-			metaEngineRecursive(alreadyComputedNodes,child,output,row);
-    }    
+    
+    
 }
+
 
 

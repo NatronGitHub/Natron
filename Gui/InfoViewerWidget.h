@@ -1,18 +1,15 @@
+//  Powiter
 //
-//  InfoViewerWidget.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 2/14/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
-
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef __PowiterOsX__InfoViewerWidget__
 #define __PowiterOsX__InfoViewerWidget__
 
 #include <iostream>
-#include <QtGui/QWidget>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QLabel>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 #include <QtCore/qpoint.h>
 #include <QtGui/qvector4d.h>
 #include "Core/displayFormat.h"

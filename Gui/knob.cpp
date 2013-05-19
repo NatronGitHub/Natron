@@ -1,5 +1,9 @@
-
-#include <QtGui/QtGui>
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+#include <QtWidgets/QtWidgets>
 #include <climits>
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
@@ -196,7 +200,7 @@ void File_Knob::open_file(){
                 if(static_cast<Reader*>(node)->hasFrames()){
                     ctrlPTR->getModel()->getVideoEngine()->abort();
                     ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
-                    ctrlPTR->getModel()->getVideoEngine()->clearCache();
+                    //ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
                     ctrlPTR->getModel()->setVideoEngineRequirements(
                                                                     ctrlPTR->getModel()->getVideoEngine()->getInputNodes(),
                                                                     ctrlPTR->getModel()->getVideoEngine()->getOutputNode());

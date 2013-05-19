@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  mappedfile.cpp
-//  PowiterOsX
-//
-//  Created by Alexandre on 3/26/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include "Superviser/powiterFn.h"
 #include "Core/mappedfile.h"
 
@@ -31,7 +29,7 @@ MMAPfile::MMAPfile( const std::string path,Powiter_Enums::MMAPfile_mode mode,siz
 }
 
 
-MMAPfile::MMAPfile():_handle(0),_data(0){}
+MMAPfile::MMAPfile():_handle(0),_data(0),_size(0),_path(0){}
 
 void MMAPfile::open(const std::string path,Powiter_Enums::MMAPfile_mode mode, size_t length,int offset,size_t newFileSize,char* hint){
     _mode = mode;

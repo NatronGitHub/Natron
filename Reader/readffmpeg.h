@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  readffmpeg.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 1/6/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #ifndef __PowiterOsX__readffmpeg__
 #define __PowiterOsX__readffmpeg__
@@ -283,12 +281,12 @@ class ReadFFMPEG : public Read
     
     
 public:
-    ReadFFMPEG(const QStringList& file_list,Reader* op,ViewerGL* ui_context);
+    ReadFFMPEG(Reader* op,ViewerGL* ui_context);
     virtual ~ReadFFMPEG();
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual bool supports_stereo(){return false;}
-    virtual void open();
-    virtual void make_preview();
+    virtual void open(const QString filename,bool openBothViews = false);
+    virtual void make_preview(const char* filename);
 
     bool fillBuffer();
     
@@ -297,6 +295,7 @@ private:
     DataBuffer::Ptr _data;    // decoding buffer
     size_t _memNeeded;                // memory needed for decoding a single frame
     int  _numFrames;                  // number of frames in the selected stream
+    QString _file;
 	QMutex _lock;
     
 };

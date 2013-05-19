@@ -1,8 +1,13 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef SETTINGSPANEL_H
 #define SETTINGSPANEL_H
 
 
-#include <QtGui/QFrame>
+#include <QtWidgets/QFrame>
 #include "Core/node.h"
 #include "Gui/knob.h"
 

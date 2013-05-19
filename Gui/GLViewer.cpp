@@ -1,10 +1,8 @@
-//
-//  GLViewer.cpp
 //  Powiter
 //
-//  Created by Alexandre on 10/28/12.
-//  Copyright (c) 2012 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
@@ -33,7 +31,6 @@
 using namespace Imf;
 using namespace Imath;
 using namespace std;
-using Powiter_Enums::ROW_RANK;
 
 
 void ViewerGL::blankInfoForViewer(bool onInit){
@@ -122,8 +119,12 @@ ViewerGL::~ViewerGL(){
 	glDeleteTextures(1,&texId[0]);
     glDeleteTextures(1,&texBlack[0]);
     glDeleteBuffers(2, &texBuffer[0]);
-	
-    delete _readerInfo;
+	if(_readerInfo != blankReaderInfo){
+        delete _readerInfo;
+        delete blankReaderInfo;
+    }else{
+        delete _readerInfo;
+    }
 	delete blankReaderInfo;
 	delete _infoViewer;
 }
@@ -137,10 +138,11 @@ void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
     float ap = _readerInfo->displayWindow().pixel_aspect();
-    if(ap > 1.f)
+    if(ap > 1.f){
         glViewport (0, 0, width*ap, height);
-    else
+    }else{
         glViewport (0, 0, width, height/ap);
+    }
 	if(transX!=0 || transY!=0){
 		_ms = DRAGGING;
 	}
@@ -169,7 +171,6 @@ void ViewerGL::paintGL()
         glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity();
         
-        
         glTranslatef(transX, -transY, 0);
         glTranslatef(zoomX, zoomY, 0);
         glScalef(zoomFactor, zoomFactor, 1);
@@ -178,6 +179,10 @@ void ViewerGL::paintGL()
         glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texId[0]);
         
+        // debug
+        //GLfloat d;
+        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
@@ -185,7 +190,6 @@ void ViewerGL::paintGL()
         glClearColor(0.0,0.0,0.0,1.0);
         glClear (GL_COLOR_BUFFER_BIT);
 		glBegin (GL_POLYGON);
-        //mapping the texture with a vertical flip
 		glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
 		glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
 		glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
@@ -298,6 +302,7 @@ void ViewerGL::initializeGL(){
         if(!shaderBlack->link()){
             cout << qPrintable(shaderBlack->log()) << endl;
         }
+        initShaderGLSL();
     }
     
 }
@@ -393,14 +398,13 @@ void ViewerGL::initShaderGLSL(){
         if(!shaderRGB->addShaderFromSourceCode(QGLShader::Fragment,fragRGB))
             cout << qPrintable(shaderRGB->log()) << endl;
         
-        if(fileType()==EXR){
             shaderLC = new QGLShaderProgram(context());
             if (!shaderLC->addShaderFromSourceCode(QGLShader::Vertex, vertLC)){
                 cout << qPrintable(shaderLC->log()) << endl;
             }
             if(!shaderLC->addShaderFromSourceCode(QGLShader::Fragment,fragLC))
                 cout << qPrintable(shaderLC->log())<< endl;
-        }
+        
         
         if(!shaderRGB->link()){
             cout << qPrintable(shaderRGB->log()) << endl;
@@ -434,7 +438,9 @@ void ViewerGL::restoreGLState()
 void ViewerGL::initTextures(){
     
 	makeCurrent();
-    initTexturesRgb();
+    int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
+    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    initTexturesRgb(w,h);
 	initShaderGLSL();
     
 }
@@ -442,9 +448,9 @@ void ViewerGL::initTextures(){
 
 
 
-void ViewerGL::initTexturesRgb(){
-    int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
-    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+void ViewerGL::initTexturesRgb(int w,int h){
+    
+    if(_textureSize.first==w && _textureSize.second==h) return;
     
     _textureSize = make_pair(w, h);
     
@@ -489,6 +495,7 @@ void ViewerGL::initTexturesRgb(){
     }
 }
 void ViewerGL::initBlackTex(){
+    makeCurrent();
     float zf =  closestBuiltinZoom(getZoomFactor());
     setCurrentBuiltInZoom(zf);
     ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(zoomFactor*100);
@@ -595,33 +602,33 @@ void ViewerGL::drawBlackTex(){
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void ViewerGL::drawRow(Row* row,ROW_RANK rank){
+void ViewerGL::drawRow(Row* row){
     
     int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
     
     
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                      w*sizeof(float),to_draw->zoomedY(),(*row)[Channel_alpha]);
+                                      w*sizeof(float),row->zoomedY(),(*row)[Channel_alpha]);
     }
     else{
         convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                   w,to_draw->zoomedY(),(*row)[Channel_alpha]);
+                                   w,row->zoomedY(),(*row)[Channel_alpha]);
     }
     
-#ifdef __POWITER_WIN32__
-    doneCurrent();  //< NEEDED FOR MULTI THREADING
-#endif
+//#ifdef __POWITER_WIN32__
+//    doneCurrent();  //< NEEDED FOR MULTI THREADING
+//#endif
     
 }
 
-void ViewerGL::preProcess(int nbFrameHint){
-    // init mmaped file if first row
+void ViewerGL::preProcess(std::string filename,int nbFrameHint){
+    // init mmaped file 
     if(_makeNewFrame){
         int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
         int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        pair<char*,FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),vengine->currentFrameName(), w, h, nbFrameHint);
+        pair<char*,FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),filename, w, h, nbFrameHint);
         frameData = p.first;
         frameInfo = p.second;
         _makeNewFrame = false;
@@ -629,14 +636,13 @@ void ViewerGL::preProcess(int nbFrameHint){
     }
 }
 
-void ViewerGL::postProcess(){
-    makeCurrent();
-    int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
-    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
-    glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texId[0]);
+std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
+    //makeCurrent();
+    
     size_t dataSize = 0;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
+    checkGLErrors();
+
 	if(_byteMode == 1 || !_hasHW){
 		dataSize =  w*h*sizeof(U32);
 		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB,dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
@@ -644,11 +650,23 @@ void ViewerGL::postProcess(){
 		dataSize = w*h*sizeof(float)*4;
 		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
 	}
+    checkGLErrors();
 	void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-	memcpy(gpuBuffer,frameData,dataSize);
+    vengine->_cache->appendFrame(frameInfo);
+    _makeNewFrame = true;
+    return make_pair(gpuBuffer,dataSize);
+        
+}
 
+void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
+    memcpy(dst, src, byteCount);    
+}
+void ViewerGL::copyPBOtoTexture(int w,int h){
+    //makeCurrent();
+    glEnable (GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texId[0]);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_byteMode==1 || !_hasHW){
+    if(_byteMode==1 || !_hasHW){        
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0,				// xoffset, yoffset
@@ -656,7 +674,7 @@ void ViewerGL::postProcess(){
                          GL_BGRA,			// format
                          GL_UNSIGNED_INT_8_8_8_8_REV,		// type
                          0);
-       
+        
         
     }else if(_byteMode ==0 && _hasHW){
         glTexSubImage2D (GL_TEXTURE_2D,
@@ -666,16 +684,11 @@ void ViewerGL::postProcess(){
                          GL_RGBA,			// format
                          GL_FLOAT,		// type
                          0);
-
-     
+        
+        
     }
-	
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    
-    
-    vengine->_cache->appendFrame(frameInfo);
-    _makeNewFrame = true;
-    
+    checkGLErrors();
 }
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,size_t nbBytesOutput,int yOffset,const float* alpha){
@@ -836,7 +849,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
         itOld += (fullSizeIncrement - downScaleIncrement);
     }
     checkGLErrors();
-    
 }
 
 
@@ -870,7 +882,7 @@ void ViewerGL::keyPressEvent ( QKeyEvent * event ){
     
 }
 void ViewerGL::mousePressEvent(QMouseEvent *event){
-    old_pos = event->posF();
+    old_pos = event->pos();
     if(event->button() != Qt::MiddleButton ){
         _ms = DRAGGING;
     }
@@ -878,11 +890,12 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
-    old_pos = event->posF();
+    old_pos = event->pos();
     QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
-    QPoint pos = openGLpos(event->x(), event->y());
+    QPoint pos;
+    pos = openGLpos((float)event->x(), event->y());
     if(pos.x() >= _readerInfo->displayWindow().x() && pos.x() <= _readerInfo->displayWindow().w() && pos.y() >=_readerInfo->displayWindow().y() && pos.y() <= _readerInfo->displayWindow().h()){
         if(!_infoViewer->colorAndMouseVisible()){
             _infoViewer->showColorAndMouseInfo();
@@ -901,7 +914,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        new_pos = event->posF();
+        new_pos = event->pos();
         float dx = new_pos.x() - old_pos.x();
         float dy = new_pos.y() - old_pos.y();
         transX += dx;
@@ -996,10 +1009,8 @@ QPoint ViewerGL::openGLpos(int x,int y){
     glGetIntegerv( GL_VIEWPORT, viewport );
     winX = (float)x;
     winY = viewport[3]- y;
-    //if(winY == 0) winY =1.f;
     glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-    // posY = displayWindow().h() - posY;
     return QPoint(posX,posY);
 }
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
@@ -1015,10 +1026,8 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     glGetIntegerv( GL_VIEWPORT, viewport );
     winX = (float)x;
     winY =viewport[3]- y;
-    //if(winY == 0) winY =1.f;
     glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-    //posY = displayWindow().h() - posY;
     if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
         return QVector4D(0,0,0,0);
     if(_byteMode==1 || !_hasHW){
@@ -1118,20 +1127,21 @@ void ViewerGL::initViewer(){
     setZoomFactor(zoomFactor-0.05);
     resetMousePos();
     setZoomXY((float)displayWindow().w()/2.f,(float)displayWindow().h()/2.f);
-    // setZoomXY(width()/2,height()/2);
 }
 
 void ViewerGL::zoomIn(){
     if(zoomFactor<=1.f){
         if(zoomFactor > currentBuiltInZoom && _drawing){
             currentBuiltInZoom = superiorBuiltinZoom(currentBuiltInZoom);
-            initTexturesRgb();
+            int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+            initTexturesRgb(w,h);
             vengine->_cache->clearPlayBackCache();
-            vengine->computeFrameRequest();
+            vengine->videoEngine(1,false,true,true);
         }
         
-    }
-    updateGL();
+    }else
+        updateGL();
     
 }
 void ViewerGL::zoomOut(){
@@ -1142,12 +1152,14 @@ void ViewerGL::zoomOut(){
         float inf = inferiorBuiltinZoom(currentBuiltInZoom);
         if(zoomFactor < inf && _drawing){
             currentBuiltInZoom = inf;
-            initTexturesRgb();
+            int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+            initTexturesRgb(w,h);
             vengine->_cache->clearPlayBackCache();
-            vengine->computeFrameRequest();
+            vengine->videoEngine(1,false,true,true);
         }
-    }
-    updateGL();
+    }else
+        updateGL();
 }
 
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
@@ -1161,8 +1173,10 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
 }
 void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
-    
-    _readerInfo = info;
+    if(info != blankReaderInfo)
+        _readerInfo->copy(info);
+    else
+        _readerInfo = info;
     DisplayFormat* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());
@@ -1228,7 +1242,7 @@ void ViewerGL::updateColorSpace(QString str){
     
     
     if(_byteMode==1 || !_hasHW)
-        vengine->startEngineWithOption(1,false);
+        vengine->computeFrameRequest(true,true,false);
     updateGL();
     
 }
@@ -1236,7 +1250,7 @@ void ViewerGL::updateExposure(double d){
     exposure = d;
     
     if(_byteMode==1 || !_hasHW)
-        vengine->startEngineWithOption(1,false);
+        vengine->computeFrameRequest(true,true,false);
     updateGL();
     
 }

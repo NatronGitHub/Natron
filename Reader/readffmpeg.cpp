@@ -1,11 +1,8 @@
-
+//  Powiter
 //
-//  readffmpeg.cpp
-//  PowiterOsX
-//
-//  Created by Alexandre on 1/6/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #include "Reader/readffmpeg.h"
 #include "Reader/Reader.h"
@@ -872,26 +869,28 @@ void FFMPEGFileManager::release(const char* filename)
     
 }
 
-ReadFFMPEG::ReadFFMPEG(const QStringList& file_list,Reader* op,ViewerGL* ui_context):Read(file_list,op,ui_context),_lock(){
+ReadFFMPEG::ReadFFMPEG(Reader* op,ViewerGL* ui_context):Read(op,ui_context),_lock(){
 }
 
 ReadFFMPEG::~ReadFFMPEG(){
     _reader.clear();
     _data.clear();
     // release the reader if is not used anymore
-	std::string filename = files[current_frame].toStdString();
-    _readerManager.release(filename.c_str());
-    _dataBufferManager.release(filename.c_str());
+	QByteArray ba = _file.toLatin1();
+    _readerManager.release(ba.constData());
+    _dataBufferManager.release(ba.constData());
     
 }
 
-void ReadFFMPEG::open(){
-	std::string filename = files[current_frame].toStdString();
-    _reader =_readerManager.get(filename.c_str());
-    _data = _dataBufferManager.get(filename.c_str());
+void ReadFFMPEG::open(const QString filename,bool openBothViews){
+	//std::string filename = files[current_frame].toStdString();
+    this->_file = filename;
+    const QByteArray ba = filename.toLatin1();
+    _reader =_readerManager.get(ba.data());
+    _data = _dataBufferManager.get(ba.data());
     if (_reader->invalid()) {
         cout << _reader->error() << endl;
-        return;
+        return ;
     }
     
     
@@ -899,29 +898,35 @@ void ReadFFMPEG::open(){
     double aspect;
     
     if (_reader->info(width, height, aspect, frames)) {
-        op->getInfo()->set_channels(Mask_RGBA);
+      //  op->getInfo()->set_channels(Mask_RGBA);
         // op->getInfo().set_info(width, height, 3, aspect);
-        DisplayFormat format(0,0,width,height,"",aspect);
-        op->getInfo()->set_full_size_format(format);
-        op->getInfo()->set(0, 0, width-1, height-1);
+        DisplayFormat imageFormat(0,0,width,height,"",aspect);
+        IntegerBox bbox(0,0,width,height);
+      //  op->getInfo()->set_full_size_format(format);
+       // op->getInfo()->set(0, 0, width-1, height-1);
        // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
         _numFrames = frames;
         _memNeeded = width * height * 3;
-    }
-    
-    _data->resize(_memNeeded);
-	if(!fillBuffer())
-        cout << "FFMPEG READER: open failed to fill the buffer" << endl;
+        
+        _data->resize(_memNeeded);
+        if(!fillBuffer())
+            cout << "FFMPEG READER: open failed to fill the buffer" << endl;
+        setReaderInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
 
+
+    }
+
+    return ;
+    
 }
 
 bool ReadFFMPEG::fillBuffer(){
     if(!_data->valid())
         return false;
-    if(!_reader->decode(_data->buffer(), current_frame)){
-        cout << _reader->error() << endl;
-        return false;
-    }
+//    if(!_reader->decode(_data->buffer(), current_frame)){
+//        cout << _reader->error() << endl;
+//        return false;
+//    }
     return true;
 }
 
@@ -935,7 +940,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
 //	foreach(Channel z,set){
 //		out->erase(z);
 //	}
-	QMutexLocker guard(&_lock);
+	//QMutexLocker guard(&_lock);
 	unsigned char* FROM = _data->buffer();
 	FROM += (h - y - 1) * w * 3;
 	FROM += offset * 3;
@@ -952,7 +957,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
 
  
 
-void ReadFFMPEG::make_preview(){
+void ReadFFMPEG::make_preview(const char* filename){
     DisplayFormat frmt = op->getInfo()->getFull_size_format();
 	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);

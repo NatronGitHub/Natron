@@ -2,10 +2,14 @@
 #define VIEWERNODE_H
 #include <cmath>
 #include "Gui/viewerTab.h"
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
 
-using Powiter_Enums::ROW_RANK;
 
 class  Viewer: public OutputNode
 {
@@ -19,7 +23,7 @@ public:
 	ViewerGL* ui_context(){return _ui_context;}
     virtual const char* class_name(){return "Viewer";}
     virtual const char* description();
-    void engine(int y,int offset,int range,ChannelMask channels,Row* out,ROW_RANK rank);
+    void engine(int y,int offset,int range,ChannelMask channels,Row* out);
 protected:
 	
 	

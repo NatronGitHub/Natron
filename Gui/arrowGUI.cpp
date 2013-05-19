@@ -1,5 +1,9 @@
-
-#include <QtGui/QtGui>
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+#include <QtWidgets/QtWidgets>
 #include "Gui/arrowGUI.h"
 #include "Gui/node_ui.h"
 #include <cmath>
@@ -8,7 +12,7 @@ using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
 const int graphicalContainerOffset=5;
 
-Arrow::Arrow(int inputNb,double angle,Node_ui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent,scene) {
+Arrow::Arrow(int inputNb,double angle,Node_ui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
     this->scene=scene;
     this->inputNb=inputNb;

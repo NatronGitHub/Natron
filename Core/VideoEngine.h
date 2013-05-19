@@ -1,11 +1,8 @@
+//  Powiter
 //
-//  VideoEngine.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 1/16/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
-
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef __PowiterOsX__VideoEngine__
 #define __PowiterOsX__VideoEngine__
 
@@ -14,9 +11,12 @@
 #include <QtCore/qobject.h>
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
+#include <QtConcurrent/QtConcurrent>
+#include <boost/bind.hpp>
 #include <map>
 #include "Core/diskcache.h"
 #include "Core/hash.h"
+#include "Reader/Reader.h"
 
 class OutputNode;
 class InputNode;
@@ -50,6 +50,22 @@ class VideoEngine :public QObject{
         _func(func){}
         
     };
+    /*Class holding informations about src and dst 
+     for gpu memory transfer*/
+    class GPUTransferInfo{
+    public:
+        GPUTransferInfo():src(0),dst(0),byteCount(0){}
+        GPUTransferInfo(const char* s,void* d,size_t size):src(s),dst(d),byteCount(size){}
+        void set(const char* s,void* d,size_t size){
+            src=s;
+            dst=d;
+            byteCount=size;
+        }
+        const char* src;
+        void* dst;
+        size_t byteCount;
+    };
+    
     std::vector<Task> _waitingTasks;
     
     DiskCache* _cache ; // disk cache (physically stored, saved between 2 runs).    
@@ -60,7 +76,6 @@ class VideoEngine :public QObject{
     std::vector<InputNode*> inputs; // the inputs of the current graph
     OutputNode* output; // the output of the current graph
     Timer* _timer; // fps timer
-    QThreadPool* pool; // thread pool used by the workerthreads
     
     std::map<int,Row*> row_cache; // buffer cache : for zoom 
     
@@ -81,14 +96,33 @@ class VideoEngine :public QObject{
 
     Hash _treeVersion;// the hash key associated to the current graph
     
+    int _frameRequestsCount; // total frames in the current videoEngine
+    
+    int _frameRequestIndex;//counter of the frames computed
+    
+    bool _forward; // forwards/backwards video engine
+    
+    bool _loopMode; //on if the player will loop
+        
+    bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
+    
+    QFutureWatcher<void>* _engineLoopWatcher;
+    QFuture<void>* _enginePostProcessResults;
+    
+    /*computing engine results*/
+    QFutureWatcher<void>* _workerThreadsWatcher;
+    QFuture<void>* _workerThreadsResults;
+    /*The sequence of rows to process*/
+    std::vector<Row*> _sequenceToWork;
+    
+    /*infos used by the engine when filling PBO's*/
+    GPUTransferInfo _gpuTransferInfo;
     
 public slots:
 	/*starts the engine with initialisation of the viewer so the frame fits in.
 	 *If nbFrames = -1, the engine cycles through all remaining frames*/
     void startEngine(int nbFrames =-1);
 
-	/*starts the engine with or without the viewer initialisation so the frame fits in*/
-    void startEngineWithOption(int nbFrames =-1,bool initViewer=true);
     void updateProgressBar();
     void setDesiredFPS(double d);
     void _abort();
@@ -110,11 +144,15 @@ public slots:
     void clearPlayBackCache();
 
 	/*clears the ROW CACHE*/
-    void clearCache(){
+    void clearRowCache(){
         std::map<int,Row*>::iterator it = row_cache.begin();
         for(;it!=row_cache.end();it++) delete it->second;
         row_cache.clear();
     }
+    void engineLoop();
+    
+    /*called internally by computeTreeForFrame*/
+    void finishComputeFrameRequest();
     
 signals:
     void fpsChanged(double d);
@@ -127,11 +165,7 @@ public:
     OutputNode* getOutputNode(){return output;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(OutputNode *output,InputNode* input,int followingComputationsNb,bool initTexture);
-
-	/*starts the engine so it executes the tree for the SAME FRAME as the last
-	 *execution of the engine. This is used by the zoom so it uses the rowCache.*/
-    void computeFrameRequest();
+    void computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb);
     
 	/*utility functions to get builtinzooms for the downscaling algorithm*/
     float closestBuiltinZoom(float v);
@@ -162,34 +196,38 @@ public:
 	/*Tell all the nodes in the grpah to draw overlays*/
     void drawOverlay();
 	
-	/*Get the name of the current frame*/
-	char* currentFrameName();
     
 	/*Inserts a new frame in the disk cache*/
-    std::pair<char*,FrameID> mapNewFrame(int frameNb,char* filename,int width,int height,int nbFrameHint);
+    std::pair<char*,FrameID> mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint);
 
 	/*Close the LRU frame in the disk cache*/
     void closeMappedFile();
+    
+    /*starts the videoEngine.
+     *frameCount is the number of frame you want to cycle. For all the sequence frameCount = -1
+     *fitFrameToViewer is true if you want the first frame that will be played to fit to the viewer.
+     *forward is true if you want the engine to go forward when cycling through frames. It goes backwards otherwise
+     *sameFrame is true if the engine will play the same frame as before. It is exclusively used when zooming.*/
+    void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    
+    /*used internally by the zoom or the videoEngine, do not call this*/
+    void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
+    
+    /*the function calling the engine for one scan-line*/
+    static void metaEnginePerRow(Row* row,OutputNode* output);
+    
+    std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,FramesIterator > >
+    startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
+    
+    void resetReadingBuffers();
+    
+    DiskCache* getDiskCache(){return _cache;}
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();
     void _drawOverlay(Node *output);
 
-	/*Calls the video engine for the graph represented by output and inputs for nbFrames.
-	 *initViewer is on if this is a new sequence (make the frame fit into the viewer).
-	 *SameFrame is on if we call the engine for the sameFrame(for zoom purpose)
-	 *RunTasks is on if we'd like run the waiting events (seek, previous, last;etc..)
-	 *at the end of this run*/
-    void videoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,
-                               int nbFrames,bool initViewer=true,bool sameFrame=false,bool _runTasks=true);
-
-	/*Same as videoSequenceEngine but in reverse*/
-    void backwardsVideoSequenceEngine(OutputNode *output,std::vector<InputNode*> inputs,int nbFrames,bool _runTasks=true);
-
-	/*This function is called by videoSequenceEngine internally when it recognises that the frames to render are present in the cache*/
-    void cachedVideoEngine(bool oneFrame,int startNb,std::vector<std::pair<char *,FramesIterator> > fileNames,bool firstFrame,bool forward);
-    
     void fillBuilInZoomsLut();
     
     /*Row cache related functions*/
@@ -214,6 +252,13 @@ private:
     /*functions handling tasks*/
     void appendTask(int frameNB,int frameCount,bool initViewer,VengineFunction func);
     void runTasks();
+    
+    /*Used internally by the computeFrameRequest func for cached frames*/
+    void cachedFrameEngine(FramesIterator fram);
+    
+    /*reset variables used by the videoEngine*/
+    void stopEngine();
+    
     
 };
 

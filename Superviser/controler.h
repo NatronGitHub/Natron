@@ -1,3 +1,9 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+
 #ifndef CONTROLER_H
 #define CONTROLER_H
 
@@ -8,7 +14,7 @@ using namespace Powiter_Enums;
 
 class Model;
 class Gui;
-class QSplashScreen;
+class QLabel;
 class Controler : public QObject
 {
 
@@ -21,7 +27,7 @@ public:
     QStringList& getNodeNameList();
     Gui* getGui(){return graphicalInterface;}
 	Model* getModel(){return coreEngine;}
-    void initControler(Model* coreEngine,QSplashScreen* loadingScreen);
+    void initControler(Model* coreEngine,QLabel* loadingScreen);
     void exit();
 private:
 

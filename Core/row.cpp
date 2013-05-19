@@ -1,7 +1,13 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include "Core/row.h"
 #include "Core/node.h"
 
 Row::Row(){
+    _cached = false;
     buffers = 0;
 }
 
@@ -14,15 +20,16 @@ void Row::turnOn(Channel c){
 
 Row::Row(int x,int y, int range, ChannelSet channels)
 {
+    _cached = false;
     this->x=x;
 	this->_y=y;
     this->r=range;
     _channels = channels;
     buffers = (float**)malloc(MAX_BUFFERS_PER_ROW*sizeof(float*));
     memset(buffers, 0, sizeof(float*)*MAX_BUFFERS_PER_ROW);
-    init();
+   
 }
-void Row::init(){
+void Row::allocate(){
     foreachChannels(z, _channels){
         buffers[z] = (float*)malloc((r-x)*sizeof(float));
     }    

@@ -1,4 +1,9 @@
-#include <QtGui/QGraphicsProxyWidget>
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+#include <QtWidgets/QGraphicsProxyWidget>
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
 #include "Gui/arrowGUI.h"
@@ -147,7 +152,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         arrow_dragged->initLine();
         scene()->update();
-        ctrl->getModel()->getVideoEngine()->clearCache();
+        ctrl->getModel()->getVideoEngine()->clearRowCache();
         ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
             /*if it is a viewer*/

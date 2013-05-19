@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  MemInfo.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 3/20/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 // Memory utility functions ( infos about RAM etc...)
 
 #ifndef PowiterOsX_MemInfo_h
@@ -97,7 +95,7 @@ static const char* printAsRAM(size_t v){
     }
     char* outchr = (char*)malloc(outStr.size()+1);
     for(int i =0 ; i< outStr.size();i++){
-        outchr[i]=outStr.at(i).toAscii();
+        outchr[i]=outStr.at(i).toLatin1();
     }
     outchr[outStr.size()]='\0';
     return outchr;

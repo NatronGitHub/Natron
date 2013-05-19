@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef WORKERTHREAD_H
 #define WORKERTHREAD_H
 
@@ -8,36 +13,19 @@
 
 /*The workthread is a task launched by the threadpool. It executes the graph
  *for one row and then stops.*/
-using Powiter_Enums::ROW_RANK;
 
 class OutputNode;
 class InputNode;
 class Node;
 class Row;
 class VideoEngine;
-class WorkerThread : public QRunnable
+class WorkerThread 
 {
-    //Q_OBJECT
+    
 public:
 	
- 
-    WorkerThread(Row* row, InputNode* input,OutputNode* output,ROW_RANK rank,bool cachedTask = false);
-    virtual ~WorkerThread();
-    void run();
-    Row* getRow(){return row;}
+    static void metaEngineRecursive(Node* node,OutputNode* output,Row *row);
 
-
-// signals:
-//     void finishedTask();
-
-    
-private:
-	void metaEngineRecursive(std::vector<char*> &alreadyComputedNodes,Node* node,OutputNode* output,Row *row);
-    OutputNode* output;
-    InputNode* input;
-	Row* row;
-    bool cached;
-    Powiter_Enums::ROW_RANK _rank;
 };
 
 #endif // WORKERTHREAD_H

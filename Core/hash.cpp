@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include "Core/hash.h"
 #include "Core/node.h"
 #include "Gui/knob.h"
@@ -34,7 +39,7 @@ void Hash::appendKnobToHash(Knob* knob){
 
 void Hash::appendQStringToHash(QString str){
     for(int i =0 ; i< str.size();i++){
-        node_values.push_back((U32)str.at(i).toAscii());
+        node_values.push_back((U32)str.at(i).unicode());
     }
 }
 

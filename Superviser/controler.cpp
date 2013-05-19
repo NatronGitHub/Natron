@@ -1,4 +1,10 @@
-#include <QtGui/qsplashscreen.h>
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+
+#include <QtWidgets/QLabel>
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
 #include "Core/model.h"
@@ -9,7 +15,7 @@
 Controler::Controler(Model* coreEngine,QObject* parent) : QObject(parent)
 { 
 }
-void Controler::initControler(Model *coreEngine,QSplashScreen* loadingScreen){
+void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     this->coreEngine=coreEngine;
     graphicalInterface=new Gui();
     graphicalInterface->setControler(this);
@@ -22,7 +28,7 @@ void Controler::initControler(Model *coreEngine,QSplashScreen* loadingScreen){
 	graphicalInterface->showMaximized();
 #endif
 
-    loadingScreen->finish(graphicalInterface);
+    loadingScreen->hide();
     delete loadingScreen;
 
     try{

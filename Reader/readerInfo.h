@@ -1,10 +1,8 @@
+//  Powiter
 //
-//  readerInfo.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 2/15/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 
 #ifndef PowiterOsX_readerInfo_h
 #define PowiterOsX_readerInfo_h
@@ -61,8 +59,8 @@ public:
     }
     
     const ChannelMask channels() const {return _channels;}
-    const DisplayFormat& displayWindow() const {return _displayWindow;}
-    const IntegerBox& dataWindow() const {return _dataWindow;}
+    const DisplayFormat displayWindow() const {return _displayWindow;}
+    const IntegerBox dataWindow() const {return _dataWindow;}
     const int Ydirection() const {return _Ydirection;}
     const bool rgbMode() const {return _rgbMode;}
     const int firstFrame() const {return _firstFrame;}

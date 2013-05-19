@@ -1,3 +1,9 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+
 #ifndef INCLUDED_ENUMS_H
 #define INCLUDED_ENUMS_H
 #include <boost/cstdint.hpp>
@@ -88,8 +94,6 @@ namespace Powiter_Enums{
     
     enum MMAPfile_mode{ReadOnly,ReadWrite,Priv};
     
-    enum ROW_RANK{FIRST,LAST,ND};
-
     
 }
 

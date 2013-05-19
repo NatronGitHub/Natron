@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef NODE_UI_H
 #define NODE_UI_H
 
@@ -5,7 +10,7 @@
 //#include <inputarrow.h>
 #include "Superviser/powiterFn.h"
 #include <QtCore/QRectF>
-#include <QtGui/QGraphicsItem>
+#include <QtWidgets/QGraphicsItem>
 
 static const int NODE_LENGTH=80;
 static const int NODE_HEIGHT=30;

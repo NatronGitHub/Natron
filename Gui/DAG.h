@@ -1,11 +1,16 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #ifndef NODEGRAPH_H
 #define NODEGRAPH_H
 #include <cmath>
-#include <QtGui/QGraphicsView>
+#include <QtWidgets/QGraphicsView>
 #include <iostream>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
-#include <QtGui/QInputDialog>
+#include <QtWidgets/QInputDialog>
 #include "Gui/outputnode_ui.h"
 #include "Gui/inputnode_ui.h"
 #include "Gui/operatornode_ui.h"

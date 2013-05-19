@@ -1,3 +1,8 @@
+//  Powiter
+//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <string>
@@ -219,21 +224,14 @@ std::string ChannelName::name() const
 		return layer + "." + chan;
 	return chan;
 }
-void ReadExr::open(){
+void ReadExr::open(const QString filename,bool openBothViews){
     
     channel_map.clear();
     views.clear();
-    
     std::map<Imf::PixelType, int> pixelTypes;
-    
     try {
-        QString filename = files[frame()];
-       
-        
-        
-        
 #ifdef __POWITER_WIN32__
-		QByteArray ba = filename.toLocal8Bit();	
+		QByteArray ba = filename.toLocal8Bit();
         if(inputStr){
             delete inputStr;
         }
@@ -247,16 +245,14 @@ void ReadExr::open(){
         inputStdStream = new Imf::StdIFStream(*inputStr,ba.data());
         inputfile = new Imf::InputFile(*inputStdStream);
 #else
-		 std::string stringFilename= filename.toStdString();
+        QByteArray ba = filename.toLatin1();
         if(inputfile){
             delete inputfile;
         }
-        inputfile = new Imf::InputFile(stringFilename.c_str());
+        inputfile = new Imf::InputFile(ba.constData());
 #endif
         
         //int view = r->view_for_reader();
-        
-        
         const Imf::StringAttribute* stringMultiView = 0;
         const Imf::StringVectorAttribute* vectorMultiView = 0;
         
@@ -289,8 +285,6 @@ void ReadExr::open(){
                 }
             }
         }
-        
-        
         // handling channels in the exr file to convert them to powiter channels
         ChannelSet mask;
         bool rgb= true;
@@ -298,7 +292,7 @@ void ReadExr::open(){
         Imf::ChannelList::ConstIterator chan;
         
         for (chan = imfchannels.begin(); chan != imfchannels.end(); chan++) {
-            
+            if(!strcmp(chan.name(),"")) continue;
             pixelTypes[chan.channel().type]++;
             ChannelName cName(chan.name(), views);
             std::set<Channel> channels;
@@ -335,23 +329,9 @@ void ReadExr::open(){
                 }
             }
         }
-
-		// uncomment if we'd like to introduce luminance weight again
-//         if(!rgb){
-//             Imf::Chromaticities chroma;
-//             
-//             if (hasChromaticities (inputfile->header()))
-//                 chroma = chromaticities (inputfile->header());
-//             
-//             yWeights = Imf::RgbaYca::computeYw (chroma);
-//         }else{
-//             yWeights.x=1;yWeights.y=1;yWeights.z=1;
-//         }
-        
         const Imath::Box2i& datawin = inputfile->header().dataWindow();
         const Imath::Box2i& dispwin = inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
-          
         formatwin.min.x = 0;
         formatwin.min.y = 0;
         dataOffset = 0;
@@ -360,22 +340,17 @@ void ReadExr::open(){
             dataOffset = -dispwin.min.x;
             formatwin.max.x = dispwin.max.x + dataOffset;
         }
-      
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
-        
         double aspect = inputfile->header().pixelAspectRatio();
-            
-        DisplayFormat image_format(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
+        DisplayFormat imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
+        IntegerBox bbox;
+        //        op->getInfo()->set_full_size_format(image_format);
+        //        op->getInfo()->set_channels(mask);
         
-        op->getInfo()->set_full_size_format(image_format);
-        op->getInfo()->set_channels(mask);
-     
         int bx = datawin.min.x + dataOffset;
         int by = dispwin.max.y - datawin.max.y;
         int br = datawin.max.x + dataOffset;
         int bt = dispwin.max.y - datawin.min.y;
-        
-    
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
             datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
             bx--;
@@ -384,185 +359,82 @@ void ReadExr::open(){
             bt++;
             op->getInfo()->black_outside(true);
         }
-        op->getInfo()->set(bx, by, br+1, bt+1);
-      
+        bbox.set(bx, by, br+1, bt+1);
+        //op->getInfo()->set(bx, by, br+1, bt+1);
+        
         int ydirection = -1;
         if (inputfile->header().lineOrder() == Imf::INCREASING_Y){
-            op->getInfo()->setYdirection(-1);
+            //   op->getInfo()->setYdirection(-1);
         }
         else{
             ydirection=1;
-            op->getInfo()->setYdirection(1);
+            //            op->getInfo()->setYdirection(1);
         }
         //        cout << "Data win " << " x: " << bx << " y: " << by << " r: " << br+1 << " t: " << bt+1 << endl;
         //        cout << "Disp win " << " x: " << image_format.x() << " y: " << image_format.y() << " r: " <<
         //        image_format.range() << " t: " << image_format.top() << endl;
-        IntegerBox dbg = *(op->getInfo());
-        setReaderInfo(image_format, // dispW
-                      *(op->getInfo())/*dataW*/,filename,mask,ydirection,rgb,current_frame,firstFrame(),lastFrame());
+        //setReaderInfo(image_format, // dispW
+        //            *(op->getInfo())/*dataW*/,filename,mask,ydirection,rgb,current_frame,firstFrame(),lastFrame());
+        
+        const int X = max(bbox.x(), datawin.min.x + dataOffset);
+        const int R = min(bbox.right(), datawin.max.x + dataOffset +1);
+        int endScanLine,startScanLine;
+        ydirection == -1 ? endScanLine = dispwin.max.y : endScanLine = dispwin.min.y;
+        ydirection == -1 ? startScanLine = dispwin.min.y : startScanLine = dispwin.max.y;
+        _img.reserve(dispwin.max.y-dispwin.min.y);
+        int y =startScanLine;
+        while(y != endScanLine){
+            std::vector<float*> scanLine;
+            Imf::FrameBuffer fbuf;
+            int exrY = dispwin.max.y - y;
+            int channelIndex = 0;
+            foreachChannels(z, mask){
+                float* chan = (float*)malloc((bbox.right()-bbox.x())*sizeof(float));
+                scanLine.push_back(chan);
+                float* dest = chan - bbox.x();
+                for (int xx = bbox.x(); xx < X; xx++)
+                    dest[xx] = 0;
+                for (int xx = R; xx < bbox.right(); xx++)
+                    dest[xx] = 0;
+                
+                if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
+                    fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
+                }else{
+                    fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0,2,2));
+                }
+                channelIndex++;
+                
+            }
+            _img.push_back(scanLine);
+            inputfile->setFrameBuffer(fbuf);
+			inputfile->readPixels(exrY);
+            if(ydirection == -1) y++;
+            else y--;
+            
+        }
+        setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
-        cout << "ERROR : " << exc.what() << endl;
+        cout << "OpenExr error: " << exc.what() << endl;
         delete inputfile;
-        return;
+        return ;
     }
-    const Imf::Header header = inputfile->header();
-    /*if (pixelTypes[Imf::FLOAT] > 0) {
-     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_FLOAT);
-     }
-     else if (pixelTypes[Imf::UINT] > 0) {
-     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_32);
-     }
-     if (pixelTypes[Imf::HALF] > 0) {
-     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_HALF);
-     }
-     MakeNeededViews(views);*/
-    for (Imf::Header::ConstIterator i = header.begin();
-         i != header.end();
-         i++) {
-        //const char* type = i.attribute().typeName();
-        
-        /*std::string key = std::string(MetaData::EXR::EXR_PREFIX) + i.name();
-         
-         if ( inputfile->header().hasTileDescription() ) {
-         _meta.setData( std::string(MetaData::EXR::EXR_TILED), true);
-         }
-         
-         if (!strcmp(i.name(), "timeCode")) {
-         key = MetaData::TIMECODE;
-         }
-         
-         if (!strcmp(i.name(), "expTime")) {
-         key = MetaData::EXPOSURE;
-         }
-         
-         if (!strcmp(i.name(), "framesPerSecond")) {
-         key = MetaData::FRAME_RATE;
-         }
-         
-         if (!strcmp(i.name(), "keyCode")) {
-         key = MetaData::EDGECODE;
-         }
-         
-         if (!strcmp(i.name(), MetaData::Nuke::NODE_HASH )) {
-         key = MetaData::Nuke::NODE_HASH;
-         }
-         
-         if (!strcmp(type, "string")) {
-         const Imf::StringAttribute* attr = static_cast<const Imf::StringAttribute*>(&i.attribute());
-         _meta.setData(key, attr->value());
-         }
-         else if (!strcmp(type, "int")) {
-         const Imf::IntAttribute* attr = static_cast<const Imf::IntAttribute*>(&i.attribute());
-         _meta.setData(key, attr->value());
-         }
-         else if (!strcmp(type, "v2i")) {
-         const Imf::V2iAttribute* attr = static_cast<const Imf::V2iAttribute*>(&i.attribute());
-         int values[2] = {
-         attr->value().x, attr->value().y
-         };
-         _meta.setData(key, values, 2);
-         }
-         else if (!strcmp(type, "v3i")) {
-         const Imf::V3iAttribute* attr = static_cast<const Imf::V3iAttribute*>(&i.attribute());
-         int values[3] = {
-         attr->value().x, attr->value().y, attr->value().z
-         };
-         _meta.setData(key, values, 3);
-         }
-         else if (!strcmp(type, "box2i")) {
-         const Imf::Box2iAttribute* attr = static_cast<const Imf::Box2iAttribute*>(&i.attribute());
-         int values[4] = {
-         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
-         };
-         _meta.setData(key, values, 4);
-         }
-         else if (!strcmp(type, "float")) {
-         const Imf::FloatAttribute* attr = static_cast<const Imf::FloatAttribute*>(&i.attribute());
-         _meta.setData(key, attr->value());
-         }
-         else if (!strcmp(type, "v2f")) {
-         const Imf::V2fAttribute* attr = static_cast<const Imf::V2fAttribute*>(&i.attribute());
-         float values[2] = {
-         attr->value().x, attr->value().y
-         };
-         _meta.setData(key, values, 2);
-         }
-         else if (!strcmp(type, "v3f")) {
-         const Imf::V3fAttribute* attr = static_cast<const Imf::V3fAttribute*>(&i.attribute());
-         float values[3] = {
-         attr->value().x, attr->value().y, attr->value().z
-         };
-         _meta.setData(key, values, 3);
-         }
-         else if (!strcmp(type, "box2f")) {
-         const Imf::Box2fAttribute* attr = static_cast<const Imf::Box2fAttribute*>(&i.attribute());
-         float values[4] = {
-         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
-         };
-         _meta.setData(key, values, 4);
-         }
-         else if (!strcmp(type, "m33f")) {
-         const Imf::M33fAttribute* attr = static_cast<const Imf::M33fAttribute*>(&i.attribute());
-         std::vector<float> values;
-         for (int i = 0; i < 3; i++) {
-         for (int j = 0; j < 3; j++) {
-         values.push_back((attr->value())[i][j]);
-         }
-         }
-         _meta.setData(key, values);
-         }
-         else if (!strcmp(type, "m44f")) {
-         const Imf::M44fAttribute* attr = static_cast<const Imf::M44fAttribute*>(&i.attribute());
-         std::vector<float> values;
-         for (int i = 0; i < 4; i++) {
-         for (int j = 0; j < 4; j++) {
-         values.push_back((attr->value())[i][j]);
-         }
-         }
-         _meta.setData(key, values);
-         }
-         else if (!strcmp(type, "timecode")) {
-         const Imf::TimeCodeAttribute* attr = static_cast<const Imf::TimeCodeAttribute*>(&i.attribute());
-         char timecode[20];
-         sprintf(timecode, "%02i:%02i:%02i:%02i", attr->value().hours(), attr->value().minutes(), attr->value().seconds(), attr->value().frame());
-         _meta.setData(key, timecode);
-         }
-         else if (!strcmp(type, "keycode")) {
-         const Imf::KeyCodeAttribute* attr = static_cast<const Imf::KeyCodeAttribute*>(&i.attribute());
-         char keycode[30];
-         sprintf(keycode, "%02i %02i %06i %04i %02i",
-         attr->value().filmMfcCode(),
-         attr->value().filmType(),
-         attr->value().prefix(),
-         attr->value().count(),
-         attr->value().perfOffset());
-         _meta.setData(key, keycode);
-         }
-         else if (!strcmp(type, "rational")) {
-         const Imf::RationalAttribute* attr = static_cast<const Imf::RationalAttribute*>(&i.attribute());
-         _meta.setData(key, (double)attr->value());
-         //    } else {
-         //      _meta.setData(key, "type " + std::string(type));
-         }*/
-    }
-   
+    
     
 }
 
-ReadExr::ReadExr(const QStringList& fileList,Reader* op,ViewerGL* ui_context):Read(fileList,op,ui_context),
+ReadExr::ReadExr(Reader* op,ViewerGL* ui_context):Read(op,ui_context),
 inputfile(0),dataOffset(0){
     
     _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
     _lut->validate();
-    C_lock=new QMutex();
     
 #ifdef __POWITER_WIN32__
     inputStr = NULL;
     inputStdStream = NULL;
 #endif
-   
+    
     
 }
 ReadExr::~ReadExr(){
@@ -576,17 +448,11 @@ ReadExr::~ReadExr(){
 
 
 void ReadExr::normal_engine(const Imath::Box2i& datawin, const Imath::Box2i& dispwin,ChannelSet& channels, int exrY, Row* row, int x, int X, int r, int R){
-   // Node::Info* _info = op->getInfo();
-   // row->changeSize(_info->x(), _info->range()+abs(dataOffset));
 	Imf::FrameBuffer fbuf;
 	foreachChannels(z, channels){
-    
+        
         // blacking out what needs to be blacked out
         float* dest = row->writable(z) ;
-        if(!dest){
-            cout << "Change size failed for channel " << getChannelName(z) << endl;
-            return;
-        }
         for (int xx = x; xx < X; xx++)
             dest[xx] = 0;
         for (int xx = R; xx < r; xx++)
@@ -599,7 +465,7 @@ void ReadExr::normal_engine(const Imath::Box2i& datawin, const Imath::Box2i& dis
 	}
     
 	{
-		QMutexLocker guard(C_lock);
+		//QMutexLocker guard(C_lock);
 		try {
 			/*if (iop->aborted())
              return;                     // abort if another thread does so*/
@@ -635,7 +501,7 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
     }
     
     
-    normal_engine(datawin, dispwin, c, exrY, out, offset, X, range, R);
+    //normal_engine(datawin, dispwin, c, exrY, out, offset, X, range, R);
     
 	//  colorspace conversion
  	
@@ -643,6 +509,10 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
     const float* fromR=(*out)[Channel_red] +X;
     const float* fromG=(*out)[Channel_green] +X;
     const float* fromB=(*out)[Channel_blue] +X;
+    
+    std::vector<float*> scanLine = _img[exrY];
+    
+    
     float* r = out->writable(Channel_red);
     float* g = out->writable(Channel_green);
     float* b = out->writable(Channel_blue);
@@ -659,11 +529,9 @@ void ReadExr::createKnobDynamically(){
     
 }
 
-void ReadExr::make_preview(){
-
-    QByteArray fileName = files[frame()].toLocal8Bit();
-
-    Imf::RgbaInputFile in (fileName.data());
+void ReadExr::make_preview(const char* filename){
+        
+    Imf::RgbaInputFile in (filename);
     Imf::Header header =in.header();
     Imath::Box2i &dataWindow = header.dataWindow();
     Imf::Array<Imf::Rgba> pixels;
@@ -724,5 +592,148 @@ void ReadExr::make_preview(){
     op->setPreview(img);
     op->getNodeUi()->updatePreviewImageForReader();
 }
+
+//META DATA HANDLING:
+//    const Imf::Header header = inputfile->header();
+//    /*if (pixelTypes[Imf::FLOAT] > 0) {
+//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_FLOAT);
+//     }
+//     else if (pixelTypes[Imf::UINT] > 0) {
+//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_32);
+//     }
+//     if (pixelTypes[Imf::HALF] > 0) {
+//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_HALF);
+//     }
+//     MakeNeededViews(views);*/
+//    for (Imf::Header::ConstIterator i = header.begin();
+//         i != header.end();
+//         i++) {
+//        //const char* type = i.attribute().typeName();
+//
+//        /*std::string key = std::string(MetaData::EXR::EXR_PREFIX) + i.name();
+//
+//         if ( inputfile->header().hasTileDescription() ) {
+//         _meta.setData( std::string(MetaData::EXR::EXR_TILED), true);
+//         }
+//
+//         if (!strcmp(i.name(), "timeCode")) {
+//         key = MetaData::TIMECODE;
+//         }
+//
+//         if (!strcmp(i.name(), "expTime")) {
+//         key = MetaData::EXPOSURE;
+//         }
+//
+//         if (!strcmp(i.name(), "framesPerSecond")) {
+//         key = MetaData::FRAME_RATE;
+//         }
+//
+//         if (!strcmp(i.name(), "keyCode")) {
+//         key = MetaData::EDGECODE;
+//         }
+//
+//         if (!strcmp(i.name(), MetaData::Nuke::NODE_HASH )) {
+//         key = MetaData::Nuke::NODE_HASH;
+//         }
+//
+//         if (!strcmp(type, "string")) {
+//         const Imf::StringAttribute* attr = static_cast<const Imf::StringAttribute*>(&i.attribute());
+//         _meta.setData(key, attr->value());
+//         }
+//         else if (!strcmp(type, "int")) {
+//         const Imf::IntAttribute* attr = static_cast<const Imf::IntAttribute*>(&i.attribute());
+//         _meta.setData(key, attr->value());
+//         }
+//         else if (!strcmp(type, "v2i")) {
+//         const Imf::V2iAttribute* attr = static_cast<const Imf::V2iAttribute*>(&i.attribute());
+//         int values[2] = {
+//         attr->value().x, attr->value().y
+//         };
+//         _meta.setData(key, values, 2);
+//         }
+//         else if (!strcmp(type, "v3i")) {
+//         const Imf::V3iAttribute* attr = static_cast<const Imf::V3iAttribute*>(&i.attribute());
+//         int values[3] = {
+//         attr->value().x, attr->value().y, attr->value().z
+//         };
+//         _meta.setData(key, values, 3);
+//         }
+//         else if (!strcmp(type, "box2i")) {
+//         const Imf::Box2iAttribute* attr = static_cast<const Imf::Box2iAttribute*>(&i.attribute());
+//         int values[4] = {
+//         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
+//         };
+//         _meta.setData(key, values, 4);
+//         }
+//         else if (!strcmp(type, "float")) {
+//         const Imf::FloatAttribute* attr = static_cast<const Imf::FloatAttribute*>(&i.attribute());
+//         _meta.setData(key, attr->value());
+//         }
+//         else if (!strcmp(type, "v2f")) {
+//         const Imf::V2fAttribute* attr = static_cast<const Imf::V2fAttribute*>(&i.attribute());
+//         float values[2] = {
+//         attr->value().x, attr->value().y
+//         };
+//         _meta.setData(key, values, 2);
+//         }
+//         else if (!strcmp(type, "v3f")) {
+//         const Imf::V3fAttribute* attr = static_cast<const Imf::V3fAttribute*>(&i.attribute());
+//         float values[3] = {
+//         attr->value().x, attr->value().y, attr->value().z
+//         };
+//         _meta.setData(key, values, 3);
+//         }
+//         else if (!strcmp(type, "box2f")) {
+//         const Imf::Box2fAttribute* attr = static_cast<const Imf::Box2fAttribute*>(&i.attribute());
+//         float values[4] = {
+//         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
+//         };
+//         _meta.setData(key, values, 4);
+//         }
+//         else if (!strcmp(type, "m33f")) {
+//         const Imf::M33fAttribute* attr = static_cast<const Imf::M33fAttribute*>(&i.attribute());
+//         std::vector<float> values;
+//         for (int i = 0; i < 3; i++) {
+//         for (int j = 0; j < 3; j++) {
+//         values.push_back((attr->value())[i][j]);
+//         }
+//         }
+//         _meta.setData(key, values);
+//         }
+//         else if (!strcmp(type, "m44f")) {
+//         const Imf::M44fAttribute* attr = static_cast<const Imf::M44fAttribute*>(&i.attribute());
+//         std::vector<float> values;
+//         for (int i = 0; i < 4; i++) {
+//         for (int j = 0; j < 4; j++) {
+//         values.push_back((attr->value())[i][j]);
+//         }
+//         }
+//         _meta.setData(key, values);
+//         }
+//         else if (!strcmp(type, "timecode")) {
+//         const Imf::TimeCodeAttribute* attr = static_cast<const Imf::TimeCodeAttribute*>(&i.attribute());
+//         char timecode[20];
+//         sprintf(timecode, "%02i:%02i:%02i:%02i", attr->value().hours(), attr->value().minutes(), attr->value().seconds(), attr->value().frame());
+//         _meta.setData(key, timecode);
+//         }
+//         else if (!strcmp(type, "keycode")) {
+//         const Imf::KeyCodeAttribute* attr = static_cast<const Imf::KeyCodeAttribute*>(&i.attribute());
+//         char keycode[30];
+//         sprintf(keycode, "%02i %02i %06i %04i %02i",
+//         attr->value().filmMfcCode(),
+//         attr->value().filmType(),
+//         attr->value().prefix(),
+//         attr->value().count(),
+//         attr->value().perfOffset());
+//         _meta.setData(key, keycode);
+//         }
+//         else if (!strcmp(type, "rational")) {
+//         const Imf::RationalAttribute* attr = static_cast<const Imf::RationalAttribute*>(&i.attribute());
+//         _meta.setData(key, (double)attr->value());
+//         //    } else {
+//         //      _meta.setData(key, "type " + std::string(type));
+//         }*/
+//    }
+//
 
 

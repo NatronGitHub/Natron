@@ -1,10 +1,9 @@
+//  Powiter
 //
-//  mappedfile.h
-//  PowiterOsX
-//
-//  Created by Alexandre on 3/26/13.
-//  Copyright (c) 2013 Alexandre. All rights reserved.
-//
+//  Created by Alexandre Gauthier-Foichat on 06/12
+//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
+//  contact: immarespond at gmail dot com
+
 // (C) Copyright 2008 CodeRage, LLC (turkanis at coderage dot com)
 // (C) Copyright 2004-2007 Jonathan Turkanis
 // (C) Copyright Craig Henderson 2002 'boost/memmap.hpp' from sandbox
