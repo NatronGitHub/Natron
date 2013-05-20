@@ -6,7 +6,7 @@
 #include "Core/Box.h"
 #include <iostream>
 
-void IntegerBox::merge(const IntegerBox b){
+void Box2D::merge(const Box2D b){
 	int x=b.x();
 	int y=b.y();
 	int r=b.right();
@@ -22,14 +22,14 @@ void IntegerBox::merge(const IntegerBox b){
 		_t=t;
 }
 
-void IntegerBox::merge(int x, int y){
+void Box2D::merge(int x, int y){
 	if(x<this->x())
 		_x=x;
 	if(y<this->y())
 		_y=y;
 }
 
-void IntegerBox::merge(int x, int y, int r, int t){
+void Box2D::merge(int x, int y, int r, int t){
 	if(x<this->x())
 		_x=x;
 	if(y<this->y())
@@ -40,7 +40,7 @@ void IntegerBox::merge(int x, int y, int r, int t){
 		_t=t;
 }
 
-void IntegerBox::intersect(const IntegerBox b){
+void Box2D::intersect(const Box2D b){
 	int x=b.x();
 	int y=b.y();
 	int t=b.top();
@@ -58,7 +58,7 @@ void IntegerBox::intersect(const IntegerBox b){
 
 
 
-void IntegerBox::intersect(int x, int y, int r, int t){
+void Box2D::intersect(int x, int y, int r, int t){
 	if(x>_x)
 		_x=x;
 	if(y>_y)
@@ -69,7 +69,7 @@ void IntegerBox::intersect(int x, int y, int r, int t){
 		_t=t;
 }
 
-bool IntegerBox::isContained(int x,int y,int r,int t){
+bool Box2D::isContained(int x,int y,int r,int t){
 	bool stillgood=true;
 	if(x<this->x())
 		stillgood=false;
@@ -82,7 +82,7 @@ bool IntegerBox::isContained(int x,int y,int r,int t){
 	return stillgood;
 
 }
-bool IntegerBox::isContained(const IntegerBox b){
+bool Box2D::isContained(const Box2D b){
 
 	int x=b.x();
 	int y=b.y();

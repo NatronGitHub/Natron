@@ -35,9 +35,9 @@ class Node
 public:
 	/*Per-node infos. This class is used to pass infos along the graph
 	 *and to know what we can request from a node.*/
-	class Info:public IntegerBox{
+	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,DisplayFormat full_size_format,ChannelMask _channels):
+		Info(int first_frame,int last_frame,int ydirection,Format full_size_format,ChannelMask _channels):
 		  first_frame(first_frame),
 			  last_frame(last_frame),
 			  ydirection(ydirection),
@@ -47,10 +47,10 @@ public:
 	    Info():first_frame(-1),last_frame(-1),ydirection(0),_channels(),full_size_format(){}
 		void setYdirection(int direction){ydirection=direction;}
 		int getYdirection(){return ydirection;}
-		void set_full_size_format(DisplayFormat format){
+		void set_full_size_format(Format format){
             full_size_format=format;
                     }
-		DisplayFormat& getFull_size_format(){return full_size_format;}
+		Format& getFull_size_format(){return full_size_format;}
 		bool is_similar(Info other);
 		void firstFrame(int nb){first_frame=nb;}
 		void lastFrame(int nb){last_frame=nb;}
@@ -74,7 +74,7 @@ public:
 		int ydirection;
 		bool _black_outside;
         bool _rgbMode;
-		DisplayFormat full_size_format; // display window of the data, for the data window see x,y,range,offset parameters
+		Format full_size_format; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelMask _channels; // all channels defined by the current Node ( that are allocated)
 		
 	};
@@ -120,7 +120,7 @@ public:
 	void clear_info();
 	ChannelMask& getOutputChannels(){return output_channels;}
 	ChannelMask& getRequestedChannels(){return requested_channels;}
-	IntegerBox& get_requested_box(){return requested_box;}
+	Box2D& get_requested_box(){return requested_box;}
     int width(){return _info->getFull_size_format().w();}
     int height(){return _info->getFull_size_format().h();}
 	/*================================*/
@@ -209,7 +209,7 @@ protected:
 	Hash* hashValue; 
 	std::vector<Knob*> knobs;
 	Knob_Callback* knob_cb;
-	IntegerBox requested_box; // composition of all the area requested by children
+	Box2D requested_box; // composition of all the area requested by children
 	ChannelMask requested_channels; // merge of all channels requested by children
 	Node_ui* node_gui;
 private:

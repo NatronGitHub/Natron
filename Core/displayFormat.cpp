@@ -8,18 +8,18 @@
 using namespace std;
 
 
-DisplayFormat::DisplayFormat(int x,int y,int r,int t,const char* name,double pa):IntegerBox(x,y,r,t){
+Format::Format(int x,int y,int r,int t,const char* name,double pa):Box2D(x,y,r,t){
     this->_name=name;
     _pixel_aspect=pa;
 }
 
-DisplayFormat::DisplayFormat():IntegerBox(),_name(""),_pixel_aspect(0){
+Format::Format():Box2D(),_name(""),_pixel_aspect(0){
     
 }
 
-const char* DisplayFormat::name() const {return _name;}
+const char* Format::name() const {return _name;}
 
-const double DisplayFormat::pixel_aspect() const {return _pixel_aspect;}
+const double Format::pixel_aspect() const {return _pixel_aspect;}
 
-void DisplayFormat::pixel_aspect( float p)  {_pixel_aspect=p;}
+void Format::pixel_aspect( float p)  {_pixel_aspect=p;}
 

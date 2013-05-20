@@ -78,7 +78,7 @@ void Model::setControler(Controler* ctrl){
     assert(formatNames.size() == resolutions.size());
     for(int i =0;i<formatNames.size();i++){
         Imath::V3f *v= resolutions[i];
-        DisplayFormat* _frmt = new DisplayFormat(0,0,v->x,v->y,formatNames[i],v->z);
+        Format* _frmt = new Format(0,0,v->x,v->y,formatNames[i],v->z);
         addFormat(_frmt);
     }
     
@@ -344,12 +344,12 @@ void Model::displayLoadedPlugins(){
 }
 
 
-void Model::addFormat(DisplayFormat* frmt){formats_list.push_back(frmt);}
+void Model::addFormat(Format* frmt){formats_list.push_back(frmt);}
 
-DisplayFormat* Model::findExistingFormat(int w, int h, double pixel_aspect){
+Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
 
 	for(int i =0;i< formats_list.size();i++){
-		DisplayFormat* frmt = formats_list[i];
+		Format* frmt = formats_list[i];
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;
 		}

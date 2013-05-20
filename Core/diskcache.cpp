@@ -107,8 +107,8 @@ void DiskCache::saveCache(){
         }
         out << " " << frame._frameInfo->currentFrame() << " " << frame._frameInfo->firstFrame() << " "
         << frame._frameInfo->lastFrame() << " ";
-        DisplayFormat format = frame._frameInfo->displayWindow();
-        IntegerBox bbox = frame._frameInfo->dataWindow();
+        Format format = frame._frameInfo->displayWindow();
+        Box2D bbox = frame._frameInfo->dataWindow();
         out << format.x() << " " << format.y() << " " << format.right() << " " << format.top() <<" " <<format.pixel_aspect() <<  " ";
         out << bbox.x() << " " << bbox.y() << " " << bbox.right() << " " << bbox.top() << " ";
         out << "\n";
@@ -216,8 +216,8 @@ void DiskCache::restoreCache(){
                     }
                     channels += z;
                 }
-                DisplayFormat format(formatX.toInt(),formatY.toInt(),formatR.toInt(),formatT.toInt(),"",formatAP.toDouble());
-                IntegerBox bbox(bboxX.toInt(),bboxY.toInt(),bboxR.toInt(),bboxT.toInt());
+                Format format(formatX.toInt(),formatY.toInt(),formatR.toInt(),formatT.toInt(),"",formatAP.toDouble());
+                Box2D bbox(bboxX.toInt(),bboxY.toInt(),bboxR.toInt(),bboxT.toInt());
                 ReaderInfo* infos = new ReaderInfo(format,bbox,fileNameStr,channels,
                                                    -1,true,currentFrameStr.toInt(),firstFrameStr.toInt(),lastFrameStr.toInt());
                 FrameID _id( zoom , exposure  , lut,
@@ -316,8 +316,8 @@ std::pair<FramesIterator,bool> DiskCache::isCached(std::string filename,
                                                    float exposure,
                                                    float lut,
                                                    bool byteMode,
-                                                   DisplayFormat format,
-                                                   IntegerBox bbox){
+                                                   Format format,
+                                                   Box2D bbox){
     pair< FramesIterator,FramesIterator> range = _frames.equal_range(filename);
     for(FramesIterator it=range.first;it!=range.second;++it){
         if((it->second._zoom == builtinZoom) &&
@@ -411,7 +411,7 @@ void DiskCache::makeFreeSpace(int nbFrames){
     while( i < nbFrames){
         FrameID frame = it->second;
         qint64 frameSize;
-        DisplayFormat frmt = frame._frameInfo->displayWindow();
+        Format frmt = frame._frameInfo->displayWindow();
         if(frame._byteMode==1.0){
             frameSize = frmt.w() * frmt.h() * sizeof(U32);
             

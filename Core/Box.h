@@ -6,7 +6,7 @@
 #ifndef __INTEGER_BOX_H__
 #define __INTEGER_BOX_H__
 
-class IntegerBox{
+class Box2D{
 private:
 	int _x; // left
 	int _y; // bottom
@@ -63,11 +63,11 @@ public:
         return iterator(_t, _x, _x, _r);
     }
     
-    IntegerBox() : _x(0), _y(0), _r(1), _t(1) {}
+    Box2D() : _x(0), _y(0), _r(1), _t(1) {}
     
-    IntegerBox(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) {}
+    Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) {}
     
-    IntegerBox(const IntegerBox &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t){}
+    Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t){}
     
     int x() const { return _x; }
     void x(int v) { _x = v; }
@@ -98,7 +98,7 @@ public:
         _t = t; }
     
    
-    void set(const IntegerBox& b) { *this = b; }
+    void set(const Box2D& b) { *this = b; }
     
     
     bool is1x1() const { return _r <= _x + 1 && _t <= _y + 1; }
@@ -136,18 +136,18 @@ public:
     
 	/*merge the current box with another integerBox.
 	 *The current box is the union of the two boxes.*/
-    void merge(const IntegerBox);
+    void merge(const Box2D);
     
     void merge(int x, int y);
     
     void merge(int x, int y, int r, int t);
     
 	/*intersection of two boxes*/
-    void intersect(const IntegerBox);
+    void intersect(const Box2D);
     
     void intersect(int x, int y, int r, int t);
     
-    bool isContained(const IntegerBox);
+    bool isContained(const Box2D);
     
     bool isContained(int x,int y,int r,int t);
     
@@ -155,7 +155,7 @@ public:
     int area() const {
         return w() * h();
     }
-    IntegerBox& operator=(const IntegerBox& other){
+    Box2D& operator=(const Box2D& other){
         _x = other.x();
         _y = other.y();
         _r = other.right();
@@ -164,7 +164,7 @@ public:
     }
 };
 /// equality of boxes
-inline bool operator==(const IntegerBox& b1, const IntegerBox& b2)
+inline bool operator==(const Box2D& b1, const Box2D& b2)
 {
 	return b1.x() == b2.x() &&
     b1.y() == b2.y() &&
@@ -173,7 +173,7 @@ inline bool operator==(const IntegerBox& b1, const IntegerBox& b2)
 }
 
 /// inequality of boxes
-inline bool operator!=(const IntegerBox& b1, const IntegerBox& b2)
+inline bool operator!=(const Box2D& b1, const Box2D& b2)
 {
 	return b1.x() != b2.x() ||
     b1.y() != b2.y() ||

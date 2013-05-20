@@ -15,8 +15,8 @@ class ReaderInfo{
     
     
 public:
-    ReaderInfo(DisplayFormat dispW,
-               IntegerBox dataW,
+    ReaderInfo(Format dispW,
+               Box2D dataW,
                QString currentFrameName,
                ChannelMask channels= Mask_RGB,
                int Ydirection = -1,
@@ -59,8 +59,8 @@ public:
     }
     
     const ChannelMask channels() const {return _channels;}
-    const DisplayFormat displayWindow() const {return _displayWindow;}
-    const IntegerBox dataWindow() const {return _dataWindow;}
+    const Format displayWindow() const {return _displayWindow;}
+    const Box2D dataWindow() const {return _dataWindow;}
     const int Ydirection() const {return _Ydirection;}
     const bool rgbMode() const {return _rgbMode;}
     const int firstFrame() const {return _firstFrame;}
@@ -91,8 +91,8 @@ public:
     
 private:
     ChannelMask _channels;  // channels contained in file
-    DisplayFormat _displayWindow; // data window contained in file
-    IntegerBox _dataWindow;
+    Format _displayWindow; // data window contained in file
+    Box2D _dataWindow;
     int _Ydirection;
     bool _rgbMode;
     int _firstFrame;

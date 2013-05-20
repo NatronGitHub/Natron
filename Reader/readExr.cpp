@@ -342,8 +342,8 @@ void ReadExr::open(const QString filename,bool openBothViews){
         }
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
         double aspect = inputfile->header().pixelAspectRatio();
-        DisplayFormat imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
-        IntegerBox bbox;
+        Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
+        Box2D bbox;
         //        op->getInfo()->set_full_size_format(image_format);
         //        op->getInfo()->set_channels(mask);
         

@@ -243,7 +243,7 @@ bool Reader::makeCurrentDecodedFrame(){
     readInfo->currentFrame(currentFrame());
     readInfo->firstFrame(firstFrame());
     readInfo->lastFrame(lastFrame());
-    IntegerBox bbox = readInfo->dataWindow();
+    Box2D bbox = readInfo->dataWindow();
     _info->set(bbox.x(), bbox.y(), bbox.right(), bbox.top());
     _info->set_full_size_format(readInfo->displayWindow());
     _info->set_channels(readInfo->channels());
