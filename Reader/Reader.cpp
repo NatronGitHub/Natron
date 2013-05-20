@@ -291,7 +291,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
     return desc;
 }
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(std::string filename){
-    for(U32 i = 0; i < _buffer.size() ; i++){
+    for(int i = _buffer.size()-1; i >= 0 ; i--){
         if(_buffer[i]._filename==filename) return _buffer.begin()+i;
     }
     return _buffer.end();
