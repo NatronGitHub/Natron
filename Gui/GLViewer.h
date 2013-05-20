@@ -125,14 +125,14 @@ public:
     ChannelMask displayChannels(){return _channelsToDraw;}
     
     /*The dataWindow of the currentFrame(BBOX)*/
-	IntegerBox dataWindow(){return _readerInfo->dataWindow();}
+	Box2D dataWindow(){return _readerInfo->dataWindow();}
     
     /*The displayWindow of the currentFrame(Resolution)*/
-	DisplayFormat displayWindow(){return _readerInfo->displayWindow();}
+	Format displayWindow(){return _readerInfo->displayWindow();}
     
     /*(ROI), not used yet*/
-    IntegerBox& regionOfInterest(){return _roi;}
-    void regionOfInterest(IntegerBox& renderBox){ this->_roi = renderBox;}
+    Box2D& regionOfInterest(){return _roi;}
+    void regionOfInterest(Box2D& renderBox){ this->_roi = renderBox;}
     
     /*function initialising display textures (and glsl shader the first time)
      according to the current level of zooom*/
@@ -352,7 +352,7 @@ private:
     int Ysampling; // sampling factor for LC files
 
     InfoViewerWidget* _infoViewer;
-    IntegerBox _roi;  // region of interest
+    Box2D _roi;  // region of interest
 	float exposure ;		// Current exposure setting.  All pixels
 	// are multiplied by pow(2,exposure) before
 	// they appear on the screen

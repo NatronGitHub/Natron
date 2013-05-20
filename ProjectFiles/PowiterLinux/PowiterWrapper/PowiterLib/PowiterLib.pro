@@ -4,13 +4,16 @@
 #
 #-------------------------------------------------
 
-QT -= core gui
 
 TARGET = PowiterLib
 TEMPLATE = lib
-CONFIG += static create_prl
+CONFIG += static moc
+QT -= core gui
+CONFIG += create_prl
+#target.path = ($POWITER_ROOT)/ProjectFiles/build
 
-MOC_DIR = $$PWD/../../../GeneratedFiles
+MOC_DIR = $(POWITER_ROOT)/ProjectFiles/GeneratedFiles
+message(Now building PowiterLib...the working directory is:  $(POWITER_ROOT))
 
 SOURCES += \
     ../../../../Gui/arrowGUI.cpp \
@@ -125,12 +128,12 @@ INSTALLS += target
 
 INCLUDEPATH += $(QT_INCLUDES)
 INCLUDEPATH += $(BOOST_INCLUDES)
-INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $(POWITER_ROOT)
 INCLUDEPATH += $(OPENEXR_INCLUDES)
 INCLUDEPATH += $(FREETYPE2_INCLUDES)
 INCLUDEPATH += $(FREETYPE_INCLUDES)
 INCLUDEPATH += $(FTGL_INCLUDES)
-DEPENDPATH += $(OPENEXR_INCLUDE)
+DEPENDPATH += $(OPENEXR_INCLUDES)
 DEPENDPATH += $(QT_INCLUDES)
 DEPENDPATH += $(FREETYPE2_INCLUDES)
 DEPENDPATH += $(FREETYPE_INCLUDES)
@@ -138,23 +141,8 @@ DEPENDPATH += $(BOOST_INCLUDES)
 DEPENDPATH += $(FTGL_INCLUDES)
 
 
-unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libHalf.a
-unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIex.a
-unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libImath.a
-unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIlmThread.a
-unix:!macx: PRE_TARGETDEPS +=$(OPENEXR_LIB)/libIlmImf.a
+unix: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread
 
-unix:!macx: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread
-
-
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavcodec.a
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavformat.a
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavdevice.a
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavutil.a
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libavfilter.a
-unix: PRE_TARGETDEPS +=$(FFMPEG_LIB)/libswscale.a
 unix: LIBS += -L$(FFMPEG_LIB) -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
 
-
-unix: PRE_TARGETDEPS += $(FTGL_LIB)/libftgl.a
 unix: LIBS += -L$(FTGL_LIB) -lftgl

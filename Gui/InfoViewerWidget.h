@@ -41,7 +41,7 @@ private:
     
     QHBoxLayout* layout;
     QLabel* resolution;
-    DisplayFormat format;
+    Format format;
     QLabel* coordDispWindow;
     QLabel* coordMouse;
     QPoint mousePos;

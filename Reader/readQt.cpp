@@ -89,8 +89,8 @@ void ReadQt::open(const QString filename,bool openBothViews){
         }
     }
 
-    DisplayFormat imageFormat(0,0,width,height,"",aspect);
-    IntegerBox bbox(0,0,width,height);
+    Format imageFormat(0,0,width,height,"",aspect);
+    Box2D bbox(0,0,width,height);
    // op->getInfo()->set_full_size_format(format);
    // op->getInfo()->set(0, 0, width, height);
    // op->getInfo()->setYdirection(-1);

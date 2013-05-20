@@ -53,8 +53,8 @@ void Read::createKnobDynamically(){
     
 }
 
-void Read::setReaderInfo(DisplayFormat dispW,
-                   IntegerBox dataW,
+void Read::setReaderInfo(Format dispW,
+                   Box2D dataW,
                    QString file,
                    ChannelMask channels,
                    int Ydirection ,

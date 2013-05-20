@@ -113,7 +113,7 @@ void Node::merge_info(){
 	
 	int final_direction=0;
 	Node* first=parents[0];
-	DisplayFormat expectedFormat=first->getInfo()->getFull_size_format();
+	Format expectedFormat=first->getInfo()->getFull_size_format();
 	ChannelMask chans=_info->channels();
     bool displayMode=first->getInfo()->rgbMode();
 	foreach(Node* parent,parents){

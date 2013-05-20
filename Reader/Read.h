@@ -32,8 +32,8 @@ public:
     bool premultiplied(){return _premult;}
     bool autoAlpha(){return _autoCreateAlpha;}
     Lut* lut(){return _lut;}
-	void setReaderInfo(DisplayFormat dispW,
-                       IntegerBox dataW,
+	void setReaderInfo(Format dispW,
+                       Box2D dataW,
                        QString file,
                        ChannelMask channels,
                        int Ydirection ,

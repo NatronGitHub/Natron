@@ -293,7 +293,7 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb){
-    IntegerBox renderBox = gl_viewer->displayWindow(); // the display window held by the data
+    Box2D renderBox = gl_viewer->displayWindow(); // the display window held by the data
     
 	int y=renderBox.y(); // bottom
     

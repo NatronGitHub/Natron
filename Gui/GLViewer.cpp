@@ -1213,7 +1213,7 @@ void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBounda
         _readerInfo->copy(info);
     else
         _readerInfo = info;
-    DisplayFormat* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+    Format* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());
     updateDataWindowAndDisplayWindowInfo();

@@ -125,10 +125,10 @@ public:
     Controler* getControler(){return ctrl;}
     
 	/*add a new built-in format to the default ones*/
-    void addFormat(DisplayFormat* frmt);
+    void addFormat(Format* frmt);
 
 	/*Find a builtin format with the same resolution and aspect ratio*/
-    DisplayFormat* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
+    Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
     /*Get the current settings of Powiter*/
     Settings* getCurrentPowiterSettings(){return _powiterSettings;}
@@ -145,7 +145,7 @@ private:
     
     std::vector<const char*> formatNames;
     std::vector<Imath::V3f*> resolutions;
-    std::vector<DisplayFormat*> formats_list;
+    std::vector<Format*> formats_list;
     std::vector<CounterID*> counters;
     std::vector<PluginID*> plugins;
     QStringList nodeNameList;

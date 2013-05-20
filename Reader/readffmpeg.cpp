@@ -900,8 +900,8 @@ void ReadFFMPEG::open(const QString filename,bool openBothViews){
     if (_reader->info(width, height, aspect, frames)) {
       //  op->getInfo()->set_channels(Mask_RGBA);
         // op->getInfo().set_info(width, height, 3, aspect);
-        DisplayFormat imageFormat(0,0,width,height,"",aspect);
-        IntegerBox bbox(0,0,width,height);
+        Format imageFormat(0,0,width,height,"",aspect);
+        Box2D bbox(0,0,width,height);
       //  op->getInfo()->set_full_size_format(format);
        // op->getInfo()->set(0, 0, width-1, height-1);
        // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
@@ -958,7 +958,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
  
 
 void ReadFFMPEG::make_preview(const char* filename){
-    DisplayFormat frmt = op->getInfo()->getFull_size_format();
+    Format frmt = op->getInfo()->getFull_size_format();
 	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);

@@ -137,8 +137,8 @@ public:
                                             float exposure,
                                             float lut ,
                                             bool byteMode,
-                                            DisplayFormat format,
-                                            IntegerBox bbox);
+                                            Format format,
+                                            Box2D bbox);
     
     /*This is the function called to finilize caching once the frame has been written to the pointer
      returned by mapNew<Frame*/

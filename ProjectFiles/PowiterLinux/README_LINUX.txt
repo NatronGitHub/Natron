@@ -14,8 +14,7 @@ In order to have Powiter compiling, first you need to install the required libra
 
 ###Qt 5
 
-You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads). Once downloaded, you'll have to compile it. Another option is to install it with your packet manager: e.g:
-	sudo apt-get install qt4
+You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads). 
 
 ###FFMPEG
 
@@ -68,12 +67,14 @@ FTGL_LIB
 OPENEXR_INCLUDES
 OPENEXR_LIB
 QT_INCLUDES
+POWITER_ROOT
 
 
 You'll need to change the path of these variable accordingly to the locations of the includes/libraries on your computer. 
 
 A few notes:
 
+*POWITER_ROOT references YOUR_PATH_TO_POWITER_CORE/Powiter_Core
 
 *All XXX_INCLUDES variables reference the place where the include files can be found for the library XXX.
 A few exceptions : OPENEXR_INCLUDES must reference the OpenExr folder and not the one containing that folder.
@@ -86,16 +87,5 @@ YOUR_PATH_TO_POWITER_CORE/Powiter_Core/ProjectFiles/PowiterLinux/build
 Select the "run" tab, change the working directory to :
 YOUR_PATH_TO_POWITER_CORE/Powiter_Core/
 
-Now go back to the "Edit" section. Right click on PowiterWrapper and build. It should build, but we cannot run it. Somehow the working directory is not taken into account when running. You'll have to open the "Powiter.pro" project separatly to run it:
-File->open file or project : select Powiter.pro under Powiter_Core/ProjectFiles/PowiterLinux/PowiterWrapper/Powiter
-Go into the projects section. In the run tab, change the working directory to :
-YOUR_PATH_TO_POWITER_CORE/Powiter_Core/
-
-You have to add all the ***_INCLUDES environment variables above again in the Build environment section of the Powiter project.
-
-Now you can right click on the Powiter project (not the one in the PowiterWrapper, but the one you just opened) and select run.
-
-If you want to build, do so with PowiterWrapper. If you want to run, do so with the Powiter project.
-
-That should be all.
+Now go back to the "Edit" section. Right click on PowiterWrapper and build. It should build and run.
 
