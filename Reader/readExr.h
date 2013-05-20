@@ -28,6 +28,7 @@
 #include <ImfStdIO.h>
 #endif
 #include "Reader/Read.h"
+#include "Core/row.h"
 
 using namespace Powiter_Enums;
 
@@ -78,7 +79,7 @@ private:
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;
-    std::vector< std::vector<float*> > _img;
+    std::vector< Row* > _img;
     
    // Imath::V3f yWeights; // for luminance, not used anymore. Left out in comment in case we'd like to introduce it again
 

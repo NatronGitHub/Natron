@@ -648,8 +648,6 @@ void ViewerGL::drawBlackTex(){
 void ViewerGL::drawRow(Row* row){
     
     int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
-    
-    
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w*sizeof(float),row->zoomedY(),(*row)[Channel_alpha]);
@@ -658,11 +656,6 @@ void ViewerGL::drawRow(Row* row){
         convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                    w,row->zoomedY(),(*row)[Channel_alpha]);
     }
-    
-//#ifdef __POWITER_WIN32__
-//    doneCurrent();  //< NEEDED FOR MULTI THREADING
-//#endif
-    
 }
 
 void ViewerGL::preProcess(std::string filename,int nbFrameHint){

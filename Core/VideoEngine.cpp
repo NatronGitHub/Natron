@@ -319,9 +319,6 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     
     
     gl_viewer->initTextures();
-    //#ifdef __POWITER_WIN32__
-    //	gl_viewer->doneCurrent(); // windows only, openGL needs this to deal with concurrency
-    //#endif
     
     // selecting the right anchor of the row
     int right = 0;
