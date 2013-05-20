@@ -7,6 +7,7 @@
 #include <QtCore/qcoreapplication.h>
 #include <QtWidgets/QPushButton>
 #include <QtGui/QVector2D>
+#include <QtWidgets/QAction>
 #include <iterator>
 #include <cassert>
 #include "Core/VideoEngine.h"
@@ -91,8 +92,8 @@ void VideoEngine::resetReadingBuffers(){
     GLint boundBuffer;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &boundBuffer);
     if(boundBuffer != 0){
-        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
+       glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+       glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
     }
     for(int j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];

@@ -3,13 +3,14 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
-#include <QtWidgets/QtWidgets>
+
 #include "Gui/node_ui.h"
 #include "Gui/arrowGUI.h"
 #include "Gui/dockableSettings.h"
 #include "Reader/Reader.h"
 #include "Core/node.h"
 #include "Superviser/controler.h"
+#include <QtWidgets/QtWidgets>
 int Node_ui::nodeNumber=0;
 const qreal pi=3.14159265358979323846264338327950288419717;
 Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)

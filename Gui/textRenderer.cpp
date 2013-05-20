@@ -35,7 +35,6 @@ TextRenderer::TextRenderer(ViewerGL *glwidget)
         cout << "error loading font " << endl;
     m_font->FaceSize(14);
 
-	m_isBetweenBeginAndEnd = false;
 }
 
 TextRenderer::~TextRenderer()
@@ -43,38 +42,11 @@ TextRenderer::~TextRenderer()
 	delete m_font;
 }
 
-void TextRenderer::do_begin()
-{
-    
-}
-
-void TextRenderer::begin()
-{
-	if( ! m_glwidget ) return;
-	if( m_isBetweenBeginAndEnd ) return;
-	m_isBetweenBeginAndEnd = true;
-	do_begin();
-}
-
-void TextRenderer::do_end()
-{
-    
-
-}
-
-void TextRenderer::end()
-{
-	if( m_isBetweenBeginAndEnd )
-        do_end();
-	m_isBetweenBeginAndEnd = false;
-}
 
 void TextRenderer::print( int x, int y, const QString &string,QColor color )
 {
 	if( ! m_glwidget ) return;
 	if( string.isEmpty() ) return;
-	//if( ! m_isBetweenBeginAndEnd ) do_begin();
-	
 	glPushMatrix();
 	        
     float zoomFactor = m_glwidget->getZoomFactor();
@@ -91,5 +63,5 @@ void TextRenderer::print( int x, int y, const QString &string,QColor color )
     m_font->Render(ba.data());
 	glPopMatrix();
     
-	//if( ! m_isBetweenBeginAndEnd ) do_end();
+	
 }

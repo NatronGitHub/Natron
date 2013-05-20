@@ -5,10 +5,10 @@
 //  contact: immarespond at gmail dot com
 
 #include <QtWidgets/QLabel>
+#include "Gui/GLViewer.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
 #include "Core/model.h"
-#include "Gui/GLViewer.h"
 #include "Gui/viewerTab.h"
 
 

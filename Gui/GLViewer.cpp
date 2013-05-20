@@ -11,6 +11,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
 #include <QtGui/QFont>
+#include <QtWidgets/QDockWidget>
 #include <cmath>
 #include <cassert>
 #include <map>
@@ -28,10 +29,45 @@
 #include "Gui/timeline.h"
 #include "Core/diskcache.h"
 #include "Superviser/powiterFn.h"
+
 using namespace Imf;
 using namespace Imath;
 using namespace std;
 
+
+
+
+
+ void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
+	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if( error == GL_FRAMEBUFFER_UNDEFINED)
+		cout << where << ": Framebuffer undefined" << endl;
+	else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+		cout << where << ": Framebuffer incomplete attachment " << endl;
+	else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+		cout << where << ": Framebuffer incomplete missing attachment" << endl;
+	else if( error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER)
+		cout << where << ": Framebuffer incomplete draw buffer" << endl;
+	else if( error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER)
+		cout << where << ": Framebuffer incomplete read buffer" << endl;
+	else if( error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
+		cout << where << ": Framebuffer incomplete read buffer" << endl;
+	else if( error== GL_FRAMEBUFFER_UNSUPPORTED)
+		cout << where << ": Framebuffer unsupported" << endl;
+	else if( error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)
+		cout << where << ": Framebuffer incomplete multisample" << endl;
+	else if( error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT)
+		cout << where << ": Framebuffer incomplete layer targets" << endl;
+	else if(error == GL_FRAMEBUFFER_COMPLETE ){
+		if(!silent)
+			cout << where << ": Framebuffer complete" << endl;
+	}
+	else if ( error == 0)
+		cout << where << ": an error occured determining the status of the framebuffer" << endl;
+	else
+		cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
+	checkGLErrors();
+}
 
 void ViewerGL::blankInfoForViewer(bool onInit){
     blankReaderInfo->currentFrame(0);
@@ -288,6 +324,7 @@ void ViewerGL::initializeGL(){
     // freopen("/dev/null", "w", stderr); // < TEMP FIX TO DISABLE ERRORS
 	makeCurrent();
 	initAndCheckGlExtensions();
+	//initializeExtraFunctions();
  	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
     glGenTextures (1, texId);
@@ -306,6 +343,12 @@ void ViewerGL::initializeGL(){
     }
     
 }
+// void ViewerGL::initializeExtraFunctions(){
+// 	QOpenGLContext* ctx = QOpenGLContext::currentContext();
+// 	 _glMapBufferPtr = ctx->getProcAddress("glMapBuffer");
+// 	_glUnMapPtr = ctx->getProcAddress("glUnmapBuffer");
+// 
+// }
 
 /*Little improvment to the QT version of makeCurrent to make it faster*/
 void ViewerGL::makeCurrent(){
@@ -351,7 +394,7 @@ void ViewerGL::initAndCheckGlExtensions(){
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
-    
+
 #ifdef __POWITER_WIN32__
 	GLenum err = glewInit();
 	if (GLEW_OK != err)

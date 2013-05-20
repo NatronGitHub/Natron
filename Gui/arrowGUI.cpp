@@ -3,11 +3,12 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
-#include <QtWidgets/QtWidgets>
+
 #include "Gui/arrowGUI.h"
 #include "Gui/node_ui.h"
 #include <cmath>
 #include "Core/node.h"
+#include <QtWidgets/QtWidgets>
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
 const int graphicalContainerOffset=5;

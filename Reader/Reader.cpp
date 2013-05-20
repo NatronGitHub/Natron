@@ -138,7 +138,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FramesIterator fr
     }
     /*allocating pbo*/
     
-    
+   
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,ui_context->getPBOId(_pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);

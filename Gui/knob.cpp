@@ -3,7 +3,7 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
-#include <QtWidgets/QtWidgets>
+
 #include <climits>
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
@@ -11,6 +11,7 @@
 #include "Gui/node_ui.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"
+#include <QtWidgets/QtWidgets>
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"

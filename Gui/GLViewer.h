@@ -35,6 +35,18 @@
 #include "Gui/textRenderer.h"
 #include "Core/diskcache.h"
 
+#ifndef PW_DEBUG
+#define checkGLErrors() ((void)0)
+#else
+#define checkGLErrors() \
+{ \
+	GLenum error = glGetError(); \
+	if(error != GL_NO_ERROR) { \
+	std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; \
+	} \
+}
+#endif
+
 class Lut;
 class InfoViewerWidget;
 class Controler;
@@ -74,7 +86,7 @@ public:
     have started.*/
 	void drawRow(Row *row);
 	
-	
+    void checkFrameBufferCompleteness(const char where[],bool silent=true);
     
 	void initializeGL();
     /*check extensions and init Glew for windows*/
@@ -290,6 +302,9 @@ signals:
     void infoDisplayWindowChanged();
     void zoomChanged(int v);
     void frameChanged(int);
+
+// 	void* glMapBuffer(GLenum  target,  GLenum  access){return (this->*_glMapBufferPtr)(target,access);}
+// 	void glUnmapBuffer(GLenum target){(this->*_glUnMapPtr)(target);}
     
 protected :
     
@@ -310,7 +325,14 @@ private:
     
     void initBlackTex();// init the black texture when viewer is disconnected
     void drawBlackTex(); // draw the black texture
-    
+
+	//void initializeExtraFunctions();
+
+// 	typedef void* (ViewerGL::*GLMapPtr)(GLenum,GLenum);
+// 	typedef void (ViewerGL::*GLUnMapPtr)(GLenum);
+//     GLMapPtr _glMapBufferPtr;
+// 	GLUnMapPtr _glUnMapPtr;
+
     TextRenderer _textRenderer;
     
     GLuint texBuffer[2];

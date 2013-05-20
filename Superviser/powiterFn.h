@@ -13,6 +13,7 @@
 #define __POWITER_UNIX__
 #elif  defined(_WIN32)
 #define __POWITER_WIN32__
+#define NOMINMAX // < Qt5 bug workaround with qdatetime.h
 #include <windows.h>
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 #define __POWITER_UNIX__

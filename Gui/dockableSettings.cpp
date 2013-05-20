@@ -3,11 +3,12 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
-#include <QtWidgets/QtWidgets>
+
 #include "Gui/dockableSettings.h"
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"
 #include "Superviser/powiterFn.h"
+#include <QtWidgets/QtWidgets>
 
 SettingsPanel::SettingsPanel(Node_ui* NodeUi ,QWidget *parent):QFrame(parent)
 {
