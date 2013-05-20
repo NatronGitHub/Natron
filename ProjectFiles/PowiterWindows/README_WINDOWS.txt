@@ -15,7 +15,7 @@ In order to have Powiter compiling, first you need to install the required libra
 
 ###Qt 5
 
-You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads). Once downloaded, remember the path where you install it as we will need it later on.
+You'll need to install Qt (5.0.2 as of writing)(opengl version) libraries from [Qt download](http://qt-project.org/downloads). Once downloaded, remember the path where you install it as we will need it later on.
 
 ###FFMPEG
 

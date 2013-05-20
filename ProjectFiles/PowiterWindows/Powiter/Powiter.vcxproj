@@ -47,7 +47,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(BOOST_INCLUDES);$(GLEW_INCLUDES);$(ProjectDir)../../../libs/;$(FFMPEG_INCLUDES);$(OPENEXR_INCLUDES);$(ProjectDir)../../../;$(QT_INCLUDES);$(FREETYPE_INCLUDES);$(FREETYPE2_INCLUDES);$(FTGL_INCLUDES);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
