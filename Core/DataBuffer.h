@@ -11,6 +11,7 @@
 #include <map>
 #include "Core/referenceCountedObj.h"
 #include <string>
+#include <cstring>
 
 /*This class implements a generic Buffer with reference counting.
  *When using it you should not directly use the DataBuffer class
