@@ -10,14 +10,14 @@
 #include "Gui/knob.h"
 #include <QtGui/QImage>
 #include <QtConcurrent/QtConcurrent>
-#include "Core/diskcache.h"
+#include "Core/viewercache.h"
 /* Reader is the node associated to all image format readers. The reader creates the appropriate Read*
  to decode a certain image format.
 */
 using namespace Powiter_Enums;
 class ViewerGL;
 class Read;
-class DiskCache;
+class ViewerCache;
 class Reader : public InputNode
 {
     
@@ -102,7 +102,7 @@ public:
         int _bufferSize; // maximum size of the buffer
     };
     
-    Reader(Node* node,ViewerGL* ui_context,DiskCache* cache);
+    Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache);
     Reader(Reader& ref);
 
     void createReadHandle();
@@ -132,12 +132,12 @@ public:
      * _cacheWatcher!=NULL.
      *if startNewThread is on,the retrieval from the cache and the copy to the PBO will occur in a separate thread.
      **/
-    Reader::Buffer::DecodedFrameDescriptor openCachedFrame(FramesIterator frame ,int frameNb,bool startNewThread);
+    Reader::Buffer::DecodedFrameDescriptor openCachedFrame(ViewerCache::FramesIterator frame ,int frameNb,bool startNewThread);
     
     /*This function is used internally by openCachedFrame(...) in case startNewThread is true.
      *It opens the frame identified by the FramesIterator in the diskcache and copies it to the
      * dst buffer(OpenGL mapped PBO).*/
-    const char* retrieveCachedFrame(FramesIterator frame,int frameNb,void* dst,size_t dataSize);
+    const char* retrieveCachedFrame(ViewerCache::FramesIterator frame,int frameNb,void* dst,size_t dataSize);
     
     /*This function will decode one or more frames depending on its parameters.
      *It will not be called for a cached frame.
@@ -158,7 +158,7 @@ public:
 	QImage* getPreview(){return preview;}
 
     virtual ~Reader();
-    virtual const char* class_name();
+    virtual const char* className();
     virtual const char* description();
 
 	File_Type fileType(){return filetype;}
@@ -200,7 +200,7 @@ private:
 	Read* readHandle;
 	File_Type filetype;
 	ViewerGL* ui_context;
-    DiskCache* _cache;
+    ViewerCache* _cache;
     int _pboIndex;
     std::map<int,QString> files; // frames
     int current_frame;

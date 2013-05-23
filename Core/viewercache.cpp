@@ -9,7 +9,7 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/QVector2D>
 #include <cassert>
-#include "Core/diskcache.h"
+#include "Core/viewercache.h"
 #include "Superviser/controler.h"
 #include "Core/model.h"
 #include "Core/settings.h"
@@ -20,7 +20,7 @@
 using namespace std;
 using Powiter_Enums::MMAPfile_mode;
 
-DiskCache::DiskCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize) : cacheSize(0),MAX_DISK_CACHE(maxDiskSize),MAX_RAM_CACHE(maxRamSize)
+ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize) : cacheSize(0),MAX_DISK_CACHE(maxDiskSize),MAX_RAM_CACHE(maxRamSize)
 {
     QDir root(ROOT);
     QStringList entries = root.entryList();
@@ -43,7 +43,7 @@ DiskCache::DiskCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize) :
     _playbackCacheSize = 0;
 }
 
-void DiskCache::clearCache(){
+void ViewerCache::clearCache(){
     /*first clear the playback cache*/
     clearPlayBackCache();
     
@@ -62,14 +62,14 @@ void DiskCache::clearCache(){
     
 }
 
-DiskCache::~DiskCache(){
+ViewerCache::~ViewerCache(){
     
     saveCache();
     
     
 }
 
-FrameID::FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
+ViewerCache::FrameID::FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
                  std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH):
 _zoom(zoom), _exposure(exp),_lut(lut),_rank(rank),_treeVers(treeVers),
 _cacheIndex(cacheIndex),_byteMode(byteMode),_actualW(actualW),_actualH(actualH){
@@ -77,7 +77,7 @@ _cacheIndex(cacheIndex),_byteMode(byteMode),_actualW(actualW),_actualH(actualH){
     _frameInfo->copy(info);
 }
 
-FrameID::FrameID(const FrameID& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
+ViewerCache::FrameID::FrameID(const ViewerCache::FrameID& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
 _rank(other._rank),_treeVers(other._treeVers),
 _cacheIndex(other._cacheIndex),_byteMode(other._byteMode),_actualW(other._actualW),_actualH(other._actualH)
 {
@@ -88,12 +88,12 @@ _cacheIndex(other._cacheIndex),_byteMode(other._byteMode),_actualW(other._actual
 
 
 
-void DiskCache::saveCache(){
+void ViewerCache::saveCache(){
     QFile _restoreFile(CACHE_ROOT_PATH"settings.cachesettings");
     _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
     QTextStream out(&_restoreFile);
     out << CACHE_VERSION << endl;
-    FramesIterator it = _frames.begin();
+    ViewerCache::FramesIterator it = _frames.begin();
     for(;it!=_frames.end();it++){
         FrameID frame(it->second);
         std::string filename = frame._frameInfo->currentFrameName().toStdString();
@@ -121,7 +121,7 @@ void DiskCache::saveCache(){
 }
 
 
-void DiskCache::restoreCache(){
+void ViewerCache::restoreCache(){
     
     // restoring the unordered multimap from file
     
@@ -220,7 +220,7 @@ void DiskCache::restoreCache(){
                 Box2D bbox(bboxX.toInt(),bboxY.toInt(),bboxR.toInt(),bboxT.toInt());
                 ReaderInfo* infos = new ReaderInfo(format,bbox,fileNameStr,channels,
                                                    -1,true,currentFrameStr.toInt(),firstFrameStr.toInt(),lastFrameStr.toInt());
-                FrameID _id( zoom , exposure  , lut,
+                ViewerCache::FrameID _id( zoom , exposure  , lut,
                             rank,treeHash,_cachedIndex,byteMode,infos,actualWStr.toInt(),actualHStr.toInt());
                 _frames.insert(make_pair(fileName,_id));
                 line = in.readLine();
@@ -281,9 +281,9 @@ void DiskCache::restoreCache(){
     
     
     // renaming the cache files to match the number of files in the map
-    FramesIterator it = _frames.begin();
+    ViewerCache::FramesIterator it = _frames.begin();
     qint64 index = 0;
-    map< int, pair<std::string,FrameID> > ranks;
+    map< int, pair<std::string,ViewerCache::FrameID> > ranks;
     for(;it!=_frames.end();it++){
         QString fileName(it->second._cacheIndex.c_str());
         QString str("frag_");
@@ -298,7 +298,7 @@ void DiskCache::restoreCache(){
     }
     assert( ranks.size() == _frames.size());
     //remapping ranks to be continuous
-    map<int,pair<std::string,FrameID> >::iterator ranksIT = ranks.begin();
+    map<int,pair<std::string,ViewerCache::FrameID> >::iterator ranksIT = ranks.begin();
     int count = 0;
     for(;ranksIT!=ranks.end();ranksIT++){
         ranksIT->second.second._rank = count;
@@ -310,7 +310,7 @@ void DiskCache::restoreCache(){
 }
 
 /*checks whether the frame is present or not*/
-std::pair<FramesIterator,bool> DiskCache::isCached(std::string filename,
+std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string filename,
                                                    U32 treeVersion,
                                                    float builtinZoom,
                                                    float exposure,
@@ -318,8 +318,8 @@ std::pair<FramesIterator,bool> DiskCache::isCached(std::string filename,
                                                    bool byteMode,
                                                    Format format,
                                                    Box2D bbox){
-    pair< FramesIterator,FramesIterator> range = _frames.equal_range(filename);
-    for(FramesIterator it=range.first;it!=range.second;++it){
+    pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
+    for(ViewerCache::FramesIterator it=range.first;it!=range.second;++it){
         if((it->second._zoom == builtinZoom) &&
            (it->second._exposure == exposure) &&
            (it->second._lut == lut) &&
@@ -337,15 +337,15 @@ std::pair<FramesIterator,bool> DiskCache::isCached(std::string filename,
 /* add the frame to the cache if there's enough space, otherwise some free space is made (LRU) to insert it
  It appends the frame with rank 0 (remove last) and increments all the other frame present in cache
  */
-void DiskCache::appendFrame(FrameID _info){
+void ViewerCache::appendFrame(ViewerCache::FrameID _info){
     
     // cycle through all the cache to increment the rank of every frame by 1 since we insert a new one
     if(_frames.begin() != _frames.end()){
-        ReverseFramesIterator ritFrames = _frames.rbegin();
-        map<int,FrameID>::reverse_iterator rit = _rankMap.rbegin();
+        ViewerCache::ReverseFramesIterator ritFrames = _frames.rbegin();
+        map<int,ViewerCache::FrameID>::reverse_iterator rit = _rankMap.rbegin();
         assert(_rankMap.size() == _frames.size());
         for(;rit!=_rankMap.rend();rit++){
-            pair<int,FrameID> curRank = *rit;
+            pair<int,ViewerCache::FrameID> curRank = *rit;
             curRank.first++;
             _rankMap.erase(--(rit.base()));
             _rankMap.insert(curRank);
@@ -359,9 +359,9 @@ void DiskCache::appendFrame(FrameID _info){
 }
 
 /* get the frame*/
-const char* DiskCache::retrieveFrame(int frameNb,FramesIterator it){
+const char* ViewerCache::retrieveFrame(int frameNb,ViewerCache::FramesIterator it){
     
-    FrameID _id = it->second;
+    ViewerCache::FrameID _id = it->second;
     string filename(CACHE_ROOT_PATH);
     filename.append(_id._cacheIndex);
     size_t dataSize;
@@ -372,7 +372,7 @@ const char* DiskCache::retrieveFrame(int frameNb,FramesIterator it){
         dataSize  = _id._actualW * _id._actualH *sizeof(float)*4;
     }
     MMAPfile* cacheFile = 0;
-    vector<pair<FrameID,MMAPfile*> >::iterator i = _playbackCache.begin();
+    vector<pair<ViewerCache::FrameID,MMAPfile*> >::iterator i = _playbackCache.begin();
     for(;i!=_playbackCache.end();i++){
         if(i->first == _id){
             cacheFile = i->second;
@@ -403,13 +403,13 @@ const char* DiskCache::retrieveFrame(int frameNb,FramesIterator it){
 }
 
 
-void DiskCache::makeFreeSpace(int nbFrames){
+void ViewerCache::makeFreeSpace(int nbFrames){
     
-    map<int,FrameID>::iterator it = _rankMap.end(); it--;
+    map<int,ViewerCache::FrameID>::iterator it = _rankMap.end(); it--;
     FramesIterator it2 = _frames.end();it2--;
     int i =0;
     while( i < nbFrames){
-        FrameID frame = it->second;
+        ViewerCache::FrameID frame = it->second;
         qint64 frameSize;
         Format frmt = frame._frameInfo->displayWindow();
         if(frame._byteMode==1.0){
@@ -450,7 +450,7 @@ void DiskCache::makeFreeSpace(int nbFrames){
 }
 
 
-std::pair<char*,FrameID> DiskCache::mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers){
+std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers){
     string name("frag_");
     char tmp[64];
     sprintf(tmp,"%llu",newCacheBlockIndex);
@@ -460,7 +460,7 @@ std::pair<char*,FrameID> DiskCache::mapNewFrame(int frameNB,std::string filename
     ReaderInfo* frameInfo = new ReaderInfo;
     frameInfo->copy(gl_viewer->getCurrentReaderInfo());
     frameInfo->currentFrameName(QString::fromStdString(filename));
-    FrameID _info(gl_viewer->currentBuiltInZoom,gl_viewer->exposure,
+    ViewerCache::FrameID _info(gl_viewer->getCurrentBuiltinZoom(),gl_viewer->exposure,
                   gl_viewer->_lut,0,treeVers,name,gl_viewer->_byteMode,
                   frameInfo,width,height);
     size_t sizeNeeded;
@@ -487,8 +487,8 @@ std::pair<char*,FrameID> DiskCache::mapNewFrame(int frameNB,std::string filename
     
     return make_pair(mf->data(),_info);
 }
-void DiskCache::closeMappedFile(){
-    vector<pair<FrameID,MMAPfile*> >::iterator it = _playbackCache.begin();
+void ViewerCache::closeMappedFile(){
+    vector<pair<ViewerCache::FrameID,MMAPfile*> >::iterator it = _playbackCache.begin();
     gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->removeCachedFrame();
     MMAPfile* mf =  it->second;
     _playbackCacheSize-=mf->size();
@@ -498,7 +498,7 @@ void DiskCache::closeMappedFile(){
     
 }
 
-void DiskCache::clearPlayBackCache(){
+void ViewerCache::clearPlayBackCache(){
     
     for(int i = 0 ; i < _playbackCache.size() ;i++){
         _playbackCache[i].second->close();
@@ -510,9 +510,9 @@ void DiskCache::clearPlayBackCache(){
 }
 
 
-void DiskCache::debugCache(){
+void ViewerCache::debugCache(){
     cout << "=========CACHE DUMP===========" << endl;
-    for(FramesIterator it = _frames.begin();it!=_frames.end();it++){
+    for(ViewerCache::FramesIterator it = _frames.begin();it!=_frames.end();it++){
         cout << it->first << endl;
     }
     cout <<"===============================" << endl;

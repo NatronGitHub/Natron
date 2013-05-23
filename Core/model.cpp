@@ -227,12 +227,12 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
     bool found=false;
     foreach(CounterID* counter,counters){
         string tmp(counter->second);
-        string nodeName(node->class_name());
+        string nodeName(node->className());
         if(tmp==nodeName){
             (counter->first)++;
             found=true;
             QString str;
-            str.append(node->class_name());
+            str.append(node->className());
             str.append("_");
             char c[50];
             sprintf(c,"%d",counter->first);
@@ -241,11 +241,11 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         }
     }
     if(!found){
-        CounterID* count=new CounterID(1,node->class_name());
+        CounterID* count=new CounterID(1,node->className());
         
         counters.push_back(count);
         QString str;
-        str.append(node->class_name());
+        str.append(node->className());
         str.append("_");
         char c[50];
         sprintf(c,"%d",count->first);

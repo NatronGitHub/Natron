@@ -357,7 +357,7 @@ void ReadExr::open(const QString filename,bool openBothViews){
             by--;
             br++;
             bt++;
-            op->getInfo()->black_outside(true);
+            op->getInfo()->blackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
         //op->getInfo()->set(bx, by, br+1, bt+1);

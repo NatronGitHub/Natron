@@ -28,9 +28,6 @@
     <ClCompile Include="..\..\..\Core\DataBuffer.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Core\diskcache.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Core\displayFormat.cpp">
       <Filter>Core</Filter>
     </ClCompile>
@@ -196,6 +193,9 @@
     <ClCompile Include="..\..\GeneratedFiles\VideoEngine_moc.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Core\viewercache.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -205,9 +205,6 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Core\DataBuffer.h">
-      <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Core\diskcache.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Core\displayFormat.h">
@@ -332,6 +329,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Gui\comboBox.h">
       <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\viewercache.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

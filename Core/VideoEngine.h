@@ -14,7 +14,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <boost/bind.hpp>
 #include <map>
-#include "Core/diskcache.h"
+#include "Core/viewercache.h"
 #include "Core/hash.h"
 #include "Reader/Reader.h"
 
@@ -68,7 +68,7 @@ class VideoEngine :public QObject{
     
     std::vector<Task> _waitingTasks;
     
-    DiskCache* _cache ; // disk cache (physically stored, saved between 2 runs).    
+    ViewerCache* _cache ; // disk cache (physically stored, saved between 2 runs).    
     ViewerGL* gl_viewer;
     Model* _coreEngine;
     bool _firstTime;
@@ -83,13 +83,6 @@ class VideoEngine :public QObject{
     std::map<Reader*, ReaderInfo* > readersInfos; // map of all readersInfos associated to the readers
     bool _readerInfoHasChanged; // true when the readerInfo for one reader has changed.This is used for the GlViewer
 
-	/*Map of the bultin zooms available. This is used by the down-scaling algorithm
-	 *A builtin zoom is a factor, associated to a pair of ints.
-	 *E.g if the zoom factor is 0.5, the pair of int will be 1,2. The first int tells how many
-	 *rows (or pixels in case of line) we will keep in the down-res version. The Second int tells
-	 *how many rows we will scan in the full-res version. It can be read as such :
-	 *We keep X rows in Y rows of the input. */
-    std::map<float, std::pair<int,int> > builtInZooms; 
 
     bool _aborted ;// true when the engine has been aborted, i.e: the user disconnected the viewer
     bool _paused; // true when the user pressed pause
@@ -167,11 +160,6 @@ public:
 	/*Executes the tree for one frame*/
     void computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb);
     
-	/*utility functions to get builtinzooms for the downscaling algorithm*/
-    float closestBuiltinZoom(float v);
-    float inferiorBuiltinZoom(float v);
-    float superiorBuiltinZoom(float v);
-    
 	/*clears-out all the node-infos in the graph*/
     void clearInfos(Node* out);
 
@@ -198,7 +186,7 @@ public:
 	
     
 	/*Inserts a new frame in the disk cache*/
-    std::pair<char*,FrameID> mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint);
+    std::pair<char*,ViewerCache::FrameID> mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint);
 
 	/*Close the LRU frame in the disk cache*/
     void closeMappedFile();
@@ -216,19 +204,17 @@ public:
     /*the function calling the engine for one scan-line*/
     static void metaEnginePerRow(Row* row,OutputNode* output);
     
-    std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,FramesIterator > >
+    std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > >
     startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
     
     void resetReadingBuffers();
     
-    DiskCache* getDiskCache(){return _cache;}
+    ViewerCache* getDiskCache(){return _cache;}
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();
     void _drawOverlay(Node *output);
-
-    void fillBuilInZoomsLut();
     
     /*Row cache related functions*/
 	std::map<int,Row*> get_row_cache(){return row_cache;}
@@ -254,7 +240,7 @@ private:
     void runTasks();
     
     /*Used internally by the computeFrameRequest func for cached frames*/
-    void cachedFrameEngine(FramesIterator fram);
+    void cachedFrameEngine(ViewerCache::FramesIterator fram);
     
     /*reset variables used by the videoEngine*/
     void stopEngine();

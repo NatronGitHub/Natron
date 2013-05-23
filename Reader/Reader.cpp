@@ -29,7 +29,7 @@
 using namespace std;
 
 
-Reader::Reader(Node* node,ViewerGL* ui_context,DiskCache* cache):InputNode(node),current_frame(0),video_sequence(0),
+Reader::Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache):InputNode(node),current_frame(0),video_sequence(0),
 readHandle(0),has_preview(false),ui_context(ui_context),_cache(cache),_pboIndex(0){}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
@@ -38,7 +38,7 @@ Reader::~Reader(){
 	delete preview;
 	delete readHandle;
 }
-const char* Reader::class_name(){return "Reader";}
+const char* Reader::className(){return "Reader";}
 
 const char* Reader::description(){
     return "InputNode";
@@ -109,7 +109,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     
 }
 
-Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FramesIterator frame,int frameNb,bool startNewThread){
+Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::FramesIterator frame,int frameNb,bool startNewThread){
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first, Buffer::BOTH_SEARCH);
     if(found !=_buffer.end()){
         if(found->_cacheWatcher || found->_cachedFrame){
@@ -161,7 +161,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FramesIterator fr
     }
 }
 
-const char* Reader::retrieveCachedFrame(FramesIterator frame,int frameNb,void* dst,size_t dataSize){
+const char* Reader::retrieveCachedFrame(ViewerCache::FramesIterator frame,int frameNb,void* dst,size_t dataSize){
     const char* cachedFrame =  _cache->retrieveFrame(frameNb,frame);
     ui_context->fillPBO(cachedFrame, dst, dataSize);
     return cachedFrame;
@@ -245,7 +245,7 @@ bool Reader::makeCurrentDecodedFrame(){
     readInfo->lastFrame(lastFrame());
     Box2D bbox = readInfo->dataWindow();
     _info->set(bbox.x(), bbox.y(), bbox.right(), bbox.top());
-    _info->set_full_size_format(readInfo->displayWindow());
+    _info->setDisplayWindow(readInfo->displayWindow());
     _info->set_channels(readInfo->channels());
     _info->setYdirection(readInfo->Ydirection());
     _info->rgbMode(readInfo->rgbMode());

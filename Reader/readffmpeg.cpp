@@ -931,8 +931,8 @@ bool ReadFFMPEG::fillBuffer(){
 }
 
 void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out){
-    int w = op->getInfo()->getFull_size_format().w();
-    int h = op->getInfo()->getFull_size_format().h();
+    int w = op->getInfo()->getDisplayWindow().w();
+    int h = op->getInfo()->getDisplayWindow().h();
 	
 	
 
@@ -958,7 +958,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
  
 
 void ReadFFMPEG::make_preview(const char* filename){
-    Format frmt = op->getInfo()->getFull_size_format();
+    Format frmt = op->getInfo()->getDisplayWindow();
 	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);

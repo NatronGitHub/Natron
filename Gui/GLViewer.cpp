@@ -27,7 +27,7 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Core/lutclasses.h"
 #include "Gui/timeline.h"
-#include "Core/diskcache.h"
+#include "Core/viewercache.h"
 #include "Superviser/powiterFn.h"
 
 using namespace Imf;
@@ -77,7 +77,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 }
 void ViewerGL::initConstructor(){
     _hasHW=true;
-    blankReaderInfo = new ReaderInfo();
+    blankReaderInfo = new ReaderInfo;
     blankReaderInfo->channels(Mask_RGBA);
     blankReaderInfo->Ydirection(1);
     blankReaderInfo->rgbMode(true);
@@ -89,12 +89,10 @@ void ViewerGL::initConstructor(){
     blankReaderInfo->lastFrame(0);
     blankReaderInfo->currentFrame(0);
     blankInfoForViewer(true);
-    zoomX =0; zoomY=0;
 	_drawing=false;
 	exposure = 1;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
-    fillBuiltInZooms();
     _firstTime = true;
 	shaderLC=NULL;
 	shaderRGB=NULL;
@@ -109,8 +107,7 @@ void ViewerGL::initConstructor(){
 }
 
 ViewerGL::ViewerGL(Controler* ctrl,float byteMode,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),zoomFactor(1),
-currentBuiltInZoom(-1.f),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+:QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 {
     
     this->ctrl = ctrl;
@@ -118,8 +115,7 @@ currentBuiltInZoom(-1.f),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(
     
 }
 ViewerGL::ViewerGL(Controler* ctrl,float byteMode,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),zoomFactor(1),
-currentBuiltInZoom(-1.f),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+:QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 
 {
     this->ctrl = ctrl;
@@ -128,8 +124,7 @@ currentBuiltInZoom(-1.f),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(
 }
 
 ViewerGL::ViewerGL(Controler* ctrl,float byteMode,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),zoomFactor(1),
-currentBuiltInZoom(-1.f),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+:QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 {
     this->ctrl = ctrl;
     initConstructor();
@@ -208,9 +203,9 @@ void ViewerGL::paintGL()
 		glLoadIdentity();
         
         glTranslatef(transX, -transY, 0);
-        glTranslatef(zoomX, zoomY, 0);
-        glScalef(zoomFactor, zoomFactor, 1);
-        glTranslatef(-zoomX, -zoomY, 0);
+        glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
+        glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
+        glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
         
         glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texId[0]);
@@ -481,8 +476,8 @@ void ViewerGL::restoreGLState()
 void ViewerGL::initTextures(){
     
 	makeCurrent();
-    int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
-    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+    int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
     initTexturesRgb(w,h);
 	initShaderGLSL();
     
@@ -505,7 +500,7 @@ void ViewerGL::initTexturesRgb(int w,int h){
     
     // if the texture is zoomed, do not produce antialiasing so the user can
     // zoom to the pixel
-    if(currentBuiltInZoom >= 0.5){
+    if(_zoomCtx.currentBuiltInZoom >= 0.5){
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }else{
@@ -539,11 +534,11 @@ void ViewerGL::initTexturesRgb(int w,int h){
 }
 void ViewerGL::initBlackTex(){
     makeCurrent();
-    float zf =  closestBuiltinZoom(getZoomFactor());
+    float zf =  _builtInZoomMap.closestBuiltinZoom(_zoomCtx.zoomFactor);
     setCurrentBuiltInZoom(zf);
-    ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(zoomFactor*100);
-    int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
-    int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
+    int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+    int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
     
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
@@ -559,8 +554,9 @@ void ViewerGL::initBlackTex(){
                   GL_BGRA,		// format
                   GL_UNSIGNED_INT_8_8_8_8_REV,	// type
                   0);			// pixels
-    float incrementNew = builtInZooms[zf].first;
-    float incrementFullsize = builtInZooms[zf].second;
+	std::pair<int,int> incr = _builtInZoomMap[zf];
+    float incrementNew = incr.first;
+    float incrementFullsize = incr.second;
     setZoomIncrement(make_pair(incrementNew,incrementFullsize));
     int y = displayWindow().y();
     int rowy = displayWindow().y();
@@ -617,12 +613,12 @@ void ViewerGL::drawBlackTex(){
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
-    glTranslatef(transX, transY, 0);
+    glTranslatef(transX, -transY, 0);
     
     
-    glTranslatef(zoomX, zoomY, 0);
-    glScalef(zoomFactor, zoomFactor, 1);
-    glTranslatef(-zoomX, -zoomY, 0);
+    glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
+    glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
+    glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
     
     glClear (GL_COLOR_BUFFER_BIT);
     glEnable (GL_TEXTURE_2D);
@@ -647,7 +643,7 @@ void ViewerGL::drawBlackTex(){
 
 void ViewerGL::drawRow(Row* row){
     
-    int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
+    int w = floorf(_readerInfo->displayWindow().w() * _zoomCtx.currentBuiltInZoom);
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w*sizeof(float),row->zoomedY(),(*row)[Channel_alpha]);
@@ -661,10 +657,10 @@ void ViewerGL::drawRow(Row* row){
 void ViewerGL::preProcess(std::string filename,int nbFrameHint){
     // init mmaped file 
     if(_makeNewFrame){
-        int w = floorf(_readerInfo->displayWindow().w() * currentBuiltInZoom);
-        int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+        int w = floorf(_readerInfo->displayWindow().w() * _zoomCtx.currentBuiltInZoom);
+        int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        pair<char*,FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),filename, w, h, nbFrameHint);
+        pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),filename, w, h, nbFrameHint);
         frameData = p.first;
         frameInfo = p.second;
         _makeNewFrame = false;
@@ -739,8 +735,8 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     output+=yOffset;
     U32* end = output + nbBytesOutput;
     
-    int downScaleIncrement = (int)zoomIncrement.first; // number of pixels to keep in the scan
-    int fullSizeIncrement = (int)zoomIncrement.second; // number of pixels to scan per cycle
+    int downScaleIncrement = (int)_zoomCtx.zoomIncrement.first; // number of pixels to keep in the scan
+    int fullSizeIncrement = (int)_zoomCtx.zoomIncrement.second; // number of pixels to scan per cycle
     
     int start = nbBytesOutput/fullSizeIncrement;
     int incrementCount = (int)(rand()%start);
@@ -865,8 +861,8 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     yOffset *=nbBytesOutput;
     output+=yOffset;
     
-    float downScaleIncrement = zoomIncrement.first; // number of rows to keep in the scan
-    float fullSizeIncrement = zoomIncrement.second; // number of rows to scan per cycle
+    float downScaleIncrement = _zoomCtx.zoomIncrement.first; // number of rows to keep in the scan
+    float fullSizeIncrement = _zoomCtx.zoomIncrement.second; // number of rows to scan per cycle
     
     int itOld = 0;
     int itNew = 0;
@@ -963,42 +959,42 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     QPointF p;
     float increment=0.f;
-    if(zoomFactor<1.f)
+    if(_zoomCtx.zoomFactor<1.f)
         increment=0.1;
     else
-        increment=0.1*zoomFactor;
+        increment=0.1*_zoomCtx.zoomFactor;
 	if(!vengine->isWorking()){
 		if(event->delta() >0){
             
-            zoomFactor+=increment;
+            _zoomCtx.zoomFactor+=increment;
             
-            if(old_zoomed_pt_win != event->pos()){
+            if(_zoomCtx.old_zoomed_pt_win != event->pos()){
                 p = openGLpos(event->x(), event->y());
                 p.setY(displayWindow().h() - p.y());
-                float dx=(p.x()-old_zoomed_pt.x());
-                float dy=(p.y()-old_zoomed_pt.y());
-                zoomX+=dx/2.f;
-                zoomY-=dy/2.f;
-                restToZoomX = dx/2.f;
-                restToZoomY = dy/2.f;
-                old_zoomed_pt = p;
-                old_zoomed_pt_win = event->pos();
+                float dx=(p.x()-_zoomCtx.old_zoomed_pt.x());
+                float dy=(p.y()-_zoomCtx.old_zoomed_pt.y());
+                _zoomCtx.zoomX+=dx/2.f;
+                _zoomCtx.zoomY-=dy/2.f;
+                _zoomCtx.restToZoomX = dx/2.f;
+                _zoomCtx.restToZoomY = dy/2.f;
+                _zoomCtx.old_zoomed_pt = p;
+                _zoomCtx.old_zoomed_pt_win = event->pos();
             }else{
-                zoomX+=restToZoomX;
-                zoomY-=restToZoomY;
-                restToZoomX = 0;
-                restToZoomY = 0;
+                _zoomCtx.zoomX+=_zoomCtx.restToZoomX;
+                _zoomCtx.zoomY-=_zoomCtx.restToZoomY;
+                _zoomCtx.restToZoomX = 0;
+                _zoomCtx.restToZoomY = 0;
             }
             zoomIn();
             
             
             
 		}else if(event->delta() < 0){
-			zoomFactor -= increment;
+			 _zoomCtx.zoomFactor -= increment;
             zoomOut();
         }
         
-        emit zoomChanged(zoomFactor*100);
+        emit zoomChanged( _zoomCtx.zoomFactor*100);
 	}
     
     
@@ -1006,11 +1002,11 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 void ViewerGL::zoomSlot(int v){
     float value = v/100.f;
     if(!vengine->isWorking()){
-        if(v<zoomFactor){ // zoom out
-            zoomFactor = value;
+        if(v<_zoomCtx.zoomFactor){ // zoom out
+            _zoomCtx.zoomFactor = value;
             zoomOut();
         }else{
-            zoomFactor = value;
+            _zoomCtx.zoomFactor = value;
             zoomIn();
         }
     }
@@ -1096,7 +1092,7 @@ QVector4D ViewerGL::U32toBGRA(U32 &c){
     return out;
 }
 
-void ViewerGL::fillBuiltInZooms(){
+void ViewerGL::BuiltinZooms::fillBuiltInZooms(){
     builtInZooms[1.f/10.f] = make_pair(1,10);
     builtInZooms[1.f/4.f] = make_pair(1,4);
     builtInZooms[1.f/2.f] = make_pair(1,2);
@@ -1105,7 +1101,7 @@ void ViewerGL::fillBuiltInZooms(){
     builtInZooms[1.f] = make_pair(1,1);
     
 }
-float ViewerGL::closestBuiltinZoom(float v){
+float ViewerGL::BuiltinZooms::closestBuiltinZoom(float v){
     std::map<float, pair<int,int> >::iterator it = builtInZooms.begin();
     std::map<float, pair<int,int> >::iterator suiv = it;
     ++suiv;
@@ -1124,7 +1120,7 @@ float ViewerGL::closestBuiltinZoom(float v){
 }
 
 
-float ViewerGL::inferiorBuiltinZoom(float v){
+float ViewerGL::BuiltinZooms::inferiorBuiltinZoom(float v){
     map<float, pair<int,int> >::iterator it=builtInZooms.begin(); it++;
     map<float, pair<int,int> >::iterator prec =builtInZooms.begin();
     for(;it!=builtInZooms.end();it++){
@@ -1137,7 +1133,7 @@ float ViewerGL::inferiorBuiltinZoom(float v){
     }
     return -1.f;
 }
-float ViewerGL::superiorBuiltinZoom(float v){
+float ViewerGL::BuiltinZooms::superiorBuiltinZoom(float v){
     map<float, pair<int,int> >::iterator suiv=builtInZooms.begin(); suiv++;
     map<float, pair<int,int> >::iterator it =builtInZooms.begin();
     for(;it!=builtInZooms.end();it++){
@@ -1153,24 +1149,24 @@ float ViewerGL::superiorBuiltinZoom(float v){
 void ViewerGL::initViewer(){
     float h = (float)(displayWindow().h());
     float zoomFactor = (float)height()/h;
-    old_zoomed_pt_win.setX((float)width()/2.f);
-    old_zoomed_pt_win.setY((float)height()/2.f);
-    old_zoomed_pt.setX((float)displayWindow().w()/2.f);
-    old_zoomed_pt.setY((float)displayWindow().h()/2.f);
+    _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);
+    _zoomCtx.old_zoomed_pt_win.setY((float)height()/2.f);
+    _zoomCtx.old_zoomed_pt.setX((float)displayWindow().w()/2.f);
+    _zoomCtx.old_zoomed_pt.setY((float)displayWindow().h()/2.f);
     
     setZoomFactor(zoomFactor);
     setTranslation(0, 0);
     setZoomFactor(zoomFactor-0.05);
     resetMousePos();
-    setZoomXY((float)displayWindow().w()/2.f,(float)displayWindow().h()/2.f);
+    _zoomCtx.setZoomXY((float)displayWindow().w()/2.f,(float)displayWindow().h()/2.f);
 }
 
 void ViewerGL::zoomIn(){
-    if(zoomFactor<=1.f){
-        if(zoomFactor > currentBuiltInZoom && _drawing){
-            currentBuiltInZoom = superiorBuiltinZoom(currentBuiltInZoom);
-            int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    if(_zoomCtx.zoomFactor<=1.f){
+        if(_zoomCtx.zoomFactor > _zoomCtx.currentBuiltInZoom && _drawing){
+            _zoomCtx.currentBuiltInZoom = _builtInZoomMap.superiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
+            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
             vengine->_cache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
@@ -1181,15 +1177,15 @@ void ViewerGL::zoomIn(){
     
 }
 void ViewerGL::zoomOut(){
-    if(zoomFactor <= 0.1){
-        zoomFactor = 0.1;
+    if(_zoomCtx.zoomFactor <= 0.1){
+        _zoomCtx.zoomFactor = 0.1;
     }
-    if(zoomFactor<=1.f){
-        float inf = inferiorBuiltinZoom(currentBuiltInZoom);
-        if(zoomFactor < inf && _drawing){
-            currentBuiltInZoom = inf;
-            int w = floorf(_readerInfo->displayWindow().w()*currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*currentBuiltInZoom);
+    if(_zoomCtx.zoomFactor<=1.f){
+        float inf = _builtInZoomMap.inferiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
+        if(_zoomCtx.zoomFactor < inf && _drawing){
+            _zoomCtx.currentBuiltInZoom = inf;
+            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
             vengine->_cache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);

@@ -16,17 +16,17 @@
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     out << "DUMPING INFO FOR :" << endl;
-    out << "Node: "<<node.class_name() << endl;
+    out << "Node: "<<node.className() << endl;
     out << "------------------------------" << endl;
     out << "Parents :" << endl;
     foreach(Node* p,node.getParents()){
-        out << "Parent: " << p->class_name();
+        out << "Parent: " << p->className();
     }
     out << endl;
     out << "------------------------------" << endl;
     out << "Children: " << endl;
     foreach(Node* p,node.getChildren()){
-        out << "Child: " << p->class_name();
+        out << "Child: " << p->className();
     }
     out << endl;
     out << "------------------------------" << endl;
@@ -79,10 +79,10 @@ void Node::Info::add_to_channels(ChannelMask &m){
 	_channels+=m;
 }
 
-void Node::Info::remove_from_channels(Channel z){
+void Node::Info::turnOffChannel(Channel z){
     _channels-=z;
 }
-void Node::Info::remove_from_channels(ChannelMask &m){
+void Node::Info::turnOffChannels(ChannelMask &m){
 	_channels-=m;
 }
 
@@ -91,7 +91,7 @@ void Node::copy_info(){
 	_info->firstFrame(parent->getInfo()->firstFrame());
 	_info->lastFrame(parent->getInfo()->lastFrame());
 	_info->setYdirection(parent->getInfo()->getYdirection());
-	_info->set_full_size_format(parent->getInfo()->getFull_size_format());
+	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
 	_info->set_channels(parent->getInfo()->channels());
 	_info->merge(*(parent->getInfo()));
     _info->rgbMode(parent->getInfo()->rgbMode());
@@ -113,18 +113,18 @@ void Node::merge_info(){
 	
 	int final_direction=0;
 	Node* first=parents[0];
-	Format expectedFormat=first->getInfo()->getFull_size_format();
+	Format expectedFormat=first->getInfo()->getDisplayWindow();
 	ChannelMask chans=_info->channels();
     bool displayMode=first->getInfo()->rgbMode();
 	foreach(Node* parent,parents){
 		merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
 		final_direction+=parent->getInfo()->getYdirection();
 		chans += parent->getInfo()->channels();
-		if(parent->getInfo()->getFull_size_format()!=expectedFormat){
-			std::cout << "Warning: merge_info: inputs of" << class_name() << " have a different format " << std::endl;
+		if(parent->getInfo()->getDisplayWindow()!=expectedFormat){
+			std::cout << "Warning: merge_info: inputs of" << className() << " have a different format " << std::endl;
 		}
         if(parent->getInfo()->rgbMode()!=displayMode){
-            std::cout << "Warning: merge_info: inputs of" << class_name() << " have a different display mode" << std::endl;
+            std::cout << "Warning: merge_info: inputs of" << className() << " have a different display mode" << std::endl;
         }
 	}
     final_direction/=parents.size();
@@ -143,12 +143,12 @@ void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
 		}
 	
 }
-bool Node::Info::is_similar(Info other){
+bool Node::Info::operator==( Node::Info &other){
 	if(other.channels()==this->channels() &&
-		other.firstFrame()==this->first_frame &&
-		other.lastFrame()==this->last_frame &&
-		other.getYdirection()==this->ydirection &&
-		other.getFull_size_format()==this->full_size_format
+		other.firstFrame()==this->_firstFrame &&
+		other.lastFrame()==this->_lastFrame &&
+		other.getYdirection()==this->_ydirection &&
+		other.getDisplayWindow()==this->_displayWindow
 		){
 			return true;
 	}else{
@@ -286,7 +286,7 @@ void Node::initInputsLabels(){
 
 
 
-const char* Node::class_name(){return "Node_Abstract_Class";}
+const char* Node::className(){return "Node_Abstract_Class";}
 
 void Node::validate(bool first_time){
 	/*_validate(bool for_real)
@@ -367,7 +367,7 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
     for(int i=0;i<knobs.size();i++){
         hashValue->appendKnobToHash(knobs[i]);
     }
-    hashValue->appendQStringToHash(name);
+    hashValue->appendQStringToHash(QString(className()));
     foreach(Node* parent,parents){
         parent->computeTreeHash(alreadyComputedHash);
         hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());

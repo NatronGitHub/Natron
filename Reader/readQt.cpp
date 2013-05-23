@@ -23,7 +23,7 @@ ReadQt::~ReadQt(){
 }
 void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     uchar* buffer;
-    int h = op->getInfo()->getFull_size_format().h();
+    int h = op->getInfo()->getDisplayWindow().h();
     int Y = h - y - 1;
     buffer = _img->scanLine(Y);
     float* r = out->writable(Channel_red) + offset;

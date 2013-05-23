@@ -15,7 +15,7 @@
 #include "Core/channels.h"
 #include "Superviser/powiterFn.h"
 #include "Core/row.h"
-#include "Core/diskcache.h"
+#include "Core/viewercache.h"
 #include "Core/displayFormat.h"
 #include "Core/Box.h"
 #include "Gui/GLViewer.h"
@@ -37,44 +37,45 @@ public:
 	 *and to know what we can request from a node.*/
 	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format full_size_format,ChannelMask _channels):
-		  first_frame(first_frame),
-			  last_frame(last_frame),
-			  ydirection(ydirection),
-			  full_size_format(full_size_format),
-			  _channels(_channels)
+		Info(int first_frame,int last_frame,int ydirection,Format full_size_format,ChannelMask channels):
+		  _firstFrame(first_frame),
+			  _lastFrame(last_frame),
+			  _ydirection(ydirection),
+			  _displayWindow(full_size_format),
+			  _channels(channels)
 		  {}
-	    Info():first_frame(-1),last_frame(-1),ydirection(0),_channels(),full_size_format(){}
-		void setYdirection(int direction){ydirection=direction;}
-		int getYdirection(){return ydirection;}
-		void set_full_size_format(Format format){
-            full_size_format=format;
+	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_channels(),_displayWindow(){}
+		void setYdirection(int direction){_ydirection=direction;}
+		int getYdirection(){return _ydirection;}
+		void setDisplayWindow(Format format){
+            _displayWindow=format;
                     }
-		Format& getFull_size_format(){return full_size_format;}
-		bool is_similar(Info other);
-		void firstFrame(int nb){first_frame=nb;}
-		void lastFrame(int nb){last_frame=nb;}
-		int firstFrame(){return first_frame;}
-		int lastFrame(){return last_frame;}
+		Format& getDisplayWindow(){return _displayWindow;}
+		Box2D& getDataWindow(){return dynamic_cast<Box2D&>(*this);}
+		bool operator==( Node::Info &other);
+		void firstFrame(int nb){_firstFrame=nb;}
+		void lastFrame(int nb){_lastFrame=nb;}
+		int firstFrame(){return _firstFrame;}
+		int lastFrame(){return _lastFrame;}
 		void add_to_channels(Channel z);
 		void add_to_channels(ChannelMask &m);
-		void remove_from_channels(Channel z);
-		void remove_from_channels(ChannelMask &m);
+		void turnOffChannel(Channel z);
+		void turnOffChannels(ChannelMask &m);
 		void set_channels(ChannelMask mask){_channels=mask;}	
 		ChannelMask& channels(){return _channels;}
-		bool black_outside(){return _black_outside;}
-		void black_outside(bool bo){_black_outside=bo;}
+		bool blackOutside(){return _blackOutside;}
+		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
         bool rgbMode(){return _rgbMode;}
         
 		
 	private:
-		int first_frame;
-		int last_frame;
-		int ydirection;
-		bool _black_outside;
+		int _firstFrame;
+		int _lastFrame;
+		int _ydirection;
+		bool _blackOutside;
         bool _rgbMode;
-		Format full_size_format; // display window of the data, for the data window see x,y,range,offset parameters
+		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelMask _channels; // all channels defined by the current Node ( that are allocated)
 		
 	};
@@ -121,8 +122,8 @@ public:
 	ChannelMask& getOutputChannels(){return output_channels;}
 	ChannelMask& getRequestedChannels(){return requested_channels;}
 	Box2D& get_requested_box(){return requested_box;}
-    int width(){return _info->getFull_size_format().w();}
-    int height(){return _info->getFull_size_format().h();}
+    int width(){return _info->getDisplayWindow().w();}
+    int height(){return _info->getDisplayWindow().h();}
 	/*================================*/
     
 
@@ -163,7 +164,7 @@ public:
     /*============================*/
 
     /*Node utility functions*/
-    virtual const char* class_name();
+    virtual const char* className();
     virtual const char* description();
     /*============================*/
 

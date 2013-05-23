@@ -28,7 +28,7 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
     number=nodeNumber;
     nodeNumber++;
 	
-	if(strcmp(node->class_name(),"Reader")==0){ // if the node is not a reader
+	if(strcmp(node->className(),"Reader")==0){ // if the node is not a reader
 		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));	
 	}else{
 		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH,NODE_HEIGHT)));
@@ -61,14 +61,14 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
     channels->setToolTip(tooltip);
     name=scene->addSimpleText((node->getName()));
 	
-	if(strcmp(node->class_name(),"Reader")==0){
+	if(strcmp(node->className(),"Reader")==0){
 		name->setX(x+35);
 		name->setY(y+1);
 	}else{
 		name->setX(x+10);
 		name->setY(y+channels->boundingRect().height()+5);
 	}
-    if(strcmp(node->class_name(),"Reader")==0){
+    if(strcmp(node->className(),"Reader")==0){
 		if(static_cast<Reader*>(node)->hasPreview()){
 			QImage *prev=static_cast<Reader*>(node)->getPreview();
 			QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -93,7 +93,7 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
     initInputArrows();
 
     /*building settings panel*/
-	if(strcmp(node->class_name(),"Viewer")){
+	if(strcmp(node->className(),"Viewer")){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
 		settings=new SettingsPanel(this);
@@ -230,7 +230,7 @@ bool Node_ui::hasInputNodeConnected(Node_ui*& node){
     }
 
     foreach(Node_ui* c,parents){
-        if(!strcmp(c->getNode()->class_name(),"Reader")){
+        if(!strcmp(c->getNode()->className(),"Reader")){
             node = c;
             return true;
         }else{
@@ -245,7 +245,7 @@ bool Node_ui::hasOutputNodeConnected(Node_ui*& node){
         return true;
     }
     foreach(Node_ui* c,children){
-        if(!strcmp(c->getNode()->class_name(),"Viewer")){
+        if(!strcmp(c->getNode()->className(),"Viewer")){
             node = c;
             return true;
         }else{

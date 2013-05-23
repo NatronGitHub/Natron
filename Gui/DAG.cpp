@@ -105,7 +105,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
 
             arrow_dragged->removeSource();
             scene()->update();
-            if(!strcmp(arrow_dragged->getDest()->getNode()->class_name(),"Viewer")){
+            if(!strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")){
                 ViewerGL* gl_viewer = ctrl->getGui()->viewer_tab->viewer;
                 
                 ctrl->getModel()->getVideoEngine()->abort(); // aborting current work
@@ -156,13 +156,13 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
             /*if it is a viewer*/
-            if(strcmp(arrow_dragged->getDest()->getNode()->class_name(),"Viewer")==0){
+            if(strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")==0){
                 std::vector<InputNode*> inputs;
                 ctrl->getModel()->getGraphInput(inputs,dynamic_cast<Node*>(arrow_dragged->getSource()->getNode()));
                 bool go=true;
                 for(int i=0;i<inputs.size();i++){
                     InputNode* currentInput=inputs[i];
-                    if(strcmp(currentInput->class_name(),"Reader")==0){
+                    if(strcmp(currentInput->className(),"Reader")==0){
                         if(!(static_cast<Reader*>(currentInput)->hasFrames())){
                             go=false;
                         }
@@ -228,7 +228,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
         Node_ui* n=nodes[i];
 
         QPointF evpt=n->mapFromScene(old_pos);
-        if(n->contains(evpt) && strcmp(n->getNode()->class_name(),"Viewer")){
+        if(n->contains(evpt) && strcmp(n->getNode()->className(),"Viewer")){
             if(!n->isThisPanelEnabled()){
                 /*building settings panel*/
                 n->setSettingsPanelEnabled(true);

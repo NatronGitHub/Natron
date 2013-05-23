@@ -88,7 +88,6 @@
     <ClCompile Include="..\..\..\Core\Box.cpp" />
     <ClCompile Include="..\..\..\Core\channels.cpp" />
     <ClCompile Include="..\..\..\Core\DataBuffer.cpp" />
-    <ClCompile Include="..\..\..\Core\diskcache.cpp" />
     <ClCompile Include="..\..\..\Core\displayFormat.cpp" />
     <ClCompile Include="..\..\..\Core\flowOP.cpp" />
     <ClCompile Include="..\..\..\Core\hash.cpp" />
@@ -105,6 +104,7 @@
     <ClCompile Include="..\..\..\Core\settings.cpp" />
     <ClCompile Include="..\..\..\Core\Timer.cpp" />
     <ClCompile Include="..\..\..\Core\VideoEngine.cpp" />
+    <ClCompile Include="..\..\..\Core\viewercache.cpp" />
     <ClCompile Include="..\..\..\Core\viewerNode.cpp" />
     <ClCompile Include="..\..\..\Core\workerthread.cpp" />
     <ClCompile Include="..\..\..\Gui\arrowGUI.cpp" />
@@ -149,7 +149,6 @@
     <ClInclude Include="..\..\..\Core\Box.h" />
     <ClInclude Include="..\..\..\Core\channels.h" />
     <ClInclude Include="..\..\..\Core\DataBuffer.h" />
-    <ClInclude Include="..\..\..\Core\diskcache.h" />
     <ClInclude Include="..\..\..\Core\displayFormat.h" />
     <ClInclude Include="..\..\..\Core\flowOP.h" />
     <ClInclude Include="..\..\..\Core\hash.h" />
@@ -159,6 +158,7 @@
     <ClInclude Include="..\..\..\Core\lutclasses.h" />
     <ClInclude Include="..\..\..\Core\mappedfile.h" />
     <ClInclude Include="..\..\..\Core\metadata.h" />
+    <ClInclude Include="..\..\..\Core\viewercache.h" />
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
     <ClInclude Include="..\..\..\Superviser\PwStrings.h" />
     <CustomBuild Include="..\..\..\Core\model.h">

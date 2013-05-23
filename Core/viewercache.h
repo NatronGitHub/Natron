@@ -24,7 +24,26 @@
 
 
 
-/*The class associated to a Frame in cache.
+
+
+
+
+class VideoEngine;
+class ViewerGL;
+class MMAPfile;
+class ViewerCache
+{
+    
+    friend class VideoEngine;
+    
+    qint64 MAX_DISK_CACHE; // total disk cache space allowed
+    qint64 MAX_RAM_CACHE; // total ram cache space allowed
+    qint64 newCacheBlockIndex; // the number in cache of the new frame
+    qint64 cacheSize; // current cache size
+    ViewerGL* gl_viewer; // pointer to the viewer
+public:
+
+	/*The class associated to a Frame in cache.
  *Two frames with the same FrameID will be considered
  *the same.*/
 class FrameID{
@@ -80,48 +99,33 @@ bool operator==(const FrameID& other){
 
 };
 
-typedef std::multimap<std::string, FrameID>::iterator FramesIterator;
-typedef std::multimap<std::string, FrameID>::reverse_iterator ReverseFramesIterator;
-
-class VideoEngine;
-class ViewerGL;
-class MMAPfile;
-class DiskCache
-{
-    
-    friend class VideoEngine;
-    
-    qint64 MAX_DISK_CACHE; // total disk cache space allowed
-    qint64 MAX_RAM_CACHE; // total ram cache space allowed
-    qint64 newCacheBlockIndex; // the number in cache of the new frame
-    qint64 cacheSize; // current cache size
-    ViewerGL* gl_viewer; // pointer to the viewer
-public:
+	typedef std::multimap<std::string,ViewerCache::FrameID>::iterator FramesIterator;
+	typedef std::multimap<std::string,ViewerCache::FrameID>::reverse_iterator ReverseFramesIterator;
     
     // multimap : each filename  may have several match
     // depending on the following variables : current tree version(hash value), current builtin zoom, exposure , viewer LUT
     // the FrameID represents then : < zoomLvl, exp , LUT , rank >   ranking is for LRU removal when cache is full
     //This map is an outpost that prevents Powiter to look into the disk whether the frame is already present
-    std::multimap<std::string,FrameID> _frames;
+    std::multimap<std::string,ViewerCache::FrameID> _frames;
     
-    std::map<int,FrameID> _rankMap; // storing rank into a map to make freeing algorithm efficient
+    std::map<int,ViewerCache::FrameID> _rankMap; // storing rank into a map to make freeing algorithm efficient
     
     
-    std::vector<std::pair<FrameID,MMAPfile*> > _playbackCache; // playback cache ( in memory : volatile)
+    std::vector<std::pair<ViewerCache::FrameID,MMAPfile*> > _playbackCache; // playback cache ( in memory : volatile)
     
     
     qint64 _playbackCacheSize;
     
     qint64 MAX_PLAYBACK_CACHE_SIZE;
     
-    FramesIterator end(){return _frames.end();}
-    FramesIterator begin(){return _frames.begin();}
+    ViewerCache::FramesIterator end(){return _frames.end();}
+    ViewerCache::FramesIterator begin(){return _frames.begin();}
     
     /* add the frame to the cache if there's enough space, otherwise some free space is made (LRU) to insert it
      It appends the frame with rank 0 (remove last) and increments all the other frame present in cache
      The nbFrameHint is to know how many frame will be actually used in this sequence and how many should we free
      */
-    std::pair<char*,FrameID> mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers);
+    std::pair<char*,ViewerCache::FrameID> mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers);
     
     /*Close the last file in the queue*/
     void closeMappedFile();
@@ -131,7 +135,7 @@ public:
     
     /*checks whether the frame is present or not.
      Returns a FramesIterator pointing to the frame if it found it other wise the boolean returns false.*/
-    std::pair<FramesIterator,bool> isCached(std::string filename,
+    std::pair<ViewerCache::FramesIterator,bool> isCached(std::string filename,
                                             U32 treeVersion,
                                             float builtinZoom,
                                             float exposure,
@@ -142,7 +146,7 @@ public:
     
     /*This is the function called to finilize caching once the frame has been written to the pointer
      returned by mapNew<Frame*/
-    void appendFrame(FrameID _info);
+    void appendFrame(ViewerCache::FrameID _info);
     
     
     const char* retrieveFrame(int frameNb,FramesIterator it);
@@ -159,9 +163,9 @@ public:
     
     void debugCache();
     
-    DiskCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize);
+    ViewerCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize);
     
-    ~DiskCache();
+    ~ViewerCache();
 private:
     
     // LRU freeing algorithm for the disk file

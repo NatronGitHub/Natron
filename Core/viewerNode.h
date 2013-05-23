@@ -21,7 +21,7 @@ public:
     virtual ~Viewer(){}
     
 	ViewerGL* ui_context(){return _ui_context;}
-    virtual const char* class_name(){return "Viewer";}
+    virtual const char* className(){return "Viewer";}
     virtual const char* description();
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);
 protected:
