@@ -36,7 +36,7 @@ class ViewerCache
     
     friend class VideoEngine;
     
-    qint64 MAX_DISK_CACHE; // total disk cache space allowed
+    qint64 MAX_VIEWER_CACHE_SIZE; // total disk cache space allowed
     qint64 MAX_RAM_CACHE; // total ram cache space allowed
     qint64 newCacheBlockIndex; // the number in cache of the new frame
     qint64 cacheSize; // current cache size

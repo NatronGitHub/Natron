@@ -20,7 +20,7 @@
 using namespace std;
 using Powiter_Enums::MMAPfile_mode;
 
-ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize) : cacheSize(0),MAX_DISK_CACHE(maxDiskSize),MAX_RAM_CACHE(maxRamSize)
+ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxCacheSize,qint64 maxRamSize) : cacheSize(0),MAX_VIEWER_CACHE_SIZE(maxCacheSize),MAX_RAM_CACHE(maxRamSize)
 {
     QDir root(ROOT);
     QStringList entries = root.entryList();
@@ -469,7 +469,7 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,std::
     }else{
         sizeNeeded = width * sizeof(float) * height * 4;
     }
-    if((cacheSize+ sizeNeeded) > MAX_DISK_CACHE){
+    if((cacheSize+ sizeNeeded) > MAX_VIEWER_CACHE_SIZE)){
         makeFreeSpace(nbFrameHint);
     }
     while(_playbackCacheSize > MAX_PLAYBACK_CACHE_SIZE){

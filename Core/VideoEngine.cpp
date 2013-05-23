@@ -209,7 +209,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     }
     for(U32 i = 0; i < readFrames.size();i++){
         std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > readFrame = readFrames[i];
-        if (readFrame.second != _cache->end()) {
+        if (readFrame.second != _viewerCache->end()) {
             cachedFrameEngine(readFrame.second);
             if(_paused){
                 stopEngine();
@@ -421,7 +421,7 @@ VideoEngine::startReading(std::vector<Reader*> readers,bool useMainThread,bool u
             std::string currentFrameName = reader->getCurrentFrameName();
             std::vector<Reader::Buffer::DecodedFrameDescriptor> ret;
             pair<ViewerCache::FramesIterator,bool> iscached =
-            _cache->isCached(currentFrameName,
+            _viewerCache->isCached(currentFrameName,
                              _treeVersion.getHashValue(),
                              gl_viewer->getCurrentBuiltinZoom(),
                              gl_viewer->getExposure(),
@@ -437,7 +437,7 @@ VideoEngine::startReading(std::vector<Reader*> readers,bool useMainThread,bool u
                 }
                 useOtherThreadOnNextLoop = !useOtherThreadOnNextLoop;
                 for(U32 j = 0; j < ret.size() ; j ++){
-                    frames.push_back(make_pair(ret[j],_cache->end()));
+                    frames.push_back(make_pair(ret[j],_viewerCache->end()));
                 }
             }else{
                 int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : reader->currentFrame();
@@ -461,7 +461,7 @@ VideoEngine::startReading(std::vector<Reader*> readers,bool useMainThread,bool u
         if(followingFrame < reader->firstFrame()) followingFrame = reader->lastFrame();
         
         std::string followingFrameName = reader->getRandomFrameName(followingFrame);
-        pair<ViewerCache::FramesIterator,bool> iscached = _cache->isCached(followingFrameName,
+        pair<ViewerCache::FramesIterator,bool> iscached = _viewerCache->isCached(followingFrameName,
                                                               _treeVersion.getHashValue(),
                                                               gl_viewer->getCurrentBuiltinZoom(),
                                                               gl_viewer->getExposure(),
@@ -472,7 +472,7 @@ VideoEngine::startReading(std::vector<Reader*> readers,bool useMainThread,bool u
         if(!iscached.second){
             ret = reader->decodeFrames(mode, false, true, _forward);
             for(U32 j = 0; j < ret.size() ; j ++){
-                frames.push_back(make_pair(ret[j],_cache->end()));
+                frames.push_back(make_pair(ret[j],_viewerCache->end()));
             }
         }else{
             int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : followingFrame;
@@ -553,7 +553,7 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     QObject::connect(frameNumber, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
     qint64 maxDiskCacheSize = engine->getCurrentPowiterSettings()->maxDiskCache;
     qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() * engine->getCurrentPowiterSettings()->maxCacheMemoryPercent;
-    _cache = new ViewerCache(gl_viewer,maxDiskCacheSize, maxMemoryCacheSize);
+    _viewerCache = new ViewerCache(gl_viewer,maxDiskCacheSize/2, maxMemoryCacheSize);
     QObject::connect(engine->getControler()->getGui()->actionClearDiskCache, SIGNAL(triggered()),this,SLOT(clearDiskCache()));
     QObject::connect(engine->getControler()->getGui()->actionClearPlayBackCache, SIGNAL(triggered()),this,SLOT(clearPlayBackCache()));
     QObject::connect(engine->getControler()->getGui()->actionClearBufferCache, SIGNAL(triggered()),this,SLOT(clearRowCache()));
@@ -561,7 +561,7 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
 }
 
 void VideoEngine::clearDiskCache(){
-    _cache->clearCache();
+    _viewerCache->clearCache();
 }
 
 VideoEngine::~VideoEngine(){
@@ -572,7 +572,7 @@ VideoEngine::~VideoEngine(){
     delete _workerThreadsWatcher;
     delete _engineLoopWatcher;
     delete _enginePostProcessResults;
-    delete _cache;
+    delete _viewerCache;
     delete _timer;
 }
 
@@ -1003,8 +1003,8 @@ void VideoEngine::changeTreeVersion(){
     
 }
 std::pair<char*,ViewerCache::FrameID> VideoEngine::mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint){
-    return _cache->mapNewFrame(frameNb,filename, width, height, nbFrameHint,_treeVersion.getHashValue());}
+    return _viewerCache->mapNewFrame(frameNb,filename, width, height, nbFrameHint,_treeVersion.getHashValue());}
 
-void VideoEngine::closeMappedFile(){_cache->closeMappedFile();}
+void VideoEngine::closeMappedFile(){_viewerCache->closeMappedFile();}
 
-void VideoEngine::clearPlayBackCache(){_cache->clearPlayBackCache();}
+void VideoEngine::clearPlayBackCache(){_viewerCache->clearPlayBackCache();}

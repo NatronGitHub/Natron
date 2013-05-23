@@ -684,7 +684,7 @@ std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
 	}
     checkGLErrors();
 	void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    vengine->_cache->appendFrame(frameInfo);
+    vengine->_viewerCache->appendFrame(frameInfo);
     _makeNewFrame = true;
     return make_pair(gpuBuffer,dataSize);
         
@@ -1168,7 +1168,7 @@ void ViewerGL::zoomIn(){
             int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
             int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
-            vengine->_cache->clearPlayBackCache();
+            vengine->_viewerCache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
         }
         
@@ -1187,7 +1187,7 @@ void ViewerGL::zoomOut(){
             int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
             int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
-            vengine->_cache->clearPlayBackCache();
+            vengine->_viewerCache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
         }
     }else

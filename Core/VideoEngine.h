@@ -68,7 +68,7 @@ class VideoEngine :public QObject{
     
     std::vector<Task> _waitingTasks;
     
-    ViewerCache* _cache ; // disk cache (physically stored, saved between 2 runs).    
+    ViewerCache* _viewerCache ; // disk cache (physically stored, saved between 2 runs).    
     ViewerGL* gl_viewer;
     Model* _coreEngine;
     bool _firstTime;
@@ -209,7 +209,7 @@ public:
     
     void resetReadingBuffers();
     
-    ViewerCache* getDiskCache(){return _cache;}
+    ViewerCache* getDiskCache(){return _viewerCache;}
     
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
