@@ -15,6 +15,8 @@
 		D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D78C15F51737E6510011B5FD /* libftgl.a */; };
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
+		D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7B4811E174E9FAB0011055D /* viewercache.cpp */; };
+		D7B48121174E9FAB0011055D /* viewercache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7B4811F174E9FAB0011055D /* viewercache.h */; };
 		D7F4174E170F7072000182E8 /* libPowiterOsX_x86_64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D76ED161170E2C0900AB21D7 /* libPowiterOsX_x86_64.a */; };
 		D7F4174F170F7078000182E8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F41735170F687D000182E8 /* OpenGL.framework */; };
 		D7F41753170F7078000182E8 /* libstdc++.6.0.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */; };
@@ -36,8 +38,6 @@
 		D7FD9A2D17101E8700D1DCEA /* channels.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99BE17101E8700D1DCEA /* channels.h */; };
 		D7FD9A2E17101E8700D1DCEA /* DataBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99BF17101E8700D1DCEA /* DataBuffer.cpp */; };
 		D7FD9A2F17101E8700D1DCEA /* DataBuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99C017101E8700D1DCEA /* DataBuffer.h */; };
-		D7FD9A3017101E8700D1DCEA /* diskcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99C117101E8700D1DCEA /* diskcache.cpp */; };
-		D7FD9A3117101E8700D1DCEA /* diskcache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99C217101E8700D1DCEA /* diskcache.h */; };
 		D7FD9A3217101E8700D1DCEA /* displayFormat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99C317101E8700D1DCEA /* displayFormat.cpp */; };
 		D7FD9A3317101E8700D1DCEA /* displayFormat.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99C417101E8700D1DCEA /* displayFormat.h */; };
 		D7FD9A3417101E8700D1DCEA /* flowOP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99C517101E8700D1DCEA /* flowOP.cpp */; };
@@ -198,6 +198,8 @@
 		D78C15F51737E6510011B5FD /* libftgl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libftgl.a; path = /usr/local/lib/libftgl.a; sourceTree = "<absolute>"; };
 		D78C15FF173861FD0011B5FD /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../Superviser/main.cpp; sourceTree = SOURCE_ROOT; };
 		D78C1606173862860011B5FD /* controler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = controler.cpp; path = ../../Superviser/controler.cpp; sourceTree = SOURCE_ROOT; };
+		D7B4811E174E9FAB0011055D /* viewercache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewercache.cpp; sourceTree = "<group>"; };
+		D7B4811F174E9FAB0011055D /* viewercache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewercache.h; sourceTree = "<group>"; };
 		D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.6.0.9.dylib"; path = "usr/lib/libstdc++.6.0.9.dylib"; sourceTree = SDKROOT; };
 		D7F4101D170F5D57000182E8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../libs/Qt_Osx/QtCore.framework; sourceTree = "<group>"; };
 		D7F4101E170F5D57000182E8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../libs/Qt_Osx/QtGui.framework; sourceTree = "<group>"; };
@@ -217,8 +219,6 @@
 		D7FD99BE17101E8700D1DCEA /* channels.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = channels.h; path = ../../Core/channels.h; sourceTree = SOURCE_ROOT; };
 		D7FD99BF17101E8700D1DCEA /* DataBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DataBuffer.cpp; path = ../../Core/DataBuffer.cpp; sourceTree = SOURCE_ROOT; };
 		D7FD99C017101E8700D1DCEA /* DataBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DataBuffer.h; path = ../../Core/DataBuffer.h; sourceTree = SOURCE_ROOT; };
-		D7FD99C117101E8700D1DCEA /* diskcache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = diskcache.cpp; path = ../../Core/diskcache.cpp; sourceTree = SOURCE_ROOT; };
-		D7FD99C217101E8700D1DCEA /* diskcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = diskcache.h; path = ../../Core/diskcache.h; sourceTree = SOURCE_ROOT; };
 		D7FD99C317101E8700D1DCEA /* displayFormat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = displayFormat.cpp; path = ../../Core/displayFormat.cpp; sourceTree = SOURCE_ROOT; };
 		D7FD99C417101E8700D1DCEA /* displayFormat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = displayFormat.h; path = ../../Core/displayFormat.h; sourceTree = SOURCE_ROOT; };
 		D7FD99C517101E8700D1DCEA /* flowOP.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = flowOP.cpp; path = ../../Core/flowOP.cpp; sourceTree = SOURCE_ROOT; };
@@ -407,14 +407,14 @@
 		D7FD99BA17101E8700D1DCEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				D7B4811E174E9FAB0011055D /* viewercache.cpp */,
+				D7B4811F174E9FAB0011055D /* viewercache.h */,
 				D7FD99BB17101E8700D1DCEA /* Box.cpp */,
 				D7FD99BC17101E8700D1DCEA /* Box.h */,
 				D7FD99BD17101E8700D1DCEA /* channels.cpp */,
 				D7FD99BE17101E8700D1DCEA /* channels.h */,
 				D7FD99BF17101E8700D1DCEA /* DataBuffer.cpp */,
 				D7FD99C017101E8700D1DCEA /* DataBuffer.h */,
-				D7FD99C117101E8700D1DCEA /* diskcache.cpp */,
-				D7FD99C217101E8700D1DCEA /* diskcache.h */,
 				D7FD99C317101E8700D1DCEA /* displayFormat.cpp */,
 				D7FD99C417101E8700D1DCEA /* displayFormat.h */,
 				D7FD99C517101E8700D1DCEA /* flowOP.cpp */,
@@ -550,7 +550,6 @@
 				D7FD9A2B17101E8700D1DCEA /* Box.h in Headers */,
 				D7FD9A2D17101E8700D1DCEA /* channels.h in Headers */,
 				D7FD9A2F17101E8700D1DCEA /* DataBuffer.h in Headers */,
-				D7FD9A3117101E8700D1DCEA /* diskcache.h in Headers */,
 				D7FD9A3317101E8700D1DCEA /* displayFormat.h in Headers */,
 				D7FD9A3517101E8700D1DCEA /* flowOP.h in Headers */,
 				D7FD9A3717101E8700D1DCEA /* hash.h in Headers */,
@@ -603,6 +602,7 @@
 				D7FD9AAE17101EBA00D1DCEA /* gl_OsDependent.h in Headers */,
 				D7FD9AB017101EBA00D1DCEA /* MemoryInfo.h in Headers */,
 				D7FD9AB117101EBA00D1DCEA /* powiterFn.h in Headers */,
+				D7B48121174E9FAB0011055D /* viewercache.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -694,7 +694,6 @@
 				D7FD9A2A17101E8700D1DCEA /* Box.cpp in Sources */,
 				D7FD9A2C17101E8700D1DCEA /* channels.cpp in Sources */,
 				D7FD9A2E17101E8700D1DCEA /* DataBuffer.cpp in Sources */,
-				D7FD9A3017101E8700D1DCEA /* diskcache.cpp in Sources */,
 				D7FD9A3217101E8700D1DCEA /* displayFormat.cpp in Sources */,
 				D7FD9A3417101E8700D1DCEA /* flowOP.cpp in Sources */,
 				D7FD9A3617101E8700D1DCEA /* hash.cpp in Sources */,
@@ -736,6 +735,7 @@
 				D7FD9A9117101E8700D1DCEA /* readExr.cpp in Sources */,
 				D7FD9A9317101E8700D1DCEA /* readffmpeg.cpp in Sources */,
 				D7FD9A9517101E8700D1DCEA /* readQt.cpp in Sources */,
+				D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -77,6 +77,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 }
 void ViewerGL::initConstructor(){
     _hasHW=true;
+    _readerInfo = new ReaderInfo;
     blankReaderInfo = new ReaderInfo;
     blankReaderInfo->channels(Mask_RGBA);
     blankReaderInfo->Ydirection(1);
@@ -150,12 +151,8 @@ ViewerGL::~ViewerGL(){
 	glDeleteTextures(1,&texId[0]);
     glDeleteTextures(1,&texBlack[0]);
     glDeleteBuffers(2, &texBuffer[0]);
-	if(_readerInfo != blankReaderInfo){
-        delete _readerInfo;
-        delete blankReaderInfo;
-    }else{
-        delete _readerInfo;
-    }
+
+    delete _readerInfo;
 	delete blankReaderInfo;
 	delete _infoViewer;
 }
@@ -272,8 +269,6 @@ void ViewerGL::drawOverlay(){
     glEnd();
     if(displayWindow() != dataWindow()){
         
-        
-        
         _textRenderer.print(dataWindow().right(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
         _textRenderer.print(dataWindow().x(), dataWindow().y(), _btmLeftBBOXoverlay, QColor(150,150,150));
         
@@ -316,10 +311,8 @@ void ViewerGL::paintEvent(QPaintEvent* event){
 }
 
 void ViewerGL::initializeGL(){
-    // freopen("/dev/null", "w", stderr); // < TEMP FIX TO DISABLE ERRORS
 	makeCurrent();
 	initAndCheckGlExtensions();
-	//initializeExtraFunctions();
  	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
     glGenTextures (1, texId);
@@ -338,12 +331,6 @@ void ViewerGL::initializeGL(){
     }
     
 }
-// void ViewerGL::initializeExtraFunctions(){
-// 	QOpenGLContext* ctx = QOpenGLContext::currentContext();
-// 	 _glMapBufferPtr = ctx->getProcAddress("glMapBuffer");
-// 	_glUnMapPtr = ctx->getProcAddress("glUnmapBuffer");
-// 
-// }
 
 /*Little improvment to the QT version of makeCurrent to make it faster*/
 void ViewerGL::makeCurrent(){
@@ -1205,10 +1192,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
 }
 void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
-    if(info != blankReaderInfo)
-        _readerInfo->copy(info);
-    else
-        _readerInfo = info;
+    _readerInfo->copy(info);
     Format* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());
