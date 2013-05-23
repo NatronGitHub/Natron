@@ -5,4 +5,4 @@
 //  contact: immarespond at gmail dot com
 #include "Core/imgOP.h"
 
-ImgOperator::ImgOperator(Node* node):Operator(node){}
+ImgOp::ImgOp(Node* node):Op(node){}

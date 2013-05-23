@@ -6,4 +6,4 @@
 
 #include "Core/flowOP.h"
 
-FlowOperator::FlowOperator(Node* node):Operator(node){}
+FlowOperator::FlowOperator(Node* node):Op(node){}

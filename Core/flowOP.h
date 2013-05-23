@@ -7,11 +7,11 @@
 #ifndef FLOWOPERATOR_H
 #define FLOWOPERATOR_H
 #include "Core/OP.h"
-class FlowOperator : public Operator
+class FlowOperator : public Op
 {
 public:
 
-    FlowOperator(FlowOperator& ref):Operator(ref){}
+    FlowOperator(FlowOperator& ref):Op(ref){}
     FlowOperator(Node* node);
 
 

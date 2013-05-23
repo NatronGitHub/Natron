@@ -6,15 +6,15 @@
 #ifndef IMGOPERATOR_H
 #define IMGOPERATOR_H
 #include "Core/OP.h"
-class ImgOperator : public Operator
+class ImgOp : public Op
 {
 public:
 
-    ImgOperator(Node* node);
-    ImgOperator(ImgOperator& ref):Operator(ref){}
+    ImgOp(Node* node);
+    ImgOp(ImgOp& ref):Op(ref){}
 
 
-    virtual ~ImgOperator(){}
+    virtual ~ImgOp(){}
 };
 
 #endif // IMGOPERATOR_H
