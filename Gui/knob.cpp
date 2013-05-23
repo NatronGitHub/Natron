@@ -131,7 +131,7 @@ Int_Knob::Int_Knob(int *integer, Knob_Callback *cb,QString& description, Knob_Ma
 }
 void Int_Knob::setValues(){
     values.clear();
-    values.push_back((U32)*integer);
+    values.push_back((U64)*integer);
 }
 
 //================================================================
@@ -246,12 +246,12 @@ File_Knob::File_Knob(Knob_Callback *cb, QString &description, QStringList &fileP
 }
 void File_Knob::setValues(){
     values.clear();
-//    for(int i=0;i<str.size();i++){
-//        QString s = str[i];
-//        for(int j =0 ; j < s.size();j++){
-//            values.push_back((U32)s.at(j).toAscii());
-//        }
-//	}
+    for(int i=0;i<str.size();i++){
+        QString s = str[i];
+        for(int j =0 ; j < s.size();j++){
+            values.push_back((U64)s.at(j).unicode());
+        }
+	}
     
 }
 

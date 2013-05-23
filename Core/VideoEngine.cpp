@@ -971,14 +971,14 @@ void VideoEngine::_debugTree(Node* n,int* nb){
         _debugTree(c,nb);
     }
 }
-void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U32> > &alreadyComputed, Node *n){
+void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U64> > &alreadyComputed, Node *n){
     for(int i =0; i < alreadyComputed.size();i++){
         if(!strcmp(alreadyComputed[i].first,n->getName()))
             return;
     }
     std::vector<char*> v;
     n->computeTreeHash(v);
-    U32 hashVal = n->getHash()->getHashValue();
+    U64 hashVal = n->getHash()->getHashValue();
     char* name = QstringCpy(n->getName());
     alreadyComputed.push_back(make_pair(name,hashVal));
     foreach(Node* parent,n->getParents()){
@@ -989,7 +989,7 @@ void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U32> > &alreadyCo
 }
 
 void VideoEngine::changeTreeVersion(){
-    std::vector< std::pair<char*,U32> > nodeHashs;
+    std::vector< std::pair<char*,U64> > nodeHashs;
     _treeVersion.reset();
     if(!output){
         return;

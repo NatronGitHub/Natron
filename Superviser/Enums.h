@@ -13,6 +13,7 @@
 namespace Powiter_Enums{
     
 	typedef boost::uint32_t U32;
+    typedef boost::uint64_t U64;
 	typedef boost::uint8_t U8;
 	typedef boost::uint16_t U16;
     

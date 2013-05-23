@@ -54,7 +54,7 @@ class Knob:public QWidget
     
 public:
     Knob(Knob_Types type,Knob_Callback* cb);
-    std::vector<uint32_t> getValues(){return values;}
+    std::vector<U64> getValues(){return values;}
     virtual ~Knob();
     static Knob* file_Knob(Knob_Callback* cb,QString& description,QStringList& filePath,Knob_Mask flags=0);
     static Knob* channels_Knob(ChannelMask* channels,Knob_Callback* cb,Knob_Mask flags=0);
@@ -71,7 +71,7 @@ protected:
     Knob_Callback *cb;
     QHBoxLayout* layout;
     std::vector<QWidget*> elements;
-    std::vector<U32> values;
+    std::vector<U64> values;
     Knob_Types _type;
     
 private:

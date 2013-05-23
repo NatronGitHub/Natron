@@ -8,15 +8,14 @@
 #include "Gui/knob.h"
 void Hash::computeHash(){
 
-
-    boost::crc_32_type result;
-    U32* data=(U32*)malloc(sizeof(U32)*node_values.size());
+    boost::crc_optimal<64,0x42F0E1EBA9EA3693,0,0,false,false> result;
+    U64* data=(U64*)malloc(sizeof(U64)*node_values.size());
 
     for(int i=0;i<node_values.size();i++){
 
         data[i]=node_values[i];
     }
-    result.process_bytes(data,node_values.size()*sizeof(U32));
+    result.process_bytes(data,node_values.size()*sizeof(U64));
     hash=result.checksum();
     free(data);
 }
@@ -26,12 +25,12 @@ void Hash::reset(){
 }
 
 
-void Hash::appendNodeHashToHash(U32 hashValue){
+void Hash::appendNodeHashToHash(U64 hashValue){
         node_values.push_back(hashValue);
 }
 
 void Hash::appendKnobToHash(Knob* knob){
-    std::vector<U32> values=knob->getValues();
+    std::vector<U64> values= knob->getValues();
     for(int i=0;i<values.size();i++){
         node_values.push_back(values[i]);
     }
@@ -39,7 +38,7 @@ void Hash::appendKnobToHash(Knob* knob){
 
 void Hash::appendQStringToHash(QString str){
     for(int i =0 ; i< str.size();i++){
-        node_values.push_back((U32)str.at(i).unicode());
+        node_values.push_back((U64)str.at(i).unicode());
     }
 }
 

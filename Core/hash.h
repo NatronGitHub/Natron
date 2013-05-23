@@ -32,13 +32,13 @@ public:
         node_values.clear();
     }
     
-    U32 getHashValue() const {return hash;}
+    U64 getHashValue() const {return hash;}
     
     void computeHash();
     
     void reset();
     
-    void appendNodeHashToHash(U32 hashValue);
+    void appendNodeHashToHash(U64 hashValue);
     
     void appendQStringToHash(QString str);
     
@@ -52,7 +52,7 @@ public:
     }
     
 private:
-    U32 hash;
-    std::vector<U32> node_values;
+    U64 hash;
+    std::vector<U64> node_values;
 };
 #endif // HASH_H

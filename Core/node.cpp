@@ -378,7 +378,7 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
     
 }
 bool Node::hashChanged(){
-    U32 oldHash=hashValue->getHashValue();
+    U64 oldHash=hashValue->getHashValue();
     vector<char*> v;
     computeTreeHash(v);
     return oldHash!=hashValue->getHashValue();
