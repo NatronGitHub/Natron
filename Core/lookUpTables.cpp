@@ -388,13 +388,19 @@ void Linear::from_short(float* r,float* g,float* b, const U16* from, const U16* 
 void Linear::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
                      bool premult,bool autoAlpha, int W, int delta ,const float* fromA,float* a){
     
-    // we don't have to copy anything : no colorspace conversion is done & data is already present in the buffer
+    // no colorspace conversion is done 
     // if autoalpha is on , we just fill the alpha channel with 1.f
-    if(fromA!=NULL && autoAlpha){
-        for(int i=0;i< W;i++){
-            a[i]=1.0;
+    for(int i = 0 ; i < W ; i++){
+        r[i] = fromR[i];
+        g[i] = fromG[i];
+        b[i] = fromB[i];
+        if(fromA!=NULL && !autoAlpha){
+            a[i]= fromA[i];
+        }else if(fromA!=NULL && autoAlpha){
+            a[i] = 1.0;
         }
-    }    
+    }
+   
 }
 Lut* Lut::getLut(DataType type){
     switch (type) {

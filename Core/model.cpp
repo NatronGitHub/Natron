@@ -219,6 +219,7 @@ void Model::getGraphInput(std::vector<InputNode*> &inputs,Node* current){
 void Model::setVideoEngineRequirements(std::vector<InputNode *> inputs, OutputNode *output){
     vengine->setInputNodes(inputs);
     vengine->setOutputNode(output);
+    /*Should also do a topological sort of the graph*/
     vengine->changeTreeVersion();
 }
 

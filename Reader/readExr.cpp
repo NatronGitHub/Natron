@@ -370,28 +370,26 @@ void ReadExr::open(const QString filename,bool openBothViews){
             ydirection=1;
             //            op->getInfo()->setYdirection(1);
         }
-        //        cout << "Data win " << " x: " << bx << " y: " << by << " r: " << br+1 << " t: " << bt+1 << endl;
-        //        cout << "Disp win " << " x: " << image_format.x() << " y: " << image_format.y() << " r: " <<
-        //        image_format.range() << " t: " << image_format.top() << endl;
-        //setReaderInfo(image_format, // dispW
-        //            *(op->getInfo())/*dataW*/,filename,mask,ydirection,rgb,current_frame,firstFrame(),lastFrame());
         
         const int X = max(bbox.x(), datawin.min.x + dataOffset);
         const int R = min(bbox.right(), datawin.max.x + dataOffset +1);
-        int endScanLine,startScanLine;
-        ydirection == -1 ? endScanLine = dispwin.max.y : endScanLine = dispwin.min.y;
-        ydirection == -1 ? startScanLine = dispwin.min.y : startScanLine = dispwin.max.y;
-        _img.reserve(dispwin.max.y-dispwin.min.y);
+        int endScanLine=0,startScanLine=0;
+        if(ydirection < 0){
+            startScanLine = dispwin.max.y;
+            endScanLine = dispwin.min.y-1;
+        }else{
+            startScanLine = dispwin.min.y ;
+            endScanLine = dispwin.max.y+1;
+        }
+        //_img.reserve(dispwin.max.y-dispwin.min.y);
         int y =startScanLine;
         while(y != endScanLine){
-            std::vector<float*> scanLine;
             Imf::FrameBuffer fbuf;
             int exrY = dispwin.max.y - y;
-            int channelIndex = 0;
+            Row* scanLine = new Row(bbox.x(),exrY,bbox.right(),mask);
+            scanLine->allocate();
             foreachChannels(z, mask){
-                float* chan = (float*)malloc((bbox.right()-bbox.x())*sizeof(float));
-                scanLine.push_back(chan);
-                float* dest = chan - bbox.x();
+                float* dest = scanLine->writable(z);
                 for (int xx = bbox.x(); xx < X; xx++)
                     dest[xx] = 0;
                 for (int xx = R; xx < bbox.right(); xx++)
@@ -401,18 +399,17 @@ void ReadExr::open(const QString filename,bool openBothViews){
                     fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
                 }else{
                     fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0,2,2));
-                }
-                channelIndex++;
-                
+                }                
             }
-            _img.push_back(scanLine);
             inputfile->setFrameBuffer(fbuf);
 			inputfile->readPixels(exrY);
-            if(ydirection == -1) y++;
-            else y--;
+            _img.push_back(scanLine);
+            if(ydirection < 0) y--;
+            else y++;
             
         }
         setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
@@ -421,6 +418,7 @@ void ReadExr::open(const QString filename,bool openBothViews){
         return ;
     }
     
+
     
 }
 
@@ -442,6 +440,10 @@ ReadExr::~ReadExr(){
     delete inputStr ;
     delete inputStdStream ;
 #endif
+    foreach(Row* row,_img){
+        delete row;
+    }
+    _img.clear();
 	delete inputfile;
 }
 
@@ -500,34 +502,29 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
         return;
     }
     
-    
     //normal_engine(datawin, dispwin, c, exrY, out, offset, X, range, R);
-    
+     
 	//  colorspace conversion
- 	
-    const float* fromA = (hasAlpha(c)) ? (*out)[Channel_alpha] + X : 0;
-    const float* fromR=(*out)[Channel_red] +X;
-    const float* fromG=(*out)[Channel_green] +X;
-    const float* fromB=(*out)[Channel_blue] +X;
-    
-    std::vector<float*> scanLine = _img[exrY];
-    
+ 	Row* from = _img[exrY];
+    const float* fromA = (hasAlpha(c)) ? (*from)[Channel_alpha] + X : 0;
+    const float* fromR=(*from)[Channel_red] +X;
+    const float* fromG=(*from)[Channel_green] +X;
+    const float* fromB=(*from)[Channel_blue] +X;
+        
     
     float* r = out->writable(Channel_red);
     float* g = out->writable(Channel_green);
     float* b = out->writable(Channel_blue);
-    float * a =NULL;
+    float * a = NULL;
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
-        fromA =(*out)[Channel_alpha] +X;
+        fromA =(*from)[Channel_alpha] +X;
         a =out->writable(Channel_alpha);
     }
     from_float(r, g, b, fromR, fromG, fromB,R - X,1,fromA,a);
  	
 }
-void ReadExr::createKnobDynamically(){
-    
-}
+
 
 void ReadExr::make_preview(const char* filename){
         

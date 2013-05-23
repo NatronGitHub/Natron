@@ -28,7 +28,6 @@
 #include <ImfStdIO.h>
 #endif
 #include "Reader/Read.h"
-#include "Core/row.h"
 
 using namespace Powiter_Enums;
 
@@ -68,7 +67,6 @@ public:
 		int                 r,
 		int                 R);
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
-    virtual void createKnobDynamically();
     virtual void open(const QString filename,bool openBothViews = false);
     virtual bool supports_stereo(){return true;}
     virtual void make_preview(const char* filename);
@@ -80,11 +78,7 @@ private:
 	std::string heroview;
 	int dataOffset;
     std::vector< Row* > _img;
-    
-   // Imath::V3f yWeights; // for luminance, not used anymore. Left out in comment in case we'd like to introduce it again
-
 	bool rgbMode;
-    
 #ifdef __POWITER_WIN32__
     std::ifstream *inputStr;
     Imf::StdIFStream* inputStdStream;
