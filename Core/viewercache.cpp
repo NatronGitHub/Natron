@@ -469,7 +469,7 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,std::
     }else{
         sizeNeeded = width * sizeof(float) * height * 4;
     }
-    if((cacheSize+ sizeNeeded) > MAX_VIEWER_CACHE_SIZE)){
+    if((cacheSize+ sizeNeeded) > MAX_VIEWER_CACHE_SIZE){
         makeFreeSpace(nbFrameHint);
     }
     while(_playbackCacheSize > MAX_PLAYBACK_CACHE_SIZE){
