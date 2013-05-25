@@ -6,13 +6,13 @@
 #ifndef OPERATOR_H
 #define OPERATOR_H
 #include "Core/node.h"
-class Operator : public Node
+class Op : public Node
 {
 public:
 
-    Operator(Operator& ref):Node(ref){}
-    Operator(Node* node);
-    virtual ~Operator(){}
+    Op(Op& ref):Node(ref){}
+    Op(Node* node);
+    virtual ~Op(){}
     virtual int inputs(){return 1;}
 
 
