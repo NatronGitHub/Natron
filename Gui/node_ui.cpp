@@ -224,35 +224,30 @@ void  Node_ui::substractParent(Node_ui* p){
 	}
 }
 
-bool Node_ui::hasInputNodeConnected(Node_ui*& node){
-    if(node!=NULL){
-        return true;
-    }
 
-    foreach(Node_ui* c,parents){
-        if(!strcmp(c->getNode()->className(),"Reader")){
-            node = c;
-            return true;
-        }else{
-            c->hasInputNodeConnected(node);
-        }
+Node_ui* Node_ui::hasViewerConnected(Node_ui* node){
+    Node_ui* out;
+    bool ok=false;
+    _hasViewerConnected(node,&ok,out);
+    if (ok) {
+        return out;
+    }else{
+        return NULL;
     }
-    return false;
-
+    
 }
-bool Node_ui::hasOutputNodeConnected(Node_ui*& node){
-    if(node!=NULL){
-        return true;
+void Node_ui::_hasViewerConnected(Node_ui* node,bool* ok,Node_ui*& out){
+    if (*ok == true) {
+        return;
     }
-    foreach(Node_ui* c,children){
-        if(!strcmp(c->getNode()->className(),"Viewer")){
-            node = c;
-            return true;
-        }else{
-            c->hasOutputNodeConnected(node);
+    if(!strcmp(node->getNode()->className(), "Viewer")){
+        out = node;
+        *ok = true;
+    }else{
+        foreach(Node_ui* c,node->getChildren()){
+            _hasViewerConnected(c,ok,out);
         }
     }
-    return false;
 }
 
 void Node_ui::setName(QString s){

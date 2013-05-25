@@ -113,6 +113,11 @@ public:
     void removeParent(Node* parent);
     /*============================*/
 
+    /*DAG related*/
+    void setMarked(bool mark){_marked = mark;}
+    bool isMarked(){return _marked;}
+    /*============================*/
+    
 	/*Node infos*/
 	Info* getInfo(){return _info;}
 	void merge_frameRange(int otherFirstFrame,int otherLastFrame);
@@ -184,8 +189,7 @@ public:
      */
     virtual void drawOverlay(){}
 
-	/*Readers only function*/
-	virtual void createReadHandle(){}
+	
 	/*============================*/
     friend ostream& operator<< (ostream &out, Node &Node);
     
@@ -204,6 +208,7 @@ protected:
 	int freeOutputNb;
 	std::vector<Node*> parents;
 	std::vector<Node*> children;
+    bool _marked;
 	std::map<int, char*> inputLabels;
 	QMutex* _mutex;
 	QString name;

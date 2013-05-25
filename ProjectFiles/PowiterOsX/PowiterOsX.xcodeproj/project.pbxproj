@@ -17,6 +17,8 @@
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
 		D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7B4811E174E9FAB0011055D /* viewercache.cpp */; };
 		D7B48121174E9FAB0011055D /* viewercache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7B4811F174E9FAB0011055D /* viewercache.h */; };
+		D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */; };
+		D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */ = {isa = PBXBuildFile; fileRef = D7C099C8174FE73A008EBC41 /* framefiledialog.h */; };
 		D7F4174E170F7072000182E8 /* libPowiterOsX_x86_64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D76ED161170E2C0900AB21D7 /* libPowiterOsX_x86_64.a */; };
 		D7F4174F170F7078000182E8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F41735170F687D000182E8 /* OpenGL.framework */; };
 		D7F41753170F7078000182E8 /* libstdc++.6.0.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */; };
@@ -76,8 +78,6 @@
 		D7FD9A5617101E8700D1DCEA /* VideoEngine.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99E717101E8700D1DCEA /* VideoEngine.h */; };
 		D7FD9A5817101E8700D1DCEA /* viewerNode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99E917101E8700D1DCEA /* viewerNode.cpp */; };
 		D7FD9A5917101E8700D1DCEA /* viewerNode.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99EA17101E8700D1DCEA /* viewerNode.h */; };
-		D7FD9A5A17101E8700D1DCEA /* workerthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99EB17101E8700D1DCEA /* workerthread.cpp */; };
-		D7FD9A5B17101E8700D1DCEA /* workerthread.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99EC17101E8700D1DCEA /* workerthread.h */; };
 		D7FD9A5C17101E8700D1DCEA /* arrowGUI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99EE17101E8700D1DCEA /* arrowGUI.cpp */; };
 		D7FD9A5D17101E8700D1DCEA /* arrowGUI.h in Headers */ = {isa = PBXBuildFile; fileRef = D7FD99EF17101E8700D1DCEA /* arrowGUI.h */; };
 		D7FD9A5E17101E8700D1DCEA /* DAG.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FD99F017101E8700D1DCEA /* DAG.cpp */; };
@@ -200,6 +200,8 @@
 		D78C1606173862860011B5FD /* controler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = controler.cpp; path = ../../Superviser/controler.cpp; sourceTree = SOURCE_ROOT; };
 		D7B4811E174E9FAB0011055D /* viewercache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewercache.cpp; sourceTree = "<group>"; };
 		D7B4811F174E9FAB0011055D /* viewercache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewercache.h; sourceTree = "<group>"; };
+		D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = framefiledialog.cpp; sourceTree = "<group>"; };
+		D7C099C8174FE73A008EBC41 /* framefiledialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = framefiledialog.h; sourceTree = "<group>"; };
 		D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.6.0.9.dylib"; path = "usr/lib/libstdc++.6.0.9.dylib"; sourceTree = SDKROOT; };
 		D7F4101D170F5D57000182E8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../libs/Qt_Osx/QtCore.framework; sourceTree = "<group>"; };
 		D7F4101E170F5D57000182E8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../libs/Qt_Osx/QtGui.framework; sourceTree = "<group>"; };
@@ -257,8 +259,6 @@
 		D7FD99E717101E8700D1DCEA /* VideoEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VideoEngine.h; path = ../../Core/VideoEngine.h; sourceTree = SOURCE_ROOT; };
 		D7FD99E917101E8700D1DCEA /* viewerNode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = viewerNode.cpp; path = ../../Core/viewerNode.cpp; sourceTree = SOURCE_ROOT; };
 		D7FD99EA17101E8700D1DCEA /* viewerNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = viewerNode.h; path = ../../Core/viewerNode.h; sourceTree = SOURCE_ROOT; };
-		D7FD99EB17101E8700D1DCEA /* workerthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = workerthread.cpp; path = ../../Core/workerthread.cpp; sourceTree = SOURCE_ROOT; };
-		D7FD99EC17101E8700D1DCEA /* workerthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = workerthread.h; path = ../../Core/workerthread.h; sourceTree = SOURCE_ROOT; };
 		D7FD99EE17101E8700D1DCEA /* arrowGUI.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arrowGUI.cpp; path = ../../Gui/arrowGUI.cpp; sourceTree = SOURCE_ROOT; };
 		D7FD99EF17101E8700D1DCEA /* arrowGUI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = arrowGUI.h; path = ../../Gui/arrowGUI.h; sourceTree = SOURCE_ROOT; };
 		D7FD99F017101E8700D1DCEA /* DAG.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DAG.cpp; path = ../../Gui/DAG.cpp; sourceTree = SOURCE_ROOT; };
@@ -453,8 +453,6 @@
 				D7FD99E717101E8700D1DCEA /* VideoEngine.h */,
 				D7FD99E917101E8700D1DCEA /* viewerNode.cpp */,
 				D7FD99EA17101E8700D1DCEA /* viewerNode.h */,
-				D7FD99EB17101E8700D1DCEA /* workerthread.cpp */,
-				D7FD99EC17101E8700D1DCEA /* workerthread.h */,
 			);
 			name = Core;
 			path = ../../Core;
@@ -501,6 +499,8 @@
 				D7FD9A1A17101E8700D1DCEA /* timeline.h */,
 				D7FD9A1C17101E8700D1DCEA /* viewerTab.cpp */,
 				D7FD9A1D17101E8700D1DCEA /* viewerTab.h */,
+				D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */,
+				D7C099C8174FE73A008EBC41 /* framefiledialog.h */,
 			);
 			name = Gui;
 			path = ../../Gui;
@@ -571,7 +571,6 @@
 				D7FD9A5417101E8700D1DCEA /* Timer.h in Headers */,
 				D7FD9A5617101E8700D1DCEA /* VideoEngine.h in Headers */,
 				D7FD9A5917101E8700D1DCEA /* viewerNode.h in Headers */,
-				D7FD9A5B17101E8700D1DCEA /* workerthread.h in Headers */,
 				D7FD9A5D17101E8700D1DCEA /* arrowGUI.h in Headers */,
 				D7FD9A5F17101E8700D1DCEA /* DAG.h in Headers */,
 				D7FD9A6217101E8700D1DCEA /* DAGQuickNode.h in Headers */,
@@ -603,6 +602,7 @@
 				D7FD9AB017101EBA00D1DCEA /* MemoryInfo.h in Headers */,
 				D7FD9AB117101EBA00D1DCEA /* powiterFn.h in Headers */,
 				D7B48121174E9FAB0011055D /* viewercache.h in Headers */,
+				D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -711,7 +711,6 @@
 				D7FD9A5317101E8700D1DCEA /* Timer.cpp in Sources */,
 				D7FD9A5517101E8700D1DCEA /* VideoEngine.cpp in Sources */,
 				D7FD9A5817101E8700D1DCEA /* viewerNode.cpp in Sources */,
-				D7FD9A5A17101E8700D1DCEA /* workerthread.cpp in Sources */,
 				D7FD9A5C17101E8700D1DCEA /* arrowGUI.cpp in Sources */,
 				D7FD9A5E17101E8700D1DCEA /* DAG.cpp in Sources */,
 				D7FD9A6417101E8700D1DCEA /* dockableSettings.cpp in Sources */,
@@ -736,6 +735,7 @@
 				D7FD9A9317101E8700D1DCEA /* readffmpeg.cpp in Sources */,
 				D7FD9A9517101E8700D1DCEA /* readQt.cpp in Sources */,
 				D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */,
+				D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

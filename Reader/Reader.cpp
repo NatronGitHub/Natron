@@ -190,16 +190,16 @@ void Reader::removeCurrentFrameFromBuffer(){
     _buffer.remove(getCurrentFrameName());
 }
 
-void Reader::createReadHandle(){
-	if(readHandle){
-        ui_context->clearViewer();
-        Controler* ctrlPTR= node_gui->getControler();
-        VideoEngine* vengine=ctrlPTR->getModel()->getVideoEngine();
-        Node* output =dynamic_cast<Node*>(vengine->getOutputNode());
-        if(output){
-            ctrlPTR->getModel()->getVideoEngine()->clearInfos(output);
-        }
-    }
+void Reader::showFilePreview(){
+//	if(readHandle){
+//        ui_context->clearViewer();
+//        Controler* ctrlPTR= node_gui->getControler();
+//        VideoEngine* vengine=ctrlPTR->getModel()->getVideoEngine();
+//        Node* output =dynamic_cast<Node*>(vengine->getOutputNode());
+//        if(output){
+//            ctrlPTR->getModel()->getVideoEngine()->clearInfos(output);
+//        }
+//    }
     _buffer.clear();
     
     getVideoSequenceFromFilesList();

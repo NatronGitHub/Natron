@@ -193,33 +193,10 @@ std::string Model::removePrefixSpaces(std::string str){
     
 }
 
-void Model::getGraphInput(std::vector<InputNode*> &inputs,Node* current){
-    
-    if(current->isInputNode()){
-		bool contained=false;
-		for(int k=0;k<inputs.size();k++){
-			if(inputs[k]==current){
-				contained=true;
-				break;
-			}
-		}
-		if(!contained){
-			inputs.push_back(dynamic_cast<InputNode*>(current));
-		}
-		
-    }
-    std::vector<Node*> parents=current->getParents();
-    int i=0;
-    while(i<parents.size()){
-        getGraphInput(inputs,parents[i]);
-        i++;
-    }
-}
 
-void Model::setVideoEngineRequirements(std::vector<InputNode *> inputs, OutputNode *output){
-    vengine->setInputNodes(inputs);
-    vengine->setOutputNode(output);
-    /*Should also do a topological sort of the graph*/
+
+void Model::setVideoEngineRequirements(OutputNode *output){
+    vengine->getCurrentDAG().resetAndSort(output);
     vengine->changeTreeVersion();
 }
 

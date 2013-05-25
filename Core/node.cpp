@@ -161,9 +161,10 @@ bool Node::Info::operator==( Node::Info &other){
 
 Node::Node(const Node& ref):parents(ref.parents),inputNb(ref.inputNb),children(ref.children),inputLabels(ref.inputLabels),
     _mutex(ref._mutex),name(ref.name),hashValue(ref.hashValue),_info(ref._info),
-    freeOutputNb(ref.freeOutputNb),output_channels(ref.output_channels),requested_box(ref.requested_box),requested_channels(ref.requested_channels){}
+    freeOutputNb(ref.freeOutputNb),output_channels(ref.output_channels),requested_box(ref.requested_box),requested_channels(ref.requested_channels),_marked(ref._marked){}
 
 Node::Node(Node* ptr){
+    _marked = false;
     _info = new Info;
     hashValue=new Hash();
 	requested_channels=Mask_None;

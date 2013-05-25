@@ -93,11 +93,7 @@ public:
     std::string removePrefixSpaces(std::string str);
     std::string getNextWord(std::string str);
 	
-	/*fills the inputs vector with the InputNodes found
-	 *upstream of output.*/
-	void getGraphInput(std::vector<InputNode*> &inputs,Node* output);
-
-	/*set pointer to the controler*/
+    /*set pointer to the controler*/
     void setControler(Controler* ctrl);
 
 	/*Create a new node internally*/
@@ -116,8 +112,8 @@ public:
      *frame fit in the viewer.*/
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
 
-	/*Set the inputs and output of the graph used by the videoEngine.*/
-    void setVideoEngineRequirements(std::vector<InputNode*> inputs,OutputNode* output);
+	/*Set the output of the graph used by the videoEngine.*/
+    void setVideoEngineRequirements(OutputNode* output);
 
 
     VideoEngine* getVideoEngine(){return vengine;}

@@ -105,7 +105,7 @@ public:
     Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache);
     Reader(Reader& ref);
 
-    void createReadHandle();
+    void showFilePreview();
     void getVideoSequenceFromFilesList();
 	bool hasFrames(){return fileNameList.size()>0;}
 	void incrementCurrentFrameIndex();

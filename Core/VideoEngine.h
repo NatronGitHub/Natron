@@ -17,13 +17,11 @@
 #include "Core/viewercache.h"
 #include "Core/hash.h"
 #include "Reader/Reader.h"
-
-class OutputNode;
+#include "outputnode.h"
 class InputNode;
 class ViewerGL;
 class Node;
 class Row;
-class WorkerThread;
 class ReaderInfo;
 class Reader;
 class Model;
@@ -33,6 +31,57 @@ class Timer;
 // Class that handles the core engine for video sequences, that's where all the work is done
 class VideoEngine :public QObject{
     Q_OBJECT
+    
+public:
+    /*Class describing the DAG internally */
+    class DAG{
+    public:
+        typedef std::vector<Node*>::iterator DAGIterator;
+        typedef std::vector<Node*>::reverse_iterator DAGReverseIterator;
+        
+        typedef std::vector<InputNode*>::iterator InputsIterator;
+        DAG():_output(0){}
+        
+        /*Clear the structure and sorts the graph
+         *represented by the OutputNode out*/
+        void resetAndSort(OutputNode* out);
+        
+        /*Accessors to the sorted graph. Must be called
+         *after resetAndSort(...) has been called*/
+        DAGIterator begin(){return _sorted.begin();}
+        DAGIterator end(){return _sorted.end();}
+        DAGReverseIterator rbegin(){return _sorted.rbegin();}
+        DAGReverseIterator rend(){return _sorted.rend();}
+        Node* operator[](int index){return _sorted[index];}
+        OutputNode* getOutput(){return _output;}
+        
+        /*Accessors to the inputs of the graph*/
+        std::vector<InputNode*>& getInputs(){return _inputs;}
+        
+        /*debug*/
+        void debug();
+    private:
+        /*recursive topological sort*/
+        void topologicalSort();
+        /*function called internally by the sorting
+         *algorithm*/
+        void _depthCycle(Node* n);
+        /*called by resetAndSort(...) to fill the structure
+         *upstream of the output given in parameter of resetAndSort(...)*/
+        void fillGraph(Node* n);
+        /*clears out the structure*/
+        void clearGraph();
+        /*the output of the DAG*/
+        OutputNode* _output;
+        /*the un-sorted DAG*/
+        std::vector<Node*> _graph;
+        /*the sorted DAG*/
+        std::vector<Node*> _sorted;
+        /**/
+        std::vector<InputNode*> _inputs;
+    };
+    
+private:
     
     friend class ViewerGL;
     
@@ -66,15 +115,16 @@ class VideoEngine :public QObject{
         size_t byteCount;
     };
     
+        
     std::vector<Task> _waitingTasks;
     
     ViewerCache* _viewerCache ; // disk cache (physically stored, saved between 2 runs).    
     ViewerGL* gl_viewer;
     Model* _coreEngine;
-    bool _firstTime;
 	bool _working;
-    std::vector<InputNode*> inputs; // the inputs of the current graph
-    OutputNode* output; // the output of the current graph
+       
+    DAG _dag; // object encapsulating the graph
+    
     Timer* _timer; // fps timer
     
     std::map<int,Row*> row_cache; // buffer cache : for zoom 
@@ -151,11 +201,8 @@ signals:
     void fpsChanged(double d);
 
 public:
-    void setInputNodes(std::vector<InputNode*>  nodes){ inputs = nodes;}
-    void setOutputNode(OutputNode* node){ output = node;}
-    
-    std::vector<InputNode*> getInputNodes(){return inputs;}
-    OutputNode* getOutputNode(){return output;}
+  
+    DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
     void computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb);
@@ -202,7 +249,7 @@ public:
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
     
     /*the function calling the engine for one scan-line*/
-    static void metaEnginePerRow(Row* row,OutputNode* output);
+    void metaEnginePerRow(Row* row,OutputNode* output);
     
     std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > >
     startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );

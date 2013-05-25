@@ -56,8 +56,8 @@ public:
     QVBoxLayout* getDockContainer(){return dockContainer;}
 	void updatePreviewImageForReader();
     
-    bool hasInputNodeConnected(Node_ui*& node);
-    bool hasOutputNodeConnected(Node_ui*& node);
+    static Node_ui* hasViewerConnected(Node_ui* node);
+    static void _hasViewerConnected(Node_ui* node,bool* ok,Node_ui*& out);
     
     Controler* getControler(){return ctrl;}
     

@@ -114,10 +114,9 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 gl_viewer->blankInfoForViewer();
                 gl_viewer->initViewer();
                 ctrl->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
+                ctrl->getModel()->setVideoEngineRequirements(NULL);
                 gl_viewer->clearViewer();
-                std::vector<InputNode*> inp;
-                ctrl->getModel()->setVideoEngineRequirements(inp, NULL);
-
+                
             }
         }
         int i=0;
@@ -155,25 +154,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         ctrl->getModel()->getVideoEngine()->clearRowCache();
         ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
-            /*if it is a viewer*/
-            if(strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")==0){
-                std::vector<InputNode*> inputs;
-                ctrl->getModel()->getGraphInput(inputs,dynamic_cast<Node*>(arrow_dragged->getSource()->getNode()));
-                bool go=true;
-                for(int i=0;i<inputs.size();i++){
-                    InputNode* currentInput=inputs[i];
-                    if(strcmp(currentInput->className(),"Reader")==0){
-                        if(!(static_cast<Reader*>(currentInput)->hasFrames())){
-                            go=false;
-                        }
-                    }
-                }
-                ctrl->getModel()->setVideoEngineRequirements(inputs,dynamic_cast<OutputNode*>(arrow_dragged->getDest()->getNode()));
-                if(go){ // if there is an input upstream, we start the engine
-                    ctrl->getModel()->startVideoEngine(1);
-                }
-                
+            Node_ui* viewer = Node_ui::hasViewerConnected(arrow_dragged->getDest());
+            if(viewer){
+                ctrl->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+                ctrl->getModel()->startVideoEngine(1);
             }
+           
         }
         scene()->update();
 

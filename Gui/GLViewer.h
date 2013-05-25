@@ -193,13 +193,15 @@ public:
 	/*overload of QT enter/leave/resize events*/
 	void enterEvent(QEvent *event)
 	{   QGLWidget::enterEvent(event);
-	setFocus();
-	grabKeyboard();
+        setFocus();
+        grabMouse();
+        grabKeyboard();
 	}
 	void leaveEvent(QEvent *event)
 	{
 		QGLWidget::leaveEvent(event);
 		setFocus();
+        releaseMouse();
 		releaseKeyboard();
 	}
 	virtual void resizeEvent(QResizeEvent* event){ // public to hack the protected field

@@ -942,6 +942,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         old_pos = new_pos;
         
     }
+
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     QPointF p;
@@ -1258,7 +1259,7 @@ void ViewerGL::updateColorSpace(QString str){
     
     
     if(_byteMode==1 || !_hasHW)
-        vengine->computeFrameRequest(true,true,false);
+        vengine->videoEngine(1,false,true,true);
     updateGL();
     
 }
@@ -1266,7 +1267,7 @@ void ViewerGL::updateExposure(double d){
     exposure = d;
     
     if(_byteMode==1 || !_hasHW)
-        vengine->computeFrameRequest(true,true,false);
+        vengine->videoEngine(1,false,true,true);
     updateGL();
     
 }
