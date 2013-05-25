@@ -11,7 +11,6 @@
 
 #include <QtOpenGL/QGLWidget>
 #include <QtCore/QEvent>
-
 #include <QtCore/QTimer>
 #include <QtGui/QKeyEvent>
 #include <string>
@@ -373,6 +372,8 @@ private:
 
 	float _lut; // 0 = NONE , 1 = sRGB , 2 = Rec 709  : this value is used by shaders
 	Lut* _colorSpace; //the lut used to do the viewer colorspace conversion when we can't use shaders
+    bool _updatingColorSpace;
+    bool _usingColorSpace;
 
 	int Ysampling; // sampling factor for LC files
 
@@ -417,6 +418,8 @@ private:
 	char* frameData; // last frame computed data , either U32* or float* depending on _byteMode
 	bool _makeNewFrame;
 	ViewerCache::FrameID frameInfo;
+    
+    
 
 };
 #endif // GLVIEWER_H

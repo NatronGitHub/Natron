@@ -12,7 +12,7 @@ FrameFileDialog::FrameFileDialog(QWidget* parent,
                                  const QString &filter) : QFileDialog(parent,caption,directory,filter){
    // setOption(QFileDialog::DontUseNativeDialog);
     setViewMode(QFileDialog::Detail);
-    
+    setFileMode(ExistingFiles);
 }
 FrameFileDialog::~FrameFileDialog(){
     

@@ -76,6 +76,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
     setCurrentReaderInfo(blankReaderInfo,onInit);
 }
 void ViewerGL::initConstructor(){
+    _updatingColorSpace = false;
     _hasHW=true;
     _readerInfo = new ReaderInfo;
     blankReaderInfo = new ReaderInfo;
@@ -717,6 +718,10 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     
+    /*flaging that we're using the colorspace so it doesn't try to change it in the same time
+     if the user requested it*/
+    _usingColorSpace = true;
+    
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=nbBytesOutput;
     output+=yOffset;
@@ -838,7 +843,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         itNew-= downScaleIncrement;
         itOld -= (fullSizeIncrement-downScaleIncrement);
     }
-    
+    _usingColorSpace = false;
 }
 // nbbytesoutput is the size in bytes of 1 channel for the row
 void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
@@ -948,9 +953,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     QPointF p;
     float increment=0.f;
     if(_zoomCtx.zoomFactor<1.f)
-        increment=0.1;
+        increment=0.05;
     else
-        increment=0.1*_zoomCtx.zoomFactor;
+        increment=0.05*_zoomCtx.zoomFactor;
 	if(!vengine->isWorking()){
 		if(event->delta() >0){
             
@@ -998,6 +1003,38 @@ void ViewerGL::zoomSlot(int v){
             zoomIn();
         }
     }
+}
+void ViewerGL::zoomIn(){
+    if(_zoomCtx.zoomFactor<=1.f){
+        if(_zoomCtx.zoomFactor > _zoomCtx.currentBuiltInZoom && _drawing){
+            _zoomCtx.currentBuiltInZoom = _builtInZoomMap.superiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
+            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
+            initTexturesRgb(w,h);
+            vengine->_viewerCache->clearPlayBackCache();
+            vengine->videoEngine(1,false,true,true);
+        }
+        
+    }//else
+    updateGL();
+    
+}
+void ViewerGL::zoomOut(){
+    if(_zoomCtx.zoomFactor <= 0.1){
+        _zoomCtx.zoomFactor = 0.1;
+    }
+    if(_zoomCtx.zoomFactor<=1.f){
+        float inf = _builtInZoomMap.inferiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
+        if(_zoomCtx.zoomFactor < inf && _drawing){
+            _zoomCtx.currentBuiltInZoom = inf;
+            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
+            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
+            initTexturesRgb(w,h);
+            vengine->_viewerCache->clearPlayBackCache();
+            vengine->videoEngine(1,false,true,true);
+        }
+    }//else
+    updateGL();
 }
 
 QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
@@ -1149,38 +1186,7 @@ void ViewerGL::initViewer(){
     _zoomCtx.setZoomXY((float)displayWindow().w()/2.f,(float)displayWindow().h()/2.f);
 }
 
-void ViewerGL::zoomIn(){
-    if(_zoomCtx.zoomFactor<=1.f){
-        if(_zoomCtx.zoomFactor > _zoomCtx.currentBuiltInZoom && _drawing){
-            _zoomCtx.currentBuiltInZoom = _builtInZoomMap.superiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
-            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
-            initTexturesRgb(w,h);
-            vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
-        }
-        
-    }else
-        updateGL();
-    
-}
-void ViewerGL::zoomOut(){
-    if(_zoomCtx.zoomFactor <= 0.1){
-        _zoomCtx.zoomFactor = 0.1;
-    }
-    if(_zoomCtx.zoomFactor<=1.f){
-        float inf = _builtInZoomMap.inferiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
-        if(_zoomCtx.zoomFactor < inf && _drawing){
-            _zoomCtx.currentBuiltInZoom = inf;
-            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
-            initTexturesRgb(w,h);
-            vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
-        }
-    }else
-        updateGL();
-}
+
 
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
@@ -1232,9 +1238,12 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     
 }
 void ViewerGL::updateColorSpace(QString str){
+    while(_usingColorSpace){}
+    _updatingColorSpace = true;
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
             delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
             _colorSpace->validate();
         }
@@ -1242,6 +1251,7 @@ void ViewerGL::updateColorSpace(QString str){
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
             delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
             _colorSpace->validate();
         }
@@ -1250,13 +1260,14 @@ void ViewerGL::updateColorSpace(QString str){
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
             delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
             _colorSpace->validate();
         }
         
         _lut = 2;
     }
-    
+    _updatingColorSpace = false;
     
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
@@ -1265,7 +1276,7 @@ void ViewerGL::updateColorSpace(QString str){
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    
+    ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
     updateGL();

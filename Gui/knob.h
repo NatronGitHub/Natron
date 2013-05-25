@@ -71,8 +71,6 @@ public:
     void validateEvent();
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
-    //To be called when the user press enter to validate informations
-    void addElement(QWidget* e){elements.push_back(e);}
     
     Knob_Callback *cb;
     QHBoxLayout* layout;
