@@ -49,7 +49,7 @@ void ReadExr::lookupChannels(std::set<Channel>& channel, const char* name)
         
         
     }
-    op->getInfo()->rgbMode(rgbMode);
+  //  op->getInfo()->rgbMode(rgbMode);
     //ui_context->rgbMode(rgbMode);
 }
 
@@ -224,7 +224,7 @@ std::string ChannelName::name() const
 		return layer + "." + chan;
 	return chan;
 }
-void ReadExr::open(const QString filename,bool openBothViews){
+void ReadExr::readHeader(const QString filename,bool openBothViews){
     
     channel_map.clear();
     views.clear();
@@ -329,6 +329,7 @@ void ReadExr::open(const QString filename,bool openBothViews){
                 }
             }
         }
+       
         const Imath::Box2i& datawin = inputfile->header().dataWindow();
         const Imath::Box2i& dispwin = inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
@@ -370,46 +371,7 @@ void ReadExr::open(const QString filename,bool openBothViews){
             ydirection=1;
             //            op->getInfo()->setYdirection(1);
         }
-        
-        const int X = max(bbox.x(), datawin.min.x + dataOffset);
-        const int R = min(bbox.right(), datawin.max.x + dataOffset +1);
-        int endScanLine=0,startScanLine=0;
-        if(ydirection < 0){
-            startScanLine = dispwin.max.y;
-            endScanLine = dispwin.min.y-1;
-        }else{
-            startScanLine = dispwin.min.y ;
-            endScanLine = dispwin.max.y+1;
-        }
-        //_img.reserve(dispwin.max.y-dispwin.min.y);
-        int y =startScanLine;
-        while(y != endScanLine){
-            Imf::FrameBuffer fbuf;
-            int exrY = dispwin.max.y - y;
-            Row* scanLine = new Row(bbox.x(),exrY,bbox.right(),mask);
-            scanLine->allocate();
-            foreachChannels(z, mask){
-                float* dest = scanLine->writable(z);
-                for (int xx = bbox.x(); xx < X; xx++)
-                    dest[xx] = 0;
-                for (int xx = R; xx < bbox.right(); xx++)
-                    dest[xx] = 0;
-                
-                if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
-                    fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
-                }else{
-                    fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0,2,2));
-                }                
-            }
-            inputfile->setFrameBuffer(fbuf);
-			inputfile->readPixels(exrY);
-            _img.push_back(scanLine);
-            if(ydirection < 0) y--;
-            else y++;
-            
-        }
         setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
-
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
@@ -418,8 +380,57 @@ void ReadExr::open(const QString filename,bool openBothViews){
         return ;
     }
     
-
     
+    
+}
+
+void ReadExr::readScanLine(int y){
+    const Imath::Box2i& dispwin = inputfile->header().displayWindow();
+	const Imath::Box2i& datawin = inputfile->header().dataWindow();
+    
+	// Invert to EXR y coordinate:
+	int exrY = dispwin.max.y - y;
+    Box2D bbox = _readInfo->dataWindow();
+    ChannelSet channels = _readInfo->channels();
+    Row* out = new Row(bbox.x(),y,bbox.right(),channels);
+    out->allocate();
+    _img.insert(make_pair(exrY,out));
+	// Figure out intersection of x,r with the data in exr file:
+	const int X = max(bbox.x(), datawin.min.x + dataOffset);
+	const int R = min(bbox.right(), datawin.max.x + dataOffset +1);
+    
+	// Black outside the bbox:
+	if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
+        out->erase(channels);
+        return;
+    }
+    Imf::FrameBuffer fbuf;
+	foreachChannels(z, channels){
+        // blacking out what needs to be blacked out
+        float* dest = out->writable(z) ;
+        for (int xx = bbox.x(); xx < X; xx++)
+            dest[xx] = 0;
+        for (int xx = R; xx < bbox.right(); xx++)
+            dest[xx] = 0;
+        if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
+            fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
+        }else{
+            fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0,2,2));
+        }
+	}
+    {
+        try {
+            /*if (iop->aborted())
+             return;                     // abort if another thread does so*/
+            inputfile->setFrameBuffer(fbuf);
+            inputfile->readPixels(exrY);
+        }
+        catch (const std::exception& exc) {
+            cout << " ERROR READING PIXELS FROM FILE : " << exc.what() <<  endl;
+            //iop->error(exc.what());
+        }
+    }
+	
 }
 
 ReadExr::ReadExr(Reader* op,ViewerGL* ui_context):Read(op,ui_context),
@@ -440,50 +451,12 @@ ReadExr::~ReadExr(){
     delete inputStr ;
     delete inputStdStream ;
 #endif
-    foreach(Row* row,_img){
-        delete row;
-    }
+    for(map<int,Row*>::iterator it =_img.begin();it!= _img.end();it++) delete it->second;
     _img.clear();
 	delete inputfile;
 }
 
-
-
-void ReadExr::normal_engine(const Imath::Box2i& datawin, const Imath::Box2i& dispwin,ChannelSet& channels, int exrY, Row* row, int x, int X, int r, int R){
-	Imf::FrameBuffer fbuf;
-	foreachChannels(z, channels){
-        
-        // blacking out what needs to be blacked out
-        float* dest = row->writable(z) ;
-        for (int xx = x; xx < X; xx++)
-            dest[xx] = 0;
-        for (int xx = R; xx < r; xx++)
-            dest[xx] = 0;
-        if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
-            fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
-        }else{
-            fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0,2,2));
-        }
-	}
-    
-	{
-		//QMutexLocker guard(C_lock);
-		try {
-			/*if (iop->aborted())
-             return;                     // abort if another thread does so*/
-			inputfile->setFrameBuffer(fbuf);
-			inputfile->readPixels(exrY);
-		}
-		catch (const std::exception& exc) {
-			cout << " ERROR READING PIXELS FROM FILE : " << exc.what() <<  endl;
-			//iop->error(exc.what());
-			return;
-		}
-	}
-    
-}
-
-void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
+void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 	const Imath::Box2i& dispwin = inputfile->header().displayWindow();
 	const Imath::Box2i& datawin = inputfile->header().dataWindow();
     
@@ -494,40 +467,74 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask c,Row* out){
 	const int X = max(offset, datawin.min.x + dataOffset);
 	const int R = min(range, datawin.max.x + dataOffset +1);
     
-    
-    
-	// Black outside the box:
-	if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
-        out->erase(c);
-        return;
+    Row* from = 0;
+    //  colorspace conversion
+    map<int,Row*>::iterator it = _img.find(exrY);
+    if(it == _img.end()){
+        cout << "couldn't read: " << exrY << endl;
     }
+    from = it->second;
+ 	
+    const float* fromA = 0;
+    const float* fromR = 0;
+    const float* fromG = 0;
+    const float* fromB = 0;
     
-    //normal_engine(datawin, dispwin, c, exrY, out, offset, X, range, R);
-     
-	//  colorspace conversion
- 	Row* from = _img[exrY];
-    const float* fromA = (hasAlpha(c)) ? (*from)[Channel_alpha] + X : 0;
-    const float* fromR=(*from)[Channel_red] +X;
-    const float* fromG=(*from)[Channel_green] +X;
-    const float* fromB=(*from)[Channel_blue] +X;
-        
+    
+    if(channels & Channel_alpha){
+        if(from->channels() & Channel_alpha){
+            fromA= (*from)[Channel_alpha] + X ;
+        }else{
+            
+        }
+    }
+    if(channels & Channel_red){
+        if(from->channels() & Channel_red){
+            fromR= (*from)[Channel_red] + X ;
+        }else{
+            
+        }
+    }
+    if(channels & Channel_green){
+        if(from->channels() & Channel_green){
+            fromG= (*from)[Channel_green] + X ;
+        }else{
+            
+        }
+    }
+
+    if(channels & Channel_blue){
+        if(from->channels() & Channel_blue){
+            fromB= (*from)[Channel_blue] + X ;
+        }else{
+            
+        }
+    } 
     
     float* r = out->writable(Channel_red);
     float* g = out->writable(Channel_green);
     float* b = out->writable(Channel_blue);
-    float * a = NULL;
+    float* a = out->writable(Channel_alpha);
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
-        fromA =(*from)[Channel_alpha] +X;
+        fromA = from->channels() & Channel_alpha ? (*from)[Channel_alpha] +X : NULL;
         a =out->writable(Channel_alpha);
     }
     from_float(r, g, b, fromR, fromG, fromB,R - X,1,fromA,a);
+    channels -= Mask_RGBA;
+    
+    /*Not converting extra channels, we pass them using the Linear class (just copying)*/
+    foreachChannels(z, channels){
+        if(from->channels() & z){
+            Linear::from_float((*from)[z],out->writable(z),R-X,1);
+        }
+    }
  	
 }
 
 
 void ReadExr::make_preview(const char* filename){
-        
+    
     Imf::RgbaInputFile in (filename);
     Imf::Header header =in.header();
     Imath::Box2i &dataWindow = header.dataWindow();
@@ -587,7 +594,6 @@ void ReadExr::make_preview(const char* filename){
         }
     }
     op->setPreview(img);
-    op->getNodeUi()->updatePreviewImageForReader();
 }
 
 //META DATA HANDLING:
@@ -732,5 +738,22 @@ void ReadExr::make_preview(const char* filename){
 //         }*/
 //    }
 //
-
+void ReadExr::debug(){
+    int w = _img.begin()->second->right() - _img.begin()->second->offset();
+    int h =_img.size();
+    map<int,Row*>::iterator it = _img.begin();
+    QImage img(w,h,QImage::Format_ARGB32);
+    for(int i =0 ; i < h ; i++){
+        Row* row = it->second;
+        const float* r = (*row)[Channel_red] + row->offset();
+        const float* g = (*row)[Channel_green] + row->offset();
+        const float* b = (*row)[Channel_blue] + row->offset();
+        for(int j = 0 ; j < w ; j++){
+            QColor c(Lut::clamp(*r++)*255,Lut::clamp(*g++)*255,Lut::clamp(*b++)*255);
+            img.setPixel(j, i, c.rgb());
+        }
+        it++;
+    }
+    img.save("debug.jpg");
+}
 

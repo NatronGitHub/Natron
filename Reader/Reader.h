@@ -24,7 +24,7 @@ class Reader : public InputNode
 public:
     /*Internal enum used to determine whether we need to open both views from
      * files that support stereo( e.g : OpenEXR multiview files)*/
-    enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE};
+    enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE,DO_NOT_DECODE};
     
     /*This class manages the buffer of the reader, i.e:
      *a reader can have several frames stored in its buffer.
@@ -87,7 +87,7 @@ public:
         void remove(std::string filename);
         QFuture<void>* getFuture(std::string filename);
         bool decodeFinished(std::string filename);
-        DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode);
+        DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode,float builtInZoom);
         void clear();
         void setSize(int size){_bufferSize = size;}
         bool isFull(){return _buffer.size() == _bufferSize;}
@@ -154,7 +154,7 @@ public:
     std::string getRandomFrameName(int f);
 	bool hasPreview(){return has_preview;}
 	void hasPreview(bool b){has_preview=b;}
-	void setPreview(QImage* img){preview=img; hasPreview(true);}
+	void setPreview(QImage* img);
 	QImage* getPreview(){return preview;}
 
     virtual ~Reader();
@@ -190,6 +190,8 @@ public:
     
     void removeCachedFramesFromBuffer();
     
+    void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
+    
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
 private:
@@ -197,6 +199,9 @@ private:
 	bool has_preview;
     QStringList fileNameList;
     bool video_sequence;
+    /*useful when using readScanLine in the open(..) function, it determines
+     how many scanlines we'd need*/
+    bool _fitFrameToViewer;
 	Read* readHandle;
 	File_Type filetype;
 	ViewerGL* ui_context;

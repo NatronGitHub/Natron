@@ -881,9 +881,7 @@ ReadFFMPEG::~ReadFFMPEG(){
     _dataBufferManager.release(ba.constData());
     
 }
-
-void ReadFFMPEG::open(const QString filename,bool openBothViews){
-	//std::string filename = files[current_frame].toStdString();
+void ReadFFMPEG::readHeader(const QString filename,bool openBothViews){
     this->_file = filename;
     const QByteArray ba = filename.toLatin1();
     _reader =_readerManager.get(ba.data());
@@ -898,27 +896,24 @@ void ReadFFMPEG::open(const QString filename,bool openBothViews){
     double aspect;
     
     if (_reader->info(width, height, aspect, frames)) {
-      //  op->getInfo()->set_channels(Mask_RGBA);
+        //  op->getInfo()->set_channels(Mask_RGBA);
         // op->getInfo().set_info(width, height, 3, aspect);
         Format imageFormat(0,0,width,height,"",aspect);
         Box2D bbox(0,0,width,height);
-      //  op->getInfo()->set_full_size_format(format);
-       // op->getInfo()->set(0, 0, width-1, height-1);
-       // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
+        //  op->getInfo()->set_full_size_format(format);
+        // op->getInfo()->set(0, 0, width-1, height-1);
+        // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
         _numFrames = frames;
         _memNeeded = width * height * 3;
-        
-        _data->resize(_memNeeded);
-        if(!fillBuffer())
-            cout << "FFMPEG READER: open failed to fill the buffer" << endl;
         setReaderInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
-
-
     }
-
-    return ;
-    
 }
+void ReadFFMPEG::readAllData(bool openBothViews){
+    _data->resize(_memNeeded);
+    if(!fillBuffer())
+        cout << "FFMPEG READER: open failed to fill the buffer" << endl;
+}
+
 
 bool ReadFFMPEG::fillBuffer(){
     if(!_data->valid())
@@ -962,6 +957,5 @@ void ReadFFMPEG::make_preview(const char* filename){
 	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);
-    op->getNodeUi()->updatePreviewImageForReader();
 }
 

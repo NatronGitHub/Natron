@@ -15,7 +15,6 @@ using namespace std;
 ReadQt::ReadQt(Reader* op,ViewerGL* ui_context) : Read(op,ui_context){
     _lut=Lut::getLut(Lut::VIEWER);
     _lut->validate();
-    _img= new QImage;
 }
 
 ReadQt::~ReadQt(){
@@ -41,11 +40,13 @@ void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 bool ReadQt::supports_stereo(){
     return false;
 }
-void ReadQt::open(const QString filename,bool openBothViews){
+
+void ReadQt::readHeader(const QString filename,bool openBothViews){
     this->filename = filename;
-    if(!_img->load(filename)){
-        cout << "ERROR reading image file : " << qPrintable(filename) << endl;
-    }
+    /*load does actually loads the data too. And we must call it to read the header.
+     That means in this case the readAllData function is useless*/
+    _img= new QImage(filename);
+
     if(_img->format() == QImage::Format_Invalid){
         cout << "Couldn't load this image format" << endl;
         return ;
@@ -56,14 +57,11 @@ void ReadQt::open(const QString filename,bool openBothViews){
     
 	bool rgb=true;
 	int ydirection = -1;
-	ChannelMask mask;
-   // op->getInfo()->rgbMode(true);
-    
+	ChannelMask mask;    
     if(_autoCreateAlpha){
         
-       // op->getInfo()->set_channels(Mask_RGBA);
 		mask = Mask_RGBA;
-
+        
     }else{
         if(_img->format()==QImage::Format_ARGB32 || _img->format()==QImage::Format_ARGB32_Premultiplied
            || _img->format()==QImage::Format_ARGB4444_Premultiplied ||
@@ -79,28 +77,25 @@ void ReadQt::open(const QString filename,bool openBothViews){
                 _premult=true;
                 
             }
-            //op->getInfo()->set_channels(Mask_RGBA);
             mask = Mask_RGBA;
         }
         else{
-            //op->getInfo()->set_channels(Mask_RGB);
 			mask = Mask_RGB;
-
+            
         }
     }
-
+    
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
-   // op->getInfo()->set_full_size_format(format);
-   // op->getInfo()->set(0, 0, width, height);
-   // op->getInfo()->setYdirection(-1);
     setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
-    
 }
+void ReadQt::readAllData(bool openBothViews){
+// does nothing
+}
+
+
+
 void ReadQt::make_preview(const char* filename){
-    if(this->filename != QString(filename)){
-        _img->load(filename);
-    }
-    op->setPreview(_img);
-    op->getNodeUi()->updatePreviewImageForReader();
+    QImage* img = new QImage(filename);
+    op->setPreview(img);
 }

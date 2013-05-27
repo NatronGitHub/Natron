@@ -135,12 +135,14 @@ public:
 	static float from_byte(float f) { return f * (1.0f / 255.0f); }
 
     static void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, bool premult,bool autoAlpha,int W, int delta ,float* a,bool qtbuf=true);
+    static void from_byte(const U8* from,float* to,int W,int delta);
 
-    static void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta = 1,float* a=NULL); // < NOT IMPLEMENTED YET
-
+    static void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta,float* a); // < NOT IMPLEMENTED YET
+    static void from_short(const U16* from,float* to,int W,int delta);
 
     static void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
-                    bool premult,bool autoAlpha, int W, int delta = 1,const float* fromA=NULL,float* a=NULL); 
+                    bool premult,bool autoAlpha, int W, int delta ,const float* fromA,float* a);
+    static void from_float(const float* from,float* to,int W,int delta);
     
 	static float to_byte(float f) { return f * 255.0f; }
     

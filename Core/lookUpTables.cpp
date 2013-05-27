@@ -192,7 +192,7 @@ void Lut::from_byte(float* r,float* g,float* b, const uchar* from,bool hasAlpha,
 }
 
 void Lut::from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta ,float* a){
-    cout << "Lut::from not yet implemented" << endl;
+    cout << "Lut::from_short not yet implemented" << endl;
     
 }
 void Lut::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
@@ -382,7 +382,7 @@ void Linear::from_byte(float* r,float* g,float* b, const uchar* from,bool hasAlp
 }
 
 void Linear::from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult, bool autoAlpha,int W, int bits, int delta ,float* a){
-    cout << "Linear::from not yet implemented" << endl;
+    cout << "Linear::from_short not yet implemented" << endl;
     
 }
 void Linear::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
@@ -391,17 +391,56 @@ void Linear::from_float(float* r,float* g,float* b, const float* fromR,const flo
     // no colorspace conversion is done 
     // if autoalpha is on , we just fill the alpha channel with 1.f
     for(int i = 0 ; i < W ; i++){
-        r[i] = fromR[i];
-        g[i] = fromG[i];
-        b[i] = fromB[i];
-        if(fromA!=NULL && !autoAlpha){
-            a[i]= fromA[i];
-        }else if(fromA!=NULL && autoAlpha){
-            a[i] = 1.0;
+        if(fromR != NULL){
+            if(r != NULL){
+                r[i] = fromR[i];
+            }
+        }else{
+            if(r!=NULL){
+                r[i] = 0.f;
+            }
         }
+        if(fromG != NULL){
+            if(g != NULL){
+                g[i] = fromG[i];
+            }
+        }else{
+            if(g!=NULL){
+                g[i] = 0.f;
+            }
+        }
+        if(fromB != NULL){
+            if(b != NULL){
+                b[i] = fromB[i];
+            }
+        }else{
+            if(b!=NULL){
+                b[i] = 0.f;
+            }
+        }
+        if (fromA != NULL) {
+            if (a != NULL) {
+                a[i] = fromA[i];
+            }
+        }else{
+            if(autoAlpha && a!=NULL){
+                a[i] = 1.0;
+            }
+        }
+        
     }
    
 }
+void Linear::from_float(const float* from,float* to,int W,int delta){
+    for(int i =0 ; i < W ;i+=delta) to[i] = from[i];
+}
+void Linear::from_short(const U16* from,float* to,int W,int delta){
+    for(int i =0 ; i < W ;i+=delta) to[i] = (float)(from[i])/65535.f;
+}
+void Linear::from_byte(const U8* from,float* to,int W,int delta){
+    for(int i =0 ; i < W ;i+=delta) to[i] = (float)(from[i])/255.f;
+}
+
 Lut* Lut::getLut(DataType type){
     switch (type) {
         case VIEWER:

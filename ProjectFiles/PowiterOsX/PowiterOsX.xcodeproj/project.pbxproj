@@ -407,8 +407,6 @@
 		D7FD99BA17101E8700D1DCEA /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				D7B4811E174E9FAB0011055D /* viewercache.cpp */,
-				D7B4811F174E9FAB0011055D /* viewercache.h */,
 				D7FD99BB17101E8700D1DCEA /* Box.cpp */,
 				D7FD99BC17101E8700D1DCEA /* Box.h */,
 				D7FD99BD17101E8700D1DCEA /* channels.cpp */,
@@ -453,6 +451,8 @@
 				D7FD99E717101E8700D1DCEA /* VideoEngine.h */,
 				D7FD99E917101E8700D1DCEA /* viewerNode.cpp */,
 				D7FD99EA17101E8700D1DCEA /* viewerNode.h */,
+				D7B4811E174E9FAB0011055D /* viewercache.cpp */,
+				D7B4811F174E9FAB0011055D /* viewercache.h */,
 			);
 			name = Core;
 			path = ../../Core;

@@ -7,6 +7,7 @@
 #include <QtGui/qrgb.h>
 #include "Reader/Read.h"
 #include "Reader/Reader.h"
+#include "Reader/readExr.h"
 #include "Gui/GLViewer.h"
 #include "Core/lookUpTables.h"
 #include "Reader/readerInfo.h"
@@ -21,7 +22,10 @@ Read::Read(Reader* op,ViewerGL* ui_context):is_stereo(false), _autoCreateAlpha(f
     _readInfo = new ReaderInfo;
     
 }
-Read::~Read(){ delete _lut; }
+Read::~Read(){
+    if(_lut)
+        delete _lut;
+}
 
 
 void Read::from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf){
@@ -67,4 +71,70 @@ void Read::setReaderInfo(Format dispW,
     _readInfo->Ydirection(Ydirection);
     _readInfo->rgbMode(rgb);
 //	ui_context->getControler()->getModel()->getVideoEngine()->pushReaderInfo(_readInfo,op);
+}
+
+
+void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews){
+    readHeader(filename,openBothViews);
+    if(supportsScanLine()){
+        
+        float h = (float)(_readInfo->displayWindow().h());
+        std::pair<int,int> incr;
+        float zoomFactor = (float)ui_context->height()/h -0.05;
+        float builtInZoom;
+        if(fitFrameToviewer){
+            builtInZoom = ui_context->getBuiltinZooms().closestBuiltinZoom(zoomFactor);
+            incr = ui_context->getBuiltinZooms()[builtInZoom];
+        }else{
+            builtInZoom = ui_context->getCurrentBuiltinZoom();
+            incr = ui_context->getZoomIncrement();
+        }
+        _readInfo->setBuiltInZoom(builtInZoom);
+        int zoomedHeight = floor((float)_readInfo->displayWindow().h()*builtInZoom);
+        float incrementNew = incr.first;
+        float incrementFullsize = incr.second;
+        int Ydirection = _readInfo->Ydirection();
+        int startY=0,endY=0;
+        Box2D _dispW = _readInfo->displayWindow(); // the display window held by the data
+        int y= 0; 
+        int rowY = 0;
+        bool mainCondition;
+        if(Ydirection < 0){// Ydirection < 0 means we cycle from top to bottom
+            rowY = zoomedHeight -1;
+            startY = _dispW.top()-1;;
+            endY = _dispW.y()-1;
+            mainCondition = y > endY;
+        }else{
+            rowY = y;
+            startY = _dispW.y();
+            endY =_dispW.top();
+            mainCondition = y < endY;
+        }
+        y = startY;
+    
+        while (mainCondition){
+            int k = y;
+            bool condition;
+            if(Ydirection < 0){
+                condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
+            }else{
+                condition = k < (incrementNew + y);
+            }
+            while(condition){
+                readScanLine(k);
+                Ydirection < 0 ? rowY-- : rowY++ ;
+                Ydirection < 0 ?  k-- : k++ ;
+                if(Ydirection < 0){
+                    condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
+                }else{
+                    condition = k < (incrementNew + y);
+                }
+            }
+            Ydirection < 0 ? y-=incrementFullsize : y+=incrementFullsize;
+            Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
+        }
+    }else{
+        readAllData(openBothViews);
+        _readInfo->setBuiltInZoom(ui_context->getCurrentBuiltinZoom());
+    }
 }

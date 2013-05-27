@@ -57,19 +57,14 @@ public:
 	bool getChannels(const ChannelName& channelName, int view, std::set<Channel>& channel);
 	
 
-	void normal_engine(const Imath::Box2i& datawin,
-		const Imath::Box2i& dispwin,
-		ChannelSet&   channels,
-		int                 exrY,
-		Row*                row,
-		int                 x,
-		int                 X,
-		int                 r,
-		int                 R);
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
-    virtual void open(const QString filename,bool openBothViews = false);
+    virtual bool supportsScanLine(){return true;}
+    virtual int scanLinesCount(){return (int)_img.size();}
+    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readScanLine(int y);
     virtual bool supports_stereo(){return true;}
     virtual void make_preview(const char* filename);
+    void debug();
 
 private:
 	Imf::InputFile* inputfile;
@@ -77,7 +72,7 @@ private:
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;
-    std::vector< Row* > _img;
+    std::map< int, Row* > _img;
 	bool rgbMode;
 #ifdef __POWITER_WIN32__
     std::ifstream *inputStr;

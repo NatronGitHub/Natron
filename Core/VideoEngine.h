@@ -251,8 +251,11 @@ public:
     /*the function calling the engine for one scan-line*/
     void metaEnginePerRow(Row* row,OutputNode* output);
     
-    std::vector< std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > >
-    startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
+    typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > ReadFrame;
+    typedef std::vector< ReadFrame > FramesVector;
+    
+    
+    VideoEngine::FramesVector startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
     
     void resetReadingBuffers();
     

@@ -84,6 +84,7 @@ class ViewerGL : public QGLWidget
 		void setCurrentBuiltInZoom(float f){currentBuiltInZoom = f;}
 		float getCurrentBuiltinZoom(){return currentBuiltInZoom;}
 		void setZoomIncrement(std::pair<int,int> p){zoomIncrement = p;}
+        std::pair<int,int> getZoomIncrement(){return zoomIncrement;}
 	};
 	class BuiltinZooms{
 		std::map<float, pair<int,int> > builtInZooms;
@@ -220,6 +221,9 @@ public:
 	void setCurrentBuiltInZoom(float f){_zoomCtx.setCurrentBuiltInZoom(f);}
 	float getCurrentBuiltinZoom(){return _zoomCtx.getCurrentBuiltinZoom();}
 	void setZoomIncrement(std::pair<int,int> p){_zoomCtx.setZoomIncrement(p);}
+    std::pair<int,int> getZoomIncrement(){return _zoomCtx.getZoomIncrement();}
+    float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx.currentBuiltInZoom);}
+    float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx.currentBuiltInZoom);}
 	void setZoomFactor(float f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
 	float getZoomFactor(){return _zoomCtx.getZoomFactor();}
 	ViewerGL::BuiltinZooms& getBuiltinZooms(){return _builtInZoomMap;}
@@ -372,7 +376,6 @@ private:
 
 	float _lut; // 0 = NONE , 1 = sRGB , 2 = Rec 709  : this value is used by shaders
 	Lut* _colorSpace; //the lut used to do the viewer colorspace conversion when we can't use shaders
-    bool _updatingColorSpace;
     bool _usingColorSpace;
 
 	int Ysampling; // sampling factor for LC files

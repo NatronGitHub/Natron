@@ -48,26 +48,17 @@ void Row::range(int offset,int range){
 }
 
 Row::~Row(){
-    for(unsigned int i =0; i < channels().size();i++){
-        free(buffers[i]);
+    foreachChannels(z, _channels){
+        free(buffers[(int)z]);
     }
     free(buffers);
 }
 const float* Row::operator[](Channel z) const{
-    if(buffers[z]){
-        return buffers[z] - x ;
-    }else{
-        return NULL;
-    }
-    
+   return _channels & z ?  buffers[z] - x : NULL;
 }
 
 float* Row::writable(Channel c){
-    if(buffers[c]){
-        return buffers[c] - x ;
-    }else{
-        return NULL;
-    }
+    return _channels & c ?  buffers[c] - x : NULL;
 }
 void Row::copy(const Row *source,ChannelSet channels,int o,int r){
     range(o, r); // does nothing if the range is smaller

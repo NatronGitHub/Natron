@@ -23,7 +23,9 @@ public:
     virtual ~ReadQt();
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual bool supports_stereo();
-    virtual void open(const QString filename,bool openBothViews = false);
+    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readAllData(bool openBothViews);
+    virtual bool supportsScanLine(){return false;}
     virtual void make_preview(const char* filename);
 };
 

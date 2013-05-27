@@ -76,7 +76,6 @@ void ViewerGL::blankInfoForViewer(bool onInit){
     setCurrentReaderInfo(blankReaderInfo,onInit);
 }
 void ViewerGL::initConstructor(){
-    _updatingColorSpace = false;
     _hasHW=true;
     _readerInfo = new ReaderInfo;
     blankReaderInfo = new ReaderInfo;
@@ -156,6 +155,7 @@ ViewerGL::~ViewerGL(){
     delete _readerInfo;
 	delete blankReaderInfo;
 	delete _infoViewer;
+    delete _colorSpace;
 }
 
 void ViewerGL::updateGL(){
@@ -1008,6 +1008,7 @@ void ViewerGL::zoomIn(){
     if(_zoomCtx.zoomFactor<=1.f){
         if(_zoomCtx.zoomFactor > _zoomCtx.currentBuiltInZoom && _drawing){
             _zoomCtx.currentBuiltInZoom = _builtInZoomMap.superiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
+            setZoomIncrement(getBuiltinZooms()[_zoomCtx.currentBuiltInZoom]);
             int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
             int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
@@ -1027,6 +1028,7 @@ void ViewerGL::zoomOut(){
         float inf = _builtInZoomMap.inferiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
         if(_zoomCtx.zoomFactor < inf && _drawing){
             _zoomCtx.currentBuiltInZoom = inf;
+            setZoomIncrement(getBuiltinZooms()[_zoomCtx.currentBuiltInZoom]);
             int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
             int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
             initTexturesRgb(w,h);
@@ -1239,7 +1241,6 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
 }
 void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
-    _updatingColorSpace = true;
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
             delete _colorSpace;
@@ -1267,8 +1268,6 @@ void ViewerGL::updateColorSpace(QString str){
         
         _lut = 2;
     }
-    _updatingColorSpace = false;
-    
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
     updateGL();
