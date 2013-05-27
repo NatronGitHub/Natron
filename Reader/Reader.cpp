@@ -14,6 +14,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
 #include "Core/outputnode.h"
+
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -212,6 +213,7 @@ void Reader::showFilePreview(){
         cout << "Reader failed to open current frame file" << endl;
     }
     QByteArray ba = fileNameList.at(0).toLatin1();
+    
     readHandle->make_preview(ba.constData());
     _buffer.clear();
 }
@@ -354,7 +356,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
     }else if(searchMode == NOTCACHED_SEARCH){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
-            if(ret->_readHandle->supportsScanLine() &&  ret->_frameInfo->getBuiltInZoom() != builtInZoom){
+            if(ret->_readHandle->supportsScanLine() /*&&  ret->_frameInfo->getBuiltInZoom() != builtInZoom*/){
                 erase(ret);
                 return _buffer.end();
             }

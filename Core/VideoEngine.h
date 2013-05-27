@@ -233,7 +233,11 @@ public:
 	
     
 	/*Inserts a new frame in the disk cache*/
-    std::pair<char*,ViewerCache::FrameID> mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint);
+    std::pair<char*,ViewerCache::FrameID> mapNewFrame(int frameNb,
+                                                      std::string filename,
+                                                      int width,
+                                                      int height,
+                                                      int nbFrameHint);
 
 	/*Close the LRU frame in the disk cache*/
     void closeMappedFile();
@@ -295,6 +299,7 @@ private:
     /*reset variables used by the videoEngine*/
     void stopEngine();
     
+    void debugRowSequence();
     
 };
 

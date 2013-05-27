@@ -49,6 +49,8 @@ public:
 
             nodeCreation_shortcut_enabled=true;
             setFocus();
+            grabMouse();
+            releaseMouse();
             grabKeyboard();
         }
     }
@@ -58,6 +60,7 @@ public:
         if(smartNodeCreationEnabled){
             nodeCreation_shortcut_enabled=false;
             setFocus();
+            releaseMouse();
             releaseKeyboard();
          }
     }

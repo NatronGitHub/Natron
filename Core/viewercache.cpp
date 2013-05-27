@@ -70,7 +70,7 @@ ViewerCache::~ViewerCache(){
 }
 
 ViewerCache::FrameID::FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
-                 std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH):
+                              std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH):
 _zoom(zoom), _exposure(exp),_lut(lut),_rank(rank),_treeVers(treeVers),
 _cacheIndex(cacheIndex),_byteMode(byteMode),_actualW(actualW),_actualH(actualH){
     _frameInfo = new ReaderInfo;
@@ -221,7 +221,7 @@ void ViewerCache::restoreCache(){
                 ReaderInfo* infos = new ReaderInfo(format,bbox,fileNameStr,channels,
                                                    -1,true,currentFrameStr.toInt(),firstFrameStr.toInt(),lastFrameStr.toInt());
                 ViewerCache::FrameID _id( zoom , exposure  , lut,
-                            rank,treeHash,_cachedIndex,byteMode,infos,actualWStr.toInt(),actualHStr.toInt());
+                                         rank,treeHash,_cachedIndex,byteMode,infos,actualWStr.toInt(),actualHStr.toInt());
                 _frames.insert(make_pair(fileName,_id));
                 line = in.readLine();
                 if(_id._byteMode==1.0){
@@ -311,13 +311,13 @@ void ViewerCache::restoreCache(){
 
 /*checks whether the frame is present or not*/
 std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string filename,
-                                                   U32 treeVersion,
-                                                   float builtinZoom,
-                                                   float exposure,
-                                                   float lut,
-                                                   bool byteMode,
-                                                   Format format,
-                                                   Box2D bbox){
+                                                                  U32 treeVersion,
+                                                                  float builtinZoom,
+                                                                  float exposure,
+                                                                  float lut,
+                                                                  bool byteMode,
+                                                                  Format format,
+                                                                  Box2D bbox){
     pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
     for(ViewerCache::FramesIterator it=range.first;it!=range.second;++it){
         if((it->second._zoom == builtinZoom) &&
@@ -450,7 +450,12 @@ void ViewerCache::makeFreeSpace(int nbFrames){
 }
 
 
-std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,std::string filename,int width,int height,int nbFrameHint,U32 treeVers){
+std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
+                                                               std::string filename,
+                                                               int width,
+                                                               int height,
+                                                               int nbFrameHint,
+                                                               U32 treeVers){
     string name("frag_");
     char tmp[64];
     sprintf(tmp,"%llu",newCacheBlockIndex);
@@ -461,8 +466,8 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,std::
     frameInfo->copy(gl_viewer->getCurrentReaderInfo());
     frameInfo->currentFrameName(QString::fromStdString(filename));
     ViewerCache::FrameID _info(gl_viewer->getCurrentBuiltinZoom(),gl_viewer->exposure,
-                  gl_viewer->_lut,0,treeVers,name,gl_viewer->_byteMode,
-                  frameInfo,width,height);
+                               gl_viewer->_lut,0,treeVers,name,gl_viewer->_byteMode,
+                               frameInfo,width,height);
     size_t sizeNeeded;
     if(gl_viewer->_byteMode == 1.0 || !gl_viewer->_hasHW){
         sizeNeeded = width * sizeof(U32) * height;

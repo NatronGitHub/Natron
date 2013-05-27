@@ -112,7 +112,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 
                 gl_viewer->drawing(false);
                 gl_viewer->blankInfoForViewer();
-                gl_viewer->initViewer();
+                gl_viewer->initViewer(gl_viewer->displayWindow());
                 ctrl->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
                 ctrl->getModel()->setVideoEngineRequirements(NULL);
                 gl_viewer->clearViewer();

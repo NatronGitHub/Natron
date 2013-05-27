@@ -195,7 +195,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
     
     if(fitFrameToViewer){
-        gl_viewer->initViewer();
+        gl_viewer->initViewer(gl_viewer->displayWindow());
     }
     if (!sameFrame) {
         float builtinZoom = gl_viewer->getBuiltinZooms().closestBuiltinZoom(gl_viewer->getZoomFactor());
@@ -230,8 +230,6 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     }
 }
 void VideoEngine::finishComputeFrameRequest(){
-
-    
     _sequenceToWork.clear();
     
     *_enginePostProcessResults = QtConcurrent::run(gl_viewer,
@@ -294,7 +292,7 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb){
-    Box2D _dispW = gl_viewer->displayWindow(); // the display window held by the data
+    Format _dispW = gl_viewer->displayWindow(); // the display window held by the data
     
 	int y=_dispW.y(); // bottom
     
@@ -306,11 +304,14 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     ChannelSet outChannels = gl_viewer->displayChannels() & output->getInfo()->channels();
     
     
-    int zoomedHeight = gl_viewer->zoomedHeight();
 	std::pair<int,int> incr = gl_viewer->getZoomIncrement();
     float incrementNew = incr.first;
     float incrementFullsize = incr.second;
-    gl_viewer->initTextures();
+    pair<int,int> rowSpan = gl_viewer->getRowSpan(_dispW);
+   // cout << "video rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
+    int w = gl_viewer->zoomedWidth();
+    int h = (int)((float)(rowSpan.first-rowSpan.second+1)*gl_viewer->getCurrentBuiltinZoom());
+    gl_viewer->initTextures(w,h);
     
     // selecting the right anchor of the row
     int right = 0;
@@ -323,24 +324,23 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     offset = gl_viewer->dataWindow().x() : offset = gl_viewer->displayWindow().x();
     
     //starting viewer preprocess : i.e initialize the cached frame
-    gl_viewer->preProcess(filename,followingComputationsNb);
+    gl_viewer->preProcess(filename,followingComputationsNb,rowSpan);
     int Ydirection = gl_viewer->Ydirection();
     int startY=0,endY=0;
     int rowY = 0;
     bool mainCondition;
     if(Ydirection < 0){// Ydirection < 0 means we cycle from top to bottom
-        rowY = zoomedHeight -1;
-        startY = _dispW.top()-1;;
-        endY = _dispW.y()-1;
-        mainCondition = y > endY;
+        rowY = h-1;
+        startY = rowSpan.first;
+        endY = rowSpan.second-1;
     }else{
-        rowY = y;
-        startY = _dispW.y();
-        endY =_dispW.top();
-        mainCondition = y < endY;
+        rowY = 0;
+        startY = rowSpan.second;
+        endY = rowSpan.first+1;
     }
     y = startY;
-    
+    Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
+    //cout << "start : " << startY << "end: " << endY << endl;
     while (mainCondition){
         int k = y;
         bool condition;
@@ -359,8 +359,6 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
                 _workerThreadsResults->waitForFinished();
                 return;
             }
-            
-            // bool cached = false;
             Row* row ;
             map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
             if(foundCached!=row_cache.end()){
@@ -385,9 +383,6 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
         Ydirection < 0 ? y-=incrementFullsize : y+=incrementFullsize;
         Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
     }
-    
-    int w = gl_viewer->zoomedWidth();
-    int h = zoomedHeight;
     
     std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);
     _gpuTransferInfo.set(gl_viewer->getFrameData(), pbo.first, pbo.second);
@@ -515,7 +510,15 @@ void VideoEngine::updateProgressBar(){
     //update progress bar
 }
 void VideoEngine::updateDisplay(){
-    gl_viewer->resizeEvent(new QResizeEvent(gl_viewer->size(),gl_viewer->size()));
+    int width = gl_viewer->size().width();
+    int height = gl_viewer->size().height();
+    float ap = gl_viewer->displayWindow().pixel_aspect();
+    if(ap > 1.f){
+        glViewport (0, 0, width*ap, height);
+    }else{
+        glViewport (0, 0, width, height/ap);
+    }
+
     gl_viewer->updateGL();
 }
 
@@ -1016,8 +1019,13 @@ void VideoEngine::changeTreeVersion(){
     _treeVersion.computeHash();
     
 }
-std::pair<char*,ViewerCache::FrameID> VideoEngine::mapNewFrame(int frameNb,std::string filename,int width,int height,int nbFrameHint){
-    return _viewerCache->mapNewFrame(frameNb,filename, width, height, nbFrameHint,_treeVersion.getHashValue());}
+std::pair<char*,ViewerCache::FrameID> VideoEngine::mapNewFrame(int frameNb,
+                                                               std::string filename,
+                                                               int width,
+                                                               int height,
+                                                               int nbFrameHint){
+    return _viewerCache->mapNewFrame(frameNb,filename, width, height, nbFrameHint,_treeVersion.getHashValue());
+}
 
 void VideoEngine::closeMappedFile(){_viewerCache->closeMappedFile();}
 
@@ -1073,4 +1081,35 @@ void VideoEngine::DAG::debug(){
     for(DAG::DAGIterator it = begin(); it != end() ;it++){
         cout << (*it)->getName().toStdString() << endl;
     }
+}
+
+
+void VideoEngine::debugRowSequence(){
+    int h = _sequenceToWork.size();
+    int w = _sequenceToWork[0]->right() - _sequenceToWork[0]->offset();
+    if(h == 0 || w == 0) cout << "empty img" << endl;
+    QImage img(w,h,QImage::Format_ARGB32);
+    for(int i = 0; i < h ; i++){
+        Row* from = _sequenceToWork[i];
+        const float* r = (*from)[Channel_red];
+        const float* g = (*from)[Channel_green];
+        const float* b = (*from)[Channel_blue];
+        const float* a = (*from)[Channel_alpha];
+        for(int j = 0 ; j < w ; j++){
+            QColor c(r ? Lut::clamp((*r++))*255 : 0,
+                     g ? Lut::clamp((*g++))*255 : 0,
+                     b ? Lut::clamp((*b++))*255 : 0,
+                     a? Lut::clamp((*a++))*255 : 255);
+            img.setPixel(j, i, c.rgba());
+        }
+    }
+    string name("debug_");
+    char tmp[60];
+    sprintf(tmp,"%i",w);
+    name.append(tmp);
+    name.append("x");
+    sprintf(tmp, "%i",h);
+    name.append(tmp);
+    name.append(".png");
+    img.save(name.c_str());
 }

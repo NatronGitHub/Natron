@@ -85,33 +85,33 @@ void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews)
         if(fitFrameToviewer){
             builtInZoom = ui_context->getBuiltinZooms().closestBuiltinZoom(zoomFactor);
             incr = ui_context->getBuiltinZooms()[builtInZoom];
+            ui_context->initViewer(_readInfo->displayWindow());
         }else{
             builtInZoom = ui_context->getCurrentBuiltinZoom();
             incr = ui_context->getZoomIncrement();
         }
         _readInfo->setBuiltInZoom(builtInZoom);
-        int zoomedHeight = floor((float)_readInfo->displayWindow().h()*builtInZoom);
+    
+        pair<int,int> rowSpan = ui_context->getRowSpan(_readInfo->displayWindow());
+        //cout << "read rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
         float incrementNew = incr.first;
         float incrementFullsize = incr.second;
         int Ydirection = _readInfo->Ydirection();
         int startY=0,endY=0;
-        Box2D _dispW = _readInfo->displayWindow(); // the display window held by the data
         int y= 0; 
         int rowY = 0;
         bool mainCondition;
         if(Ydirection < 0){// Ydirection < 0 means we cycle from top to bottom
-            rowY = zoomedHeight -1;
-            startY = _dispW.top()-1;;
-            endY = _dispW.y()-1;
-            mainCondition = y > endY;
+            rowY = rowSpan.first;
+            startY = rowSpan.first;
+            endY = rowSpan.second-1;
         }else{
-            rowY = y;
-            startY = _dispW.y();
-            endY =_dispW.top();
-            mainCondition = y < endY;
+            rowY = rowSpan.second;
+            startY = rowSpan.second;
+            endY = rowSpan.first+1;
         }
         y = startY;
-    
+        Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
         while (mainCondition){
             int k = y;
             bool condition;

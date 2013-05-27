@@ -105,6 +105,7 @@ void ViewerGL::initConstructor(){
     _makeNewFrame = true;
     _colorSpace = Lut::getLut(Lut::VIEWER);
     _colorSpace->validate();
+    _mustFreeFrameData = false;
 }
 
 ViewerGL::ViewerGL(Controler* ctrl,float byteMode,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
@@ -176,6 +177,8 @@ void ViewerGL::resizeGL(int width, int height){
 		_ms = DRAGGING;
 	}
     _ms = UNDEFINED;
+    if(_drawing)
+        vengine->videoEngine(1,false,true,true);
 	checkGLErrors();
 }
 void ViewerGL::paintGL()
@@ -233,7 +236,7 @@ void ViewerGL::paintGL()
 	}else{
         if(_firstTime){
             _firstTime = false;
-            initViewer();
+            initViewer(displayWindow());
             initBlackTex();
         }
         drawBlackTex();
@@ -350,6 +353,44 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
+std::pair<int,int> ViewerGL::getRowSpan(Format displayWindow){
+    saveGLState();
+    
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    
+    float w = (float)width();
+    float h = (float)height();
+    float left = -w/2.f + displayWindow.w()/2.f;
+    float right = w/2.f + displayWindow.w()/2.f;
+    float bottom = -h/2.f + displayWindow.h()/2.f;
+    float top = h/2.f + displayWindow.h()/2.f ;
+    
+    glOrtho(left, right, bottom, top, -1, 1);
+    
+    glMatrixMode (GL_MODELVIEW);
+    glLoadIdentity();
+    
+    glTranslatef(transX, -transY, 0);
+    glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
+    glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
+    glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
+    
+    QPoint start = openGLpos(0, 0);
+    QPoint end = openGLpos(0, h-1);
+    if(start.y() >= displayWindow.h()) start.setY(displayWindow.h()-1);
+    else if(start.y() < 0){
+        start.setY(0);
+        end.setY(0);
+    }
+    if(end.y() < 0) end.setY(0);
+    else if(end.y() >= displayWindow.h()){
+        start.setY(0);
+        end.setY(0);
+    }
+    restoreGLState();
+    return make_pair(start.y(), end.y());
+}
 
 int ViewerGL::isExtensionSupported(const char *extension){
 	const GLubyte *extensions = NULL;
@@ -461,11 +502,9 @@ void ViewerGL::restoreGLState()
 	glPopAttrib();
 }
 
-void ViewerGL::initTextures(){
+void ViewerGL::initTextures(int w,int h){
     
 	makeCurrent();
-    int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
-    int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
     initTexturesRgb(w,h);
 	initShaderGLSL();
     
@@ -642,23 +681,38 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-void ViewerGL::preProcess(std::string filename,int nbFrameHint){
+void ViewerGL::preProcess(std::string filename,int nbFrameHint,std::pair<int,int> rowSpan){
     // init mmaped file 
     if(_makeNewFrame){
-        int w = floorf(_readerInfo->displayWindow().w() * _zoomCtx.currentBuiltInZoom);
-        int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
+        int w = zoomedWidth();
+        int h = (rowSpan.first - rowSpan.second +1)*_zoomCtx.currentBuiltInZoom;
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),filename, w, h, nbFrameHint);
-        frameData = p.first;
-        frameInfo = p.second;
-        _makeNewFrame = false;
+        if(_mustFreeFrameData){
+            free(frameData);
+            _mustFreeFrameData = false;
+        }
+        if(rowSpan.first != displayWindow().h()-1 || rowSpan.second != displayWindow().y()){
+            size_t dataSize = 0;
+            _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+            frameData = (char*)malloc(dataSize);
+            _mustFreeFrameData = true;
+        }else{
+            pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),
+                                                                      filename,
+                                                                      w, h,
+                                                                      nbFrameHint);
+            frameData = p.first;
+            frameInfo = p.second;
+            _makeNewFrame = false;
+        }
+        
+        
         
     }
 }
 
 std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
     //makeCurrent();
-    
     size_t dataSize = 0;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
     checkGLErrors();
@@ -672,8 +726,10 @@ std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
 	}
     checkGLErrors();
 	void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    vengine->_viewerCache->appendFrame(frameInfo);
-    _makeNewFrame = true;
+    if(!_makeNewFrame){
+        vengine->_viewerCache->appendFrame(frameInfo);
+        _makeNewFrame = true;
+    }
     return make_pair(gpuBuffer,dataSize);
         
 }
@@ -920,7 +976,12 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPoint pos;
     pos = openGLpos((float)event->x(), event->y());
-    if(pos.x() >= _readerInfo->displayWindow().x() && pos.x() <= _readerInfo->displayWindow().w() && pos.y() >=_readerInfo->displayWindow().y() && pos.y() <= _readerInfo->displayWindow().h()){
+    if(pos.x() >= _readerInfo->displayWindow().x() &&
+       pos.x() <= _readerInfo->displayWindow().w() &&
+       pos.y() >=_readerInfo->displayWindow().y() &&
+       pos.y() <= _readerInfo->displayWindow().h() &&
+       event->x() >= 0 && event->x() < width() &&
+       event->y() >= 0 && event->y() < height()){
         if(!_infoViewer->colorAndMouseVisible()){
             _infoViewer->showColorAndMouseInfo();
         }
@@ -943,8 +1004,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         float dy = new_pos.y() - old_pos.y();
         transX += dx;
         transY += dy;
-        updateGL();
         old_pos = new_pos;
+        if(_drawing && !vengine->isWorking())
+            vengine->videoEngine(1,false,true,true);
+        updateGL();
+
         
     }
 
@@ -1003,20 +1067,18 @@ void ViewerGL::zoomSlot(int v){
             zoomIn();
         }
     }
+    
 }
 void ViewerGL::zoomIn(){
     if(_zoomCtx.zoomFactor<=1.f){
         if(_zoomCtx.zoomFactor > _zoomCtx.currentBuiltInZoom && _drawing){
             _zoomCtx.currentBuiltInZoom = _builtInZoomMap.superiorBuiltinZoom(_zoomCtx.currentBuiltInZoom);
             setZoomIncrement(getBuiltinZooms()[_zoomCtx.currentBuiltInZoom]);
-            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
-            initTexturesRgb(w,h);
             vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
         }
-        
-    }//else
+    }
+    if(_drawing)
+        vengine->videoEngine(1,false,true,true);
     updateGL();
     
 }
@@ -1029,13 +1091,12 @@ void ViewerGL::zoomOut(){
         if(_zoomCtx.zoomFactor < inf && _drawing){
             _zoomCtx.currentBuiltInZoom = inf;
             setZoomIncrement(getBuiltinZooms()[_zoomCtx.currentBuiltInZoom]);
-            int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.currentBuiltInZoom);
-            int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.currentBuiltInZoom);
-            initTexturesRgb(w,h);
             vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
+            
         }
-    }//else
+    }
+    if(_drawing)
+        vengine->videoEngine(1,false,true,true);
     updateGL();
 }
 
@@ -1173,19 +1234,19 @@ float ViewerGL::BuiltinZooms::superiorBuiltinZoom(float v){
     }
     return -1.f;
 }
-void ViewerGL::initViewer(){
-    float h = (float)(displayWindow().h());
+void ViewerGL::initViewer(Format displayWindow){
+    float h = (float)(displayWindow.h());
     float zoomFactor = (float)height()/h;
     _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);
     _zoomCtx.old_zoomed_pt_win.setY((float)height()/2.f);
-    _zoomCtx.old_zoomed_pt.setX((float)displayWindow().w()/2.f);
-    _zoomCtx.old_zoomed_pt.setY((float)displayWindow().h()/2.f);
+    _zoomCtx.old_zoomed_pt.setX((float)displayWindow.w()/2.f);
+    _zoomCtx.old_zoomed_pt.setY((float)displayWindow.h()/2.f);
     
     setZoomFactor(zoomFactor);
     setTranslation(0, 0);
     setZoomFactor(zoomFactor-0.05);
     resetMousePos();
-    _zoomCtx.setZoomXY((float)displayWindow().w()/2.f,(float)displayWindow().h()/2.f);
+    _zoomCtx.setZoomXY((float)displayWindow.w()/2.f,(float)displayWindow.h()/2.f);
 }
 
 

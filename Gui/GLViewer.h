@@ -175,7 +175,7 @@ public:
 
 	/*function initialising display textures (and glsl shader the first time)
 	according to the current level of zooom*/
-	void initTextures();
+	void initTextures(int w,int h);
 	/*init the RGB texture*/
 	void initTexturesRgb(int w,int h);
 	/*width and height of the display texture*/
@@ -227,6 +227,10 @@ public:
 	void setZoomFactor(float f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
 	float getZoomFactor(){return _zoomCtx.getZoomFactor();}
 	ViewerGL::BuiltinZooms& getBuiltinZooms(){return _builtInZoomMap;}
+    
+    /*computes what are the first and last row that should be displayed on viewer
+     for the given displayWindow with the current zoom factor and zoom position.*/
+    std::pair<int,int> getRowSpan(Format displayWindow);
 
 	/*translation/zoom related functions*/
 	void setTranslation(float x,float y){transX = x; transY=y;}
@@ -269,9 +273,9 @@ public:
 	infos below the viewer)*/
 	void setInfoViewer(InfoViewerWidget* i );
 
-	/*handy function that zoom automatically the viewer so it displays
-	the frame in the entirely in the viewer*/
-	void initViewer();
+	/*handy function that zoom automatically the viewer so it fit
+	the frame  entirely in the viewer*/
+	void initViewer(Format displayWindow);
 
 	/*display black in the viewer*/
 	void clearViewer(){
@@ -305,7 +309,7 @@ public:
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
 	*/
-	void preProcess(std::string filename,int nbFrameHint);
+	void preProcess(std::string filename,int nbFrameHint,std::pair<int,int> rowSpan);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
 	std::pair<void*,size_t> allocatePBO(int w,int h);
@@ -419,6 +423,7 @@ private:
 	bool _fullscreen;
 
 	char* frameData; // last frame computed data , either U32* or float* depending on _byteMode
+    bool _mustFreeFrameData;
 	bool _makeNewFrame;
 	ViewerCache::FrameID frameInfo;
     
