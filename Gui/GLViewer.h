@@ -66,38 +66,19 @@ class ViewerGL : public QGLWidget
 
 	class ZoomContext{
 	public:
-		ZoomContext():zoomX(0),zoomY(0),zoomFactor(1),currentBuiltInZoom(-1),restToZoomX(0),restToZoomY(0)
+		ZoomContext():zoomX(0),zoomY(0),zoomFactor(1),restToZoomX(0),restToZoomY(0)
 		{}
 
 		QPointF old_zoomed_pt,old_zoomed_pt_win;
 		float zoomX,zoomY;
 		float restToZoomX,restToZoomY;
 		float zoomFactor;
-		float currentBuiltInZoom;
-		std::pair<int,int> zoomIncrement;
-
+	
 		void setZoomXY(float x,float y){zoomX=x;zoomY=y;}
 		std::pair<int,int> getZoomXY(){return std::make_pair(zoomX,zoomY);}
 		/*the level of zoom used to display the frame*/
 		void setZoomFactor(float f){zoomFactor = f;}
 		float getZoomFactor(){return zoomFactor;}
-		void setCurrentBuiltInZoom(float f){currentBuiltInZoom = f;}
-		float getCurrentBuiltinZoom(){return currentBuiltInZoom;}
-		void setZoomIncrement(std::pair<int,int> p){zoomIncrement = p;}
-        std::pair<int,int> getZoomIncrement(){return zoomIncrement;}
-	};
-	class BuiltinZooms{
-		std::map<float, pair<int,int> > builtInZooms;
-	public:
-		BuiltinZooms(){fillBuiltInZooms();}
-		/*builtin factors used to compute the data: this has nothing to do
-		with the level of zoom used to display*/
-		void fillBuiltInZooms();
-		float closestBuiltinZoom(float v);
-		float inferiorBuiltinZoom(float v);
-		float superiorBuiltinZoom(float v);
-		std::pair<int,int>& operator[](float v){return builtInZooms[v];}
-
 	};
 
 public:
@@ -152,10 +133,6 @@ public:
 	/*the lut used by the viewer to output images*/
 	float lutType(){return _lut;}
 
-	/*the builtinZoom is the level of zoom at which the data 
-	have been computed, it is NOT the level of zoom currently
-	set to draw the texture.*/
-	/*float currentBuiltinZoom(){return currentBuiltInZoom;}*/
 
 	/*the exposure applied to the fragments when drawing*/
 	float getExposure(){return exposure;}
@@ -211,33 +188,24 @@ public:
 			setVisible(true);
 		}
 	}
-
-	/*zoom functions*/
-	void zoomIn();
-	void zoomOut();
-
-
 	/*Convenience functions to communicate with the ZoomContext*/
-	void setCurrentBuiltInZoom(float f){_zoomCtx.setCurrentBuiltInZoom(f);}
-	float getCurrentBuiltinZoom(){return _zoomCtx.getCurrentBuiltinZoom();}
-	void setZoomIncrement(std::pair<int,int> p){_zoomCtx.setZoomIncrement(p);}
-    std::pair<int,int> getZoomIncrement(){return _zoomCtx.getZoomIncrement();}
-    float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx.currentBuiltInZoom);}
-    float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx.currentBuiltInZoom);}
+    float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx.zoomFactor);}
+    float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx.zoomFactor);}
 	void setZoomFactor(float f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
 	float getZoomFactor(){return _zoomCtx.getZoomFactor();}
-	ViewerGL::BuiltinZooms& getBuiltinZooms(){return _builtInZoomMap;}
     
-    /*computes what are the first and last row that should be displayed on viewer
-     for the given displayWindow with the current zoom factor and zoom position.*/
-    std::pair<int,int> getRowSpan(Format displayWindow,float zoomFactor);
-
+    /*computes what are the rows that should be displayed on viewer
+     for the given displayWindow with the  zoom factor and  current zoom center.*/
+    std::vector<int> computeRowSpan(Format displayWindow,float zoomFactor);
+    int _glInvertMatrix(float *m, float *out);
+    void _glMultMats44(float *result, float *matrix1, float *matrix2);
+    void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
+    int _glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector);
 	/*translation/zoom related functions*/
 	void setTranslation(float x,float y){transX = x; transY=y;}
 	std::pair<int,int> getTranslation(){return std::make_pair(transX,transY);}
 	void resetMousePos(){ new_pos.setX(0);new_pos.setY(0); old_pos.setX(0);old_pos.setY(0);}
-	//     void setZoomXY(float x,float y){zoomX=x;zoomY=y;}
-	//     std::pair<int,int> getZoomXY(){return std::make_pair(zoomX,zoomY);}
+	
 
 	/*the file type of the current frame*/
 	void fileType(File_Type f){_filetype=f;}
@@ -248,10 +216,10 @@ public:
 	algorithm. It also applies the viewer LUT during the filling process.
 	nbBytesOutput hold the number of bytes for 1 channel in the output*/
 	void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-		size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha=NULL);
 	/*idem above but for floating point textures (no dithering applied here)*/
 	void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-		size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha=NULL);
 
 	/*handy functions to fill textures*/
 	static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
@@ -412,7 +380,6 @@ private:
 
 
 	ZoomContext _zoomCtx;
-	BuiltinZooms _builtInZoomMap;
 
 	VideoEngine* vengine;
 

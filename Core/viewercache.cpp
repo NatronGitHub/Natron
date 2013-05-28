@@ -312,7 +312,7 @@ void ViewerCache::restoreCache(){
 /*checks whether the frame is present or not*/
 std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string filename,
                                                                   U32 treeVersion,
-                                                                  float builtinZoom,
+                                                                  float zoomFactor,
                                                                   float exposure,
                                                                   float lut,
                                                                   bool byteMode,
@@ -320,7 +320,7 @@ std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string fi
                                                                   Box2D bbox){
     pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
     for(ViewerCache::FramesIterator it=range.first;it!=range.second;++it){
-        if((it->second._zoom == builtinZoom) &&
+        if((it->second._zoom == zoomFactor) &&
            (it->second._exposure == exposure) &&
            (it->second._lut == lut) &&
            (it->second._treeVers== treeVersion) &&
@@ -465,7 +465,7 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
     ReaderInfo* frameInfo = new ReaderInfo;
     frameInfo->copy(gl_viewer->getCurrentReaderInfo());
     frameInfo->currentFrameName(QString::fromStdString(filename));
-    ViewerCache::FrameID _info(gl_viewer->getCurrentBuiltinZoom(),gl_viewer->exposure,
+    ViewerCache::FrameID _info(gl_viewer->getZoomFactor(),gl_viewer->exposure,
                                gl_viewer->_lut,0,treeVers,name,gl_viewer->_byteMode,
                                frameInfo,width,height);
     size_t sizeNeeded;

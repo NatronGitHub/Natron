@@ -70,70 +70,30 @@ void Read::setReaderInfo(Format dispW,
     _readInfo->channels(channels);
     _readInfo->Ydirection(Ydirection);
     _readInfo->rgbMode(rgb);
-//	ui_context->getControler()->getModel()->getVideoEngine()->pushReaderInfo(_readInfo,op);
 }
 
 
 void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews){
     readHeader(filename,openBothViews);
-    if(supportsScanLine()){
-        
+    if(supportsScanLine()){        
         float h = (float)(_readInfo->displayWindow().h());
-        std::pair<int,int> incr;
         float zoomFactor = (float)ui_context->height()/h -0.05;
-        float builtInZoom;
         if(fitFrameToviewer){
-            builtInZoom = ui_context->getBuiltinZooms().closestBuiltinZoom(zoomFactor);
-            incr = ui_context->getBuiltinZooms()[builtInZoom];
             ui_context->initViewer(_readInfo->displayWindow());
-        }else{
-            builtInZoom = ui_context->getCurrentBuiltinZoom();
-            incr = ui_context->getZoomIncrement();
         }
-        _readInfo->setBuiltInZoom(builtInZoom);
-        pair<int,int> rowSpan = ui_context->getRowSpan(_readInfo->displayWindow(), builtInZoom);
-        //cout << "read rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
-        float incrementNew = incr.first;
-        float incrementFullsize = incr.second;
-        int Ydirection = _readInfo->Ydirection();
-        int startY=0,endY=0;
-        int y= 0; 
-        int rowY = 0;
-        bool mainCondition;
-        if(Ydirection < 0){// Ydirection < 0 means we cycle from top to bottom
-            rowY = rowSpan.first;
-            startY = rowSpan.first;
-            endY = rowSpan.second-1;
-        }else{
-            rowY = rowSpan.second;
-            startY = rowSpan.second;
-            endY = rowSpan.first+1;
-        }
-        y = startY;
-        Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
-        while (mainCondition){
-            int k = y;
-            bool condition;
-            if(Ydirection < 0){
-                condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
-            }else{
-                condition = k < (incrementNew + y);
+        std::vector<int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
+        if(_readInfo->Ydirection() < 0){
+            for(U32 i = 0 ; i < rows.size() ; i++){
+                readScanLine(rows[i]);
             }
-            while(condition){
-                readScanLine(k);
-                Ydirection < 0 ? rowY-- : rowY++ ;
-                Ydirection < 0 ?  k-- : k++ ;
-                if(Ydirection < 0){
-                    condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
-                }else{
-                    condition = k < (incrementNew + y);
-                }
+        }else{
+            for(int i = rows.size() -1 ; i >=0 ; i--){
+                readScanLine(rows[i]);
             }
-            Ydirection < 0 ? y-=incrementFullsize : y+=incrementFullsize;
-            Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
         }
+
     }else{
         readAllData(openBothViews);
-        _readInfo->setBuiltInZoom(ui_context->getCurrentBuiltinZoom());
+        _readInfo->setZoomFactor(ui_context->getZoomFactor());
     }
 }

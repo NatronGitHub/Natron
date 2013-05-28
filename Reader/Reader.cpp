@@ -64,7 +64,7 @@ void Reader::randomFrame(int f){if(f>=firstFrame() && f<=lastFrame()) current_fr
 Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode mode,bool startNewThread){
     QByteArray ba = filename.toLatin1();
     const char* filename_cstr=ba.constData();
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOTCACHED_SEARCH,ui_context->getCurrentBuiltinZoom());
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOTCACHED_SEARCH,ui_context->getZoomFactor());
     if(found !=_buffer.end()){
         if(found->_asynchTask && !found->_asynchTask->isFinished()){
             found->_asynchTask->waitForFinished();
@@ -114,7 +114,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
 Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::FramesIterator frame,int frameNb,bool startNewThread){
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first,
                                                                     Buffer::BOTH_SEARCH,
-                                                                    ui_context->getCurrentBuiltinZoom());
+                                                                    ui_context->getZoomFactor());
     if(found !=_buffer.end()){
         if(found->_cacheWatcher || found->_cachedFrame){
             if(found->_cacheWatcher){
@@ -238,7 +238,7 @@ bool Reader::makeCurrentDecodedFrame(){
     QString currentFile = files[current_frame];
     Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
                                                                     Buffer::BOTH_SEARCH,
-                                                                    ui_context->getCurrentBuiltinZoom());
+                                                                    ui_context->getZoomFactor());
     if(frame == _buffer.end() || (frame->_asynchTask && !frame->_asynchTask->isFinished())) return false;
     
     readHandle = frame->_readHandle;
@@ -356,7 +356,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
     }else if(searchMode == NOTCACHED_SEARCH){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
-            if(ret->_readHandle->supportsScanLine() /*&&  ret->_frameInfo->getBuiltInZoom() != builtInZoom*/){
+            if(ret->_readHandle->supportsScanLine()){
                 erase(ret);
                 return _buffer.end();
             }

@@ -197,13 +197,6 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     if(fitFrameToViewer){
         gl_viewer->initViewer(gl_viewer->displayWindow());
     }
-    if (!sameFrame) {
-        float builtinZoom = gl_viewer->getBuiltinZooms().closestBuiltinZoom(gl_viewer->getZoomFactor());
-        gl_viewer->setCurrentBuiltInZoom(builtinZoom);
-        gl_viewer->setZoomIncrement(gl_viewer->getBuiltinZooms()[builtinZoom]);
-    }else{
-        gl_viewer->setZoomIncrement(gl_viewer->getZoomIncrement());
-    }
     for(U32 i = 0; i < readFrames.size();i++){
         ReadFrame readFrame = readFrames[i];
         if (readFrame.second != _viewerCache->end()) {
@@ -294,25 +287,19 @@ void VideoEngine::engineLoop(){
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb){
     Format _dispW = gl_viewer->displayWindow(); // the display window held by the data
     
-	int y=_dispW.y(); // bottom
-    
     // REQUEST THE CHANNELS CONTAINED IN THE VIEWER TAB COMBOBOX IN THE GUI !!
-    output->request(y,_dispW.top(),0,_dispW.right(),gl_viewer->displayChannels());
+    output->request(_dispW.y(),_dispW.top(),0,_dispW.right(),gl_viewer->displayChannels());
     // AT THIS POINT EVERY OPERATOR HAS ITS INFO SET!! AS WELL AS REQUESTED_BOX AND REQUESTED_CHANNELS
     
     //outChannels are the intersection between what the viewer requests and the ones available in the viewer node
     ChannelSet outChannels = gl_viewer->displayChannels() & output->getInfo()->channels();
     
     
-	std::pair<int,int> incr = gl_viewer->getZoomIncrement();
-    float incrementNew = incr.first;
-    float incrementFullsize = incr.second;
-    float builtinZoom = gl_viewer->getCurrentBuiltinZoom();
-    //float zoomFactor = gl_viewer->getZoomFactor();
-    pair<int,int> rowSpan = gl_viewer->getRowSpan(_dispW, builtinZoom );
-   // cout << "video rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
-    int w = gl_viewer->zoomedWidth();
-    int h = (int)((float)(rowSpan.first-rowSpan.second+1)*builtinZoom);
+    float zoomFactor = gl_viewer->getZoomFactor();
+    std::vector<int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
+    
+    int w = _dispW.w() * zoomFactor;
+    int h = rows.size();
     gl_viewer->initTextures(w,h);
     
     // selecting the right anchor of the row
@@ -326,69 +313,32 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     offset = gl_viewer->dataWindow().x() : offset = gl_viewer->displayWindow().x();
     
     //starting viewer preprocess : i.e initialize the cached frame
-    gl_viewer->preProcess(filename,followingComputationsNb,w,h,rowSpan);
-    int Ydirection = gl_viewer->Ydirection();
-    int startY=0,endY=0;
-    int rowY = 0;
-    bool mainCondition;
-    if(Ydirection < 0){// Ydirection < 0 means we cycle from top to bottom
-        rowY = h-1;
-        startY = rowSpan.first;
-        endY = rowSpan.second-1;
-    }else{
-        rowY = 0;
-        startY = rowSpan.second;
-        endY = rowSpan.first+1;
-    }
-    y = startY;
-    Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
-    //cout << "start : " << startY << "end: " << endY << endl;
-    while (mainCondition){
-        int k = y;
-        bool condition;
-        if(Ydirection < 0){
-            condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
+    gl_viewer->preProcess(filename,followingComputationsNb,w,h,make_pair(rows.front(), rows.back()));
+    for(U32 i = 0 ; i < rows.size() ; i++){
+        if(_aborted){
+            _abort();
+            return;
+        }else if(_paused){
+            _workerThreadsWatcher->cancel();
+            _workerThreadsResults->waitForFinished();
+            return;
+        }
+        Row* row ;
+        int y = rows[i];
+        map<int,Row*>::iterator foundCached = isRowContainedInCache(y);
+        if(foundCached!=row_cache.end()){
+            row= foundCached->second;
+            row->cached(true);
         }else{
-            condition = k < (incrementNew + y);
+            row=new Row(offset,y,right,outChannels);
+            addToRowCache(row);
         }
-        while(condition){
-            
-            if(_aborted){
-                _abort();
-                return;
-            }else if(_paused){
-                _workerThreadsWatcher->cancel();
-                _workerThreadsResults->waitForFinished();
-                return;
-            }
-            Row* row ;
-            map<int,Row*>::iterator foundCached = isRowContainedInCache(k);
-            if(foundCached!=row_cache.end()){
-                row= foundCached->second;
-                row->cached(true);
-            }else{
-                row=new Row(offset,k,right,outChannels);
-                addToRowCache(row);
-            }
-            row->zoomedY(rowY);
-            _sequenceToWork.push_back(row);
-            
-            Ydirection < 0 ? rowY-- : rowY++ ;
-            Ydirection < 0 ?  k-- : k++ ;
-            if(Ydirection < 0){
-                condition = k > (y -incrementNew) && (rowY >= 0) && (k > endY);
-            }else{
-                condition = k < (incrementNew + y);
-            }
-            
-        }
-        Ydirection < 0 ? y-=incrementFullsize : y+=incrementFullsize;
-        Ydirection < 0 ? mainCondition = y > endY : mainCondition = y < endY;
+        row->zoomedY(i);
+        _sequenceToWork.push_back(row);
     }
     
     std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);
     _gpuTransferInfo.set(gl_viewer->getFrameData(), pbo.first, pbo.second);
-    
     
     *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,this,_1,output));
     _workerThreadsWatcher->setFuture(*_workerThreadsResults);
@@ -411,7 +361,7 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*> readers
             pair<ViewerCache::FramesIterator,bool> iscached =
             _viewerCache->isCached(currentFrameName,
                                    _treeVersion.getHashValue(),
-                                   gl_viewer->getCurrentBuiltinZoom(),
+                                   gl_viewer->getZoomFactor(),
                                    gl_viewer->getExposure(),
                                    gl_viewer->lutType(),
                                    gl_viewer->_byteMode,
@@ -452,7 +402,7 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*> readers
         std::string followingFrameName = reader->getRandomFrameName(followingFrame);
         pair<ViewerCache::FramesIterator,bool> iscached = _viewerCache->isCached(followingFrameName,
                                                                                  _treeVersion.getHashValue(),
-                                                                                 gl_viewer->getCurrentBuiltinZoom(),
+                                                                                 gl_viewer->getZoomFactor(),
                                                                                  gl_viewer->getExposure(),
                                                                                  gl_viewer->lutType(),
                                                                                  gl_viewer->_byteMode,

@@ -141,7 +141,7 @@ public:
      Returns a FramesIterator pointing to the frame if it found it other wise the boolean returns false.*/
     std::pair<ViewerCache::FramesIterator,bool> isCached(std::string filename,
                                                          U32 treeVersion,
-                                                         float builtinZoom,
+                                                         float zoomFactor,
                                                          float exposure,
                                                          float lut ,
                                                          bool byteMode,

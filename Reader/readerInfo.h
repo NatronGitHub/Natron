@@ -27,14 +27,14 @@ public:
     _channels(channels),_Ydirection(Ydirection),_rgbMode(rgb),
     _currentFrame(currentFrame),_lastFrame(lastFrame),_firstFrame(firstFrame),
     _displayWindow(dispW.x(), dispW.y(), dispW.right(), dispW.top(),""),
-    _dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top()),_currentFrameName(currentFrameName),_builtInZoom(0)
+    _dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top()),_currentFrameName(currentFrameName),_zoomFactor(0)
     {
         
         _displayWindow.name(dispW.name());
         _displayWindow.pixel_aspect(dispW.pixel_aspect());
     }
     ReaderInfo():_dataWindow(),_displayWindow(),_channels(Mask_RGB),
-    _Ydirection(-1),_rgbMode(true),_currentFrame(0),_lastFrame(0),_firstFrame(0),_builtInZoom(0){
+    _Ydirection(-1),_rgbMode(true),_currentFrame(0),_lastFrame(0),_firstFrame(0),_zoomFactor(0){
     }
     ReaderInfo(const ReaderInfo& other):_dataWindow(other.dataWindow()),
     _displayWindow(other.displayWindow()),_Ydirection(other.Ydirection()),
@@ -88,8 +88,8 @@ public:
         _firstFrame == other.firstFrame() &&
         _lastFrame == other.lastFrame();
     }
-    void setBuiltInZoom(float z){_builtInZoom = z;}
-    float getBuiltInZoom(){return _builtInZoom;}
+    void setZoomFactor(float z){_zoomFactor = z;}
+    float getZoomFactor(){return _zoomFactor;}
 private:
     ChannelMask _channels;  // channels contained in file
     Format _displayWindow; // data window contained in file
@@ -100,7 +100,7 @@ private:
     int _lastFrame;
     int _currentFrame;
     QString _currentFrameName;
-    float _builtInZoom; // for scan-line based readers
+    float _zoomFactor; // for scan-line based readers
     
 };
 
