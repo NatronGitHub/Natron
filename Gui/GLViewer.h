@@ -230,7 +230,7 @@ public:
     
     /*computes what are the first and last row that should be displayed on viewer
      for the given displayWindow with the current zoom factor and zoom position.*/
-    std::pair<int,int> getRowSpan(Format displayWindow);
+    std::pair<int,int> getRowSpan(Format displayWindow,float zoomFactor);
 
 	/*translation/zoom related functions*/
 	void setTranslation(float x,float y){transX = x; transY=y;}
@@ -264,7 +264,11 @@ public:
 	/*returns openGL coordinates of the mouse position
 	passed in window coordinates*/
 	QPoint openGLpos(int x,int y);
-
+    
+    /*same as openGLpos(x,y) but ignores the z component,avoiding
+     a call to glReadPixels()*/
+    QPoint openGLpos_fast(int x,int y);
+    
 	/*get color of the pixel located at (x,y) in
 	opengl coordinates*/
 	QVector4D getColorUnderMouse(int x,int y);
@@ -309,7 +313,7 @@ public:
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
 	*/
-	void preProcess(std::string filename,int nbFrameHint,std::pair<int,int> rowSpan);
+	void preProcess(std::string filename,int nbFrameHint,int w,int h,std::pair<int,int> rowSpan);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
 	std::pair<void*,size_t> allocatePBO(int w,int h);

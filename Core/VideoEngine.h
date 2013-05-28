@@ -252,7 +252,7 @@ public:
     /*used internally by the zoom or the videoEngine, do not call this*/
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
     
-    /*the function calling the engine for one scan-line*/
+    /*the function cycling through the DAG for one scan-line*/
     void metaEnginePerRow(Row* row,OutputNode* output);
     
     typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > ReadFrame;

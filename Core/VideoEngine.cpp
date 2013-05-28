@@ -307,10 +307,12 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
 	std::pair<int,int> incr = gl_viewer->getZoomIncrement();
     float incrementNew = incr.first;
     float incrementFullsize = incr.second;
-    pair<int,int> rowSpan = gl_viewer->getRowSpan(_dispW);
+    float builtinZoom = gl_viewer->getCurrentBuiltinZoom();
+    //float zoomFactor = gl_viewer->getZoomFactor();
+    pair<int,int> rowSpan = gl_viewer->getRowSpan(_dispW, builtinZoom );
    // cout << "video rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
     int w = gl_viewer->zoomedWidth();
-    int h = (int)((float)(rowSpan.first-rowSpan.second+1)*gl_viewer->getCurrentBuiltinZoom());
+    int h = (int)((float)(rowSpan.first-rowSpan.second+1)*builtinZoom);
     gl_viewer->initTextures(w,h);
     
     // selecting the right anchor of the row
@@ -324,7 +326,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     offset = gl_viewer->dataWindow().x() : offset = gl_viewer->displayWindow().x();
     
     //starting viewer preprocess : i.e initialize the cached frame
-    gl_viewer->preProcess(filename,followingComputationsNb,rowSpan);
+    gl_viewer->preProcess(filename,followingComputationsNb,w,h,rowSpan);
     int Ydirection = gl_viewer->Ydirection();
     int startY=0,endY=0;
     int rowY = 0;
@@ -510,15 +512,14 @@ void VideoEngine::updateProgressBar(){
     //update progress bar
 }
 void VideoEngine::updateDisplay(){
-    int width = gl_viewer->size().width();
-    int height = gl_viewer->size().height();
+    int width = gl_viewer->width();
+    int height = gl_viewer->height();
     float ap = gl_viewer->displayWindow().pixel_aspect();
     if(ap > 1.f){
         glViewport (0, 0, width*ap, height);
     }else{
         glViewport (0, 0, width, height/ap);
     }
-
     gl_viewer->updateGL();
 }
 

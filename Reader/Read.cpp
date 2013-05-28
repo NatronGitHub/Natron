@@ -91,8 +91,7 @@ void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews)
             incr = ui_context->getZoomIncrement();
         }
         _readInfo->setBuiltInZoom(builtInZoom);
-    
-        pair<int,int> rowSpan = ui_context->getRowSpan(_readInfo->displayWindow());
+        pair<int,int> rowSpan = ui_context->getRowSpan(_readInfo->displayWindow(), builtInZoom);
         //cout << "read rowspan: " << rowSpan.first << " " << rowSpan.second << endl;
         float incrementNew = incr.first;
         float incrementFullsize = incr.second;

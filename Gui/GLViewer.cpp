@@ -160,7 +160,7 @@ ViewerGL::~ViewerGL(){
 }
 
 void ViewerGL::updateGL(){
-	makeCurrent();
+	//makeCurrent();
 	QGLWidget::updateGL();
 }
 
@@ -212,8 +212,8 @@ void ViewerGL::paintGL()
         glBindTexture(GL_TEXTURE_2D, texId[0]);
         
         // debug
-        //GLfloat d;
-        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+//        GLfloat d;
+//         glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
@@ -353,7 +353,7 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-std::pair<int,int> ViewerGL::getRowSpan(Format displayWindow){
+std::pair<int,int> ViewerGL::getRowSpan(Format displayWindow,float zoomFactor){
     saveGLState();
     
     glMatrixMode (GL_PROJECTION);
@@ -373,11 +373,11 @@ std::pair<int,int> ViewerGL::getRowSpan(Format displayWindow){
     
     glTranslatef(transX, -transY, 0);
     glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
-    glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
+    glScalef(zoomFactor, zoomFactor, 1);
     glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
     
-    QPoint start = openGLpos(0, 0);
-    QPoint end = openGLpos(0, h-1);
+    QPoint start = openGLpos_fast(0, 0);
+    QPoint end = openGLpos_fast(0, h-1);
     if(start.y() >= displayWindow.h()) start.setY(displayWindow.h()-1);
     else if(start.y() < 0){
         start.setY(0);
@@ -681,11 +681,9 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-void ViewerGL::preProcess(std::string filename,int nbFrameHint,std::pair<int,int> rowSpan){
+void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h,std::pair<int,int> rowSpan){
     // init mmaped file 
     if(_makeNewFrame){
-        int w = zoomedWidth();
-        int h = (rowSpan.first - rowSpan.second +1)*_zoomCtx.currentBuiltInZoom;
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
         if(_mustFreeFrameData){
             free(frameData);
@@ -697,7 +695,7 @@ void ViewerGL::preProcess(std::string filename,int nbFrameHint,std::pair<int,int
             frameData = (char*)malloc(dataSize);
             _mustFreeFrameData = true;
         }else{
-            pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount==1 ? 0 : _readerInfo->currentFrame(),
+            pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount == 1 ? 0 : _readerInfo->currentFrame(),
                                                                       filename,
                                                                       w, h,
                                                                       nbFrameHint);
@@ -975,7 +973,7 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPoint pos;
-    pos = openGLpos((float)event->x(), event->y());
+    pos = openGLpos_fast((float)event->x(), event->y());
     if(pos.x() >= _readerInfo->displayWindow().x() &&
        pos.x() <= _readerInfo->displayWindow().w() &&
        pos.y() >=_readerInfo->displayWindow().y() &&
@@ -1026,7 +1024,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             _zoomCtx.zoomFactor+=increment;
             
             if(_zoomCtx.old_zoomed_pt_win != event->pos()){
-                p = openGLpos(event->x(), event->y());
+                p = openGLpos_fast(event->x(), event->y());
                 p.setY(displayWindow().h() - p.y());
                 float dx=(p.x()-_zoomCtx.old_zoomed_pt.x());
                 float dy=(p.y()-_zoomCtx.old_zoomed_pt.y());
@@ -1133,9 +1131,22 @@ QPoint ViewerGL::openGLpos(int x,int y){
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
     return QPoint(posX,posY);
 }
+QPoint ViewerGL::openGLpos_fast(int x,int y){
+	GLint viewport[4];
+	GLdouble modelview[16];
+    GLdouble projection[16];
+    GLfloat winX=0, winY=0;
+    GLdouble posX=0, posY=0, posZ=0;
+    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
+    glGetDoublev( GL_PROJECTION_MATRIX, projection );
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    winX = (float)x;
+    winY = viewport[3]- y;
+    gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
+    return QPoint(posX,posY);
+}
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     if(vengine->isWorking()) return QVector4D(0,0,0,0);
-    
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
