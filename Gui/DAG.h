@@ -102,9 +102,9 @@ private:
     QPointF oldp;
     Controler* ctrl;
     EVENT_STATE state;
-    Node_ui* node_dragged;
+    NodeGui* node_dragged;
     Arrow* arrow_dragged;
-    std::vector<Node_ui*> nodes;
+    std::vector<NodeGui*> nodes;
     int timerId;
     bool nodeCreation_shortcut_enabled;
     bool _fullscreen;

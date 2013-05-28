@@ -14,18 +14,18 @@ class QPainterPath;
 class QGraphicsScene;
 class QGraphicsTextItem;
 class QGraphicsSceneMouseEvent;
-class Node_ui;
+class NodeGui;
 class Node;
 static const qreal UNATTACHED_ARROW_LENGTH=30.;
 class Arrow: public QGraphicsLineItem
 {
     
 public:
-    Arrow(int inputNb,double angle,Node_ui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
-    Arrow(int inputNb,Node_ui *src, Node_ui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    Arrow(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    Arrow(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
     QPainterPath shape() const;
     bool contains(const QPointF &point) const;
-    void setSource(Node_ui* src){
+    void setSource(NodeGui* src){
         this->source=src;
         has_source=true;
 
@@ -33,8 +33,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,
                QWidget *parent = 0);
     void removeSource(){has_source=false; initLine();}
-    Node_ui* getDest(){return dest;}
-    Node_ui* getSource(){return source;}
+    NodeGui* getDest(){return dest;}
+    NodeGui* getSource(){return source;}
     bool hasSource(){return has_source;}
     void updatePosition(QPointF pos);
     void initLine();
@@ -53,8 +53,8 @@ private:
     QGraphicsTextItem* label;
     bool has_source;
     QPolygonF arrowHead;
-    Node_ui* dest;
-    Node_ui* source;
+    NodeGui* dest;
+    NodeGui* source;
 };
 
 #endif // ARROW_H

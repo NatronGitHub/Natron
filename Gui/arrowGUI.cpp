@@ -13,7 +13,7 @@ using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
 const int graphicalContainerOffset=5;
 
-Arrow::Arrow(int inputNb,double angle,Node_ui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
+Arrow::Arrow(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
     this->scene=scene;
     this->inputNb=inputNb;
@@ -26,7 +26,7 @@ Arrow::Arrow(int inputNb,double angle,Node_ui *dest, QGraphicsItem *parent, QGra
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
 }
-Arrow::Arrow(int inputNb,Node_ui *src,Node_ui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
+Arrow::Arrow(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
 {
 
     this->inputNb=inputNb;

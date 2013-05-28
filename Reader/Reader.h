@@ -87,7 +87,7 @@ public:
         void remove(std::string filename);
         QFuture<void>* getFuture(std::string filename);
         bool decodeFinished(std::string filename);
-        DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode,float builtInZoom);
+        DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode,float zoomFactor);
         void clear();
         void setSize(int size){_bufferSize = size;}
         bool isFull(){return _buffer.size() == _bufferSize;}

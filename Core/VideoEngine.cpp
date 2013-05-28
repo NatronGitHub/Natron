@@ -195,7 +195,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
     
     if(fitFrameToViewer){
-        gl_viewer->initViewer(gl_viewer->displayWindow());
+        gl_viewer->fitToFormat(gl_viewer->displayWindow());
     }
     for(U32 i = 0; i < readFrames.size();i++){
         ReadFrame readFrame = readFrames[i];
@@ -313,7 +313,14 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     offset = gl_viewer->dataWindow().x() : offset = gl_viewer->displayWindow().x();
     
     //starting viewer preprocess : i.e initialize the cached frame
-    gl_viewer->preProcess(filename,followingComputationsNb,w,h,make_pair(rows.front(), rows.back()));
+	pair<int,int> rowSpan;
+	if(rows.empty()){
+		rowSpan.first = -1;
+		rowSpan.second = -1;
+	}else{
+		rowSpan = make_pair(rows.front(),rows.back());
+	}
+    gl_viewer->preProcess(filename,followingComputationsNb,w,h,rowSpan);
     for(U32 i = 0 ; i < rows.size() ; i++){
         if(_aborted){
             _abort();

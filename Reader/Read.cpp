@@ -17,83 +17,89 @@
 Read::Read(Reader* op,ViewerGL* ui_context):is_stereo(false), _autoCreateAlpha(false),_premult(false)
 {
 	_lut=NULL;
-    this->ui_context = ui_context;
+	this->ui_context = ui_context;
 	this->op=op;
-    _readInfo = new ReaderInfo;
-    
+	_readInfo = new ReaderInfo;
+
 }
 Read::~Read(){
-    if(_lut)
-        delete _lut;
+	if(_lut)
+		delete _lut;
 }
 
 
 void Read::from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf){
-    if(!_lut->linear()){
-        _lut->from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(), W,delta,a,qtbuf);
-    }
-    else{
-        Linear::from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(),W,delta,a,qtbuf);
-    }
-	
+	if(!_lut->linear()){
+		_lut->from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(), W,delta,a,qtbuf);
+	}
+	else{
+		Linear::from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(),W,delta,a,qtbuf);
+	}
+
 }
 
 void Read::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,
-                      const float* fromB, int W, int delta ,const float* fromA,float* a){
-    if(!_lut->linear()){
-        _lut->from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(), W,delta,fromA,a);
-    }
-    else{
-        Linear::from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(),W,delta,fromA,a);
-    }
-    
-    
-    
+	const float* fromB, int W, int delta ,const float* fromA,float* a){
+		if(!_lut->linear()){
+			_lut->from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(), W,delta,fromA,a);
+		}
+		else{
+			Linear::from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(),W,delta,fromA,a);
+		}
+
+
+
 }
 
 
 
 void Read::createKnobDynamically(){
-    
+
 }
 
 void Read::setReaderInfo(Format dispW,
-                   Box2D dataW,
-                   QString file,
-                   ChannelMask channels,
-                   int Ydirection ,
-                   bool rgb ){
-	_readInfo->displayWindow(dispW.x(), dispW.y(), dispW.right(), dispW.top());
-    _readInfo->setDisplayWindowName(dispW.name());
-    _readInfo->pixelAspect(dispW.pixel_aspect());
-    _readInfo->dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top());
-    _readInfo->channels(channels);
-    _readInfo->Ydirection(Ydirection);
-    _readInfo->rgbMode(rgb);
+	Box2D dataW,
+	QString file,
+	ChannelMask channels,
+	int Ydirection ,
+	bool rgb ){
+		_readInfo->displayWindow(dispW.x(), dispW.y(), dispW.right(), dispW.top());
+		_readInfo->setDisplayWindowName(dispW.name());
+		_readInfo->pixelAspect(dispW.pixel_aspect());
+		_readInfo->dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top());
+		_readInfo->channels(channels);
+		_readInfo->Ydirection(Ydirection);
+		_readInfo->rgbMode(rgb);
 }
 
 
 void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews){
-    readHeader(filename,openBothViews);
-    if(supportsScanLine()){        
-        float h = (float)(_readInfo->displayWindow().h());
-        float zoomFactor = (float)ui_context->height()/h -0.05;
-        if(fitFrameToviewer){
-            ui_context->initViewer(_readInfo->displayWindow());
-        }
-        std::vector<int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
-        if(_readInfo->Ydirection() < 0){
-            for(U32 i = 0 ; i < rows.size() ; i++){
-                readScanLine(rows[i]);
-            }
-        }else{
-            for(int i = rows.size() -1 ; i >=0 ; i--){
-                readScanLine(rows[i]);
-            }
-        }
+	readHeader(filename,openBothViews);
+	if(supportsScanLine()){        
 
-    }else{
-        readAllData(openBothViews);
-        _readInfo->setZoomFactor(ui_context->getZoomFactor());
-    }
+		float zoomFactor;
+		if(fitFrameToviewer){
+			float h = (float)(_readInfo->displayWindow().h());
+			zoomFactor = (float)ui_context->height()/h -0.05;
+			ui_context->fitToFormat(_readInfo->displayWindow());
+		}else{
+			zoomFactor = ui_context->getZoomFactor();
+		}
+		std::vector<int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
+		if(_readInfo->Ydirection() < 0){
+			//top to bottom
+			for(int i = rows.size() -1 ; i >=0 ; i--){
+				readScanLine(rows[i]);
+			}
+		}else{
+			//bottom to top
+			for(U32 i = 0 ; i < rows.size() ; i++){
+				readScanLine(rows[i]);
+			}
+		}
+
+	}else{
+		readAllData(openBothViews);
+		_readInfo->setZoomFactor(ui_context->getZoomFactor());
+	}
 }

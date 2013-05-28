@@ -11,9 +11,9 @@
 #include "Core/node.h"
 #include "Superviser/controler.h"
 #include <QtWidgets/QtWidgets>
-int Node_ui::nodeNumber=0;
+int NodeGui::nodeNumber=0;
 const qreal pi=3.14159265358979323846264338327950288419717;
-Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
+NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
 {
     
 	this->ctrl = ctrl;
@@ -113,7 +113,7 @@ Node_ui::Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockCo
 
 
 }
-void Node_ui::updatePreviewImageForReader(){
+void NodeGui::updatePreviewImageForReader(){
 	QImage *prev=static_cast<Reader*>(node)->getPreview();
 	QPixmap prev_pixmap=QPixmap::fromImage(*prev);
 	prev_pixmap=prev_pixmap.scaled(60,40);
@@ -124,7 +124,7 @@ void Node_ui::updatePreviewImageForReader(){
 	prev_pix->setY(20);
 	prev_pix->setParentItem(this);
 }
-void Node_ui::initInputArrows(){
+void NodeGui::initInputArrows(){
     int i=0;
     int inputnb=node->getInputsNb();
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
@@ -137,21 +137,21 @@ void Node_ui::initInputArrows(){
         i++;
     }
 }
-bool Node_ui::contains(const QPointF &point) const{
+bool NodeGui::contains(const QPointF &point) const{
     return rectangle->contains(point);
 }
 
-QPainterPath Node_ui::shape() const
+QPainterPath NodeGui::shape() const
  {
      return rectangle->shape();
 
  }
 
-QRectF Node_ui::boundingRect() const{
+QRectF NodeGui::boundingRect() const{
     return rectangle->boundingRect();
 }
 
-void Node_ui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
+void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
 
         // Shadow
         QRectF rect=boundingRect();
@@ -187,18 +187,18 @@ void Node_ui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
     #endif
 
 }
-bool Node_ui::isNearby(QPointF &point){
+bool NodeGui::isNearby(QPointF &point){
     QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
     return r.contains(point);
 }
 
 
-void  Node_ui::substractChild(Node_ui* c){
+void  NodeGui::substractChild(NodeGui* c){
 	if(!children.empty()){
-		for(int i=0;i<children.size();i++){
-			Node_ui* node=children[i];
+		for(U32 i=0;i<children.size();i++){
+			NodeGui* node=children[i];
 			if(node->getNode()->getName()==c->getNode()->getName()){
-				Node_ui* tmp=node;
+				NodeGui* tmp=node;
 				children[i]=children[children.size()-1];
 				children[children.size()-1]=tmp;
 				children.pop_back();
@@ -208,12 +208,12 @@ void  Node_ui::substractChild(Node_ui* c){
 		}
 	}
 }
-void  Node_ui::substractParent(Node_ui* p){
+void  NodeGui::substractParent(NodeGui* p){
 	if(!parents.empty()){
-		for(int i=0;i<parents.size();i++){
-			Node_ui* node=parents[i];
+		for(U32 i=0;i<parents.size();i++){
+			NodeGui* node=parents[i];
 			if(node->getNode()->getName()==p->getNode()->getName()){
-				Node_ui* tmp=node;
+				NodeGui* tmp=node;
 				parents[i]=parents[parents.size()-1];
 				parents[parents.size()-1]=tmp;
 				parents.pop_back();
@@ -225,8 +225,8 @@ void  Node_ui::substractParent(Node_ui* p){
 }
 
 
-Node_ui* Node_ui::hasViewerConnected(Node_ui* node){
-    Node_ui* out;
+NodeGui* NodeGui::hasViewerConnected(NodeGui* node){
+    NodeGui* out;
     bool ok=false;
     _hasViewerConnected(node,&ok,out);
     if (ok) {
@@ -236,7 +236,7 @@ Node_ui* Node_ui::hasViewerConnected(Node_ui* node){
     }
     
 }
-void Node_ui::_hasViewerConnected(Node_ui* node,bool* ok,Node_ui*& out){
+void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
     if (*ok == true) {
         return;
     }
@@ -244,13 +244,13 @@ void Node_ui::_hasViewerConnected(Node_ui* node,bool* ok,Node_ui*& out){
         out = node;
         *ok = true;
     }else{
-        foreach(Node_ui* c,node->getChildren()){
+        foreach(NodeGui* c,node->getChildren()){
             _hasViewerConnected(c,ok,out);
         }
     }
 }
 
-void Node_ui::setName(QString s){
+void NodeGui::setName(QString s){
     name->setText(s);
     node->setName(s);
     sc->update();

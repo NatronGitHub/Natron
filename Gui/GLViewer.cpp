@@ -205,6 +205,9 @@ void ViewerGL::paintGL()
         
         glTranslatef(transX, -transY, 0);
         glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
+
+		//float scale = _textureSize.first/zoomedHeight();
+
         glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
         glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
         
@@ -236,7 +239,7 @@ void ViewerGL::paintGL()
 	}else{
         if(_firstTime){
             _firstTime = false;
-            initViewer(displayWindow());
+            fitToFormat(displayWindow());
             initBlackTex();
         }
         drawBlackTex();
@@ -352,7 +355,6 @@ void ViewerGL::makeCurrent(){
 		QGLWidget::makeCurrent();
 	}
 }
-
 
 std::vector<int> ViewerGL::computeRowSpan(Format displayWindow,float zoomFactor){
     std::vector<int> ret;
@@ -722,7 +724,7 @@ void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h,std::
             free(frameData);
             _mustFreeFrameData = false;
         }
-        if(rowSpan.second < displayWindow().h()-1 || rowSpan.first > displayWindow().y()){
+        if(rowSpan.second > displayWindow().h()-1 || rowSpan.first < displayWindow().y()){
             size_t dataSize = 0;
             _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
             frameData = (char*)malloc(dataSize);
@@ -1008,9 +1010,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     QPointF p;
     float increment=0.f;
     if(_zoomCtx.zoomFactor<1.f)
-        increment=0.05;
+        increment=0.1;
     else
-        increment=0.05*_zoomCtx.zoomFactor;
+        increment=0.1*_zoomCtx.zoomFactor;
 	if(!vengine->isWorking()){
 		if(event->delta() >0){
             
@@ -1156,7 +1158,7 @@ QVector4D ViewerGL::U32toBGRA(U32 &c){
     return out;
 }
 
-void ViewerGL::initViewer(Format displayWindow){
+void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
     float zoomFactor = (float)height()/h;
     _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);

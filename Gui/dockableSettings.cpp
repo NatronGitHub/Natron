@@ -10,7 +10,7 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
 
-SettingsPanel::SettingsPanel(Node_ui* NodeUi ,QWidget *parent):QFrame(parent)
+SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent)
 {
 
     this->NodeUi=NodeUi;
