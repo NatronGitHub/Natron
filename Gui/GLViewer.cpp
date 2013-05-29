@@ -714,7 +714,7 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h,std::pair<int,int> rowSpan){
+void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h){
     // init mmaped file
     if(_makeNewFrame){
         int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
@@ -722,7 +722,9 @@ void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h,std::
             free(frameData);
             _mustFreeFrameData = false;
         }
-        if(rowSpan.second < displayWindow().h()-1 || rowSpan.first > displayWindow().y()){
+        QPoint top = mousePosFromOpenGL(0, displayWindow().h()-1);
+        QPoint btm = mousePosFromOpenGL(0, displayWindow().y());
+        if(top.y() >= height() || btm.y() < 0){
             size_t dataSize = 0;
             _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
             frameData = (char*)malloc(dataSize);

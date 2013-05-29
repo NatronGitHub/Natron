@@ -281,7 +281,7 @@ public:
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
 	*/
-	void preProcess(std::string filename,int nbFrameHint,int w,int h,std::pair<int,int> rowSpan);
+	void preProcess(std::string filename,int nbFrameHint,int w,int h);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
 	std::pair<void*,size_t> allocatePBO(int w,int h);
