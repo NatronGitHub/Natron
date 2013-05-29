@@ -106,12 +106,12 @@
     <ClCompile Include="..\..\..\Core\VideoEngine.cpp" />
     <ClCompile Include="..\..\..\Core\viewercache.cpp" />
     <ClCompile Include="..\..\..\Core\viewerNode.cpp" />
-    <ClCompile Include="..\..\..\Core\workerthread.cpp" />
     <ClCompile Include="..\..\..\Gui\arrowGUI.cpp" />
     <ClCompile Include="..\..\..\Gui\DAG.cpp" />
     <ClCompile Include="..\..\..\Gui\DAGQuickNode.cpp" />
     <ClCompile Include="..\..\..\Gui\dockableSettings.cpp" />
     <ClCompile Include="..\..\..\Gui\FeedbackSpinBox.cpp" />
+    <ClCompile Include="..\..\..\Gui\framefiledialog.cpp" />
     <ClCompile Include="..\..\..\Gui\GLViewer.cpp" />
     <ClCompile Include="..\..\..\Gui\InfoViewerWidget.cpp" />
     <ClCompile Include="..\..\..\Gui\inputnode_ui.cpp" />
@@ -160,6 +160,7 @@
     <ClInclude Include="..\..\..\Core\metadata.h" />
     <ClInclude Include="..\..\..\Core\viewercache.h" />
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
+    <ClInclude Include="..\..\..\Gui\framefiledialog.h" />
     <ClInclude Include="..\..\..\Superviser\PwStrings.h" />
     <CustomBuild Include="..\..\..\Core\model.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
@@ -191,7 +192,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Core\viewerNode.h" />
-    <ClInclude Include="..\..\..\Core\workerthread.h" />
     <ClInclude Include="..\..\..\Gui\arrowGUI.h" />
     <CustomBuild Include="..\..\..\Gui\DAG.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>

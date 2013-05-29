@@ -341,7 +341,7 @@ void Reader::Buffer::debugBuffer(){
     cout << "=================================" << endl;
 }
 
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode,float builtInZoom){
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode,float zoomFactor){
     if(searchMode == CACHED_SEARCH){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){

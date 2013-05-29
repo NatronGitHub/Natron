@@ -79,9 +79,6 @@
     <ClCompile Include="..\..\..\Core\viewerNode.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Core\workerthread.cpp">
-      <Filter>Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Gui\arrowGUI.cpp">
       <Filter>Gui</Filter>
     </ClCompile>
@@ -196,6 +193,9 @@
     <ClCompile Include="..\..\..\Core\viewercache.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Gui\framefiledialog.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -264,9 +264,6 @@
     <ClInclude Include="..\..\..\Core\viewerNode.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Core\workerthread.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Gui\arrowGUI.h">
       <Filter>Gui</Filter>
     </ClInclude>
@@ -332,6 +329,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Core\viewercache.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\framefiledialog.h">
+      <Filter>Gui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

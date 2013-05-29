@@ -11,7 +11,7 @@
 #include "Core/node.h"
 #include "Gui/knob.h"
 
-class Node_ui;
+class NodeGui;
 class Knob_Callback;
 class QVBoxLayout;
 class QTabWidget;
@@ -24,7 +24,7 @@ class SettingsPanel:public QFrame
 
 public:
 
-    SettingsPanel(Node_ui* NodeUi, QWidget *parent=0);
+    SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
     virtual ~SettingsPanel();
 	void addKnobDynamically(Knob* knob);
 public slots:
@@ -32,7 +32,7 @@ public slots:
     void minimizeOrMaximize(bool toggled);
 
 private:
-    Node_ui* NodeUi;
+    NodeGui* NodeUi;
     QLineEdit* nodeName;
     QPushButton* minimize;
     QPushButton* cross;

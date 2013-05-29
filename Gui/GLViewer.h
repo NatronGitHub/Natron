@@ -195,11 +195,16 @@ public:
 	float getZoomFactor(){return _zoomCtx.getZoomFactor();}
     
     /*computes what are the rows that should be displayed on viewer
-     for the given displayWindow with the  zoom factor and  current zoom center.*/
+     for the given displayWindow with the  zoom factor and  current zoom center.
+	 They will be stored from bottom to top.*/
     std::vector<int> computeRowSpan(Format displayWindow,float zoomFactor);
+	/*computes the inverse matrix of m and stores it in out*/
     int _glInvertMatrix(float *m, float *out);
+	/*multiply matrix1 by matrix2 and stores the result in result*/
     void _glMultMats44(float *result, float *matrix1, float *matrix2);
+	/*multiply the matrix by the vector and stores it in resultvector*/
     void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
+	/*Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)*/
     int _glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector);
 	/*translation/zoom related functions*/
 	void setTranslation(float x,float y){transX = x; transY=y;}
@@ -211,10 +216,9 @@ public:
 	void fileType(File_Type f){_filetype=f;}
 	File_Type fileType(){return _filetype;}
 
-	/*Fill the _renderingBuffer (PBO) with the current row . It converts
+	/*Fill the frameData buffer with the current row . It converts
 	32bit floating points intensities to 8bit using error diffusion
-	algorithm. It also applies the viewer LUT during the filling process.
-	nbBytesOutput hold the number of bytes for 1 channel in the output*/
+	algorithm. It also applies the viewer LUT during the filling process.*/
 	void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
 		int w,int yOffset,const float* alpha=NULL);
 	/*idem above but for floating point textures (no dithering applied here)*/
@@ -246,8 +250,8 @@ public:
 	void setInfoViewer(InfoViewerWidget* i );
 
 	/*handy function that zoom automatically the viewer so it fit
-	the frame  entirely in the viewer*/
-	void initViewer(Format displayWindow);
+	the displayWindow  entirely in the viewer*/
+	void fitToFormat(Format displayWindow);
 
 	/*display black in the viewer*/
 	void clearViewer(){
@@ -280,6 +284,7 @@ public:
 
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+	* That's where the viewer cached frame is initialised.
 	*/
 	void preProcess(std::string filename,int nbFrameHint,int w,int h);
 

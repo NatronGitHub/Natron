@@ -23,14 +23,14 @@ class SettingsPanel;
 class QVBoxLayout;
 class Node;
 class Controler;
-class Node_ui : public QObject,public QGraphicsItem
+class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
 
 public:
     static int nodeNumber;
 
-    Node_ui(Controler* ctrl,std::vector<Node_ui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
+    NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
 
 
     int getNumber(){return number;}
@@ -46,18 +46,18 @@ public:
     QVBoxLayout* getSettingsLayout(){return dockContainer;}
     bool isThisPanelEnabled(){return settingsPanel_displayed;}
     void setSettingsPanelEnabled(bool enabled){settingsPanel_displayed=enabled;}
-    void addChild(Node_ui* c){children.push_back(c);}
-    void addParent(Node_ui* p){parents.push_back(p);}
-    void substractChild(Node_ui* c);
-	void substractParent(Node_ui* p);
-    std::vector<Node_ui*> getParents(){return parents;}
-    std::vector<Node_ui*> getChildren(){return children;}
+    void addChild(NodeGui* c){children.push_back(c);}
+    void addParent(NodeGui* p){parents.push_back(p);}
+    void substractChild(NodeGui* c);
+	void substractParent(NodeGui* p);
+    std::vector<NodeGui*> getParents(){return parents;}
+    std::vector<NodeGui*> getChildren(){return children;}
     SettingsPanel* getSettingPanel(){return settings;}
     QVBoxLayout* getDockContainer(){return dockContainer;}
 	void updatePreviewImageForReader();
     
-    static Node_ui* hasViewerConnected(Node_ui* node);
-    static void _hasViewerConnected(Node_ui* node,bool* ok,Node_ui*& out);
+    static NodeGui* hasViewerConnected(NodeGui* node);
+    static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);
     
     Controler* getControler(){return ctrl;}
     
@@ -66,9 +66,9 @@ public slots:
 protected:
 
 
-    std::vector<Node_ui*> children;
-    std::vector<Node_ui*> parents;
-    std::vector<Node_ui*> graphNodes;
+    std::vector<NodeGui*> children;
+    std::vector<NodeGui*> parents;
+    std::vector<NodeGui*> graphNodes;
 
     QVBoxLayout* dockContainer;
     int number;

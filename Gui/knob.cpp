@@ -55,8 +55,8 @@ Knob::~Knob(){
 
 void Knob::validateEvent(){
     Node* node = getCallBack()->getNode();
-    Node_ui* nodeUI = node->getNodeUi();
-    Node_ui* viewer = Node_ui::hasViewerConnected(nodeUI);
+    NodeGui* nodeUI = node->getNodeUi();
+    NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
     if(viewer){
         Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();

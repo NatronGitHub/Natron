@@ -29,7 +29,7 @@ class SettingsPanel;
 class Hash;
 class Knob;
 class Knob_Callback;
-class Node_ui;
+class NodeGui;
 class Node
 {
 public:
@@ -100,8 +100,8 @@ public:
     virtual void initKnobs(Knob_Callback *cb);
 	virtual void createKnobDynamically();
 	Knob_Callback* getKnobCallBack(){return knob_cb;}
-	void setNodeUi(Node_ui* ui){node_gui=ui;}
-	Node_ui* getNodeUi(){return node_gui;}
+	void setNodeUi(NodeGui* ui){node_gui=ui;}
+	NodeGui* getNodeUi(){return node_gui;}
     /*============================*/
 
     /*Parents & children nodes related functions*/
@@ -217,7 +217,7 @@ protected:
 	Knob_Callback* knob_cb;
 	Box2D requested_box; // composition of all the area requested by children
 	ChannelMask requested_channels; // merge of all channels requested by children
-	Node_ui* node_gui;
+	NodeGui* node_gui;
 private:
 	
 
