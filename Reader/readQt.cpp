@@ -25,17 +25,16 @@ void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     int h = op->getInfo()->getDisplayWindow().h();
     int Y = h - y - 1;
     buffer = _img->scanLine(Y);
-    float* r = out->writable(Channel_red) + offset;
-	float* g = out->writable(Channel_green) + offset;
-	float* b = out->writable(Channel_blue) + offset;
-	float* a = channels &Channel_alpha ? out->writable(Channel_alpha) + offset : NULL;
-    if(autoAlpha() && a==NULL){
+    if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
-        a =out->writable(Channel_alpha)+offset;
     }
-    int depth = 4; 
-	from_byte(r,g,b,buffer + offset * depth,channels & Channel_alpha,(range-offset),depth,a);
-     
+    const QRgb* from = reinterpret_cast<const QRgb*>(buffer);
+    foreachChannels(z, channels){
+        float* to = out->writable(z) + offset;
+        if(to!=NULL){
+            from_byteQt(z, to, from, (range-offset),1);
+        }
+    }     
 }
 bool ReadQt::supports_stereo(){
     return false;

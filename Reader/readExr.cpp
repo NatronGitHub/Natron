@@ -474,62 +474,14 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
         cout << "couldn't read: " << exrY << endl;
     }
     from = it->second;
- 	
-    const float* fromA = 0;
-    const float* fromR = 0;
-    const float* fromG = 0;
-    const float* fromB = 0;
-    
-    
-    if(channels & Channel_alpha){
-        if(from->channels() & Channel_alpha){
-            fromA= (*from)[Channel_alpha] + X ;
-        }else{
-            
-        }
-    }
-    if(channels & Channel_red){
-        if(from->channels() & Channel_red){
-            fromR= (*from)[Channel_red] + X ;
-        }else{
-            
-        }
-    }
-    if(channels & Channel_green){
-        if(from->channels() & Channel_green){
-            fromG= (*from)[Channel_green] + X ;
-        }else{
-            
-        }
-    }
-
-    if(channels & Channel_blue){
-        if(from->channels() & Channel_blue){
-            fromB= (*from)[Channel_blue] + X ;
-        }else{
-            
-        }
-    } 
-    
-    float* r = out->writable(Channel_red);
-    float* g = out->writable(Channel_green);
-    float* b = out->writable(Channel_blue);
-    float* a = out->writable(Channel_alpha);
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
-        fromA = from->channels() & Channel_alpha ? (*from)[Channel_alpha] +X : NULL;
-        a =out->writable(Channel_alpha);
     }
-    from_float(r, g, b, fromR, fromG, fromB,R - X,1,fromA,a);
-    channels -= Mask_RGBA;
-    
-    /*Not converting extra channels, we pass them using the Linear class (just copying)*/
     foreachChannels(z, channels){
-        if(from->channels() & z){
-            Linear::from_float((*from)[z],out->writable(z),R-X,1);
-        }
+        float* to = out->writable(z);
+        const float* in= (*from)[z] + X;
+        from_float(z,to,in,(*from)[Channel_alpha], R-X,1);
     }
- 	
 }
 
 

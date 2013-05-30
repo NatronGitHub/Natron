@@ -296,7 +296,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     
     
     float zoomFactor = gl_viewer->getZoomFactor();
-    std::vector<int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
+    std::map<int,int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
     
     int w = _dispW.w() * zoomFactor;
     int h = rows.size();
@@ -304,19 +304,25 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     
     // selecting the right anchor of the row
     int right = 0;
-    gl_viewer->dataWindow().right() > gl_viewer->displayWindow().right() ?
-    right = gl_viewer->dataWindow().right() : right = gl_viewer->displayWindow().right();
+    gl_viewer->dataWindow().right() > _dispW.right() ?
+    right = gl_viewer->dataWindow().right() : right = _dispW.right();
     
     // selection the left anchor of the row
 	int offset=0;
-    gl_viewer->dataWindow().x() < gl_viewer->displayWindow().x() ?
-    offset = gl_viewer->dataWindow().x() : offset = gl_viewer->displayWindow().x();
-    
-    //starting viewer preprocess : i.e initialize the cached frame
-
+    gl_viewer->dataWindow().x() < _dispW.x() ?
+    offset = gl_viewer->dataWindow().x() : offset = _dispW.x();
+    map<int,int>::iterator it = rows.begin();
+    map<int,int>::iterator last = rows.end();
+    if(rows.size() > 0){
+        last--;
+        gl_viewer->setRowSpan(make_pair(it->first, last->first));
+    }else{
+        gl_viewer->setRowSpan(make_pair(_dispW.y(), _dispW.h()-1));
+    }
+    //starting viewer pre-process : i.e initialize the cached frame
     gl_viewer->preProcess(filename,followingComputationsNb,w,h);
-
-    for(U32 i = 0 ; i < rows.size() ; i++){
+    int counter = 0;
+    for(; it!=rows.end() ; it++){
         if(_aborted){
             _abort();
             return;
@@ -326,7 +332,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
             return;
         }
         Row* row ;
-        int y = rows[i];
+        int y = it->first;
         map<int,Row*>::iterator foundCached = isRowContainedInCache(y);
         if(foundCached!=row_cache.end()){
             row= foundCached->second;
@@ -335,8 +341,9 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
             row=new Row(offset,y,right,outChannels);
             addToRowCache(row);
         }
-        row->zoomedY(i);
+        row->zoomedY(counter);
         _sequenceToWork.push_back(row);
+        counter++;
     }
     
     std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);

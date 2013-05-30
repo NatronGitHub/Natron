@@ -196,8 +196,9 @@ public:
     
     /*computes what are the rows that should be displayed on viewer
      for the given displayWindow with the  zoom factor and  current zoom center.
-	 They will be stored from bottom to top.*/
-    std::vector<int> computeRowSpan(Format displayWindow,float zoomFactor);
+	 They will be stored from bottom to top. The values are returned
+     as a map of displayWindow coordinates mapped to viewport cooridnates*/
+    std::map<int,int> computeRowSpan(Format displayWindow,float zoomFactor);
 	/*computes the inverse matrix of m and stores it in out*/
     int _glInvertMatrix(float *m, float *out);
 	/*multiply matrix1 by matrix2 and stores the result in result*/
@@ -235,7 +236,7 @@ public:
 
 	/*returns openGL coordinates of the mouse position
 	passed in window coordinates*/
-	QPoint openGLpos(int x,int y);
+	QVector3D openGLpos(int x,int y);
     
     /*same as openGLpos(x,y) but ignores the z component,avoiding
      a call to glReadPixels()*/
@@ -305,6 +306,8 @@ public:
 	const char* getFrameData(){return frameData;}
 
 	GLuint getPBOId(int index){return texBuffer[index];}
+    
+    void setRowSpan(std::pair<int,int> p){_rowSpan = p;}
 
 	public slots:
 		virtual void updateGL();
@@ -382,7 +385,8 @@ private:
 	QPointF old_pos;
 	QPointF new_pos;
 	float transX,transY;
-
+    
+    std::pair<int,int> _rowSpan;
 
 	ZoomContext _zoomCtx;
 

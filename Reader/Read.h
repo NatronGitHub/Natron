@@ -13,6 +13,7 @@
 #include "Core/channels.h"
 #include "Core/row.h"
 #include "Core/displayFormat.h"
+#include <QtGui/QRgb>
 #include "Superviser/PwStrings.h"
 class ViewerGL;
 class Reader;
@@ -95,12 +96,16 @@ public:
     
 protected:
     
-    void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf = true);
+    void from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
+    void from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta = 1);
+    void from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
+    void from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+   // void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf = true);
    
-    void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha, int W, int bits, int delta ,float* a);
+   // void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha, int W, int bits, int delta ,float* a);
    
-	void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,
-                    const float* fromB, int W, int delta ,const float* fromA,float* a);
+//	void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,
+ //                   const float* fromB, int W, int delta ,const float* fromA,float* a);
     
         
 	bool is_stereo;

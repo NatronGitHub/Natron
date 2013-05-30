@@ -28,29 +28,46 @@ Read::~Read(){
 }
 
 
-void Read::from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf){
-	if(!_lut->linear()){
-		_lut->from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(), W,delta,a,qtbuf);
-	}
-	else{
-		Linear::from_byte(r,g,b,from,hasAlpha,premultiplied(),autoAlpha(),W,delta,a,qtbuf);
-	}
 
+
+void Read::from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta ){
+    if( z <= 3 && !_lut->linear()){
+        if(alpha && _premult){
+            _lut->from_byte(to, from, alpha, W,delta);
+        }else{
+            _lut->from_byte(to, from, W,delta);
+        }
+    }else{
+        Linear::from_byte(to, from, W,delta);
+    }
 }
-
-void Read::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,
-	const float* fromB, int W, int delta ,const float* fromA,float* a){
-		if(!_lut->linear()){
-			_lut->from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(), W,delta,fromA,a);
-		}
-		else{
-			Linear::from_float(r,g,b,fromR,fromG,fromB,premultiplied(),autoAlpha(),W,delta,fromA,a);
-		}
-
-
-
+void Read::from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta){
+    if( z <= 4 && !_lut->linear()){
+        _lut->from_byteQt(to, from, z, _premult, W , delta);
+    }
 }
-
+void Read::from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta ){
+    if( z <= 3 && !_lut->linear()){
+        if(alpha && _premult){
+            _lut->from_short(to, from, alpha, W,delta);
+        }else{
+            _lut->from_short(to, from, W,delta);
+        }
+    }else{
+        Linear::from_short(to, from, W,delta);
+    }
+}
+void Read::from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta ){
+    if( z <= 3 && !_lut->linear()){
+        if(alpha && _premult){
+            _lut->from_float(to, from, alpha, W,delta);
+        }else{
+            _lut->from_float(to, from, W,delta);
+        }
+    }else{
+        Linear::from_float(to, from, W,delta);
+    }
+}
 
 
 void Read::createKnobDynamically(){
@@ -85,16 +102,18 @@ void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews)
 		}else{
 			zoomFactor = ui_context->getZoomFactor();
 		}
-		std::vector<int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
+		std::map<int,int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
 		if(_readInfo->Ydirection() < 0){
 			//top to bottom
-			for(int i = rows.size() -1 ; i >=0 ; i--){
-				readScanLine(rows[i]);
+            map<int,int>::reverse_iterator it  = rows.rbegin();
+			for(; it!=rows.rend() ; it++){
+				readScanLine(it->first);
 			}
 		}else{
 			//bottom to top
-			for(U32 i = 0 ; i < rows.size() ; i++){
-				readScanLine(rows[i]);
+            map<int,int>::iterator it = rows.begin();
+			for(; it!=rows.end() ; it++){
+				readScanLine(it->first);
 			}
 		}
 

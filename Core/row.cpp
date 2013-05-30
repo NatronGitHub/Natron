@@ -12,6 +12,7 @@ Row::Row(){
 }
 
 void Row::turnOn(Channel c){
+    if( c & _channels) return;
     _channels += c;
     buffers[c] = (float*)malloc((r-x)*sizeof(float));
 }

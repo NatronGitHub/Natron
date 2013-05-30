@@ -16,7 +16,7 @@ using namespace std;
  This can be used by a from_byte() implementation that works by using interpolation to invert the to_byte() function.
  Does nothing if called a second time. */
 void Lut::fillToTable(){
-   // float increment = 1.f /65535.f;
+    // float increment = 1.f /65535.f;
     if(init_) return;
     bool linearTrue = true;
     for (int i = 0; i < 0x10000; i++) {
@@ -31,7 +31,7 @@ void Lut::fillToTable(){
     if (linearTrue) {
         linear_=true;
     }
-
+    
 }
 
 /*Fill in the table used by fromFloatFast() and thus all the from functions.
@@ -47,9 +47,9 @@ void Lut::fillFromTable()
         i = highFloatPart(f);
         to_byte_table[i] = b*0x100;
     }
-//	for(int i=0;i<256;i++){
-//		from_byte_table[i]=from_byte(i);
-//	}
+    //	for(int i=0;i<256;i++){
+    //		from_byte_table[i]=from_byte(i);
+    //	}
 }
 
 /*Forces fillToTable() and fillFromTable() to fill the tables again and calls them, and calculates a value for hash().
@@ -84,363 +84,128 @@ float Lut::index_to_float(const U16 i)
 
 /*Converts a single floating point value to linear by using the lookup tables. The value is clamped to the 0-1 range as that is the range of the tables! */
 float Lut::fromFloatFast(float v) {
-	return lookup_fromByteLUT(v);
+	return from_byte_table[(int)v];
 }
-
 /*Converts a single floating point value from linear to the LUT space by using the lookup tables. */
-float Lut::toFloatFast(float v) {
-    return lookup_toByteLUT(v)/255.f;
+float Lut::toFloatFast(float v)  {
+    return (float)to_byte_table[highFloatPart(&v)]/255.f;
+}
+void Lut::from_byte(float* to, const uchar* from, int W, int delta) {
+    for(int i =0 ; i < W ; i+=delta){
+        to[i]=from_byte_table[(int)from[i]];
+    }
 }
 
-
-void Lut::from_byte(float* r,float* g,float* b, const uchar* from,bool hasAlpha,bool premult,bool autoAlpha, int W, int delta ,float* a,bool qtbuf){
-    const QRgb* ptrQt = reinterpret_cast<const QRgb*>(from);
-    
-    if(hasAlpha && premult){//if img is premultiplied,un-premultiplied before applying color space conversion, and then multiply back
-        //alpha channel is copied through Linear (no conversion)
-        for(int i=0;i< W;i++){
-            float red,green,blue,alphac=1.f;
-            if(qtbuf){
-                const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                alphac = qAlpha(c);
-            }else{
-                const uchar *c = from+i*3;
-                Lut::U24_to_rgb(&red, &green, &blue, c);
-               
+void Lut::from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta ) {
+    for(int i =0 ; i < W ; i+=delta){
+        float a = (float)alpha[i];
+        to[i]=from_byte_table[(int)from[i]/(int)a] * a;
+    }
+}
+void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta) {
+    typedef int(*ChannelLookup)(QRgb);
+    ChannelLookup lookup;
+    switch (z) {
+        case Powiter_Enums::Channel_alpha:
+            lookup = qAlpha;
+            break;
+        case Powiter_Enums::Channel_red:
+            lookup = qRed;
+            break;
+        case Powiter_Enums::Channel_green:
+            lookup = qGreen;
+            break;
+        case Powiter_Enums::Channel_blue:
+            lookup = qBlue;
+            break;
+        default:
+            lookup = qRed;
+            break;
+    }
+    if(z == Powiter_Enums::Channel_alpha){
+        Linear::from_byteQt(to, from, z, W,delta);
+    }else{
+        if(premult){
+            for(int i =0 ; i < W ; i+=delta){
+                const QRgb c = from[i];
+                int alpha = qAlpha(c);
+                to[i] = from_byte_table[((*lookup)(c)/alpha)] * alpha;
             }
-            if(r!=NULL)
-                r[i]=from_byte_table[(int)(red/alphac)] * alphac;
-            if(g!=NULL)
-                g[i]=from_byte_table[(int)(green/alphac)] * alphac;
-            if(b!=NULL)
-                b[i]=from_byte_table[(int)(blue/alphac)] * alphac;
-            a[i]=Linear::fromFloatFast((float)alphac/255.f);
-        }
-        
-    }else if(hasAlpha && !premult){
-        for(int i=0;i< W;i++){
-            float red,green,blue,alphac=1.f;
-            if(qtbuf){
-                const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                alphac = qAlpha(c);
-            }else{
-                const uchar *c = from+i*3;
-                Lut::U24_to_rgb(&red, &green, &blue, c);
-               
+        }else{
+            for(int i =0 ; i < W ; i+=delta){
+                const QRgb c = from[i];
+                to[i] = from_byte_table[(*lookup)(c)];
             }
-            if(r!=NULL)
-                r[i]=from_byte_table[(int)red];
-            if(g!=NULL)
-                g[i]=from_byte_table[(int)green];
-            if(b!=NULL)
-                b[i]=from_byte_table[(int)blue];
-            a[i]=Linear::fromFloatFast((float)alphac/255.f);
-        }
-        
-    }else if(!hasAlpha && autoAlpha){
-        for(int i=0;i< W;i++){
-            float red,green,blue,alphac=1.f;
-            if(qtbuf){
-                const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                alphac = 1.0;
-            }else{
-                const uchar *c = from+i*3;
-                Lut::U24_to_rgb(&red, &green, &blue, c);
-             
-            }
-            if(r!=NULL)
-                r[i]=from_byte_table[(int)red];
-            if(g!=NULL)
-                g[i]=from_byte_table[(int)green];
-            if(b!=NULL)
-                b[i]=from_byte_table[(int)blue];
-            a[i]=Linear::fromFloatFast(alphac);
-        }
-        
-    }else if(!hasAlpha && !autoAlpha){
-        for(int i=0;i< W;i++){
-            float red,green,blue;
-            if(qtbuf){
-                const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                
-            }else{
-                const uchar *c = from+i*3;
-                Lut::U24_to_rgb(&red, &green, &blue, c);
-                
-            }
-            if(r!=NULL)
-                r[i]=fromFloatFast(red);
-            if(g!=NULL)
-                g[i]=fromFloatFast(green);
-            if(b!=NULL)
-                b[i]=fromFloatFast(blue);
-            
         }
     }
 }
 
-void Lut::from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta ,float* a){
+void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) {
     cout << "Lut::from_short not yet implemented" << endl;
+}
+void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bits , int delta ) {
+    cout << "Lut::from_short not yet implemented" << endl;
+}
+void Lut::from_float(float* to, const float* from, int W, int delta ) {
+    for(int i=0;i< W;i+=delta){
+        to[i]=fromFloatFast(from[i]*255.f);
+    }
+}
+void Lut::from_float(float* to, const float* from, const float* alpha, int W, int delta) {
+    for(int i=0;i< W;i+=delta){
+        float a = alpha[i];
+        to[i]=fromFloatFast((from[i]/a)*255.f) * a * 255.f;
+    }
     
 }
-void Lut::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
-                bool premult,bool autoAlpha, int W, int delta ,const float* fromA,float* a){
-    
-    if(fromA!=NULL && premult){//if img is premultiplied,un-premultiplied before applying color space conversion, and then multiply back
-        //alpha channel is copied through Linear (no conversion)
-        for(int i=0;i< W;i++){
-            float red = fromR[i];
-            float green = fromG[i];
-            float blue = fromB[i];
-            float alphac = fromA[i];
-            if(r!=NULL)
-                r[i]=fromFloatFast((red/alphac)*255.f) * alphac*255.f;
-            if(g!=NULL)
-                g[i]=fromFloatFast((green/alphac)*255.f) * alphac*255.f;
-            if(b!=NULL)
-                b[i]=fromFloatFast((blue/alphac)*255.f) * alphac*255.f;
-            a[i]=Linear::fromFloat(alphac*255.f);
+
+void Linear::from_byte(float* to, const uchar* from, int W, int delta ){
+    for(int i =0;i < W ; i+=delta){
+        to[i] = Linear::fromFloatFast(from[i]/255.f);
+    }
+}
+void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta ){
+    typedef int(*ChannelLookup)(QRgb);
+    ChannelLookup lookup;
+    switch (z) {
+        case Powiter_Enums::Channel_alpha:
+            lookup = qAlpha;
+            break;
+        case Powiter_Enums::Channel_red:
+            lookup = qRed;
+            break;
+        case Powiter_Enums::Channel_green:
+            lookup = qGreen;
+            break;
+        case Powiter_Enums::Channel_blue:
+            lookup = qBlue;
+            break;
+        default:
+            lookup = qRed;
+            break;
+    }
+    if(z == Powiter_Enums::Channel_alpha){
+        for(int i = 0 ; i < W ; i+=delta){
+            const QRgb c = from[i];
+            to[i] = fromFloatFast(qAlpha(c));
         }
+    }else{
         
-    }else if(fromA!=NULL && !premult){
-        for(int i=0;i< W;i++){
-            float red = fromR[i];
-            float green = fromG[i];
-            float blue = fromB[i];
-            float alphac = fromA[i];
-            if(r!=NULL)
-                r[i]=fromFloatFast(red*255.f);
-            if(g!=NULL)
-                g[i]=fromFloatFast(green*255.f);
-            if(b!=NULL)
-                b[i]=fromFloatFast(blue*255.f);
-            a[i]=Linear::fromFloat(alphac*255.f);
-        }
-        
-    }else if(fromA!=NULL && autoAlpha){
-        for(int i=0;i< W;i++){
-            float red = fromR[i];
-            float green = fromG[i];
-            float blue = fromB[i];
-            float alphac = 1.0;
-            if(r!=NULL)
-                r[i]=fromFloatFast(red*255.f);
-            if(g!=NULL)
-                g[i]=fromFloatFast(green*255.f);
-            if(b!=NULL)
-                b[i]=fromFloatFast(blue*255.f);
-            a[i]=Linear::fromFloat(alphac*255.f);
-        }
-        
-    }else if(fromA==NULL && !autoAlpha){
-        for(int i=0;i< W;i++){
-            float red = fromR[i];
-            float green = fromG[i];
-            float blue = fromB[i];
-            if(r!=NULL)
-                r[i]=fromFloatFast(red*255.f);
-            if(g!=NULL)
-                g[i]=fromFloatFast(green*255.f);
-            if(b!=NULL)
-                b[i]=fromFloatFast(blue*255.f);
+        for(int i =0 ; i < W ; i+=delta){
+            const QRgb c = from[i];
+            to[i] = fromFloatFast((*lookup)(c));
         }
     }
     
-    
-    
 }
-    
-
-
-void Linear::from_byte(float* r,float* g,float* b, const uchar* from,bool hasAlpha,bool premult,bool autoAlpha, int W, int delta ,float* a,bool qtbuf){
-    
-	const QRgb* ptrQt = reinterpret_cast<const QRgb*>(from);
-
-	if(hasAlpha && premult){//if img is premultiplied,un-premultiplied before applying color space conversion, and then multiply back
-		//alpha channel is copied through Linear (no conversion)
-		for(int i=0;i< W;i++){
-			float red,green,blue,alphac=1;
-			if(qtbuf){
-				const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                alphac = qAlpha(c);
-			}else{
-				const uchar *c = from+i*3;
-				Lut::U24_to_rgb(&red, &green, &blue, c);
-
-			}
-            red/=255.f;
-            green/=255.f;
-            blue/=255.f;
-            alphac/=255.f;
-            if(r!=NULL)
-                r[i]=Linear::fromFloatFast(red/alphac) * alphac;
-            if(g!=NULL)
-                g[i]=Linear::fromFloatFast(green/alphac) * alphac;
-            if(b!=NULL)
-                b[i]=Linear::fromFloatFast(blue/alphac) * alphac;
-			a[i]=Linear::fromFloatFast(alphac);
-		}
-
-	}else if(hasAlpha && !premult){
-		for(int i=0;i< W;i++){
-			float red,green,blue,alphac=1;
-			if(qtbuf){
-				const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-                alphac = qAlpha(c);
-			}else{
-				const uchar *c = from+i*3;
-				Lut::U24_to_rgb(&red, &green, &blue, c);
-
-			}
-            red/=255.f;
-            green/=255.f;
-            blue/=255.f;
-            alphac/=255.f;
-            if(r!=NULL)
-                r[i]=Linear::fromFloatFast(red);
-            if(g!=NULL)
-                g[i]=Linear::fromFloatFast(green);
-            if(b!=NULL)
-                b[i]=Linear::fromFloatFast(blue);
-			a[i]=Linear::fromFloatFast(alphac);
-		}
-
-	}else if(!hasAlpha && autoAlpha){
-		for(int i=0;i< W;i++){
-			float red,green,blue,alphac=1;
-			if(qtbuf){
-				const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-				alphac = 1.0;
-			}else{
-				const uchar *c = from+i*3;
-				Lut::U24_to_rgb(&red, &green, &blue, c);
-
-			}
-            red/=255.f;
-            green/=255.f;
-            blue/=255.f;
-            alphac/=255.f;
-			if(r!=NULL)
-                r[i]=Linear::fromFloatFast(red);
-            if(g!=NULL)
-                g[i]=Linear::fromFloatFast(green);
-            if(b!=NULL)
-                b[i]=Linear::fromFloatFast(blue);
-			a[i]=Linear::fromFloatFast(alphac);
-		}
-
-	}else if(!hasAlpha && !autoAlpha){
-		for(int i=0;i< W;i++){
-			float red,green,blue;
-			if(qtbuf){
-				const QRgb c = ptrQt[i];
-                red = qRed(c);
-                green = qGreen(c);
-                blue = qBlue(c);
-           
-
-			}else{
-				const uchar *c = from+i*3;
-				Lut::U24_to_rgb(&red, &green, &blue, c);
-
-			}
-            red/=255.f;
-            green/=255.f;
-            blue/=255.f;
-            
-			if(r!=NULL)
-                r[i]=Linear::fromFloatFast(red);
-            if(g!=NULL)
-                g[i]=Linear::fromFloatFast(green);
-            if(b!=NULL)
-                b[i]=Linear::fromFloatFast(blue);
-
-		}
-	}
-
+void Linear::from_short(float* to, const U16* from, int W, int bits , int delta ){
+     cout << "Linear::from_short not yet implemented" << endl;
 }
-
-void Linear::from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult, bool autoAlpha,int W, int bits, int delta ,float* a){
-    cout << "Linear::from_short not yet implemented" << endl;
-    
-}
-void Linear::from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
-                     bool premult,bool autoAlpha, int W, int delta ,const float* fromA,float* a){
-    
-    // no colorspace conversion is done 
-    // if autoalpha is on , we just fill the alpha channel with 1.f
-    for(int i = 0 ; i < W ; i++){
-        if(fromR != NULL){
-            if(r != NULL){
-                r[i] = fromR[i];
-            }
-        }else{
-            if(r!=NULL){
-                r[i] = 0.f;
-            }
-        }
-        if(fromG != NULL){
-            if(g != NULL){
-                g[i] = fromG[i];
-            }
-        }else{
-            if(g!=NULL){
-                g[i] = 0.f;
-            }
-        }
-        if(fromB != NULL){
-            if(b != NULL){
-                b[i] = fromB[i];
-            }
-        }else{
-            if(b!=NULL){
-                b[i] = 0.f;
-            }
-        }
-        if (fromA != NULL) {
-            if (a != NULL) {
-                a[i] = fromA[i];
-            }
-        }else{
-            if(autoAlpha && a!=NULL){
-                a[i] = 1.0;
-            }
-        }
-        
+void Linear::from_float(float* to, const float* from, int W, int delta ){
+    for(int i=0;i< W;i+=delta){
+        to[i]=fromFloatFast(from[i]);
     }
-   
 }
-void Linear::from_float(const float* from,float* to,int W,int delta){
-    for(int i =0 ; i < W ;i+=delta) to[i] = from[i];
-}
-void Linear::from_short(const U16* from,float* to,int W,int delta){
-    for(int i =0 ; i < W ;i+=delta) to[i] = (float)(from[i])/65535.f;
-}
-void Linear::from_byte(const U8* from,float* to,int W,int delta){
-    for(int i =0 ; i < W ;i+=delta) to[i] = (float)(from[i])/255.f;
-}
-
 Lut* Lut::getLut(DataType type){
     switch (type) {
         case VIEWER:

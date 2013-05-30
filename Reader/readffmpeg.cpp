@@ -930,20 +930,16 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
     int h = op->getInfo()->getDisplayWindow().h();
 	
 	
-
-//	out->changeSize(0,range,set);
-//	foreach(Channel z,set){
-//		out->erase(z);
-//	}
-	//QMutexLocker guard(&_lock);
 	unsigned char* FROM = _data->buffer();
 	FROM += (h - y - 1) * w * 3;
 	FROM += offset * 3;
-	float* r = out->writable(Channel_red) + offset;
-	float* g = out->writable(Channel_green) + offset;
-	float* b = out->writable(Channel_blue) + offset;
-	float* a = channels & Channel_alpha ? out->writable(Channel_alpha) + offset : NULL;
-	from_byte(r,g,b,FROM,NULL,(range-offset),3,a);
+
+	foreachChannels(z, channels){
+        float* to = out->writable(z) + offset;        
+        if(to!=NULL){
+            from_byte(z, to, FROM+z-1, FROM+4-1,(range-offset),3);
+        }
+    }
 
 
 }
