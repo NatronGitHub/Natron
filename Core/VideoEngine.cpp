@@ -298,7 +298,8 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     float zoomFactor = gl_viewer->getZoomFactor();
     std::map<int,int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
     
-    int w = _dispW.w() * zoomFactor;
+    int w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
+   // int w = _dispW.w();
     int h = rows.size();
     gl_viewer->initTextures(w,h);
     

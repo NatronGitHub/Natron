@@ -69,7 +69,7 @@ ViewerCache::~ViewerCache(){
     
 }
 
-ViewerCache::FrameID::FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
+ViewerCache::FrameID::FrameID(float zoom,float exp,float lut,int rank,U64 treeVers,
                               std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH):
 _zoom(zoom), _exposure(exp),_lut(lut),_rank(rank),_treeVers(treeVers),
 _cacheIndex(cacheIndex),_byteMode(byteMode),_actualW(actualW),_actualH(actualH){

@@ -54,7 +54,7 @@ public:
         float _lut;
         int _rank;
         float _zoom;
-        U32 _treeVers;
+        U64 _treeVers;
         ReaderInfo* _frameInfo; //bbox,format,channels,frame name,ydirection
         std::string _cacheIndex;
         float _byteMode;
@@ -62,7 +62,7 @@ public:
         FrameID():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualH(0),_actualW(0){
             _frameInfo = new ReaderInfo;
         }
-        FrameID(float zoom,float exp,float lut,int rank,U32 treeVers,
+        FrameID(float zoom,float exp,float lut,int rank,U64 treeVers,
                 std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH);
         FrameID(const FrameID& other);
         

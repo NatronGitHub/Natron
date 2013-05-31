@@ -323,7 +323,9 @@ ViewerTab::~ViewerTab()
 {
 }
 
-
+void ViewerTab::setTextureCache(TextureCache* cache){
+    viewer->setTextureCache(cache);
+}
 
 Controler* ViewerTab::getControler(){
     return ctrl;

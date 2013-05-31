@@ -29,7 +29,7 @@ class QProgressBar;
 class QStatusBar;
 class QTreeView;
 class Controler;
-
+class TextureCache;
 class Gui:public QMainWindow
 {
     Q_OBJECT

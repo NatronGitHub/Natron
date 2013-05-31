@@ -15,6 +15,8 @@
 		D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D78C15F51737E6510011B5FD /* libftgl.a */; };
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
+		D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7AC026C1758E5D1009548B6 /* texturecache.cpp */; };
+		D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7AC026D1758E5D1009548B6 /* texturecache.h */; };
 		D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7B4811E174E9FAB0011055D /* viewercache.cpp */; };
 		D7B48121174E9FAB0011055D /* viewercache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7B4811F174E9FAB0011055D /* viewercache.h */; };
 		D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */; };
@@ -198,6 +200,8 @@
 		D78C15F51737E6510011B5FD /* libftgl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libftgl.a; path = /usr/local/lib/libftgl.a; sourceTree = "<absolute>"; };
 		D78C15FF173861FD0011B5FD /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../Superviser/main.cpp; sourceTree = SOURCE_ROOT; };
 		D78C1606173862860011B5FD /* controler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = controler.cpp; path = ../../Superviser/controler.cpp; sourceTree = SOURCE_ROOT; };
+		D7AC026C1758E5D1009548B6 /* texturecache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = texturecache.cpp; sourceTree = "<group>"; };
+		D7AC026D1758E5D1009548B6 /* texturecache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = texturecache.h; sourceTree = "<group>"; };
 		D7B4811E174E9FAB0011055D /* viewercache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewercache.cpp; sourceTree = "<group>"; };
 		D7B4811F174E9FAB0011055D /* viewercache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewercache.h; sourceTree = "<group>"; };
 		D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = framefiledialog.cpp; sourceTree = "<group>"; };
@@ -501,6 +505,8 @@
 				D7FD9A1D17101E8700D1DCEA /* viewerTab.h */,
 				D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */,
 				D7C099C8174FE73A008EBC41 /* framefiledialog.h */,
+				D7AC026C1758E5D1009548B6 /* texturecache.cpp */,
+				D7AC026D1758E5D1009548B6 /* texturecache.h */,
 			);
 			name = Gui;
 			path = ../../Gui;
@@ -603,6 +609,7 @@
 				D7FD9AB117101EBA00D1DCEA /* powiterFn.h in Headers */,
 				D7B48121174E9FAB0011055D /* viewercache.h in Headers */,
 				D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */,
+				D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -736,6 +743,7 @@
 				D7FD9A9517101E8700D1DCEA /* readQt.cpp in Sources */,
 				D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */,
 				D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */,
+				D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -27,6 +27,7 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Core/lutclasses.h"
 #include "Gui/timeline.h"
+#include "Gui/texturecache.h"
 #include "Core/viewercache.h"
 #include "Superviser/powiterFn.h"
 
@@ -184,10 +185,8 @@ void ViewerGL::resizeGL(int width, int height){
 void ViewerGL::paintGL()
 {
     if(_drawing){
-        
         float w = (float)width();
 		float h = (float)height();
-        
         glMatrixMode (GL_PROJECTION);
 		glLoadIdentity();
         
@@ -204,12 +203,6 @@ void ViewerGL::paintGL()
         glTranslatef(transX, -transY, 0);
         glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
         
-        /*scale is here to adjust the zoomFactor because the texture size is not really
-         at the size expected for this zoomFactor (since we removed some rows).
-         In the case the frame fit entirely in the viewer, scale should be equal
-         to 1.*/
-		//float scale = (float)_textureSize.second/(float)displayWindow().h(); //(float)_textureSize.second/zoomedHeight();
-        
         glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
         glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
         
@@ -217,8 +210,8 @@ void ViewerGL::paintGL()
         glBindTexture(GL_TEXTURE_2D, texId[0]);
         
         // debug (so the openGL debugger can make a breakpoint here)
-        //                GLfloat d;
-        //                glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        GLfloat d;
+        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
@@ -227,10 +220,6 @@ void ViewerGL::paintGL()
         glClearColor(0.0,0.0,0.0,1.0);
         glClear (GL_COLOR_BUFFER_BIT);
 		glBegin (GL_POLYGON);
-        //		glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
-        //		glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
-        //		glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
-        //		glTexCoord2i (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
         glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _rowSpan.first);
 		glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _rowSpan.second+1);
 		glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _rowSpan.second+1);
@@ -585,7 +574,6 @@ void ViewerGL::initTexturesRgb(int w,int h){
     
 	makeCurrent();
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-    
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, texId[0]);
     
@@ -629,7 +617,8 @@ void ViewerGL::initBlackTex(){
     ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
     int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.zoomFactor);
     int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.zoomFactor);
-    
+    //int w = displayWindow().w();
+    //int h = displayWindow().h();
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -721,8 +710,10 @@ void ViewerGL::drawBlackTex(){
 }
 
 void ViewerGL::drawRow(Row* row){
-    
-    int w = floorf(_readerInfo->displayWindow().w() * _zoomCtx.zoomFactor);
+    float zoomFactor;
+    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+    int w = floorf(_readerInfo->displayWindow().w() * zoomFactor);
+    //int w = displayWindow().w();
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w,row->zoomedY(),(*row)[Channel_alpha]);
@@ -730,6 +721,25 @@ void ViewerGL::drawRow(Row* row){
     else{
         convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                    w,row->zoomedY(),(*row)[Channel_alpha]);
+        //        U32* output = reinterpret_cast<U32*>(frameData);
+        //        int yOffset = row->zoomedY();
+        //        yOffset*=w;
+        //        output+=yOffset;
+        //        const float* a = (*row)[Channel_alpha];
+        //        if(a){
+        //            for(int i =0 ; i < w ; i++) output[i] |= ((U32)(a[i] * 255.f) << 24);
+        //        }else{
+        //            for(int i =0 ; i < w ; i++) output[i] |= (1 << 24);
+        //        }
+        //        const float* r = (*row)[Channel_red];
+        //        const float* g = (*row)[Channel_green];
+        //        const float* b = (*row)[Channel_blue];
+        //        if(r)
+        //            rowToTexture8bit(Channel_red,r, output, w);
+        //        if(g)
+        //            rowToTexture8bit(Channel_green,g, output, w);
+        //        if(b)
+        //            rowToTexture8bit(Channel_blue,b, output, w);
     }
 }
 
@@ -818,6 +828,79 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     checkGLErrors();
 }
+void ViewerGL::rowToTexture8bit(Powiter_Enums::Channel z,const float* from ,U32* to, int w){
+    int start = (int)(rand()%w);
+    int wedge = 0;
+    switch (z) {
+        case Powiter_Enums::Channel_red:
+            wedge = 16;
+            break;
+        case Powiter_Enums::Channel_green:
+            wedge = 8;
+            break;
+        case Powiter_Enums::Channel_blue:
+        default:
+            break;
+    }
+    float zoomFactor;
+    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+    if(_drawing){
+        if(!_colorSpace->linear()){
+            _usingColorSpace = true;
+            unsigned error = 0x80;
+            /* go fowards from starting point to end of line: */
+            for(int i = start ; i < w ; i++){
+                float x = (float)i*1.f/zoomFactor;
+                int nearest;
+                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+                
+                U8 v_;
+                float _v = from[nearest];
+                float alpha = (float)(to[i] >> 24)/255.f;
+                _v*= alpha;
+                _v*=exposure;
+                error = (error&0xff) + _colorSpace->toFloatFast(_v);
+                v_ = error >> 8;
+                to[i]  |= (v_ << wedge);
+            }
+            /* go backwards from starting point to start of line: */
+            error = 0x80;
+            for(int i = start-1 ; i >= 0 ; i--){
+                float x = (float)i*1.f/zoomFactor;
+                int nearest;
+                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+                
+                U8 v_;
+                float _v = from[nearest];
+                float alpha = (float)(to[i] >> 24)/255.f;
+                _v*= alpha;
+                _v*=exposure;
+                error = (error&0xff) + _colorSpace->toFloatFast(_v);
+                v_ = error >> 8;
+                to[i]  |= (v_ << wedge);
+            }
+            _usingColorSpace = false;
+        }else{
+            for(int i = 0 ; i < w ; i++){
+                float x = (float)i*1.f/zoomFactor;
+                int nearest;
+                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+                
+                U8 v_;
+                float _v = from[nearest];
+                float alpha = (float)(to[i] >> 24)/255.f;
+                _v*= alpha;
+                _v*=exposure;
+                v_ = (U8)_v*255.f;
+                to[i]  |= (v_ << wedge);
+            }
+        }
+    }else{
+        for(int i = 0 ; i < w ; i++){
+            to[i]  |= (0 << wedge);
+        }
+    }
+}
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
                                           int w,int yOffset,const float* alpha){
     /*Converting one row (float32) to 8bit BGRA texture. We apply a dithering algorithm based on error diffusion.
@@ -825,68 +908,25 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     
-    /*flaging that we're using the colorspace so it doesn't try to change it in the same time
-     if the user requested it*/
-    _usingColorSpace = true;
-    
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=w;
     output+=yOffset;
-    int start = (int)(rand()%w);
-    unsigned error_r = 0x80;
-    unsigned error_g = 0x80;
-    unsigned error_b = 0x80;
-    /* go fowards from starting point to end of line: */
-    for(int i = start ; i < w ; i++){
-        float _r,_g,_b,_a;
-        U8 r_,g_,b_,a_;
-        float x = (float)i*1.f/_zoomCtx.zoomFactor;
-        int nearest;
-        (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
-        if(_drawing){
-            r!=NULL? _r=r[nearest] : _r=0.f;
-            g!=NULL? _g=g[nearest] : _g=0.f;
-            b!=NULL? _b=b[nearest] : _b=0.f;
-            alpha!=NULL? _a=alpha[nearest] : _a=1.f;
-            
-            if(!rgbMode()){
-                _r = (_r + 1.0)*_r;
-                _g = _r; _b = _r;
-            }
-            _r*=_a;_g*=_a;_b*=_a;
-            _r*=exposure;_g*=exposure;_b*=exposure;
-            if(!_colorSpace->linear()){
-                error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
-                error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
-                error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
-                a_ = _a*255;
-                r_ = error_r >> 8;
-                g_ = error_g >> 8;
-                b_ = error_b >> 8;
-            }else{
-                a_ = _a*255;
-                r_ = _r*255;
-                g_ = _g*255;
-                b_ = _b*255;
-            }
-        }else{
-            r_ = g_ = b_ = 0;
-            a_ = 255;
-        }
-        output[i] = toBGRA(r_,g_,b_,a_);
-    }
-    /* go backwards from starting point to start of line: */
-    error_r = 0x80;
-    error_g = 0x80;
-    error_b = 0x80;
     
-    for(int i = start-1 ; i >= 0 ; i--){
-        float _r,_g,_b,_a;
-        U8 r_,g_,b_,a_;
-        float x = (float)i*1.f/_zoomCtx.zoomFactor;
-        int nearest;
-        (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
-        if(_drawing){
+    if(!_drawing){
+        for(int i = 0 ; i < w ; i++){
+            output[i] = toBGRA(0, 0, 0, 255);
+        }
+    }else if(_drawing && _colorSpace->linear()){
+        int start = (int)(rand()%w);
+        /* go fowards from starting point to end of line: */
+        float zoomFactor;
+        _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+        for(int i = start ; i < w ; i++){
+            float _r,_g,_b,_a;
+            U8 r_,g_,b_,a_;
+            float x = (float)i*1.f/zoomFactor;
+            int nearest;
+            (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
             
             r!=NULL? _r=r[nearest] : _r=0.f;
             g!=NULL? _g=g[nearest] : _g=0.f;
@@ -899,27 +939,107 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             }
             _r*=_a;_g*=_a;_b*=_a;
             _r*=exposure;_g*=exposure;_b*=exposure;
-            if(!_colorSpace->linear()){
-                error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
-                error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
-                error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
-                a_ = _a*255;
-                r_ = error_r >> 8;
-                g_ = error_g >> 8;
-                b_ = error_b >> 8;
-            }else{
-                a_ = _a*255;
-                r_ = _r*255;
-                g_ = _g*255;
-                b_ = _b*255;
-            }
-        }else{
-            r_ = g_ = b_ = 0;
-            a_ = 255;
+            a_ = _a*255;
+            r_ = _r*255;
+            g_ = _g*255;
+            b_ = _b*255;
+            output[i] = toBGRA(r_,g_,b_,a_);
         }
-        output[i] = toBGRA(r_,g_,b_,a_);
+        /* go backwards from starting point to start of line: */
+        for(int i = start-1 ; i >= 0 ; i--){
+            float _r,_g,_b,_a;
+            U8 r_,g_,b_,a_;
+            float x = (float)i*1.f/zoomFactor;
+            int nearest;
+            (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+            r!=NULL? _r=r[nearest] : _r=0.f;
+            g!=NULL? _g=g[nearest] : _g=0.f;
+            b!=NULL? _b=b[nearest] : _b=0.f;
+            alpha!=NULL? _a=alpha[nearest] : _a=1.f;
+            if(!rgbMode()){
+                _r = (_r + 1.0)*_r;
+                _g = _r; _b = _r;
+            }
+            _r*=_a;_g*=_a;_b*=_a;
+            _r*=exposure;_g*=exposure;_b*=exposure;
+            a_ = _a*255;
+            r_ = _r*255;
+            g_ = _g*255;
+            b_ = _b*255;
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+    }else{ // _drawing && !linear
+        /*flaging that we're using the colorspace so it doesn't try to change it in the same time
+         if the user requested it*/
+        _usingColorSpace = true;
+        int start = (int)(rand()%w);
+        unsigned error_r = 0x80;
+        unsigned error_g = 0x80;
+        unsigned error_b = 0x80;
+        /* go fowards from starting point to end of line: */
+        float zoomFactor;
+        _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+        for(int i = start ; i < w ; i++){
+            float _r,_g,_b,_a;
+            U8 r_,g_,b_,a_;
+            float x = (float)i*1.f/zoomFactor;
+            int nearest;
+            (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+            r!=NULL? _r=r[nearest] : _r=0.f;
+            g!=NULL? _g=g[nearest] : _g=0.f;
+            b!=NULL? _b=b[nearest] : _b=0.f;
+            alpha!=NULL? _a=alpha[nearest] : _a=1.f;
+            
+            if(!rgbMode()){
+                _r = (_r + 1.0)*_r;
+                _g = _r; _b = _r;
+            }
+            _r*=_a;_g*=_a;_b*=_a;
+            _r*=exposure;_g*=exposure;_b*=exposure;
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
+            a_ = _a*255;
+            r_ = error_r >> 8;
+            g_ = error_g >> 8;
+            b_ = error_b >> 8;
+            output[i] = toBGRA(r_,g_,b_,a_);
+        }
+        /* go backwards from starting point to start of line: */
+        error_r = 0x80;
+        error_g = 0x80;
+        error_b = 0x80;
+        
+        for(int i = start-1 ; i >= 0 ; i--){
+            float _r,_g,_b,_a;
+            U8 r_,g_,b_,a_;
+            float x = (float)i*1.f/zoomFactor;
+            int nearest;
+            (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
+            r!=NULL? _r=r[nearest] : _r=0.f;
+            g!=NULL? _g=g[nearest] : _g=0.f;
+            b!=NULL? _b=b[nearest] : _b=0.f;
+            alpha!=NULL? _a=alpha[nearest] : _a=1.f;
+            
+            if(!rgbMode()){
+                _r = (_r + 1.0)*_r;
+                _g = _r; _b = _r;
+            }
+            _r*=_a;_g*=_a;_b*=_a;
+            _r*=exposure;_g*=exposure;_b*=exposure;
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
+            a_ = _a*255;
+            r_ = error_r >> 8;
+            g_ = error_g >> 8;
+            b_ = error_b >> 8;
+            output[i] = toBGRA(r_,g_,b_,a_);
+
+        }
+        _usingColorSpace = false;
     }
-    _usingColorSpace = false;
+    
 }
 
 // nbbytesoutput is the size in bytes of 1 channel for the row
@@ -930,8 +1050,10 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     yOffset *=w*sizeof(float);
     output+=yOffset;
     int index = 0;
+    float zoomFactor;
+    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
     for(int i =0 ; i < w*4 ; i+=4){
-        float x = (float)index*1.f/_zoomCtx.zoomFactor;
+        float x = (float)index*1.f/zoomFactor;
         int nearest;
         (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
         r!=NULL? output[i]=r[nearest] : output[i]=0.f;
@@ -939,7 +1061,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
         b!=NULL? output[i+2]=b[nearest] : output[i+2]=0.f;
         alpha!=NULL? output[i+3]=alpha[nearest] : output[i+3]=1.f;
         index++;
-        
     }
 }
 
@@ -1028,499 +1149,499 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         
     }
 }
-    void ViewerGL::wheelEvent(QWheelEvent *event) {
-        
-        if(!vengine->isWorking()){
-            QPointF p;
-            float increment=0.f;
-            if(_zoomCtx.zoomFactor<1.f)
-                increment=0.1;
-            else
-                increment=0.1*_zoomCtx.zoomFactor;
-            if(event->delta() >0){
-                
-                _zoomCtx.zoomFactor+=increment;
-                
-                if(_zoomCtx.old_zoomed_pt_win != event->pos()){
-                    p = openGLpos_fast(event->x(), event->y());
-                    p.setY(displayWindow().h() - p.y());
-                    float dx=(p.x()-_zoomCtx.old_zoomed_pt.x());
-                    float dy=(p.y()-_zoomCtx.old_zoomed_pt.y());
-                    _zoomCtx.zoomX+=dx/2.f;
-                    _zoomCtx.zoomY-=dy/2.f;
-                    _zoomCtx.restToZoomX = dx/2.f;
-                    _zoomCtx.restToZoomY = dy/2.f;
-                    _zoomCtx.old_zoomed_pt = p;
-                    _zoomCtx.old_zoomed_pt_win = event->pos();
-                }else{
-                    _zoomCtx.zoomX+=_zoomCtx.restToZoomX;
-                    _zoomCtx.zoomY-=_zoomCtx.restToZoomY;
-                    _zoomCtx.restToZoomX = 0;
-                    _zoomCtx.restToZoomY = 0;
-                }
-                
-            }else if(event->delta() < 0){
-                _zoomCtx.zoomFactor -= increment;
-                if(_zoomCtx.zoomFactor <= 0.1){
-                    _zoomCtx.zoomFactor = 0.1;
-                }
-            }
-            if(_drawing){
-                vengine->_viewerCache->clearPlayBackCache();
-                vengine->videoEngine(1,false,true,true);
+void ViewerGL::wheelEvent(QWheelEvent *event) {
+    
+    if(!vengine->isWorking()){
+        QPointF p;
+        float increment=0.f;
+        if(_zoomCtx.zoomFactor<1.f)
+            increment=0.1;
+        else
+            increment=0.1*_zoomCtx.zoomFactor;
+        if(event->delta() >0){
+            
+            _zoomCtx.zoomFactor+=increment;
+            
+            if(_zoomCtx.old_zoomed_pt_win != event->pos()){
+                p = openGLpos_fast(event->x(), event->y());
+                p.setY(displayWindow().h() - p.y());
+                float dx=(p.x()-_zoomCtx.old_zoomed_pt.x());
+                float dy=(p.y()-_zoomCtx.old_zoomed_pt.y());
+                _zoomCtx.zoomX+=dx/2.f;
+                _zoomCtx.zoomY-=dy/2.f;
+                _zoomCtx.restToZoomX = dx/2.f;
+                _zoomCtx.restToZoomY = dy/2.f;
+                _zoomCtx.old_zoomed_pt = p;
+                _zoomCtx.old_zoomed_pt_win = event->pos();
             }else{
-                updateGL();
+                _zoomCtx.zoomX+=_zoomCtx.restToZoomX;
+                _zoomCtx.zoomY-=_zoomCtx.restToZoomY;
+                _zoomCtx.restToZoomX = 0;
+                _zoomCtx.restToZoomY = 0;
             }
-            emit zoomChanged( _zoomCtx.zoomFactor*100);
+            
+        }else if(event->delta() < 0){
+            _zoomCtx.zoomFactor -= increment;
+            if(_zoomCtx.zoomFactor <= 0.1){
+                _zoomCtx.zoomFactor = 0.1;
+            }
         }
-        
-    }
-    void ViewerGL::zoomSlot(int v){
-        if(!vengine->isWorking()){
-            float value = v/100.f;
-            if(value <0.1) value = 0.1;
-            _zoomCtx.zoomFactor = value;
-            if(_drawing){
-                vengine->_viewerCache->clearPlayBackCache();
-                vengine->videoEngine(1,false,true,true);
-            }
+        if(_drawing){
+            vengine->_viewerCache->clearPlayBackCache();
+            vengine->videoEngine(1,false,true,true);
+        }else{
             updateGL();
         }
+        emit zoomChanged( _zoomCtx.zoomFactor*100);
     }
     
-    QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
-        GLint viewport[4];
-        GLdouble modelview[16];
-        GLdouble projection[16];
-        GLdouble winX=0, winY=0, winZ=0;
-        glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-        glGetDoublev( GL_PROJECTION_MATRIX, projection );
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        double ap = _readerInfo->displayWindow().pixel_aspect();
-        if(ap < 1){
-            viewport[0]=0;viewport[1]=0;viewport[2]=width();viewport[3]=height()*ap;
+}
+void ViewerGL::zoomSlot(int v){
+    if(!vengine->isWorking()){
+        float value = v/100.f;
+        if(value <0.1) value = 0.1;
+        _zoomCtx.zoomFactor = value;
+        if(_drawing){
+            vengine->_viewerCache->clearPlayBackCache();
+            vengine->videoEngine(1,false,true,true);
         }
-        gluProject(x,y , 0.5, modelview, projection, viewport, &winX, &winY, &winZ);
-        return QPoint(winX,winY);
+        updateGL();
     }
-    /*Returns coordinates with 0,0 at top left, Powiter inverts
-     y as such : y= displayWindow().h() - y  to get the coordinates
-     with 0,0 at bottom left*/
-    QVector3D ViewerGL::openGLpos(int x,int y){
-        GLint viewport[4];
-        GLdouble modelview[16];
-        GLdouble projection[16];
-        GLfloat winX=0, winY=0, winZ=0;
-        GLdouble posX=0, posY=0, posZ=0;
-        glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-        glGetDoublev( GL_PROJECTION_MATRIX, projection );
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        winX = (float)x;
-        winY = viewport[3]- y;
-        glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-        gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-        return QVector3D(posX,posY,posZ);
+}
+
+QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
+    GLint viewport[4];
+    GLdouble modelview[16];
+    GLdouble projection[16];
+    GLdouble winX=0, winY=0, winZ=0;
+    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
+    glGetDoublev( GL_PROJECTION_MATRIX, projection );
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    double ap = _readerInfo->displayWindow().pixel_aspect();
+    if(ap < 1){
+        viewport[0]=0;viewport[1]=0;viewport[2]=width();viewport[3]=height()*ap;
     }
-    QPoint ViewerGL::openGLpos_fast(int x,int y){
-        GLint viewport[4];
-        GLdouble modelview[16];
-        GLdouble projection[16];
-        GLfloat winX=0, winY=0;
-        GLdouble posX=0, posY=0, posZ=0;
-        glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-        glGetDoublev( GL_PROJECTION_MATRIX, projection );
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        winX = (float)x;
-        winY = viewport[3]- y;
-        gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
-        return QPoint(posX,posY);
-    }
-    QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-        if(vengine->isWorking()) return QVector4D(0,0,0,0);
-        GLint viewport[4];
-        GLdouble modelview[16];
-        GLdouble projection[16];
-        GLfloat winX=0, winY=0, winZ=0;
-        GLdouble posX=0, posY=0, posZ=0;
-        glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-        glGetDoublev( GL_PROJECTION_MATRIX, projection );
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        winX = (float)x;
-        winY =viewport[3]- y;
-        glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-        gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
-        if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
-            return QVector4D(0,0,0,0);
-        if(_byteMode==1 || !_hasHW){
-            U32 pixel;
-            glReadPixels( x, winY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
-            U8 r=0,g=0,b=0,a=0;
-            b |= pixel;
-            g |= (pixel >> 8);
-            r |= (pixel >> 16);
-            a |= (pixel >> 24);
-            return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
-        }else if(_byteMode==0 && _hasHW){
-            GLfloat pixel[4];
-            glReadPixels( x, winY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
-            return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
-        }
+    gluProject(x,y , 0.5, modelview, projection, viewport, &winX, &winY, &winZ);
+    return QPoint(winX,winY);
+}
+/*Returns coordinates with 0,0 at top left, Powiter inverts
+ y as such : y= displayWindow().h() - y  to get the coordinates
+ with 0,0 at bottom left*/
+QVector3D ViewerGL::openGLpos(int x,int y){
+    GLint viewport[4];
+    GLdouble modelview[16];
+    GLdouble projection[16];
+    GLfloat winX=0, winY=0, winZ=0;
+    GLdouble posX=0, posY=0, posZ=0;
+    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
+    glGetDoublev( GL_PROJECTION_MATRIX, projection );
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    winX = (float)x;
+    winY = viewport[3]- y;
+    glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
+    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+    return QVector3D(posX,posY,posZ);
+}
+QPoint ViewerGL::openGLpos_fast(int x,int y){
+    GLint viewport[4];
+    GLdouble modelview[16];
+    GLdouble projection[16];
+    GLfloat winX=0, winY=0;
+    GLdouble posX=0, posY=0, posZ=0;
+    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
+    glGetDoublev( GL_PROJECTION_MATRIX, projection );
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    winX = (float)x;
+    winY = viewport[3]- y;
+    gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
+    return QPoint(posX,posY);
+}
+QVector4D ViewerGL::getColorUnderMouse(int x,int y){
+    if(vengine->isWorking()) return QVector4D(0,0,0,0);
+    GLint viewport[4];
+    GLdouble modelview[16];
+    GLdouble projection[16];
+    GLfloat winX=0, winY=0, winZ=0;
+    GLdouble posX=0, posY=0, posZ=0;
+    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
+    glGetDoublev( GL_PROJECTION_MATRIX, projection );
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    winX = (float)x;
+    winY =viewport[3]- y;
+    glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
+    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+    if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
         return QVector4D(0,0,0,0);
+    if(_byteMode==1 || !_hasHW){
+        U32 pixel;
+        glReadPixels( x, winY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
+        U8 r=0,g=0,b=0,a=0;
+        b |= pixel;
+        g |= (pixel >> 8);
+        r |= (pixel >> 16);
+        a |= (pixel >> 24);
+        return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
+    }else if(_byteMode==0 && _hasHW){
+        GLfloat pixel[4];
+        glReadPixels( x, winY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
     }
-    QVector4D ViewerGL::U32toBGRA(U32 &c){
-        QVector4D out;
-        int r=0,g=0,b=0,a=0;
-        b |= (c >> 24);
-        g |= (((c << 8) >> 8) >> 16);
-        r |= (((c << 16) >> 16) >> 8);
-        a |= (c << 24) >> 24;
-        out.setX((float)r/255.f);
-        out.setY((float)g/255.f);
-        out.setZ((float)b/255.f);
-        out.setW((float)a/255.f);
-        return out;
+    return QVector4D(0,0,0,0);
+}
+QVector4D ViewerGL::U32toBGRA(U32 &c){
+    QVector4D out;
+    int r=0,g=0,b=0,a=0;
+    b |= (c >> 24);
+    g |= (((c << 8) >> 8) >> 16);
+    r |= (((c << 16) >> 16) >> 8);
+    a |= (c << 24) >> 24;
+    out.setX((float)r/255.f);
+    out.setY((float)g/255.f);
+    out.setZ((float)b/255.f);
+    out.setW((float)a/255.f);
+    return out;
+}
+
+void ViewerGL::fitToFormat(Format displayWindow){
+    float h = (float)(displayWindow.h());
+    float zoomFactor = (float)height()/h;
+    _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);
+    _zoomCtx.old_zoomed_pt_win.setY((float)height()/2.f);
+    _zoomCtx.old_zoomed_pt.setX((float)displayWindow.w()/2.f);
+    _zoomCtx.old_zoomed_pt.setY((float)displayWindow.h()/2.f);
+    
+    setZoomFactor(zoomFactor);
+    setTranslation(0, 0);
+    setZoomFactor(zoomFactor-0.05);
+    resetMousePos();
+    _zoomCtx.setZoomXY((float)displayWindow.w()/2.f,(float)displayWindow.h()/2.f);
+}
+
+
+
+void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
+    
+    _infoViewer = i;
+    QObject::connect(this, SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
+    QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_infoViewer,SLOT(updateColor()));
+    QObject::connect(this,SIGNAL(infoResolutionChanged()),_infoViewer,SLOT(changeResolution()));
+    QObject::connect(this,SIGNAL(infoDisplayWindowChanged()),_infoViewer,SLOT(changeDisplayWindow()));
+    
+    
+}
+void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
+    _readerInfo->copy(info);
+    Format* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+    if(df)
+        _readerInfo->setDisplayWindowName(df->name());
+    updateDataWindowAndDisplayWindowInfo();
+    if(!onInit){
+        ctrl->getGui()->viewer_tab->frameNumberBox->setMaximum(_readerInfo->lastFrame());
+        ctrl->getGui()->viewer_tab->frameNumberBox->setMinimum(_readerInfo->firstFrame());
     }
-    
-    void ViewerGL::fitToFormat(Format displayWindow){
-        float h = (float)(displayWindow.h());
-        float zoomFactor = (float)height()/h;
-        _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);
-        _zoomCtx.old_zoomed_pt_win.setY((float)height()/2.f);
-        _zoomCtx.old_zoomed_pt.setX((float)displayWindow.w()/2.f);
-        _zoomCtx.old_zoomed_pt.setY((float)displayWindow.h()/2.f);
+    if(!onInit)
+        ctrl->getGui()->viewer_tab->frameSeeker->setFrameRange(_readerInfo->firstFrame(), _readerInfo->lastFrame(),initBoundaries);
+    if((_readerInfo->lastFrame() - _readerInfo->firstFrame())==0){
+        emit frameChanged(0);
         
-        setZoomFactor(zoomFactor);
-        setTranslation(0, 0);
-        setZoomFactor(zoomFactor-0.05);
-        resetMousePos();
-        _zoomCtx.setZoomXY((float)displayWindow.w()/2.f,(float)displayWindow.h()/2.f);
+    }else{
+        emit frameChanged(_readerInfo->currentFrame());
     }
+}
+
+void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
+    emit infoResolutionChanged();
+    emit infoDisplayWindowChanged();
+    _resolutionOverlay.clear();
+    _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().w()));
+    _resolutionOverlay.append("x");
+    _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().h()));
+    _btmLeftBBOXoverlay.clear();
+    _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().x()));
+    _btmLeftBBOXoverlay.append(",");
+    _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().y()));
+    _topRightBBOXoverlay.clear();
+    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().right()));
+    _topRightBBOXoverlay.append(",");
+    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().top()));
     
     
     
-    void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
-        
-        _infoViewer = i;
-        QObject::connect(this, SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
-        QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_infoViewer,SLOT(updateColor()));
-        QObject::connect(this,SIGNAL(infoResolutionChanged()),_infoViewer,SLOT(changeResolution()));
-        QObject::connect(this,SIGNAL(infoDisplayWindowChanged()),_infoViewer,SLOT(changeDisplayWindow()));
-        
-        
-    }
-    void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
-        _readerInfo->copy(info);
-        Format* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
-        if(df)
-            _readerInfo->setDisplayWindowName(df->name());
-        updateDataWindowAndDisplayWindowInfo();
-        if(!onInit){
-            ctrl->getGui()->viewer_tab->frameNumberBox->setMaximum(_readerInfo->lastFrame());
-            ctrl->getGui()->viewer_tab->frameNumberBox->setMinimum(_readerInfo->firstFrame());
+}
+void ViewerGL::updateColorSpace(QString str){
+    while(_usingColorSpace){}
+    if (str == "Linear(None)") {
+        if(_lut != 0){ // if it wasnt already this setting
+            delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            _colorSpace = Lut::getLut(Lut::FLOAT);
+            _colorSpace->validate();
         }
-        if(!onInit)
-            ctrl->getGui()->viewer_tab->frameSeeker->setFrameRange(_readerInfo->firstFrame(), _readerInfo->lastFrame(),initBoundaries);
-        if((_readerInfo->lastFrame() - _readerInfo->firstFrame())==0){
-            emit frameChanged(0);
-            
-        }else{
-            emit frameChanged(_readerInfo->currentFrame());
+        _lut = 0;
+    }else if(str == "sRGB"){
+        if(_lut != 1){ // if it wasnt already this setting
+            delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            _colorSpace = Lut::getLut(Lut::VIEWER);
+            _colorSpace->validate();
         }
-    }
-    
-    void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
-        emit infoResolutionChanged();
-        emit infoDisplayWindowChanged();
-        _resolutionOverlay.clear();
-        _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().w()));
-        _resolutionOverlay.append("x");
-        _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().h()));
-        _btmLeftBBOXoverlay.clear();
-        _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().x()));
-        _btmLeftBBOXoverlay.append(",");
-        _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().y()));
-        _topRightBBOXoverlay.clear();
-        _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().right()));
-        _topRightBBOXoverlay.append(",");
-        _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().top()));
         
-        
-        
-    }
-    void ViewerGL::updateColorSpace(QString str){
-        while(_usingColorSpace){}
-        if (str == "Linear(None)") {
-            if(_lut != 0){ // if it wasnt already this setting
-                delete _colorSpace;
-                ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
-                _colorSpace = Lut::getLut(Lut::FLOAT);
-                _colorSpace->validate();
-            }
-            _lut = 0;
-        }else if(str == "sRGB"){
-            if(_lut != 1){ // if it wasnt already this setting
-                delete _colorSpace;
-                ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
-                _colorSpace = Lut::getLut(Lut::VIEWER);
-                _colorSpace->validate();
-            }
-            
-            _lut = 1;
-        }else if(str == "Rec.709"){
-            if(_lut != 2){ // if it wasnt already this setting
-                delete _colorSpace;
-                ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
-                _colorSpace = Lut::getLut(Lut::MONITOR);
-                _colorSpace->validate();
-            }
-            
-            _lut = 2;
+        _lut = 1;
+    }else if(str == "Rec.709"){
+        if(_lut != 2){ // if it wasnt already this setting
+            delete _colorSpace;
+            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            _colorSpace = Lut::getLut(Lut::MONITOR);
+            _colorSpace->validate();
         }
-        if(_byteMode==1 || !_hasHW)
-            vengine->videoEngine(1,false,true,true);
-        updateGL();
         
+        _lut = 2;
     }
-    void ViewerGL::updateExposure(double d){
-        exposure = d;
-        ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
-        if(_byteMode==1 || !_hasHW)
-            vengine->videoEngine(1,false,true,true);
-        updateGL();
-        
-    }
+    if(_byteMode==1 || !_hasHW)
+        vengine->videoEngine(1,false,true,true);
+    updateGL();
     
+}
+void ViewerGL::updateExposure(double d){
+    exposure = d;
+    ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+    if(_byteMode==1 || !_hasHW)
+        vengine->videoEngine(1,false,true,true);
+    updateGL();
     
+}
+
+
 #define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
 #define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
 #define MAT(m,r,c) (m)[(c)*4+(r)]
-    int ViewerGL::_glInvertMatrix(float *m, float *out){
-        float wtmp[4][8];
-        float m0, m1, m2, m3, s;
-        float *r0, *r1, *r2, *r3;
-        r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
-        r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
-        r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
-        r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
-        r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
-        r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
-        r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
-        r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
-        r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
-        r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
-        r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
-        r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
-        r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
-        /* choose pivot - or die */
-        if (fabsf(r3[0]) > fabsf(r2[0]))
-            SWAP_ROWS_FLOAT(r3, r2);
-        if (fabsf(r2[0]) > fabsf(r1[0]))
-            SWAP_ROWS_FLOAT(r2, r1);
-        if (fabsf(r1[0]) > fabsf(r0[0]))
-            SWAP_ROWS_FLOAT(r1, r0);
-        if (0.0 == r0[0])
-            return 0;
-        /* eliminate first variable     */
-        m1 = r1[0] / r0[0];
-        m2 = r2[0] / r0[0];
-        m3 = r3[0] / r0[0];
-        s = r0[1];
-        r1[1] -= m1 * s;
-        r2[1] -= m2 * s;
-        r3[1] -= m3 * s;
-        s = r0[2];
-        r1[2] -= m1 * s;
-        r2[2] -= m2 * s;
-        r3[2] -= m3 * s;
-        s = r0[3];
-        r1[3] -= m1 * s;
-        r2[3] -= m2 * s;
-        r3[3] -= m3 * s;
-        s = r0[4];
-        if (s != 0.0) {
-            r1[4] -= m1 * s;
-            r2[4] -= m2 * s;
-            r3[4] -= m3 * s;
-        }
-        s = r0[5];
-        if (s != 0.0) {
-            r1[5] -= m1 * s;
-            r2[5] -= m2 * s;
-            r3[5] -= m3 * s;
-        }
-        s = r0[6];
-        if (s != 0.0) {
-            r1[6] -= m1 * s;
-            r2[6] -= m2 * s;
-            r3[6] -= m3 * s;
-        }
-        s = r0[7];
-        if (s != 0.0) {
-            r1[7] -= m1 * s;
-            r2[7] -= m2 * s;
-            r3[7] -= m3 * s;
-        }
-        /* choose pivot - or die */
-        if (fabsf(r3[1]) > fabsf(r2[1]))
-            SWAP_ROWS_FLOAT(r3, r2);
-        if (fabsf(r2[1]) > fabsf(r1[1]))
-            SWAP_ROWS_FLOAT(r2, r1);
-        if (0.0 == r1[1])
-            return 0;
-        /* eliminate second variable */
-        m2 = r2[1] / r1[1];
-        m3 = r3[1] / r1[1];
-        r2[2] -= m2 * r1[2];
-        r3[2] -= m3 * r1[2];
-        r2[3] -= m2 * r1[3];
-        r3[3] -= m3 * r1[3];
-        s = r1[4];
-        if (0.0 != s) {
-            r2[4] -= m2 * s;
-            r3[4] -= m3 * s;
-        }
-        s = r1[5];
-        if (0.0 != s) {
-            r2[5] -= m2 * s;
-            r3[5] -= m3 * s;
-        }
-        s = r1[6];
-        if (0.0 != s) {
-            r2[6] -= m2 * s;
-            r3[6] -= m3 * s;
-        }
-        s = r1[7];
-        if (0.0 != s) {
-            r2[7] -= m2 * s;
-            r3[7] -= m3 * s;
-        }
-        /* choose pivot - or die */
-        if (fabsf(r3[2]) > fabsf(r2[2]))
-            SWAP_ROWS_FLOAT(r3, r2);
-        if (0.0 == r2[2])
-            return 0;
-        /* eliminate third variable */
-        m3 = r3[2] / r2[2];
-        r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
-        r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
-        /* last check */
-        if (0.0 == r3[3])
-            return 0;
-        s = 1.0 / r3[3];             /* now back substitute row 3 */
-        r3[4] *= s;
-        r3[5] *= s;
-        r3[6] *= s;
-        r3[7] *= s;
-        m2 = r2[3];                  /* now back substitute row 2 */
-        s = 1.0 / r2[2];
-        r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
-        r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
-        m1 = r1[3];
-        r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
-        r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
-        m0 = r0[3];
-        r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
-        r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
-        m1 = r1[2];                  /* now back substitute row 1 */
-        s = 1.0 / r1[1];
-        r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
-        r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
-        m0 = r0[2];
-        r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
-        r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
-        m0 = r0[1];                  /* now back substitute row 0 */
-        s = 1.0 / r0[0];
-        r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
-        r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
-        MAT(out, 0, 0) = r0[4];
-        MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
-        MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
-        MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
-        MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
-        MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
-        MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
-        MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
-        MAT(out, 3, 3) = r3[7];
-        return 1;
+int ViewerGL::_glInvertMatrix(float *m, float *out){
+    float wtmp[4][8];
+    float m0, m1, m2, m3, s;
+    float *r0, *r1, *r2, *r3;
+    r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
+    r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
+    r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
+    r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
+    r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
+    r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
+    r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
+    r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
+    r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
+    r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
+    r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
+    r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
+    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
+    /* choose pivot - or die */
+    if (fabsf(r3[0]) > fabsf(r2[0]))
+        SWAP_ROWS_FLOAT(r3, r2);
+    if (fabsf(r2[0]) > fabsf(r1[0]))
+        SWAP_ROWS_FLOAT(r2, r1);
+    if (fabsf(r1[0]) > fabsf(r0[0]))
+        SWAP_ROWS_FLOAT(r1, r0);
+    if (0.0 == r0[0])
+        return 0;
+    /* eliminate first variable     */
+    m1 = r1[0] / r0[0];
+    m2 = r2[0] / r0[0];
+    m3 = r3[0] / r0[0];
+    s = r0[1];
+    r1[1] -= m1 * s;
+    r2[1] -= m2 * s;
+    r3[1] -= m3 * s;
+    s = r0[2];
+    r1[2] -= m1 * s;
+    r2[2] -= m2 * s;
+    r3[2] -= m3 * s;
+    s = r0[3];
+    r1[3] -= m1 * s;
+    r2[3] -= m2 * s;
+    r3[3] -= m3 * s;
+    s = r0[4];
+    if (s != 0.0) {
+        r1[4] -= m1 * s;
+        r2[4] -= m2 * s;
+        r3[4] -= m3 * s;
     }
-    void ViewerGL::_glMultMats44(float *result, float *matrix1, float *matrix2){
-        result[0]=matrix1[0]*matrix2[0]+
-        matrix1[4]*matrix2[1]+
-        matrix1[8]*matrix2[2]+
-        matrix1[12]*matrix2[3];
-        result[4]=matrix1[0]*matrix2[4]+
-        matrix1[4]*matrix2[5]+
-        matrix1[8]*matrix2[6]+
-        matrix1[12]*matrix2[7];
-        result[8]=matrix1[0]*matrix2[8]+
-        matrix1[4]*matrix2[9]+
-        matrix1[8]*matrix2[10]+
-        matrix1[12]*matrix2[11];
-        result[12]=matrix1[0]*matrix2[12]+
-        matrix1[4]*matrix2[13]+
-        matrix1[8]*matrix2[14]+
-        matrix1[12]*matrix2[15];
-        result[1]=matrix1[1]*matrix2[0]+
-        matrix1[5]*matrix2[1]+
-        matrix1[9]*matrix2[2]+
-        matrix1[13]*matrix2[3];
-        result[5]=matrix1[1]*matrix2[4]+
-        matrix1[5]*matrix2[5]+
-        matrix1[9]*matrix2[6]+
-        matrix1[13]*matrix2[7];
-        result[9]=matrix1[1]*matrix2[8]+
-        matrix1[5]*matrix2[9]+
-        matrix1[9]*matrix2[10]+
-        matrix1[13]*matrix2[11];
-        result[13]=matrix1[1]*matrix2[12]+
-        matrix1[5]*matrix2[13]+
-        matrix1[9]*matrix2[14]+
-        matrix1[13]*matrix2[15];
-        result[2]=matrix1[2]*matrix2[0]+
-        matrix1[6]*matrix2[1]+
-        matrix1[10]*matrix2[2]+
-        matrix1[14]*matrix2[3];
-        result[6]=matrix1[2]*matrix2[4]+
-        matrix1[6]*matrix2[5]+
-        matrix1[10]*matrix2[6]+
-        matrix1[14]*matrix2[7];
-        result[10]=matrix1[2]*matrix2[8]+
-        matrix1[6]*matrix2[9]+
-        matrix1[10]*matrix2[10]+
-        matrix1[14]*matrix2[11];
-        result[14]=matrix1[2]*matrix2[12]+
-        matrix1[6]*matrix2[13]+
-        matrix1[10]*matrix2[14]+
-        matrix1[14]*matrix2[15];
-        result[3]=matrix1[3]*matrix2[0]+
-        matrix1[7]*matrix2[1]+
-        matrix1[11]*matrix2[2]+
-        matrix1[15]*matrix2[3];
-        result[7]=matrix1[3]*matrix2[4]+
-        matrix1[7]*matrix2[5]+
-        matrix1[11]*matrix2[6]+
-        matrix1[15]*matrix2[7];
-        result[11]=matrix1[3]*matrix2[8]+
-        matrix1[7]*matrix2[9]+
-        matrix1[11]*matrix2[10]+
-        matrix1[15]*matrix2[11];
-        result[15]=matrix1[3]*matrix2[12]+
-        matrix1[7]*matrix2[13]+
-        matrix1[11]*matrix2[14]+
-        matrix1[15]*matrix2[15];
+    s = r0[5];
+    if (s != 0.0) {
+        r1[5] -= m1 * s;
+        r2[5] -= m2 * s;
+        r3[5] -= m3 * s;
     }
-    void ViewerGL::_glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector){
-        resultvector[0]=matrix[0]*pvector[0]+matrix[4]*pvector[1]+matrix[8]*pvector[2]+matrix[12]*pvector[3];
-        resultvector[1]=matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
-        resultvector[2]=matrix[2]*pvector[0]+matrix[6]*pvector[1]+matrix[10]*pvector[2]+matrix[14]*pvector[3];
-        resultvector[3]=matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
+    s = r0[6];
+    if (s != 0.0) {
+        r1[6] -= m1 * s;
+        r2[6] -= m2 * s;
+        r3[6] -= m3 * s;
     }
-    int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector){
-        float y = matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
-        float w = matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
-        if(!w) return 0;
-        w = 1.f / w;
-        *yComponent =  y * w;
-        return 1;
+    s = r0[7];
+    if (s != 0.0) {
+        r1[7] -= m1 * s;
+        r2[7] -= m2 * s;
+        r3[7] -= m3 * s;
     }
-    
+    /* choose pivot - or die */
+    if (fabsf(r3[1]) > fabsf(r2[1]))
+        SWAP_ROWS_FLOAT(r3, r2);
+    if (fabsf(r2[1]) > fabsf(r1[1]))
+        SWAP_ROWS_FLOAT(r2, r1);
+    if (0.0 == r1[1])
+        return 0;
+    /* eliminate second variable */
+    m2 = r2[1] / r1[1];
+    m3 = r3[1] / r1[1];
+    r2[2] -= m2 * r1[2];
+    r3[2] -= m3 * r1[2];
+    r2[3] -= m2 * r1[3];
+    r3[3] -= m3 * r1[3];
+    s = r1[4];
+    if (0.0 != s) {
+        r2[4] -= m2 * s;
+        r3[4] -= m3 * s;
+    }
+    s = r1[5];
+    if (0.0 != s) {
+        r2[5] -= m2 * s;
+        r3[5] -= m3 * s;
+    }
+    s = r1[6];
+    if (0.0 != s) {
+        r2[6] -= m2 * s;
+        r3[6] -= m3 * s;
+    }
+    s = r1[7];
+    if (0.0 != s) {
+        r2[7] -= m2 * s;
+        r3[7] -= m3 * s;
+    }
+    /* choose pivot - or die */
+    if (fabsf(r3[2]) > fabsf(r2[2]))
+        SWAP_ROWS_FLOAT(r3, r2);
+    if (0.0 == r2[2])
+        return 0;
+    /* eliminate third variable */
+    m3 = r3[2] / r2[2];
+    r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
+    r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
+    /* last check */
+    if (0.0 == r3[3])
+        return 0;
+    s = 1.0 / r3[3];             /* now back substitute row 3 */
+    r3[4] *= s;
+    r3[5] *= s;
+    r3[6] *= s;
+    r3[7] *= s;
+    m2 = r2[3];                  /* now back substitute row 2 */
+    s = 1.0 / r2[2];
+    r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
+    r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
+    m1 = r1[3];
+    r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
+    r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
+    m0 = r0[3];
+    r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
+    r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
+    m1 = r1[2];                  /* now back substitute row 1 */
+    s = 1.0 / r1[1];
+    r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
+    r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
+    m0 = r0[2];
+    r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
+    r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
+    m0 = r0[1];                  /* now back substitute row 0 */
+    s = 1.0 / r0[0];
+    r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
+    r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
+    MAT(out, 0, 0) = r0[4];
+    MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
+    MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
+    MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
+    MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
+    MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
+    MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
+    MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
+    MAT(out, 3, 3) = r3[7];
+    return 1;
+}
+void ViewerGL::_glMultMats44(float *result, float *matrix1, float *matrix2){
+    result[0]=matrix1[0]*matrix2[0]+
+    matrix1[4]*matrix2[1]+
+    matrix1[8]*matrix2[2]+
+    matrix1[12]*matrix2[3];
+    result[4]=matrix1[0]*matrix2[4]+
+    matrix1[4]*matrix2[5]+
+    matrix1[8]*matrix2[6]+
+    matrix1[12]*matrix2[7];
+    result[8]=matrix1[0]*matrix2[8]+
+    matrix1[4]*matrix2[9]+
+    matrix1[8]*matrix2[10]+
+    matrix1[12]*matrix2[11];
+    result[12]=matrix1[0]*matrix2[12]+
+    matrix1[4]*matrix2[13]+
+    matrix1[8]*matrix2[14]+
+    matrix1[12]*matrix2[15];
+    result[1]=matrix1[1]*matrix2[0]+
+    matrix1[5]*matrix2[1]+
+    matrix1[9]*matrix2[2]+
+    matrix1[13]*matrix2[3];
+    result[5]=matrix1[1]*matrix2[4]+
+    matrix1[5]*matrix2[5]+
+    matrix1[9]*matrix2[6]+
+    matrix1[13]*matrix2[7];
+    result[9]=matrix1[1]*matrix2[8]+
+    matrix1[5]*matrix2[9]+
+    matrix1[9]*matrix2[10]+
+    matrix1[13]*matrix2[11];
+    result[13]=matrix1[1]*matrix2[12]+
+    matrix1[5]*matrix2[13]+
+    matrix1[9]*matrix2[14]+
+    matrix1[13]*matrix2[15];
+    result[2]=matrix1[2]*matrix2[0]+
+    matrix1[6]*matrix2[1]+
+    matrix1[10]*matrix2[2]+
+    matrix1[14]*matrix2[3];
+    result[6]=matrix1[2]*matrix2[4]+
+    matrix1[6]*matrix2[5]+
+    matrix1[10]*matrix2[6]+
+    matrix1[14]*matrix2[7];
+    result[10]=matrix1[2]*matrix2[8]+
+    matrix1[6]*matrix2[9]+
+    matrix1[10]*matrix2[10]+
+    matrix1[14]*matrix2[11];
+    result[14]=matrix1[2]*matrix2[12]+
+    matrix1[6]*matrix2[13]+
+    matrix1[10]*matrix2[14]+
+    matrix1[14]*matrix2[15];
+    result[3]=matrix1[3]*matrix2[0]+
+    matrix1[7]*matrix2[1]+
+    matrix1[11]*matrix2[2]+
+    matrix1[15]*matrix2[3];
+    result[7]=matrix1[3]*matrix2[4]+
+    matrix1[7]*matrix2[5]+
+    matrix1[11]*matrix2[6]+
+    matrix1[15]*matrix2[7];
+    result[11]=matrix1[3]*matrix2[8]+
+    matrix1[7]*matrix2[9]+
+    matrix1[11]*matrix2[10]+
+    matrix1[15]*matrix2[11];
+    result[15]=matrix1[3]*matrix2[12]+
+    matrix1[7]*matrix2[13]+
+    matrix1[11]*matrix2[14]+
+    matrix1[15]*matrix2[15];
+}
+void ViewerGL::_glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector){
+    resultvector[0]=matrix[0]*pvector[0]+matrix[4]*pvector[1]+matrix[8]*pvector[2]+matrix[12]*pvector[3];
+    resultvector[1]=matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
+    resultvector[2]=matrix[2]*pvector[0]+matrix[6]*pvector[1]+matrix[10]*pvector[2]+matrix[14]*pvector[3];
+    resultvector[3]=matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
+}
+int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector){
+    float y = matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
+    float w = matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
+    if(!w) return 0;
+    w = 1.f / w;
+    *yComponent =  y * w;
+    return 1;
+}
+

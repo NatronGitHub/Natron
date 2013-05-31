@@ -88,7 +88,7 @@ float Lut::fromFloatFast(float v) {
 }
 /*Converts a single floating point value from linear to the LUT space by using the lookup tables. */
 float Lut::toFloatFast(float v)  {
-    return (float)to_byte_table[highFloatPart(&v)]/255.f;
+    return (float)to_byte_table[highFloatPart(&v)];
 }
 void Lut::from_byte(float* to, const uchar* from, int W, int delta) {
     for(int i =0 ; i < W ; i+=delta){
@@ -187,7 +187,7 @@ void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta
     if(z == Powiter_Enums::Channel_alpha){
         for(int i = 0 ; i < W ; i+=delta){
             const QRgb c = from[i];
-            to[i] = fromFloatFast(qAlpha(c));
+            to[i] = fromFloatFast((float)qAlpha(c)/255.f);
         }
     }else{
         

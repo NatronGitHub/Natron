@@ -4,12 +4,12 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include "Gui/mainGui.h"
+#include "Gui/texturecache.h"
 #include "Superviser/controler.h"
 #include "Gui/GLViewer.h"
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include <QtWidgets/QtWidgets>
-
 using namespace std;
 
 Gui::Gui(QWidget* parent):QMainWindow(parent)

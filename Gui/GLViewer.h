@@ -50,6 +50,7 @@ class Lut;
 class InfoViewerWidget;
 class Controler;
 class VideoEngine;
+class TextureCache;
 class ViewerGL : public QGLWidget
 {
 	Q_OBJECT
@@ -221,10 +222,12 @@ public:
 	32bit floating points intensities to 8bit using error diffusion
 	algorithm. It also applies the viewer LUT during the filling process.*/
 	void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-		int w,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha);
 	/*idem above but for floating point textures (no dithering applied here)*/
 	void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-		int w,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha);
+    //obsolete
+    void rowToTexture8bit(Powiter_Enums::Channel z,const float* from,U32* to,int w);
 
 	/*handy functions to fill textures*/
 	static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
@@ -308,6 +311,8 @@ public:
 	GLuint getPBOId(int index){return texBuffer[index];}
     
     void setRowSpan(std::pair<int,int> p){_rowSpan = p;}
+    
+    void setTextureCache(TextureCache* cache){ _textureCache = cache;}
 
 	public slots:
 		virtual void updateGL();
@@ -338,7 +343,7 @@ protected :
 private:
 	void initConstructor(); // called in the constructor
 	void initShaderGLSL(); // init shaders
-	int  isExtensionSupported(const char* extension); // check if OpenGL extension is supported
+	int isExtensionSupported(const char* extension); // check if OpenGL extension is supported
 
 
 	void initBlackTex();// init the black texture when viewer is disconnected
@@ -407,6 +412,7 @@ private:
 	bool _makeNewFrame;
 	ViewerCache::FrameID frameInfo;
     
+    TextureCache* _textureCache;
     
 
 };
