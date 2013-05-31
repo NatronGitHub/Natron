@@ -27,6 +27,7 @@
 #include "Gui/timeline.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/GLViewer.h"
+#include "Gui/texturecache.h"
 
 #include "Reader/readerInfo.h"
 
@@ -239,8 +240,9 @@ void VideoEngine::cachedFrameEngine(ViewerCache::FramesIterator frame){
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
     }
-    /*resizing texture if needed*/
-    gl_viewer->initTexturesRgb(w,h);
+    /*resizing texture if needed, the calls must be made in that order*/
+    gl_viewer->initTextureBGRA(w,h,gl_viewer->getDefaultTextureID());
+    gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
     checkGLErrors();
     gl_viewer->drawing(true);
     QCoreApplication::processEvents();
@@ -298,11 +300,6 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     float zoomFactor = gl_viewer->getZoomFactor();
     std::map<int,int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
     
-    int w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
-   // int w = _dispW.w();
-    int h = rows.size();
-    gl_viewer->initTextures(w,h);
-    
     // selecting the right anchor of the row
     int right = 0;
     gl_viewer->dataWindow().right() > _dispW.right() ?
@@ -320,8 +317,17 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     }else{
         gl_viewer->setRowSpan(make_pair(_dispW.y(), _dispW.h()-1));
     }
+    int w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
+    int h = rows.size();
     //starting viewer pre-process : i.e initialize the cached frame
-    gl_viewer->preProcess(filename,followingComputationsNb,w,h);
+    bool isTextureCached = gl_viewer->handleTextureAndViewerCache(filename,followingComputationsNb,w,h);
+    _viewerCache->appendFrame(gl_viewer->getCurrentFrameID());
+
+    /*if a texture was found in cache, notify the viewer and skip immediately to the loop*/
+    if(isTextureCached){
+        engineLoop();
+        return;
+    }
     int counter = 0;
     for(; it!=rows.end() ; it++){
         if(_aborted){
@@ -346,9 +352,14 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
         _sequenceToWork.push_back(row);
         counter++;
     }
-    
-    std::pair<void*,size_t> pbo = gl_viewer->allocatePBO(w, h);
-    _gpuTransferInfo.set(gl_viewer->getFrameData(), pbo.first, pbo.second);
+    size_t dataSize = 0;
+    if(gl_viewer->byteMode() == 1 || !gl_viewer->hasHardware()){
+		dataSize =  w*h*sizeof(U32);
+	}else{
+		dataSize = w*h*sizeof(float)*4;
+	}
+    void* gpuMappedBuffer = gl_viewer->allocateAndMapPBO(dataSize,gl_viewer->getPBOId(0));
+    _gpuTransferInfo.set(gl_viewer->getFrameData(), gpuMappedBuffer, dataSize);
     
     *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,this,_1,output));
     _workerThreadsWatcher->setFuture(*_workerThreadsResults);

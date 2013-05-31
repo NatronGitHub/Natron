@@ -265,6 +265,8 @@ public:
     
     ViewerCache* getDiskCache(){return _viewerCache;}
     
+    U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
+    
 private:
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();

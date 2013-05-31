@@ -99,11 +99,11 @@ void ViewerGL::initConstructor(){
 	shaderLC=NULL;
 	shaderRGB=NULL;
     shaderBlack=NULL;
+    _textureCache = NULL;
     _overlay=true;
     _fullscreen = false;
     _channelsToDraw = Mask_RGBA;
     frameData = NULL;
-    _makeNewFrame = true;
     _colorSpace = Lut::getLut(Lut::VIEWER);
     _colorSpace->validate();
     _mustFreeFrameData = false;
@@ -153,6 +153,9 @@ ViewerGL::~ViewerGL(){
 	glDeleteTextures(1,&texId[0]);
     glDeleteTextures(1,&texBlack[0]);
     glDeleteBuffers(2, &texBuffer[0]);
+    
+    if(_mustFreeFrameData)
+        free(frameData);
     
     delete _readerInfo;
 	delete blankReaderInfo;
@@ -207,11 +210,11 @@ void ViewerGL::paintGL()
         glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
         
         glEnable (GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texId[0]);
+        glBindTexture(GL_TEXTURE_2D, currentTexture);
         
         // debug (so the openGL debugger can make a breakpoint here)
-        GLfloat d;
-        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        //        GLfloat d;
+        //        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
@@ -555,27 +558,26 @@ void ViewerGL::restoreGLState()
 	glPopAttrib();
 }
 
-void ViewerGL::initTextures(int w,int h){
-    
-	makeCurrent();
-    initTexturesRgb(w,h);
+void ViewerGL::initTextures(int w,int h,GLuint texID){
+    initTextureBGRA(w,h,texID);
+    /*Returns immediately if shaders have already been
+     initialized*/
 	initShaderGLSL();
-    
 }
 
 
 
 
-void ViewerGL::initTexturesRgb(int w,int h){
+void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
     
-    if(_textureSize.first==w && _textureSize.second==h) return;
+    if(_textureSize.first==w && _textureSize.second==h && texID==currentTexture) return;
     
     _textureSize = make_pair(w, h);
     
 	makeCurrent();
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, texId[0]);
+    glBindTexture (GL_TEXTURE_2D, texID);
     
     // if the texture is zoomed, do not produce antialiasing so the user can
     // zoom to the pixel
@@ -617,8 +619,6 @@ void ViewerGL::initBlackTex(){
     ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
     int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.zoomFactor);
     int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.zoomFactor);
-    //int w = displayWindow().w();
-    //int h = displayWindow().h();
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -743,66 +743,67 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-void ViewerGL::preProcess(std::string filename,int nbFrameHint,int w,int h){
-    // init mmaped file
-    if(_makeNewFrame){
-        int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        if(_mustFreeFrameData){
-            free(frameData);
-            _mustFreeFrameData = false;
-        }
-        
-        QPoint top = mousePosFromOpenGL(0, displayWindow().h()-1);
-        QPoint btm = mousePosFromOpenGL(0, displayWindow().y());
-        if(top.y() >= height() || btm.y() < 0){
-            size_t dataSize = 0;
-            _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
-            frameData = (char*)malloc(dataSize);
-            _mustFreeFrameData = true;
+bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h){
+    int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
+    if(_mustFreeFrameData){
+        free(frameData);
+        _mustFreeFrameData = false;
+    }
+    
+    QPoint top = mousePosFromOpenGL(0, displayWindow().h()-1);
+    QPoint btm = mousePosFromOpenGL(0, displayWindow().y());
+    if(top.y() >= height() || btm.y() < 0){
+        TextureCache::TextureKey key(exposure,_lut,_zoomCtx.zoomFactor,
+                                     w,h,_byteMode,filename,
+                                     vengine->getCurrentTreeVersion(),
+                                     _rowSpan.first,_rowSpan.second);
+        TextureCache::TextureIterator found = _textureCache->isCached(key);
+        U32 ret = 0;
+        if(found != _textureCache->end()){
+            cout <<"cached texture!!" << endl;
+            setCurrentTexture((GLuint)found->second);
+            /*flaging that it will not be needed to copy data from the current PBO
+             to the texture as it already contains the results.*/
+            _noDataTransfer = true;
+            return true;
         }else{
-            pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount == 1 ? 0 : _readerInfo->currentFrame(),
-                                                                      filename,
-                                                                      w, h,
-                                                                      nbFrameHint);
-            frameData = p.first;
-            frameInfo = p.second;
-            _makeNewFrame = false;
+            ret = _textureCache->append(key);
         }
-        
-        
-        
+        size_t dataSize = 0;
+        _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+        frameData = (char*)malloc(dataSize);
+        _mustFreeFrameData = true;
+        initTextures(w,h,(GLuint)ret);
+        setCurrentTexture((GLuint)ret);
+        return false;
+    }else{
+        // init mmaped file
+        pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount == 1 ? 0 : _readerInfo->currentFrame(),
+                                                                  filename,
+                                                                  w, h,
+                                                                  nbFrameHint);
+        frameData = p.first;
+        frameInfo = p.second;
+        initTextures(w,h,texId[0]);
+        setCurrentTexture(texId[0]);
+        return false;
     }
 }
 
-std::pair<void*,size_t> ViewerGL::allocatePBO(int w,int h){
-    //makeCurrent();
-    size_t dataSize = 0;
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
-    checkGLErrors();
-    
-	if(_byteMode == 1 || !_hasHW){
-		dataSize =  w*h*sizeof(U32);
-		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB,dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-	}else{
-		dataSize = w*h*sizeof(float)*4;
-		glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-	}
-    checkGLErrors();
-	void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    if(!_makeNewFrame){
-        vengine->_viewerCache->appendFrame(frameInfo);
-        _makeNewFrame = true;
-    }
-    return make_pair(gpuBuffer,dataSize);
-    
+void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
+	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
+	return glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 }
 
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
 void ViewerGL::copyPBOtoTexture(int w,int h){
+    if(_noDataTransfer) return;
+    
     glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texId[0]);
+    glBindTexture(GL_TEXTURE_2D, currentTexture);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     if(_byteMode==1 || !_hasHW){
         glTexSubImage2D (GL_TEXTURE_2D,
@@ -1035,7 +1036,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             g_ = error_g >> 8;
             b_ = error_b >> 8;
             output[i] = toBGRA(r_,g_,b_,a_);
-
+            
         }
         _usingColorSpace = false;
     }

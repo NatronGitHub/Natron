@@ -48,7 +48,7 @@ protected:
     
 private:
 
-  
+    TextureCache* _textureCache;
     Controler* crossPlatform; // Pointer to the controler
     
     

@@ -50,16 +50,18 @@ public:
     /*Returns true if the texture represented by the key is present in the cache.*/
     TextureCache::TextureIterator isCached(TextureCache::TextureKey &key);
     
+    TextureCache::TextureIterator end(){return _cache.end();}
+    
     /*Frees approximatively 10% of the texture cache*/
     void makeFreeSpace();
     
     /*Inserts a new texture,represented by key in the cache. This function must be called
      only if  isCached(...) returned false with this key*/
-    void append(TextureCache::TextureKey key);
+    U32 append(TextureCache::TextureKey key);
     
 private:
-    /*Initialize an openGL texture and returns the texture ID*/
-    U32 initializeTexture(TextureCache::TextureKey& key);
+    /*Initialize an OpenGL texture and returns the texture ID*/
+    U32 initializeTexture();
     
     
     std::vector< std::pair<TextureKey,U32> > _cache; // key, texture Id

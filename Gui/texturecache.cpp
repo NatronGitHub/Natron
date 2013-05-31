@@ -89,7 +89,7 @@ void TextureCache::makeFreeSpace(){
 
 /*Inserts a new texture,represented by key in the cache. This function must be called
  only if  isCached(...) returned false with this key*/
-void TextureCache::append(TextureCache::TextureKey key){
+U32 TextureCache::append(TextureCache::TextureKey key){
     size_t dataSize = 0;
     if(key._byteMode == 1.f){
         dataSize = key._w * key._h * sizeof(U32);
@@ -99,45 +99,15 @@ void TextureCache::append(TextureCache::TextureKey key){
     if(_size + dataSize > _maxSizeAllowed){
         makeFreeSpace();
     }
-    U32 texID = initializeTexture(key);
+    _size+=dataSize;
+    U32 texID = initializeTexture();
     _cache.push_back(make_pair(key,texID));
+    return texID;
 }
 
 
-U32 initializeTexture(TextureCache::TextureKey& key){
+U32 TextureCache::initializeTexture(){
     GLuint texID;
-    glEnable(GL_TEXTURE_2D);
     glGenTextures(1, &texID);
-    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture (GL_TEXTURE_2D, texID);
-    if(key._zoomFactor >= 0.5){
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }else{
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    if(key._byteMode==1){
-        glTexImage2D (GL_TEXTURE_2D,
-                      0,			// level
-                      GL_RGBA8, //internalFormat
-                      key._w, key._h,
-                      0,			// border
-                      GL_BGRA,		// format
-                      GL_UNSIGNED_INT_8_8_8_8_REV,	// type
-                      0);			// pixels
-    }else{
-        glTexImage2D (GL_TEXTURE_2D,
-                      0,			// level
-                      GL_RGBA32F_ARB, //internalFormat
-                      key._w, key._h,
-                      0,			// border
-                      GL_RGBA,		// format
-                      GL_FLOAT,	// type
-                      0);			// pixels
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
     return (U32)texID;
 }

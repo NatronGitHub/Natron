@@ -153,9 +153,9 @@ public:
 
 	/*function initialising display textures (and glsl shader the first time)
 	according to the current level of zooom*/
-	void initTextures(int w,int h);
+	void initTextures(int w,int h,GLuint texID);
 	/*init the RGB texture*/
-	void initTexturesRgb(int w,int h);
+	void initTextureBGRA(int w,int h,GLuint texID);
 	/*width and height of the display texture*/
 	std::pair<int,int> textureSize(){return _textureSize;}
 
@@ -289,11 +289,18 @@ public:
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
 	* That's where the viewer cached frame is initialised.
+    * if a texture residing in the texture cache already holds the results.
+    * The caller should then abort any computation and set for current texture the one returned.
+    * otherwise returns false.
 	*/
-	void preProcess(std::string filename,int nbFrameHint,int w,int h);
+	bool handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
-	std::pair<void*,size_t> allocatePBO(int w,int h);
+    
+    /*Allocate the pbo represented by the pboID with dataSize bytes.
+     This function returns a pointer to
+     the mapping created between the GPU and the RAM*/
+	void* allocateAndMapPBO(size_t dataSize,GLuint pboID);
 
 	/*Fill the mapped PBO represented by dst with byteCount of src*/
 	void fillPBO(const char* src,void* dst,size_t byteCount);
@@ -313,6 +320,18 @@ public:
     void setRowSpan(std::pair<int,int> p){_rowSpan = p;}
     
     void setTextureCache(TextureCache* cache){ _textureCache = cache;}
+    
+    TextureCache* getTextureCache(){return _textureCache;}
+    
+    void setCurrentTexture(GLuint texture){currentTexture = texture;}
+    
+    GLuint getDefaultTextureID(){return texId[0];}
+    
+    float byteMode(){return _byteMode;}
+    
+    bool hasHardware(){return _hasHW;}
+    
+    ViewerCache::FrameID getCurrentFrameID(){return frameInfo;}
 
 	public slots:
 		virtual void updateGL();
@@ -352,10 +371,11 @@ private:
 
 	TextRenderer _textRenderer;
 
-	GLuint texBuffer[2];
-	GLuint texId[1];
+	GLuint texBuffer[2]; // PBO's used to upload textures
+	GLuint texId[1]; // < the texture used for rendering when the texture does not come from cache
+    GLuint currentTexture; // the texture used for rendering, might come from the cache,otherwise it is texId[0]
 	//  void* _renderingBuffer; // the frame currently computed (mapped PBO handle)
-	std::pair<int,int> _textureSize;
+	std::pair<int,int> _textureSize; // size of texId[0]
 	GLuint texBlack[1];
 	QGLShaderProgram* shaderRGB;
 	QGLShaderProgram* shaderLC;
@@ -408,8 +428,11 @@ private:
 	bool _fullscreen;
 
 	char* frameData; // last frame computed data , either U32* or float* depending on _byteMode
-    bool _mustFreeFrameData;
-	bool _makeNewFrame;
+    bool _mustFreeFrameData; // true whenever the texture displayed is just a portion of the full image
+    bool _noDataTransfer; // true whenever the current texture already holds data and doesn't need
+    //a copy from a pbo
+    
+    
 	ViewerCache::FrameID frameInfo;
     
     TextureCache* _textureCache;

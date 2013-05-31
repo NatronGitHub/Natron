@@ -17,6 +17,7 @@ public:
         maxCacheMemoryPercent=0.5;
         maxPlayBackMemoryPercent = 0.14;
         maxDiskCache = 9000000000;
+        maxTextureCache = 256000000;
         byte_mode=1;
         stereo_mode=false;
     }
@@ -24,6 +25,7 @@ public:
     double maxCacheMemoryPercent ; // percentage of the total  RAM
     double maxPlayBackMemoryPercent; //percentage of maxCacheMemoryPercent
     qint64 maxDiskCache ; // 9GB for now
+    U64 maxTextureCache;
     // viewer related
     float byte_mode;
     bool stereo_mode;
