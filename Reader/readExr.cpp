@@ -14,6 +14,7 @@
 #include "Gui/node_ui.h"
 #include "Gui/GLViewer.h"
 #include "Core/lookUpTables.h"
+#include "Core/lutclasses.h"
 using namespace std;
 
 void ReadExr::lookupChannels(std::set<Channel>& channel, const char* name)
@@ -377,11 +378,7 @@ void ReadExr::readHeader(const QString filename,bool openBothViews){
         //iop->error(exc.what());
         cout << "OpenExr error: " << exc.what() << endl;
         delete inputfile;
-        return ;
     }
-    
-    
-    
 }
 
 void ReadExr::readScanLine(int y){
@@ -433,19 +430,18 @@ void ReadExr::readScanLine(int y){
 	
 }
 
-ReadExr::ReadExr(Reader* op,ViewerGL* ui_context):Read(op,ui_context),
-inputfile(0),dataOffset(0){
-    
-    _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
-    _lut->validate();
-    
+ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
 #ifdef __POWITER_WIN32__
     inputStr = NULL;
     inputStdStream = NULL;
 #endif
-    
-    
 }
+
+void ReadExr::initializeColorSpace(){
+    _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
+    _lut->validate();
+}
+
 ReadExr::~ReadExr(){
 #ifdef __POWITER_WIN32__
     delete inputStr ;
@@ -485,64 +481,42 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 }
 
 
-void ReadExr::make_preview(const char* filename){
-    
-    Imf::RgbaInputFile in (filename);
-    Imf::Header header =in.header();
+void ReadExr::make_preview(){
+    Imf::Header header = inputfile->header();
     Imath::Box2i &dataWindow = header.dataWindow();
-    Imf::Array<Imf::Rgba> pixels;
+    Imath::Box2i &dispWindow = header.displayWindow();
     int dw = dataWindow.max.x - dataWindow.min.x + 1;
     int dh = dataWindow.max.y - dataWindow.min.y + 1;
-    int dx = dataWindow.min.x;
-    int dy = dataWindow.min.y;
-    pixels.resizeErase (dw * dh);
-    in.setFrameBuffer (pixels - dx - dy * dw, 1, dw);
-    try
-    {
-        in.readPixels (dataWindow.min.y, dataWindow.max.y);
+    int w = floor((float)dw*0.1);
+    int h = floor((float)dh*0.1);
+    
+    for(int i =0 ; i < h ; i++){
+        float y = (float)i*1.f/0.1;
+        int nearest;
+        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
+        readScanLine(nearest);
     }
-    catch (const exception &e)
-    {
-        
-        cerr << e.what() << endl;
-    }
-    QImage* img=new QImage(dw,dh,QImage::Format_ARGB32);
-    for(U32 i=0;i< dh;i++){
-        for(U32 j=0;j<dw;j++){
-            Imf::Rgba rgba= pixels[i*dw+j];
-            float r=Lut::clamp(rgba.r);
-            float g=Lut::clamp(rgba.g);
-            float b=Lut::clamp(rgba.b);
-            // sRGB conversion so the preview looks nice
-            if(r<=0.0031308){
-                r = 12.92*r*255.f;
-            }else{
-                r= (((1.f+0.055)*powf(r,1.f/2.4))-0.055)*255.f;
-            }
-            if(g<=0.0031308){
-                g = 12.92*g*255.f;
-            }else{
-                g= (((1.f+0.055)*powf(g,1.f/2.4))-0.055)*255.f;
-            }
-            if(b<=0.0031308){
-                b = 12.92*b*255.f;
-            }else{
-                b= (((1.f+0.055)*powf(b,1.f/2.4))-0.055)*255.f;
-            }
-            if(r>255.f)
-                r = 255.f;
-            if(r<0.0)
-                r = 0.0;
-            if(g>255.0)
-                g = 255.0;
-            if(g<0.0)
-                g = 0.0;
-            if(b>255.0)
-                b = 255.0;
-            if(b<0.0)
-                b = 0.0;
-            QColor c(r,g,b);
-            img->setPixel(j, i,c.rgb());
+    QImage* img=new QImage(w,h,QImage::Format_ARGB32);
+    for(int i=0;i< h;i++){
+        float y = (float)i*1.f/0.1;
+        int nearest;
+        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
+        int exrY = dispWindow.max.y - nearest;
+        Row* from = _img[exrY];
+        const float* red = (*from)[Channel_red] ;
+        const float* green = (*from)[Channel_green] ;
+        const float* blue = (*from)[Channel_blue];
+        const float* alpha = (*from)[Channel_alpha] ;
+        for(int j=0;j<w;j++){
+            float x = (float)j*1.f/0.1;
+            int nearestX;
+            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            float r = red ? Lut::clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
+            float g = green ? Lut::clamp(sRGB::toSRGB(green[nearestX])) : 0.f;
+            float b = blue ? Lut::clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
+            float a = alpha ? alpha[nearestX] : 1.f;
+            QColor c(r*255,g*255,b*255,a*255);
+            img->setPixel(j, h-1-i,c.rgba());
         }
     }
     op->setPreview(img);

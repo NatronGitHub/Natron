@@ -64,6 +64,10 @@ class ViewerGL : public QGLWidget
 
 	/*basic state switching for mouse events*/
 	enum MOUSE_STATE{DRAGGING,UNDEFINED};
+    
+    /*enum used by the handleTextureAndViewerCache function to determine the behaviour
+     to have depending on the caching mode*/
+    enum CACHING_MODE{TEXTURE_CACHE,VIEWER_CACHE};
 
 	class ZoomContext{
 	public:
@@ -293,7 +297,7 @@ public:
     * The caller should then abort any computation and set for current texture the one returned.
     * otherwise returns false.
 	*/
-	bool handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h);
+	bool handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
     
@@ -325,13 +329,15 @@ public:
     
     void setCurrentTexture(GLuint texture){currentTexture = texture;}
     
+    U32 getCurrentTexture(){return currentTexture;}
+    
     GLuint getDefaultTextureID(){return texId[0];}
     
     float byteMode(){return _byteMode;}
     
     bool hasHardware(){return _hasHW;}
     
-    ViewerCache::FrameID getCurrentFrameID(){return frameInfo;}
+    ViewerCache::FrameID& getCurrentFrameID(){return frameInfo;}
 
 	public slots:
 		virtual void updateGL();
@@ -363,8 +369,7 @@ private:
 	void initConstructor(); // called in the constructor
 	void initShaderGLSL(); // init shaders
 	int isExtensionSupported(const char* extension); // check if OpenGL extension is supported
-
-
+    
 	void initBlackTex();// init the black texture when viewer is disconnected
 	void drawBlackTex(); // draw the black texture
 

@@ -49,7 +49,6 @@ void Gui::createGui(){
     
     QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
     nodeGraphArea->setControler(crossPlatform);
-    
     nodeGraphArea->installEventFilter(this);
     viewer_tab->installEventFilter(this);
     rightDock->installEventFilter(this);
@@ -97,6 +96,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
 	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
 	actionClearBufferCache ->setText(QApplication::translate("Powiter","Clear buffer cache"));
+    actionClearTextureCache ->setText(QApplication::translate("Powiter","Clear texture cache"));
 
 #ifdef __POWITER_WIN32__
 	viewersTabContainer->setTabText(viewersTabContainer->indexOf(viewer_tab), QApplication::translate("Powiter", "Viewer 1"));
@@ -161,15 +161,20 @@ void Gui::setupUi(Controler* ctrl)
 	actionClearDiskCache = new QAction(this);
 	actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
 	actionClearDiskCache->setCheckable(false);
-	actionClearDiskCache->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_K));
+	actionClearDiskCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_K));
 	actionClearPlayBackCache = new QAction(this);
 	actionClearPlayBackCache->setObjectName(QString::fromUtf8("actionClearPlayBackCache"));
 	actionClearPlayBackCache->setCheckable(false);
-	actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_P));
+	actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_P));
 	actionClearBufferCache = new QAction(this);
 	actionClearBufferCache->setObjectName(QString::fromUtf8("actionClearBufferCache"));
 	actionClearBufferCache->setCheckable(false);
-	actionClearBufferCache->setShortcut(QKeySequence(Qt::CTRL+Qt::ALT+Qt::Key_B));
+	actionClearBufferCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
+    actionClearTextureCache = new QAction(this);
+	actionClearTextureCache->setObjectName(QString::fromUtf8("actionClearTextureCache"));
+	actionClearTextureCache->setCheckable(false);
+	actionClearTextureCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_T));
+    
 
 	/*CENTRAL AREA*/
 	//======================
@@ -342,6 +347,7 @@ void Gui::setupUi(Controler* ctrl)
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearBufferCache);
+    cacheMenu->addAction(actionClearTextureCache);
 	retranslateUi(this);
 
 	WorkShop->setCurrentIndex(0);
@@ -377,5 +383,13 @@ void Gui::setupUi(Controler* ctrl)
 	rightDock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, rightDock);
 	rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
+    QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
+
 	QMetaObject::connectSlotsByName(this);
+    
 } // setupUi
+
+void Gui::clearTextureCache(){
+    U32 currentTexture = viewer_tab->viewer->getCurrentTexture();
+    _textureCache->clearCache(currentTexture);
+}

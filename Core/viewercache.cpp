@@ -311,13 +311,14 @@ void ViewerCache::restoreCache(){
 
 /*checks whether the frame is present or not*/
 std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string filename,
-                                                                  U32 treeVersion,
+                                                                  U64 treeVersion,
                                                                   float zoomFactor,
                                                                   float exposure,
                                                                   float lut,
                                                                   bool byteMode,
                                                                   Format format,
                                                                   Box2D bbox){
+
     pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
     for(ViewerCache::FramesIterator it=range.first;it!=range.second;++it){
         if((it->second._zoom == zoomFactor) &&
@@ -338,7 +339,6 @@ std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string fi
  It appends the frame with rank 0 (remove last) and increments all the other frame present in cache
  */
 void ViewerCache::appendFrame(ViewerCache::FrameID _info){
-    
     // cycle through all the cache to increment the rank of every frame by 1 since we insert a new one
     if(_frames.begin() != _frames.end()){
         ViewerCache::ReverseFramesIterator ritFrames = _frames.rbegin();
@@ -455,7 +455,7 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
                                                                int width,
                                                                int height,
                                                                int nbFrameHint,
-                                                               U32 treeVers){
+                                                               U64 treeVers){
     string name("frag_");
     char tmp[64];
     sprintf(tmp,"%llu",newCacheBlockIndex);
@@ -515,10 +515,18 @@ void ViewerCache::clearPlayBackCache(){
 }
 
 
-void ViewerCache::debugCache(){
+void ViewerCache::debugCache(bool verbose){
     cout << "=========CACHE DUMP===========" << endl;
     for(ViewerCache::FramesIterator it = _frames.begin();it!=_frames.end();it++){
-        cout << it->first << endl;
+        if(!verbose){
+            cout << it->first << endl;
+        }else{
+            ViewerCache::FrameID id = it->second;
+            cout << it->first << " :" << "treeVersion: "<< id._treeVers <<
+            " zoomFactor: " << id._zoom << " exposure: " << id._exposure <<
+            " lut :" << id._lut << " w: " << id._actualW << " h: " << id._actualH <<
+            " bytemode: " << id._byteMode << endl;
+        }
     }
     cout <<"===============================" << endl;
 }

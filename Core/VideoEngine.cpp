@@ -260,17 +260,17 @@ void VideoEngine::engineLoop(){
     
     std::pair<int,int> texSize = gl_viewer->getTextureSize();
     gl_viewer->copyPBOtoTexture(texSize.first, texSize.second); // fill texture, returns instantly
-    std::vector<Reader*> readers;
-    std::vector<InputNode*>& inputs = _dag.getInputs();
-    for(int j=0;j<inputs.size();j++){
-        InputNode* currentInput=inputs[j];
-        if(strcmp(currentInput->className(),"Reader")==0){
-            Reader* inp =static_cast<Reader*>(currentInput);
-            inp->fitFrameToViewer(false);
-            readers.push_back(inp);
-        }
-    }
     if(_frameRequestsCount!=0 && !_paused){
+        std::vector<Reader*> readers;
+        std::vector<InputNode*>& inputs = _dag.getInputs();
+        for(int j=0;j<inputs.size();j++){
+            InputNode* currentInput=inputs[j];
+            if(strcmp(currentInput->className(),"Reader")==0){
+                Reader* inp =static_cast<Reader*>(currentInput);
+                inp->fitFrameToViewer(false);
+                readers.push_back(inp);
+            }
+        }
         startReading(readers , false , true);
     }
     
@@ -311,18 +311,28 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     offset = gl_viewer->dataWindow().x() : offset = _dispW.x();
     map<int,int>::iterator it = rows.begin();
     map<int,int>::iterator last = rows.end();
+    ViewerGL::CACHING_MODE mode = ViewerGL::TEXTURE_CACHE;
     if(rows.size() > 0){
         last--;
-        gl_viewer->setRowSpan(make_pair(it->first, last->first));
+        int firstRow = it->first;
+        int lastRow = last->first;
+        gl_viewer->setRowSpan(make_pair(firstRow, lastRow));
+        if(rows.size() >= 2){
+            it++;
+            int gap = it->first - firstRow; // gap between first and second rows
+            if (firstRow <= _dispW.y()+gap && lastRow >= _dispW.h()-1-gap) {
+                mode = ViewerGL::VIEWER_CACHE;
+            }
+            it--; // setting back the iterator to begin
+            
+        }
     }else{
         gl_viewer->setRowSpan(make_pair(_dispW.y(), _dispW.h()-1));
     }
     int w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
     int h = rows.size();
     //starting viewer pre-process : i.e initialize the cached frame
-    bool isTextureCached = gl_viewer->handleTextureAndViewerCache(filename,followingComputationsNb,w,h);
-    _viewerCache->appendFrame(gl_viewer->getCurrentFrameID());
-
+    bool isTextureCached = gl_viewer->handleTextureAndViewerCache(filename,followingComputationsNb,w,h,mode);
     /*if a texture was found in cache, notify the viewer and skip immediately to the loop*/
     if(isTextureCached){
         engineLoop();

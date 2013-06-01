@@ -50,7 +50,7 @@ class ReadExr : public Read{
 public:
 	
 
-	ReadExr(Reader* op,ViewerGL* ui_context);
+	ReadExr(Reader* op);
 	virtual ~ReadExr();
     
 	void lookupChannels(std::set<Channel>& channel, const char* name);
@@ -63,7 +63,8 @@ public:
     virtual void readHeader(const QString filename,bool openBothViews);
     virtual void readScanLine(int y);
     virtual bool supports_stereo(){return true;}
-    virtual void make_preview(const char* filename);
+    virtual void make_preview();
+    virtual void initializeColorSpace();
     void debug();
 
 private:

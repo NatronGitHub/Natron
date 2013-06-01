@@ -15,14 +15,19 @@
 #include "Core/displayFormat.h"
 #include <QtGui/QRgb>
 #include "Superviser/PwStrings.h"
+#include "Reader/Reader.h"
 class ViewerGL;
-class Reader;
 class Lut;
 class ReaderInfo;
 class Read{
     
 public:
-	Read(Reader* op,ViewerGL* ui_context);
+    /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
+     are oftenly re-created. To initialize the input color-space , you can do so by overloading
+     initializeColorSpace. This function is called after the constructor and before any
+     reading occurs.*/
+	Read(Reader* op);
+    
 	virtual ~Read();
     
     /*This must be implemented to do the to linear colorspace conversion*/
@@ -40,9 +45,16 @@ public:
 //     More precise documentation coming soon.*/
 //    virtual void open(const QString filename,bool openBothViews = false)=0;
     
-    /*This function open calls readHeader and depending whether the Read*
-     supports scan line reading, it calls either readAllData or just readScanLine*/
-    void open(const QString filename,bool fitFrameToviewer,bool openBothViews = false);
+    /*This function  calls readHeader and readAllData*/
+    void readData(const QString filename,bool openBothViews = false);
+    
+    /*This function calls readScanLine for the requested scanLines. It does not call readHeader.
+     If onlyExtaRows is true, this function reads only the content of the _rowsToCompute member
+     of slContext. Otherwise, it will compute the rows contained in the _rows of slContext.*/
+    void readScanLineData(const QString filename,
+                          Reader::Buffer::ScanLineContext* slContext,
+                          bool onlyExtraRows,
+                          bool openBothViews = false);
     
     /*Should open the file and call setReaderInfo with the infos from the file.*/
     virtual void readHeader(const QString filename,bool openBothViews)=0;
@@ -67,10 +79,15 @@ public:
     
     /*Must be overloaded: this function is used to create a little preview that
      can be seen on the GUI node*/
-    virtual void make_preview(const char* filename)=0;
+    virtual void make_preview()=0;
     
     /*Returns true if the file is stereo*/
     bool fileStereo(){return is_stereo;};
+    
+    /*Must implement it to initialize the appropriate colorspace  for
+     the file type. You can initialize the _lut member by calling the
+     function Lut::getLut(datatype) and then calling _lut->validate()*/
+    virtual void initializeColorSpace()=0;
     
     /*Returns true if the file has alpha premultiplied data*/
     bool premultiplied(){return _premult;}
@@ -112,7 +129,6 @@ protected:
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;
 	Reader* op;
-    ViewerGL* ui_context;
     Lut* _lut;
 	ReaderInfo* _readInfo;
     

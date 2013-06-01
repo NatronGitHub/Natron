@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <QtGui/qrgb.h>
 #include "Reader/Read.h"
-#include "Reader/Reader.h"
 #include "Reader/readExr.h"
 #include "Gui/GLViewer.h"
 #include "Core/lookUpTables.h"
@@ -14,10 +13,9 @@
 #include "Superviser/controler.h"
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
-Read::Read(Reader* op,ViewerGL* ui_context):is_stereo(false), _autoCreateAlpha(false),_premult(false)
+Read::Read(Reader* op):is_stereo(false), _autoCreateAlpha(false),_premult(false)
 {
 	_lut=NULL;
-	this->ui_context = ui_context;
 	this->op=op;
 	_readInfo = new ReaderInfo;
 
@@ -84,41 +82,37 @@ void Read::setReaderInfo(Format dispW,
 		_readInfo->setDisplayWindowName(dispW.name());
 		_readInfo->pixelAspect(dispW.pixel_aspect());
 		_readInfo->dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top());
-		_readInfo->channels(channels);
-		_readInfo->Ydirection(Ydirection);
-		_readInfo->rgbMode(rgb);
+    _readInfo->channels(channels);
+    _readInfo->Ydirection(Ydirection);
+    _readInfo->rgbMode(rgb);
 }
 
-
-void Read::open(const QString filename,bool fitFrameToviewer,bool openBothViews){
-	readHeader(filename,openBothViews);
-	if(supportsScanLine()){        
-
-		float zoomFactor;
-		if(fitFrameToviewer){
-			float h = (float)(_readInfo->displayWindow().h());
-			zoomFactor = (float)ui_context->height()/h -0.05;
-			ui_context->fitToFormat(_readInfo->displayWindow());
-		}else{
-			zoomFactor = ui_context->getZoomFactor();
-		}
-		std::map<int,int> rows = ui_context->computeRowSpan(_readInfo->displayWindow(), zoomFactor);
-		if(_readInfo->Ydirection() < 0){
-			//top to bottom
+void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext,
+                            bool onlyExtraRows,bool openBothViews){
+    if(!onlyExtraRows){
+        std::map<int,int>& rows = slContext->getRows();
+        if(_readInfo->Ydirection() < 0){
+            //top to bottom
             map<int,int>::reverse_iterator it  = rows.rbegin();
-			for(; it!=rows.rend() ; it++){
-				readScanLine(it->first);
-			}
-		}else{
-			//bottom to top
+            for(; it!=rows.rend() ; it++){
+                readScanLine(it->first);
+            }
+        }else{
+            //bottom to top
             map<int,int>::iterator it = rows.begin();
-			for(; it!=rows.end() ; it++){
-				readScanLine(it->first);
-			}
-		}
-
-	}else{
-		readAllData(openBothViews);
-		_readInfo->setZoomFactor(ui_context->getZoomFactor());
-	}
+            for(; it!=rows.end() ; it++){
+                readScanLine(it->first);
+            }
+        }
+    }else{
+        std::vector<int>& rows = slContext->getRowsToRead();
+        for(U32 i = 0; i <rows.size();i++){
+            readScanLine(rows[i]);
+        }
+    }
+}
+void Read::readData(const QString filename,bool openBothViews){
+    readHeader(filename,openBothViews);
+    readAllData(openBothViews);
+   // _readInfo->setZoomFactor(ui_context->getZoomFactor());
 }

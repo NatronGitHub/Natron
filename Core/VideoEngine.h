@@ -263,7 +263,7 @@ public:
     
     void resetReadingBuffers();
     
-    ViewerCache* getDiskCache(){return _viewerCache;}
+    ViewerCache* getViewerCache(){return _viewerCache;}
     
     U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
     

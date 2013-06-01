@@ -251,7 +251,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node,ctrl->getGui()->viewer_tab->viewer,vengine->getDiskCache());
+		node=new Reader(node,ctrl->getGui()->viewer_tab->viewer,vengine->getViewerCache());
         node->setMutex(m);
         node->_inputs();
 		type=initCounterAndGetDescription(node);

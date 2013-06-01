@@ -35,10 +35,6 @@ using namespace Imf;
 using namespace Imath;
 using namespace std;
 
-
-
-
-
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if( error == GL_FRAMEBUFFER_UNDEFINED)
@@ -537,9 +533,6 @@ void ViewerGL::initShaderGLSL(){
     
 }
 
-
-
-
 void ViewerGL::saveGLState()
 {
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -564,9 +557,6 @@ void ViewerGL::initTextures(int w,int h,GLuint texID){
      initialized*/
 	initShaderGLSL();
 }
-
-
-
 
 void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
     
@@ -743,16 +733,13 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h){
-    int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
+bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode){
     if(_mustFreeFrameData){
         free(frameData);
         _mustFreeFrameData = false;
     }
     
-    QPoint top = mousePosFromOpenGL(0, displayWindow().h()-1);
-    QPoint btm = mousePosFromOpenGL(0, displayWindow().y());
-    if(top.y() >= height() || btm.y() < 0){
+    if(mode == TEXTURE_CACHE){ // texture caching
         TextureCache::TextureKey key(exposure,_lut,_zoomCtx.zoomFactor,
                                      w,h,_byteMode,filename,
                                      vengine->getCurrentTreeVersion(),
@@ -760,7 +747,6 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
         TextureCache::TextureIterator found = _textureCache->isCached(key);
         U32 ret = 0;
         if(found != _textureCache->end()){
-            cout <<"cached texture!!" << endl;
             setCurrentTexture((GLuint)found->second);
             /*flaging that it will not be needed to copy data from the current PBO
              to the texture as it already contains the results.*/
@@ -768,22 +754,24 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
             return true;
         }else{
             ret = _textureCache->append(key);
+            size_t dataSize = 0;
+            _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+            frameData = (char*)malloc(dataSize);
+            _mustFreeFrameData = true;
+            initTextures(w,h,(GLuint)ret);
+            setCurrentTexture((GLuint)ret);
+            return false;
         }
-        size_t dataSize = 0;
-        _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
-        frameData = (char*)malloc(dataSize);
-        _mustFreeFrameData = true;
-        initTextures(w,h,(GLuint)ret);
-        setCurrentTexture((GLuint)ret);
-        return false;
-    }else{
+    }else{ // viewer caching
         // init mmaped file
+        int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
         pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount == 1 ? 0 : _readerInfo->currentFrame(),
                                                                   filename,
                                                                   w, h,
                                                                   nbFrameHint);
         frameData = p.first;
         frameInfo = p.second;
+        vengine->getViewerCache()->appendFrame(frameInfo);
         initTextures(w,h,texId[0]);
         setCurrentTexture(texId[0]);
         return false;
@@ -800,7 +788,10 @@ void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
 void ViewerGL::copyPBOtoTexture(int w,int h){
-    if(_noDataTransfer) return;
+    if(_noDataTransfer){
+        _noDataTransfer = false; // reinitialize the flag
+        return;
+    }
     
     glEnable (GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, currentTexture);
@@ -1218,10 +1209,6 @@ QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
     glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
     glGetDoublev( GL_PROJECTION_MATRIX, projection );
     glGetIntegerv( GL_VIEWPORT, viewport );
-    double ap = _readerInfo->displayWindow().pixel_aspect();
-    if(ap < 1){
-        viewport[0]=0;viewport[1]=0;viewport[2]=width();viewport[3]=height()*ap;
-    }
     gluProject(x,y , 0.5, modelview, projection, viewport, &winX, &winY, &winZ);
     return QPoint(winX,winY);
 }
@@ -1262,15 +1249,14 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
-    GLfloat winX=0, winY=0, winZ=0;
+    GLfloat winX=0, winY=0;
     GLdouble posX=0, posY=0, posZ=0;
     glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
     glGetDoublev( GL_PROJECTION_MATRIX, projection );
     glGetIntegerv( GL_VIEWPORT, viewport );
     winX = (float)x;
     winY =viewport[3]- y;
-    glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
-    gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+    gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
     if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
         return QVector4D(0,0,0,0);
     if(_byteMode==1 || !_hasHW){
@@ -1323,7 +1309,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
 void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
     _infoViewer = i;
-    QObject::connect(this, SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
+    QObject::connect(this,SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
     QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_infoViewer,SLOT(updateColor()));
     QObject::connect(this,SIGNAL(infoResolutionChanged()),_infoViewer,SLOT(changeResolution()));
     QObject::connect(this,SIGNAL(infoDisplayWindowChanged()),_infoViewer,SLOT(changeDisplayWindow()));
@@ -1400,7 +1386,8 @@ void ViewerGL::updateColorSpace(QString str){
     }
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
-    updateGL();
+    else
+        updateGL();
     
 }
 void ViewerGL::updateExposure(double d){
@@ -1408,7 +1395,8 @@ void ViewerGL::updateExposure(double d){
     ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
-    updateGL();
+    else
+        updateGL();
     
 }
 
@@ -1645,4 +1633,5 @@ int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent, const float *ma
     *yComponent =  y * w;
     return 1;
 }
+
 

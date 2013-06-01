@@ -12,11 +12,12 @@
 #include "Gui/node_ui.h"
 #include "Core/lutclasses.h"
 using namespace std;
-ReadQt::ReadQt(Reader* op,ViewerGL* ui_context) : Read(op,ui_context){
+ReadQt::ReadQt(Reader* op) : Read(op){}
+
+void ReadQt::initializeColorSpace(){
     _lut=Lut::getLut(Lut::VIEWER);
     _lut->validate();
 }
-
 ReadQt::~ReadQt(){
     delete _img;
 }
@@ -94,7 +95,12 @@ void ReadQt::readAllData(bool openBothViews){
 
 
 
-void ReadQt::make_preview(const char* filename){
-    QImage* img = new QImage(filename);
+void ReadQt::make_preview(){
+    QImage* img = new QImage(_img->width(),_img->height(),_img->format());
+    for(int i =0 ; i < _img->height() ; i++){
+        for(int j = 0 ; j < _img->width() ; j++){
+            img->setPixel(j, i, _img->pixel(j, i));
+        }
+    }
     op->setPreview(img);
 }

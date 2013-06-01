@@ -53,7 +53,7 @@ Knob::~Knob(){
     values.clear();
 }
 
-void Knob::validateEvent(){
+void Knob::validateEvent(bool initViewer){
     Node* node = getCallBack()->getNode();
     NodeGui* nodeUI = node->getNodeUi();
     NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
@@ -61,7 +61,7 @@ void Knob::validateEvent(){
         Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(static_cast<OutputNode*>(viewer->getNode()));
-        ctrlPTR->getModel()->startVideoEngine();
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);
     }
 }
 
@@ -162,7 +162,7 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 			if(!strcmp(className,"Reader")){
                 Node* node=knob->getCallBack()->getNode();
                 static_cast<Reader*>(node)->showFilePreview();
-                knob->validateEvent();
+                knob->validateEvent(true);
             }
 		}
     }
@@ -195,7 +195,7 @@ void File_Knob::open_file(){
         if(!strcmp(className,"Reader")){
             Node* node=getCallBack()->getNode();
             static_cast<Reader*>(node)->showFilePreview();
-            validateEvent();
+            validateEvent(true);
         }
     }
     

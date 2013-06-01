@@ -24,10 +24,10 @@ bool TextureCache::TextureKey::operator==(const TextureKey& other){
     /*comparison is done by by ordering members such that the ones
      that are the most likely to be different are compared first*/
     if(_byteMode == 1.0){ // we care of the lut since it was applied by software
-        return _exposure ==_firstRow == other._firstRow &&
+        return _exposure == other._exposure &&
+        _firstRow == other._firstRow &&
         _lastRow == other._lastRow &&
         _zoomFactor == other._zoomFactor &&
-        other._exposure &&
         _lut == other._lut &&
         _w == other._w &&
         _h == other._h &&
@@ -36,7 +36,8 @@ bool TextureCache::TextureKey::operator==(const TextureKey& other){
         _treeVersion == other._treeVersion;
         
     }else{ // don't care of the lut and exposure
-        return _exposure == _firstRow == other._firstRow &&
+        return _exposure == other._exposure &&
+        _firstRow == other._firstRow &&
         _lastRow == other._lastRow &&
         _zoomFactor == other._zoomFactor &&
         _w == other._w &&
@@ -73,7 +74,7 @@ TextureCache::TextureIterator TextureCache::isCached(TextureCache::TextureKey &k
 /*Frees approximatively 10% of the texture cache*/
 void TextureCache::makeFreeSpace(){
     size_t sizeTargeted = (size_t)((float)_size*9.f/10.f);
-    while (_size > sizeTargeted) {
+    while (_size > sizeTargeted && _cache.size() > 0) {
         pair<TextureKey,U32>& tex = _cache.back();
         size_t dataSize = 0;
         if(tex.first._byteMode == 1.f){
@@ -111,3 +112,17 @@ U32 TextureCache::initializeTexture(){
     glGenTextures(1, &texID);
     return (U32)texID;
 }
+
+void TextureCache::clearCache(U32 currentlyDisplayedTex){
+    TextureKey currentlyDisplayedKey;
+    for(TextureIterator it = _cache.begin(); it!= _cache.end() ; it++){
+        if(it->second == currentlyDisplayedTex){
+            currentlyDisplayedKey = it->first;
+        }else{
+            glDeleteTextures(1, &it->second);
+        }
+    }
+    _cache.clear();
+    append(currentlyDisplayedKey);
+}
+

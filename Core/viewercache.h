@@ -129,7 +129,7 @@ public:
                                                       int width,
                                                       int height,
                                                       int nbFrameHint,
-                                                      U32 treeVers);
+                                                      U64 treeVers);
     
     /*Close the last file in the queue*/
     void closeMappedFile();
@@ -140,7 +140,7 @@ public:
     /*checks whether the frame is present or not.
      Returns a FramesIterator pointing to the frame if it found it other wise the boolean returns false.*/
     std::pair<ViewerCache::FramesIterator,bool> isCached(std::string filename,
-                                                         U32 treeVersion,
+                                                         U64 treeVersion,
                                                          float zoomFactor,
                                                          float exposure,
                                                          float lut ,
@@ -165,7 +165,7 @@ public:
     void clearCache();
     
     
-    void debugCache();
+    void debugCache(bool verbose);
     
     ViewerCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize);
     

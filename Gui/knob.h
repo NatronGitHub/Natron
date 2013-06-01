@@ -68,7 +68,7 @@ public:
     //to be called on events functions to tell the engine to start processing
     //made public to allow other class that knob depends on to call validateEvent
     //but shouldn't be called by any other class.
-    void validateEvent();
+    void validateEvent(bool initViewer);
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
     

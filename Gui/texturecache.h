@@ -46,6 +46,7 @@ public:
     ~TextureCache(){}
     
     typedef std::vector< std::pair<TextureKey,U32> >::iterator TextureIterator;
+    typedef std::vector< std::pair<TextureKey,U32> >::reverse_iterator TextureReverseIterator;
     
     /*Returns true if the texture represented by the key is present in the cache.*/
     TextureCache::TextureIterator isCached(TextureCache::TextureKey &key);
@@ -58,6 +59,12 @@ public:
     /*Inserts a new texture,represented by key in the cache. This function must be called
      only if  isCached(...) returned false with this key*/
     U32 append(TextureCache::TextureKey key);
+    
+    /*clears out the texture cache*/
+    void clearCache(U32 currentlyDisplayedTex);
+    
+    /*Returns the current size of the cache*/
+    U64 size(){return _size;}
     
 private:
     /*Initialize an OpenGL texture and returns the texture ID*/

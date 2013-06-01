@@ -869,7 +869,10 @@ void FFMPEGFileManager::release(const char* filename)
     
 }
 
-ReadFFMPEG::ReadFFMPEG(Reader* op,ViewerGL* ui_context):Read(op,ui_context),_lock(){
+ReadFFMPEG::ReadFFMPEG(Reader* op):Read(op),_lock(){}
+
+void ReadFFMPEG::initializeColorSpace(){
+    _lut = NULL;
 }
 
 ReadFFMPEG::~ReadFFMPEG(){
@@ -948,9 +951,8 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
 
  
 
-void ReadFFMPEG::make_preview(const char* filename){
+void ReadFFMPEG::make_preview(){
     Format frmt = op->getInfo()->getDisplayWindow();
-	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);
 }
