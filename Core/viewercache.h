@@ -144,7 +144,7 @@ public:
                                                          float zoomFactor,
                                                          float exposure,
                                                          float lut ,
-                                                         bool byteMode,
+                                                         float byteMode,
                                                          Format format,
                                                          Box2D bbox);
     

@@ -361,7 +361,7 @@ void Node::engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 
 void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
     for(int i =0 ; i < alreadyComputedHash.size();i++){
-        if(QString(alreadyComputedHash[i]) ==name)
+        if(QString(alreadyComputedHash[i]) == name)
             return;
     }
     hashValue->reset();
@@ -369,14 +369,13 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
         hashValue->appendKnobToHash(knobs[i]);
     }
     hashValue->appendQStringToHash(QString(className()));
+    char* copy = QstringCpy(name);
+    alreadyComputedHash.push_back(copy);
     foreach(Node* parent,parents){
         parent->computeTreeHash(alreadyComputedHash);
         hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
     }
     hashValue->computeHash();
-    char* copy = QstringCpy(name);
-    alreadyComputedHash.push_back(copy);
-    
 }
 bool Node::hashChanged(){
     U64 oldHash=hashValue->getHashValue();

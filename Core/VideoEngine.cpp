@@ -973,7 +973,7 @@ void VideoEngine::_debugTree(Node* n,int* nb){
 }
 void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U64> > &alreadyComputed, Node *n){
     for(int i =0; i < alreadyComputed.size();i++){
-        if(!strcmp(alreadyComputed[i].first,n->getName()))
+        if(QString(alreadyComputed[i].first) == n->getName())
             return;
     }
     std::vector<char*> v;

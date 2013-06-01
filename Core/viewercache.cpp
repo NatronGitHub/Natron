@@ -194,7 +194,7 @@ void ViewerCache::restoreCache(){
                 float exposure = expStr.toFloat();
                 float lut =  lutStr.toFloat() ;
                 int rank = rankStr.toInt();
-                U32 treeHash = (U32)treeVers.toUInt();
+                U64 treeHash = (U64)treeVers.toULongLong();
                 ChannelSet channels;
                 int j = 0;
                 while(!channelsStr.isEmpty()){
@@ -216,22 +216,24 @@ void ViewerCache::restoreCache(){
                     }
                     channels += z;
                 }
+                int actualW = actualHStr.toInt();
+                int actualH = actualHStr.toInt();
                 Format format(formatX.toInt(),formatY.toInt(),formatR.toInt(),formatT.toInt(),"",formatAP.toDouble());
                 Box2D bbox(bboxX.toInt(),bboxY.toInt(),bboxR.toInt(),bboxT.toInt());
                 ReaderInfo* infos = new ReaderInfo(format,bbox,fileNameStr,channels,
                                                    -1,true,currentFrameStr.toInt(),firstFrameStr.toInt(),lastFrameStr.toInt());
                 ViewerCache::FrameID _id( zoom , exposure  , lut,
-                                         rank,treeHash,_cachedIndex,byteMode,infos,actualWStr.toInt(),actualHStr.toInt());
+                                         rank,treeHash,_cachedIndex,byteMode,infos,actualW,actualH);
                 _frames.insert(make_pair(fileName,_id));
                 line = in.readLine();
                 if(_id._byteMode==1.0){
-                    cacheSize += sizeof(U32) * format.w() * format.h();
+                    cacheSize += sizeof(U32) * actualW * actualH;
                 }else{
-                    cacheSize += 4 * sizeof(float) * format.w() * format.h();
+                    cacheSize += 4 * sizeof(float) * actualW * actualH;
                 }
                 
                 frameNumber++;
-            }
+            } // end while
             // now we just check if there is the same number of cached frames than it is said in the settings file
             QDir directory(CACHE_ROOT_PATH);
             QStringList filters;
@@ -249,7 +251,7 @@ void ViewerCache::restoreCache(){
                 cacheSize=0;
                 QFile::remove(CACHE_ROOT_PATH"settings.cachesettings");
             }
-            
+            // end if valid cache version
         }else{
             _restoreFile.resize(0);
             
@@ -263,6 +265,7 @@ void ViewerCache::restoreCache(){
             
         }
         _restoreFile.close();
+        // end if exist cache settings file
     }else{
         QDir directory(CACHE_ROOT_PATH);
         QStringList files = directory.entryList(QStringList("*.cache"));
@@ -315,12 +318,12 @@ std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string fi
                                                                   float zoomFactor,
                                                                   float exposure,
                                                                   float lut,
-                                                                  bool byteMode,
+                                                                  float byteMode,
                                                                   Format format,
                                                                   Box2D bbox){
 
     pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
-    for(ViewerCache::FramesIterator it=range.first;it!=range.second;++it){
+    for(ViewerCache::FramesIterator it=range.first;it!=range.second;it++){
         if((it->second._zoom == zoomFactor) &&
            (it->second._exposure == exposure) &&
            (it->second._lut == lut) &&
@@ -404,21 +407,11 @@ const char* ViewerCache::retrieveFrame(int frameNb,ViewerCache::FramesIterator i
 
 
 void ViewerCache::makeFreeSpace(int nbFrames){
-    
     map<int,ViewerCache::FrameID>::iterator it = _rankMap.end(); it--;
     FramesIterator it2 = _frames.end();it2--;
     int i =0;
     while( i < nbFrames){
         ViewerCache::FrameID frame = it->second;
-        qint64 frameSize;
-        Format frmt = frame._frameInfo->displayWindow();
-        if(frame._byteMode==1.0){
-            frameSize = frmt.w() * frmt.h() * sizeof(U32);
-            
-        }else{
-            frameSize = 4 * sizeof(float) * frmt.w() * frmt.h();
-        }
-        
         /*If the frame is in RAM, leave it*/
         bool cont = false;
         for(int i = _playbackCache.size()-1;i >= 0;i--){
@@ -433,7 +426,13 @@ void ViewerCache::makeFreeSpace(int nbFrames){
             continue;
         }
         
-        
+        qint64 frameSize;
+        if(frame._byteMode==1.0){
+            frameSize = frame._actualW * frame._actualH * sizeof(U32);
+            
+        }else{
+            frameSize = 4 * sizeof(float) * frame._actualW * frame._actualH;
+        }
         QString name(CACHE_ROOT_PATH);
         name.append(frame._cacheIndex.c_str());
         QFile::remove(name);

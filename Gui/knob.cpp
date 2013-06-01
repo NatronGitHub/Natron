@@ -232,13 +232,7 @@ File_Knob::File_Knob(Knob_Callback *cb, QString &description, QStringList &fileP
 }
 void File_Knob::setValues(){
     values.clear();
-    for(int i=0;i<str.size();i++){
-        QString s = str[i];
-        for(int j =0 ; j < s.size();j++){
-            values.push_back((U64)s.at(j).unicode());
-        }
-	}
-    
+    // filenames should not be involved in hash key computation as it defeats all the purpose of the cache
 }
 
 //================================================================
