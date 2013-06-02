@@ -211,10 +211,11 @@ void Gui::setupUi(Controler* ctrl)
 	viewer_tab->setObjectName(QString::fromUtf8("Viewer1"));
 	splitter->addWidget(viewer_tab);
     
-    /*initializing texture cache*/
-    _textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->maxTextureCache);
-    viewer_tab->setTextureCache(_textureCache);
+    
 #endif
+	/*initializing texture cache*/
+	_textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->maxTextureCache);
+	viewer_tab->setTextureCache(_textureCache);
 	// splitter->setCollapsible(0,false);
 
 	/*GRAPH EDITOR*/

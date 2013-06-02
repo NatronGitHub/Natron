@@ -196,6 +196,9 @@
     <ClCompile Include="..\..\..\Gui\framefiledialog.cpp">
       <Filter>Gui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Gui\texturecache.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -331,6 +334,9 @@
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Gui\framefiledialog.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\texturecache.h">
       <Filter>Gui</Filter>
     </ClInclude>
   </ItemGroup>
