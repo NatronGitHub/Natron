@@ -169,8 +169,8 @@ public:
     /*============================*/
 
     /*Node utility functions*/
-    virtual const char* className();
-    virtual const char* description();
+    virtual std::string className();
+    virtual std::string description();
     /*============================*/
 
     /*Calculations related functions*/

@@ -28,7 +28,7 @@ NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockCo
     number=nodeNumber;
     nodeNumber++;
 	
-	if(strcmp(node->className(),"Reader")==0){ // if the node is not a reader
+	if(node->className() == string("Reader")){ // if the node is not a reader
 		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));	
 	}else{
 		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH,NODE_HEIGHT)));
@@ -61,14 +61,14 @@ NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockCo
     channels->setToolTip(tooltip);
     name=scene->addSimpleText((node->getName()));
 	
-	if(strcmp(node->className(),"Reader")==0){
+	if(node->className() == string("Reader")){
 		name->setX(x+35);
 		name->setY(y+1);
 	}else{
 		name->setX(x+10);
 		name->setY(y+channels->boundingRect().height()+5);
 	}
-    if(strcmp(node->className(),"Reader")==0){
+    if(node->className() == string("Reader")){
 		if(static_cast<Reader*>(node)->hasPreview()){
 			QImage *prev=static_cast<Reader*>(node)->getPreview();
 			QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -93,7 +93,7 @@ NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockCo
     initInputArrows();
 
     /*building settings panel*/
-	if(strcmp(node->className(),"Viewer")){
+	if(node->className() != string("Viewer")){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
 		settings=new SettingsPanel(this);
@@ -240,7 +240,7 @@ void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
     if (*ok == true) {
         return;
     }
-    if(!strcmp(node->getNode()->className(), "Viewer")){
+    if(node->getNode()->className() == string("Viewer")){
         out = node;
         *ok = true;
     }else{

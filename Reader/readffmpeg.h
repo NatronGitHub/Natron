@@ -281,8 +281,22 @@ class ReadFFMPEG : public Read
     
     
 public:
+    static Read* BuildRead(Reader* reader){return new ReadFFMPEG(reader);}
+    
     ReadFFMPEG(Reader* op);
     virtual ~ReadFFMPEG();
+    
+    /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
+    virtual std::vector<std::string> fileTypesDecoded(){
+        std::vector<std::string> out;
+        out.push_back("jpg");
+        out.push_back("png");
+        // TODO : complete the list
+        return out;
+    };
+    
+    /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
+    virtual std::string decoderName(){return "FFmpeg";}
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual bool supports_stereo(){return false;}
     virtual void readHeader(const QString filename,bool openBothViews);

@@ -114,5 +114,4 @@ void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineConte
 void Read::readData(const QString filename,bool openBothViews){
     readHeader(filename,openBothViews);
     readAllData(openBothViews);
-   // _readInfo->setZoomFactor(ui_context->getZoomFactor());
 }

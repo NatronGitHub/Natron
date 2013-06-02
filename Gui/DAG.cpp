@@ -105,7 +105,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
 
             arrow_dragged->removeSource();
             scene()->update();
-            if(!strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")){
+            if(arrow_dragged->getDest()->getNode()->className() == std::string("Viewer")){
                 ViewerGL* gl_viewer = ctrl->getGui()->viewer_tab->viewer;
                 
                 ctrl->getModel()->getVideoEngine()->abort(); // aborting current work
@@ -214,7 +214,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
         NodeGui* n=nodes[i];
 
         QPointF evpt=n->mapFromScene(old_pos);
-        if(n->contains(evpt) && strcmp(n->getNode()->className(),"Viewer")){
+        if(n->contains(evpt) && n->getNode()->className() == std::string("Viewer")){
             if(!n->isThisPanelEnabled()){
                 /*building settings panel*/
                 n->setSettingsPanelEnabled(true);

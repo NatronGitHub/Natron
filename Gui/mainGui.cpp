@@ -21,9 +21,9 @@ Gui::~Gui(){
 
 }
 void Gui::exit(){
-  //  delete crossPlatform;
-   // crossPlatform->exit();
     crossPlatform->getModel()->getVideoEngine()->abort();
+    delete crossPlatform;
+    delete this;
     qApp->exit(0);
     
 }
@@ -210,8 +210,7 @@ void Gui::setupUi(Controler* ctrl)
 	viewer_tab->setLayout(viewer_tabLayout);
 	viewer_tab->setObjectName(QString::fromUtf8("Viewer1"));
 	splitter->addWidget(viewer_tab);
-    
-    
+
 #endif
 	/*initializing texture cache*/
 	_textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->maxTextureCache);
