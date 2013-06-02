@@ -346,8 +346,6 @@ void ReadExr::readHeader(const QString filename,bool openBothViews){
         double aspect = inputfile->header().pixelAspectRatio();
         Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
         Box2D bbox;
-        //        op->getInfo()->set_full_size_format(image_format);
-        //        op->getInfo()->set_channels(mask);
         
         int bx = datawin.min.x + dataOffset;
         int by = dispwin.max.y - datawin.max.y;
@@ -362,15 +360,10 @@ void ReadExr::readHeader(const QString filename,bool openBothViews){
             op->getInfo()->blackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
-        //op->getInfo()->set(bx, by, br+1, bt+1);
         
         int ydirection = -1;
-        if (inputfile->header().lineOrder() == Imf::INCREASING_Y){
-            //   op->getInfo()->setYdirection(-1);
-        }
-        else{
+        if (inputfile->header().lineOrder() != Imf::INCREASING_Y){
             ydirection=1;
-            //            op->getInfo()->setYdirection(1);
         }
         setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
     }
@@ -417,8 +410,6 @@ void ReadExr::readScanLine(int y){
 	}
     {
         try {
-            /*if (iop->aborted())
-             return;                     // abort if another thread does so*/
             inputfile->setFrameBuffer(fbuf);
             inputfile->readPixels(exrY);
         }
@@ -473,10 +464,14 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
     }
+    const float* alpha = (*from)[Channel_alpha];
+    if(alpha) alpha+= X;
     foreachChannels(z, channels){
         float* to = out->writable(z);
-        const float* in= (*from)[z] + X;
-        from_float(z,to,in,(*from)[Channel_alpha], R-X,1);
+        const float* in = (*from)[z];
+        if(in){
+            from_float(z,to + X ,in + X,alpha, R-X,1);
+        }
     }
 }
 
@@ -503,10 +498,14 @@ void ReadExr::make_preview(){
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
         int exrY = dispWindow.max.y - nearest;
         Row* from = _img[exrY];
-        const float* red = (*from)[Channel_red] ;
-        const float* green = (*from)[Channel_green] ;
-        const float* blue = (*from)[Channel_blue];
+        const float* red = (*from)[Channel_red];
+        const float* green = (*from)[Channel_green];
+        const float* blue = (*from)[Channel_blue] ;
         const float* alpha = (*from)[Channel_alpha] ;
+        if(red) red+=from->offset();
+        if(green) green+=from->offset();
+        if(blue) blue+=from->offset();
+        if(alpha) alpha+=from->offset();
         for(int j=0;j<w;j++){
             float x = (float)j*1.f/0.1;
             int nearestX;
