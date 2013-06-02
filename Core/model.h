@@ -25,47 +25,44 @@ using namespace Powiter_Enums;
 #ifdef __POWITER_WIN32__
 class PluginID{
 public:
-    PluginID(HINSTANCE first,const char* second){
+    PluginID(HINSTANCE first,std::string second){
         this->first=first;
         this->second=second;
     }
     ~PluginID(){
         
         FreeLibrary(first);
-        delete[] second;
+    
     }
     HINSTANCE first;
-    const char* second;
+    std::string second;
 };
 #elif defined(__POWITER_UNIX__)
 class PluginID{
 public:
-    PluginID(void* first,const char* second){
+    PluginID(void* first,std::string second){
         this->first=first;
         this->second=second;
     }
     ~PluginID(){
         
         dlclose(first);
-        delete[] second;
     }
     void* first;
-    const char* second;
+    std::string second;
 };
 #endif
 class CounterID{
 public:
-    CounterID(int first,const char* second){
+    CounterID(int first,std::string second){
         this->first=first;
         this->second=second;
         
     }
-    ~CounterID(){
-        delete[] second;
-    }
+    ~CounterID(){}
     
     int first;
-    const char* second;
+    std::string second;
 };
 
 
@@ -76,18 +73,27 @@ class Viewer;
 class Hash;
 class VideoEngine;
 class QMutex;
-//class Reader;
-
 class Model: public QObject
 {
     Q_OBJECT
     
 
 public:
-    Model(QObject* parent=0);
+    Model();
     virtual ~Model();
     
+    /*loads plugins(nodes)*/
     void loadPluginsAndInitNameList();
+    
+    /*name says it all*/
+    void loadBuiltinPlugins();
+    
+    /*loads extra reader plug-ins */
+    void loadReadPlugins();
+    
+    /*loads reads that are incorporated to Powiter*/
+    void loadBuiltinReads();
+    
 
     /*utility functions used to parse*/
     std::string removePrefixSpaces(std::string str);
@@ -108,6 +114,9 @@ public:
 	/*output to the console the name of the loaded plugins*/
     void displayLoadedPlugins();
     
+    /*output to the console the readPlugins multimap content*/
+    void displayLoadedReads();
+    
     /*starts the videoEngine for nbFrames. It will re-init the viewer so the
      *frame fit in the viewer.*/
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
@@ -126,8 +135,8 @@ public:
 	/*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
-    /*Get the current settings of Powiter*/
     Settings* getCurrentPowiterSettings(){return _powiterSettings;}
+    
 signals:
     void vengineNeeded(int nbFrames);
     
@@ -144,6 +153,8 @@ private:
     std::vector<Format*> formats_list;
     std::vector<CounterID*> counters;
     std::vector<PluginID*> plugins;
+    std::multimap<std::string,PluginID*> readPlugins;
+    
     QStringList nodeNameList;
 
 	/*All nodes currently active in the node graph*/

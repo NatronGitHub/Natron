@@ -99,7 +99,7 @@ void VideoEngine::resetReadingBuffers(){
     std::vector<InputNode*>& inputs = _dag.getInputs();
     for(int j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
-        if(strcmp(currentInput->className(),"Reader")==0){
+        if(currentInput->className() == string("Reader")){
             static_cast<Reader*>(currentInput)->removeCachedFramesFromBuffer();
         }
     }
@@ -170,7 +170,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     std::vector<InputNode*>& inputs = _dag.getInputs();
     for(int j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
-        if(strcmp(currentInput->className(),"Reader")==0){
+        if(currentInput->className() == string("Reader")){
             Reader* inp = static_cast<Reader*>(currentInput);
             inp->fitFrameToViewer(fitFrameToViewer);
             inp->randomFrame(currentFrame);
@@ -190,7 +190,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     
     // if inputs[0] is a reader we make its reader info the current ones
     // NEED TO ADJUST IT FOR STEREO AND SEVERAL INPUTS !
-	if(!strcmp(inputs[0]->className(),"Reader")){
+	if(inputs[0]->className() == string("Reader")){
 		makeReaderInfoCurrent(static_cast<Reader*>(inputs[0]));
 	}
     assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
@@ -265,7 +265,7 @@ void VideoEngine::engineLoop(){
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
             InputNode* currentInput=inputs[j];
-            if(strcmp(currentInput->className(),"Reader")==0){
+            if(currentInput->className() == string("Reader")){
                 Reader* inp =static_cast<Reader*>(currentInput);
                 inp->fitFrameToViewer(false);
                 readers.push_back(inp);
@@ -335,6 +335,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,in
     bool isTextureCached = gl_viewer->handleTextureAndViewerCache(filename,followingComputationsNb,w,h,mode);
     /*if a texture was found in cache, notify the viewer and skip immediately to the loop*/
     if(isTextureCached){
+        QCoreApplication::processEvents();
         engineLoop();
         return;
     }
@@ -541,8 +542,9 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumber, SLOT(setValue(int)));
     QObject::connect(frameNumber, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
-    qint64 maxDiskCacheSize = engine->getCurrentPowiterSettings()->maxDiskCache;
-    qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() * engine->getCurrentPowiterSettings()->maxCacheMemoryPercent;
+    qint64 maxDiskCacheSize = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxDiskCache;
+    qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() *
+    gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxCacheMemoryPercent;
     _viewerCache = new ViewerCache(gl_viewer,maxDiskCacheSize/2, maxMemoryCacheSize);
     QObject::connect(engine->getControler()->getGui()->actionClearDiskCache, SIGNAL(triggered()),this,SLOT(clearDiskCache()));
     QObject::connect(engine->getControler()->getGui()->actionClearPlayBackCache, SIGNAL(triggered()),this,SLOT(clearPlayBackCache()));
@@ -765,7 +767,7 @@ void VideoEngine::_previousFrame(int frameNB,int frameCount,bool initViewer){
             for(int j=0;j<inputs.size();j++){
                 std::vector<InputNode*>& inputs = _dag.getInputs();
                 InputNode* currentInput=inputs[j];
-                if(strcmp(currentInput->className(),"Reader")==0){
+                if(currentInput->className() == string("Reader")){
                     Reader* inp = static_cast<Reader*>(currentInput);
                     //int f =inp->currentFrame();
                     inp->decrementCurrentFrameIndex();
@@ -789,7 +791,7 @@ void VideoEngine::_nextFrame(int frameNB,int frameCount,bool initViewer){
             std::vector<InputNode*>& inputs = _dag.getInputs();
             for(int j=0;j<inputs.size();j++){
                 InputNode* currentInput=inputs[j];
-                if(strcmp(currentInput->className(),"Reader")==0){
+                if(currentInput->className() == string("Reader")){
                     Reader* inp = static_cast<Reader*>(currentInput);
                     //int f =inp->currentFrame();
                     inp->incrementCurrentFrameIndex();
@@ -814,7 +816,7 @@ void VideoEngine::_previousIncrement(int frameNB,int frameCount,bool initViewer)
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
                 if(frameNB > frameSeeker->firstFrame()){
                     inp->randomFrame(frameNB);
@@ -838,7 +840,7 @@ void VideoEngine::_nextIncrement(int frameNB,int frameCount,bool initViewer){
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
                 if(frameNB < frameSeeker->lastFrame()){
                     inp->randomFrame(frameNB);
@@ -858,7 +860,7 @@ void VideoEngine::_firstFrame(int frameNB,int frameCount,bool initViewer){
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
                 inp->randomFrame(frameNB);
                 assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
@@ -874,7 +876,7 @@ void VideoEngine::_lastFrame(int frameNB,int frameCount,bool initViewer){
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
 				inp->randomFrame(frameNB);
                 assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
@@ -894,7 +896,7 @@ void VideoEngine::_seekRandomFrame(int frameNB,int frameCount,bool initViewer){
         std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
                 inp->randomFrame(frameNB);
                 assert(gl_viewer->getCurrentReaderInfo()->currentFrame() == static_cast<Reader*>(inputs[0])->currentFrame());
@@ -936,7 +938,7 @@ void VideoEngine::seekRandomFrameWithStart(int f){
         gl_viewer->currentFrame(f);
         for(int j=0;j<inputs.size();j++){
 			InputNode* currentInput=inputs[j];
-			if(strcmp(currentInput->className(),"Reader")==0){
+			if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
                 int o =inp->currentFrame();
                 if(o < f){

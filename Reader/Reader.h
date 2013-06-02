@@ -201,8 +201,8 @@ public:
 	QImage* getPreview(){return preview;}
 
     virtual ~Reader();
-    virtual const char* className();
-    virtual const char* description();
+    virtual std::string className();
+    virtual std::string description();
 
 	File_Type fileType(){return filetype;}
 	

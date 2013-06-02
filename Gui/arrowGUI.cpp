@@ -49,7 +49,7 @@ void Arrow::initLine(){
 
         srcpt=source->mapToItem(this,QPointF(source->boundingRect().x(),source->boundingRect().y()));
 		
-		if(strcmp(source->getNode()->className(),"Reader")==0){
+		if(source->getNode()->className() == std::string("Reader")){
 			setLine(x1+(NODE_LENGTH)/2,y1,srcpt.x()+(NODE_LENGTH+PREVIEW_LENGTH)/2,srcpt.y()+NODE_HEIGHT+PREVIEW_HEIGHT);
 			label->setPos(((x1+((NODE_LENGTH)/2)+srcpt.x())/2.)-5,((y1+srcpt.y())/2.)-5);
 		}

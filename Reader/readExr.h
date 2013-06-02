@@ -48,7 +48,8 @@ public:
 class ReadExr : public Read{
 
 public:
-	
+    
+    static Read* BuildRead(Reader* reader){return new ReadExr(reader);}
 
 	ReadExr(Reader* op);
 	virtual ~ReadExr();
@@ -56,7 +57,15 @@ public:
 	void lookupChannels(std::set<Channel>& channel, const char* name);
 	bool getChannels(const ChannelName& channelName, int view, std::set<Channel>& channel);
 	
-
+    /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
+    virtual std::vector<std::string> fileTypesDecoded(){
+        std::vector<std::string> out;
+        out.push_back("exr");
+        return out;
+    };
+    
+    /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
+    virtual std::string decoderName(){return "OpenEXR";}
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     virtual bool supportsScanLine(){return true;}
     virtual int scanLinesCount(){return (int)_img.size();}

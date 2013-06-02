@@ -287,7 +287,7 @@ void Node::initInputsLabels(){
 
 
 
-const char* Node::className(){return "Node_Abstract_Class";}
+std::string Node::className(){return "Node_Abstract_Class";}
 
 void Node::validate(bool first_time){
 	/*_validate(bool for_real)
@@ -368,7 +368,7 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
     for(int i=0;i<knobs.size();i++){
         hashValue->appendKnobToHash(knobs[i]);
     }
-    hashValue->appendQStringToHash(QString(className()));
+    hashValue->appendQStringToHash(QString(className().c_str()));
     char* copy = QstringCpy(name);
     alreadyComputedHash.push_back(copy);
     foreach(Node* parent,parents){
@@ -392,7 +392,7 @@ void Node::createKnobDynamically(){
 	knob_cb->createKnobDynamically();
 }
 
-const char* Node::description(){
+std::string Node::description(){
     return "";
 }
 

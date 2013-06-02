@@ -39,9 +39,9 @@ Reader::~Reader(){
 	delete preview;
 	delete readHandle;
 }
-const char* Reader::className(){return "Reader";}
+std::string Reader::className(){return "Reader";}
 
-const char* Reader::description(){
+std::string Reader::description(){
     return "InputNode";
 }
 void Reader::initKnobs(Knob_Callback *cb){

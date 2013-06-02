@@ -20,21 +20,20 @@
 #include "Gui/GLViewer.h"
 #include "Core/VideoEngine.h"
 #include "Core/displayFormat.h"
+#include "Reader/Read.h"
+#include "Reader/readExr.h"
+#include "Reader/readffmpeg.h"
+#include "Reader/readQt.h"
 using namespace std;
-Model::Model(QObject* parent):QObject(parent)
+Model::Model()
 {
-    // these  are built-in nodes
-	nodeNameList.append("Reader");
-	nodeNameList.append("Viewer");
-    
-    _mutex = new QMutex();
-    _powiterSettings = new Settings;
+    _mutex = new QMutex;
     loadPluginsAndInitNameList();
+    loadBuiltinPlugins();
+    loadReadPlugins();
     displayLoadedPlugins();
-    
-	
-    
-    
+    _powiterSettings = new Settings;
+
 }
 void Model::setControler(Controler* ctrl){
     this->ctrl=ctrl;
@@ -88,16 +87,16 @@ void Model::setControler(Controler* ctrl){
 Model::~Model(){
    
     vengine->abort();
+    foreach(PluginID* p,plugins) delete p;
+    foreach(CounterID* c,counters) delete c;
     plugins.clear();
-    allNodes.clear();
     counters.clear();
+    allNodes.clear();
     formatNames.clear();
     resolutions.clear();
     formats_list.clear();
     nodeNameList.clear();
-    
-    
-    
+    delete _powiterSettings;
 }
 
 
@@ -136,8 +135,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
                 if(lib==NULL){
                     cout << " couldn't open library " << qPrintable(className) << endl;
                 }else{
-                    char* pluginName = QstringCpy(className);
-                    PluginID* plugin=new PluginID(lib,pluginName);
+                    PluginID* plugin=new PluginID(lib,className.toStdString());
                     plugins.push_back(plugin);
                 }
                 
@@ -155,9 +153,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
                     cout << " couldn't open library " << qPrintable(className) << endl;
                 }
                 else{
-                    char* pluginName = new char[className.size()];
-                    pluginName=QstringCpy(className);
-                    PluginID* plugin=new PluginID((void*)lib,pluginName);
+                    PluginID* plugin=new PluginID((void*)lib,className.toStdString());
                     plugins.push_back(plugin);
                     
                 }
@@ -204,12 +200,12 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
     bool found=false;
     foreach(CounterID* counter,counters){
         string tmp(counter->second);
-        string nodeName(node->className());
+        string nodeName = node->className();
         if(tmp==nodeName){
             (counter->first)++;
             found=true;
             QString str;
-            str.append(node->className());
+            str.append(nodeName.c_str());
             str.append("_");
             char c[50];
             sprintf(c,"%d",counter->first);
@@ -222,7 +218,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         
         counters.push_back(count);
         QString str;
-        str.append(node->className());
+        str.append(node->className().c_str());
         str.append("_");
         char c[50];
         sprintf(c,"%d",count->first);
@@ -235,8 +231,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
     string inputNodeSymbol="InputNode";
     string flowOpSymbol="FlowOperator";
     string imgOperatorSymbol="ImgOperator";
-    const char* desc_cstr=node->description();
-    string desc(desc_cstr);
+    string desc =node->description();
     if(desc==outputNodeSymbol){
         return OUTPUT;
     }
@@ -333,4 +328,141 @@ Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
 		}
 	}
 	return NULL;
+}
+
+
+void Model::loadReadPlugins(){
+    QDir d(PLUGINS_PATH);
+    if (d.isReadable())
+    {
+        QStringList filters;
+#ifdef __POWITER_WIN32__
+        filters << "*.dll";
+#elif defined(__POWITER_OSX__)
+        filters << "*.dylib";
+#elif defined(__POWITER_LINUX__)
+        filters << "*.so";
+#endif
+        d.setNameFilters(filters);
+		QStringList fileList = d.entryList();
+        for(int i = 0 ; i < fileList.size() ;i ++)
+        {
+            QString filename = fileList.at(i);
+            if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+                QString className;
+                int index = filename.size() -1;
+                while(filename.at(index) != QChar('.')) index--;
+                className = filename.left(index);
+                PluginID* plugin = 0;
+#ifdef __POWITER_WIN32__
+                HINSTANCE lib;
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+                dll.append(".dll");
+                lib=LoadLibrary(dll.c_str());
+                if(lib==NULL){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    ReadBuilder builder=(ReadBuilder)GetProcAddress(lib,"BuildRead");
+                    if(builder!=NULL){
+                        Read* read=builder(NULL);
+                        std::vector<std::string> extensions = read->fileTypesDecoded();
+                        std::string decoderName = read->decoderName();
+                        plugin = new PluginID(lib,decoderName.c_str());
+                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                            readPlugins.insert(make_pair(extensions[i],plugin));
+                        }
+                        delete read;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildRead" << endl;
+                        continue;
+                    }
+                    
+                }
+                
+#elif defined(__POWITER_UNIX__)
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+#ifdef __POWITER_OSX__
+                dll.append(".dylib");
+#elif defined(__POWITER_LINUX__)
+                dll.append(".so");
+#endif
+                void* lib=dlopen(dll.c_str(),RTLD_LAZY);
+                if(!lib){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }
+                else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    ReadBuilder builder=(ReadBuilder)dlsym(lib,"BuildRead");
+                    if(builder!=NULL){
+                        Read* read=builder(NULL);
+                        std::vector<std::string> extensions = read->fileTypesDecoded();
+                        std::string decoderName = read->decoderName();
+                        plugin = new PluginID(lib,decoderName.c_str());
+                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                            readPlugins.insert(make_pair(extensions[i],plugin));
+                        }
+                        delete read;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildRead" << endl;
+                        continue;
+                    }
+                }
+#endif
+            }else{
+                continue;
+            }
+        }
+    }
+    loadBuiltinReads();
+}
+
+void Model::displayLoadedReads(){
+    std::multimap<std::string,PluginID*>::iterator it = readPlugins.begin();
+    for (; it!=readPlugins.end(); it++) {
+        cout << it->second->second << " : " << it->first << endl;
+    }
+}
+
+void Model::loadBuiltinReads(){
+    Read* read = ReadExr::BuildRead(NULL);
+    std::vector<std::string> extensions = read->fileTypesDecoded();
+    std::string decoderName = read->decoderName();
+    PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    for (U32 i = 0 ; i < extensions.size(); i++) {
+        readPlugins.insert(make_pair(extensions[i],EXRplugin));
+    }
+    delete read;
+    
+    read = ReadQt::BuildRead(NULL);
+    extensions = read->fileTypesDecoded();
+    decoderName = read->decoderName();
+    PluginID *Qtplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    for (U32 i = 0 ; i < extensions.size(); i++) {
+        readPlugins.insert(make_pair(extensions[i],Qtplugin));
+    }
+    delete read;
+    
+    read = ReadFFMPEG::BuildRead(NULL);
+    extensions = read->fileTypesDecoded();
+    decoderName = read->decoderName();
+    PluginID *FFMPEGplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    for (U32 i = 0 ; i < extensions.size(); i++) {
+        readPlugins.insert(make_pair(extensions[i],FFMPEGplugin));
+    }
+    delete read;
+    
+}
+void Model::loadBuiltinPlugins(){
+    // these  are built-in nodes
+	nodeNameList.append("Reader");
+	nodeNameList.append("Viewer");
 }

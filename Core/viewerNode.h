@@ -21,8 +21,8 @@ public:
     virtual ~Viewer(){}
     
 	ViewerGL* ui_context(){return _ui_context;}
-    virtual const char* className(){return "Viewer";}
-    virtual const char* description();
+    virtual std::string className(){return "Viewer";}
+    virtual std::string description();
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);
 protected:
 	

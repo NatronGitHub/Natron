@@ -158,8 +158,8 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 		if(strlist!=knob->getStr()){
 			knob->setStr(strlist);
 			knob->setValues();
-			const char* className=knob->getCallBack()->getNode()->className();
-			if(!strcmp(className,"Reader")){
+            std::string className=knob->getCallBack()->getNode()->className();
+			if(className == std::string("Reader")){
                 Node* node=knob->getCallBack()->getNode();
                 static_cast<Reader*>(node)->showFilePreview();
                 knob->validateEvent(true);
@@ -191,8 +191,8 @@ void File_Knob::open_file(){
         name->setText(strlist.at(0));
         setStr(strlist);
         setValues();
-        const char* className=getCallBack()->getNode()->className();
-        if(!strcmp(className,"Reader")){
+        std::string className=getCallBack()->getNode()->className();
+        if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
             static_cast<Reader*>(node)->showFilePreview();
             validateEvent(true);

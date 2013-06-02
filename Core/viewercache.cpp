@@ -33,13 +33,15 @@ ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxCacheSize,qint64 maxRamSi
     }
     if(!foundDir){
         root.mkdir("Cache");
+        root.setCurrent(ROOT"Cache");
+        root.mkdir("ViewerCache");
     }
     
     this->gl_viewer = gl_viewer;
     
     restoreCache();
     
-    MAX_PLAYBACK_CACHE_SIZE = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->maxPlayBackMemoryPercent * MAX_RAM_CACHE;
+    MAX_PLAYBACK_CACHE_SIZE = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxPlayBackMemoryPercent * MAX_RAM_CACHE;
     _playbackCacheSize = 0;
 }
 
@@ -47,11 +49,11 @@ void ViewerCache::clearCache(){
     /*first clear the playback cache*/
     clearPlayBackCache();
     
-    QFile::remove(CACHE_ROOT_PATH"settings.cachesettings");
-    QDir directory(CACHE_ROOT_PATH);
+    QFile::remove(VIEWER_CACHE_PATH"settings.cachesettings");
+    QDir directory(VIEWER_CACHE_PATH);
     QStringList files = directory.entryList(QStringList("*.cache"));
     for(int i =0 ; i< files.size() ;i++){
-        QString name(CACHE_ROOT_PATH);
+        QString name(VIEWER_CACHE_PATH);
         name.append(files[i]);
         QFile::remove(name);
     }
@@ -89,7 +91,7 @@ _cacheIndex(other._cacheIndex),_byteMode(other._byteMode),_actualW(other._actual
 
 
 void ViewerCache::saveCache(){
-    QFile _restoreFile(CACHE_ROOT_PATH"settings.cachesettings");
+    QFile _restoreFile(VIEWER_CACHE_PATH"settings.cachesettings");
     _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
     QTextStream out(&_restoreFile);
     out << CACHE_VERSION << endl;
@@ -125,8 +127,8 @@ void ViewerCache::restoreCache(){
     
     // restoring the unordered multimap from file
     
-    if(QFile::exists(CACHE_ROOT_PATH"settings.cachesettings")){
-        QFile _restoreFile(CACHE_ROOT_PATH"settings.cachesettings");
+    if(QFile::exists(VIEWER_CACHE_PATH"settings.cachesettings")){
+        QFile _restoreFile(VIEWER_CACHE_PATH"settings.cachesettings");
         _restoreFile.open(QIODevice::ReadWrite);
         QTextStream in(&_restoreFile);
         QString line = in.readLine();
@@ -235,13 +237,13 @@ void ViewerCache::restoreCache(){
                 frameNumber++;
             } // end while
             // now we just check if there is the same number of cached frames than it is said in the settings file
-            QDir directory(CACHE_ROOT_PATH);
+            QDir directory(VIEWER_CACHE_PATH);
             QStringList filters;
             filters << "*.cache";
             QStringList files = directory.entryList(filters);
             if(files.size() != frameNumber){ // issue in cache, we delete everything
                 for(int i =0 ; i< files.size() ;i++){
-                    QString name(CACHE_ROOT_PATH);
+                    QString name(VIEWER_CACHE_PATH);
                     name.append(files[i]);
                     QFile::remove(name);
                 }
@@ -249,16 +251,16 @@ void ViewerCache::restoreCache(){
                 _frames.clear();
                 _rankMap.clear();
                 cacheSize=0;
-                QFile::remove(CACHE_ROOT_PATH"settings.cachesettings");
+                QFile::remove(VIEWER_CACHE_PATH"settings.cachesettings");
             }
             // end if valid cache version
         }else{
             _restoreFile.resize(0);
             
-            QDir directory(CACHE_ROOT_PATH);
+            QDir directory(VIEWER_CACHE_PATH);
             QStringList files = directory.entryList(QStringList("*.cache"));
             for(int i =0 ; i< files.size() ;i++){
-                QString name(CACHE_ROOT_PATH);
+                QString name(VIEWER_CACHE_PATH);
                 name.append(files[i]);
                 QFile::remove(name);
             }
@@ -267,15 +269,15 @@ void ViewerCache::restoreCache(){
         _restoreFile.close();
         // end if exist cache settings file
     }else{
-        QDir directory(CACHE_ROOT_PATH);
+        QDir directory(VIEWER_CACHE_PATH);
         QStringList files = directory.entryList(QStringList("*.cache"));
         for(int i =0 ; i< files.size() ;i++){
-            QString name(CACHE_ROOT_PATH);
+            QString name(VIEWER_CACHE_PATH);
             name.append(files[i]);
             QFile::remove(name);
             
         }
-        QFile _restoreFile(CACHE_ROOT_PATH"settings.cachesettings");
+        QFile _restoreFile(VIEWER_CACHE_PATH"settings.cachesettings");
         _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
         QTextStream outsetti(&_restoreFile);
         outsetti << CACHE_VERSION << endl;
@@ -365,7 +367,7 @@ void ViewerCache::appendFrame(ViewerCache::FrameID _info){
 const char* ViewerCache::retrieveFrame(int frameNb,ViewerCache::FramesIterator it){
     
     ViewerCache::FrameID _id = it->second;
-    string filename(CACHE_ROOT_PATH);
+    string filename(VIEWER_CACHE_PATH);
     filename.append(_id._cacheIndex);
     size_t dataSize;
     
@@ -433,7 +435,7 @@ void ViewerCache::makeFreeSpace(int nbFrames){
         }else{
             frameSize = 4 * sizeof(float) * frame._actualW * frame._actualH;
         }
-        QString name(CACHE_ROOT_PATH);
+        QString name(VIEWER_CACHE_PATH);
         name.append(frame._cacheIndex.c_str());
         QFile::remove(name);
         cacheSize-=frameSize;
@@ -481,7 +483,7 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
     }
     cacheSize+=sizeNeeded;
     _playbackCacheSize+=sizeNeeded;
-    string _cacheFileName(CACHE_ROOT_PATH);
+    string _cacheFileName(VIEWER_CACHE_PATH);
     _cacheFileName.append(name);
     MMAPfile* mf = new MMAPfile(_cacheFileName,ReadWrite,sizeNeeded,0,sizeNeeded);
     _playbackCache.push_back(make_pair(_info,mf));

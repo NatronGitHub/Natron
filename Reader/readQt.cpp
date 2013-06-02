@@ -12,14 +12,15 @@
 #include "Gui/node_ui.h"
 #include "Core/lutclasses.h"
 using namespace std;
-ReadQt::ReadQt(Reader* op) : Read(op){}
+ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
 
 void ReadQt::initializeColorSpace(){
     _lut=Lut::getLut(Lut::VIEWER);
     _lut->validate();
 }
 ReadQt::~ReadQt(){
-    delete _img;
+    if(_img)
+        delete _img;
 }
 void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     uchar* buffer;

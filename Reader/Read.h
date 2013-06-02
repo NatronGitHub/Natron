@@ -30,6 +30,12 @@ public:
     
 	virtual ~Read();
     
+    /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
+    virtual std::vector<std::string> fileTypesDecoded()=0;
+    
+    /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
+    virtual std::string decoderName()=0;
+    
     /*This must be implemented to do the to linear colorspace conversion*/
 	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out)=0;
     
@@ -135,11 +141,10 @@ protected:
 };
 
 
-
-
-
-
-
+typedef Read* (*ReadBuilder)(void*);
+/*Classes deriving Read should implement a function named BuildRead with the following signature:
+static Read* BuildRead(Reader*);
+ */
 
 
 #endif // __READ__H__

@@ -18,7 +18,7 @@ void Viewer::_validate(bool first_time){
     Node::_validate(first_time);
 }
 
-const char* Viewer::description(){
+std::string Viewer::description(){
     return "OutputNode";
 }
 
