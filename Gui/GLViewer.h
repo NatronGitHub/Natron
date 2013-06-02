@@ -230,8 +230,7 @@ public:
 	/*idem above but for floating point textures (no dithering applied here)*/
 	void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
 		int w,int yOffset,const float* alpha);
-    //obsolete
-    void rowToTexture8bit(Powiter_Enums::Channel z,const float* from,U32* to,int w);
+
 
 	/*handy functions to fill textures*/
 	static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);

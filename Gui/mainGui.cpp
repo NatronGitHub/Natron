@@ -213,7 +213,7 @@ void Gui::setupUi(Controler* ctrl)
 
 #endif
 	/*initializing texture cache*/
-	_textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->maxTextureCache);
+	_textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxTextureCache);
 	viewer_tab->setTextureCache(_textureCache);
 	// splitter->setCollapsible(0,false);
 

@@ -703,7 +703,6 @@ void ViewerGL::drawRow(Row* row){
     float zoomFactor;
     _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
     int w = floorf(_readerInfo->displayWindow().w() * zoomFactor);
-    //int w = displayWindow().w();
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w,row->zoomedY(),(*row)[Channel_alpha]);
@@ -711,25 +710,7 @@ void ViewerGL::drawRow(Row* row){
     else{
         convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                    w,row->zoomedY(),(*row)[Channel_alpha]);
-        //        U32* output = reinterpret_cast<U32*>(frameData);
-        //        int yOffset = row->zoomedY();
-        //        yOffset*=w;
-        //        output+=yOffset;
-        //        const float* a = (*row)[Channel_alpha];
-        //        if(a){
-        //            for(int i =0 ; i < w ; i++) output[i] |= ((U32)(a[i] * 255.f) << 24);
-        //        }else{
-        //            for(int i =0 ; i < w ; i++) output[i] |= (1 << 24);
-        //        }
-        //        const float* r = (*row)[Channel_red];
-        //        const float* g = (*row)[Channel_green];
-        //        const float* b = (*row)[Channel_blue];
-        //        if(r)
-        //            rowToTexture8bit(Channel_red,r, output, w);
-        //        if(g)
-        //            rowToTexture8bit(Channel_green,g, output, w);
-        //        if(b)
-        //            rowToTexture8bit(Channel_blue,b, output, w);
+   
     }
 }
 
@@ -820,79 +801,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     checkGLErrors();
 }
-void ViewerGL::rowToTexture8bit(Powiter_Enums::Channel z,const float* from ,U32* to, int w){
-    int start = (int)(rand()%w);
-    int wedge = 0;
-    switch (z) {
-        case Powiter_Enums::Channel_red:
-            wedge = 16;
-            break;
-        case Powiter_Enums::Channel_green:
-            wedge = 8;
-            break;
-        case Powiter_Enums::Channel_blue:
-        default:
-            break;
-    }
-    float zoomFactor;
-    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
-    if(_drawing){
-        if(!_colorSpace->linear()){
-            _usingColorSpace = true;
-            unsigned error = 0x80;
-            /* go fowards from starting point to end of line: */
-            for(int i = start ; i < w ; i++){
-                float x = (float)i*1.f/zoomFactor;
-                int nearest;
-                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
-                
-                U8 v_;
-                float _v = from[nearest];
-                float alpha = (float)(to[i] >> 24)/255.f;
-                _v*= alpha;
-                _v*=exposure;
-                error = (error&0xff) + _colorSpace->toFloatFast(_v);
-                v_ = error >> 8;
-                to[i]  |= (v_ << wedge);
-            }
-            /* go backwards from starting point to start of line: */
-            error = 0x80;
-            for(int i = start-1 ; i >= 0 ; i--){
-                float x = (float)i*1.f/zoomFactor;
-                int nearest;
-                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
-                
-                U8 v_;
-                float _v = from[nearest];
-                float alpha = (float)(to[i] >> 24)/255.f;
-                _v*= alpha;
-                _v*=exposure;
-                error = (error&0xff) + _colorSpace->toFloatFast(_v);
-                v_ = error >> 8;
-                to[i]  |= (v_ << wedge);
-            }
-            _usingColorSpace = false;
-        }else{
-            for(int i = 0 ; i < w ; i++){
-                float x = (float)i*1.f/zoomFactor;
-                int nearest;
-                (x-floor(x) < ceil(x) - x) ? nearest = floor(x) : nearest = ceil(x);
-                
-                U8 v_;
-                float _v = from[nearest];
-                float alpha = (float)(to[i] >> 24)/255.f;
-                _v*= alpha;
-                _v*=exposure;
-                v_ = (U8)_v*255.f;
-                to[i]  |= (v_ << wedge);
-            }
-        }
-    }else{
-        for(int i = 0 ; i < w ; i++){
-            to[i]  |= (0 << wedge);
-        }
-    }
-}
+
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
                                           int w,int yOffset,const float* alpha){
     /*Converting one row (float32) to 8bit BGRA texture. We apply a dithering algorithm based on error diffusion.

@@ -433,32 +433,45 @@ void Model::displayLoadedReads(){
 }
 
 void Model::loadBuiltinReads(){
-    Read* read = ReadExr::BuildRead(NULL);
-    std::vector<std::string> extensions = read->fileTypesDecoded();
-    std::string decoderName = read->decoderName();
-    PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    Read* readExr = ReadExr::BuildRead(NULL);
+    std::vector<std::string> extensions = readExr->fileTypesDecoded();
+    std::string decoderName = readExr->decoderName();
+#ifdef __POWITER_WIN32__
+	 PluginID *EXRplugin = new PluginID((HINSTANCE)&ReadExr::BuildRead,decoderName.c_str());
+#else
+	 PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+#endif
+   
     for (U32 i = 0 ; i < extensions.size(); i++) {
         readPlugins.insert(make_pair(extensions[i],EXRplugin));
     }
-    delete read;
+    delete readExr;
     
-    read = ReadQt::BuildRead(NULL);
-    extensions = read->fileTypesDecoded();
-    decoderName = read->decoderName();
-    PluginID *Qtplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    Read* readQt = ReadQt::BuildRead(NULL);
+    extensions = readQt->fileTypesDecoded();
+    decoderName = readQt->decoderName();
+#ifdef __POWITER_WIN32__
+	PluginID *Qtplugin = new PluginID((HINSTANCE)&ReadQt::BuildRead,decoderName.c_str());
+#else
+	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
+#endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
         readPlugins.insert(make_pair(extensions[i],Qtplugin));
     }
-    delete read;
+    delete readQt;
     
-    read = ReadFFMPEG::BuildRead(NULL);
-    extensions = read->fileTypesDecoded();
-    decoderName = read->decoderName();
-    PluginID *FFMPEGplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
+    extensions = readFfmpeg->fileTypesDecoded();
+    decoderName = readFfmpeg->decoderName();
+#ifdef __POWITER_WIN32__
+	PluginID *FFMPEGplugin = new PluginID((HINSTANCE)&ReadFFMPEG::BuildRead,decoderName.c_str());
+#else
+	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
+#endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
         readPlugins.insert(make_pair(extensions[i],FFMPEGplugin));
     }
-    delete read;
+    delete readFfmpeg;
     
 }
 void Model::loadBuiltinPlugins(){
