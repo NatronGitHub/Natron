@@ -20,6 +20,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/VideoEngine.h"
 #include "Core/displayFormat.h"
+#include "Core/settings.h"
 #include "Reader/Read.h"
 #include "Reader/readExr.h"
 #include "Reader/readffmpeg.h"
@@ -28,11 +29,14 @@ using namespace std;
 Model::Model()
 {
     _mutex = new QMutex;
+    _powiterSettings = new Settings;
+
     loadPluginsAndInitNameList();
     loadBuiltinPlugins();
     loadReadPlugins();
     displayLoadedPlugins();
-    _powiterSettings = new Settings;
+    
+    
 
 }
 void Model::setControler(Controler* ctrl){
@@ -371,7 +375,7 @@ void Model::loadReadPlugins(){
                         Read* read=builder(NULL);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
-                        plugin = new PluginID(lib,decoderName.c_str());
+                        plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
                             readPlugins.insert(make_pair(extensions[i],plugin));
                         }
@@ -405,7 +409,7 @@ void Model::loadReadPlugins(){
                         Read* read=builder(NULL);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
-                        plugin = new PluginID(lib,decoderName.c_str());
+                        plugin = new PluginID((void*)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
                             readPlugins.insert(make_pair(extensions[i],plugin));
                         }
@@ -423,6 +427,28 @@ void Model::loadReadPlugins(){
         }
     }
     loadBuiltinReads();
+    
+    std::map<std::string, PluginID*> defaultMapping;
+    for (ReadPluginsIterator it = readPlugins.begin(); it!=readPlugins.end(); it++) {
+        if(it->first == "exr" && it->second->second == "OpenEXR"){
+            defaultMapping.insert(*it);
+        }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
+            defaultMapping.insert(*it);
+        }else if((it->first == "jpg" ||
+                  it->first == "bmp" ||
+                  it->first == "jpeg"||
+                  it->first == "gif" ||
+                  it->first == "png" ||
+                  it->first == "pbm" ||
+                  it->first == "pgm" ||
+                  it->first == "ppm" ||
+                  it->first == "xbm" ||
+                  it->first == "xpm") && it->second->second == "QImage (Qt)"){
+            defaultMapping.insert(*it);
+            
+        }
+    }
+    _powiterSettings->_readersSettings.fillMap(defaultMapping);
 }
 
 void Model::displayLoadedReads(){

@@ -85,6 +85,10 @@ public:
             _cachedFrame(other._cachedFrame),_cacheWatcher(other._cacheWatcher),_filename(other._filename),
             _slContext(other._slContext)
             {}
+            
+            bool isEmpty(){return !_asynchTask && !_readHandle && !_frameInfo && !_cachedFrame &&
+                !_cacheWatcher && !_slContext && _filename.empty();}
+            
             /*This member is not 0 if the decoding for the frame was done in an asynchronous manner
              It is used to query whether it has finish or not.*/
             QFuture<void>* _asynchTask;

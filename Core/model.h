@@ -15,11 +15,11 @@
 #include <map>
 #include <ImfStandardAttributes.h>
 #include "Core/inputnode.h"
-#include "Core/settings.h"
 
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
+class Settings;
 using namespace Powiter_Enums;
 
 #ifdef __POWITER_WIN32__
@@ -136,6 +136,8 @@ public:
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
     Settings* getCurrentPowiterSettings(){return _powiterSettings;}
+    
+    typedef std::multimap<std::string, PluginID*>::iterator ReadPluginsIterator;
     
 signals:
     void vengineNeeded(int nbFrames);

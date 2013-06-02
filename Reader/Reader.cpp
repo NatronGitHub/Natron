@@ -14,7 +14,8 @@
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
 #include "Core/outputnode.h"
-
+#include "Core/settings.h"
+#include "Reader/Read.h"
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -68,25 +69,22 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     /*the read handle used to decode the frame*/
     Read* _read = 0;
     
+    QString extension;
+    for(int i = filename.size() - 1 ; i>= 0 ; i--){
+        QChar c = filename.at(i);
+        if(c != QChar('.'))
+            extension.prepend(c);
+        else
+            break;
+    }
     
-    /*TODO :should do a more appropriate extension mapping in the future*/
-    QString extension=filename.right(4);
-    if(extension.at(0) == QChar('.') && extension.at(1) == QChar('e') && extension.at(2) == QChar('x') && extension.at(3) == QChar('r') ){
-        
-        _read=new ReadExr(this);
-    }else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('j') && extension.at(2) == QChar('p') && extension.at(3) == QChar('g')){
-        
-        _read=new ReadQt(this);
-    }else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('p') && extension.at(2) == QChar('n') && extension.at(3) == QChar('g')){
-        
-        _read=new ReadQt(this);
+    PluginID* decoder = ui_context->getControler()->getModel()->getCurrentPowiterSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
+    if(!decoder){
+        cout << "Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
+        return Buffer::DecodedFrameDescriptor();
     }
-    else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('d') && extension.at(2) == QChar('p') && extension.at(3) == QChar('x') ){
-        
-        _read=new ReadFFMPEG(this);
-    }else if(extension.at(0) == QChar('t') && extension.at(1) == QChar('i') && extension.at(2) == QChar('f') && extension.at(3) == QChar('f') ){
-    }else{
-    }
+    ReadBuilder builder = (ReadBuilder)(decoder->first);
+    _read = builder(this);
     
     if(_read == 0 || mode == DO_NOT_DECODE){
         _read->readHeader(filename, false);
@@ -245,6 +243,9 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
     std::vector<Reader::Buffer::DecodedFrameDescriptor> out;
     if(useCurrentThread){
         Buffer::DecodedFrameDescriptor ret = open(files[current_frame], mode , false);
+        if(ret.isEmpty()){
+            cout << "Reader:: ERROR" << endl;
+        }
         out.push_back(ret);
     }else{
         if(useOtherThread){
@@ -253,6 +254,9 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
             if(followingFrame > lastFrame()) followingFrame = firstFrame();
             if(followingFrame < firstFrame()) followingFrame = lastFrame();
             Buffer::DecodedFrameDescriptor ret = open(files[followingFrame], mode ,true);
+            if(ret.isEmpty()){
+                cout << "Reader:: ERROR" << endl;
+            }
             out.push_back(ret);
             // must review this part
         }
@@ -270,7 +274,10 @@ void Reader::showFilePreview(){
     getVideoSequenceFromFilesList();
     
     fitFrameToViewer(false);
-    open(fileNameList.at(0), DO_NOT_DECODE ,false);
+    Buffer::DecodedFrameDescriptor ret = open(fileNameList.at(0), DO_NOT_DECODE ,false);
+    if(ret.isEmpty()){
+        cout <<" Reader:: ERROR " << endl;
+    }
     
     if(!makeCurrentDecodedFrame()){
         cout << "Reader failed to open current frame file" << endl;

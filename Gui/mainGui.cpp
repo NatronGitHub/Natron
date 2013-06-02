@@ -10,6 +10,7 @@
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include <QtWidgets/QtWidgets>
+#include "Core/settings.h"
 using namespace std;
 
 Gui::Gui(QWidget* parent):QMainWindow(parent)
@@ -22,8 +23,8 @@ Gui::~Gui(){
 }
 void Gui::exit(){
     crossPlatform->getModel()->getVideoEngine()->abort();
-    delete crossPlatform;
-    delete this;
+   // delete crossPlatform;
+   // delete this;
     qApp->exit(0);
     
 }

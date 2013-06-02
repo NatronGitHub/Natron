@@ -9,7 +9,9 @@
 #include <QtCore/qglobal.h>
 #include "Superviser/powiterFn.h"
 #include "Core/metadata.h"
+#include <map>
 #include <boost/noncopyable.hpp>
+class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
  that means the powiter settings are unique and there cannot be 2 instances living at the same time.*/
 class Settings : public boost::noncopyable
@@ -42,6 +44,19 @@ public:
     public:
         
         Readers();
+        
+        /*Returns a pluginID if it could find a decoder for the filetype,
+         otherwise returns NULL.*/
+        PluginID* decoderForFiletype(std::string type);
+        
+        /*changes the decoder for files identified by the filetype*/
+        void changeMapping(std::string filetype,PluginID* decoder);
+        
+        /*use to initialise default mapping*/
+        void fillMap(std::map<std::string,PluginID*>& defaultMap);
+    private:
+        
+        std::map<std::string,PluginID*> _fileTypesMap;
     };
     
     
