@@ -246,9 +246,9 @@ void Node::_inputs(){
 int Node::inputs(){return 1;}
 
 int Node::getInputsNb() const {return inputNb;}
-std::map<int, char*> Node::getInputLabels() const {return inputLabels;}
+const std::map<int, std::string>& Node::getInputLabels() const {return inputLabels;}
 
-const char* Node::getLabel(int inputNb)  {
+std::string Node::getLabel(int inputNb)  {
     return inputLabels[inputNb];}
 QString Node::getName() {return name;}
 QMutex* Node::getMutex() const {return _mutex;}
@@ -265,12 +265,10 @@ std::string Node::setInputLabel(int inputNb){
 }
 void Node::_setLabels(){
     for(int i=0;i<inputLabels.size();i++){
-        std::map<int, char*>::iterator it;
+        std::map<int, std::string>::iterator it;
         it =inputLabels.find(i);
         inputLabels.erase(it);
-        string input =setInputLabel(i);
-        char* tmp=stdStrCpy(input);
-        inputLabels[i]=tmp;
+        inputLabels[i] =setInputLabel(i);
     }
 }
 void Node::initInputsLabels(){
@@ -359,9 +357,9 @@ void Node::_request(int y,int top,int offset,int range,ChannelMask channels){
 void Node::engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 
 
-void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
+void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     for(int i =0 ; i < alreadyComputedHash.size();i++){
-        if(QString(alreadyComputedHash[i]) == name)
+        if(alreadyComputedHash[i] == name.toStdString())
             return;
     }
     hashValue->reset();
@@ -369,8 +367,7 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
         hashValue->appendKnobToHash(knobs[i]);
     }
     hashValue->appendQStringToHash(QString(className().c_str()));
-    char* copy = QstringCpy(name);
-    alreadyComputedHash.push_back(copy);
+    alreadyComputedHash.push_back(name.toStdString());
     foreach(Node* parent,parents){
         parent->computeTreeHash(alreadyComputedHash);
         hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
@@ -379,7 +376,7 @@ void Node::computeTreeHash(std::vector<char*> &alreadyComputedHash){
 }
 bool Node::hashChanged(){
     U64 oldHash=hashValue->getHashValue();
-    vector<char*> v;
+    vector<std::string> v;
     computeTreeHash(v);
     return oldHash!=hashValue->getHashValue();
 }

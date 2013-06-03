@@ -12,15 +12,16 @@
 #include "Gui/viewerTab.h"
 
 
-Controler::Controler(Model* coreEngine)
-{ 
-}
+Controler::Controler(){}
+
 void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     this->coreEngine=coreEngine;
     graphicalInterface=new Gui();
     graphicalInterface->setControler(this);
     graphicalInterface->createGui();
 	coreEngine->setControler(this);
+    loadingScreen->hide();
+
 #ifdef __POWITER_OSX__
 	graphicalInterface->show();
 
@@ -28,7 +29,6 @@ void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
 	graphicalInterface->showMaximized();
 #endif
 
-    loadingScreen->hide();
     delete loadingScreen;
 
     try{

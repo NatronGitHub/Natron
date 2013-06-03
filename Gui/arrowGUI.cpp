@@ -21,7 +21,7 @@ Arrow::Arrow(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGra
     this->dest=dest;
     has_source=false;
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getLabel(inputNb)));
+    label=scene->addText(QString(dest->getNode()->getLabel(inputNb).c_str()));
     label->setParentItem(this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
@@ -34,7 +34,7 @@ Arrow::Arrow(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGrap
     this->source=src;
     this->dest=dest;
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getLabel(inputNb)));
+    label=scene->addText(QString(dest->getNode()->getLabel(inputNb).c_str()));
     label->setParentItem(this);
     initLine();
 

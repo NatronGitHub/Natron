@@ -510,7 +510,7 @@ void VideoEngine::startEngine(int nbFrames){
 }
 
 VideoEngine::VideoEngine(ViewerGL *gl_viewer,Model* engine,QMutex* lock):
-QObject(engine),_working(false),_aborted(false),_paused(true),_readerInfoHasChanged(false),
+_working(false),_aborted(false),_paused(true),_readerInfoHasChanged(false),
 _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false){
     
     _engineLoopWatcher = new QFutureWatcher<void>;
@@ -973,16 +973,15 @@ void VideoEngine::_debugTree(Node* n,int* nb){
         _debugTree(c,nb);
     }
 }
-void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U64> > &alreadyComputed, Node *n){
+void VideoEngine::computeTreeHash(std::vector< std::pair<std::string,U64> > &alreadyComputed, Node *n){
     for(int i =0; i < alreadyComputed.size();i++){
-        if(QString(alreadyComputed[i].first) == n->getName())
+        if(alreadyComputed[i].first == n->getName().toStdString())
             return;
     }
-    std::vector<char*> v;
+    std::vector<std::string> v;
     n->computeTreeHash(v);
     U64 hashVal = n->getHash()->getHashValue();
-    char* name = QstringCpy(n->getName());
-    alreadyComputed.push_back(make_pair(name,hashVal));
+    alreadyComputed.push_back(make_pair(n->getName().toStdString(),hashVal));
     foreach(Node* parent,n->getParents()){
         computeTreeHash(alreadyComputed, parent);
     }
@@ -991,7 +990,7 @@ void VideoEngine::computeTreeHash(std::vector< std::pair<char*,U64> > &alreadyCo
 }
 
 void VideoEngine::changeTreeVersion(){
-    std::vector< std::pair<char*,U64> > nodeHashs;
+    std::vector< std::pair<std::string,U64> > nodeHashs;
     _treeVersion.reset();
     if(!_dag.getOutput()){
         return;

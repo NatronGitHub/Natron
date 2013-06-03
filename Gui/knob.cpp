@@ -82,7 +82,7 @@ Channels_Knob::Channels_Knob(ChannelMask* channels,Knob_Callback *cb,Knob_Mask f
     QComboBox* box=new QComboBox();
     ChannelSet chanset= *this->channels;
     foreachChannels( z,chanset){
-        box->addItem(QString(getChannelName(z)));
+        box->addItem(QString(getChannelName(z).c_str()));
     }
     
     layout->addWidget(boxtext);
@@ -178,6 +178,7 @@ void File_Knob::open_file(){
     str.clear(); 
 
 
+
 //    QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
 //                                                      ,_lastOpened
 //                                                      ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
@@ -186,6 +187,7 @@ void File_Knob::open_file(){
     if(dialog.exec()){
         strlist = dialog.selectedFiles();
     }
+
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
         name->setText(strlist.at(0));

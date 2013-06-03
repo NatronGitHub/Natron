@@ -37,7 +37,6 @@ SOURCES += \
     ../../../../Core/Box.cpp \
     ../../../../Core/channels.cpp \
     ../../../../Core/DataBuffer.cpp \
-    ../../../../Core/diskcache.cpp \
     ../../../../Core/displayFormat.cpp \
     ../../../../Core/flowOP.cpp \
     ../../../../Core/hash.cpp \
@@ -55,13 +54,15 @@ SOURCES += \
     ../../../../Core/Timer.cpp \
     ../../../../Core/VideoEngine.cpp \
     ../../../../Core/viewerNode.cpp \
-    ../../../../Core/workerthread.cpp \
     ../../../../Reader/Read.cpp \
     ../../../../Reader/Reader.cpp \
     ../../../../Reader/readExr.cpp \
     ../../../../Reader/readffmpeg.cpp \
     ../../../../Reader/readQt.cpp \
-    ../../../../Superviser/controler.cpp
+    ../../../../Superviser/controler.cpp \
+    ../../../../Core/viewercache.cpp \
+    ../../../../Gui/texturecache.cpp \
+    ../../../../Gui/framefiledialog.cpp
 
 HEADERS += \
     ../../../../Gui/arrowGUI.h \
@@ -87,7 +88,6 @@ HEADERS += \
     ../../../../Core/Box.h \
     ../../../../Core/channels.h \
     ../../../../Core/DataBuffer.h \
-    ../../../../Core/diskcache.h \
     ../../../../Core/displayFormat.h \
     ../../../../Core/flowOP.h \
     ../../../../Core/hash.h \
@@ -109,7 +109,6 @@ HEADERS += \
     ../../../../Core/Timer.h \
     ../../../../Core/VideoEngine.h \
     ../../../../Core/viewerNode.h \
-    ../../../../Core/workerthread.h \
     ../../../../Reader/Read.h \
     ../../../../Reader/Reader.h \
     ../../../../Reader/readerInfo.h \
@@ -121,7 +120,10 @@ HEADERS += \
     ../../../../Superviser/gl_OsDependent.h \
     ../../../../Superviser/MemoryInfo.h \
     ../../../../Superviser/powiterFn.h \
-    ../../../../Superviser/PwStrings.h
+    ../../../../Superviser/PwStrings.h \
+    ../../../../Core/viewercache.h \
+    ../../../../Gui/texturecache.h \
+    ../../../../Gui/framefiledialog.h
 
 INSTALLS += target
 
