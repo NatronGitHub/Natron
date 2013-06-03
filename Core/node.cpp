@@ -246,9 +246,9 @@ void Node::_inputs(){
 int Node::inputs(){return 1;}
 
 int Node::getInputsNb() const {return inputNb;}
-std::map<int, char*> Node::getInputLabels() const {return inputLabels;}
+const std::map<int, std::string>& Node::getInputLabels() const {return inputLabels;}
 
-const char* Node::getLabel(int inputNb)  {
+std::string Node::getLabel(int inputNb)  {
     return inputLabels[inputNb];}
 QString Node::getName() {return name;}
 QMutex* Node::getMutex() const {return _mutex;}
@@ -265,7 +265,7 @@ std::string Node::setInputLabel(int inputNb){
 }
 void Node::_setLabels(){
     for(int i=0;i<inputLabels.size();i++){
-        std::map<int, char*>::iterator it;
+        std::map<int, std::string>::iterator it;
         it =inputLabels.find(i);
         inputLabels.erase(it);
         string input =setInputLabel(i);

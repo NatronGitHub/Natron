@@ -71,7 +71,7 @@ public:
     void currentFrameName(QString name){_currentFrameName = name;}
     void lastFrame(int l){_lastFrame=l;}
     void firstFrame(int f){_firstFrame=f;}
-    void setDisplayWindowName(const char* n){_displayWindow.name(n);}
+    void setDisplayWindowName(std::string n){_displayWindow.name(n);}
     void dataWindow(int x,int y,int r,int t){_dataWindow.set(x,y, r, t);}
     void displayWindow(int x,int y,int r,int t){_displayWindow.set(x, y, r, t);}
     void Ydirection(int y){_Ydirection=y;}

@@ -160,7 +160,7 @@ typedef ChannelSet ChannelMask;
 Channel getChannelByName(const char *name);
 
 /*Return a cstring with the name of the channel c*/
-const char* getChannelName(Channel c);
+std::string getChannelName(Channel c);
 
 /*useful function to check whether alpha is on in the mask*/
 bool hasAlpha(ChannelMask mask);

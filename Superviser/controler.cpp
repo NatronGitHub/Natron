@@ -12,9 +12,8 @@
 #include "Gui/viewerTab.h"
 
 
-Controler::Controler(Model* coreEngine)
-{ 
-}
+Controler::Controler(){}
+
 void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     this->coreEngine=coreEngine;
     graphicalInterface=new Gui();

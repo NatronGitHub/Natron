@@ -82,7 +82,7 @@ Channels_Knob::Channels_Knob(ChannelMask* channels,Knob_Callback *cb,Knob_Mask f
     QComboBox* box=new QComboBox();
     ChannelSet chanset= *this->channels;
     foreachChannels( z,chanset){
-        box->addItem(QString(getChannelName(z)));
+        box->addItem(QString(getChannelName(z).c_str()));
     }
     
     layout->addWidget(boxtext);

@@ -74,7 +74,7 @@ static size_t getSystemTotalRAM(){
     
 }
 // prints RAM value as KiB, MiB or GiB
-static const char* printAsRAM(size_t v){
+static std::string printAsRAM(size_t v){
     QString toStr = QString::number(v);
     QString outStr;
     if(toStr.size()<=9 && toStr.size()>=7){ 
@@ -93,12 +93,8 @@ static const char* printAsRAM(size_t v){
         outStr.append(toStr);
         outStr.append(" Kb");
     }
-    char* outchr = (char*)malloc(outStr.size()+1);
-    for(int i =0 ; i< outStr.size();i++){
-        outchr[i]=outStr.at(i).toLatin1();
-    }
-    outchr[outStr.size()]='\0';
-    return outchr;
+    
+    return outStr.toStdString();
 }
 
 

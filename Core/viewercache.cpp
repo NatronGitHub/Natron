@@ -105,7 +105,7 @@ void ViewerCache::saveCache(){
         out << frame._actualW << " " << frame._actualH << " ";
         ChannelSet channels = frame._frameInfo->channels();
         foreachChannels(z, channels){
-            out << getChannelName(z) << "|";
+            out << getChannelName(z).c_str() << "|";
         }
         out << " " << frame._frameInfo->currentFrame() << " " << frame._frameInfo->firstFrame() << " "
         << frame._frameInfo->lastFrame() << " ";

@@ -21,7 +21,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false
     layout = new QHBoxLayout(this);
     QString reso("<font color=\"#DBE0E0\">");
     char tmp[10];
-    reso.append(viewer->displayWindow().name());
+    reso.append(viewer->displayWindow().name().c_str());
     reso.append("\t");
     reso.append("</font>");
     resolution = new QLabel(reso,this);
@@ -242,7 +242,7 @@ void InfoViewerWidget::updateCoordMouse(){
 }
 void InfoViewerWidget::changeResolution(){
     format = viewer->displayWindow();
-    if(!strcmp(format.name(),"")){
+    if(format.name() == string("")){
         QString reso("<font color=\"#DBE0E0\">");
         char tmp[10];
         sprintf(tmp, "%i",viewer->displayWindow().w());
@@ -256,7 +256,7 @@ void InfoViewerWidget::changeResolution(){
         resolution->setMaximumWidth(resolution->sizeHint().width());
     }else{
         QString reso("<font color=\"#DBE0E0\">");
-        reso.append(format.name());
+        reso.append(format.name().c_str());
         reso.append("\t");
         reso.append("</font>");
         resolution->setText(reso);
