@@ -42,7 +42,7 @@ Channel getChannelByName(const char *name){
         throw std::string("(getChannelByName):Bad channel name");
     }
 }
-const char* getChannelName(Channel c){
+std::string getChannelName(Channel c){
     if(c==Channel_red){
         return "Channel_red";
     }else if(c==Channel_green){

@@ -13,8 +13,10 @@
 #include "dlfcn.h"
 #endif
 #include <map>
+#include <vector>
 #include <ImfStandardAttributes.h>
 #include "Core/inputnode.h"
+#include <boost/noncopyable.hpp>
 
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
@@ -73,7 +75,7 @@ class Viewer;
 class Hash;
 class VideoEngine;
 class QMutex;
-class Model: public QObject
+class Model: public QObject,public boost::noncopyable
 {
     Q_OBJECT
     
@@ -149,24 +151,24 @@ private:
 	 *to know whether it is an outputNode,InputNode or an operator.*/
     UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
 
+    Controler* ctrl;
+    VideoEngine* vengine; // Video Engine
+    QMutex* _mutex; // mutex for workerthreads
+    Settings* _powiterSettings;
+
+    /*All nodes currently active in the node graph*/
+    std::vector<Node*> allNodes;
     
-    std::vector<const char*> formatNames;
     std::vector<Imath::V3f*> resolutions;
     std::vector<Format*> formats_list;
     std::vector<CounterID*> counters;
     std::vector<PluginID*> plugins;
     std::multimap<std::string,PluginID*> readPlugins;
-    
     QStringList nodeNameList;
 
-	/*All nodes currently active in the node graph*/
-    std::vector<Node*> allNodes;
-    
-    Settings* _powiterSettings;
-    Controler* ctrl;
-    VideoEngine* vengine; // Video Engine
-    QMutex* _mutex; // mutex for workerthreads
+    std::vector<std::string> formatNames;
 
+    
 
 
 };

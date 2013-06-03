@@ -21,8 +21,7 @@ NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockCo
     this->node=node;
 	this->node->setNodeUi(this);
     this->sc=scene;
-    //setFlag(QGraphicsItem::ItemIsMovable);
-    //setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+    
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
     number=nodeNumber;
@@ -53,7 +52,7 @@ NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockCo
     tooltip.append("Channels: ");
     foreachChannels( z,chans){
         tooltip.append("\n");
-        tooltip.append(getChannelName(z));
+        tooltip.append(getChannelName(z).c_str());
 
     }
 

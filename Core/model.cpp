@@ -26,7 +26,7 @@
 #include "Reader/readffmpeg.h"
 #include "Reader/readQt.h"
 using namespace std;
-Model::Model()
+Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
 {
     _mutex = new QMutex;
     _powiterSettings = new Settings;
@@ -35,30 +35,28 @@ Model::Model()
     loadBuiltinPlugins();
     loadReadPlugins();
     displayLoadedPlugins();
-    
-    
 
 }
 void Model::setControler(Controler* ctrl){
     this->ctrl=ctrl;
     vengine = new VideoEngine(ctrl->getGui()->viewer_tab->viewer,this,_mutex);
     connect(this,SIGNAL(vengineNeeded(int)),vengine,SLOT(startEngine(int)));
-    formatNames.push_back("PC_Video");
-    formatNames.push_back("NTSC");
-    formatNames.push_back("PAL");
-    formatNames.push_back("HD");
-    formatNames.push_back("NTSC_16:9");
-    formatNames.push_back("PAL_16:9");
-    formatNames.push_back("1K_Super_35(full-ap)");
-    formatNames.push_back("1K_Cinemascope");
-    formatNames.push_back("2K_Super_35(full-ap)");
-    formatNames.push_back("2K_Cinemascope");
-    formatNames.push_back("4K_Super_35(full-ap)");
-    formatNames.push_back("4K_Cinemascope");
-    formatNames.push_back("square_256");
-    formatNames.push_back("square_512");
-    formatNames.push_back("square_1K");
-    formatNames.push_back("square_2K");
+    formatNames.push_back(string("PC_Video"));
+    formatNames.push_back(string("NTSC"));
+    formatNames.push_back(string("PAL"));
+    formatNames.push_back(string("HD"));
+    formatNames.push_back(string("NTSC_16:9"));
+    formatNames.push_back(string("PAL_16:9"));
+    formatNames.push_back(string("1K_Super_35(full-ap)"));
+    formatNames.push_back(string("1K_Cinemascope"));
+    formatNames.push_back(string("2K_Super_35(full-ap)"));
+    formatNames.push_back(string("2K_Cinemascope"));
+    formatNames.push_back(string("4K_Super_35(full-ap)"));
+    formatNames.push_back(string("4K_Cinemascope"));
+    formatNames.push_back(string("square_256"));
+    formatNames.push_back(string("square_512"));
+    formatNames.push_back(string("square_1K"));
+    formatNames.push_back(string("square_2K"));
     
     resolutions.push_back(new Imath::V3f(640,480,1)); // pc video
     resolutions.push_back(new Imath::V3f(720,486,0.91)); // ntsc
@@ -93,6 +91,8 @@ Model::~Model(){
     vengine->abort();
     foreach(PluginID* p,plugins) delete p;
     foreach(CounterID* c,counters) delete c;
+    foreach(Imath::V3f* p, resolutions) delete p;
+    foreach(Format* f,formats_list) delete f;
     plugins.clear();
     counters.clear();
     allNodes.clear();
@@ -101,6 +101,8 @@ Model::~Model(){
     formats_list.clear();
     nodeNameList.clear();
     delete _powiterSettings;
+    delete _mutex;
+    delete vengine;
 }
 
 

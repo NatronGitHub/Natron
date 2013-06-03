@@ -510,7 +510,7 @@ void VideoEngine::startEngine(int nbFrames){
 }
 
 VideoEngine::VideoEngine(ViewerGL *gl_viewer,Model* engine,QMutex* lock):
-QObject(engine),_working(false),_aborted(false),_paused(true),_readerInfoHasChanged(false),
+_working(false),_aborted(false),_paused(true),_readerInfoHasChanged(false),
 _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false){
     
     _engineLoopWatcher = new QFutureWatcher<void>;

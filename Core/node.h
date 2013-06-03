@@ -149,9 +149,9 @@ public:
     void _inputs();
     virtual int inputs();
     int getInputsNb() const;
-    std::map<int, char*> getInputLabels() const;
+    const std::map<int, std::string>& getInputLabels() const;
     virtual std::string setInputLabel(int inputNb);
-    const char* getLabel(int inputNb) ;
+    std::string getLabel(int inputNb) ;
     void _setLabels();
     void initInputsLabels();
     /*============================*/
@@ -209,7 +209,7 @@ protected:
 	std::vector<Node*> parents;
 	std::vector<Node*> children;
     bool _marked;
-	std::map<int, char*> inputLabels;
+	std::map<int, std::string> inputLabels;
 	QMutex* _mutex;
 	QString name;
 	Hash* hashValue; 

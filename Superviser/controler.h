@@ -10,16 +10,17 @@
 #include <QtCore/QObject>
 #include "Gui/node_ui.h"
 #include "Superviser/powiterFn.h"
+#include <boost/noncopyable.hpp>
 using namespace Powiter_Enums;
 
 class Model;
 class Gui;
 class QLabel;
-class Controler : public QObject
+class Controler : public QObject,public boost::noncopyable
 {
 
 public:
-    Controler(Model* coreEngine);
+    Controler();
     ~Controler();
 
     void setProgressBarProgression(int value);
