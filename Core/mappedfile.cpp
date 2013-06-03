@@ -15,6 +15,9 @@
 # include <sys/stat.h>
 # include <sys/types.h>     // struct stat.
 # include <unistd.h>        // sysconf.
+#include <errno.h>
+#include <cstring>
+#include <cstdio>
 #endif
 
 using namespace std;
@@ -46,9 +49,9 @@ void MMAPfile::open(const std::string path,Powiter_Enums::MMAPfile_mode mode, si
        flags |= (O_CREAT | O_TRUNC);
     }
     _handle= ::open(path.c_str(),flags,S_IRUSR | S_IWUSR);
-    errno = 0;
-    if (errno != 0){
-        cleanup("failed opening file to map");
+    if(_handle==-1){
+        cleanup("Failed opening file to map");
+        cout << strerror(errno) << endl;
         return;
     }
     //--------------Set file size---------------------------------------------//

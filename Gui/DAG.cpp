@@ -22,7 +22,7 @@
 #include "Gui/viewerTab.h"
 #include "Core/VideoEngine.h"
 
-NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),_fullscreen(false){
+NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),_fullscreen(false),state(DEFAULT){
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(BoundingRectViewportUpdate);
