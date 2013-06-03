@@ -6,7 +6,6 @@
 
 #ifndef CONTROLER_H
 #define CONTROLER_H
-
 #include <QtCore/QObject>
 #include "Gui/node_ui.h"
 #include "Superviser/powiterFn.h"

@@ -10,8 +10,9 @@
 #include <QtCore/QString>
 #include <QtWidgets/QLabel>
 #include <QtGui/qpixmap.h>
-
-//#include <vld.h> //< visual studio memory leaks finder header
+#ifdef __POWITER_WIN32__
+#include <vld.h> //< visual studio memory leaks finder header
+#endif
 #include "Superviser/controler.h"
 #include "Core/model.h"
 #include "Superviser/powiterFn.h"
@@ -19,7 +20,11 @@
 using namespace std;
 
 int main(int argc, char *argv[])
-{
+{	
+#ifdef __POWITER_WIN32__
+	VLDEnable();
+	VLDReportLeaks();
+#endif
     QApplication app(argc, argv);
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");

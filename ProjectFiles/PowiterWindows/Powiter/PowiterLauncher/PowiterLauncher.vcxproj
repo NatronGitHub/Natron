@@ -58,7 +58,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\Qt5Core.lib;$(QT_LIB)\Qt5Gui.lib;$(QT_LIB)\Qt5OpenGL.lib;$(QT_LIB)\Qt5Widgets.lib;$(QT_LIB)\Qt5Concurrent.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OPENEXR_LIB)\Iex.lib;$(OPENEXR_LIB)\Half.lib;$(OPENEXR_LIB)\Imath.lib;$(OPENEXR_LIB)\IlmThread.lib;$(OPENEXR_LIB)\IlmImf.lib;$(FFMPEG_LIB)\avcodec.lib;$(FFMPEG_LIB)\avdevice.lib;$(FFMPEG_LIB)\avfilter.lib;$(FFMPEG_LIB)\avformat.lib;$(FFMPEG_LIB)\avutil.lib;$(FFMPEG_LIB)\swscale.lib;$(QT_LIB)\Qt5Core.lib;$(QT_LIB)\Qt5Gui.lib;$(QT_LIB)\Qt5OpenGL.lib;$(QT_LIB)\Qt5Widgets.lib;$(QT_LIB)\Qt5Concurrent.lib;$(FREETYPE2_LIB)\freetype242MT.lib;$(FTGL_LIB)\ftgl.lib;$(TargetDir)Powiter_win32.lib;$(GLEW_LIB)\glew32.lib;opengl32.lib;wsock32.lib;glu32.lib;Psapi.lib;vld.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CustomBuildStep>
