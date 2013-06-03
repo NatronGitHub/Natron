@@ -25,11 +25,14 @@ class Controler;
 class FeedBackSpinBox;
 class ScaleSlider;
 class TimeSlider;
+class TextureCache;
 class ViewerTab: public QWidget 
 {
 public:
 	ViewerTab(Controler* ctrl,QVBoxLayout*& viewer_tabLayout,QWidget* parent=0);
 	virtual ~ViewerTab();
+    
+    void setTextureCache(TextureCache* cache);
 	//QVBoxLayout* viewer_tabLayout;
 
 	/*Viewer Settings*/
@@ -76,6 +79,7 @@ public:
 
 	/*frame seeker*/
 	TimeSlider* frameSeeker;
+    
     void setControler(Controler* c);
     Controler* getControler();
     bool initialized(){return initialized_;}

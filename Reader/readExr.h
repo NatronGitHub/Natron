@@ -48,28 +48,33 @@ public:
 class ReadExr : public Read{
 
 public:
-	
+    
+    static Read* BuildRead(Reader* reader){return new ReadExr(reader);}
 
-	ReadExr(Reader* op,ViewerGL* ui_context);
+	ReadExr(Reader* op);
 	virtual ~ReadExr();
     
 	void lookupChannels(std::set<Channel>& channel, const char* name);
 	bool getChannels(const ChannelName& channelName, int view, std::set<Channel>& channel);
 	
-
-	void normal_engine(const Imath::Box2i& datawin,
-		const Imath::Box2i& dispwin,
-		ChannelSet&   channels,
-		int                 exrY,
-		Row*                row,
-		int                 x,
-		int                 X,
-		int                 r,
-		int                 R);
+    /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
+    virtual std::vector<std::string> fileTypesDecoded(){
+        std::vector<std::string> out;
+        out.push_back("exr");
+        return out;
+    };
+    
+    /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
+    virtual std::string decoderName(){return "OpenEXR";}
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
-    virtual void open(const QString filename,bool openBothViews = false);
+    virtual bool supportsScanLine(){return true;}
+    virtual int scanLinesCount(){return (int)_img.size();}
+    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readScanLine(int y);
     virtual bool supports_stereo(){return true;}
-    virtual void make_preview(const char* filename);
+    virtual void make_preview();
+    virtual void initializeColorSpace();
+    void debug();
 
 private:
 	Imf::InputFile* inputfile;
@@ -77,7 +82,7 @@ private:
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;
-    std::vector< Row* > _img;
+    std::map< int, Row* > _img;
 	bool rgbMode;
 #ifdef __POWITER_WIN32__
     std::ifstream *inputStr;

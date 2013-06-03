@@ -64,10 +64,14 @@ public:
     static Knob* bool_Knob(bool& boolean,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
 	Knob_Callback* getCallBack(){return cb;}
     Knob_Types getType() const {return _type;}
+    
+    //to be called on events functions to tell the engine to start processing
+    //made public to allow other class that knob depends on to call validateEvent
+    //but shouldn't be called by any other class.
+    void validateEvent(bool initViewer);
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
-    //To be called when the user press enter to validate informations
-    void addElement(QWidget* e){elements.push_back(e);}
+    
     Knob_Callback *cb;
     QHBoxLayout* layout;
     std::vector<QWidget*> elements;

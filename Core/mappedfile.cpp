@@ -108,9 +108,9 @@ void MMAPfile::open(const std::string path,Powiter_Enums::MMAPfile_mode mode, si
 		dwCreationDisposition,
 		dwFlagsandAttributes,
 		NULL );
-    
+
     if (_handle == INVALID_HANDLE_VALUE) {
-        cleanup("failed opening file");
+        cleanup("Failed to create file (CreateFileA returned INVALID_HANDLE_VALUE)");
         return;
     }
     

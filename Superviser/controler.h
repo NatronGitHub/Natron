@@ -19,7 +19,7 @@ class Controler : public QObject
 {
 
 public:
-    Controler(Model* coreEngine,QObject* parent=0);
+    Controler(Model* coreEngine);
     ~Controler();
 
     void setProgressBarProgression(int value);

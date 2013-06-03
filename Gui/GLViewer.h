@@ -11,7 +11,6 @@
 
 #include <QtOpenGL/QGLWidget>
 #include <QtCore/QEvent>
-
 #include <QtCore/QTimer>
 #include <QtGui/QKeyEvent>
 #include <string>
@@ -51,6 +50,7 @@ class Lut;
 class InfoViewerWidget;
 class Controler;
 class VideoEngine;
+class TextureCache;
 class ViewerGL : public QGLWidget
 {
 	Q_OBJECT
@@ -64,40 +64,26 @@ class ViewerGL : public QGLWidget
 
 	/*basic state switching for mouse events*/
 	enum MOUSE_STATE{DRAGGING,UNDEFINED};
+    
+    /*enum used by the handleTextureAndViewerCache function to determine the behaviour
+     to have depending on the caching mode*/
+    enum CACHING_MODE{TEXTURE_CACHE,VIEWER_CACHE};
 
 	class ZoomContext{
 	public:
-		ZoomContext():zoomX(0),zoomY(0),zoomFactor(1),currentBuiltInZoom(-1),restToZoomX(0),restToZoomY(0)
+		ZoomContext():zoomX(0),zoomY(0),zoomFactor(1),restToZoomX(0),restToZoomY(0)
 		{}
 
 		QPointF old_zoomed_pt,old_zoomed_pt_win;
 		float zoomX,zoomY;
 		float restToZoomX,restToZoomY;
 		float zoomFactor;
-		float currentBuiltInZoom;
-		std::pair<int,int> zoomIncrement;
-
+	
 		void setZoomXY(float x,float y){zoomX=x;zoomY=y;}
 		std::pair<int,int> getZoomXY(){return std::make_pair(zoomX,zoomY);}
 		/*the level of zoom used to display the frame*/
 		void setZoomFactor(float f){zoomFactor = f;}
 		float getZoomFactor(){return zoomFactor;}
-		void setCurrentBuiltInZoom(float f){currentBuiltInZoom = f;}
-		float getCurrentBuiltinZoom(){return currentBuiltInZoom;}
-		void setZoomIncrement(std::pair<int,int> p){zoomIncrement = p;}
-	};
-	class BuiltinZooms{
-		std::map<float, pair<int,int> > builtInZooms;
-	public:
-		BuiltinZooms(){fillBuiltInZooms();}
-		/*builtin factors used to compute the data: this has nothing to do
-		with the level of zoom used to display*/
-		void fillBuiltInZooms();
-		float closestBuiltinZoom(float v);
-		float inferiorBuiltinZoom(float v);
-		float superiorBuiltinZoom(float v);
-		std::pair<int,int>& operator[](float v){return builtInZooms[v];}
-
 	};
 
 public:
@@ -152,10 +138,6 @@ public:
 	/*the lut used by the viewer to output images*/
 	float lutType(){return _lut;}
 
-	/*the builtinZoom is the level of zoom at which the data 
-	have been computed, it is NOT the level of zoom currently
-	set to draw the texture.*/
-	/*float currentBuiltinZoom(){return currentBuiltInZoom;}*/
 
 	/*the exposure applied to the fragments when drawing*/
 	float getExposure(){return exposure;}
@@ -175,9 +157,9 @@ public:
 
 	/*function initialising display textures (and glsl shader the first time)
 	according to the current level of zooom*/
-	void initTextures();
+	void initTextures(int w,int h,GLuint texID);
 	/*init the RGB texture*/
-	void initTexturesRgb(int w,int h);
+	void initTextureBGRA(int w,int h,GLuint texID);
 	/*width and height of the display texture*/
 	std::pair<int,int> textureSize(){return _textureSize;}
 
@@ -193,13 +175,15 @@ public:
 	/*overload of QT enter/leave/resize events*/
 	void enterEvent(QEvent *event)
 	{   QGLWidget::enterEvent(event);
-	setFocus();
-	grabKeyboard();
+        setFocus();
+        grabMouse();
+        grabKeyboard();
 	}
 	void leaveEvent(QEvent *event)
 	{
 		QGLWidget::leaveEvent(event);
 		setFocus();
+        releaseMouse();
 		releaseKeyboard();
 	}
 	virtual void resizeEvent(QResizeEvent* event){ // public to hack the protected field
@@ -209,40 +193,44 @@ public:
 			setVisible(true);
 		}
 	}
-
-	/*zoom functions*/
-	void zoomIn();
-	void zoomOut();
-
-
 	/*Convenience functions to communicate with the ZoomContext*/
-	void setCurrentBuiltInZoom(float f){_zoomCtx.setCurrentBuiltInZoom(f);}
-	float getCurrentBuiltinZoom(){return _zoomCtx.getCurrentBuiltinZoom();}
-	void setZoomIncrement(std::pair<int,int> p){_zoomCtx.setZoomIncrement(p);}
+    float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx.zoomFactor);}
+    float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx.zoomFactor);}
 	void setZoomFactor(float f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
 	float getZoomFactor(){return _zoomCtx.getZoomFactor();}
-	ViewerGL::BuiltinZooms& getBuiltinZooms(){return _builtInZoomMap;}
-
+    
+    /*computes what are the rows that should be displayed on viewer
+     for the given displayWindow with the  zoom factor and  current zoom center.
+	 They will be stored from bottom to top. The values are returned
+     as a map of displayWindow coordinates mapped to viewport cooridnates*/
+    std::map<int,int> computeRowSpan(Format displayWindow,float zoomFactor);
+	/*computes the inverse matrix of m and stores it in out*/
+    int _glInvertMatrix(float *m, float *out);
+	/*multiply matrix1 by matrix2 and stores the result in result*/
+    void _glMultMats44(float *result, float *matrix1, float *matrix2);
+	/*multiply the matrix by the vector and stores it in resultvector*/
+    void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
+	/*Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)*/
+    int _glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector);
 	/*translation/zoom related functions*/
 	void setTranslation(float x,float y){transX = x; transY=y;}
 	std::pair<int,int> getTranslation(){return std::make_pair(transX,transY);}
 	void resetMousePos(){ new_pos.setX(0);new_pos.setY(0); old_pos.setX(0);old_pos.setY(0);}
-	//     void setZoomXY(float x,float y){zoomX=x;zoomY=y;}
-	//     std::pair<int,int> getZoomXY(){return std::make_pair(zoomX,zoomY);}
+	
 
 	/*the file type of the current frame*/
 	void fileType(File_Type f){_filetype=f;}
 	File_Type fileType(){return _filetype;}
 
-	/*Fill the _renderingBuffer (PBO) with the current row . It converts
+	/*Fill the frameData buffer with the current row . It converts
 	32bit floating points intensities to 8bit using error diffusion
-	algorithm. It also applies the viewer LUT during the filling process.
-	nbBytesOutput hold the number of bytes for 1 channel in the output*/
+	algorithm. It also applies the viewer LUT during the filling process.*/
 	void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-		size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha);
 	/*idem above but for floating point textures (no dithering applied here)*/
 	void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-		size_t nbBytesOutput,int yOffset,const float* alpha=NULL);
+		int w,int yOffset,const float* alpha);
+
 
 	/*handy functions to fill textures*/
 	static U32 toBGRA(U32 r,U32 g,U32 b,U32 a);
@@ -254,8 +242,12 @@ public:
 
 	/*returns openGL coordinates of the mouse position
 	passed in window coordinates*/
-	QPoint openGLpos(int x,int y);
-
+	QVector3D openGLpos(int x,int y);
+    
+    /*same as openGLpos(x,y) but ignores the z component,avoiding
+     a call to glReadPixels()*/
+    QPoint openGLpos_fast(int x,int y);
+    
 	/*get color of the pixel located at (x,y) in
 	opengl coordinates*/
 	QVector4D getColorUnderMouse(int x,int y);
@@ -264,9 +256,9 @@ public:
 	infos below the viewer)*/
 	void setInfoViewer(InfoViewerWidget* i );
 
-	/*handy function that zoom automatically the viewer so it displays
-	the frame in the entirely in the viewer*/
-	void initViewer();
+	/*handy function that zoom automatically the viewer so it fit
+	the displayWindow  entirely in the viewer*/
+	void fitToFormat(Format displayWindow);
 
 	/*display black in the viewer*/
 	void clearViewer(){
@@ -299,11 +291,19 @@ public:
 
 	/*called by the main thread to init specific variables per frame
 	* safe place to do things before any computation for the frame is started. Avoid heavy computations here.
+	* That's where the viewer cached frame is initialised.
+    * if a texture residing in the texture cache already holds the results.
+    * The caller should then abort any computation and set for current texture the one returned.
+    * otherwise returns false.
 	*/
-	void preProcess(std::string filename,int nbFrameHint);
+	bool handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
-	std::pair<void*,size_t> allocatePBO(int w,int h);
+    
+    /*Allocate the pbo represented by the pboID with dataSize bytes.
+     This function returns a pointer to
+     the mapping created between the GPU and the RAM*/
+	void* allocateAndMapPBO(size_t dataSize,GLuint pboID);
 
 	/*Fill the mapped PBO represented by dst with byteCount of src*/
 	void fillPBO(const char* src,void* dst,size_t byteCount);
@@ -319,6 +319,24 @@ public:
 	const char* getFrameData(){return frameData;}
 
 	GLuint getPBOId(int index){return texBuffer[index];}
+    
+    void setRowSpan(std::pair<int,int> p){_rowSpan = p;}
+    
+    void setTextureCache(TextureCache* cache){ _textureCache = cache;}
+    
+    TextureCache* getTextureCache(){return _textureCache;}
+    
+    void setCurrentTexture(GLuint texture){currentTexture = texture;}
+    
+    U32 getCurrentTexture(){return currentTexture;}
+    
+    GLuint getDefaultTextureID(){return texId[0];}
+    
+    float byteMode(){return _byteMode;}
+    
+    bool hasHardware(){return _hasHW;}
+    
+    ViewerCache::FrameID& getCurrentFrameID(){return frameInfo;}
 
 	public slots:
 		virtual void updateGL();
@@ -349,19 +367,19 @@ protected :
 private:
 	void initConstructor(); // called in the constructor
 	void initShaderGLSL(); // init shaders
-	int  isExtensionSupported(const char* extension); // check if OpenGL extension is supported
-
-
+	int isExtensionSupported(const char* extension); // check if OpenGL extension is supported
+    
 	void initBlackTex();// init the black texture when viewer is disconnected
 	void drawBlackTex(); // draw the black texture
 
 
 	TextRenderer _textRenderer;
 
-	GLuint texBuffer[2];
-	GLuint texId[1];
+	GLuint texBuffer[2]; // PBO's used to upload textures
+	GLuint texId[1]; // < the texture used for rendering when the texture does not come from cache
+    GLuint currentTexture; // the texture used for rendering, might come from the cache,otherwise it is texId[0]
 	//  void* _renderingBuffer; // the frame currently computed (mapped PBO handle)
-	std::pair<int,int> _textureSize;
+	std::pair<int,int> _textureSize; // size of texId[0]
 	GLuint texBlack[1];
 	QGLShaderProgram* shaderRGB;
 	QGLShaderProgram* shaderLC;
@@ -371,6 +389,7 @@ private:
 
 	float _lut; // 0 = NONE , 1 = sRGB , 2 = Rec 709  : this value is used by shaders
 	Lut* _colorSpace; //the lut used to do the viewer colorspace conversion when we can't use shaders
+    bool _usingColorSpace;
 
 	int Ysampling; // sampling factor for LC files
 
@@ -395,10 +414,10 @@ private:
 	QPointF old_pos;
 	QPointF new_pos;
 	float transX,transY;
-
+    
+    std::pair<int,int> _rowSpan;
 
 	ZoomContext _zoomCtx;
-	BuiltinZooms _builtInZoomMap;
 
 	VideoEngine* vengine;
 
@@ -413,8 +432,15 @@ private:
 	bool _fullscreen;
 
 	char* frameData; // last frame computed data , either U32* or float* depending on _byteMode
-	bool _makeNewFrame;
+    bool _mustFreeFrameData; // true whenever the texture displayed is just a portion of the full image
+    bool _noDataTransfer; // true whenever the current texture already holds data and doesn't need
+    //a copy from a pbo
+    
+    
 	ViewerCache::FrameID frameInfo;
+    
+    TextureCache* _textureCache;
+    
 
 };
 #endif // GLVIEWER_H

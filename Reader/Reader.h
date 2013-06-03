@@ -24,28 +24,71 @@ class Reader : public InputNode
 public:
     /*Internal enum used to determine whether we need to open both views from
      * files that support stereo( e.g : OpenEXR multiview files)*/
-    enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE};
+    enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE,DO_NOT_DECODE};
     
     /*This class manages the buffer of the reader, i.e:
      *a reader can have several frames stored in its buffer.
      The size of the buffer is variable, see Reader::setMaxFrameBufferSize(...)*/
     class Buffer{
     public:
+        
+        /*This class represent the information needed to know how many scanlines were decoded for scan-line
+         readers. This class is used to determine whether 2 decoded scan-line frames
+         are equals and also as an optimization structure to read only needed scan-lines (for
+         zoom/panning purpose)*/
+        class ScanLineContext{
+        public:
+            typedef std::map<int,int>::iterator ScanLineIterator;
+            typedef std::map<int,int>::reverse_iterator ScanLineReverseIterator;
+            
+            ScanLineContext(){}
+            ScanLineContext(std::map<int,int> rows):_rows(rows){}
+            
+            /*set the base scan-lines that represents the context*/
+            void setRows(std::map<int,int> rows){_rows=rows;}
+            std::map<int,int>& getRows(){return _rows;}
+            
+            bool hasScanLines(){return _rows.size() > 0;}
+            
+            /*Adds to _rowsToRead the rows in others that are missing to _rows*/
+            void computeIntersectionAndSetRowsToRead(std::map<int,int>& others);
+            
+            /*merges _rowsToRead and _rows and clears out _rowsToRead*/
+            void merge();
+            
+            ScanLineIterator begin(){return _rows.begin();}
+            ScanLineIterator end(){return _rows.end();}
+            ScanLineReverseIterator rbegin(){return _rows.rbegin();}
+            ScanLineReverseIterator rend(){return _rows.rend();}
+            
+            std::vector<int>& getRowsToRead(){return _rowsToRead;}
+            
+        private:
+            std::map<int,int> _rows; //base rows
+            std::vector<int> _rowsToRead; // rows that were added on top of the others and that need to be read
+        };
+        
         /*This class represents a frame residing in the buffer.*/
         class DecodedFrameDescriptor{
         public:
             DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,
                                    ReaderInfo* frameInfo,const char* cachedFrame,
-                                   QFutureWatcher<const char*>* cacheWatcher,std::string filename):
+                                   QFutureWatcher<const char*>* cacheWatcher,std::string filename,
+                                   ScanLineContext *slContext = 0):
             _asynchTask(asynchTask),_readHandle(readHandle),_frameInfo(frameInfo),_cachedFrame(cachedFrame),
-            _cacheWatcher(cacheWatcher),_filename(filename)
+            _cacheWatcher(cacheWatcher),_filename(filename),_slContext(slContext)
             {}
             DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_frameInfo(0),_cachedFrame(0),_cacheWatcher(0)
-            ,_filename(""){}
+            ,_filename(""),_slContext(0){}
             DecodedFrameDescriptor(const DecodedFrameDescriptor& other):
             _asynchTask(other._asynchTask),_readHandle(other._readHandle),_frameInfo(other._frameInfo),
-            _cachedFrame(other._cachedFrame),_cacheWatcher(other._cacheWatcher),_filename(other._filename)
+            _cachedFrame(other._cachedFrame),_cacheWatcher(other._cacheWatcher),_filename(other._filename),
+            _slContext(other._slContext)
             {}
+            
+            bool isEmpty(){return !_asynchTask && !_readHandle && !_frameInfo && !_cachedFrame &&
+                !_cacheWatcher && !_slContext && _filename.empty();}
+            
             /*This member is not 0 if the decoding for the frame was done in an asynchronous manner
              It is used to query whether it has finish or not.*/
             QFuture<void>* _asynchTask;
@@ -67,6 +110,8 @@ public:
             
             /*The name of the frame in the buffer.*/
             std::string _filename;
+            
+            ScanLineContext* _slContext;
         };
         
         typedef std::vector<DecodedFrameDescriptor>::iterator DecodedFrameIterator;
@@ -74,16 +119,18 @@ public:
         
         /*Enum used to know what kind of frame is enqueued in the buffer, it is used by
          isEnqueued(...) and this function is used by open(...) and openCachedFrame(...)*/
-        enum SEARCH_TYPE{CACHED_SEARCH,NOTCACHED_SEARCH,BOTH_SEARCH};
+        enum SEARCH_TYPE{CACHED_FRAME = 1,SCANLINE_FRAME = 2 ,FULL_FRAME = 4 , NOT_CACHED_FRAME = 8,ALL_FRAMES = 16};
+    
         
         Buffer():_bufferSize(2){}
         ~Buffer(){clear();}
         Reader::Buffer::DecodedFrameDescriptor insert(QString filename,
-                    QFuture<void> *future,
-                    ReaderInfo* info,
-                    Read* readHandle,
-                    const char* cachedFrame,
-                    QFutureWatcher<const char*>* cacheWatcher=NULL);
+                                                      QFuture<void> *future,
+                                                      ReaderInfo* info,
+                                                      Read* readHandle,
+                                                      const char* cachedFrame,
+                                                      ScanLineContext *slContext = 0,
+                                                      QFutureWatcher<const char*>* cacheWatcher=NULL);
         void remove(std::string filename);
         QFuture<void>* getFuture(std::string filename);
         bool decodeFinished(std::string filename);
@@ -105,7 +152,7 @@ public:
     Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache);
     Reader(Reader& ref);
 
-    void createReadHandle();
+    void showFilePreview();
     void getVideoSequenceFromFilesList();
 	bool hasFrames(){return fileNameList.size()>0;}
 	void incrementCurrentFrameIndex();
@@ -154,12 +201,12 @@ public:
     std::string getRandomFrameName(int f);
 	bool hasPreview(){return has_preview;}
 	void hasPreview(bool b){has_preview=b;}
-	void setPreview(QImage* img){preview=img; hasPreview(true);}
+	void setPreview(QImage* img);
 	QImage* getPreview(){return preview;}
 
     virtual ~Reader();
-    virtual const char* className();
-    virtual const char* description();
+    virtual std::string className();
+    virtual std::string description();
 
 	File_Type fileType(){return filetype;}
 	
@@ -190,6 +237,8 @@ public:
     
     void removeCachedFramesFromBuffer();
     
+    void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
+    
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
 private:
@@ -197,6 +246,9 @@ private:
 	bool has_preview;
     QStringList fileNameList;
     bool video_sequence;
+    /*useful when using readScanLine in the open(..) function, it determines
+     how many scanlines we'd need*/
+    bool _fitFrameToViewer;
 	Read* readHandle;
 	File_Type filetype;
 	ViewerGL* ui_context;

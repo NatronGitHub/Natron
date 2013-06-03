@@ -60,11 +60,6 @@ static const char* fragRGB ="uniform sampler2D Tex;\n"
 "   }\n"   // << END TO REC 709
 "   color_tmp.rgb = color_tmp.rgb * expMult;\n"
 "}\n" // end if !bytemode
-//"else{"
-//"    float tmp = color_tmp.r;\n"
-//"    color_tmp.r = color_tmp.b;\n"
-//"    color_tmp.b = tmp;\n"
-//"}\n"
 "	gl_FragColor = color_tmp;\n"
 "}\n"
 ;

@@ -12,7 +12,7 @@
 #include "Gui/viewerTab.h"
 
 
-Controler::Controler(Model* coreEngine,QObject* parent) : QObject(parent)
+Controler::Controler(Model* coreEngine)
 { 
 }
 void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
@@ -44,9 +44,7 @@ Controler::~Controler(){
     delete coreEngine;
 }
 
-void Controler::exit(){
-   //delete this;
-}
+void Controler::exit(){}
 
 QStringList& Controler::getNodeNameList(){
     return coreEngine->getNodeNameList();

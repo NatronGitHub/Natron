@@ -23,6 +23,8 @@
 
 #define ROOT "./"
 #define CACHE_ROOT_PATH ROOT"Cache/"
+#define VIEWER_CACHE_PATH CACHE_ROOT_PATH"ViewerCache/"
+#define NODE_CACHE_PATH CACHE_ROOT_PATH"NodeCache/"
 #define IMAGES_PATH ROOT"Images/"
 #define PLUGINS_PATH ROOT"Plugins"
 

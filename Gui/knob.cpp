@@ -15,6 +15,7 @@
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
+#include "Gui/framefiledialog.h"
 
 std::vector<Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;
@@ -50,6 +51,18 @@ Knob::~Knob(){
     elements.clear();
     delete layout;
     values.clear();
+}
+
+void Knob::validateEvent(bool initViewer){
+    Node* node = getCallBack()->getNode();
+    NodeGui* nodeUI = node->getNodeUi();
+    NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
+    if(viewer){
+        Controler* ctrlPTR = viewer->getControler();
+        ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
+        ctrlPTR->getModel()->setVideoEngineRequirements(static_cast<OutputNode*>(viewer->getNode()));
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);
+    }
 }
 
 //================================================================
@@ -145,24 +158,12 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 		if(strlist!=knob->getStr()){
 			knob->setStr(strlist);
 			knob->setValues();
-			const char* className=knob->getCallBack()->getNode()->className();
-			if(!strcmp(className,"Reader")){
-				Node* node=knob->getCallBack()->getNode();
-				node->createReadHandle();
-                Node_ui* readerUi = knob->getCallBack()->getNode()->getNodeUi();
-                Node_ui* output =NULL;
-                if(readerUi->hasOutputNodeConnected(output)){
-                    Controler* ctrlPTR = output->getControler();
-                    if(static_cast<Reader*>(node)->hasFrames()){
-                        ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
-                        ctrlPTR->getModel()->setVideoEngineRequirements(
-                                                                        ctrlPTR->getModel()->getVideoEngine()->getInputNodes(),
-                                                                        ctrlPTR->getModel()->getVideoEngine()->getOutputNode());
-                        ctrlPTR->getModel()->startVideoEngine();
-                        
-                    }
-                }
-			}
+            std::string className=knob->getCallBack()->getNode()->className();
+			if(className == std::string("Reader")){
+                Node* node=knob->getCallBack()->getNode();
+                static_cast<Reader*>(node)->showFilePreview();
+                knob->validateEvent(true);
+            }
 		}
     }
 	QLineEdit::keyPressEvent(e);
@@ -176,36 +177,27 @@ Knob* Knob::file_Knob( Knob_Callback *cb, QString &description, QStringList &fil
 void File_Knob::open_file(){
     str.clear(); 
 
-    QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
-                                                      ,_lastOpened
-                                                      ,tr("Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)"));
-    cout << strlist.size() << endl;
+
+
+//    QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
+//                                                      ,_lastOpened
+//                                                      ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+    QStringList strlist;
+    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+    if(dialog.exec()){
+        strlist = dialog.selectedFiles();
+    }
+
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
         name->setText(strlist.at(0));
         setStr(strlist);
         setValues();
-        const char* className=getCallBack()->getNode()->className();
-        if(!strcmp(className,"Reader")){
+        std::string className=getCallBack()->getNode()->className();
+        if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
-            node->createReadHandle();
-            Node_ui* readerUi = getCallBack()->getNode()->getNodeUi();
-            Node_ui* output =NULL;
-            if(readerUi->hasOutputNodeConnected(output)){
-                Controler* ctrlPTR = output->getControler();
-                
-                if(static_cast<Reader*>(node)->hasFrames()){
-                    ctrlPTR->getModel()->getVideoEngine()->abort();
-                    ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
-                    //ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
-                    ctrlPTR->getModel()->setVideoEngineRequirements(
-                                                                    ctrlPTR->getModel()->getVideoEngine()->getInputNodes(),
-                                                                    ctrlPTR->getModel()->getVideoEngine()->getOutputNode());
-                    ctrlPTR->getModel()->startVideoEngine(1);
-                    
-                }
-            }
-            
+            static_cast<Reader*>(node)->showFilePreview();
+            validateEvent(true);
         }
     }
     
@@ -242,13 +234,7 @@ File_Knob::File_Knob(Knob_Callback *cb, QString &description, QStringList &fileP
 }
 void File_Knob::setValues(){
     values.clear();
-    for(int i=0;i<str.size();i++){
-        QString s = str[i];
-        for(int j =0 ; j < s.size();j++){
-            values.push_back((U64)s.at(j).unicode());
-        }
-	}
-    
+    // filenames should not be involved in hash key computation as it defeats all the purpose of the cache
 }
 
 //================================================================

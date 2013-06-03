@@ -12,6 +12,7 @@ Row::Row(){
 }
 
 void Row::turnOn(Channel c){
+    if( c & _channels) return;
     _channels += c;
     buffers[c] = (float*)malloc((r-x)*sizeof(float));
 }
@@ -35,41 +36,34 @@ void Row::allocate(){
     }    
 }
 
-void Row::range(int offset,int range){
-    //TODO : change the name of the function to reflect its behaviour
-    if((range-offset) < (r-x)) // don't changeSize if the range is smaller
+void Row::range(int offset,int right){
+    if((right-offset) < (r-x)) // don't changeSize if the range is smaller
         return;
-    r = range;
+    r = right;
     x = offset;
     foreachChannels(z, _channels){
-        buffers[(int)z] = (float*)realloc(buffers[(int)z],(r-x)*sizeof(float));
+        if(buffers[(int)z])
+            buffers[(int)z] = (float*)realloc(buffers[(int)z],(r-x)*sizeof(float));
+        else
+            buffers[(int)z] = (float*)malloc((r-x)*sizeof(float));
     }
-   
 }
 
 Row::~Row(){
-    for(unsigned int i =0; i < channels().size();i++){
-        free(buffers[i]);
+    foreachChannels(z, _channels){
+        free(buffers[(int)z]);
     }
     free(buffers);
 }
 const float* Row::operator[](Channel z) const{
-    if(buffers[z]){
-        return buffers[z] - x ;
-    }else{
-        return NULL;
-    }
-    
+   return _channels & z ?  buffers[z] - x : NULL;
 }
 
 float* Row::writable(Channel c){
-    if(buffers[c]){
-        return buffers[c] - x ;
-    }else{
-        return NULL;
-    }
+    return _channels & c ?  buffers[c] - x : NULL;
 }
 void Row::copy(const Row *source,ChannelSet channels,int o,int r){
+    _channels = channels;
     range(o, r); // does nothing if the range is smaller
     foreachChannels(z, channels){
         if(!buffers[z]){

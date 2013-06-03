@@ -29,7 +29,7 @@ class QProgressBar;
 class QStatusBar;
 class QTreeView;
 class Controler;
-
+class TextureCache;
 class Gui:public QMainWindow
 {
     Q_OBJECT
@@ -48,13 +48,16 @@ protected:
     
 private:
 
-  
+    TextureCache* _textureCache;
     Controler* crossPlatform; // Pointer to the controler
     
-    
-public slots:    
+    void clearTextureCache();
+
+public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
+    void clearTexCache(){clearTextureCache();}
+
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -71,6 +74,7 @@ public:
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearBufferCache;
+    QAction *actionClearTextureCache;
     /*CENTRAL ZONE SPLITING*/
     //======================
     QWidget *centralwidget;

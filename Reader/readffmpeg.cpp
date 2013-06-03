@@ -869,7 +869,10 @@ void FFMPEGFileManager::release(const char* filename)
     
 }
 
-ReadFFMPEG::ReadFFMPEG(Reader* op,ViewerGL* ui_context):Read(op,ui_context),_lock(){
+ReadFFMPEG::ReadFFMPEG(Reader* op):Read(op),_lock(){}
+
+void ReadFFMPEG::initializeColorSpace(){
+    _lut = NULL;
 }
 
 ReadFFMPEG::~ReadFFMPEG(){
@@ -881,9 +884,7 @@ ReadFFMPEG::~ReadFFMPEG(){
     _dataBufferManager.release(ba.constData());
     
 }
-
-void ReadFFMPEG::open(const QString filename,bool openBothViews){
-	//std::string filename = files[current_frame].toStdString();
+void ReadFFMPEG::readHeader(const QString filename,bool openBothViews){
     this->_file = filename;
     const QByteArray ba = filename.toLatin1();
     _reader =_readerManager.get(ba.data());
@@ -898,27 +899,24 @@ void ReadFFMPEG::open(const QString filename,bool openBothViews){
     double aspect;
     
     if (_reader->info(width, height, aspect, frames)) {
-      //  op->getInfo()->set_channels(Mask_RGBA);
+        //  op->getInfo()->set_channels(Mask_RGBA);
         // op->getInfo().set_info(width, height, 3, aspect);
         Format imageFormat(0,0,width,height,"",aspect);
         Box2D bbox(0,0,width,height);
-      //  op->getInfo()->set_full_size_format(format);
-       // op->getInfo()->set(0, 0, width-1, height-1);
-       // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
+        //  op->getInfo()->set_full_size_format(format);
+        // op->getInfo()->set(0, 0, width-1, height-1);
+        // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
         _numFrames = frames;
         _memNeeded = width * height * 3;
-        
-        _data->resize(_memNeeded);
-        if(!fillBuffer())
-            cout << "FFMPEG READER: open failed to fill the buffer" << endl;
         setReaderInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
-
-
     }
-
-    return ;
-    
 }
+void ReadFFMPEG::readAllData(bool openBothViews){
+    _data->resize(_memNeeded);
+    if(!fillBuffer())
+        cout << "FFMPEG READER: open failed to fill the buffer" << endl;
+}
+
 
 bool ReadFFMPEG::fillBuffer(){
     if(!_data->valid())
@@ -935,20 +933,16 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
     int h = op->getInfo()->getDisplayWindow().h();
 	
 	
-
-//	out->changeSize(0,range,set);
-//	foreach(Channel z,set){
-//		out->erase(z);
-//	}
-	//QMutexLocker guard(&_lock);
 	unsigned char* FROM = _data->buffer();
 	FROM += (h - y - 1) * w * 3;
 	FROM += offset * 3;
-	float* r = out->writable(Channel_red) + offset;
-	float* g = out->writable(Channel_green) + offset;
-	float* b = out->writable(Channel_blue) + offset;
-	float* a = channels & Channel_alpha ? out->writable(Channel_alpha) + offset : NULL;
-	from_byte(r,g,b,FROM,NULL,(range-offset),3,a);
+
+	foreachChannels(z, channels){
+        float* to = out->writable(z) + offset;        
+        if(to!=NULL){
+            from_byte(z, to, FROM+z-1, FROM+4-1,(range-offset),3);
+        }
+    }
 
 
 }
@@ -957,11 +951,9 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out
 
  
 
-void ReadFFMPEG::make_preview(const char* filename){
+void ReadFFMPEG::make_preview(){
     Format frmt = op->getInfo()->getDisplayWindow();
-	
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);
-    op->getNodeUi()->updatePreviewImageForReader();
 }
 

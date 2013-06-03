@@ -29,7 +29,7 @@ class SettingsPanel;
 class Hash;
 class Knob;
 class Knob_Callback;
-class Node_ui;
+class NodeGui;
 class Node
 {
 public:
@@ -100,8 +100,8 @@ public:
     virtual void initKnobs(Knob_Callback *cb);
 	virtual void createKnobDynamically();
 	Knob_Callback* getKnobCallBack(){return knob_cb;}
-	void setNodeUi(Node_ui* ui){node_gui=ui;}
-	Node_ui* getNodeUi(){return node_gui;}
+	void setNodeUi(NodeGui* ui){node_gui=ui;}
+	NodeGui* getNodeUi(){return node_gui;}
     /*============================*/
 
     /*Parents & children nodes related functions*/
@@ -113,6 +113,11 @@ public:
     void removeParent(Node* parent);
     /*============================*/
 
+    /*DAG related*/
+    void setMarked(bool mark){_marked = mark;}
+    bool isMarked(){return _marked;}
+    /*============================*/
+    
 	/*Node infos*/
 	Info* getInfo(){return _info;}
 	void merge_frameRange(int otherFirstFrame,int otherLastFrame);
@@ -164,8 +169,8 @@ public:
     /*============================*/
 
     /*Node utility functions*/
-    virtual const char* className();
-    virtual const char* description();
+    virtual std::string className();
+    virtual std::string description();
     /*============================*/
 
     /*Calculations related functions*/
@@ -184,8 +189,7 @@ public:
      */
     virtual void drawOverlay(){}
 
-	/*Readers only function*/
-	virtual void createReadHandle(){}
+	
 	/*============================*/
     friend ostream& operator<< (ostream &out, Node &Node);
     
@@ -204,6 +208,7 @@ protected:
 	int freeOutputNb;
 	std::vector<Node*> parents;
 	std::vector<Node*> children;
+    bool _marked;
 	std::map<int, char*> inputLabels;
 	QMutex* _mutex;
 	QString name;
@@ -212,7 +217,7 @@ protected:
 	Knob_Callback* knob_cb;
 	Box2D requested_box; // composition of all the area requested by children
 	ChannelMask requested_channels; // merge of all channels requested by children
-	Node_ui* node_gui;
+	NodeGui* node_gui;
 private:
 	
 

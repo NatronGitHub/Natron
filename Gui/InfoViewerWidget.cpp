@@ -181,7 +181,7 @@ void InfoViewerWidget::updateColor(){
     values.append(blue);
     values.append("</font> ");
     QString alpha;
-    sprintf(tmp, "%.2f",colorUnderMouse.z());
+    sprintf(tmp, "%.2f",colorUnderMouse.w());
     alpha.append(tmp);
     values.append("<font color=\"#DBE0E0\">");
     values.append(alpha);

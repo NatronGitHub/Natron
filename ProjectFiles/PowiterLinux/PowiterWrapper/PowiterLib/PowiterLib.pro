@@ -54,14 +54,15 @@ SOURCES += \
     ../../../../Core/Timer.cpp \
     ../../../../Core/VideoEngine.cpp \
     ../../../../Core/viewerNode.cpp \
-    ../../../../Core/workerthread.cpp \
     ../../../../Reader/Read.cpp \
     ../../../../Reader/Reader.cpp \
     ../../../../Reader/readExr.cpp \
     ../../../../Reader/readffmpeg.cpp \
     ../../../../Reader/readQt.cpp \
     ../../../../Superviser/controler.cpp \
-    ../../../../Core/viewercache.cpp
+    ../../../../Core/viewercache.cpp \
+    ../../../../Gui/texturecache.cpp \
+    ../../../../Gui/framefiledialog.cpp
 
 HEADERS += \
     ../../../../Gui/arrowGUI.h \
@@ -108,7 +109,6 @@ HEADERS += \
     ../../../../Core/Timer.h \
     ../../../../Core/VideoEngine.h \
     ../../../../Core/viewerNode.h \
-    ../../../../Core/workerthread.h \
     ../../../../Reader/Read.h \
     ../../../../Reader/Reader.h \
     ../../../../Reader/readerInfo.h \
@@ -121,7 +121,9 @@ HEADERS += \
     ../../../../Superviser/MemoryInfo.h \
     ../../../../Superviser/powiterFn.h \
     ../../../../Superviser/PwStrings.h \
-    ../../../../Core/viewercache.h
+    ../../../../Core/viewercache.h \
+    ../../../../Gui/texturecache.h \
+    ../../../../Gui/framefiledialog.h
 
 INSTALLS += target
 

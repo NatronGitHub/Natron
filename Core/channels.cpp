@@ -254,11 +254,11 @@ void ChannelSet::operator-=(ChannelSetInit source) {
 
 
 void ChannelSet::operator-=(Channel z){
-    mask &= ~1; // removing the flag all if it was set
-    if(z < 31){
-        mask &= ~(1 << z);
+    if(z < 31 && *this&z){// if it is a valid channel and it is effectivly contained
+        mask &= ~1; // removing the flag all if it was set
+        mask &= ~(1 << z); // setting to 0 the channel z
+        _size--; // decrementing channels count
     }
-    _size--;
     
 }
 void ChannelSet::operator&=(const ChannelSet& source){

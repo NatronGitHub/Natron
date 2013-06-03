@@ -12,40 +12,42 @@
 #include "Gui/node_ui.h"
 #include "Core/lutclasses.h"
 using namespace std;
-ReadQt::ReadQt(Reader* op,ViewerGL* ui_context) : Read(op,ui_context){
+ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
+
+void ReadQt::initializeColorSpace(){
     _lut=Lut::getLut(Lut::VIEWER);
     _lut->validate();
-    _img= new QImage;
 }
-
 ReadQt::~ReadQt(){
-    delete _img;
+    if(_img)
+        delete _img;
 }
 void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     uchar* buffer;
     int h = op->getInfo()->getDisplayWindow().h();
     int Y = h - y - 1;
     buffer = _img->scanLine(Y);
-    float* r = out->writable(Channel_red) + offset;
-	float* g = out->writable(Channel_green) + offset;
-	float* b = out->writable(Channel_blue) + offset;
-	float* a = channels &Channel_alpha ? out->writable(Channel_alpha) + offset : NULL;
-    if(autoAlpha() && a==NULL){
+    if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
-        a =out->writable(Channel_alpha)+offset;
     }
-    int depth = 4; 
-	from_byte(r,g,b,buffer + offset * depth,channels & Channel_alpha,(range-offset),depth,a);
-     
+    const QRgb* from = reinterpret_cast<const QRgb*>(buffer);
+    foreachChannels(z, channels){
+        float* to = out->writable(z) + offset;
+        if(to!=NULL){
+            from_byteQt(z, to, from, (range-offset),1);
+        }
+    }     
 }
 bool ReadQt::supports_stereo(){
     return false;
 }
-void ReadQt::open(const QString filename,bool openBothViews){
+
+void ReadQt::readHeader(const QString filename,bool openBothViews){
     this->filename = filename;
-    if(!_img->load(filename)){
-        cout << "ERROR reading image file : " << qPrintable(filename) << endl;
-    }
+    /*load does actually loads the data too. And we must call it to read the header.
+     That means in this case the readAllData function is useless*/
+    _img= new QImage(filename);
+
     if(_img->format() == QImage::Format_Invalid){
         cout << "Couldn't load this image format" << endl;
         return ;
@@ -56,14 +58,11 @@ void ReadQt::open(const QString filename,bool openBothViews){
     
 	bool rgb=true;
 	int ydirection = -1;
-	ChannelMask mask;
-   // op->getInfo()->rgbMode(true);
-    
+	ChannelMask mask;    
     if(_autoCreateAlpha){
         
-       // op->getInfo()->set_channels(Mask_RGBA);
 		mask = Mask_RGBA;
-
+        
     }else{
         if(_img->format()==QImage::Format_ARGB32 || _img->format()==QImage::Format_ARGB32_Premultiplied
            || _img->format()==QImage::Format_ARGB4444_Premultiplied ||
@@ -79,28 +78,30 @@ void ReadQt::open(const QString filename,bool openBothViews){
                 _premult=true;
                 
             }
-            //op->getInfo()->set_channels(Mask_RGBA);
             mask = Mask_RGBA;
         }
         else{
-            //op->getInfo()->set_channels(Mask_RGB);
 			mask = Mask_RGB;
-
+            
         }
     }
-
+    
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
-   // op->getInfo()->set_full_size_format(format);
-   // op->getInfo()->set(0, 0, width, height);
-   // op->getInfo()->setYdirection(-1);
     setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
-    
 }
-void ReadQt::make_preview(const char* filename){
-    if(this->filename != QString(filename)){
-        _img->load(filename);
+void ReadQt::readAllData(bool openBothViews){
+// does nothing
+}
+
+
+
+void ReadQt::make_preview(){
+    QImage* img = new QImage(_img->width(),_img->height(),_img->format());
+    for(int i =0 ; i < _img->height() ; i++){
+        for(int j = 0 ; j < _img->width() ; j++){
+            img->setPixel(j, i, _img->pixel(j, i));
+        }
     }
-    op->setPreview(_img);
-    op->getNodeUi()->updatePreviewImageForReader();
+    op->setPreview(img);
 }

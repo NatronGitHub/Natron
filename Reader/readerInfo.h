@@ -88,7 +88,6 @@ public:
         _firstFrame == other.firstFrame() &&
         _lastFrame == other.lastFrame();
     }
-    
 private:
     ChannelMask _channels;  // channels contained in file
     Format _displayWindow; // data window contained in file

@@ -49,6 +49,8 @@ public:
 
             nodeCreation_shortcut_enabled=true;
             setFocus();
+            grabMouse();
+            releaseMouse();
             grabKeyboard();
         }
     }
@@ -58,6 +60,7 @@ public:
         if(smartNodeCreationEnabled){
             nodeCreation_shortcut_enabled=false;
             setFocus();
+            releaseMouse();
             releaseKeyboard();
          }
     }
@@ -99,9 +102,9 @@ private:
     QPointF oldp;
     Controler* ctrl;
     EVENT_STATE state;
-    Node_ui* node_dragged;
+    NodeGui* node_dragged;
     Arrow* arrow_dragged;
-    std::vector<Node_ui*> nodes;
+    std::vector<NodeGui*> nodes;
     int timerId;
     bool nodeCreation_shortcut_enabled;
     bool _fullscreen;

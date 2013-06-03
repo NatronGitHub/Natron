@@ -10,14 +10,12 @@
 
 #define MAX_CHANNEL_COUNT 17
 
+typedef boost::uint32_t U32;
+typedef boost::uint64_t U64;
+typedef boost::uint8_t U8;
+typedef boost::uint16_t U16;
+
 namespace Powiter_Enums{
-    
-	typedef boost::uint32_t U32;
-    typedef boost::uint64_t U64;
-	typedef boost::uint8_t U8;
-	typedef boost::uint16_t U16;
-    
-    
     
     enum Knob_Types{FILE_KNOB,CHANNELS_KNOB,INT_KNOB,FLOAT_KNOB,STRING_KNOB,BOOL_KNOB};
     

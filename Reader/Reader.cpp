@@ -14,6 +14,8 @@
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
 #include "Core/outputnode.h"
+#include "Core/settings.h"
+#include "Reader/Read.h"
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -30,7 +32,7 @@ using namespace std;
 
 
 Reader::Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache):InputNode(node),current_frame(0),video_sequence(0),
-readHandle(0),has_preview(false),ui_context(ui_context),_cache(cache),_pboIndex(0){}
+readHandle(0),has_preview(false),ui_context(ui_context),_cache(cache),_pboIndex(0),preview(0){}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
 
@@ -38,9 +40,9 @@ Reader::~Reader(){
 	delete preview;
 	delete readHandle;
 }
-const char* Reader::className(){return "Reader";}
+std::string Reader::className(){return "Reader";}
 
-const char* Reader::description(){
+std::string Reader::description(){
     return "InputNode";
 }
 void Reader::initKnobs(Knob_Callback *cb){
@@ -61,56 +63,118 @@ void Reader::seekLastFrame(){current_frame=lastFrame();}
 void Reader::randomFrame(int f){if(f>=firstFrame() && f<=lastFrame()) current_frame=f;}
 
 Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode mode,bool startNewThread){
+    /*the future used to check asynchronous results if the read happens in a new thread*/
+    QFuture<void> *future = 0;
+    
+    /*the read handle used to decode the frame*/
+    Read* _read = 0;
+    
+    QString extension;
+    for(int i = filename.size() - 1 ; i>= 0 ; i--){
+        QChar c = filename.at(i);
+        if(c != QChar('.'))
+            extension.prepend(c);
+        else
+            break;
+    }
+    
+    PluginID* decoder = ui_context->getControler()->getModel()->getCurrentPowiterSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
+    if(!decoder){
+        cout << "Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
+        return Buffer::DecodedFrameDescriptor();
+    }
+    ReadBuilder builder = (ReadBuilder)(decoder->first);
+    _read = builder(this);
+    
+    if(_read == 0 || mode == DO_NOT_DECODE){
+        _read->readHeader(filename, false);
+        return _buffer.insert(filename, NULL, _read->getReaderInfo(),_read,   NULL);
+    }
+    
+    /*checking whether the reader should open both views or not*/
+    bool openStereo = false;
+    if(_read->supports_stereo() && mode == STEREO_DECODE) openStereo = true;
+    
+    /*In case the read handle supports scanlines, we read the header to determine
+     how many scan-lines we would need, depending also on the viewer context.*/
     QByteArray ba = filename.toLatin1();
     const char* filename_cstr=ba.constData();
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOTCACHED_SEARCH);
+    std::map<int,int> rows;
+    /*the slContext is useful to check the equality of 2 scan-line based frames.*/
+    Reader::Buffer::ScanLineContext *slContext = 0;
+    if(_read->supportsScanLine()){
+        slContext = new Reader::Buffer::ScanLineContext;
+        _read->readHeader(filename, openStereo);
+        _read->readHeader(filename,openStereo);
+        float zoomFactor;
+        Format dispW = _read->getReaderInfo()->displayWindow();
+        if(_fitFrameToViewer){
+            float h = (float)(dispW.h());
+            zoomFactor = (float)ui_context->height()/h -0.05;
+            ui_context->fitToFormat(dispW);
+        }else{
+            zoomFactor = ui_context->getZoomFactor();
+        }
+        slContext->setRows(ui_context->computeRowSpan(dispW, zoomFactor));
+    }
+    /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOT_CACHED_FRAME);
     if(found !=_buffer.end()){
         if(found->_asynchTask && !found->_asynchTask->isFinished()){
             found->_asynchTask->waitForFinished();
         }
-        return *found;
-    }
-    QFuture<void> *future = 0;
-    Read* _read = 0;
-    /*TODO :should do a more appropriate extension mapping in the future*/
-    QString extension=filename.right(4);
-    if(extension.at(0) == QChar('.') && extension.at(1) == QChar('e') && extension.at(2) == QChar('x') && extension.at(3) == QChar('r') ){
-        
-        _read=new ReadExr(this,ui_context);
-    }else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('j') && extension.at(2) == QChar('p') && extension.at(3) == QChar('g')){
-        
-        _read=new ReadQt(this,ui_context);
-    }else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('p') && extension.at(2) == QChar('n') && extension.at(3) == QChar('g')){
-        
-        _read=new ReadQt(this,ui_context);
-    }
-    else if(extension.at(0) == QChar('.') && extension.at(1) == QChar('d') && extension.at(2) == QChar('p') && extension.at(3) == QChar('x') ){
-        
-        _read=new ReadFFMPEG(this,ui_context);
-    }else if(extension.at(0) == QChar('t') && extension.at(1) == QChar('i') && extension.at(2) == QChar('f') && extension.at(3) == QChar('f') ){
+        if(!found->_slContext){
+            delete _read;
+            return *found;
+        }else{
+            /*we found a buffered frame with a scanline context. We can now compute
+             the intersection between the current scan-line context and the one found
+             to find out which rows we need to compute*/
+            found->_slContext->computeIntersectionAndSetRowsToRead(slContext->getRows());
+            if(startNewThread){
+                future = new QFuture<void>;
+                *future = QtConcurrent::run(found->_readHandle,&Read::readScanLineData,filename,found->_slContext,true,openStereo);
+                found->_slContext->merge();
+                found->_asynchTask = future;
+                delete _read;
+                return *found;
+            }else{
+                found->_readHandle->readScanLineData(filename, found->_slContext,true,openStereo);
+                found->_slContext->merge();
+                delete _read;
+                return *found;
+            }
+        }
     }else{
-    }
-    
-    if(_read == 0){
-        Reader::Buffer::DecodedFrameDescriptor desc;
-        return desc;
-    }
-    bool openStereo = false;
-    if(_read->supports_stereo() && mode == STEREO_DECODE) openStereo = true;
-    pair<Reader::Buffer::DecodedFrameIterator,bool> ret;
-    if(startNewThread){
-        future = new QFuture<void>;
-        *future = QtConcurrent::run(_read,&Read::open,filename,openStereo);
-        return _buffer.insert(filename, future, NULL , _read,NULL);
-    }else{
-        _read->open(filename,openStereo);
-        return _buffer.insert(filename, NULL, _read->getReaderInfo(), _read,NULL);
+        
+        /*Now that we're sure that we will decode data, we can initialize the color-space*/
+        _read->initializeColorSpace();
+        
+        /*starting to read data, in a new thread or on the main thread*/
+        pair<Reader::Buffer::DecodedFrameIterator,bool> ret;
+        if(startNewThread){
+            future = new QFuture<void>;
+            if(_read->supportsScanLine()){
+                *future = QtConcurrent::run(_read,&Read::readScanLineData,filename,slContext,false,openStereo);
+            }else{
+                *future = QtConcurrent::run(_read,&Read::readData,filename,openStereo);
+            }
+            return _buffer.insert(filename, future, _read->getReaderInfo() , _read, NULL ,  slContext);
+        }else{
+            if(_read->supportsScanLine()){
+                _read->readScanLineData(filename, slContext,false,openStereo);
+            }else{
+                _read->readData(filename,openStereo);
+            }
+            return _buffer.insert(filename, NULL, _read->getReaderInfo(), _read, NULL ,slContext);
+        }
     }
     
 }
 
 Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::FramesIterator frame,int frameNb,bool startNewThread){
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first, Buffer::BOTH_SEARCH);
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first,
+                                                                    Buffer::CACHED_FRAME);
     if(found !=_buffer.end()){
         if(found->_cacheWatcher || found->_cachedFrame){
             if(found->_cacheWatcher){
@@ -150,11 +214,18 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
     if(!startNewThread){
         cachedFrame =  _cache->retrieveFrame(frameNb,frame);
         ui_context->fillPBO(cachedFrame, output, dataSize);
-        return _buffer.insert(info->currentFrameName(), 0 , info, 0 , cachedFrame,watcher);
+        return _buffer.insert(info->currentFrameName(), 0 , info, 0 ,cachedFrame,NULL,watcher);
     }else{
         future = new QFuture<const char*>;
         watcher = new QFutureWatcher<const char*>;
-        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(info->currentFrameName(), 0 , info, 0 , cachedFrame,watcher);
+        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(
+                                                                        info->currentFrameName(),
+                                                                        0 ,
+                                                                        info,
+                                                                        0 ,
+                                                                        cachedFrame,
+                                                                        NULL,
+                                                                        watcher);
         *future = QtConcurrent::run(this,&Reader::retrieveCachedFrame,frame,frameNb,output,dataSize);
         watcher->setFuture(*future);
         return newFrame;
@@ -172,6 +243,9 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
     std::vector<Reader::Buffer::DecodedFrameDescriptor> out;
     if(useCurrentThread){
         Buffer::DecodedFrameDescriptor ret = open(files[current_frame], mode , false);
+        if(ret.isEmpty()){
+            cout << "Reader:: ERROR" << endl;
+        }
         out.push_back(ret);
     }else{
         if(useOtherThread){
@@ -180,6 +254,9 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
             if(followingFrame > lastFrame()) followingFrame = firstFrame();
             if(followingFrame < firstFrame()) followingFrame = lastFrame();
             Buffer::DecodedFrameDescriptor ret = open(files[followingFrame], mode ,true);
+            if(ret.isEmpty()){
+                cout << "Reader:: ERROR" << endl;
+            }
             out.push_back(ret);
             // must review this part
         }
@@ -190,28 +267,23 @@ void Reader::removeCurrentFrameFromBuffer(){
     _buffer.remove(getCurrentFrameName());
 }
 
-void Reader::createReadHandle(){
-	if(readHandle){
-        ui_context->clearViewer();
-        Controler* ctrlPTR= node_gui->getControler();
-        VideoEngine* vengine=ctrlPTR->getModel()->getVideoEngine();
-        Node* output =dynamic_cast<Node*>(vengine->getOutputNode());
-        if(output){
-            ctrlPTR->getModel()->getVideoEngine()->clearInfos(output);
-        }
-    }
+void Reader::showFilePreview(){
+
     _buffer.clear();
     
     getVideoSequenceFromFilesList();
     
-    open(fileNameList.at(0), DEFAULT_DECODE ,false);
+    fitFrameToViewer(false);
+    Buffer::DecodedFrameDescriptor ret = open(fileNameList.at(0), DO_NOT_DECODE ,false);
+    if(ret.isEmpty()){
+        cout <<" Reader:: ERROR " << endl;
+    }
     
     if(!makeCurrentDecodedFrame()){
         cout << "Reader failed to open current frame file" << endl;
     }
-    QByteArray ba = fileNameList.at(0).toLatin1();
-    readHandle->make_preview(ba.constData());
-    
+    readHandle->make_preview();
+    _buffer.clear();
 }
 
 void Reader::removeCachedFramesFromBuffer(){
@@ -221,7 +293,7 @@ void Reader::Buffer::removeAllCachedFrames(){
     bool recursive = false;
     for(DecodedFrameIterator it = _buffer.begin();it != _buffer.end();it++){
         if(it->_cachedFrame || it->_cacheWatcher){
-            _buffer.erase(it);
+            erase(it);
             recursive = true;
             break;
         }
@@ -232,7 +304,8 @@ void Reader::Buffer::removeAllCachedFrames(){
 
 bool Reader::makeCurrentDecodedFrame(){
     QString currentFile = files[current_frame];
-    Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),Buffer::BOTH_SEARCH);
+    Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
+                                                                    Buffer::ALL_FRAMES);
     if(frame == _buffer.end() || (frame->_asynchTask && !frame->_asynchTask->isFinished())) return false;
     
     readHandle = frame->_readHandle;
@@ -271,6 +344,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
                                                               ReaderInfo* info,
                                                               Read* readHandle,
                                                               const char* cachedFrame,
+                                                              ScanLineContext* slContext,
                                                               QFutureWatcher<const char*>* cacheWatcher){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == _bufferSize){
@@ -279,15 +353,14 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
             if((!frameToRemove._asynchTask && !frameToRemove._cacheWatcher) ||
                (frameToRemove._asynchTask && frameToRemove._asynchTask->isFinished()) ||
                (frameToRemove._cacheWatcher && frameToRemove._cacheWatcher->isFinished())){
-                _buffer.erase(_buffer.begin()+i);
+                erase(_buffer.begin()+i);
                 break;
             }
         }
     }
     std::string _name  = QStringToStdString(filename);
-    DecodedFrameDescriptor desc(future,readHandle,info,cachedFrame,cacheWatcher,_name);
+    DecodedFrameDescriptor desc(future,readHandle,info,cachedFrame,cacheWatcher,_name,slContext);
     _buffer.push_back(desc);
-    
     return desc;
 }
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(std::string filename){
@@ -336,7 +409,7 @@ void Reader::Buffer::debugBuffer(){
 }
 
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode){
-    if(searchMode == CACHED_SEARCH){
+    if(searchMode == CACHED_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
             if(ret->_cachedFrame || ret->_cacheWatcher){
@@ -347,9 +420,12 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
         }else{
             return _buffer.end();
         }
-    }else if(searchMode == NOTCACHED_SEARCH){
+    }else if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
+            if(!ret->_readHandle->supportsScanLine()){
+                return _buffer.end();
+            }
             if(!ret->_cachedFrame){
                 return ret;
             }else{
@@ -358,7 +434,21 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
         }else{
             return _buffer.end();
         }
-    }else{
+    }else if(searchMode == FULL_FRAME){
+        DecodedFrameIterator ret = find(filename);
+        if(ret != _buffer.end()){
+            if(ret->_readHandle->supportsScanLine()){
+                return _buffer.end();
+            }
+            if(!ret->_cachedFrame){
+                return ret;
+            }else{
+                return _buffer.end();
+            }
+        }else{
+            return _buffer.end();
+        }
+    }else{ // all frames
         return find(filename);
     }
 }
@@ -469,4 +559,35 @@ std::string Reader::getCurrentFrameName(){
 }
 std::string Reader::getRandomFrameName(int f){
     return QStringToStdString(files[f]);
+}
+
+void Reader::setPreview(QImage* img){
+    if(preview)
+        delete preview;
+    preview=img;
+    hasPreview(true);
+    getNodeUi()->updatePreviewImageForReader();
+}
+
+
+/*Adds to _rowsToRead the rows in others that are missing to _rows*/
+void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::map<int,int>& others){
+    ScanLineIterator it = others.begin();
+    std::map<int,int> rowsCopy = _rows;
+    for(;it!=others.end();it++){
+        ScanLineIterator found = rowsCopy.find(it->first);
+        if(found == rowsCopy.end()){ // if not found, we add the row to rows
+            _rowsToRead.push_back(it->first);
+        }else{
+            rowsCopy.erase(found); // otherwise , we erase the row from the copy to speed up the computation of the intersection
+        }
+    }
+}
+
+/*merges _rowsToRead and _rows*/
+void Reader::Buffer::ScanLineContext::merge(){
+    for(U32 i = 0;i < _rowsToRead.size(); i++){
+        _rows.insert(make_pair(_rowsToRead[i],0));
+    }
+    _rowsToRead.clear();
 }

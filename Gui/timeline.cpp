@@ -222,7 +222,6 @@ void TimeSlider::paintEvent(QPaintEvent *e){
     p.fillPath(lastP, boundariesColor);
     
     
-   // QColor cachedColor(69,96,63);
     QColor cachedColor(143,201,103);
     double offset = (double)((w-BORDER_OFFSET_) - BORDER_OFFSET_ )/(double)(_displayedValues.size()-1);
     if(_increment==5)

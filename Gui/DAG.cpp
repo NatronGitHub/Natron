@@ -35,7 +35,7 @@ NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,
 }
 void NodeGraph::addNode_ui(QVBoxLayout *dockContainer,qreal x, qreal y, UI_NODE_TYPE type, Node *node){
     QGraphicsScene* sc=scene();
-    Node_ui* node_ui;
+    NodeGui* node_ui;
 
     if(type==OUTPUT){
         node_ui=new OutputNode_ui(ctrl,nodes,dockContainer,(node),x,y,0,sc);
@@ -54,7 +54,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
     int i=0;
     bool found=false;
     while(i<nodes.size() && !found){
-        Node_ui* n=nodes[i];
+        NodeGui* n=nodes[i];
 
         QPointF evpt=n->mapFromScene(old_pos);
         if(n->contains(evpt)){
@@ -105,25 +105,24 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
 
             arrow_dragged->removeSource();
             scene()->update();
-            if(!strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")){
+            if(arrow_dragged->getDest()->getNode()->className() == std::string("Viewer")){
                 ViewerGL* gl_viewer = ctrl->getGui()->viewer_tab->viewer;
                 
                 ctrl->getModel()->getVideoEngine()->abort(); // aborting current work
                 
                 gl_viewer->drawing(false);
                 gl_viewer->blankInfoForViewer();
-                gl_viewer->initViewer();
+                gl_viewer->fitToFormat(gl_viewer->displayWindow());
                 ctrl->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
+                ctrl->getModel()->setVideoEngineRequirements(NULL);
                 gl_viewer->clearViewer();
-                std::vector<InputNode*> inp;
-                ctrl->getModel()->setVideoEngineRequirements(inp, NULL);
-
+                
             }
         }
         int i=0;
         bool foundSrc=false;
         while(i<nodes.size()){
-            Node_ui* n=nodes[i];
+            NodeGui* n=nodes[i];
             QPointF ep=mapToScene(event->pos());
             QPointF evpt=n->mapFromScene(ep);
 
@@ -155,25 +154,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         ctrl->getModel()->getVideoEngine()->clearRowCache();
         ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
-            /*if it is a viewer*/
-            if(strcmp(arrow_dragged->getDest()->getNode()->className(),"Viewer")==0){
-                std::vector<InputNode*> inputs;
-                ctrl->getModel()->getGraphInput(inputs,dynamic_cast<Node*>(arrow_dragged->getSource()->getNode()));
-                bool go=true;
-                for(int i=0;i<inputs.size();i++){
-                    InputNode* currentInput=inputs[i];
-                    if(strcmp(currentInput->className(),"Reader")==0){
-                        if(!(static_cast<Reader*>(currentInput)->hasFrames())){
-                            go=false;
-                        }
-                    }
-                }
-                ctrl->getModel()->setVideoEngineRequirements(inputs,dynamic_cast<OutputNode*>(arrow_dragged->getDest()->getNode()));
-                if(go){ // if there is an input upstream, we start the engine
-                    ctrl->getModel()->startVideoEngine(1);
-                }
-                
+            NodeGui* viewer = NodeGui::hasViewerConnected(arrow_dragged->getDest());
+            if(viewer){
+                ctrl->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+                ctrl->getModel()->startVideoEngine(1);
             }
+           
         }
         scene()->update();
 
@@ -210,7 +196,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
             arrow->initLine();
         }
 
-        foreach(Node_ui* child,node_dragged->getChildren()){
+        foreach(NodeGui* child,node_dragged->getChildren()){
             foreach(Arrow* arrow,child->getInputsArrows()){
                 arrow->initLine();
             }
@@ -225,10 +211,10 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
     int i=0;
     while(i<nodes.size()){
-        Node_ui* n=nodes[i];
+        NodeGui* n=nodes[i];
 
         QPointF evpt=n->mapFromScene(old_pos);
-        if(n->contains(evpt) && strcmp(n->getNode()->className(),"Viewer")){
+        if(n->contains(evpt) && n->getNode()->className() == std::string("Viewer")){
             if(!n->isThisPanelEnabled()){
                 /*building settings panel*/
                 n->setSettingsPanelEnabled(true);

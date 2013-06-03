@@ -44,16 +44,15 @@ public:
     // to have the opposite effect of to_byte(float), returns it between [0-1f]
     virtual float from_byte(float)  = 0;
 
-
-    void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, bool premult,bool autoAlpha,int W, int delta ,float* a,bool qtbuf=true);
+    void from_byte(float* to, const uchar* from, int W, int delta = 1) ;
+    void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) ;
+    void from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta = 1) ;
     
-
-    void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta = 1,float* a=NULL); // < NOT IMPLEMENTED YET
-
+    void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1) ;
+    void from_short(float* to, const U16* from, const U16* alpha, int W, int bits = 16, int delta = 1) ;
     
-    void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
-                    bool premult,bool autoAlpha, int W, int delta = 1,const float* fromA=NULL,float* a=NULL);
-
+    void from_float(float* to, const float* from, int W, int delta = 1) ;
+    void from_float(float* to, const float* from, const float* alpha, int W, int delta = 1) ;
     
     float fromFloat(float v)  { return from_byte(v * 255.f); }
     float fromFloatFast(float v) ;
@@ -80,16 +79,6 @@ public:
         if(v < min) v = min;
         return v;
     }
-    // input value in 0-1.f
-    U16 lookup_toByteLUT(float v){
-        return to_byte_table[highFloatPart(&v)];
-    }
-    
-    // input value in 0-255
-    float lookup_fromByteLUT(int v){
-        return from_byte_table[v];
-    }
-    
     static bool isEqual_float(float A, float B, int maxUlps)
     {
         // Make sure maxUlps is non-negative and small enough that the
@@ -134,13 +123,10 @@ public:
 	// OPTIMIZATION : Make similar functions but taking out ptrs to r,g,b,a so copy is done all at once
 	static float from_byte(float f) { return f * (1.0f / 255.0f); }
 
-    static void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, bool premult,bool autoAlpha,int W, int delta ,float* a,bool qtbuf=true);
-
-    static void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha,bool premult,bool autoAlpha, int W, int bits, int delta = 1,float* a=NULL); // < NOT IMPLEMENTED YET
-
-
-    static void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,const float* fromB,
-                    bool premult,bool autoAlpha, int W, int delta = 1,const float* fromA=NULL,float* a=NULL); 
+    static void from_byte(float* to, const uchar* from, int W, int delta = 1);
+    static void from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta = 1);
+    static void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1);
+    static void from_float(float* to, const float* from, int W, int delta = 1);
     
 	static float to_byte(float f) { return f * 255.0f; }
     
