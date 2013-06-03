@@ -175,15 +175,11 @@ Knob* Knob::file_Knob( Knob_Callback *cb, QString &description, QStringList &fil
 }
 void File_Knob::open_file(){
     str.clear(); 
-#ifdef __POWITER_WIN32__
+
     QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
                                                       ,_lastOpened
                                                       ,tr("Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)"));
-#else
-    QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
-                                                      ,_lastOpened
-                                                      ,tr("Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)"));
-#endif
+    cout << strlist.size() << endl;
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
         name->setText(strlist.at(0));

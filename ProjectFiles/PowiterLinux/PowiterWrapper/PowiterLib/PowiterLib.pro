@@ -37,7 +37,6 @@ SOURCES += \
     ../../../../Core/Box.cpp \
     ../../../../Core/channels.cpp \
     ../../../../Core/DataBuffer.cpp \
-    ../../../../Core/diskcache.cpp \
     ../../../../Core/displayFormat.cpp \
     ../../../../Core/flowOP.cpp \
     ../../../../Core/hash.cpp \
@@ -61,7 +60,8 @@ SOURCES += \
     ../../../../Reader/readExr.cpp \
     ../../../../Reader/readffmpeg.cpp \
     ../../../../Reader/readQt.cpp \
-    ../../../../Superviser/controler.cpp
+    ../../../../Superviser/controler.cpp \
+    ../../../../Core/viewercache.cpp
 
 HEADERS += \
     ../../../../Gui/arrowGUI.h \
@@ -87,7 +87,6 @@ HEADERS += \
     ../../../../Core/Box.h \
     ../../../../Core/channels.h \
     ../../../../Core/DataBuffer.h \
-    ../../../../Core/diskcache.h \
     ../../../../Core/displayFormat.h \
     ../../../../Core/flowOP.h \
     ../../../../Core/hash.h \
@@ -121,7 +120,8 @@ HEADERS += \
     ../../../../Superviser/gl_OsDependent.h \
     ../../../../Superviser/MemoryInfo.h \
     ../../../../Superviser/powiterFn.h \
-    ../../../../Superviser/PwStrings.h
+    ../../../../Superviser/PwStrings.h \
+    ../../../../Core/viewercache.h
 
 INSTALLS += target
 

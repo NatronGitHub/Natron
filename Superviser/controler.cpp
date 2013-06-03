@@ -21,6 +21,8 @@ void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     graphicalInterface->setControler(this);
     graphicalInterface->createGui();
 	coreEngine->setControler(this);
+    loadingScreen->hide();
+
 #ifdef __POWITER_OSX__
 	graphicalInterface->show();
 
@@ -28,7 +30,6 @@ void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
 	graphicalInterface->showMaximized();
 #endif
 
-    loadingScreen->hide();
     delete loadingScreen;
 
     try{
