@@ -16,9 +16,6 @@ using namespace std;
 std::map<Lut::DataType,Lut*> Lut::_luts;
 
 
-/*Fill in the table used by toFloatFast() and thus by all the to functions. This is done by calling to_byte().
- This can be used by a from_byte() implementation that works by using interpolation to invert the to_byte() function.
- Does nothing if called a second time. */
 void Lut::fillToTable(){
     // float increment = 1.f /65535.f;
     if(init_) return;
@@ -38,9 +35,7 @@ void Lut::fillToTable(){
     
 }
 
-/*Fill in the table used by fromFloatFast() and thus all the from functions.
- This is done by calling from_byte(). This can be used by a to_byte() implementation taht works by using interpolation to invert the from_byte() function.
- Does nothing if called a second time. */
+
 void Lut::fillFromTable()
 {
     if(init_) return;
@@ -51,9 +46,7 @@ void Lut::fillFromTable()
         i = highFloatPart(f);
         to_byte_table[i] = b*0x100;
     }
-    //	for(int i=0;i<256;i++){
-    //		from_byte_table[i]=from_byte(i);
-    //	}
+
 }
 
 /*Forces fillToTable() and fillFromTable() to fill the tables again and calls them, and calculates a value for hash().
@@ -86,11 +79,10 @@ float Lut::index_to_float(const U16 i)
     return f[0];
 }
 
-/*Converts a single floating point value to linear by using the lookup tables. The value is clamped to the 0-1 range as that is the range of the tables! */
+
 float Lut::fromFloatFast(float v) {
 	return from_byte_table[(int)v];
 }
-/*Converts a single floating point value from linear to the LUT space by using the lookup tables. */
 float Lut::toFloatFast(float v)  {
     return (float)to_byte_table[highFloatPart(&v)];
 }

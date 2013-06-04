@@ -97,6 +97,9 @@ void Gui::createGui(){
     nodeGraphArea->installEventFilter(this);
     viewer_tab->installEventFilter(this);
     rightDock->installEventFilter(this);
+    nodeGraphArea->grabKeyboard();
+    nodeGraphArea->releaseKeyboard();
+    nodeGraphArea->setFocus();
 }
 
 void Gui::keyPressEvent(QKeyEvent *e){

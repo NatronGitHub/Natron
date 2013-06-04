@@ -293,4 +293,26 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 }
 
 
+void NodeGraph::enterEvent(QEvent *event)
+{
+    QGraphicsView::enterEvent(event);
+    if(smartNodeCreationEnabled){
+        
+        nodeCreation_shortcut_enabled=true;
+        setFocus();
+        grabMouse();
+        releaseMouse();
+        grabKeyboard();
+    }
+}
+void NodeGraph::leaveEvent(QEvent *event)
+{
+    QGraphicsView::leaveEvent(event);
+    if(smartNodeCreationEnabled){
+        nodeCreation_shortcut_enabled=false;
+        setFocus();
+        releaseMouse();
+        releaseKeyboard();
+    }
+}
 

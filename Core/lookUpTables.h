@@ -102,13 +102,7 @@ public:
         return false;
     }
     static Lut* Linear();
-     
-//     //! Modify the array of luts that builtin() returns
-//     static void setBuiltin(int n, const char* name, LUT* lut);
-//     static Lut* builtin(int n);
-//     static Lut* builtin(const char* name);
-//     static const char* builtin_names[];
-
+    
 //
     // luts : linear,srgb,rec709,cineon,gamma 1.8,gamma2.2,panalog,redlog,viperlog,alexaV3logC,ploglin,slog,redspace
     // default : monitor = srgb,8bit :srgb, 16 bit:srgb, log :cineon,float : linear

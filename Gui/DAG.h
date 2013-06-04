@@ -42,28 +42,8 @@ public:
  
     void addNode_ui(QVBoxLayout *dockContainer,qreal x,qreal y,UI_NODE_TYPE type,Node *node);
 
-    void enterEvent(QEvent *event)
-    {   
-        QGraphicsView::enterEvent(event);
-        if(smartNodeCreationEnabled){
-
-            nodeCreation_shortcut_enabled=true;
-            setFocus();
-            grabMouse();
-            releaseMouse();
-            grabKeyboard();
-        }
-    }
-    void leaveEvent(QEvent *event)
-    {
-        QGraphicsView::leaveEvent(event);
-        if(smartNodeCreationEnabled){
-            nodeCreation_shortcut_enabled=false;
-            setFocus();
-            releaseMouse();
-            releaseKeyboard();
-         }
-    }
+    void enterEvent(QEvent *event);
+    void leaveEvent(QEvent *event);
 
     void keyPressEvent(QKeyEvent *e);
 
@@ -81,10 +61,8 @@ protected:
 
     void wheelEvent(QWheelEvent *event){
 
-
         scaleView(pow((double)2, event->delta() / 240.0));
     }
-
 
 
 

@@ -1101,8 +1101,9 @@ void ViewerGL::zoomSlot(int v){
         if(_drawing){
             vengine->_viewerCache->clearPlayBackCache();
             vengine->videoEngine(1,false,true,true);
+        }else{
+            updateGL();
         }
-        updateGL();
     }
 }
 
@@ -1283,6 +1284,10 @@ void ViewerGL::updateColorSpace(QString str){
         
         _lut = 2;
     }
+    if (!_drawing) {
+        return;
+    }
+    
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
     else
@@ -1292,7 +1297,7 @@ void ViewerGL::updateColorSpace(QString str){
 void ViewerGL::updateExposure(double d){
     exposure = d;
     ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
-    if(_byteMode==1 || !_hasHW)
+    if((_byteMode==1 || !_hasHW) && _drawing)
         vengine->videoEngine(1,false,true,true);
     else
         updateGL();

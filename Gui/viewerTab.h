@@ -8,6 +8,8 @@
 
 #include <QtWidgets/QWidget>
 
+/*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
+ a tab , and several ViewerTab should run in parallel seemlessly.*/
 
 
 class QPushButton;

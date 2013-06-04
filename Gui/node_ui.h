@@ -55,6 +55,7 @@ public:
     SettingsPanel* getSettingPanel(){return settings;}
     QVBoxLayout* getDockContainer(){return dockContainer;}
 	void updatePreviewImageForReader();
+    void updateChannelsTooltip();
     
     static NodeGui* hasViewerConnected(NodeGui* node);
     static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);

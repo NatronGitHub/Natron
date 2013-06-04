@@ -16,7 +16,7 @@ const qreal pi=3.14159265358979323846264338327950288419717;
 NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
 {
     
-
+    
     this->graphNodes=nodes;
     this->node=node;
 	this->node->setNodeUi(this);
@@ -28,15 +28,15 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     nodeNumber++;
 	
 	if(node->className() == string("Reader")){ // if the node is not a reader
-		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));	
+		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));
 	}else{
 		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH,NODE_HEIGHT)));
 	}
 	
     rectangle->setParentItem(this);
-
+    
     QImage img(IMAGES_PATH"RGBAchannels.png");
-
+    
     
     QPixmap pixmap=QPixmap::fromImage(img);
     pixmap=pixmap.scaled(10,10);
@@ -44,20 +44,10 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     channels->setX(x+1);
     channels->setY(y+1);
     channels->setParentItem(this);
-
-
-
-    QString tooltip;
-    ChannelSet chans= node->getInfo()->channels();
-    tooltip.append("Channels: ");
-    foreachChannels( z,chans){
-        tooltip.append("\n");
-        tooltip.append(getChannelName(z).c_str());
-
-    }
-
+    
+    updateChannelsTooltip();
+    
 	
-    channels->setToolTip(tooltip);
     name=scene->addSimpleText((node->getName()));
 	
 	if(node->className() == string("Reader")){
@@ -90,28 +80,41 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     
     name->setParentItem(this);
     initInputArrows();
-
+    
     /*building settings panel*/
 	if(node->className() != string("Viewer")){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
 		settings=new SettingsPanel(this);
-
+        
 		dockContainer->addWidget(settings);
 	}
-  
-
-
+    
+    
+    
     // needed for the layout to work correctly
     QWidget* pr=dockContainer->parentWidget();
     pr->setMinimumSize(dockContainer->sizeHint());
-
+    
     scene->addItem(this);
-
-
-
-
+    
+    
+    
+    
 }
+
+void NodeGui::updateChannelsTooltip(){
+    QString tooltip;
+    ChannelSet chans= node->getRequestedChannels();
+    tooltip.append("Channels Requested: ");
+    foreachChannels( z,chans){
+        tooltip.append("\n");
+        tooltip.append(getChannelName(z).c_str());
+        
+    }
+    channels->setToolTip(tooltip);
+}
+
 void NodeGui::updatePreviewImageForReader(){
 	QImage *prev=static_cast<Reader*>(node)->getPreview();
 	QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -141,50 +144,49 @@ bool NodeGui::contains(const QPointF &point) const{
 }
 
 QPainterPath NodeGui::shape() const
- {
-     return rectangle->shape();
-
- }
+{
+    return rectangle->shape();
+    
+}
 
 QRectF NodeGui::boundingRect() const{
     return rectangle->boundingRect();
 }
 
 void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
-
-        // Shadow
-        QRectF rect=boundingRect();
-        QRectF sceneRect =boundingRect();//this->sceneRect();
-        QRectF rightShadow(sceneRect.right(), sceneRect.top() + 5, 5, sceneRect.height());
-        QRectF bottomShadow(sceneRect.left() + 5, sceneRect.bottom(), sceneRect.width(), 5);
-        if (rightShadow.intersects(rect) || rightShadow.contains(rect))
+    
+    // Shadow
+    QRectF rect=boundingRect();
+    QRectF sceneRect =boundingRect();//this->sceneRect();
+    QRectF rightShadow(sceneRect.right(), sceneRect.top() + 5, 5, sceneRect.height());
+    QRectF bottomShadow(sceneRect.left() + 5, sceneRect.bottom(), sceneRect.width(), 5);
+    if (rightShadow.intersects(rect) || rightShadow.contains(rect))
         painter->fillRect(rightShadow, Qt::darkGray);
-        if (bottomShadow.intersects(rect) || bottomShadow.contains(rect))
+    if (bottomShadow.intersects(rect) || bottomShadow.contains(rect))
         painter->fillRect(bottomShadow, Qt::darkGray);
-
-        // Fill
-        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
-        gradient.setColorAt(0, QColor(224,224,224));
-        gradient.setColorAt(1, QColor(142,142,142));
-        painter->fillRect(rect.intersected(sceneRect), gradient);
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(sceneRect);
-
-    #if !defined(Q_OS_SYMBIAN) && !defined(Q_WS_MAEMO_5)
-        // Text
-        QRectF textRect(sceneRect.left() + 4, sceneRect.top() + 4,
-                        sceneRect.width() - 4, sceneRect.height() - 4);
-
-
-        QFont font = painter->font();
-        font.setBold(true);
-        font.setPointSize(14);
-        painter->setFont(font);
-
-
-
-    #endif
-
+    
+    // Fill
+    QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
+    gradient.setColorAt(0, QColor(224,224,224));
+    gradient.setColorAt(1, QColor(142,142,142));
+    painter->fillRect(rect.intersected(sceneRect), gradient);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(sceneRect);
+    
+    
+    // Text
+    QRectF textRect(sceneRect.left() + 4, sceneRect.top() + 4,
+                    sceneRect.width() - 4, sceneRect.height() - 4);
+    
+    
+    QFont font = painter->font();
+    font.setBold(true);
+    font.setPointSize(14);
+    painter->setFont(font);
+    
+    updateChannelsTooltip();
+    
+    
 }
 bool NodeGui::isNearby(QPointF &point){
     QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
@@ -201,7 +203,7 @@ void  NodeGui::substractChild(NodeGui* c){
 				children[i]=children[children.size()-1];
 				children[children.size()-1]=tmp;
 				children.pop_back();
-
+                
 				break;
 			}
 		}
@@ -216,7 +218,7 @@ void  NodeGui::substractParent(NodeGui* p){
 				parents[i]=parents[parents.size()-1];
 				parents[parents.size()-1]=tmp;
 				parents.pop_back();
-
+                
 				break;
 			}
 		}

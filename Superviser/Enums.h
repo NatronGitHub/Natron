@@ -6,14 +6,8 @@
 
 #ifndef INCLUDED_ENUMS_H
 #define INCLUDED_ENUMS_H
-#include <boost/cstdint.hpp>
 
 #define MAX_CHANNEL_COUNT 17
-
-typedef boost::uint32_t U32;
-typedef boost::uint64_t U64;
-typedef boost::uint8_t U8;
-typedef boost::uint16_t U16;
 
 namespace Powiter_Enums{
     

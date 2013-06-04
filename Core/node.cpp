@@ -8,9 +8,11 @@
 #include "Gui/dockableSettings.h"
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
+#include "Gui/node_ui.h"
 #include "Core/channels.h"
 #include "Core/model.h"
 #include "Core/displayFormat.h"
+
 
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
@@ -309,6 +311,7 @@ void Node::_validate(bool first_time){
 		clear_info();
 		merge_info();
 	}
+    _nodeGUI->updateChannelsTooltip();
 	set_output_channels(Mask_All);
 
 }

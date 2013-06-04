@@ -32,6 +32,15 @@
 // debug flag
 #define PW_DEBUG
 
+#include <boost/cstdint.hpp>
+
+
+
+typedef boost::uint32_t U32;
+typedef boost::uint64_t U64;
+typedef boost::uint8_t U8;
+typedef boost::uint16_t U16;
+
 
 namespace PowiterWindows{
     
