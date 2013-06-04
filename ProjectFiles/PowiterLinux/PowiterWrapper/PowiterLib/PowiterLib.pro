@@ -13,7 +13,24 @@ CONFIG += create_prl
 #target.path = ($POWITER_ROOT)/ProjectFiles/build
 
 MOC_DIR = $(POWITER_ROOT)/ProjectFiles/GeneratedFiles
-message(Now building PowiterLib...the working directory is:  $(POWITER_ROOT))
+message(Now building PowiterLib...the working directory is:  $$PWD)
+
+INCLUDEPATH += $(QT_INCLUDES)
+INCLUDEPATH += $$PWD/../../../../
+INCLUDEPATH += $(BOOST_INCLUDES)
+INCLUDEPATH += $(POWITER_ROOT)
+INCLUDEPATH += $(OPENEXR_INCLUDES)
+INCLUDEPATH += $(FREETYPE2_INCLUDES)
+INCLUDEPATH += $(FREETYPE_INCLUDES)
+INCLUDEPATH += $(FTGL_INCLUDES)
+DEPENDPATH += $$PWD/../../../../
+DEPENDPATH += $(OPENEXR_INCLUDES)
+DEPENDPATH += $(QT_INCLUDES)
+DEPENDPATH += $(FREETYPE2_INCLUDES)
+DEPENDPATH += $(FREETYPE_INCLUDES)
+DEPENDPATH += $(BOOST_INCLUDES)
+DEPENDPATH += $(FTGL_INCLUDES)
+
 
 SOURCES += \
     ../../../../Gui/arrowGUI.cpp \
@@ -128,19 +145,6 @@ HEADERS += \
 INSTALLS += target
 
 
-INCLUDEPATH += $(QT_INCLUDES)
-INCLUDEPATH += $(BOOST_INCLUDES)
-INCLUDEPATH += $(POWITER_ROOT)
-INCLUDEPATH += $(OPENEXR_INCLUDES)
-INCLUDEPATH += $(FREETYPE2_INCLUDES)
-INCLUDEPATH += $(FREETYPE_INCLUDES)
-INCLUDEPATH += $(FTGL_INCLUDES)
-DEPENDPATH += $(OPENEXR_INCLUDES)
-DEPENDPATH += $(QT_INCLUDES)
-DEPENDPATH += $(FREETYPE2_INCLUDES)
-DEPENDPATH += $(FREETYPE_INCLUDES)
-DEPENDPATH += $(BOOST_INCLUDES)
-DEPENDPATH += $(FTGL_INCLUDES)
 
 
 unix: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread
@@ -148,3 +152,4 @@ unix: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread
 unix: LIBS += -L$(FFMPEG_LIB) -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
 
 unix: LIBS += -L$(FTGL_LIB) -lftgl
+
