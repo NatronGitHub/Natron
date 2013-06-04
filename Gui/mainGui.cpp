@@ -431,7 +431,7 @@ void Gui::setupUi(Controler* ctrl)
 	rightDock->setWidget(rightContent);
 	rightDock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, rightDock);
-	//rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
+	rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
     QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
 
 	QMetaObject::connectSlotsByName(this);
