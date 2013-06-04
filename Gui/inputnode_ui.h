@@ -9,7 +9,7 @@
 class InputNode_ui : public NodeGui
 {
 public:
-    InputNode_ui(Controler *ctrl,std::vector<NodeGui*> nodes,QVBoxLayout* dockContainer,
+    InputNode_ui(std::vector<NodeGui*> nodes,QVBoxLayout* dockContainer,
                  Node *node,qreal x, qreal y,QGraphicsItem* parent=0,QGraphicsScene* sc=0);
      bool hasOutput(){return true;}
      void initInputArrows(){}

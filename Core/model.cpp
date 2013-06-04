@@ -28,10 +28,10 @@
 #include "Core/lookUpTables.h"
 #include <cassert>
 using namespace std;
-Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
+Model::Model(): _videoEngine(0),_mutex(0)
 {
     _mutex = new QMutex;
-    _powiterSettings = new Settings;
+
 
     loadPluginsAndInitNameList();
     loadBuiltinPlugins();
@@ -41,11 +41,11 @@ Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
     Lut::allocateLuts();
 
 }
-void Model::setControler(Controler* ctrl){
-    this->ctrl=ctrl;
-    assert(ctrl);
-    vengine = new VideoEngine(ctrl->getGui()->viewer_tab->viewer,this,_mutex);
-    connect(this,SIGNAL(vengineNeeded(int)),vengine,SLOT(startEngine(int)));
+void Model::postInitialisation(){
+
+   
+    _videoEngine = new VideoEngine(ctrlPTR->getGui()->viewer_tab->viewer,this,_mutex);
+    connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
     std::vector<std::string> formatNames;
     formatNames.push_back("PC_Video");
     formatNames.push_back("NTSC");
@@ -112,14 +112,14 @@ void Model::setControler(Controler* ctrl){
 Model::~Model(){
    
     Lut::deallocateLuts();
-    vengine->abort();
-    foreach(PluginID* p,plugins) delete p;
-    foreach(CounterID* c,counters) delete c;
-    foreach(Format* f,formats_list) delete f;
-    for(ReadPluginsIterator it = readPlugins.begin();it!=readPlugins.end();it++){
+    _videoEngine->abort();
+    foreach(PluginID* p,_pluginsLoaded) delete p;
+    foreach(CounterID* c,_nodeCounters) delete c;
+    foreach(Format* f,_formats) delete f;
+    for(ReadPluginsIterator it = _readPluginsLoaded.begin();it!=_readPluginsLoaded.end();it++){
         if(it->second){
             /*finding all other reads that have the same pointer to avoid double free*/
-            for(ReadPluginsIterator it2 = readPlugins.begin();it2!=readPlugins.end();it2++){
+            for(ReadPluginsIterator it2 = _readPluginsLoaded.begin();it2!=_readPluginsLoaded.end();it2++){
                 if(it2->second == it->second && it2->first!=it->first)
                     it2->second = 0;
             }
@@ -127,15 +127,15 @@ Model::~Model(){
             it->second = 0;
         }
     }
-    readPlugins.clear();
-    plugins.clear();
-    counters.clear();
-    allNodes.clear();
-    formats_list.clear();
-    nodeNameList.clear();
-    delete _powiterSettings;
+    _readPluginsLoaded.clear();
+    _pluginsLoaded.clear();
+    _nodeCounters.clear();
+	foreach(Node* n,_currentNodes) delete n;
+    _currentNodes.clear();
+    _formats.clear();
+    _nodeNames.clear();
     delete _mutex;
-    delete vengine;
+    delete _videoEngine;
 }
 
 
@@ -152,52 +152,61 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 #elif defined(__POWITER_LINUX__)
         filters << "*.so";
 #endif
-        d.setNameFilters(filters);
+		d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
-        {
-            QString filename = fileList.at(i);
-            if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
-                QString className;
-                int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
-                className = filename.left(index);
-                nodeNameList.append(QString(className));
+		for(int i = 0 ; i < fileList.size() ;i ++)
+		{
+			QString filename = fileList.at(i);
+			if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+				QString className;
+				int index = filename.size() -1;
+				while(filename.at(index) != QChar('.')) index--;
+				className = filename.left(index);
+				_nodeNames.append(QString(className));
 
 #ifdef __POWITER_WIN32__
-                HINSTANCE lib;
-                string dll;
-                dll.append(PLUGINS_PATH);
-                dll.append(className.toStdString());
-                dll.append(".dll");
-                lib=LoadLibrary(dll.c_str());
-                if(lib==NULL){
-                    cout << " couldn't open library " << qPrintable(className) << endl;
-                }else{
-                    PluginID* plugin=new PluginID(lib,className.toStdString());
-                    plugins.push_back(plugin);
-                }
-                
+				HINSTANCE lib;
+				string dll;
+				dll.append(PLUGINS_PATH);
+				dll.append(className.toStdString());
+				dll.append(".dll");
+				lib=LoadLibrary(dll.c_str());
+				if(lib==NULL){
+					cout << " couldn't open library " << qPrintable(className) << endl;
+				}else{
+					NodeBuilder builder=(NodeBuilder)GetProcAddress(lib,"BuildNode");
+					if(builder){
+						Node* test = builder(NULL);
+						PluginID* plugin=new PluginID((HINSTANCE)builder,test->getName().toStdString());
+						delete test;
+						_pluginsLoaded.push_back(plugin);
+					}
+				}
+
 #elif defined(__POWITER_UNIX__)
-                string dll;
+				string dll;
                 dll.append(PLUGINS_PATH);
-                dll.append(className.toStdString());
+				dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
-                dll.append(".dylib");
+				dll.append(".dylib");
 #elif defined(__POWITER_LINUX__)
-                dll.append(".so");
+				dll.append(".so");
 #endif
-                void* lib=dlopen(dll.c_str(),RTLD_LAZY);
-                if(!lib){
-                    cout << " couldn't open library " << qPrintable(className) << endl;
-                }
-                else{
-                    PluginID* plugin=new PluginID((void*)lib,className.toStdString());
-                    plugins.push_back(plugin);
-                    
-                }
+				void* lib=dlopen(dll.c_str(),RTLD_LAZY);
+				if(!lib){
+					cout << " couldn't open library " << qPrintable(className) << endl;
+				}
+				else{
+					NodeBuilder builder=(NodeBuilder)dlsym(lib,"BuildNode");
+					if(builder){
+						Node* test = builder(NULL);
+						PluginID* plugin=new PluginID((void*)builder,test->getName().toStdString());
+						_pluginsLoaded.push_back(plugin);
+						delete test;
+					}
+				}
 #endif
-            }else{
+			}else{
                 continue;
             }
         }
@@ -231,13 +240,13 @@ std::string Model::removePrefixSpaces(std::string str){
 
 
 void Model::setVideoEngineRequirements(OutputNode *output){
-    vengine->getCurrentDAG().resetAndSort(output);
-    vengine->changeTreeVersion();
+    _videoEngine->getCurrentDAG().resetAndSort(output);
+    _videoEngine->changeTreeVersion();
 }
 
 UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
     bool found=false;
-    foreach(CounterID* counter,counters){
+    foreach(CounterID* counter,_nodeCounters){
         string tmp(counter->second);
         string nodeName = node->className();
         if(tmp==nodeName){
@@ -255,7 +264,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
     if(!found){
         CounterID* count=new CounterID(1,node->className());
         
-        counters.push_back(count);
+        _nodeCounters.push_back(count);
         QString str;
         str.append(node->className().c_str());
         str.append("_");
@@ -265,7 +274,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         node->setName(str);
     }
 	node->setOutputNb();
-    allNodes.push_back(node);
+    _currentNodes.push_back(node);
     string outputNodeSymbol="OutputNode";
     string inputNodeSymbol="InputNode";
     string flowOpSymbol="FlowOperator";
@@ -285,56 +294,36 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node,ctrl->getGui()->viewer_tab->viewer,vengine->getViewerCache());
+		node=new Reader(node,ctrlPTR->getGui()->viewer_tab->viewer,_videoEngine->getViewerCache());
         node->setMutex(m);
-        node->_inputs();
+        node->initializeInputs();
 		type=initCounterAndGetDescription(node);
 		return type;
 	}else if(name =="Viewer"){
 		UI_NODE_TYPE type;
-		node=new Viewer(node,ctrl->getGui()->viewer_tab->viewer);
+		node=new Viewer(node,ctrlPTR->getGui()->viewer_tab->viewer);
         node->setMutex(m);
-        node->_inputs();
+        node->initializeInputs();
 		type=initCounterAndGetDescription(node);
 		return type;
 	}else{
         
         UI_NODE_TYPE type=UNDEFINED;
         
-		foreach(PluginID* pair,plugins){
+		foreach(PluginID* pair,_pluginsLoaded){
 			string str(pair->second);
             
 			if(str==name.toStdString()){
 				
-				string handleName;
-				handleName.append("Build");
-				handleName.append(pair->second);
-#ifdef __POWITER_WIN32__
-                
-				NodeBuilder builder=(NodeBuilder)GetProcAddress(pair->first,handleName.c_str());
+
+				NodeBuilder builder=(NodeBuilder)pair->first;
 				if(builder!=NULL){
 					node=builder(node);
                     node->setMutex(m);
-                    node->_inputs();
+                    node->initializeInputs();
 					type=initCounterAndGetDescription(node);
                     
-                    
-				}else{
-					cout << "RunTime: couldn't call " << handleName.c_str() << endl;
-				}
-                
-#elif defined(__POWITER_UNIX__)
-				NodeBuilder builder=(NodeBuilder)dlsym(pair->first,handleName.c_str());
-				if(builder!=NULL){
-					node=builder(node);
-					type=initCounterAndGetDescription(node);
-                    
-				}else{
-					cout << "RunTime: couldn't call " << handleName.c_str() << endl;
-				}
-                
-#endif
-                
+				}     
 				return type;
 			}
             
@@ -348,7 +337,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 // in the future, display the plugins loaded on the loading wallpaper
 void Model::displayLoadedPlugins(){
     int i=0;
-    foreach(PluginID* plugin,plugins){
+    foreach(PluginID* plugin,_pluginsLoaded){
         i++;
         cout << "Plugin:  " << plugin->second << endl;
     }
@@ -356,12 +345,12 @@ void Model::displayLoadedPlugins(){
 }
 
 
-void Model::addFormat(Format* frmt){formats_list.push_back(frmt);}
+void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
 Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
 
-	for(int i =0;i< formats_list.size();i++){
-		Format* frmt = formats_list[i];
+	for(int i =0;i< _formats.size();i++){
+		Format* frmt = _formats[i];
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;
 		}
@@ -412,7 +401,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
-                            readPlugins.push_back(make_pair(extensions[i],plugin));
+                            _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
                         
@@ -446,7 +435,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((void*)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
-                            readPlugins.push_back(make_pair(extensions[i],plugin));
+                            _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
                         
@@ -464,7 +453,7 @@ void Model::loadReadPlugins(){
     loadBuiltinReads();
     
     std::map<std::string, PluginID*> defaultMapping;
-    for (ReadPluginsIterator it = readPlugins.begin(); it!=readPlugins.end(); it++) {
+    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); it++) {
         if(it->first == "exr" && it->second->second == "OpenEXR"){
             defaultMapping.insert(*it);
         }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
@@ -483,12 +472,12 @@ void Model::loadReadPlugins(){
             
         }
     }
-    _powiterSettings->_readersSettings.fillMap(defaultMapping);
+    Settings::getPowiterCurrentSettings()->_readersSettings.fillMap(defaultMapping);
 }
 
 void Model::displayLoadedReads(){
-    ReadPluginsIterator it = readPlugins.begin();
-    for (; it!=readPlugins.end(); it++) {
+    ReadPluginsIterator it = _readPluginsLoaded.begin();
+    for (; it!=_readPluginsLoaded.end(); it++) {
         cout << it->second->second << " : " << it->first << endl;
     }
 }
@@ -504,7 +493,7 @@ void Model::loadBuiltinReads(){
 #endif
    
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.push_back(make_pair(extensions[i],EXRplugin));
+        _readPluginsLoaded.push_back(make_pair(extensions[i],EXRplugin));
     }
     delete readExr;
     
@@ -517,7 +506,7 @@ void Model::loadBuiltinReads(){
 	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
 #endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.push_back(make_pair(extensions[i],Qtplugin));
+        _readPluginsLoaded.push_back(make_pair(extensions[i],Qtplugin));
     }
     delete readQt;
     
@@ -530,13 +519,13 @@ void Model::loadBuiltinReads(){
 	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
 #endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.push_back(make_pair(extensions[i],FFMPEGplugin));
+        _readPluginsLoaded.push_back(make_pair(extensions[i],FFMPEGplugin));
     }
     delete readFfmpeg;
     
 }
 void Model::loadBuiltinPlugins(){
     // these  are built-in nodes
-	nodeNameList.append("Reader");
-	nodeNameList.append("Viewer");
+	_nodeNames.append("Reader");
+	_nodeNames.append("Viewer");
 }

@@ -38,11 +38,11 @@ void NodeGraph::addNode_ui(QVBoxLayout *dockContainer,qreal x, qreal y, UI_NODE_
     NodeGui* node_ui;
 
     if(type==OUTPUT){
-        node_ui=new OutputNode_ui(ctrl,nodes,dockContainer,(node),x,y,0,sc);
+        node_ui=new OutputNode_ui(nodes,dockContainer,(node),x,y,0,sc);
     }else if(type==INPUT_NODE){
-        node_ui=new InputNode_ui(ctrl,nodes,dockContainer,(node),x,y,0,sc);
+        node_ui=new InputNode_ui(nodes,dockContainer,(node),x,y,0,sc);
     }else if(type==OPERATOR){
-        node_ui=new OperatorNode_ui(ctrl,nodes,dockContainer,(node),x,y,0,sc);
+        node_ui=new OperatorNode_ui(nodes,dockContainer,(node),x,y,0,sc);
     }
 	
     nodes.push_back(node_ui);
@@ -106,15 +106,15 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             arrow_dragged->removeSource();
             scene()->update();
             if(arrow_dragged->getDest()->getNode()->className() == std::string("Viewer")){
-                ViewerGL* gl_viewer = ctrl->getGui()->viewer_tab->viewer;
+                ViewerGL* gl_viewer = ctrlPTR->getGui()->viewer_tab->viewer;
                 
-                ctrl->getModel()->getVideoEngine()->abort(); // aborting current work
+               ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work
                 
                 gl_viewer->drawing(false);
                 gl_viewer->blankInfoForViewer();
                 gl_viewer->fitToFormat(gl_viewer->displayWindow());
-                ctrl->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
-                ctrl->getModel()->setVideoEngineRequirements(NULL);
+                ctrlPTR->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
+                ctrlPTR->getModel()->setVideoEngineRequirements(NULL);
                 gl_viewer->clearViewer();
                 
             }
@@ -131,7 +131,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     break;
                 }
 		
-                if(n->getNode()->getFreeOutputNb()>0){
+                if(n->getNode()->getFreeOutputCount()>0){
                     arrow_dragged->getDest()->getNode()->addParent(n->getNode());
                     arrow_dragged->getDest()->addParent(n);
                     n->getNode()->addChild(arrow_dragged->getDest()->getNode());
@@ -151,13 +151,13 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         arrow_dragged->initLine();
         scene()->update();
-        ctrl->getModel()->getVideoEngine()->clearRowCache();
-        ctrl->getModel()->getVideoEngine()->clearPlayBackCache();
+        ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
+        ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
             NodeGui* viewer = NodeGui::hasViewerConnected(arrow_dragged->getDest());
             if(viewer){
-                ctrl->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
-                ctrl->getModel()->startVideoEngine(1);
+                ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+                ctrlPTR->getModel()->startVideoEngine(1);
             }
            
         }
@@ -242,10 +242,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 
         if(smartNodeCreationEnabled){
             releaseKeyboard();
-            SmartInputDialog* nodeCreation=new SmartInputDialog(ctrl,this);
+            SmartInputDialog* nodeCreation=new SmartInputDialog(this);
 
-            QPoint position=ctrl->getGui()->WorkShop->pos();
-            position+=QPoint(ctrl->getGui()->width()/2,0);
+            QPoint position=ctrlPTR->getGui()->WorkShop->pos();
+            position+=QPoint(ctrlPTR->getGui()->width()/2,0);
             nodeCreation->move(position);
             setMouseTracking(false);
 
@@ -261,7 +261,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     }else if(e->key() == Qt::Key_R){
         try{
             
-            ctrl->addNewNode(0,0,"Reader");
+            ctrlPTR->createNode(0,0,"Reader");
         }catch(...){
             std::cout << "(NodeGraph::keyPressEvent) Couldn't create reader. " << std::endl;
             
@@ -280,10 +280,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_fullscreen){
             _fullscreen = true;
-            ctrl->getGui()->viewer_tab->hide();
+            ctrlPTR->getGui()->viewer_tab->hide();
         }else{
             _fullscreen = false;
-            ctrl->getGui()->viewer_tab->show();
+            ctrlPTR->getGui()->viewer_tab->show();
         }
         
     }

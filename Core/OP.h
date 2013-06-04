@@ -13,7 +13,7 @@ public:
     Op(Op& ref):Node(ref){}
     Op(Node* node);
     virtual ~Op(){}
-    virtual int inputs(){return 1;}
+    virtual int totalInputsCount(){return 1;}
 
 
 };

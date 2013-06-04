@@ -39,7 +39,7 @@ public:
     NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
 
     ~NodeGraph(){ nodeCreation_shortcut_enabled=false; nodes.clear();}
-    void setControler(Controler* c){ctrl= c;}
+ 
     void addNode_ui(QVBoxLayout *dockContainer,qreal x,qreal y,UI_NODE_TYPE type,Node *node);
 
     void enterEvent(QEvent *event)
@@ -100,7 +100,6 @@ private:
     bool smartNodeCreationEnabled;
     QPointF old_pos;
     QPointF oldp;
-    Controler* ctrl;
     EVENT_STATE state;
     NodeGui* node_dragged;
     Arrow* arrow_dragged;

@@ -12,27 +12,27 @@
 #include "Gui/viewerTab.h"
 
 
-Controler::Controler():coreEngine(0),graphicalInterface(0){}
+Controler::Controler():_model(0),_gui(0){}
 
-void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
-    this->coreEngine=coreEngine;
-    graphicalInterface=new Gui();
-    graphicalInterface->setControler(this);
-    graphicalInterface->createGui();
-	coreEngine->setControler(this);
+void Controler::initControler(Model *model,QLabel* loadingScreen){
+    this->_model=model;
+    _gui=new Gui();
+
+    _gui->createGui();
+	model->postInitialisation();
     loadingScreen->hide();
 
 #ifdef __POWITER_OSX__
-	graphicalInterface->show();
+	_gui->show();
 
 #else
-	graphicalInterface->showMaximized();
+	_gui->showMaximized();
 #endif
 
     delete loadingScreen;
 
     try{
-        addNewNode(0,0,"Viewer");
+        createNode(0,0,"Viewer");
     }catch(...){
         std::cout << "Couldn't create node viewer" << std::endl;
     }
@@ -40,29 +40,29 @@ void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
 }
 
 Controler::~Controler(){
-    delete coreEngine;
+    delete _model;
 }
 
 void Controler::exit(){}
 
 QStringList& Controler::getNodeNameList(){
-    return coreEngine->getNodeNameList();
+    return _model->getNodeNameList();
 }
 
 void Controler::setProgressBarProgression(int value){
 
 }
-void Controler::addNewNode(qreal x,qreal y,QString name){
+void Controler::createNode(qreal x,qreal y,QString name){
    
-	QMutex *mutex=coreEngine->mutex();
+	QMutex *mutex=_model->mutex();
    // Node* node=new Node(mutex);
     Node* node=NULL;
     UI_NODE_TYPE type;
 
-    type=coreEngine->createNode(node,name,mutex);
+    type=_model->createNode(node,name,mutex);
 
     if(type!=UNDEFINED){
-        graphicalInterface->addNode_ui(x,y,type,node);
+        _gui->createNodeGUI(x,y,type,node);
 		
     }else{
         throw "Node creation failed!";

@@ -14,7 +14,7 @@
 #include <cassert>
 using namespace std;
 
-Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),crossPlatform(0),
+Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
@@ -69,8 +69,8 @@ Gui::~Gui(){
 
 }
 void Gui::exit(){
-    crossPlatform->getModel()->getVideoEngine()->abort();
-    delete crossPlatform;
+    ctrlPTR->getModel()->getVideoEngine()->abort();
+	ctrlPTR->Destroy();
     delete this;
     qApp->exit(0);
     
@@ -82,22 +82,18 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-void Gui::addNode_ui(qreal x,qreal y,UI_NODE_TYPE type, Node* node){
+void Gui::createNodeGUI(qreal x,qreal y,UI_NODE_TYPE type, Node* node){
     nodeGraphArea->addNode_ui(layout_settings, x,y,type,node);
 
 }
 
-void Gui::setControler(Controler* crossPlatform){
-    this->crossPlatform=crossPlatform;
-    assert(crossPlatform);
-}
+
 void Gui::createGui(){
 
    
-    setupUi(crossPlatform);
+    setupUi();
     
     QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
-    nodeGraphArea->setControler(crossPlatform);
     nodeGraphArea->installEventFilter(this);
     viewer_tab->installEventFilter(this);
     rightDock->installEventFilter(this);
@@ -119,11 +115,11 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Right) {
-            crossPlatform->getModel()->getVideoEngine()->nextFrame();
+            ctrlPTR->getModel()->getVideoEngine()->nextFrame();
             focusNextChild();
             return true;
         }else if(keyEvent->key() == Qt::Key_Left){
-            crossPlatform->getModel()->getVideoEngine()->previousFrame();
+            ctrlPTR->getModel()->getVideoEngine()->previousFrame();
             focusNextChild();
             return true;
         }
@@ -161,7 +157,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
 
 } // retranslateUi
-void Gui::setupUi(Controler* ctrl)
+void Gui::setupUi()
 {
 	if (objectName().isEmpty())
 		setObjectName(QString::fromUtf8("MainWindow"));
@@ -246,7 +242,7 @@ void Gui::setupUi(Controler* ctrl)
 	/*Viewer(s)*/
 	QVBoxLayout* viewer_tabLayout=viewer_tabLayout=new QVBoxLayout(viewersTabContainer);
 	viewer_tabLayout->setObjectName(QString::fromUtf8("viewer_tabLayout"));;
-	viewer_tab = new ViewerTab(ctrl,viewer_tabLayout,viewersTabContainer);
+	viewer_tab = new ViewerTab(viewer_tabLayout,viewersTabContainer);
 	viewer_tab->setLayout(viewer_tabLayout);
 	viewer_tab->setObjectName(QString::fromUtf8("Viewer1"));
 	viewersTabContainer->addTab(viewer_tab, QString());
@@ -255,14 +251,14 @@ void Gui::setupUi(Controler* ctrl)
 	/*Viewer(s)*/  //< CONTAINER NOT WORKING WITH QT/COCOA, FIND A WORKAROUND ON OSX
 	QVBoxLayout* viewer_tabLayout=viewer_tabLayout=new QVBoxLayout(splitter);
 	viewer_tabLayout->setObjectName(QString::fromUtf8("viewer_tabLayout"));;
-	viewer_tab = new ViewerTab(ctrl,viewer_tabLayout,splitter);
+	viewer_tab = new ViewerTab(viewer_tabLayout,splitter);
 	viewer_tab->setLayout(viewer_tabLayout);
 	viewer_tab->setObjectName(QString::fromUtf8("Viewer1"));
 	splitter->addWidget(viewer_tab);
 
 #endif
 	/*initializing texture cache*/
-	_textureCache = new TextureCache(crossPlatform->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxTextureCache);
+	_textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	viewer_tab->setTextureCache(_textureCache);
 	// splitter->setCollapsible(0,false);
 

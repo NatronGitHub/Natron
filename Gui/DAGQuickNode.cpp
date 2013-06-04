@@ -7,11 +7,11 @@
 #include "Gui/DAG.h"
 
 
-SmartInputDialog::SmartInputDialog(Controler* ctrl,NodeGraph* graph, QWidget *parent):QFrame(parent)
+SmartInputDialog::SmartInputDialog(NodeGraph* graph, QWidget *parent):QFrame(parent)
 {
    //this->setParent(dynamic_cast<QWidget*>(ctrlPTR->getGui()));
     this->graph=graph;
-    this->ctrl=ctrl;
+ 
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));
@@ -21,7 +21,7 @@ SmartInputDialog::SmartInputDialog(Controler* ctrl,NodeGraph* graph, QWidget *pa
     textEdit=new QComboBox(this);
     textEdit->setEditable(true);
 
-    textEdit->addItems(ctrl->getNodeNameList());
+    textEdit->addItems(ctrlPTR->getNodeNameList());
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
     textEdit->lineEdit()->selectAll();
@@ -34,10 +34,10 @@ SmartInputDialog::SmartInputDialog(Controler* ctrl,NodeGraph* graph, QWidget *pa
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
       QString res=textEdit->lineEdit()->text();
-      if(ctrl->getNodeNameList().contains(res)){
+      if(ctrlPTR->getNodeNameList().contains(res)){
           try{
 
-          ctrl->addNewNode(0,0,res);
+          ctrlPTR->createNode(0,0,res);
           }catch(...){
               std::cout << "(SmartInputDialog:KeyPressEvent) Couldn't create node " << qPrintable(res) << std::endl;
           }

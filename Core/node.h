@@ -96,12 +96,12 @@ public:
 
     /*Knobs related functions*/
     std::vector<Knob*> getKnobs() const;
-    void add_knob_to_vector(Knob* knob);
+    void addToKnobVector(Knob* knob);
     virtual void initKnobs(Knob_Callback *cb);
 	virtual void createKnobDynamically();
-	Knob_Callback* getKnobCallBack(){return knob_cb;}
-	void setNodeUi(NodeGui* ui){node_gui=ui;}
-	NodeGui* getNodeUi(){return node_gui;}
+	Knob_Callback* getKnobCallBack(){return _knobsCB;}
+	void setNodeUi(NodeGui* ui){_nodeGUI=ui;}
+	NodeGui* getNodeUi(){return _nodeGUI;}
     /*============================*/
 
     /*Parents & children nodes related functions*/
@@ -124,9 +124,9 @@ public:
 	void merge_info();
 	void copy_info();
 	void clear_info();
-	ChannelMask& getOutputChannels(){return output_channels;}
-	ChannelMask& getRequestedChannels(){return requested_channels;}
-	Box2D& get_requested_box(){return requested_box;}
+	ChannelMask& getOutputChannels(){return _outputChannels;}
+	ChannelMask& getRequestedChannels(){return _requestedChannels;}
+	Box2D& get_requested_box(){return _requestedBox;}
     int width(){return _info->getDisplayWindow().w();}
     int height(){return _info->getDisplayWindow().h();}
 	/*================================*/
@@ -134,7 +134,7 @@ public:
 
     /*OutputNB related functions*/
     virtual bool hasOutput();
-    int getFreeOutputNb() const;
+    int getFreeOutputCount() const;
     void decrementFreeOutputNb();
     void incrementFreeOutputNb();
     virtual void setOutputNb();
@@ -146,14 +146,14 @@ public:
     /*============================*/
 
     /*Node Input related functions*/
-    void _inputs();
-    virtual int inputs();
-    int getInputsNb() const;
+    void initializeInputs();
+    virtual int totalInputsCount();
+    int getInputCount() const;
     const std::map<int, std::string>& getInputLabels() const;
     virtual std::string setInputLabel(int inputNb);
     std::string getLabel(int inputNb) ;
-    void _setLabels();
-    void initInputsLabels();
+    void applyLabelsToInputs();
+    void initInputLabelsMap();
     /*============================*/
 
     
@@ -195,7 +195,7 @@ public:
     
 protected:
 
-	void set_output_channels(ChannelMask mask){output_channels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
+	void set_output_channels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
 	// and _info.channels()
 
 	virtual void in_channels(int inputNb,ChannelMask &mask){};
@@ -203,21 +203,21 @@ protected:
     virtual void _request(int y,int top,int offset,int range,ChannelMask channels);
    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-	ChannelMask output_channels; // the channels that the operator chooses to output from the ones among _info.channels(), by default Mask_all
-	int inputNb;
-	int freeOutputNb;
-	std::vector<Node*> parents;
-	std::vector<Node*> children;
+	ChannelMask _outputChannels; // the channels that the operator chooses to output from the ones among _info.channels(), by default Mask_all
+	int _inputsCount;
+	int _freeOutputCount;
+	std::vector<Node*> _parents;
+	std::vector<Node*> _children;
     bool _marked;
-	std::map<int, std::string> inputLabels;
+	std::map<int, std::string> _inputLabelsMap;
 	QMutex* _mutex;
-	QString name;
-	Hash* hashValue; 
-	std::vector<Knob*> knobs;
-	Knob_Callback* knob_cb;
-	Box2D requested_box; // composition of all the area requested by children
-	ChannelMask requested_channels; // merge of all channels requested by children
-	NodeGui* node_gui;
+	QString _name;
+	Hash* _hashValue; 
+	std::vector<Knob*> _knobsVector;
+	Knob_Callback* _knobsCB;
+	Box2D _requestedBox; // composition of all the area requested by children
+	ChannelMask _requestedChannels; // merge of all channels requested by children
+	NodeGui* _nodeGUI;
 private:
 	
 

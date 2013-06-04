@@ -104,31 +104,29 @@ void ViewerGL::initConstructor(){
     _mustFreeFrameData = false;
 }
 
-ViewerGL::ViewerGL(Controler* ctrl,float byteMode,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(float byteMode,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
 :QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 {
     
-    this->ctrl = ctrl;
     initConstructor();
     
 }
-ViewerGL::ViewerGL(Controler* ctrl,float byteMode,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(float byteMode,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
 :QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 
 {
-    this->ctrl = ctrl;
+
     initConstructor();
     
 }
 
-ViewerGL::ViewerGL(Controler* ctrl,float byteMode,QWidget* parent,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(float byteMode,QWidget* parent,const QGLWidget* shareWidget)
 :QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
 {
-    this->ctrl = ctrl;
     initConstructor();
     
 }
-Controler* ViewerGL::getControler(){return ctrl;}
+
 
 ViewerGL::~ViewerGL(){
     if(shaderLC){
@@ -604,7 +602,7 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
 void ViewerGL::initBlackTex(){
     makeCurrent();
     
-    ctrl->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
+    ctrlPTR->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
     int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.zoomFactor);
     int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
@@ -982,12 +980,12 @@ void ViewerGL::keyPressEvent ( QKeyEvent * event ){
         releaseKeyboard();
         if(_fullscreen){
             _fullscreen=false;
-            ctrl->getGui()->rightDock->show();
-            ctrl->getGui()->WorkShop->show();
+            ctrlPTR->getGui()->rightDock->show();
+            ctrlPTR->getGui()->WorkShop->show();
         }else{
             _fullscreen=true;
-            ctrl->getGui()->rightDock->hide();
-            ctrl->getGui()->WorkShop->hide();
+            ctrlPTR->getGui()->rightDock->hide();
+            ctrlPTR->getGui()->WorkShop->hide();
             
         }
     }
@@ -1225,16 +1223,16 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 }
 void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
     _readerInfo->copy(info);
-    Format* df=ctrl->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+    Format* df=ctrlPTR->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
     if(df)
         _readerInfo->setDisplayWindowName(df->name());
     updateDataWindowAndDisplayWindowInfo();
     if(!onInit){
-        ctrl->getGui()->viewer_tab->frameNumberBox->setMaximum(_readerInfo->lastFrame());
-        ctrl->getGui()->viewer_tab->frameNumberBox->setMinimum(_readerInfo->firstFrame());
+        ctrlPTR->getGui()->viewer_tab->frameNumberBox->setMaximum(_readerInfo->lastFrame());
+        ctrlPTR->getGui()->viewer_tab->frameNumberBox->setMinimum(_readerInfo->firstFrame());
     }
     if(!onInit)
-        ctrl->getGui()->viewer_tab->frameSeeker->setFrameRange(_readerInfo->firstFrame(), _readerInfo->lastFrame(),initBoundaries);
+        ctrlPTR->getGui()->viewer_tab->frameSeeker->setFrameRange(_readerInfo->firstFrame(), _readerInfo->lastFrame(),initBoundaries);
     if((_readerInfo->lastFrame() - _readerInfo->firstFrame())==0){
         emit frameChanged(0);
         
@@ -1266,20 +1264,20 @@ void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
-            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
         }
         _lut = 0;
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
-            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
         }
         
         _lut = 1;
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
-            ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
         }
         
@@ -1293,7 +1291,7 @@ void ViewerGL::updateColorSpace(QString str){
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+    ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
     if(_byteMode==1 || !_hasHW)
         vengine->videoEngine(1,false,true,true);
     else

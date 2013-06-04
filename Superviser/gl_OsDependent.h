@@ -23,7 +23,6 @@ using std::endl;
 #if defined __APPLE__
 
     
- //   #include <OpenGL/gl.h>
     #include <OpenGL/glu.h>
     #ifndef GL_HALF_FLOAT_ARB
 	#define USE_APPLE_FLOAT_PIXELS
@@ -42,16 +41,9 @@ using std::endl;
     #endif
 
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-
-    //#include <GL/gl.h>
-
+	#include <GL/glu.h>
 #endif
 
-#include "Superviser/powiterFn.h"
 
-
-#ifdef __POWITER_LINUX__
-    #include <GL/glu.h>
-#endif
 
 #endif

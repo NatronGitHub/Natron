@@ -18,6 +18,7 @@
 #include "Core/hash.h"
 #include "Reader/Reader.h"
 #include "outputnode.h"
+#include <boost/noncopyable.hpp>
 class InputNode;
 class ViewerGL;
 class Node;
@@ -29,7 +30,7 @@ class MMAPfile;
 class Timer;
 
 // Class that handles the core engine for video sequences, that's where all the work is done
-class VideoEngine :public QObject{
+class VideoEngine :public QObject,public boost::noncopyable{
     Q_OBJECT
     
 public:

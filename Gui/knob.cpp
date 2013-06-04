@@ -58,7 +58,7 @@ void Knob::validateEvent(bool initViewer){
     NodeGui* nodeUI = node->getNodeUi();
     NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
     if(viewer){
-        Controler* ctrlPTR = viewer->getControler();
+        //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(static_cast<OutputNode*>(viewer->getNode()));
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);

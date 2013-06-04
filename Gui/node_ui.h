@@ -30,7 +30,7 @@ class NodeGui : public QObject,public QGraphicsItem
 public:
     static int nodeNumber;
 
-    NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
+    NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
 
 
     int getNumber(){return number;}
@@ -59,7 +59,6 @@ public:
     static NodeGui* hasViewerConnected(NodeGui* node);
     static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);
     
-    Controler* getControler(){return ctrl;}
     
 public slots:
     void setName(QString);
@@ -81,7 +80,7 @@ protected:
     QGraphicsSimpleTextItem *name;
     bool settingsPanel_displayed;
     SettingsPanel* settings;
-    Controler* ctrl;
+
 };
 
 #endif // NODE_UI_H

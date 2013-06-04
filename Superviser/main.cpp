@@ -3,7 +3,9 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
-
+#ifdef _WIN32
+#include <vld.h> //< visual studio memory leaks finder header
+#endif
 #include <iostream>
 #include <QtWidgets/QApplication>
 #include <QtCore/QObject>
@@ -11,18 +13,17 @@
 #include <QtWidgets/QLabel>
 #include <QtGui/qpixmap.h>
 #include "Superviser/powiterFn.h"
-#ifdef __POWITER_WIN32__
-#include <vld.h> //< visual studio memory leaks finder header
-#endif
+
 #include "Superviser/controler.h"
 #include "Core/model.h"
+
 
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {	
-#ifdef __POWITER_WIN32__
+#ifdef _WIN32
 	VLDEnable();
 	VLDReportLeaks();
 #endif
@@ -39,12 +40,12 @@ int main(int argc, char *argv[])
     QCoreApplication::processEvents();
 	/*instanciating the core*/
     Model* coreEngine=new Model();
-
 	/*instancating the controler, that will in turn create the GUI*/
-    Controler* ctrl=new Controler();
+    Controler* ctrl= Controler::instance();
 	/*we create the GUI in the initControler function*/
     ctrl->initControler(coreEngine,splashScreen);
     return app.exec();
+
 
 }
 

@@ -21,7 +21,7 @@
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
-class Settings;
+
 using namespace Powiter_Enums;
 
 #ifdef __POWITER_WIN32__
@@ -102,13 +102,13 @@ public:
     std::string getNextWord(std::string str);
 	
     /*set pointer to the controler*/
-    void setControler(Controler* ctrl);
+    void postInitialisation();
 
 	/*Create a new node internally*/
     UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
-    QStringList& getNodeNameList(){return nodeNameList;}
+    QStringList& getNodeNameList(){return _nodeNames;}
 
 	/*this is the general mutex used by all the nodes in the graph*/
 	QMutex* mutex(){return _mutex;}
@@ -127,9 +127,8 @@ public:
     void setVideoEngineRequirements(OutputNode* output);
 
 
-    VideoEngine* getVideoEngine(){return vengine;}
+    VideoEngine* getVideoEngine(){return _videoEngine;}
     
-    Controler* getControler(){return ctrl;}
     
 	/*add a new built-in format to the default ones*/
     void addFormat(Format* frmt);
@@ -137,7 +136,6 @@ public:
 	/*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
-    Settings* getCurrentPowiterSettings(){return _powiterSettings;}
     
     typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
     
@@ -151,19 +149,18 @@ private:
 	 *to know whether it is an outputNode,InputNode or an operator.*/
     UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
 
-    Controler* ctrl;
-    VideoEngine* vengine; // Video Engine
-    QMutex* _mutex; // mutex for workerthreads
-    Settings* _powiterSettings;
 
+    VideoEngine* _videoEngine; // Video Engine
+    QMutex* _mutex; // mutex for workerthreads
+  
     /*All nodes currently active in the node graph*/
-    std::vector<Node*> allNodes;
+    std::vector<Node*> _currentNodes;
     
-    std::vector<Format*> formats_list;
-    std::vector<CounterID*> counters;
-    std::vector<PluginID*> plugins;
-    std::vector< std::pair< std::string,PluginID*> > readPlugins;
-    QStringList nodeNameList;
+    std::vector<Format*> _formats;
+    std::vector<CounterID*> _nodeCounters;
+    std::vector<PluginID*> _pluginsLoaded;
+    std::vector< std::pair< std::string,PluginID*> > _readPluginsLoaded;
+    QStringList _nodeNames;
 
 
     

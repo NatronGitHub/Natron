@@ -15,7 +15,7 @@ Knob_Callback::Knob_Callback(SettingsPanel *panel, Node *node){
 void Knob_Callback::initNodeKnobsVector(){
     for(int i=0;i<knobs.size();i++){
         Knob* pair=knobs[i];
-        node->add_knob_to_vector(pair);
+        node->addToKnobVector(pair);
     }
 
 }

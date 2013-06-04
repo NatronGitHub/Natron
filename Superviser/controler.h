@@ -9,13 +9,15 @@
 #include <QtCore/QObject>
 #include "Gui/node_ui.h"
 #include "Superviser/powiterFn.h"
-#include <boost/noncopyable.hpp>
+#include "Core/singleton.h"
 using namespace Powiter_Enums;
+
+#define ctrlPTR Controler::instance()
 
 class Model;
 class Gui;
 class QLabel;
-class Controler : public QObject,public boost::noncopyable
+class Controler : public QObject,public Singleton<Controler>
 {
 
 public:
@@ -23,17 +25,17 @@ public:
     ~Controler();
 
     void setProgressBarProgression(int value);
-    void addNewNode(qreal x, qreal y, QString name);
+    void createNode(qreal x, qreal y, QString name);
     QStringList& getNodeNameList();
-    Gui* getGui(){return graphicalInterface;}
-	Model* getModel(){return coreEngine;}
-    void initControler(Model* coreEngine,QLabel* loadingScreen);
+    Gui* getGui(){return _gui;}
+	Model* getModel(){return _model;}
+    void initControler(Model* model,QLabel* loadingScreen);
     void exit();
 private:
-
+	 
     
-    Model* coreEngine;
-    Gui* graphicalInterface;
+    Model* _model;
+    Gui* _gui;
 
 };
 
