@@ -13,10 +13,10 @@
 #include <QtWidgets/QtWidgets>
 int NodeGui::nodeNumber=0;
 const qreal pi=3.14159265358979323846264338327950288419717;
-NodeGui::NodeGui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
+NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
 {
     
-	this->ctrl = ctrl;
+
     this->graphNodes=nodes;
     this->node=node;
 	this->node->setNodeUi(this);
@@ -125,7 +125,7 @@ void NodeGui::updatePreviewImageForReader(){
 }
 void NodeGui::initInputArrows(){
     int i=0;
-    int inputnb=node->getInputsNb();
+    int inputnb=node->getInputCount();
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){

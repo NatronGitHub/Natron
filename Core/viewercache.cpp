@@ -41,7 +41,7 @@ ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxCacheSize,qint64 maxRamSi
     
     restoreCache();
     
-    MAX_PLAYBACK_CACHE_SIZE = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxPlayBackMemoryPercent * MAX_RAM_CACHE;
+    MAX_PLAYBACK_CACHE_SIZE = Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent * MAX_RAM_CACHE;
     _playbackCacheSize = 0;
 }
 
@@ -393,7 +393,7 @@ const char* ViewerCache::retrieveFrame(int frameNb,ViewerCache::FramesIterator i
         _playbackCacheSize += dataSize;
         
         // also adding the feedback on the timeline for this frame
-        gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNb);
+       ctrlPTR->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNb);
         
     }
     
@@ -489,13 +489,13 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
     _playbackCache.push_back(make_pair(_info,mf));
     
     // also adding feedback on the timeline for this frame
-    gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNB);
+    ctrlPTR->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNB);
     
     return make_pair(mf->data(),_info);
 }
 void ViewerCache::closeMappedFile(){
     vector<pair<ViewerCache::FrameID,MMAPfile*> >::iterator it = _playbackCache.begin();
-    gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->removeCachedFrame();
+    ctrlPTR->getGui()->viewer_tab->frameSeeker->removeCachedFrame();
     MMAPfile* mf =  it->second;
     _playbackCacheSize-=mf->size();
     mf->close();
@@ -510,7 +510,7 @@ void ViewerCache::clearPlayBackCache(){
         _playbackCache[i].second->close();
         delete _playbackCache[i].second;
     }
-    gl_viewer->getControler()->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+    ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
     _playbackCache.clear();
     _playbackCacheSize = 0;
 }

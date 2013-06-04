@@ -22,7 +22,7 @@ class SmartInputDialog:public QFrame
 Q_OBJECT
 
 public:
-    SmartInputDialog(Controler* ctrl,NodeGraph* graph, QWidget *parent=0);
+    SmartInputDialog(NodeGraph* graph, QWidget *parent=0);
     virtual ~SmartInputDialog(){}
     void keyPressEvent(QKeyEvent *e);
     bool eventFilter(QObject * obj, QEvent * e);
@@ -31,7 +31,6 @@ private:
     QVBoxLayout* layout;
     QLabel* textLabel;
     QComboBox* textEdit;
-    Controler* ctrl;
 };
 
 #endif // SMARTINPUTDIALOG_H

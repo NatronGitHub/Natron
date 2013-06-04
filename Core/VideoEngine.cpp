@@ -77,8 +77,8 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     computeFrameRequest(sameFrame,forward,fitFrameToViewer,false);
 }
 void VideoEngine::stopEngine(){
-    _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
-    _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
+    ctrlPTR->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
+    ctrlPTR->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
     _frameRequestsCount = 0;
     _working = false;
     _aborted = false;
@@ -118,7 +118,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         return;
     }
     
-    TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+    TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
     int firstFrame = frameSeeker->firstFrame();
     int lastFrame = frameSeeker->lastFrame();
     
@@ -524,31 +524,31 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     this->gl_viewer = gl_viewer;
     gl_viewer->setVideoEngine(this);
     _timer=new Timer();
-    FeedBackSpinBox* fpsBox = engine->getControler()->getGui()->viewer_tab->fpsBox;
-    TimeSlider* frameSeeker = engine->getControler()->getGui()->viewer_tab->frameSeeker;
-    FeedBackSpinBox* frameNumber = engine->getControler()->getGui()->viewer_tab->frameNumberBox;
+    FeedBackSpinBox* fpsBox = ctrlPTR->getGui()->viewer_tab->fpsBox;
+    TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
+    FeedBackSpinBox* frameNumber = ctrlPTR->getGui()->viewer_tab->frameNumberBox;
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),this, SLOT(setDesiredFPS(double)));
     QObject::connect(this, SIGNAL(fpsChanged(double)), fpsBox, SLOT(setValue(double)));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->play_Forward_Button,SIGNAL(toggled(bool)),this,SLOT(startPause(bool)));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->stop_Button,SIGNAL(clicked()),this,SLOT(pause()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->play_Backward_Button,SIGNAL(toggled(bool)),this,SLOT(startBackward(bool)));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->previousIncrement_Button,SIGNAL(clicked()),this,SLOT(previousIncrement()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
-    QObject::connect(engine->getControler()->getGui()->viewer_tab->lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->play_Forward_Button,SIGNAL(toggled(bool)),this,SLOT(startPause(bool)));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->stop_Button,SIGNAL(clicked()),this,SLOT(pause()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->play_Backward_Button,SIGNAL(toggled(bool)),this,SLOT(startBackward(bool)));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->previousIncrement_Button,SIGNAL(clicked()),this,SLOT(previousIncrement()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
+    QObject::connect(ctrlPTR->getGui()->viewer_tab->lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(frameNumber,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumber, SLOT(setValue(int)));
     QObject::connect(frameNumber, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
-    qint64 maxDiskCacheSize = gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxDiskCache;
+    qint64 maxDiskCacheSize = Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache;
     qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() *
-    gl_viewer->getControler()->getModel()->getCurrentPowiterSettings()->_cacheSettings.maxCacheMemoryPercent;
+    Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent;
     _viewerCache = new ViewerCache(gl_viewer,maxDiskCacheSize/2, maxMemoryCacheSize);
-    QObject::connect(engine->getControler()->getGui()->actionClearDiskCache, SIGNAL(triggered()),this,SLOT(clearDiskCache()));
-    QObject::connect(engine->getControler()->getGui()->actionClearPlayBackCache, SIGNAL(triggered()),this,SLOT(clearPlayBackCache()));
-    QObject::connect(engine->getControler()->getGui()->actionClearBufferCache, SIGNAL(triggered()),this,SLOT(clearRowCache()));
+    QObject::connect(ctrlPTR->getGui()->actionClearDiskCache, SIGNAL(triggered()),this,SLOT(clearDiskCache()));
+    QObject::connect(ctrlPTR->getGui()->actionClearPlayBackCache, SIGNAL(triggered()),this,SLOT(clearPlayBackCache()));
+    QObject::connect(ctrlPTR->getGui()->actionClearBufferCache, SIGNAL(triggered()),this,SLOT(clearRowCache()));
     
 }
 
@@ -635,11 +635,11 @@ void VideoEngine::abort(){
 void VideoEngine::pause(){
     _paused=true;
     _timer->playState=PAUSE; // pausing timer
-    _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
-    _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
+   ctrlPTR->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
+    ctrlPTR->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
 }
 void VideoEngine::startPause(bool c){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
         return;
     }
@@ -649,8 +649,8 @@ void VideoEngine::startPause(bool c){
         videoEngine(-1,false,true);
     }
     else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
-        _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
+        ctrlPTR->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
+        ctrlPTR->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
         
     }else{
         pause();
@@ -658,7 +658,7 @@ void VideoEngine::startPause(bool c){
 }
 void VideoEngine::startBackward(bool c){
     
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()){
         pause();
         return;
     }
@@ -666,16 +666,16 @@ void VideoEngine::startBackward(bool c){
         videoEngine(-1,false,false);
     }
     else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
-        _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
+        ctrlPTR->getGui()->viewer_tab->play_Forward_Button->setChecked(false);
+        ctrlPTR->getGui()->viewer_tab->play_Backward_Button->setChecked(false);
         
     }else{
         pause();
     }
 }
 void VideoEngine::previousFrame(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       || ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
     if(!_working)
@@ -685,8 +685,8 @@ void VideoEngine::previousFrame(){
 }
 
 void VideoEngine::nextFrame(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if(ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       || ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
     if(!_working)
@@ -696,11 +696,11 @@ void VideoEngine::nextFrame(){
 }
 
 void VideoEngine::firstFrame(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
-    TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+    TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
     if(!_working)
         _firstFrame(frameSeeker->firstFrame(), 1, false);
     //    else
@@ -708,11 +708,11 @@ void VideoEngine::firstFrame(){
 }
 
 void VideoEngine::lastFrame(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
-    TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+    TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
     if(!_working)
         _lastFrame(frameSeeker->lastFrame(), 1, false);
     //    else
@@ -720,11 +720,11 @@ void VideoEngine::lastFrame(){
 }
 
 void VideoEngine::previousIncrement(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if(ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
-    int frame = gl_viewer->getCurrentReaderInfo()->currentFrame()-_coreEngine->getControler()->getGui()->viewer_tab->incrementSpinBox->value();
+    int frame = gl_viewer->getCurrentReaderInfo()->currentFrame()-ctrlPTR->getGui()->viewer_tab->incrementSpinBox->value();
     if(!_working)
         _previousIncrement(frame, 1, false);
     //    else{
@@ -735,11 +735,11 @@ void VideoEngine::previousIncrement(){
 }
 
 void VideoEngine::nextIncrement(){
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
-    int frame = gl_viewer->getCurrentReaderInfo()->currentFrame()+_coreEngine->getControler()->getGui()->viewer_tab->incrementSpinBox->value();
+    int frame = gl_viewer->getCurrentReaderInfo()->currentFrame()+ctrlPTR->getGui()->viewer_tab->incrementSpinBox->value();
     if(!_working)
         _nextIncrement(frame, 1, false);
     //    else
@@ -748,8 +748,8 @@ void VideoEngine::nextIncrement(){
 
 void VideoEngine::seekRandomFrame(int f){
     if(!_dag.getOutput() || _dag.getInputs().size()==0) return;
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
     if(!_working)
@@ -760,7 +760,7 @@ void VideoEngine::seekRandomFrame(int f){
 
 void VideoEngine::_previousFrame(int frameNB,int frameCount,bool initViewer){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(frameNB >= frameSeeker->firstFrame()){
             gl_viewer->currentFrame(frameNB);
             std::vector<InputNode*>& inputs = _dag.getInputs();
@@ -785,7 +785,7 @@ void VideoEngine::_previousFrame(int frameNB,int frameCount,bool initViewer){
 }
 void VideoEngine::_nextFrame(int frameNB,int frameCount,bool initViewer){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker =ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(frameNB <= frameSeeker->lastFrame()){
             gl_viewer->currentFrame(frameNB);
             std::vector<InputNode*>& inputs = _dag.getInputs();
@@ -808,7 +808,7 @@ void VideoEngine::_nextFrame(int frameNB,int frameCount,bool initViewer){
 }
 void VideoEngine::_previousIncrement(int frameNB,int frameCount,bool initViewer){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(frameNB > frameSeeker->firstFrame())
             gl_viewer->currentFrame(frameNB);
         else
@@ -832,7 +832,7 @@ void VideoEngine::_previousIncrement(int frameNB,int frameCount,bool initViewer)
 }
 void VideoEngine::_nextIncrement(int frameNB,int frameCount,bool initViewer){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(frameNB < frameSeeker->lastFrame())
             gl_viewer->currentFrame(frameNB);
         else
@@ -889,7 +889,7 @@ void VideoEngine::_lastFrame(int frameNB,int frameCount,bool initViewer){
 }
 void VideoEngine::_seekRandomFrame(int frameNB,int frameCount,bool initViewer){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(frameNB < frameSeeker->firstFrame() || frameNB > frameSeeker->lastFrame())
             return;
         gl_viewer->currentFrame(frameNB);
@@ -926,13 +926,13 @@ void VideoEngine::runTasks(){
 /*code needs to be reviewed*/
 void VideoEngine::seekRandomFrameWithStart(int f){
     if(_dag.getOutput() && _dag.getInputs().size()>0) return;
-    if( _coreEngine->getControler()->getGui()->viewer_tab->play_Forward_Button->isChecked()
-       ||  _coreEngine->getControler()->getGui()->viewer_tab->play_Backward_Button->isChecked()){
+    if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
+       ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
         pause();
     }
     std::vector<InputNode*>& inputs = _dag.getInputs();
     if(_dag.getOutput() && inputs.size()>0){
-        TimeSlider* frameSeeker = _coreEngine->getControler()->getGui()->viewer_tab->frameSeeker;
+        TimeSlider* frameSeeker = ctrlPTR->getGui()->viewer_tab->frameSeeker;
         if(f < frameSeeker->firstFrame() || f > frameSeeker->lastFrame())
             return;
         gl_viewer->currentFrame(f);

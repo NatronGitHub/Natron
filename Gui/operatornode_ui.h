@@ -10,7 +10,7 @@
 class OperatorNode_ui : public NodeGui
 {
 public:
-    OperatorNode_ui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout* dockContainer,
+    OperatorNode_ui(std::vector<NodeGui*> nodes,QVBoxLayout* dockContainer,
                     Node *node,qreal x, qreal y,QGraphicsItem* parent=0,QGraphicsScene* sc=0);
      bool hasOutput(){return true;}
      void initInputArrows(){NodeGui::initInputArrows();}

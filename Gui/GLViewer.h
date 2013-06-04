@@ -88,9 +88,9 @@ class ViewerGL : public QGLWidget
 
 public:
 	/*3 different constructors, that all take a different parameter related to OpenGL or Qt widget parenting*/
-	ViewerGL(Controler* ctrl,float byteMode,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-	ViewerGL(Controler* ctrl,float byteMode,const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-	ViewerGL(Controler* ctrl,float byteMode,QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(float byteMode,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(float byteMode,const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
+	ViewerGL(float byteMode,QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
 
 	virtual ~ViewerGL();
 
@@ -281,9 +281,6 @@ public:
 	/*update the BBOX info*/
 	void updateDataWindowAndDisplayWindowInfo();
 
-	/*controler pointer*/
-	Controler* getControler();
-
 	/*turn on/off overlay*/
 	void turnOnOverlay(){_overlay=true;}
 	void turnOffOverlay(){_overlay=false;}
@@ -403,7 +400,6 @@ private:
 	ReaderInfo* _readerInfo;
 	ReaderInfo* blankReaderInfo;
 
-	Controler* ctrl;
 
 
 	bool _drawing;

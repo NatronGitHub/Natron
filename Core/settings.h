@@ -8,15 +8,19 @@
 #include <vector>
 #include <QtCore/qglobal.h>
 #include "Superviser/powiterFn.h"
+#include "Core/singleton.h"
 #include "Core/metadata.h"
 #include <map>
-#include <boost/noncopyable.hpp>
+
 class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
  that means the powiter settings are unique and there cannot be 2 instances living at the same time.*/
-class Settings : public boost::noncopyable
+class Settings : public Singleton<Settings>
 {
 public:
+
+	static Settings* getPowiterCurrentSettings(){return Settings::instance();}
+
     Settings():_cacheSettings(),_viewerSettings(),_generalSettings(),_readersSettings(){}
         
     class Caching{

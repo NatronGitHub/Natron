@@ -20,8 +20,8 @@ public:
     
     virtual bool hasOutput(){return false;}
     virtual bool isOutputNode(){return true;}
-    virtual void setOutputNb(){freeOutputNb=0;}
-    virtual int inputs(){return 1;}
+    virtual void setOutputNb(){_freeOutputCount=0;}
+    virtual int totalInputsCount(){return 1;}
    
 	int currentFrame(){return _currentFrame;}
 	void currentFrame(int c){_currentFrame=c;}

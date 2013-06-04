@@ -13,7 +13,7 @@ public:
     InputNode(Node* node );
     InputNode(InputNode& ref);
     virtual ~InputNode();
-    virtual int inputs(){return 0;}
+    virtual int totalInputsCount(){return 0;}
    
     bool isInputNode();
 private:

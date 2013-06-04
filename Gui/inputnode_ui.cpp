@@ -5,6 +5,6 @@
 //  contact: immarespond at gmail dot com
 #include "Gui/inputnode_ui.h"
 
-InputNode_ui::InputNode_ui(Controler* ctrl,std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y, QGraphicsItem *parent, QGraphicsScene *scene):NodeGui(ctrl,nodes,dockContainer,node,x,y,parent,scene)
+InputNode_ui::InputNode_ui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y, QGraphicsItem *parent, QGraphicsScene *scene):NodeGui(nodes,dockContainer,node,x,y,parent,scene)
 {
 }

@@ -87,7 +87,7 @@ void Node::Info::turnOffChannels(ChannelMask &m){
 }
 
 void Node::copy_info(){
-	Node* parent=parents[0];
+	Node* parent=_parents[0];
 	_info->firstFrame(parent->getInfo()->firstFrame());
 	_info->lastFrame(parent->getInfo()->lastFrame());
 	_info->setYdirection(parent->getInfo()->getYdirection());
@@ -105,18 +105,18 @@ void Node::clear_info(){
     _info->y(0);
     _info->right(0);
     _info->top(0);
-    requested_channels=Mask_None;
-    requested_box.set(0, 0, 0, 0);
+    _requestedChannels=Mask_None;
+    _requestedBox.set(0, 0, 0, 0);
 
 }
 void Node::merge_info(){
 	
 	int final_direction=0;
-	Node* first=parents[0];
+	Node* first=_parents[0];
 	Format expectedFormat=first->getInfo()->getDisplayWindow();
 	ChannelMask chans=_info->channels();
     bool displayMode=first->getInfo()->rgbMode();
-	foreach(Node* parent,parents){
+	foreach(Node* parent,_parents){
 		merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
 		final_direction+=parent->getInfo()->getYdirection();
 		chans += parent->getInfo()->channels();
@@ -127,7 +127,7 @@ void Node::merge_info(){
             std::cout << "Warning: merge_info: inputs of" << className() << " have a different display mode" << std::endl;
         }
 	}
-    final_direction/=parents.size();
+    final_direction/=_parents.size();
 	_info->set_channels(chans);
     _info->rgbMode(displayMode);
     _info->setYdirection(final_direction);
@@ -159,46 +159,46 @@ bool Node::Info::operator==( Node::Info &other){
 
 
 
-Node::Node(const Node& ref):parents(ref.parents),inputNb(ref.inputNb),children(ref.children),inputLabels(ref.inputLabels),
-    _mutex(ref._mutex),name(ref.name),hashValue(ref.hashValue),_info(ref._info),
-    freeOutputNb(ref.freeOutputNb),output_channels(ref.output_channels),requested_box(ref.requested_box),requested_channels(ref.requested_channels),_marked(ref._marked){}
+Node::Node(const Node& ref):_parents(ref._parents),_inputsCount(ref._inputsCount),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
+    _mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
+    _freeOutputCount(ref._freeOutputCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
 
 Node::Node(Node* ptr){
     _marked = false;
     _info = new Info;
-    hashValue=new Hash();
-	requested_channels=Mask_None;
+    _hashValue=new Hash();
+	_requestedChannels=Mask_None;
 
 }
-Hash* Node::getHash() const{return hashValue;}
+Hash* Node::getHash() const{return _hashValue;}
 
-std::vector<Knob*> Node::getKnobs() const{return knobs;}
-void Node::add_knob_to_vector(Knob* knob){knobs.push_back(knob);}
-std::vector<Node*> Node::getParents() const {return parents;}
-std::vector<Node*> Node::getChildren() const {return children;}
+std::vector<Knob*> Node::getKnobs() const{return _knobsVector;}
+void Node::addToKnobVector(Knob* knob){_knobsVector.push_back(knob);}
+std::vector<Node*> Node::getParents() const {return _parents;}
+std::vector<Node*> Node::getChildren() const {return _children;}
 
 bool Node::hasOutput(){return true;}
 
-int Node::getFreeOutputNb() const{return freeOutputNb;}
+int Node::getFreeOutputCount() const{return _freeOutputCount;}
 
 void Node::addChild(Node* child){
 
-    children.push_back(child);
+    _children.push_back(child);
 }
 void Node::addParent(Node* parent){
 
-    parents.push_back(parent);
+    _parents.push_back(parent);
 }
 void Node::removeChild(Node* child){
 
     int i=0;
-    while(i<children.size()){
-        Node* c=children[i];
+    while(i<_children.size()){
+        Node* c=_children[i];
         if(c->getName()==child->getName()){
-            Node* tmp=children[i];
-            children[i]=children[children.size()-1];
-            children[children.size()-1]=tmp;
-            children.pop_back();
+            Node* tmp=_children[i];
+            _children[i]=_children[_children.size()-1];
+            _children[_children.size()-1]=tmp;
+            _children.pop_back();
 
             break;
         }
@@ -208,13 +208,13 @@ void Node::removeChild(Node* child){
 void Node::removeParent(Node* parent){
 
     int i=0;
-    while(i<parents.size()){
-        Node* p=parents[i];
+    while(i<_parents.size()){
+        Node* p=_parents[i];
         if(p->getName()==parent->getName()){
-            Node* tmp=parents[i];
-            parents[i]=parents[parents.size()-1];
-            parents[parents.size()-1]=tmp;
-            parents.pop_back();
+            Node* tmp=_parents[i];
+            _parents[i]=_parents[_parents.size()-1];
+            _parents[_parents.size()-1]=tmp;
+            _parents.pop_back();
 
             break;
         }
@@ -225,36 +225,36 @@ void Node::removeParent(Node* parent){
 
 void Node::decrementFreeOutputNb(){
     if(hasOutput()){
-        freeOutputNb--;
+        _freeOutputCount--;
     }
 }
 void Node::incrementFreeOutputNb(){
     if(hasOutput()){
-        freeOutputNb++;
+        _freeOutputCount++;
     }
 }
-void Node::setOutputNb(){freeOutputNb=1;}
+void Node::setOutputNb(){_freeOutputCount=1;}
 bool Node::isInputNode(){return false;}
 bool Node::isOutputNode(){return false;}
 
-void Node::_inputs(){
-    inputNb=inputs();
-    initInputsLabels();
-    _setLabels();
+void Node::initializeInputs(){
+    _inputsCount=totalInputsCount();
+    initInputLabelsMap();
+    applyLabelsToInputs();
     
 }
-int Node::inputs(){return 1;}
+int Node::totalInputsCount(){return 1;}
 
-int Node::getInputsNb() const {return inputNb;}
-const std::map<int, std::string>& Node::getInputLabels() const {return inputLabels;}
+int Node::getInputCount() const {return _inputsCount;}
+const std::map<int, std::string>& Node::getInputLabels() const {return _inputLabelsMap;}
 
 std::string Node::getLabel(int inputNb)  {
-    return inputLabels[inputNb];}
-QString Node::getName() {return name;}
+    return _inputLabelsMap[inputNb];}
+QString Node::getName() {return _name;}
 QMutex* Node::getMutex() const {return _mutex;}
 
 
-void Node::setName(QString name){this->name=name;}
+void Node::setName(QString name){this->_name=name;}
 
 
 /*To change label names : override setInputLabel to reflect what you want to have for input "inputNb" */
@@ -263,21 +263,21 @@ std::string Node::setInputLabel(int inputNb){
     out.append(1,(char)(inputNb+65));
     return out;
 }
-void Node::_setLabels(){
-    for(U32 i=0;i<inputLabels.size();i++){
+void Node::applyLabelsToInputs(){
+    for(U32 i=0;i<_inputLabelsMap.size();i++){
         std::map<int, std::string>::iterator it;
-        it =inputLabels.find(i);
-        inputLabels.erase(it);
-        inputLabels[i] =setInputLabel(i);
+        it =_inputLabelsMap.find(i);
+        _inputLabelsMap.erase(it);
+        _inputLabelsMap[i] =setInputLabel(i);
     }
 }
-void Node::initInputsLabels(){
+void Node::initInputLabelsMap(){
     int i=0;
-    while(i<inputNb){
+    while(i<_inputsCount){
         char str[2];
         str[0] =i+65;
         str[1]='\0';
-        inputLabels[i]=str;
+        _inputLabelsMap[i]=str;
         i++;
     }
  
@@ -300,13 +300,13 @@ void Node::validate(bool first_time){
 }
 void Node::_validate(bool first_time){
 
-	foreach(Node* parent,parents){
+	foreach(Node* parent,_parents){
 		parent->validate(first_time);
 	}
-	if(parents.size()==1){
+	if(_parents.size()==1){
 		copy_info();
 	}
-	else if(parents.size()>1){
+	else if(_parents.size()>1){
 		clear_info();
 		merge_info();
 	}
@@ -321,8 +321,8 @@ void Node::request(int y,int top,int offset, int range,ChannelMask channels){
 		if(not in cache box(channels))
 			_request(channels,box)
 			setup cache*/
-	requested_channels += channels;
-	requested_box.merge(offset,y,range,top);
+	_requestedChannels += channels;
+	_requestedBox.merge(offset,y,range,top);
 	
 	validate(true);
 
@@ -341,13 +341,13 @@ void Node::request(int y,int top,int offset, int range,ChannelMask channels){
 //        << " range: " << requested_box.range() << " top: " << requested_box.top() << " )"<< std::endl;
 //	}
 
-	_request(y,top,offset,range,requested_channels);
+	_request(y,top,offset,range,_requestedChannels);
 	
 	
 }
 void Node::_request(int y,int top,int offset,int range,ChannelMask channels){
 	int i=0;
-	foreach(Node* parent,parents){
+	foreach(Node* parent,_parents){
 		in_channels(i,channels);
 		parent->request(y,top,offset,range,channels);
 		++i;
@@ -359,34 +359,34 @@ void Node::engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     for(int i =0 ; i < alreadyComputedHash.size();i++){
-        if(alreadyComputedHash[i] == name.toStdString())
+        if(alreadyComputedHash[i] == _name.toStdString())
             return;
     }
-    hashValue->reset();
-    for(int i=0;i<knobs.size();i++){
-        hashValue->appendKnobToHash(knobs[i]);
+    _hashValue->reset();
+    for(int i=0;i<_knobsVector.size();i++){
+        _hashValue->appendKnobToHash(_knobsVector[i]);
     }
-    hashValue->appendQStringToHash(QString(className().c_str()));
-    alreadyComputedHash.push_back(name.toStdString());
-    foreach(Node* parent,parents){
+    _hashValue->appendQStringToHash(QString(className().c_str()));
+    alreadyComputedHash.push_back(_name.toStdString());
+    foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
-        hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
+        _hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
     }
-    hashValue->computeHash();
+    _hashValue->computeHash();
 }
 bool Node::hashChanged(){
-    U64 oldHash=hashValue->getHashValue();
+    U64 oldHash=_hashValue->getHashValue();
     vector<std::string> v;
     computeTreeHash(v);
-    return oldHash!=hashValue->getHashValue();
+    return oldHash!=_hashValue->getHashValue();
 }
 void Node::initKnobs(Knob_Callback *cb){
-	this->knob_cb=cb;
+	this->_knobsCB=cb;
     cb->initNodeKnobsVector();
 }
 void Node::createKnobDynamically(){
 
-	knob_cb->createKnobDynamically();
+	_knobsCB->createKnobDynamically();
 }
 
 std::string Node::description(){
@@ -394,10 +394,11 @@ std::string Node::description(){
 }
 
 Node::~Node(){
-    parents.clear();
-    children.clear();
-    knobs.clear();
-    inputLabels.clear();
-    delete hashValue;
+    _parents.clear();
+    _children.clear();
+	foreach(Knob* k,_knobsVector) delete k;
+    _knobsVector.clear();
+    _inputLabelsMap.clear();
+    delete _hashValue;
     delete _info;
 }

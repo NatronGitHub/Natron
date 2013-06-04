@@ -10,6 +10,7 @@
 #include "Gui/viewerTab.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QMainWindow>
+#include <boost/noncopyable.hpp>
 #define RIGHTDOCK_WIDTH 380
 
 using namespace Powiter_Enums;
@@ -30,7 +31,7 @@ class QStatusBar;
 class QTreeView;
 class Controler;
 class TextureCache;
-class Gui:public QMainWindow
+class Gui:public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
 public:
@@ -38,9 +39,9 @@ public:
     virtual ~Gui();
 	
 
-    void setControler(Controler* crossPlatform);
+  
     void createGui();
-    void addNode_ui(qreal x,qreal y,UI_NODE_TYPE type,Node *node);
+    void createNodeGUI(qreal x,qreal y,UI_NODE_TYPE type,Node *node);
     bool eventFilter(QObject *target, QEvent *event);
 
 protected:
@@ -49,7 +50,7 @@ protected:
 private:
 
     TextureCache* _textureCache;
-    Controler* crossPlatform; // Pointer to the controler
+
     
     void clearTextureCache();
 
@@ -133,7 +134,7 @@ public:
     //======================
     QStatusBar *statusbar;
     
-    void setupUi(Controler* ctrl);
+    void setupUi();
    
 	void retranslateUi(QMainWindow *MainWindow);
     

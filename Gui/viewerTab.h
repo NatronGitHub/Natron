@@ -29,7 +29,7 @@ class TextureCache;
 class ViewerTab: public QWidget 
 {
 public:
-	ViewerTab(Controler* ctrl,QVBoxLayout*& viewer_tabLayout,QWidget* parent=0);
+	ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent=0);
 	virtual ~ViewerTab();
     
     void setTextureCache(TextureCache* cache);
@@ -80,11 +80,9 @@ public:
 	/*frame seeker*/
 	TimeSlider* frameSeeker;
     
-    void setControler(Controler* c);
-    Controler* getControler();
     bool initialized(){return initialized_;}
 private:
-    Controler* ctrl;
+  
     bool initialized_;
 };
 

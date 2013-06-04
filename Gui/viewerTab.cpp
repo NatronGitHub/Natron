@@ -27,9 +27,9 @@
 #include "Gui/comboBox.h"
 
 
-ViewerTab::ViewerTab(Controler* ctrl,QVBoxLayout*& viewer_tabLayout,QWidget* parent):QWidget(parent),initialized_(false)
+ViewerTab::ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent):QWidget(parent),initialized_(false)
 {
-    this->ctrl = ctrl;
+
     
 	this->setObjectName(QString::fromUtf8("Viewer_tab1"));
 	//viewer_tabLayout=new QVBoxLayout();
@@ -140,7 +140,7 @@ ViewerTab::ViewerTab(Controler* ctrl,QVBoxLayout*& viewer_tabLayout,QWidget* par
 	/*=============================================*/
     
 	/*openGL viewer*/
-	viewer=new ViewerGL(ctrl,ctrl->getModel()->getCurrentPowiterSettings()->_viewerSettings.byte_mode,this);
+	viewer=new ViewerGL(Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode,this);
 	viewer->setObjectName(QString::fromUtf8("viewer"));
     viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	viewer_tabLayout->addWidget(viewer);
@@ -327,6 +327,4 @@ void ViewerTab::setTextureCache(TextureCache* cache){
     viewer->setTextureCache(cache);
 }
 
-Controler* ViewerTab::getControler(){
-    return ctrl;
-}
+ 

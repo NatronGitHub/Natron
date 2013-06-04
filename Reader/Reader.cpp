@@ -78,7 +78,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
             break;
     }
     
-    PluginID* decoder = ui_context->getControler()->getModel()->getCurrentPowiterSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
+    PluginID* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if(!decoder){
         cout << "Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return Buffer::DecodedFrameDescriptor();
@@ -322,8 +322,8 @@ bool Reader::makeCurrentDecodedFrame(){
     _info->set_channels(readInfo->channels());
     _info->setYdirection(readInfo->Ydirection());
     _info->rgbMode(readInfo->rgbMode());
-    ui_context->getControler()->getModel()->getVideoEngine()->popReaderInfo(this);
-    ui_context->getControler()->getModel()->getVideoEngine()->pushReaderInfo(readInfo, this);
+    ctrlPTR->getModel()->getVideoEngine()->popReaderInfo(this);
+    ctrlPTR->getModel()->getVideoEngine()->pushReaderInfo(readInfo, this);
     return true;
 }
 
