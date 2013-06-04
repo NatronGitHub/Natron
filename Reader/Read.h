@@ -14,7 +14,6 @@
 #include "Core/row.h"
 #include "Core/displayFormat.h"
 #include <QtGui/QRgb>
-#include "Superviser/PwStrings.h"
 #include "Reader/Reader.h"
 class ViewerGL;
 class Lut;

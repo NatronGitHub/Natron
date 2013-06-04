@@ -190,8 +190,8 @@ void ViewerCache::restoreCache(){
                 
                 
                 float byteMode = byteModeStr.toFloat();
-                std::string fileName = QStringToStdString(fileNameStr);
-                std::string _cachedIndex = QStringToStdString(cacheIndexStr);
+                std::string fileName = fileNameStr.toStdString();
+                std::string _cachedIndex = cacheIndexStr.toStdString();
                 float zoom =zoomStr.toFloat();
                 float exposure = expStr.toFloat();
                 float lut =  lutStr.toFloat() ;
@@ -298,7 +298,7 @@ void ViewerCache::restoreCache(){
         str.append(".cache");
         QFile::rename(fileName, str);
         ranks.insert(make_pair(it->second._rank,*it));
-        it->second._cacheIndex = QStringToStdString(str);
+        it->second._cacheIndex = str.toStdString();
         index++;
     }
     assert( ranks.size() == _frames.size());

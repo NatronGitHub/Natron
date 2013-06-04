@@ -11,7 +11,6 @@
 #include "Core/channels.h"
 #include "Core/model.h"
 #include "Core/displayFormat.h"
-#include "Superviser/PwStrings.h"
 
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;

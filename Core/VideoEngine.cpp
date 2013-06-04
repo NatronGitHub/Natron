@@ -33,7 +33,6 @@
 
 #include "Superviser/controler.h"
 #include "Superviser/MemoryInfo.h"
-#include "Superviser/PwStrings.h"
 
 
 /* Here's a drawing that represents how the video Engine works:

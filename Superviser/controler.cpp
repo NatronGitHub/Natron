@@ -43,15 +43,12 @@ Controler::~Controler(){
     delete _model;
 }
 
-void Controler::exit(){}
 
 QStringList& Controler::getNodeNameList(){
     return _model->getNodeNameList();
 }
 
-void Controler::setProgressBarProgression(int value){
 
-}
 void Controler::createNode(qreal x,qreal y,QString name){
    
 	QMutex *mutex=_model->mutex();

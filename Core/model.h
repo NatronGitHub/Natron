@@ -5,19 +5,18 @@
 //  contact: immarespond at gmail dot com
 #ifndef MODEL_H
 #define MODEL_H
-#include "Superviser/PwStrings.h"
 #include <iostream>
 #include <fstream>
 #include <QtCore/QStringList>
+#include "Superviser/powiterFn.h"
 #ifdef __POWITER_UNIX__
-#include "dlfcn.h"
+#include <dlfcn.h>
 #endif
 #include <map>
 #include <vector>
 #include <ImfStandardAttributes.h>
 #include "Core/inputnode.h"
 #include <boost/noncopyable.hpp>
-
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/

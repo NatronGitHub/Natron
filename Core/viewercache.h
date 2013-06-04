@@ -13,8 +13,6 @@
 #include <map>
 #include <QtGui/qvector4d.h>
 #include <QtCore/QFile>
-#include "Superviser/PwStrings.h"
-
 
 #define CACHE_VERSION "1.0.0"
 

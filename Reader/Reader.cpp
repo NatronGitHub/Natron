@@ -38,7 +38,6 @@ Reader::Reader(Reader& ref):InputNode(ref){}
 
 Reader::~Reader(){
 	delete preview;
-	delete readHandle;
 }
 std::string Reader::className(){return "Reader";}
 
@@ -358,7 +357,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
             }
         }
     }
-    std::string _name  = QStringToStdString(filename);
+    std::string _name  = filename.toStdString();
     DecodedFrameDescriptor desc(future,readHandle,info,cachedFrame,cacheWatcher,_name,slContext);
     _buffer.push_back(desc);
     return desc;
@@ -555,10 +554,10 @@ int Reader::lastFrame(){
 }
 
 std::string Reader::getCurrentFrameName(){
-    return QStringToStdString(files[current_frame]);
+    return files[current_frame].toStdString();
 }
 std::string Reader::getRandomFrameName(int f){
-    return QStringToStdString(files[f]);
+    return files[f].toStdString();
 }
 
 void Reader::setPreview(QImage* img){

@@ -12,11 +12,17 @@
 #include "Core/singleton.h"
 using namespace Powiter_Enums;
 
+/*macro to get a pointer to the controler*/
 #define ctrlPTR Controler::instance()
 
 class Model;
 class Gui;
 class QLabel;
+
+/*Controler (see Model-view-controler pattern on wikipedia). This class
+ implements the singleton pattern to ensure there's only 1 single
+ instance of the object living. Also you can access the controler
+ by the handy macro ctrlPTR*/
 class Controler : public QObject,public Singleton<Controler>
 {
 
@@ -24,18 +30,30 @@ public:
     Controler();
     ~Controler();
 
-    void setProgressBarProgression(int value);
+    /*Create a new node at position (x,y) in the node graph.
+     The name passed in parameter must match a valid node name,
+     otherwise an exception is thrown. You should encapsulate the call
+     by a try-catch block.*/
     void createNode(qreal x, qreal y, QString name);
+    
+    /*Get a reference to the list of all the node names 
+     available. E.g : Viewer,Reader, Blur, etc...*/
     QStringList& getNodeNameList();
+    
+    /*Pointer to the GUI*/
     Gui* getGui(){return _gui;}
+    
+    /*Pointer to the model*/
 	Model* getModel(){return _model;}
+    
+    /*initialize the pointers to the model and the view. It also call 
+     gui->createGUI() and build a viewer node.*/
     void initControler(Model* model,QLabel* loadingScreen);
-    void exit();
 private:
 	 
     
-    Model* _model;
-    Gui* _gui;
+    Model* _model; // the model of the MVC pattern
+    Gui* _gui; // the view of the MVC pattern
 
 };
 
