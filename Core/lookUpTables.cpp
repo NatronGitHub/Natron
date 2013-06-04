@@ -12,6 +12,10 @@
 #endif
 
 using namespace std;
+
+std::map<Lut::DataType,Lut*> Lut::_luts;
+
+
 /*Fill in the table used by toFloatFast() and thus by all the to functions. This is done by calling to_byte().
  This can be used by a from_byte() implementation that works by using interpolation to invert the to_byte() function.
  Does nothing if called a second time. */
@@ -199,7 +203,7 @@ void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta
     
 }
 void Linear::from_short(float* to, const U16* from, int W, int bits , int delta ){
-     cout << "Linear::from_short not yet implemented" << endl;
+    cout << "Linear::from_short not yet implemented" << endl;
 }
 void Linear::from_float(float* to, const float* from, int W, int delta ){
     for(int i=0;i< W;i+=delta){
@@ -207,31 +211,30 @@ void Linear::from_float(float* to, const float* from, int W, int delta ){
     }
 }
 Lut* Lut::getLut(DataType type){
-    switch (type) {
-        case VIEWER:
-            return new sRGB();
-            break;
-        case FLOAT:
-            return Lut::Linear();
-            break;
-		case INT8:
-			return new sRGB();
-			break;
-		case INT16:
-			return new sRGB();
-			break;
-        case MONITOR:
-            return new Rec709();
-            break;
-        default:
-            return NULL;
-            break;
+    std::map<DataType,Lut*>::iterator found = Lut::_luts.find(type);
+    if(found != Lut::_luts.end()){
+        return found->second;
     }
-    
+    return NULL;
 }
 
 Lut* Lut::Linear(){
     Lut* lut=new LinearLut();
     lut->linear(true);
     return lut;
+}
+
+
+void Lut::initializeLuts(){
+    Lut* srgb = new sRGB;
+    srgb->validate();
+    Lut* lin = Lut::Linear();
+    lin->validate();
+    Lut* rec709 = new Rec709;
+    rec709->validate();
+    Lut::_luts.insert(make_pair(VIEWER,srgb));
+    Lut::_luts.insert(make_pair(FLOAT,lin));
+    Lut::_luts.insert(make_pair(INT8,srgb));
+    Lut::_luts.insert(make_pair(INT16,srgb));
+    Lut::_luts.insert(make_pair(MONITOR,rec709));
 }

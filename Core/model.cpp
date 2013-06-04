@@ -25,6 +25,7 @@
 #include "Reader/readExr.h"
 #include "Reader/readffmpeg.h"
 #include "Reader/readQt.h"
+#include "Core/lookUpTables.h"
 using namespace std;
 Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
 {
@@ -35,6 +36,8 @@ Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
     loadBuiltinPlugins();
     loadReadPlugins();
     displayLoadedPlugins();
+    
+    Lut::initializeLuts();
 
 }
 void Model::setControler(Controler* ctrl){

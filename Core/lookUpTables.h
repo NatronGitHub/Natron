@@ -20,6 +20,7 @@ class Lut{
 	bool init_;
 	bool linear_;
     bool _bigEndian;
+            
 protected:
     
     void fillToTable();
@@ -33,6 +34,7 @@ public:
     bool linear() {  return linear_; }
     void linear(bool b){linear_=b;}
   
+    static void initializeLuts();
     
     void validate();
     
@@ -108,10 +110,17 @@ public:
 //
     // luts : linear,srgb,rec709,cineon,gamma 1.8,gamma2.2,panalog,redlog,viperlog,alexaV3logC,ploglin,slog,redspace
     // default : monitor = srgb,8bit :srgb, 16 bit:srgb, log :cineon,float : linear
-     enum DataType { MONITOR = 0, VIEWER, INT8, INT16, LOG, FLOAT, GAMMA1_8, GAMMA2_2,
-         PANALOG, REDLOG, VIPERLOG, ALEXAV3LOGC, PLOGLIN, SLOG, TYPES_END };
+    enum DataType { MONITOR = 0, VIEWER=1, INT8=2, INT16=3, LOG=4, FLOAT=5, GAMMA1_8=6, GAMMA2_2=7,
+         PANALOG=8, REDLOG=9, VIPERLOG=10, ALEXAV3LOGC=11, PLOGLIN=12, SLOG=13, TYPES_END=14 };
 //     // Return a LUT associated to the datatype
-     static Lut* getLut(DataType);
+    static Lut* getLut(DataType);
+    
+
+    
+private:
+
+    static std::map<DataType,Lut*> _luts;
+
 //     //! Modify above table
 //     static void setLut(DataType, Lut*);
 };
@@ -136,7 +145,6 @@ public:
     static float toFloatFast(float v) { return v; }
     
 };
-
 
 
 #endif //__LUT_CLASS_H__

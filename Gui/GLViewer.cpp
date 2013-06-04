@@ -101,7 +101,6 @@ void ViewerGL::initConstructor(){
     _channelsToDraw = Mask_RGBA;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
-    _colorSpace->validate();
     _mustFreeFrameData = false;
 }
 
@@ -1271,7 +1270,6 @@ void ViewerGL::updateColorSpace(QString str){
             delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
-            _colorSpace->validate();
         }
         _lut = 0;
     }else if(str == "sRGB"){
@@ -1279,7 +1277,6 @@ void ViewerGL::updateColorSpace(QString str){
             delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
-            _colorSpace->validate();
         }
         
         _lut = 1;
@@ -1288,7 +1285,6 @@ void ViewerGL::updateColorSpace(QString str){
             delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
-            _colorSpace->validate();
         }
         
         _lut = 2;

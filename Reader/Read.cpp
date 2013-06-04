@@ -21,8 +21,7 @@ Read::Read(Reader* op):is_stereo(false), _autoCreateAlpha(false),_premult(false)
 
 }
 Read::~Read(){
-	if(_lut)
-		delete _lut;
+	
 }
 
 
