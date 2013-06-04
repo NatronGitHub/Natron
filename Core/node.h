@@ -90,7 +90,7 @@ public:
 
     /*Hash related functions*/
     Hash* getHash() const;
-    void computeTreeHash(std::vector<char*> &alreadyComputedHash);
+    void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
 

@@ -278,7 +278,7 @@ private:
     void debugTree();
     void _debugTree(Node* n,int* nb);
     std::map<int,Row*>::iterator isRowContainedInCache(int rowIndex);
-    void computeTreeHash(std::vector< std::pair<char*,U64> > &alreadyComputed,Node* n);
+    void computeTreeHash(std::vector<std::pair<std::string, U64> > &alreadyComputed, Node* n);
     /*============================*/
     
     /*These are the functions called by the tasks*/
