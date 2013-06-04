@@ -225,7 +225,7 @@ Lut* Lut::Linear(){
 }
 
 
-void Lut::initializeLuts(){
+void Lut::allocateLuts(){
     Lut* srgb = new sRGB;
     srgb->validate();
     Lut* lin = Lut::Linear();
@@ -237,4 +237,11 @@ void Lut::initializeLuts(){
     Lut::_luts.insert(make_pair(INT8,srgb));
     Lut::_luts.insert(make_pair(INT16,srgb));
     Lut::_luts.insert(make_pair(MONITOR,rec709));
+}
+
+void Lut::deallocateLuts(){
+    for(std::map<DataType,Lut*>::iterator it = _luts.begin();it!=_luts.end();it++){
+        delete it->second;
+    }
+    _luts.clear();
 }

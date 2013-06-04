@@ -34,7 +34,9 @@ public:
     bool linear() {  return linear_; }
     void linear(bool b){linear_=b;}
   
-    static void initializeLuts();
+    static void allocateLuts();
+
+    static void deallocateLuts();
     
     void validate();
     

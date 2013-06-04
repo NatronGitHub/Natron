@@ -264,7 +264,7 @@ std::string Node::setInputLabel(int inputNb){
     return out;
 }
 void Node::_setLabels(){
-    for(int i=0;i<inputLabels.size();i++){
+    for(U32 i=0;i<inputLabels.size();i++){
         std::map<int, std::string>::iterator it;
         it =inputLabels.find(i);
         inputLabels.erase(it);
