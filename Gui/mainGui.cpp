@@ -11,20 +11,67 @@
 #include "Core/VideoEngine.h"
 #include <QtWidgets/QtWidgets>
 #include "Core/settings.h"
+#include <cassert>
 using namespace std;
 
-Gui::Gui(QWidget* parent):QMainWindow(parent)
+Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),crossPlatform(0),
+actionNew_project(0),
+actionOpen_project(0),
+actionSave_project(0),
+actionPreferences(0),
+actionExit(0),
+actionUndo(0),
+actionRedo(0),
+actionProject_settings(0),
+actionSplitViewersTab(0),
+actionClearDiskCache(0),
+actionClearPlayBackCache(0),
+actionClearBufferCache(0),
+actionClearTextureCache(0),
+centralwidget(0),
+verticalLayout(0),
+centralFrame(0),
+verticalLayout_2(0),
+splitter(0),
+viewersTabContainer(0),
+viewer_tab(0),
+WorkShop(0),
+GraphEditor(0),
+verticalLayout_3(0),
+graph_scene(0),
+nodeGraphArea(0),
+scrollAreaWidgetContents(0),
+CurveEditor(0),
+progressBar(0),
+menubar(0),
+menuFile(0),
+menuEdit(0),
+menuDisplay(0),
+menuOptions(0),
+viewersMenu(0),
+cacheMenu(0),
+ToolDock(0),
+ToolDockContent(0),
+verticalLayout_5(0),
+ToolChooser(0),
+rightDock(0),
+PropertiesDock(0),
+PropertiesDockContent(0),
+propertiesContainer(0),
+layout_settings(0),
+statusbar(0)
 {
 
 }
 Gui::~Gui(){
     
+    delete _textureCache;
 
 }
 void Gui::exit(){
     crossPlatform->getModel()->getVideoEngine()->abort();
-   // delete crossPlatform;
-   // delete this;
+    delete crossPlatform;
+    delete this;
     qApp->exit(0);
     
 }
@@ -42,6 +89,7 @@ void Gui::addNode_ui(qreal x,qreal y,UI_NODE_TYPE type, Node* node){
 
 void Gui::setControler(Controler* crossPlatform){
     this->crossPlatform=crossPlatform;
+    assert(crossPlatform);
 }
 void Gui::createGui(){
 
@@ -225,13 +273,13 @@ void Gui::setupUi(Controler* ctrl)
 
 	WorkShop->setObjectName(QString::fromUtf8("WorkShop"));
 
-	GraphEditor = new QWidget();
+	GraphEditor = new QWidget(WorkShop);
 	GraphEditor->setObjectName(QString::fromUtf8("GraphEditor"));
 	verticalLayout_3 = new QVBoxLayout(GraphEditor);
 	verticalLayout_3->setObjectName(QString::fromUtf8("verticalLayout_3"));
 	graph_scene=new QGraphicsScene(GraphEditor);
 	graph_scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-	QWidget* viewport=new QWidget();
+	QWidget* viewport=new QWidget(WorkShop);
 	viewport->setObjectName(QString::fromUtf8("viewport"));
 	// viewport->setStyleSheet(QString("QWidget#viewport{background-color:silver}"));
 	//  viewport->setStyleSheet(QString("QWidget#viewport{background-color: rgba(50,50,50,255);}"));
@@ -247,7 +295,7 @@ void Gui::setupUi(Controler* ctrl)
 
 	/*CURVE EDITOR*/
 	//======================
-	CurveEditor = new QWidget();
+	CurveEditor = new QWidget(WorkShop);
 	CurveEditor->setObjectName(QString::fromUtf8("CurveEditor"));
 	WorkShop->addTab(CurveEditor, QString());
 	WorkShop->setContentsMargins(0, 0, 0, 0);
@@ -308,10 +356,10 @@ void Gui::setupUi(Controler* ctrl)
 	PropertiesDock->setWindowTitle("Properties");
 	PropertiesDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
 
-	PropertiesDockContent = new QScrollArea();
+	PropertiesDockContent = new QScrollArea(PropertiesDock);
 	//PropertiesDockContent->setStyleSheet("background-color:rgba(50,50,50,255);");
 
-	propertiesContainer=new QWidget();
+	propertiesContainer=new QWidget(PropertiesDockContent);
 	// propertiesContainer->setStyleSheet("background-color:rgba(50,50,50,255);");
 	propertiesContainer->setObjectName("propertiesContainer");
 	layout_settings=new QVBoxLayout(propertiesContainer);
@@ -364,7 +412,7 @@ void Gui::setupUi(Controler* ctrl)
 	ToolDock->setObjectName(QString::fromUtf8("ToolDock"));
 	ToolDock->setWindowTitle("Tools");
 	ToolDock->setFeatures(QDockWidget::DockWidgetMovable);
-	ToolDockContent = new QWidget();
+	ToolDockContent = new QWidget(ToolDock);
 	ToolDockContent->setObjectName(QString::fromUtf8("ToolDockContent"));
 	verticalLayout_5 = new QVBoxLayout(ToolDockContent);
 	verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
@@ -383,7 +431,7 @@ void Gui::setupUi(Controler* ctrl)
 	rightDock->setWidget(rightContent);
 	rightDock->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, rightDock);
-	rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
+	//rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
     QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
 
 	QMetaObject::connectSlotsByName(this);

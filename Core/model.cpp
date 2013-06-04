@@ -25,6 +25,8 @@
 #include "Reader/readExr.h"
 #include "Reader/readffmpeg.h"
 #include "Reader/readQt.h"
+#include "Core/lookUpTables.h"
+#include <cassert>
 using namespace std;
 Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
 {
@@ -35,51 +37,72 @@ Model::Model(): ctrl(0),vengine(0),_mutex(0),_powiterSettings(0)
     loadBuiltinPlugins();
     loadReadPlugins();
     displayLoadedPlugins();
+    
+    Lut::allocateLuts();
 
 }
 void Model::setControler(Controler* ctrl){
     this->ctrl=ctrl;
+    assert(ctrl);
     vengine = new VideoEngine(ctrl->getGui()->viewer_tab->viewer,this,_mutex);
     connect(this,SIGNAL(vengineNeeded(int)),vengine,SLOT(startEngine(int)));
-    formatNames.push_back(string("PC_Video"));
-    formatNames.push_back(string("NTSC"));
-    formatNames.push_back(string("PAL"));
-    formatNames.push_back(string("HD"));
-    formatNames.push_back(string("NTSC_16:9"));
-    formatNames.push_back(string("PAL_16:9"));
-    formatNames.push_back(string("1K_Super_35(full-ap)"));
-    formatNames.push_back(string("1K_Cinemascope"));
-    formatNames.push_back(string("2K_Super_35(full-ap)"));
-    formatNames.push_back(string("2K_Cinemascope"));
-    formatNames.push_back(string("4K_Super_35(full-ap)"));
-    formatNames.push_back(string("4K_Cinemascope"));
-    formatNames.push_back(string("square_256"));
-    formatNames.push_back(string("square_512"));
-    formatNames.push_back(string("square_1K"));
-    formatNames.push_back(string("square_2K"));
+    std::vector<std::string> formatNames;
+    formatNames.push_back("PC_Video");
+    formatNames.push_back("NTSC");
+    formatNames.push_back("PAL");
+    formatNames.push_back("HD");
+    formatNames.push_back("NTSC_16:9");
+    formatNames.push_back("PAL_16:9");
+    formatNames.push_back("1K_Super_35(full-ap)");
+    formatNames.push_back("1K_Cinemascope");
+    formatNames.push_back("2K_Super_35(full-ap)");
+    formatNames.push_back("2K_Cinemascope");
+    formatNames.push_back("4K_Super_35(full-ap)");
+    formatNames.push_back("4K_Cinemascope");
+    formatNames.push_back("square_256");
+    formatNames.push_back("square_512");
+    formatNames.push_back("square_1K");
+    formatNames.push_back("square_2K");
     
-    resolutions.push_back(new Imath::V3f(640,480,1)); // pc video
-    resolutions.push_back(new Imath::V3f(720,486,0.91)); // ntsc
-    resolutions.push_back(new Imath::V3f(720,576,1.09)); // pal
-    resolutions.push_back(new Imath::V3f(1920,1080,1)); //hd
-    resolutions.push_back(new Imath::V3f(720,486,1.21)); // ntsc 16 9
-    resolutions.push_back(new Imath::V3f(720,576,1.46)); //pal 16 9 
-    resolutions.push_back(new Imath::V3f(1024,778,1)); // 1k super 35 full ap
-    resolutions.push_back(new Imath::V3f(914,778,2)); //1k cinemascope
-    resolutions.push_back(new Imath::V3f(2048,1556,1)); // 2k super 35 full ap
-    resolutions.push_back(new Imath::V3f(1828,1556,2));//2k cinemascope
-    resolutions.push_back(new Imath::V3f(4096,3112,1)); // 4k super 35 full ap
-    resolutions.push_back(new Imath::V3f(3656,3112,2)); // 4K cinemascope
-    resolutions.push_back(new Imath::V3f(256,256,1)); // square 256
-    resolutions.push_back(new Imath::V3f(512,512,1));// square 512
-    resolutions.push_back(new Imath::V3f(1024,1024,1));// square 1K
-    resolutions.push_back(new Imath::V3f(2048,2048,1));// square 2K
+    std::vector< std::vector<float> > resolutions;
+    std::vector<float> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
+    std::vector<float> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
+    std::vector<float> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
+    std::vector<float> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
+    std::vector<float> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
+    std::vector<float> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
+    std::vector<float> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
+    std::vector<float> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
+    std::vector<float> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
+    std::vector<float> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
+    std::vector<float> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
+    std::vector<float> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
+    std::vector<float> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
+    std::vector<float> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
+    std::vector<float> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
+    std::vector<float> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
     
+    resolutions.push_back(pcvideo);
+    resolutions.push_back(ntsc);
+    resolutions.push_back(pal);
+    resolutions.push_back(hd);
+    resolutions.push_back(ntsc169);
+    resolutions.push_back(pal169);
+    resolutions.push_back(super351k);
+    resolutions.push_back(cine1k);
+    resolutions.push_back(super352k);
+    resolutions.push_back(cine2K);
+    resolutions.push_back(super4K35);
+    resolutions.push_back(cine4K);
+    resolutions.push_back(square256);
+    resolutions.push_back(square512);
+    resolutions.push_back(square1K);
+    resolutions.push_back(square2K);
     
     assert(formatNames.size() == resolutions.size());
     for(int i =0;i<formatNames.size();i++){
-        Imath::V3f *v= resolutions[i];
-        Format* _frmt = new Format(0,0,v->x,v->y,formatNames[i],v->z);
+        std::vector<float> v = resolutions[i];
+        Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
         addFormat(_frmt);
     }
     
@@ -88,16 +111,26 @@ void Model::setControler(Controler* ctrl){
 
 Model::~Model(){
    
+    Lut::deallocateLuts();
     vengine->abort();
     foreach(PluginID* p,plugins) delete p;
     foreach(CounterID* c,counters) delete c;
-    foreach(Imath::V3f* p, resolutions) delete p;
     foreach(Format* f,formats_list) delete f;
+    for(ReadPluginsIterator it = readPlugins.begin();it!=readPlugins.end();it++){
+        if(it->second){
+            /*finding all other reads that have the same pointer to avoid double free*/
+            for(ReadPluginsIterator it2 = readPlugins.begin();it2!=readPlugins.end();it2++){
+                if(it2->second == it->second && it2->first!=it->first)
+                    it2->second = 0;
+            }
+            delete it->second;
+            it->second = 0;
+        }
+    }
+    readPlugins.clear();
     plugins.clear();
     counters.clear();
     allNodes.clear();
-    formatNames.clear();
-    resolutions.clear();
     formats_list.clear();
     nodeNameList.clear();
     delete _powiterSettings;
@@ -108,7 +141,7 @@ Model::~Model(){
 
 
 void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
-    QDir d(PLUGINS_PATH);
+    QDir d(QString(PLUGINS_PATH));
     if (d.isReadable())
     {
         QStringList filters;
@@ -379,7 +412,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
-                            readPlugins.insert(make_pair(extensions[i],plugin));
+                            readPlugins.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
                         
@@ -413,7 +446,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((void*)builder,decoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); i++) {
-                            readPlugins.insert(make_pair(extensions[i],plugin));
+                            readPlugins.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
                         
@@ -454,7 +487,7 @@ void Model::loadReadPlugins(){
 }
 
 void Model::displayLoadedReads(){
-    std::multimap<std::string,PluginID*>::iterator it = readPlugins.begin();
+    ReadPluginsIterator it = readPlugins.begin();
     for (; it!=readPlugins.end(); it++) {
         cout << it->second->second << " : " << it->first << endl;
     }
@@ -471,7 +504,7 @@ void Model::loadBuiltinReads(){
 #endif
    
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.insert(make_pair(extensions[i],EXRplugin));
+        readPlugins.push_back(make_pair(extensions[i],EXRplugin));
     }
     delete readExr;
     
@@ -484,7 +517,7 @@ void Model::loadBuiltinReads(){
 	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
 #endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.insert(make_pair(extensions[i],Qtplugin));
+        readPlugins.push_back(make_pair(extensions[i],Qtplugin));
     }
     delete readQt;
     
@@ -497,7 +530,7 @@ void Model::loadBuiltinReads(){
 	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
 #endif
     for (U32 i = 0 ; i < extensions.size(); i++) {
-        readPlugins.insert(make_pair(extensions[i],FFMPEGplugin));
+        readPlugins.push_back(make_pair(extensions[i],FFMPEGplugin));
     }
     delete readFfmpeg;
     

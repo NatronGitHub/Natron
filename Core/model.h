@@ -82,7 +82,7 @@ class Model: public QObject,public boost::noncopyable
 
 public:
     Model();
-    virtual ~Model();
+    ~Model();
     
     /*loads plugins(nodes)*/
     void loadPluginsAndInitNameList();
@@ -139,7 +139,7 @@ public:
     
     Settings* getCurrentPowiterSettings(){return _powiterSettings;}
     
-    typedef std::multimap<std::string, PluginID*>::iterator ReadPluginsIterator;
+    typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
     
 signals:
     void vengineNeeded(int nbFrames);
@@ -159,14 +159,12 @@ private:
     /*All nodes currently active in the node graph*/
     std::vector<Node*> allNodes;
     
-    std::vector<Imath::V3f*> resolutions;
     std::vector<Format*> formats_list;
     std::vector<CounterID*> counters;
     std::vector<PluginID*> plugins;
-    std::multimap<std::string,PluginID*> readPlugins;
+    std::vector< std::pair< std::string,PluginID*> > readPlugins;
     QStringList nodeNameList;
 
-    std::vector<std::string> formatNames;
 
     
 

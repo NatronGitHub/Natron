@@ -16,7 +16,6 @@ ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
 
 void ReadQt::initializeColorSpace(){
     _lut=Lut::getLut(Lut::VIEWER);
-    _lut->validate();
 }
 ReadQt::~ReadQt(){
     if(_img)

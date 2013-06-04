@@ -9,7 +9,7 @@ SOURCES += \
 
 MOC_DIR = $(POWITER_ROOT)/ProjectFiles/GeneratedFiles
 message(Now building Powiter...the working directory is:  $(POWITER_ROOT))
-
+INCLUDEPATH += $$PWD/../../../../
 INCLUDEPATH += $(QT_INCLUDES)
 INCLUDEPATH += $(BOOST_INCLUDES)
 INCLUDEPATH += $(POWITER_ROOT)
@@ -26,3 +26,5 @@ DEPENDPATH += $(FTGL_INCLUDES)
 
 #unix: PRE_TARGETDEPS += $(POWITER_ROOT)/ProjectFiles/PowiterLinux/build/PowiterLib/libPowiterLib.a
 LIBS += -L$(POWITER_ROOT)/ProjectFiles/PowiterLinux/build/PowiterLib/ -lPowiterLib
+
+unix: LIBS += -L$(OPENEXR_LIB) -lHalf -lIex -lImath -lIlmImf -lIlmThread

@@ -15,9 +15,14 @@
 class ComboBox : public QComboBox
 {
 public:
-    ComboBox(QWidget* parent = 0):QComboBox(parent){
-        setStyle(QStyleFactory::create("windows"));
+    ComboBox(QWidget* parent = 0):QComboBox(parent),_style(0){
+        _style = QStyleFactory::create("windows");
+        setStyle(_style);
     }
+    virtual ~ComboBox(){delete _style;}
+    
+private:
+    QStyle* _style;
     
 };
 

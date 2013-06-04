@@ -92,7 +92,7 @@ public:
     
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
-     function Lut::getLut(datatype) and then calling _lut->validate()*/
+     function Lut::getLut(datatype) */
     virtual void initializeColorSpace()=0;
     
     /*Returns true if the file has alpha premultiplied data*/

@@ -19,7 +19,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent)
     this->setMinimumWidth(MINIMUM_WIDTH);
     setFrameShape(QFrame::StyledPanel);
     minimized=false;
-    QGroupBox* box=new QGroupBox();
+    QGroupBox* box=new QGroupBox(this);
     box->setObjectName("box");
     box->setStyleSheet(QString("QGroupBox#box{padding :-15 px;background-color:rgb(50,50,50);}"));
     

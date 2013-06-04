@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 2.7.0, 2013-06-03T17:43:13. -->
+<!-- Written by QtCreator 2.7.0, 2013-06-04T10:06:36. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -51,9 +51,9 @@
  <data>
   <variable>ProjectExplorer.Project.Target.0</variable>
   <valuemap type="QVariantMap">
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop Qt 5.0.2 GCC 32bit</value>
-   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop Qt 5.0.2 GCC 32bit</value>
-   <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">qt.502.gcc.essentials_kit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Desktop Qt 5.0.2 GCC 64bit</value>
+   <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">Desktop Qt 5.0.2 GCC 64bit</value>
+   <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">qt.502.gcc_64.essentials_kit</value>
    <value type="int" key="ProjectExplorer.Target.ActiveBuildConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveDeployConfiguration">0</value>
    <value type="int" key="ProjectExplorer.Target.ActiveRunConfiguration">0</value>
@@ -64,8 +64,8 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">qmake</value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
       <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">QtProjectManager.QMakeBuildStep</value>
-      <value type="bool" key="QtProjectManager.QMakeBuildStep.LinkQmlDebuggingLibrary">true</value>
-      <value type="bool" key="QtProjectManager.QMakeBuildStep.LinkQmlDebuggingLibraryAuto">false</value>
+      <value type="bool" key="QtProjectManager.QMakeBuildStep.LinkQmlDebuggingLibrary">false</value>
+      <value type="bool" key="QtProjectManager.QMakeBuildStep.LinkQmlDebuggingLibraryAuto">true</value>
       <value type="QString" key="QtProjectManager.QMakeBuildStep.QMakeArguments"></value>
       <value type="bool" key="QtProjectManager.QMakeBuildStep.QMakeForced">false</value>
      </valuemap>
@@ -109,23 +109,22 @@
     <value type="int" key="ProjectExplorer.BuildConfiguration.BuildStepListCount">2</value>
     <value type="bool" key="ProjectExplorer.BuildConfiguration.ClearSystemEnvironment">false</value>
     <valuelist type="QVariantList" key="ProjectExplorer.BuildConfiguration.UserEnvironmentChanges">
-     <value type="QString">QT_INCLUDES=/home/lex/Qt5.0.2/5.0.2/gcc/include</value>
-     <value type="QString">OPENEXR_LIB=/usr/local/lib</value>
-     <value type="QString">OPENEXR_INCLUDES=/usr/local/include/OpenEXR</value>
-     <value type="QString">FTGL_LIB=/usr/lib</value>
-     <value type="QString">FTGL_INCLUDES=/usr/include</value>
-     <value type="QString">FFMPEG_LIB=/usr/lib/i386-linux-gnu</value>
+     <value type="QString">POWITER_ROOT=/home/developpeur/Powiter/Powiter_Core</value>
+     <value type="QString">QT_INCLUDES=/home/developpeur/Qt5.0.2/5.0.2/gcc_64/include</value>
      <value type="QString">FFMPEG_INCLUDES=/usr/include</value>
-     <value type="QString">FREETYPE_INCLUDES=/usr/include/freetype2</value>
      <value type="QString">FREETYPE2_INCLUDES=/usr/include</value>
-     <value type="QString">BOOST_INCLUDES=/usr/include</value>
-     <value type="QString">POWITER_ROOT=/home/lex/Documents/Powiter_Core</value>
+     <value type="QString">FREETYPE_INCLUDES=/usr/include/freetype2</value>
+     <value type="QString">FTGL_INCLUDES=/usr/include</value>
+     <value type="QString">OPENEXR_INCLUDES=/home/developpeur/Downloads/OpenEXR_2.0.0_linux64/include/OpenEXR</value>
+     <value type="QString">OPENEXR_LIB=/home/developpeur/Downloads/OpenEXR_2.0.0_linux64/lib</value>
+     <value type="QString">FFMPEG_LIB=/usr/lib</value>
+     <value type="QString">FTGL_LIB=/usr/lib</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Debug</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4BuildConfiguration</value>
     <value type="int" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildConfiguration">2</value>
-    <value type="QString" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildDirectory">/home/lex/Documents/Powiter_Core/ProjectFiles/PowiterLinux/build</value>
+    <value type="QString" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildDirectory">/home/developpeur/Powiter/Powiter_Core/ProjectFiles/PowiterLinux/build</value>
     <value type="bool" key="Qt4ProjectManager.Qt4BuildConfiguration.UseShadowBuild">true</value>
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.1">
@@ -184,7 +183,7 @@
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
     <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4BuildConfiguration</value>
     <value type="int" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildConfiguration">0</value>
-    <value type="QString" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildDirectory">/home/lex/Documents/Powiter_Core/ProjectFiles/PowiterLinux/build</value>
+    <value type="QString" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildDirectory">/home/developpeur/Powiter/Powiter_Core/ProjectFiles/PowiterLinux/build</value>
     <value type="bool" key="Qt4ProjectManager.Qt4BuildConfiguration.UseShadowBuild">true</value>
    </valuemap>
    <value type="int" key="ProjectExplorer.Target.BuildConfigurationCount">2</value>
@@ -235,14 +234,14 @@
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">Powiter</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
-    <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/lex/Documents/Powiter_Core/ProjectFiles/PowiterLinux/PowiterWrapper/Powiter/Powiter.pro</value>
+    <value type="QByteArray" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/developpeur/Powiter/Powiter_Core/ProjectFiles/PowiterLinux/PowiterWrapper/Powiter/Powiter.pro</value>
     <value type="int" key="Qt4ProjectManager.Qt4RunConfiguration.BaseEnvironmentBase">2</value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.CommandLineArguments"></value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.ProFile">Powiter/Powiter.pro</value>
     <value type="bool" key="Qt4ProjectManager.Qt4RunConfiguration.UseDyldImageSuffix">false</value>
     <value type="bool" key="Qt4ProjectManager.Qt4RunConfiguration.UseTerminal">false</value>
     <valuelist type="QVariantList" key="Qt4ProjectManager.Qt4RunConfiguration.UserEnvironmentChanges"/>
-    <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.UserWorkingDirectory">/home/lex/Documents/Powiter_Core</value>
+    <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.UserWorkingDirectory">/home/developpeur/Powiter/Powiter_Core</value>
     <value type="uint" key="RunConfiguration.QmlDebugServerPort">3768</value>
     <value type="bool" key="RunConfiguration.UseCppDebugger">true</value>
     <value type="bool" key="RunConfiguration.UseMultiProcess">false</value>
@@ -258,7 +257,7 @@
  </data>
  <data>
   <variable>ProjectExplorer.Project.Updater.EnvironmentId</variable>
-  <value type="QString">{41491fa0-f5b3-4219-b508-56b57813787f}</value>
+  <value type="QString">{96e6f1a8-3a47-4fe2-a00d-729408681b90}</value>
  </data>
  <data>
   <variable>ProjectExplorer.Project.Updater.FileVersion</variable>

@@ -430,7 +430,6 @@ ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
 
 void ReadExr::initializeColorSpace(){
     _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
-    _lut->validate();
 }
 
 ReadExr::~ReadExr(){
