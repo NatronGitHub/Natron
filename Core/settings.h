@@ -17,7 +17,7 @@ class PluginID;
 class Settings : public boost::noncopyable
 {
 public:
-    Settings(){}
+    Settings():_cacheSettings(),_viewerSettings(),_generalSettings(),_readersSettings(){}
         
     class Caching{
     public:

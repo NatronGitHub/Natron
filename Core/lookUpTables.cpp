@@ -241,7 +241,15 @@ void Lut::allocateLuts(){
 
 void Lut::deallocateLuts(){
     for(std::map<DataType,Lut*>::iterator it = _luts.begin();it!=_luts.end();it++){
-        delete it->second;
+        if(it->second){
+            // now finding in map all other members that have the same pointer to avoid double free
+            for(std::map<DataType,Lut*>::iterator it2 = _luts.begin();it2!=_luts.end();it2++){
+                if(it2->second == it->second && it->first!=it2->first)
+                    it2->second = 0;
+            }
+            delete it->second;
+            it->second = 0;
+        }
     }
     _luts.clear();
 }

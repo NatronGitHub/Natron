@@ -155,7 +155,6 @@ ViewerGL::~ViewerGL(){
     delete _readerInfo;
 	delete blankReaderInfo;
 	delete _infoViewer;
-    delete _colorSpace;
 }
 
 void ViewerGL::updateGL(){
@@ -1267,14 +1266,12 @@ void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
-            delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
         }
         _lut = 0;
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
-            delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
         }
@@ -1282,7 +1279,6 @@ void ViewerGL::updateColorSpace(QString str){
         _lut = 1;
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
-            delete _colorSpace;
             ctrl->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
         }

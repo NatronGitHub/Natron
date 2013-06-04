@@ -12,7 +12,7 @@
 #include "Gui/viewerTab.h"
 
 
-Controler::Controler(){}
+Controler::Controler():coreEngine(0),graphicalInterface(0){}
 
 void Controler::initControler(Model *coreEngine,QLabel* loadingScreen){
     this->coreEngine=coreEngine;
