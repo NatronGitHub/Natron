@@ -9,10 +9,9 @@
 class InputNode_ui : public NodeGui
 {
 public:
-    InputNode_ui(std::vector<NodeGui*> nodes,QVBoxLayout* dockContainer,
+    InputNode_ui(NodeGraph* dag,QVBoxLayout* dockContainer,
                  Node *node,qreal x, qreal y,QGraphicsItem* parent=0,QGraphicsScene* sc=0);
      bool hasOutput(){return true;}
-     void initInputArrows(){}
      QRectF boundingRect() const{return NodeGui::boundingRect();}
      void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
          NodeGui::paint(painter,options,parent);

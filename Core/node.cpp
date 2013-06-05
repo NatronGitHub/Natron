@@ -160,7 +160,7 @@ bool Node::Info::operator==( Node::Info &other){
 
 
 
-Node::Node(const Node& ref):_parents(ref._parents),_inputsCount(ref._inputsCount),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
+Node::Node(const Node& ref):_parents(ref._parents),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
     _mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
     _freeOutputCount(ref._freeOutputCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
 
@@ -239,14 +239,14 @@ bool Node::isInputNode(){return false;}
 bool Node::isOutputNode(){return false;}
 
 void Node::initializeInputs(){
-    _inputsCount=totalInputsCount();
     initInputLabelsMap();
     applyLabelsToInputs();
     
 }
 int Node::totalInputsCount(){return 1;}
 
-int Node::getInputCount() const {return _inputsCount;}
+
+
 const std::map<int, std::string>& Node::getInputLabels() const {return _inputLabelsMap;}
 
 std::string Node::getLabel(int inputNb)  {
@@ -274,7 +274,7 @@ void Node::applyLabelsToInputs(){
 }
 void Node::initInputLabelsMap(){
     int i=0;
-    while(i<_inputsCount){
+    while(i<totalInputsCount()){
         char str[2];
         str[0] =i+65;
         str[1]='\0';

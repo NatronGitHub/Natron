@@ -41,7 +41,7 @@ public:
 
   
     void createGui();
-    void createNodeGUI(qreal x,qreal y,UI_NODE_TYPE type,Node *node);
+    void createNodeGUI(UI_NODE_TYPE type,Node *node,double x,double y);
     bool eventFilter(QObject *target, QEvent *event);
 
 protected:

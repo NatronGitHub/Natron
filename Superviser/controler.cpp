@@ -32,7 +32,7 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
     delete loadingScreen;
 
     try{
-        createNode(0,0,"Viewer");
+        createNode("Viewer",0,0);
     }catch(...){
         std::cout << "Couldn't create node viewer" << std::endl;
     }
@@ -49,7 +49,7 @@ QStringList& Controler::getNodeNameList(){
 }
 
 
-void Controler::createNode(qreal x,qreal y,QString name){
+void Controler::createNode(QString name,double x,double y){
    
 	QMutex *mutex=_model->mutex();
    // Node* node=new Node(mutex);
@@ -59,7 +59,7 @@ void Controler::createNode(qreal x,qreal y,QString name){
     type=_model->createNode(node,name,mutex);
 
     if(type!=UNDEFINED){
-        _gui->createNodeGUI(x,y,type,node);
+        _gui->createNodeGUI(type,node,x,y);
 		
     }else{
         throw "Node creation failed!";

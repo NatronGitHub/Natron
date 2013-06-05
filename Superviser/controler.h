@@ -31,10 +31,13 @@ public:
     ~Controler();
 
     /*Create a new node at position (x,y) in the node graph.
+     By default x,y has garbage value and the nodegraph will try
+     to guess a good position for the node, you can bypass it by specifying
+     explicitly x,y in scene coordinates.
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    void createNode(qreal x, qreal y, QString name);
+    void createNode(QString name,double x = INT_MAX,double y = INT_MAX);
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/

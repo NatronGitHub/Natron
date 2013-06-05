@@ -148,7 +148,6 @@ public:
     /*Node Input related functions*/
     void initializeInputs();
     virtual int totalInputsCount();
-    int getInputCount() const;
     const std::map<int, std::string>& getInputLabels() const;
     virtual std::string setInputLabel(int inputNb);
     std::string getLabel(int inputNb) ;
@@ -204,7 +203,6 @@ protected:
    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	ChannelMask _outputChannels; // the channels that the operator chooses to output from the ones among _info.channels(), by default Mask_all
-	int _inputsCount;
 	int _freeOutputCount;
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;

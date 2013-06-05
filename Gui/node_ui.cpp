@@ -11,26 +11,26 @@
 #include "Core/node.h"
 #include "Superviser/controler.h"
 #include <QtWidgets/QtWidgets>
-int NodeGui::nodeNumber=0;
+#include <cassert>
 const qreal pi=3.14159265358979323846264338327950288419717;
-NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
+NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
 {
     
-    
-    this->graphNodes=nodes;
+    _selected = false;
+    this->_dag = dag;
     this->node=node;
 	this->node->setNodeUi(this);
     this->sc=scene;
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
-    number=nodeNumber;
-    nodeNumber++;
+    
+    QPointF itemPos = mapFromScene(QPointF(x,y));
 	
 	if(node->className() == string("Reader")){ // if the node is not a reader
-		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));
+		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));
 	}else{
-		rectangle=scene->addRect(QRectF(mapFromScene(QPointF(x,y)),QSizeF(NODE_LENGTH,NODE_HEIGHT)));
+		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NODE_LENGTH,NODE_HEIGHT)));
 	}
 	
     rectangle->setParentItem(this);
@@ -41,8 +41,8 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     QPixmap pixmap=QPixmap::fromImage(img);
     pixmap=pixmap.scaled(10,10);
     channels=scene->addPixmap(pixmap);
-    channels->setX(x+1);
-    channels->setY(y+1);
+    channels->setX(itemPos.x()+1);
+    channels->setY(itemPos.y()+1);
     channels->setParentItem(this);
     
     updateChannelsTooltip();
@@ -51,11 +51,11 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     name=scene->addSimpleText((node->getName()));
 	
 	if(node->className() == string("Reader")){
-		name->setX(x+35);
-		name->setY(y+1);
+		name->setX(itemPos.x()+35);
+		name->setY(itemPos.y()+1);
 	}else{
-		name->setX(x+10);
-		name->setY(y+channels->boundingRect().height()+5);
+		name->setX(itemPos.x()+10);
+		name->setY(itemPos.y()+channels->boundingRect().height()+5);
 	}
     if(node->className() == string("Reader")){
 		if(static_cast<Reader*>(node)->hasPreview()){
@@ -63,16 +63,16 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
 			QPixmap prev_pixmap=QPixmap::fromImage(*prev);
 			prev_pixmap=prev_pixmap.scaled(60,40);
 			prev_pix=scene->addPixmap(prev_pixmap);
-			prev_pix->setX(x+30);
-			prev_pix->setY(y+20);
+			prev_pix->setX(itemPos.x()+30);
+			prev_pix->setY(itemPos.y()+20);
 			prev_pix->setParentItem(this);
 		}else{
 			QImage prev(60,40,QImage::Format_ARGB32);
 			prev.fill(Qt::black);
 			QPixmap prev_pixmap=QPixmap::fromImage(prev);
 			prev_pix=scene->addPixmap(prev_pixmap);
-			prev_pix->setX(x+30);
-			prev_pix->setY(y+20);
+			prev_pix->setX(itemPos.x()+30);
+			prev_pix->setY(itemPos.y()+20);
 			prev_pix->setParentItem(this);
 		}
 		
@@ -96,10 +96,7 @@ NodeGui::NodeGui(std::vector<NodeGui*> nodes,QVBoxLayout *dockContainer,Node *no
     QWidget* pr=dockContainer->parentWidget();
     pr->setMinimumSize(dockContainer->sizeHint());
     
-    scene->addItem(this);
-    
-    
-    
+    //  scene->addItem(this);
     
 }
 
@@ -116,24 +113,23 @@ void NodeGui::updateChannelsTooltip(){
 }
 
 void NodeGui::updatePreviewImageForReader(){
-	QImage *prev=static_cast<Reader*>(node)->getPreview();
+    Reader* reader = static_cast<Reader*>(node);
+    /*the node must be a reader to call this function.*/
+    if(!reader) return;
+    
+	QImage *prev = reader->getPreview();
 	QPixmap prev_pixmap=QPixmap::fromImage(*prev);
 	prev_pixmap=prev_pixmap.scaled(60,40);
-    // clear the previous pixmap first :
-	//prev_pix=sc->addPixmap(prev_pixmap);
     prev_pix->setPixmap(prev_pixmap);
-	prev_pix->setX(30);
-	prev_pix->setY(20);
-	prev_pix->setParentItem(this);
+
 }
 void NodeGui::initInputArrows(){
     int i=0;
-    int inputnb=node->getInputCount();
+    int inputnb=node->totalInputsCount();
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){
-        Arrow* edge=new Arrow(i,angle,this,0,sc);
-        edge->setParentItem(this);
+        Arrow* edge=new Arrow(i,angle,this,this,sc);
         inputs.push_back(edge);
         angle-=piDividedbyX;
         i++;
@@ -166,14 +162,20 @@ void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
         painter->fillRect(bottomShadow, Qt::darkGray);
     
     // Fill
-    QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
-    gradient.setColorAt(0, QColor(224,224,224));
-    gradient.setColorAt(1, QColor(142,142,142));
-    painter->fillRect(rect.intersected(sceneRect), gradient);
+    if(_selected){
+        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
+        gradient.setColorAt(0, QColor(249,187,81));
+        gradient.setColorAt(1, QColor(150,187,81));
+        painter->fillRect(rect.intersected(sceneRect), gradient);
+    }else{
+        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
+        gradient.setColorAt(0, QColor(224,224,224));
+        gradient.setColorAt(1, QColor(142,142,142));
+        painter->fillRect(rect.intersected(sceneRect), gradient);
+        
+    }
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(sceneRect);
-    
-    
     // Text
     QRectF textRect(sceneRect.left() + 4, sceneRect.top() + 4,
                     sceneRect.width() - 4, sceneRect.height() - 4);
@@ -183,6 +185,9 @@ void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
     font.setBold(true);
     font.setPointSize(14);
     painter->setFont(font);
+    
+    
+    
     
     updateChannelsTooltip();
     
@@ -255,4 +260,13 @@ void NodeGui::setName(QString s){
     name->setText(s);
     node->setName(s);
     sc->update();
+}
+
+Arrow* NodeGui::firstAvailableEdge(){
+    foreach(Arrow* a,inputs){
+        if (!a->hasSource()) {
+            return a;
+        }
+    }
+    return NULL;
 }

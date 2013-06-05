@@ -30,22 +30,29 @@
 using namespace std;
 Model::Model(): _videoEngine(0),_mutex(0)
 {
+    /*general mutex shared by all nodes*/
     _mutex = new QMutex;
 
-
+    /*loading node plugins*/
     loadPluginsAndInitNameList();
     loadBuiltinPlugins();
+    
+    /*loading read plugins*/
     loadReadPlugins();
     displayLoadedPlugins();
     
+    /*allocating lookup tables*/
     Lut::allocateLuts();
 
 }
 void Model::postInitialisation(){
 
    
+    /*we can now create the videoEngine since the controler is set up*/
     _videoEngine = new VideoEngine(ctrlPTR->getGui()->viewer_tab->viewer,this,_mutex);
     connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
+    
+    /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
     formatNames.push_back("PC_Video");
     formatNames.push_back("NTSC");

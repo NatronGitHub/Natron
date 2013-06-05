@@ -37,7 +37,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
       if(ctrlPTR->getNodeNameList().contains(res)){
           try{
 
-          ctrlPTR->createNode(0,0,res);
+          ctrlPTR->createNode(res,0,0);
           }catch(...){
               std::cout << "(SmartInputDialog:KeyPressEvent) Couldn't create node " << qPrintable(res) << std::endl;
           }

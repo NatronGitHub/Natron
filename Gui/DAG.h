@@ -24,60 +24,46 @@ class SettingsPanel;
 class NodeGraph: public QGraphicsView{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
     Q_OBJECT
-public slots:
-
-    void zoomIn(){
-         scaleView(qreal(1.2));
-    }
-
-    void zoomOut(){
-         scaleView(1 / qreal(1.2));
-    }
 
 public:
 
     NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
 
-    ~NodeGraph(){ nodeCreation_shortcut_enabled=false; nodes.clear();}
+    virtual ~NodeGraph();
  
-    void addNode_ui(QVBoxLayout *dockContainer,qreal x,qreal y,UI_NODE_TYPE type,Node *node);
+    void addNode_ui(QVBoxLayout *dockContainer,UI_NODE_TYPE type,Node *node,double x,double y);
 
-    void enterEvent(QEvent *event);
-    void leaveEvent(QEvent *event);
+    virtual void enterEvent(QEvent *event);
+    
+    virtual void leaveEvent(QEvent *event);
 
-    void keyPressEvent(QKeyEvent *e);
-
-
-    void mousePressEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
+    virtual void keyPressEvent(QKeyEvent *e);
+    
+    void autoConnect(NodeGui* selected,NodeGui* created);
+    
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
 
 	
 protected:
 
+    void mousePressEvent(QMouseEvent *event);
+    
+    void mouseReleaseEvent(QMouseEvent *event);
+    
+    void mouseMoveEvent(QMouseEvent *event);
+    
+    void mouseDoubleClickEvent(QMouseEvent *event);
 
+    void wheelEvent(QWheelEvent *event);
 
-    void wheelEvent(QWheelEvent *event){
-
-        scaleView(pow((double)2, event->delta() / 240.0));
-    }
-
-
-
-    void scaleView(qreal scaleFactor){
-        qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-        if (factor < 0.07 || factor > 100)
-            return;
-
-        scale(scaleFactor, scaleFactor);
-    }
+    void scaleView(qreal scaleFactor,QPointF center);
 
 private:
     bool smartNodeCreationEnabled;
     QPointF old_pos;
     QPointF oldp;
+    QPointF oldZoom;
+    QPointF _lastSelectedPos;
     EVENT_STATE state;
     NodeGui* node_dragged;
     Arrow* arrow_dragged;
@@ -85,6 +71,8 @@ private:
     int timerId;
     bool nodeCreation_shortcut_enabled;
     bool _fullscreen;
+    QGraphicsItem* _root;
+    
 };
 
 

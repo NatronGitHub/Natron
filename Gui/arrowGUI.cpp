@@ -46,7 +46,7 @@ void Arrow::initLine(){
     y1=dest->boundingRect().y();
     if(has_source){
         QPointF srcpt;
-
+        
         srcpt=source->mapToItem(this,QPointF(source->boundingRect().x(),source->boundingRect().y()));
 		
 		if(source->getNode()->className() == std::string("Reader")){

@@ -82,8 +82,8 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-void Gui::createNodeGUI(qreal x,qreal y,UI_NODE_TYPE type, Node* node){
-    nodeGraphArea->addNode_ui(layout_settings, x,y,type,node);
+void Gui::createNodeGUI(UI_NODE_TYPE type, Node* node,double x,double y){
+    nodeGraphArea->addNode_ui(layout_settings,type,node,x,y);
 
 }
 
