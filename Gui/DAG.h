@@ -17,7 +17,7 @@
 #include "Superviser/powiterFn.h"
 using namespace Powiter_Enums;
 class Controler;
-class Arrow;
+class Edge;
 class SmartInputDialog;
 class SettingsPanel;
 
@@ -31,7 +31,7 @@ public:
 
     virtual ~NodeGraph();
  
-    void addNode_ui(QVBoxLayout *dockContainer,UI_NODE_TYPE type,Node *node,double x,double y);
+    void createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type,Node *node,double x,double y);
 
     virtual void enterEvent(QEvent *event);
     
@@ -64,12 +64,11 @@ private:
     QPointF oldp;
     QPointF oldZoom;
     QPointF _lastSelectedPos;
-    EVENT_STATE state;
-    NodeGui* node_dragged;
-    Arrow* arrow_dragged;
-    std::vector<NodeGui*> nodes;
-    int timerId;
-    bool nodeCreation_shortcut_enabled;
+    EVENT_STATE _evtState;
+    NodeGui* _nodeSelected;
+    Edge* _arrowSelected;
+    std::vector<NodeGui*> _nodes;
+    bool _nodeCreationShortcutEnabled;
     bool _fullscreen;
     QGraphicsItem* _root;
     

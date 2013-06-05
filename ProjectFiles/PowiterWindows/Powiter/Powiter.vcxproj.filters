@@ -324,9 +324,6 @@
     <ClInclude Include="..\..\..\Reader\readQt.h">
       <Filter>Reader</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Superviser\PwStrings.h">
-      <Filter>Superviser</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Gui\comboBox.h">
       <Filter>Gui</Filter>
     </ClInclude>

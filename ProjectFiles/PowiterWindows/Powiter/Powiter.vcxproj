@@ -163,7 +163,6 @@
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
     <ClInclude Include="..\..\..\Gui\framefiledialog.h" />
     <ClInclude Include="..\..\..\Gui\texturecache.h" />
-    <ClInclude Include="..\..\..\Superviser\PwStrings.h" />
     <CustomBuild Include="..\..\..\Core\model.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>

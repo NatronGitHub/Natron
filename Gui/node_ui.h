@@ -16,7 +16,7 @@ static const int NODE_LENGTH=80;
 static const int NODE_HEIGHT=30;
 static const int PREVIEW_LENGTH=40;
 static const int PREVIEW_HEIGHT=40;
-class Arrow;
+class Edge;
 class QPainterPath;
 class QScrollArea;
 class SettingsPanel;
@@ -60,7 +60,7 @@ public:
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
-    std::vector<Arrow*>& getInputsArrows(){return inputs;}
+    std::vector<Edge*>& getInputsArrows(){return inputs;}
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -115,7 +115,7 @@ public:
     bool isSelected(){return _selected;}
     
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
-    Arrow* firstAvailableEdge();
+    Edge* firstAvailableEdge();
     
 private:
     /*used internally by hasViewerConnected.*/
@@ -160,7 +160,7 @@ protected:
 	QGraphicsPixmapItem* prev_pix;
     
     /*the graphical input arrows*/
-    std::vector<Arrow*> inputs;
+    std::vector<Edge*> inputs;
     
     /*settings panel related*/
     bool settingsPanel_displayed;

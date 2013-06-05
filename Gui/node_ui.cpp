@@ -129,7 +129,7 @@ void NodeGui::initInputArrows(){
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){
-        Arrow* edge=new Arrow(i,angle,this,this,sc);
+        Edge* edge=new Edge(i,angle,this,this,sc);
         inputs.push_back(edge);
         angle-=piDividedbyX;
         i++;
@@ -262,8 +262,8 @@ void NodeGui::setName(QString s){
     sc->update();
 }
 
-Arrow* NodeGui::firstAvailableEdge(){
-    foreach(Arrow* a,inputs){
+Edge* NodeGui::firstAvailableEdge(){
+    foreach(Edge* a,inputs){
         if (!a->hasSource()) {
             return a;
         }

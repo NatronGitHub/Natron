@@ -162,7 +162,7 @@ bool Node::Info::operator==( Node::Info &other){
 
 Node::Node(const Node& ref):_parents(ref._parents),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
     _mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
-    _freeOutputCount(ref._freeOutputCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
+    _freeSocketCount(ref._freeSocketCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
 
 Node::Node(Node* ptr){
     _marked = false;
@@ -180,7 +180,7 @@ std::vector<Node*> Node::getChildren() const {return _children;}
 
 bool Node::hasOutput(){return true;}
 
-int Node::getFreeOutputCount() const{return _freeOutputCount;}
+int Node::getFreeOutputCount() const{return _freeSocketCount;}
 
 void Node::addChild(Node* child){
 
@@ -224,17 +224,17 @@ void Node::removeParent(Node* parent){
 }
 
 
-void Node::decrementFreeOutputNb(){
+void Node::releaseSocket(){
     if(hasOutput()){
-        _freeOutputCount--;
+        _freeSocketCount--;
     }
 }
-void Node::incrementFreeOutputNb(){
+void Node::lockSocket(){
     if(hasOutput()){
-        _freeOutputCount++;
+        _freeSocketCount++;
     }
 }
-void Node::setOutputNb(){_freeOutputCount=1;}
+void Node::setSocketCount(){_freeSocketCount=1;}
 bool Node::isInputNode(){return false;}
 bool Node::isOutputNode(){return false;}
 
@@ -328,20 +328,6 @@ void Node::request(int y,int top,int offset, int range,ChannelMask channels){
 	
 	validate(true);
 
-	/* check if channels requested are present*/
-	
-//	foreachChannels( z,channels){
-//		if((z & _info->channels())==0){
-//			//std::cout<< "(Request) Channel " << getChannelName(z) << " is requested but does not exist in the output of " << class_name() << std::endl;
-//		}
-//	}
-	/*check if the area requested is defined*/
-//	if(!_info->isContained(requested_box)){
-//		std::cout << "(Request) The requested area to " <<  class_name() << " has no data for this operator "
-//        << ": data window(x: " << _info->x() << " y: " << _info->y() << " range: " << _info->range() << " top: "
-//        << _info->top() << " ) , requested(x: "  << requested_box.x() << " y :" << requested_box.y()
-//        << " range: " << requested_box.range() << " top: " << requested_box.top() << " )"<< std::endl;
-//	}
 
 	_request(y,top,offset,range,_requestedChannels);
 	

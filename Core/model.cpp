@@ -280,7 +280,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         str.append(c);
         node->setName(str);
     }
-	node->setOutputNb();
+	node->setSocketCount();
     _currentNodes.push_back(node);
     string outputNodeSymbol="OutputNode";
     string inputNodeSymbol="InputNode";

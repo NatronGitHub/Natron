@@ -13,7 +13,7 @@ using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
 const int graphicalContainerOffset=5;
 
-Arrow::Arrow(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
+Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
     this->scene=scene;
     this->inputNb=inputNb;
@@ -26,7 +26,7 @@ Arrow::Arrow(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGra
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
 }
-Arrow::Arrow(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
+Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
 {
 
     this->inputNb=inputNb;
@@ -40,7 +40,7 @@ Arrow::Arrow(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGrap
 
 
 }
-void Arrow::initLine(){
+void Edge::initLine(){
     qreal x1,y1;
     x1=dest->boundingRect().x();
     y1=dest->boundingRect().y();
@@ -86,7 +86,7 @@ void Arrow::initLine(){
 }
 
 
-QPainterPath Arrow::shape() const
+QPainterPath Edge::shape() const
  {
      QPainterPath path = QGraphicsLineItem::shape();
      path.addPolygon(arrowHead);
@@ -95,7 +95,7 @@ QPainterPath Arrow::shape() const
      return path;
  }
 
-bool Arrow::contains(const QPointF &point) const{
+bool Edge::contains(const QPointF &point) const{
     QPointF ULeft,LRight;
     qreal a = acos(line().dx() / line().length());
     if (line().dy() >= 0)
@@ -108,7 +108,7 @@ bool Arrow::contains(const QPointF &point) const{
    // cout << "rect x1 " << rect.x() << " rect y1 " << rect.y() << " rect x2 " << rect.x()+rect.width() << " rect y2 " << rect.y()+rect.height() << endl;
     return rect.contains(point);
 }
-void Arrow::updatePosition(QPointF pos){
+void Edge::updatePosition(QPointF pos){
 
 
     qreal x1,y1;
@@ -139,7 +139,7 @@ void Arrow::updatePosition(QPointF pos){
 
 
 }
-void Arrow::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
+void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
            QWidget * parent)
  {
 

@@ -27,9 +27,9 @@
 
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
 _fullscreen(false),
-state(DEFAULT),
+_evtState(DEFAULT),
 _lastSelectedPos(0,0),
-node_dragged(0){
+_nodeSelected(0){
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(BoundingRectViewportUpdate);
@@ -45,17 +45,17 @@ node_dragged(0){
 }
 
 NodeGraph::~NodeGraph(){
-    nodeCreation_shortcut_enabled=false;
-    nodes.clear();
+    _nodeCreationShortcutEnabled=false;
+    _nodes.clear();
 }
 
-void NodeGraph::addNode_ui(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node *node,double x,double y){
+void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node *node,double x,double y){
     QGraphicsScene* sc=scene();
     NodeGui* node_ui;
     
     /*remove previously selected node*/
-    for(U32 i = 0 ; i < nodes.size() ;i++){
-        NodeGui* n = nodes[i];
+    for(U32 i = 0 ; i < _nodes.size() ;i++){
+        NodeGui* n = _nodes[i];
         n->setSelected(false);
     }
     
@@ -76,13 +76,13 @@ void NodeGraph::addNode_ui(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node *n
         node_ui=new OperatorNode_ui(this,dockContainer,node,x,y,_root,sc);
     }
     
-    nodes.push_back(node_ui);
+    _nodes.push_back(node_ui);
     
-    if(node_dragged)
-        autoConnect(node_dragged, node_ui);
+    if(_nodeSelected)
+        autoConnect(_nodeSelected, node_ui);
     
     node_ui->setSelected(true);
-    node_dragged = node_ui;
+    _nodeSelected = node_ui;
     _lastSelectedPos = QPoint(x,y);
     
 }
@@ -91,33 +91,33 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
     oldp=event->pos();
     int i=0;
     bool found=false;
-    while(i<nodes.size() && !found){
-        NodeGui* n=nodes[i];
+    while(i<_nodes.size() && !found){
+        NodeGui* n=_nodes[i];
         
         QPointF evpt=n->mapFromScene(old_pos);
         if(n->contains(evpt)){
             
-            node_dragged=n;
+            _nodeSelected=n;
             /*now remove previously selected node*/
-            for(U32 i = 0 ; i < nodes.size() ;i++){
-                nodes[i]->setSelected(false);
+            for(U32 i = 0 ; i < _nodes.size() ;i++){
+                _nodes[i]->setSelected(false);
             }
             n->setSelected(true);
             _lastSelectedPos = n->pos();
             
-            state=NODE_DRAGGING;
+            _evtState=NODE_DRAGGING;
             found=true;
             break;
         }else{
-            std::vector<Arrow*>& arrows = n->getInputsArrows();
+            std::vector<Edge*>& arrows = n->getInputsArrows();
             int j=0;
             while(j<arrows.size()){
-                Arrow* a=arrows[j];
+                Edge* a=arrows[j];
                 
                 if(a->contains(evpt)){
                     
-                    arrow_dragged=a;
-                    state=ARROW_DRAGGING;
+                    _arrowSelected=a;
+                    _evtState=ARROW_DRAGGING;
                     found=true;
                     break;
                 }
@@ -128,37 +128,37 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
         i++;
     }
     if(!found){
-        for(U32 i = 0 ; i < nodes.size() ;i++){
-            NodeGui* n = nodes[i];
+        for(U32 i = 0 ; i < _nodes.size() ;i++){
+            NodeGui* n = _nodes[i];
             if(n->isSelected()){
                 _lastSelectedPos = n->pos();
             }
             n->setSelected(false);
         }
-        state=MOVING_AREA;
+        _evtState=MOVING_AREA;
     }
 }
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
-    if(state==ARROW_DRAGGING){
-        if(arrow_dragged->hasSource()){
+    if(_evtState==ARROW_DRAGGING){
+        if(_arrowSelected->hasSource()){
             
-            arrow_dragged->getSource()->getNode()->incrementFreeOutputNb();
+            _arrowSelected->getSource()->getNode()->lockSocket();
             
-            arrow_dragged->getSource()->getNode()->removeChild(arrow_dragged->getDest()->getNode());
-            arrow_dragged->getSource()->substractChild(arrow_dragged->getDest());
+            _arrowSelected->getSource()->getNode()->removeChild(_arrowSelected->getDest()->getNode());
+            _arrowSelected->getSource()->substractChild(_arrowSelected->getDest());
             
-            arrow_dragged->getDest()->getNode()->removeParent(arrow_dragged->getSource()->getNode());
-            arrow_dragged->getDest()->substractParent(arrow_dragged->getSource());
+            _arrowSelected->getDest()->getNode()->removeParent(_arrowSelected->getSource()->getNode());
+            _arrowSelected->getDest()->substractParent(_arrowSelected->getSource());
             
-            arrow_dragged->removeSource();
+            _arrowSelected->removeSource();
             scene()->update();
-            if(arrow_dragged->getDest()->getNode()->className() == std::string("Viewer")){
+            if(_arrowSelected->getDest()->getNode()->className() == std::string("Viewer")){
                 ViewerGL* gl_viewer = ctrlPTR->getGui()->viewer_tab->viewer;
                 ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work
                 gl_viewer->drawing(false);
                 gl_viewer->blankInfoForViewer();
                 gl_viewer->fitToFormat(gl_viewer->displayWindow());
-                ctrlPTR->getModel()->getVideoEngine()->clearInfos(arrow_dragged->getDest()->getNode());
+                ctrlPTR->getModel()->getVideoEngine()->clearInfos(_arrowSelected->getDest()->getNode());
                 ctrlPTR->getModel()->setVideoEngineRequirements(NULL);
                 gl_viewer->clearViewer();
                 
@@ -166,23 +166,23 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         int i=0;
         bool foundSrc=false;
-        while(i<nodes.size()){
-            NodeGui* n=nodes[i];
+        while(i<_nodes.size()){
+            NodeGui* n=_nodes[i];
             QPointF ep=mapToScene(event->pos());
             QPointF evpt=n->mapFromScene(ep);
             
-            if(n->isNearby(evpt) && n->getNode()->getName()!=arrow_dragged->getDest()->getNode()->getName()){
-                if(n->getNode()->isOutputNode() && arrow_dragged->getDest()->getNode()->isOutputNode()){
+            if(n->isNearby(evpt) && n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName()){
+                if(n->getNode()->isOutputNode() && _arrowSelected->getDest()->getNode()->isOutputNode()){
                     break;
                 }
                 
                 if(n->getNode()->getFreeOutputCount()>0){
-                    arrow_dragged->getDest()->getNode()->addParent(n->getNode());
-                    arrow_dragged->getDest()->addParent(n);
-                    n->getNode()->addChild(arrow_dragged->getDest()->getNode());
-                    n->addChild(arrow_dragged->getDest());
-                    n->getNode()->decrementFreeOutputNb();
-                    arrow_dragged->setSource(n);
+                    _arrowSelected->getDest()->getNode()->addParent(n->getNode());
+                    _arrowSelected->getDest()->addParent(n);
+                    n->getNode()->addChild(_arrowSelected->getDest()->getNode());
+                    n->addChild(_arrowSelected->getDest());
+                    n->getNode()->releaseSocket();
+                    _arrowSelected->setSource(n);
                     foundSrc=true;
                     
                     break;
@@ -192,14 +192,14 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         if(!foundSrc){
             
-            arrow_dragged->removeSource();
+            _arrowSelected->removeSource();
         }
-        arrow_dragged->initLine();
+        _arrowSelected->initLine();
         scene()->update();
         ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
-            NodeGui* viewer = NodeGui::hasViewerConnected(arrow_dragged->getDest());
+            NodeGui* viewer = NodeGui::hasViewerConnected(_arrowSelected->getDest());
             if(viewer){
                 ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
                 ctrlPTR->getModel()->startVideoEngine(1);
@@ -209,35 +209,35 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         scene()->update();
         
     }
-    state=DEFAULT;
+    _evtState=DEFAULT;
     setCursor(QCursor(Qt::ArrowCursor));
     viewport()->setCursor(QCursor(Qt::ArrowCursor));
     
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     QPointF newPos=mapToScene(event->pos());
-    if(state==ARROW_DRAGGING){
-        QPointF np=arrow_dragged->mapFromScene(newPos);
-        arrow_dragged->updatePosition(np);
-    }else if(state==NODE_DRAGGING){
-        QPointF op=node_dragged->mapFromScene(old_pos);
-        QPointF np=node_dragged->mapFromScene(newPos);
+    if(_evtState==ARROW_DRAGGING){
+        QPointF np=_arrowSelected->mapFromScene(newPos);
+        _arrowSelected->updatePosition(np);
+    }else if(_evtState==NODE_DRAGGING){
+        QPointF op=_nodeSelected->mapFromScene(old_pos);
+        QPointF np=_nodeSelected->mapFromScene(newPos);
         qreal diffx=np.x()-op.x();
         qreal diffy=np.y()-op.y();
-        node_dragged->moveBy(diffx,diffy);
+        _nodeSelected->moveBy(diffx,diffy);
         /*also moving node creation anchor*/
         _lastSelectedPos+= QPointF(newPos.x()-old_pos.x() ,newPos.y()-old_pos.y());
-        foreach(Arrow* arrow,node_dragged->getInputsArrows()){
+        foreach(Edge* arrow,_nodeSelected->getInputsArrows()){
             arrow->initLine();
         }
         
-        foreach(NodeGui* child,node_dragged->getChildren()){
-            foreach(Arrow* arrow,child->getInputsArrows()){
+        foreach(NodeGui* child,_nodeSelected->getChildren()){
+            foreach(Edge* arrow,child->getInputsArrows()){
                 arrow->initLine();
             }
         }
         
-    }else if(state==MOVING_AREA){
+    }else if(_evtState==MOVING_AREA){
         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
         _root->moveBy(dx, dy);
@@ -251,8 +251,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
 }
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
     int i=0;
-    while(i<nodes.size()){
-        NodeGui* n=nodes[i];
+    while(i<_nodes.size()){
+        NodeGui* n=_nodes[i];
         
         QPointF evpt=n->mapFromScene(old_pos);
         if(n->contains(evpt) && n->getNode()->className() != std::string("Viewer")){
@@ -274,7 +274,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
 
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
-    if(e->key() == Qt::Key_N  && nodeCreation_shortcut_enabled){
+    if(e->key() == Qt::Key_N  && _nodeCreationShortcutEnabled){
         
         
         if(smartNodeCreationEnabled){
@@ -303,7 +303,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
             std::cout << "(NodeGraph::keyPressEvent) Couldn't create reader. " << std::endl;
             
         }
-        Node* reader = nodes[nodes.size()-1]->getNode();
+        Node* reader = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = reader->getKnobs();
         foreach(Knob* k,knobs){
             if(k->getType() == FILE_KNOB){
@@ -335,7 +335,7 @@ void NodeGraph::enterEvent(QEvent *event)
     QGraphicsView::enterEvent(event);
     if(smartNodeCreationEnabled){
         
-        nodeCreation_shortcut_enabled=true;
+        _nodeCreationShortcutEnabled=true;
         setFocus();
         grabMouse();
         releaseMouse();
@@ -346,7 +346,7 @@ void NodeGraph::leaveEvent(QEvent *event)
 {
     QGraphicsView::leaveEvent(event);
     if(smartNodeCreationEnabled){
-        nodeCreation_shortcut_enabled=false;
+        _nodeCreationShortcutEnabled=false;
         setFocus();
         releaseMouse();
         releaseKeyboard();
@@ -370,7 +370,7 @@ void NodeGraph::scaleView(qreal scaleFactor,QPointF center){
 }
 
 void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
-    Arrow* first = 0;
+    Edge* first = 0;
     /*dst is outputnode,src isn't*/
     if(selected->getNode()->isOutputNode()){
         first = selected->firstAvailableEdge();
@@ -380,7 +380,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 first->getDest()->addParent(created);
                 created->getNode()->addChild(first->getDest()->getNode());
                 created->addChild(first->getDest());
-                created->getNode()->decrementFreeOutputNb();
+                created->getNode()->releaseSocket();
                 first->setSource(created);
                 first->initLine();
             }
@@ -394,7 +394,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 first->getDest()->addParent(selected);
                 selected->getNode()->addChild(first->getDest()->getNode());
                 selected->addChild(first->getDest());
-                selected->getNode()->decrementFreeOutputNb();
+                selected->getNode()->releaseSocket();
                 first->setSource(selected);
                 first->initLine();
             }

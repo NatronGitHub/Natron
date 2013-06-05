@@ -8,7 +8,7 @@
 OutputNode::OutputNode(Node *node):Node(node){
     
    // _inputs();
-    setOutputNb();
+    setSocketCount();
  }
 
 

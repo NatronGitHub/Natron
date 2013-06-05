@@ -135,9 +135,9 @@ public:
     /*OutputNB related functions*/
     virtual bool hasOutput();
     int getFreeOutputCount() const;
-    void decrementFreeOutputNb();
-    void incrementFreeOutputNb();
-    virtual void setOutputNb();
+    void releaseSocket();
+    void lockSocket();
+    virtual void setSocketCount();
     /*============================*/
 
     /*Node type related functions*/
@@ -203,7 +203,7 @@ protected:
    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	ChannelMask _outputChannels; // the channels that the operator chooses to output from the ones among _info.channels(), by default Mask_all
-	int _freeOutputCount;
+	int _freeSocketCount;
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
     bool _marked;

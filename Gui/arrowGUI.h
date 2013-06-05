@@ -17,12 +17,12 @@ class QGraphicsSceneMouseEvent;
 class NodeGui;
 class Node;
 static const qreal UNATTACHED_ARROW_LENGTH=30.;
-class Arrow: public QGraphicsLineItem
+class Edge: public QGraphicsLineItem
 {
     
 public:
-    Arrow(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
-    Arrow(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
     QPainterPath shape() const;
     bool contains(const QPointF &point) const;
     void setSource(NodeGui* src){
