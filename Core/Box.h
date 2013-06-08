@@ -13,7 +13,12 @@ private:
 	int _r; // right
 	int _t; // top
     
+protected:
+    //protected so Node::Info can modify it
+    bool _modified; // true when some functions are called
 public:
+    
+    bool hasBeenModified(){return _modified;}
     
     /*iterator : bottom-top, left-right */
     class  iterator {
@@ -63,11 +68,11 @@ public:
         return iterator(_t, _x, _x, _r);
     }
     
-    Box2D() : _x(0), _y(0), _r(1), _t(1) {}
+    Box2D() : _x(0), _y(0), _r(1), _t(1) ,_modified(false){}
     
-    Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) {}
+    Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) , _modified(false){}
     
-    Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t){}
+    Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t) , _modified(false){}
     
     int x() const { return _x; }
     void x(int v) { _x = v; }
@@ -92,13 +97,15 @@ public:
     float middle_column() const { return (_y + _t) / 2.0f; }
     
    
-    void set(int x, int y, int r, int t) { _x = x;
+    virtual void set(int x, int y, int r, int t) { _x = x;
         _y = y;
         _r = r;
-        _t = t; }
+        _t = t;
+        _modified = true;
+    }
     
    
-    void set(const Box2D& b) { *this = b; }
+    virtual void set(const Box2D& b) { *this = b; }
     
     
     bool is1x1() const { return _r <= _x + 1 && _t <= _y + 1; }
@@ -109,7 +116,9 @@ public:
     void move(int dx, int dy) { _x += dx;
         _r += dx;
         _y += dy;
-        _t += dy; }
+        _t += dy;
+        _modified = true;
+    }
     
     /*Pad the edges of the box by the input values.
      *This is used by filters that increases the BBOX 
@@ -120,6 +129,7 @@ public:
             _r += dr; }
         if (_t > _y + 1) { _y += dy;
             _t += dt; }
+        _modified = true;
     }
     
     /*add the same amount left/right and bottom/top. */
@@ -136,7 +146,7 @@ public:
     
 	/*merge the current box with another integerBox.
 	 *The current box is the union of the two boxes.*/
-    void merge(const Box2D);
+    void merge(const Box2D&);
     
     void merge(int x, int y);
     

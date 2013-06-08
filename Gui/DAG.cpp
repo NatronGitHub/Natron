@@ -4,6 +4,7 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include <QtWidgets/QGraphicsProxyWidget>
+#include "Gui/tabwidget.h"
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
 #include "Gui/arrowGUI.h"
@@ -23,6 +24,7 @@
 #include "Core/VideoEngine.h"
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QGraphicsLineItem>
+#include "Gui/timeline.h"
 #include <cstdlib>
 
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
@@ -152,17 +154,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             
             _arrowSelected->removeSource();
             scene()->update();
-            if(_arrowSelected->getDest()->getNode()->className() == std::string("Viewer")){
-                ViewerGL* gl_viewer = ctrlPTR->getGui()->viewer_tab->viewer;
-                ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work
-                gl_viewer->drawing(false);
-                gl_viewer->blankInfoForViewer();
-                gl_viewer->fitToFormat(gl_viewer->displayWindow());
-                ctrlPTR->getModel()->getVideoEngine()->clearInfos(_arrowSelected->getDest()->getNode());
-                ctrlPTR->getModel()->setVideoEngineRequirements(NULL);
-                gl_viewer->clearViewer();
-                
-            }
+            
         }
         int i=0;
         bool foundSrc=false;
@@ -191,20 +183,26 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             i++;
         }
         if(!foundSrc){
-            
             _arrowSelected->removeSource();
         }
         _arrowSelected->initLine();
         scene()->update();
-        ctrlPTR->getModel()->getVideoEngine()->clearRowCache();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         if(foundSrc){
             NodeGui* viewer = NodeGui::hasViewerConnected(_arrowSelected->getDest());
             if(viewer){
-                ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
-                ctrlPTR->getModel()->startVideoEngine(1);
+                if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
+                    ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
+                }else{
+                    ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+                    ctrlPTR->getModel()->startVideoEngine(1);
+                }
             }
             
+        }
+        if(!_arrowSelected->hasSource() && _arrowSelected->getDest()->getNode()->className() == std::string("Viewer")){
+            ViewerGL* gl_viewer = currentViewer->viewer;
+            gl_viewer->disconnectViewer();
         }
         scene()->update();
         
@@ -271,31 +269,37 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
     }
     
 }
+bool NodeGraph::event(QEvent* event){
+    if ( event->type() == QEvent::KeyPress ) {
+        QKeyEvent *ke = static_cast<QKeyEvent*>(event);
+        if (ke &&  ke->key() == Qt::Key_Tab && _nodeCreationShortcutEnabled ) {
+            if(smartNodeCreationEnabled){
+                releaseKeyboard();
+                QPoint global = mapToGlobal(oldp.toPoint());
+                SmartInputDialog* nodeCreation=new SmartInputDialog(this);
+                nodeCreation->move(global.x(), global.y());
+                QPoint position=ctrlPTR->getGui()->WorkShop->pos();
+                position+=QPoint(ctrlPTR->getGui()->width()/2,0);
+                nodeCreation->move(position);
+                setMouseTracking(false);
+                
+                nodeCreation->show();
+                nodeCreation->raise();
+                nodeCreation->activateWindow();
+                
+                
+                smartNodeCreationEnabled=false;
+            }
+            ke->accept();
+            return true;
+        }
+    }
+    return QGraphicsView::event(event);
+}
 
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
-    if(e->key() == Qt::Key_N  && _nodeCreationShortcutEnabled){
-        
-        
-        if(smartNodeCreationEnabled){
-            releaseKeyboard();
-            SmartInputDialog* nodeCreation=new SmartInputDialog(this);
-            
-            QPoint position=ctrlPTR->getGui()->WorkShop->pos();
-            position+=QPoint(ctrlPTR->getGui()->width()/2,0);
-            nodeCreation->move(position);
-            setMouseTracking(false);
-            
-            nodeCreation->show();
-            nodeCreation->raise();
-            nodeCreation->activateWindow();
-            
-            
-            smartNodeCreationEnabled=false;
-        }
-        
-        
-    }else if(e->key() == Qt::Key_R){
+    if(e->key() == Qt::Key_R){
         try{
             
             ctrlPTR->createNode("Reader");
@@ -317,10 +321,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_fullscreen){
             _fullscreen = true;
-            ctrlPTR->getGui()->viewer_tab->hide();
+            ctrlPTR->getGui()->viewersTabContainer->hide();
         }else{
             _fullscreen = false;
-            ctrlPTR->getGui()->viewer_tab->show();
+            ctrlPTR->getGui()->viewersTabContainer->show();
         }
         
     }
@@ -371,6 +375,8 @@ void NodeGraph::scaleView(qreal scaleFactor,QPointF center){
 
 void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     Edge* first = 0;
+    if(!selected) return;
+    bool cont = false;
     /*dst is outputnode,src isn't*/
     if(selected->getNode()->isOutputNode()){
         first = selected->firstAvailableEdge();
@@ -383,6 +389,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 created->getNode()->releaseSocket();
                 first->setSource(created);
                 first->initLine();
+                cont = true;
             }
         }
     }else{
@@ -397,14 +404,25 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 selected->getNode()->releaseSocket();
                 first->setSource(selected);
                 first->initLine();
+                cont = true;
             }
         }
     }
-    if(first){
+    if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
             ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
-            ctrlPTR->getModel()->startVideoEngine(1);
+            VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+            vector<InputNode*>& inputs = dag.getInputs();
+            bool start = false;
+            for (U32 i = 0 ; i < inputs.size(); i++) {
+                if (inputs[0]->className() == "Reader") {
+                    if(static_cast<Reader*>(inputs[0])->hasFrames())
+                        start = true;
+                }
+            }
+            if(start)
+                ctrlPTR->getModel()->startVideoEngine(1);
         }
     }
 }

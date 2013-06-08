@@ -13,7 +13,7 @@
 #include <QtWidgets/QtWidgets>
 #include <cassert>
 const qreal pi=3.14159265358979323846264338327950288419717;
-NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj)
+NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj),settings(0)
 {
     
     _selected = false;
@@ -100,6 +100,12 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     
 }
 
+NodeGui::~NodeGui(){
+    if(settings)
+        delete settings;
+    foreach(Edge* a,inputs) delete a;
+}
+
 void NodeGui::updateChannelsTooltip(){
     QString tooltip;
     ChannelSet chans= node->getRequestedChannels();
@@ -125,7 +131,7 @@ void NodeGui::updatePreviewImageForReader(){
 }
 void NodeGui::initInputArrows(){
     int i=0;
-    int inputnb=node->totalInputsCount();
+    int inputnb=node->maximumInputs();
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){
@@ -270,3 +276,10 @@ Edge* NodeGui::firstAvailableEdge(){
     }
     return NULL;
 }
+
+
+void NodeGui::setSelected(bool b){
+    _selected = b;
+    update();
+    if(settings)
+        settings->update();}

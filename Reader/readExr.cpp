@@ -380,14 +380,19 @@ void ReadExr::readScanLine(int y){
     
 	// Invert to EXR y coordinate:
 	int exrY = dispwin.max.y - y;
-    Box2D bbox = _readInfo->dataWindow();
-    ChannelSet channels = _readInfo->channels();
-    Row* out = new Row(bbox.x(),y,bbox.right(),channels);
+    const Box2D& bbox = _readInfo->getDataWindow();
+    const Format& dispW = _readInfo->getDisplayWindow();
+    int r = 0;
+    bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
+    int x=0;
+    bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
+    const ChannelSet& channels = _readInfo->channels();
+    Row* out = new Row(x,y,r,channels);
     out->allocate();
     _img.insert(make_pair(exrY,out));
 	// Figure out intersection of x,r with the data in exr file:
-	const int X = max(bbox.x(), datawin.min.x + dataOffset);
-	const int R = min(bbox.right(), datawin.max.x + dataOffset +1);
+	const int X = max(x, datawin.min.x + dataOffset);
+	const int R = min(r, datawin.max.x + dataOffset +1);
     
 	// Black outside the bbox:
 	if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
@@ -398,9 +403,9 @@ void ReadExr::readScanLine(int y){
 	foreachChannels(z, channels){
         // blacking out what needs to be blacked out
         float* dest = out->writable(z) ;
-        for (int xx = bbox.x(); xx < X; xx++)
+        for (int xx = x; xx < X; xx++)
             dest[xx] = 0;
-        for (int xx = R; xx < bbox.right(); xx++)
+        for (int xx = R; xx < r; xx++)
             dest[xx] = 0;
         if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
             fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
@@ -445,7 +450,6 @@ ReadExr::~ReadExr(){
 void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 	const Imath::Box2i& dispwin = inputfile->header().displayWindow();
 	const Imath::Box2i& datawin = inputfile->header().dataWindow();
-    
 	// Invert to EXR y coordinate:
 	int exrY = dispwin.max.y - y;
     

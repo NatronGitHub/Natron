@@ -5,17 +5,32 @@
 //  contact: immarespond at gmail dot com
 #include "Core/viewerNode.h"
 #include "Gui/GLViewer.h"
-
-Viewer::Viewer(Node* node,ViewerGL* v):OutputNode(node)
+#include "Gui/mainGui.h"
+#include "Superviser/controler.h"
+#include "Gui/viewerTab.h"
+#include "Gui/GLViewer.h"
+Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0)
 {
-	this->_ui_context=v;
-    _firstTime=true;
+    ctrlPTR->getGui()->addViewerTab();
+    _uiContext = currentViewer;
+}
+Viewer::~Viewer(){
+    ctrlPTR->getGui()->removeViewerTab(_uiContext);
+    if(_viewerInfos)
+        delete _viewerInfos;
 }
 
-void Viewer::_validate(bool first_time){
-    first_time=true;
-    _firstTime=true;
-    Node::_validate(first_time);
+void Viewer::_validate(bool forReal){
+    if(_parents.size()==1){
+		copy_info(_parents[0],forReal);
+	}
+    set_output_channels(Mask_All);
+    
+    if(_viewerInfos){
+        delete _viewerInfos;
+    }
+    makeCurrentViewer();
+    
 }
 
 std::string Viewer::description(){
@@ -23,11 +38,11 @@ std::string Viewer::description(){
 }
 
 void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
-	
-	if(_firstTime) {  // if this is the first engine for this frame we initialize the display widget settings
-		ui_context()->drawing(true); // activating the drawing of our rows
-		_firstTime=false;
-	}
-	ui_context()->drawRow(out); // we set the display widget current row to display, and ask for a redraw
+    _uiContext->viewer->drawRow(out); // we  ask for the GLViewer to draw this row
 }
 
+void Viewer::makeCurrentViewer(){
+    _viewerInfos = new ViewerInfos;
+    dynamic_cast<Node::Info&>(*_viewerInfos) = dynamic_cast<const Node::Info&>(*_info);
+    currentViewer->viewer->setCurrentViewerInfos(_viewerInfos,false,false);
+}

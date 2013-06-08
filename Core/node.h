@@ -18,7 +18,6 @@
 #include "Core/viewercache.h"
 #include "Core/displayFormat.h"
 #include "Core/Box.h"
-#include "Gui/GLViewer.h"
 
 using namespace Powiter_Enums;
 
@@ -47,12 +46,11 @@ public:
 	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_channels(),_displayWindow(){}
 		void setYdirection(int direction){_ydirection=direction;}
 		int getYdirection(){return _ydirection;}
-		void setDisplayWindow(Format format){
-            _displayWindow=format;
-                    }
-		Format& getDisplayWindow(){return _displayWindow;}
-		Box2D& getDataWindow(){return dynamic_cast<Box2D&>(*this);}
+		void setDisplayWindow(Format format){_displayWindow=format;}
+		const Format& getDisplayWindow(){return _displayWindow;}
+		const Box2D& getDataWindow(){return dynamic_cast<const Box2D&>(*this);}
 		bool operator==( Node::Info &other);
+        void operator=(const Node::Info &other);
 		void firstFrame(int nb){_firstFrame=nb;}
 		void lastFrame(int nb){_lastFrame=nb;}
 		int firstFrame(){return _firstFrame;}
@@ -62,13 +60,14 @@ public:
 		void turnOffChannel(Channel z);
 		void turnOffChannels(ChannelMask &m);
 		void set_channels(ChannelMask mask){_channels=mask;}	
-		ChannelMask& channels(){return _channels;}
+		const ChannelMask& channels(){return _channels;}
 		bool blackOutside(){return _blackOutside;}
 		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
         bool rgbMode(){return _rgbMode;}
         
-		
+        void reset();
+        
 	private:
 		int _firstFrame;
 		int _lastFrame;
@@ -77,7 +76,6 @@ public:
         bool _rgbMode;
 		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelMask _channels; // all channels defined by the current Node ( that are allocated)
-		
 	};
     
 
@@ -121,8 +119,8 @@ public:
 	/*Node infos*/
 	Info* getInfo(){return _info;}
 	void merge_frameRange(int otherFirstFrame,int otherLastFrame);
-	void merge_info();
-	void copy_info();
+	void merge_info(bool forReal);
+	void copy_info(Node* parent,bool forReal);
 	void clear_info();
 	ChannelMask& getOutputChannels(){return _outputChannels;}
 	ChannelMask& getRequestedChannels(){return _requestedChannels;}
@@ -133,7 +131,6 @@ public:
     
 
     /*OutputNB related functions*/
-    virtual bool hasOutput();
     int getFreeOutputCount() const;
     void releaseSocket();
     void lockSocket();
@@ -147,7 +144,9 @@ public:
 
     /*Node Input related functions*/
     void initializeInputs();
-    virtual int totalInputsCount();
+    virtual int maximumInputs();
+    virtual int minimumInputs();
+    Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const;
     virtual std::string setInputLabel(int inputNb);
     std::string getLabel(int inputNb) ;
@@ -173,16 +172,16 @@ public:
     /*============================*/
 
     /*Calculations related functions*/
-    virtual void validate(bool first_time);
-    virtual void request(int y,int top,int offset, int range,ChannelMask channels);
-    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    virtual void validate(bool forReal);
+    virtual void request(ChannelMask channels);
+    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 	
     /*============================*/
     
     /*overlay support:
      *Just overload this function in your operator.
      *No need to include any openGL related header.
-     *The coordinate space is the defined by the displayWindow
+     *The coordinate space is  defined by the displayWindow
      *(i.e: (0,0) = bottomLeft and  width() and height() being
      * respectivly the width and height of the frame.)
      */
@@ -197,12 +196,12 @@ protected:
 	void set_output_channels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
 	// and _info.channels()
 
-	virtual void in_channels(int inputNb,ChannelMask &mask){};
-	virtual void _validate(bool first_time);
-    virtual void _request(int y,int top,int offset,int range,ChannelMask channels);
+	virtual void in_channels(int inputNb,ChannelMask &mask){}
+	virtual void _validate(bool forReal);
+    virtual void _request(ChannelMask channels);
    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-	ChannelMask _outputChannels; // the channels that the operator chooses to output from the ones among _info.channels(), by default Mask_all
+	ChannelMask _outputChannels; // the channels that the operator outputs from the ones among _info.channels(), by default Mask_all
 	int _freeSocketCount;
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;

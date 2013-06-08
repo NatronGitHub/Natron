@@ -15,6 +15,8 @@ using namespace Powiter_Enums;
 /*macro to get a pointer to the controler*/
 #define ctrlPTR Controler::instance()
 
+#define currentViewer ctrlPTR->getGui()->getCurrentViewerTab()
+
 class Model;
 class Gui;
 class QLabel;

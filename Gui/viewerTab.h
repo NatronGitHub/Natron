@@ -31,11 +31,11 @@ class TextureCache;
 class ViewerTab: public QWidget 
 {
 public:
-	ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent=0);
+	ViewerTab(QWidget* parent=0);
 	virtual ~ViewerTab();
     
     void setTextureCache(TextureCache* cache);
-	//QVBoxLayout* viewer_tabLayout;
+    QVBoxLayout* viewer_tabLayout;
 
 	/*Viewer Settings*/
 	QGroupBox* viewerSettings;

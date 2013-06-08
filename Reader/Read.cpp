@@ -9,7 +9,6 @@
 #include "Reader/readExr.h"
 #include "Gui/GLViewer.h"
 #include "Core/lookUpTables.h"
-#include "Reader/readerInfo.h"
 #include "Superviser/controler.h"
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
@@ -17,15 +16,12 @@ Read::Read(Reader* op):is_stereo(false), _autoCreateAlpha(false),_premult(false)
 {
 	_lut=NULL;
 	this->op=op;
-	_readInfo = new ReaderInfo;
+	_readInfo = new ReaderInfo; // deleted by the reader which manages this read handle
 
 }
 Read::~Read(){
 	
 }
-
-
-
 
 void Read::from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta ){
     if( z <= 3 && !_lut->linear()){
@@ -77,20 +73,19 @@ void Read::setReaderInfo(Format dispW,
 	ChannelMask channels,
 	int Ydirection ,
 	bool rgb ){
-		_readInfo->displayWindow(dispW.x(), dispW.y(), dispW.right(), dispW.top());
-		_readInfo->setDisplayWindowName(dispW.name());
-		_readInfo->pixelAspect(dispW.pixel_aspect());
-		_readInfo->dataWindow(dataW.x(), dataW.y(), dataW.right(), dataW.top());
-    _readInfo->channels(channels);
-    _readInfo->Ydirection(Ydirection);
+    _readInfo->setDisplayWindow(dispW);
+    _readInfo->set(dataW);
+    _readInfo->set_channels(channels);
+    _readInfo->setYdirection(Ydirection);
     _readInfo->rgbMode(rgb);
+    _readInfo->setCurrentFrameName(file.toStdString());
 }
 
 void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext,
                             bool onlyExtraRows,bool openBothViews){
     if(!onlyExtraRows){
         std::map<int,int>& rows = slContext->getRows();
-        if(_readInfo->Ydirection() < 0){
+        if(_readInfo->getYdirection() < 0){
             //top to bottom
             map<int,int>::reverse_iterator it  = rows.rbegin();
             for(; it!=rows.rend() ; it++){

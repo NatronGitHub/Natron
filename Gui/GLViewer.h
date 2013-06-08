@@ -26,13 +26,12 @@
 #include <ImfArray.h>
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtGui/qvector4d.h>
-#include "Reader/readerInfo.h"
 #include <QtGui/QPainter>
-
 #include "Core/row.h"
 #include "Core/displayFormat.h"
 #include "Gui/textRenderer.h"
 #include "Core/viewercache.h"
+#include "Core/viewerNode.h"
 
 #ifndef PW_DEBUG
 #define checkGLErrors() ((void)0)
@@ -49,7 +48,6 @@
 class Lut;
 class InfoViewerWidget;
 class Controler;
-class VideoEngine;
 class TextureCache;
 class ViewerGL : public QGLWidget
 {
@@ -94,14 +92,6 @@ public:
 
 	virtual ~ViewerGL();
 
-	/*set the current frame associated to the GLWidget*/
-	void currentFrame(int c){_readerInfo->currentFrame(c); emit frameChanged(c);}
-
-	/*Convenience functions
-	 *set the first frame and last frame of the readerInfo associated to the GLWidget*/
-	void firstFrame(int f){_readerInfo->firstFrame(f);}
-	void lastFrame(int l){_readerInfo->lastFrame(l);}
-
 	/*drawRow is called by the viewer node. Row is a pointer to the
 	row to draw.*/
 	void drawRow(Row *row);
@@ -124,7 +114,7 @@ public:
 	/*Convenience function.
 	 *Ydirection is the order of fill of the display texture:
 	either bottom to top or top to bottom.*/
-	int Ydirection(){return _readerInfo->Ydirection();}
+	int Ydirection(){return getCurrentViewerInfos()->getYdirection();}
 
 	/*handy functions to save/restore the GL context states*/
 	void saveGLState();
@@ -133,7 +123,7 @@ public:
 
 	/*rgbMode is true when we have rgba data. 
 	False means it is luminance chroma*/
-	bool rgbMode(){return _readerInfo->rgbMode();}
+	bool rgbMode(){return getCurrentViewerInfos()->rgbMode();}
 
 	/*the lut used by the viewer to output images*/
 	float lutType(){return _lut;}
@@ -146,10 +136,10 @@ public:
 	ChannelMask displayChannels(){return _channelsToDraw;}
 
 	/*The dataWindow of the currentFrame(BBOX)*/
-	Box2D dataWindow(){return _readerInfo->dataWindow();}
+	const Box2D& dataWindow(){return getCurrentViewerInfos()->getDataWindow();}
 
 	/*The displayWindow of the currentFrame(Resolution)*/
-	Format displayWindow(){return _readerInfo->displayWindow();}
+	const Format& displayWindow(){return getCurrentViewerInfos()->getDisplayWindow();}
 
 	/*(ROI), not used yet*/
 	Box2D& regionOfInterest(){return _roi;}
@@ -169,8 +159,6 @@ public:
 	/*start using the luminance/chroma shader*/
 	void activateShaderLC();
 
-	/*set the video engine pointer*/
-	void setVideoEngine(VideoEngine* v){vengine = v;}
 
 	/*overload of QT enter/leave/resize events*/
 	void enterEvent(QEvent *event)
@@ -270,13 +258,12 @@ public:
 	displaying black)*/
 	void blankInfoForViewer(bool onInit=false);
 
-	/*readerInfo related functions)*/
-	void setCurrentReaderInfo(ReaderInfo* info,bool onInit=false,bool initBoundaries = false);
-	void updateCurrentReaderInfo(){updateDataWindowAndDisplayWindowInfo();}
-	ReaderInfo* getCurrentReaderInfo(){return _readerInfo;}
+	/*viewerInfo related functions)*/
+	void setCurrentViewerInfos(Viewer::ViewerInfos *viewerInfos,bool onInit=false,bool initBoundaries = false);
+    Viewer::ViewerInfos* getCurrentViewerInfos(){return _currentViewerInfos;}
 
-	/*the name of the current frame name*/
-	QString getCurrentFrameName(){return _readerInfo->currentFrameName();}
+	void updateCurrentViewerInfo(){updateDataWindowAndDisplayWindowInfo();}
+
 
 	/*update the BBOX info*/
 	void updateDataWindowAndDisplayWindowInfo();
@@ -334,6 +321,8 @@ public:
     bool hasHardware(){return _hasHW;}
     
     ViewerCache::FrameID& getCurrentFrameID(){return frameInfo;}
+    
+    void disconnectViewer();
 
 	public slots:
 		virtual void updateGL();
@@ -397,8 +386,9 @@ private:
 	// they appear on the screen
 	ChannelMask _channelsToDraw;
 
-	ReaderInfo* _readerInfo;
-	ReaderInfo* blankReaderInfo;
+    Viewer::ViewerInfos* _currentViewerInfos;
+    
+    Viewer::ViewerInfos* _blankViewerInfos;
 
 
 
@@ -414,8 +404,6 @@ private:
     std::pair<int,int> _rowSpan;
 
 	ZoomContext _zoomCtx;
-
-	VideoEngine* vengine;
 
 
 	QString _resolutionOverlay;

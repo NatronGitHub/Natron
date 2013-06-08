@@ -6,12 +6,10 @@
 #include "Gui/DAGQuickNode.h"
 #include "Gui/DAG.h"
 
-
-SmartInputDialog::SmartInputDialog(NodeGraph* graph, QWidget *parent):QFrame(parent)
+SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
 {
    //this->setParent(dynamic_cast<QWidget*>(ctrlPTR->getGui()));
-    this->graph=graph;
- 
+        this->graph=graph;
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));
@@ -30,6 +28,8 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph, QWidget *parent):QFrame(par
     textEdit->lineEdit()->setFocus(Qt::ActiveWindowFocusReason);
     textEdit->grabKeyboard();
     installEventFilter(this);
+
+   
 }
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
@@ -37,7 +37,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
       if(ctrlPTR->getNodeNameList().contains(res)){
           try{
 
-          ctrlPTR->createNode(res,0,0);
+          ctrlPTR->createNode(res,INT_MAX,INT_MAX);
           }catch(...){
               std::cout << "(SmartInputDialog:KeyPressEvent) Couldn't create node " << qPrintable(res) << std::endl;
           }

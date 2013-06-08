@@ -32,6 +32,8 @@ public:
 
     NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
 
+    ~NodeGui();
+    
     /*returns a ptr to the internal node*/
     Node* getNode(){return node;}
     
@@ -110,7 +112,7 @@ public:
     static NodeGui* hasViewerConnected(NodeGui* node);
     
     /*toggles selected on/off*/
-    void setSelected(bool b){_selected = b; update();}
+    void setSelected(bool b);
     
     bool isSelected(){return _selected;}
     

@@ -13,8 +13,8 @@ public:
     InputNode(Node* node );
     InputNode(InputNode& ref);
     virtual ~InputNode();
-    virtual int totalInputsCount(){return 0;}
-   
+    virtual int maximumInputs(){return 0;}
+    virtual int minimumInputs(){return 0;}
     bool isInputNode();
 private:
   

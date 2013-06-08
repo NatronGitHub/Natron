@@ -39,9 +39,10 @@ public:
     public:
         typedef std::vector<Node*>::iterator DAGIterator;
         typedef std::vector<Node*>::reverse_iterator DAGReverseIterator;
-        
+        typedef void (VideoEngine::DAG::*ValidateFunc)(bool);
         typedef std::vector<InputNode*>::iterator InputsIterator;
-        DAG():_output(0){}
+        
+        DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate){}
         
         /*Clear the structure and sorts the graph
          *represented by the OutputNode out*/
@@ -59,9 +60,28 @@ public:
         /*Accessors to the inputs of the graph*/
         std::vector<InputNode*>& getInputs(){return _inputs;}
         
+        /*Depending if this is the first time for this DAG or not,
+         different versions of validates are called : validate() is called
+         the 1st time and set infos across all nodes, then validateInputs()
+         is called. This function will call the appropriate function when
+         needed.*/
+        void autoValidate(bool forReal){(*this.*_validate)(forReal);}
+        
+        /*handy function to get the frame range
+         of input nodes in the dag based on node infos*/
+        int firstFrame();
+        int lastFrame();
+        
         /*debug*/
         void debug();
     private:
+        /*sets infos accordingly across all the DAG*/
+        void validate(bool forReal);
+        
+        /*same as validate(), but it refreshes info only for inputNodes.
+         This*/
+        void validateInputs(bool forReal);
+        
         /*recursive topological sort*/
         void topologicalSort();
         /*function called internally by the sorting
@@ -78,15 +98,19 @@ public:
         std::vector<Node*> _graph;
         /*the sorted DAG*/
         std::vector<Node*> _sorted;
-        /**/
+        /*all the inputs of the dag*/
         std::vector<InputNode*> _inputs;
+        /*the validate function called to validate node infos*/
+        ValidateFunc _validate;
+        /*true if validate() has already been called for this DAG*/
+        bool _hasValidated;
     };
     
 private:
     
     friend class ViewerGL;
     
-    typedef void (VideoEngine::*VengineFunction)(int,int,bool);
+    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,OutputNode*);
     /*This class represents one task that has to be performed by
      the engine and that is waiting to be done.*/
     class Task{
@@ -94,10 +118,12 @@ private:
         int _newFrameNB;
         int _frameCount;
         bool _initViewer;
+        bool _forward;
+        OutputNode* _output;
         VengineFunction _func;
-        Task(int newFrameNB,int frameCount,bool initViewer,VengineFunction func):
-        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),
-        _func(func){}
+        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func):
+        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),
+        _func(func),_output(output){}
         
     };
     /*Class holding informations about src and dst 
@@ -120,19 +146,16 @@ private:
     std::vector<Task> _waitingTasks;
     
     ViewerCache* _viewerCache ; // disk cache (physically stored, saved between 2 runs).    
-    ViewerGL* gl_viewer;
     Model* _coreEngine;
 	bool _working;
        
     DAG _dag; // object encapsulating the graph
     
     Timer* _timer; // fps timer
-    
-    std::map<int,Row*> row_cache; // buffer cache : for zoom 
-    
+        
     QMutex* _lock; // general lock for the engine
-    std::map<Reader*, ReaderInfo* > readersInfos; // map of all readersInfos associated to the readers
-    bool _readerInfoHasChanged; // true when the readerInfo for one reader has changed.This is used for the GlViewer
+   // std::map<Reader*, ReaderInfo* > readersInfos; // map of all readersInfos associated to the readers
+   // bool _readerInfoHasChanged; // true when the readerInfo for one reader has changed.This is used for the GlViewer
 
 
     bool _aborted ;// true when the engine has been aborted, i.e: the user disconnected the viewer
@@ -149,6 +172,8 @@ private:
     bool _loopMode; //on if the player will loop
         
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
+    
+    bool _outputIsViewer;//on if the output is a viewer, off if it is a writer
     
     QFutureWatcher<void>* _engineLoopWatcher;
     QFuture<void>* _enginePostProcessResults;
@@ -169,7 +194,6 @@ public slots:
 
     void updateProgressBar();
     void setDesiredFPS(double d);
-    void _abort();
     void abort();
     void pause();
     void startPause(bool c);
@@ -182,17 +206,10 @@ public slots:
     void nextIncrement();
     void seekRandomFrame(int f);
     void seekRandomFrame(double d){seekRandomFrame((int)d);} // convenience func for the FeedBackSpinbox class
-    void seekRandomFrameWithStart(int f);
     void changeTreeVersion();
     void clearDiskCache();
     void clearPlayBackCache();
 
-	/*clears the ROW CACHE*/
-    void clearRowCache(){
-        std::map<int,Row*>::iterator it = row_cache.begin();
-        for(;it!=row_cache.end();it++) delete it->second;
-        row_cache.clear();
-    }
     void engineLoop();
     
     /*called internally by computeTreeForFrame*/
@@ -203,10 +220,12 @@ signals:
 
 public:
   
+    void changeDAGAndStartEngine(OutputNode* output);
+    
     DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(std::string filename,OutputNode *output,int followingComputationsNb);
+    void computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer,int followingComputationsNb);
     
 	/*clears-out all the node-infos in the graph*/
     void clearInfos(Node* out);
@@ -214,20 +233,20 @@ public:
 	/*Returns true if the engine is currently working*/
 	bool isWorking(){return _working;}
     
-    VideoEngine(ViewerGL* gl_viewer,Model* engine,QMutex* lock);
+    VideoEngine(Model* engine,QMutex* lock);
     virtual ~VideoEngine();
     
     /*Associates the info to the reader in the map*/
-	void pushReaderInfo(ReaderInfo* info,Reader* reader);
+	//void pushReaderInfo(ReaderInfo* info,Reader* reader);
 
 	/*Removes the readerInfo associated to reader in the map*/
-	void popReaderInfo(Reader* reader);
+	//void popReaderInfo(Reader* reader);
 
 	/*Tells the GlViewer that the current readerInfo will be the info
 	 *of the Reader "reader"*/
-	void makeReaderInfoCurrent(Reader* reader);
+	//void makeReaderInfoCurrent(Reader* reader);
 
-	ReaderInfo* getReaderInfo(Reader* reader){return readersInfos[reader];}
+	//ReaderInfo* getReaderInfo(Reader* reader){return readersInfos[reader];}
 
 	/*Tell all the nodes in the grpah to draw overlays*/
     void drawOverlay();
@@ -248,7 +267,7 @@ public:
      *fitFrameToViewer is true if you want the first frame that will be played to fit to the viewer.
      *forward is true if you want the engine to go forward when cycling through frames. It goes backwards otherwise
      *sameFrame is true if the engine will play the same frame as before. It is exclusively used when zooming.*/
-    void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    void videoEngine(bool outputIsViewer,int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /*used internally by the zoom or the videoEngine, do not call this*/
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
@@ -260,7 +279,7 @@ public:
     typedef std::vector< ReadFrame > FramesVector;
     
     
-    VideoEngine::FramesVector startReading(std::vector<Reader*> readers,bool useMainThread,bool useOtherThread );
+    VideoEngine::FramesVector startReading(std::vector<Reader*>& readers,bool useMainThread,bool useOtherThread );
     
     void resetReadingBuffers();
     
@@ -273,27 +292,18 @@ private:
     void updateDisplay();
     void _drawOverlay(Node *output);
     
-    /*Row cache related functions*/
-	std::map<int,Row*> get_row_cache(){return row_cache;}
-    void addToRowCache(Row* row);
+
     void debugTree();
     void _debugTree(Node* n,int* nb);
-    std::map<int,Row*>::iterator isRowContainedInCache(int rowIndex);
     void computeTreeHash(std::vector<std::pair<std::string, U64> > &alreadyComputed, Node* n);
     /*============================*/
     
     /*These are the functions called by the tasks*/
-    void _previousFrame(int frameNB,int frameCount,bool initViewer);
-    void _nextFrame(int frameNB,int frameCount,bool initViewer);
-    void _previousIncrement(int frameNB,int frameCount,bool initViewer);
-    void _nextIncrement(int frameNB,int frameCount,bool initViewer);
-    void _firstFrame(int frameNB,int frameCount,bool initViewer);
-    void _lastFrame(int frameNB,int frameCount,bool initViewer);
-    void _seekRandomFrame(int frameNB,int frameCount,bool initViewer);
-    
+    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
+    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
     
     /*functions handling tasks*/
-    void appendTask(int frameNB,int frameCount,bool initViewer,VengineFunction func);
+    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func);
     void runTasks();
     
     /*Used internally by the computeFrameRequest func for cached frames*/

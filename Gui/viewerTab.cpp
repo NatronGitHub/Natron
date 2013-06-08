@@ -27,12 +27,12 @@
 #include "Gui/comboBox.h"
 
 
-ViewerTab::ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent):QWidget(parent),initialized_(false)
+ViewerTab::ViewerTab(QWidget* parent):QWidget(parent),initialized_(false)
 {
-
     
+    viewer_tabLayout=viewer_tabLayout=new QVBoxLayout(parent);
+    setLayout(viewer_tabLayout);
 	this->setObjectName(QString::fromUtf8("Viewer_tab1"));
-	//viewer_tabLayout=new QVBoxLayout();
     viewer_tabLayout->QLayout::setSpacing(0);
 	/*VIEWER SETTINGS*/
 	viewerSettings=new QGroupBox(this);
@@ -231,7 +231,7 @@ ViewerTab::ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent):QWidget(par
         
     timeButtons->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 	viewer_tabLayout->addWidget(timeButtons);
-    timeButtonsLayout->setSpacing(12);
+    timeButtonsLayout->setSpacing(0);
     timeButtonsLayout->setContentsMargins(0, 0, 0, 0);
     timeButtons->setContentsMargins(0, 0, 0, 0);
 	timeButtons->setLayout(timeButtonsLayout);
@@ -314,7 +314,8 @@ ViewerTab::ViewerTab(QVBoxLayout*& viewer_tabLayout,QWidget* parent):QWidget(par
     QObject::connect(gainSlider, SIGNAL(positionChanged(double)), gainBox, SLOT(setValue(double)));
     QObject::connect(gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
     QObject::connect(gainBox, SIGNAL(valueChanged(double)), gainSlider, SLOT(seekScalePosition(double)));
-    
+    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumberBox, SLOT(setValue(int)));
+    QObject::connect(frameNumberBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
          
     initialized_=true;
 }

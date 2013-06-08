@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cassert>
 #include <map>
+#include "Gui/tabwidget.h"
 #include "Gui/GLViewer.h"
 #include "Core/VideoEngine.h"
 #include "Gui/shaders.h"
@@ -67,25 +68,19 @@ void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 }
 
 void ViewerGL::blankInfoForViewer(bool onInit){
-    blankReaderInfo->currentFrame(0);
-    blankReaderInfo->lastFrame(0);
-    blankReaderInfo->firstFrame(0);
-    setCurrentReaderInfo(blankReaderInfo,onInit);
+    setCurrentViewerInfos(_blankViewerInfos,onInit);
 }
 void ViewerGL::initConstructor(){
     _hasHW=true;
-    _readerInfo = new ReaderInfo;
-    blankReaderInfo = new ReaderInfo;
-    blankReaderInfo->channels(Mask_RGBA);
-    blankReaderInfo->Ydirection(1);
-    blankReaderInfo->rgbMode(true);
-    blankReaderInfo->setDisplayWindowName("2K_Super_35(full-ap)");
-    blankReaderInfo->dataWindow(0, 0, 2048, 1556);
-    blankReaderInfo->pixelAspect(1.0);
-    blankReaderInfo->displayWindow(0, 0, 2048, 1556);
-    blankReaderInfo->firstFrame(0);
-    blankReaderInfo->lastFrame(0);
-    blankReaderInfo->currentFrame(0);
+    _blankViewerInfos = new Viewer::ViewerInfos;
+    _blankViewerInfos->set_channels(Mask_RGBA);
+    _blankViewerInfos->setYdirection(1);
+    _blankViewerInfos->rgbMode(true);
+    Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
+    _blankViewerInfos->set(0, 0, 2048, 1556);
+    _blankViewerInfos->setDisplayWindow(frmt);
+    _blankViewerInfos->firstFrame(0);
+    _blankViewerInfos->lastFrame(0);
     blankInfoForViewer(true);
 	_drawing=false;
 	exposure = 1;
@@ -150,8 +145,7 @@ ViewerGL::~ViewerGL(){
     if(_mustFreeFrameData)
         free(frameData);
     
-    delete _readerInfo;
-	delete blankReaderInfo;
+	delete _blankViewerInfos;
 	delete _infoViewer;
 }
 
@@ -163,7 +157,7 @@ void ViewerGL::updateGL(){
 void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
-    float ap = _readerInfo->displayWindow().pixel_aspect();
+    float ap = displayWindow().pixel_aspect();
     if(ap > 1.f){
         glViewport (0, 0, width*ap, height);
     }else{
@@ -174,7 +168,7 @@ void ViewerGL::resizeGL(int width, int height){
 	}
     _ms = UNDEFINED;
     if(_drawing)
-        vengine->videoEngine(1,false,true,true);
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
 	checkGLErrors();
 }
 void ViewerGL::paintGL()
@@ -184,11 +178,11 @@ void ViewerGL::paintGL()
 		float h = (float)height();
         glMatrixMode (GL_PROJECTION);
 		glLoadIdentity();
-        
-        float left = -w/2.f + displayWindow().w()/2.f;
-        float right = w/2.f + displayWindow().w()/2.f;
-        float bottom = -h/2.f + displayWindow().h()/2.f;
-        float top = h/2.f + displayWindow().h()/2.f ;
+        const Format& dispW = displayWindow();
+        float left = -w/2.f + dispW.w()/2.f;
+        float right = w/2.f + dispW.w()/2.f;
+        float bottom = -h/2.f + dispW.h()/2.f;
+        float top = h/2.f + dispW.h()/2.f ;
         
         glOrtho(left, right, bottom, top, -1, 1);
         
@@ -205,8 +199,8 @@ void ViewerGL::paintGL()
         glBindTexture(GL_TEXTURE_2D, currentTexture);
         
         // debug (so the openGL debugger can make a breakpoint here)
-        //        GLfloat d;
-        //        glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+                GLfloat d;
+                glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
@@ -215,10 +209,10 @@ void ViewerGL::paintGL()
         glClearColor(0.0,0.0,0.0,1.0);
         glClear (GL_COLOR_BUFFER_BIT);
 		glBegin (GL_POLYGON);
-        glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _rowSpan.first);
-		glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _rowSpan.second+1);
-		glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _rowSpan.second+1);
-		glTexCoord2i (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _rowSpan.first);
+        glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first);
+		glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1);
+		glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1);
+		glTexCoord2i (1, 0);glVertex2i (dispW.w(), _rowSpan.first);
         
 		glEnd ();
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -297,7 +291,9 @@ void ViewerGL::drawOverlay(){
         
         
     }
-    vengine->drawOverlay();
+    VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
+    if(vengine)
+        vengine->drawOverlay();
     //reseting color for next pass
     glColor4f(1, 1, 1, 1);
 }
@@ -602,9 +598,9 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
 void ViewerGL::initBlackTex(){
     makeCurrent();
     
-    ctrlPTR->getGui()->viewer_tab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
-    int w = floorf(_readerInfo->displayWindow().w()*_zoomCtx.zoomFactor);
-    int h = floorf(_readerInfo->displayWindow().h()*_zoomCtx.zoomFactor);
+    currentViewer->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
+    int w = floorf(displayWindow().w()*_zoomCtx.zoomFactor);
+    int h = floorf(displayWindow().h()*_zoomCtx.zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -655,11 +651,12 @@ void ViewerGL::drawBlackTex(){
     
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    
-    float left = -w/2.f + displayWindow().w()/2.f;
-    float right = w/2.f + displayWindow().w()/2.f;
-    float bottom = -h/2.f + displayWindow().h()/2.f;
-    float top = h/2.f + displayWindow().h()/2.f ;
+    const Format& dispW = displayWindow();
+
+    float left = -w/2.f + dispW.w()/2.f;
+    float right = w/2.f + dispW.w()/2.f;
+    float bottom = -h/2.f + dispW.h()/2.f;
+    float top = h/2.f + dispW.h()/2.f ;
     
     
     glOrtho(left, right, bottom, top, -1, 1);
@@ -685,10 +682,10 @@ void ViewerGL::drawBlackTex(){
     if(_hasHW)
         shaderBlack->setUniformValue("Tex", 0);
     glBegin (GL_POLYGON);
-    glTexCoord2i (0, 0);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().y());
-    glTexCoord2i (0, 1);glVertex2i (_readerInfo->displayWindow().x(), _readerInfo->displayWindow().h());
-    glTexCoord2i (1, 1);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
-    glTexCoord2i (1, 0);glVertex2i (_readerInfo->displayWindow().w(), _readerInfo->displayWindow().y());
+    glTexCoord2i (0, 0);glVertex2i (dispW.x(), dispW.y());
+    glTexCoord2i (0, 1);glVertex2i (dispW.x(), dispW.h());
+    glTexCoord2i (1, 1);glVertex2i (dispW.w(),dispW.h());
+    glTexCoord2i (1, 0);glVertex2i (dispW.w(),dispW.y());
     glEnd ();
     if(_hasHW)
         shaderBlack->release();
@@ -698,7 +695,7 @@ void ViewerGL::drawBlackTex(){
 void ViewerGL::drawRow(Row* row){
     float zoomFactor;
     _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
-    int w = floorf(_readerInfo->displayWindow().w() * zoomFactor);
+    int w = floorf(displayWindow().w() * zoomFactor);
     if(_byteMode==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w,row->zoomedY(),(*row)[Channel_alpha]);
@@ -719,7 +716,7 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
     if(mode == TEXTURE_CACHE){ // texture caching
         TextureCache::TextureKey key(exposure,_lut,_zoomCtx.zoomFactor,
                                      w,h,_byteMode,filename,
-                                     vengine->getCurrentTreeVersion(),
+                                     ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion(),
                                      _rowSpan.first,_rowSpan.second);
         TextureCache::TextureIterator found = _textureCache->isCached(key);
         U32 ret = 0;
@@ -741,14 +738,14 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
         }
     }else{ // viewer caching
         // init mmaped file
-        int frameCount = _readerInfo->lastFrame() - _readerInfo->firstFrame() +1;
-        pair<char*,ViewerCache::FrameID> p = vengine->mapNewFrame(frameCount == 1 ? 0 : _readerInfo->currentFrame(),
+        int frameCount = getCurrentViewerInfos()->lastFrame() - getCurrentViewerInfos()->firstFrame() +1;
+        pair<char*,ViewerCache::FrameID> p = ctrlPTR->getModel()->getVideoEngine()->mapNewFrame(frameCount == 1 ? 0 : currentViewer->frameSeeker->currentFrame(),
                                                                   filename,
                                                                   w, h,
                                                                   nbFrameHint);
         frameData = p.first;
         frameInfo = p.second;
-        vengine->getViewerCache()->appendFrame(frameInfo);
+        ctrlPTR->getModel()->getVideoEngine()->getViewerCache()->appendFrame(frameInfo);
         initTextures(w,h,texId[0]);
         setCurrentTexture(texId[0]);
         return false;
@@ -772,6 +769,12 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     
     glEnable (GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, currentTexture);
+    GLint currentBoundPBO;
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+    if (currentBoundPBO == 0) {
+        return;
+    }
+    
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     if(_byteMode==1 || !_hasHW){
         glTexSubImage2D (GL_TEXTURE_2D,
@@ -1006,10 +1009,11 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPoint pos;
     pos = openGLpos_fast((float)event->x(), event->y());
-    if(pos.x() >= _readerInfo->displayWindow().x() &&
-       pos.x() <= _readerInfo->displayWindow().w() &&
-       pos.y() >=_readerInfo->displayWindow().y() &&
-       pos.y() <= _readerInfo->displayWindow().h() &&
+    const Format& dispW = displayWindow();
+    if(pos.x() >= dispW.x() &&
+       pos.x() <= dispW.w() &&
+       pos.y() >= dispW.y() &&
+       pos.y() <= dispW.h() &&
        event->x() >= 0 && event->x() < width() &&
        event->y() >= 0 && event->y() < height()){
         if(!_infoViewer->colorAndMouseVisible()){
@@ -1019,7 +1023,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         _infoViewer->setColor(color);
         _infoViewer->setMousePos(pos);
         emit infoMousePosChanged();
-        if(!vengine->isWorking())
+        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking())
             emit infoColorUnderMouseChanged();
     }else{
         if(_infoViewer->colorAndMouseVisible()){
@@ -1029,7 +1033,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        if(!vengine->isWorking()){
+        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
             new_pos = event->pos();
             float dx = new_pos.x() - old_pos.x();
             float dy = new_pos.y() - old_pos.y();
@@ -1037,7 +1041,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             transY += dy;
             old_pos = new_pos;
             if(_drawing){
-                vengine->videoEngine(1,false,true,true);
+                ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
                 
             }else{
                 updateGL();
@@ -1048,7 +1052,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     
-    if(!vengine->isWorking()){
+    if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         QPointF p;
         float increment=0.f;
         if(_zoomCtx.zoomFactor<1.f)
@@ -1084,8 +1088,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             }
         }
         if(_drawing){
-            vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
+            ctrlPTR->getModel()->getVideoEngine()->_viewerCache->clearPlayBackCache();
+            ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();
         }
@@ -1094,13 +1098,13 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
 }
 void ViewerGL::zoomSlot(int v){
-    if(!vengine->isWorking()){
+    if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         float value = v/100.f;
         if(value <0.1) value = 0.1;
         _zoomCtx.zoomFactor = value;
         if(_drawing){
-            vengine->_viewerCache->clearPlayBackCache();
-            vengine->videoEngine(1,false,true,true);
+            ctrlPTR->getModel()->getVideoEngine()->_viewerCache->clearPlayBackCache();
+            ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();
         }
@@ -1151,7 +1155,7 @@ QPoint ViewerGL::openGLpos_fast(int x,int y){
     return QPoint(posX,posY);
 }
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    if(vengine->isWorking()) return QVector4D(0,0,0,0);
+    if(ctrlPTR->getModel()->getVideoEngine()->isWorking()) return QVector4D(0,0,0,0);
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
@@ -1222,41 +1226,39 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
     
 }
-void ViewerGL::setCurrentReaderInfo(ReaderInfo* info,bool onInit,bool initBoundaries){
-    _readerInfo->copy(info);
-    Format* df=ctrlPTR->getModel()->findExistingFormat(_readerInfo->displayWindow().w(), _readerInfo->displayWindow().h());
+void ViewerGL::setCurrentViewerInfos(Viewer::ViewerInfos* viewerInfos,bool onInit,bool initBoundaries){
+    _currentViewerInfos = viewerInfos;
+    Format* df=ctrlPTR->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
-        _readerInfo->setDisplayWindowName(df->name());
+        _currentViewerInfos->getDisplayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
     if(!onInit){
-        ctrlPTR->getGui()->viewer_tab->frameNumberBox->setMaximum(_readerInfo->lastFrame());
-        ctrlPTR->getGui()->viewer_tab->frameNumberBox->setMinimum(_readerInfo->firstFrame());
-    }
-    if(!onInit)
-        ctrlPTR->getGui()->viewer_tab->frameSeeker->setFrameRange(_readerInfo->firstFrame(), _readerInfo->lastFrame(),initBoundaries);
-    if((_readerInfo->lastFrame() - _readerInfo->firstFrame())==0){
-        emit frameChanged(0);
-        
-    }else{
-        emit frameChanged(_readerInfo->currentFrame());
-    }
+        currentViewer->frameNumberBox->setMaximum(_currentViewerInfos->lastFrame());
+        currentViewer->frameNumberBox->setMinimum(_currentViewerInfos->firstFrame());
+        int curFirstFrame = currentViewer->frameSeeker->firstFrame();
+        int curLastFrame = currentViewer->frameSeeker->lastFrame();
+        if(_currentViewerInfos->firstFrame() != curFirstFrame || _currentViewerInfos->lastFrame() != curLastFrame){
+            currentViewer->frameSeeker->setFrameRange(_currentViewerInfos->firstFrame(), _currentViewerInfos->lastFrame());
+            currentViewer->frameSeeker->setBoundaries(_currentViewerInfos->firstFrame(), _currentViewerInfos->lastFrame());
+        }
+    }    
 }
 
 void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     emit infoResolutionChanged();
     emit infoDisplayWindowChanged();
     _resolutionOverlay.clear();
-    _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().w()));
+    _resolutionOverlay.append(QString::number(displayWindow().w()));
     _resolutionOverlay.append("x");
-    _resolutionOverlay.append(QString::number(_readerInfo->displayWindow().h()));
+    _resolutionOverlay.append(QString::number(displayWindow().h()));
     _btmLeftBBOXoverlay.clear();
-    _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().x()));
+    _btmLeftBBOXoverlay.append(QString::number(dataWindow().x()));
     _btmLeftBBOXoverlay.append(",");
-    _btmLeftBBOXoverlay.append(QString::number(_readerInfo->dataWindow().y()));
+    _btmLeftBBOXoverlay.append(QString::number(dataWindow().y()));
     _topRightBBOXoverlay.clear();
-    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().right()));
+    _topRightBBOXoverlay.append(QString::number(dataWindow().right()));
     _topRightBBOXoverlay.append(",");
-    _topRightBBOXoverlay.append(QString::number(_readerInfo->dataWindow().top()));
+    _topRightBBOXoverlay.append(QString::number(dataWindow().top()));
     
     
     
@@ -1265,23 +1267,22 @@ void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
-            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            currentViewer->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
         }
         _lut = 0;
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
-            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            currentViewer->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
         }
         
         _lut = 1;
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
-            ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+            currentViewer->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
         }
-        
         _lut = 2;
     }
     if (!_drawing) {
@@ -1289,16 +1290,16 @@ void ViewerGL::updateColorSpace(QString str){
     }
     
     if(_byteMode==1 || !_hasHW)
-        vengine->videoEngine(1,false,true,true);
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
     else
         updateGL();
     
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+    currentViewer->frameSeeker->clearCachedFrames();
     if((_byteMode==1 || !_hasHW) && _drawing)
-        vengine->videoEngine(1,false,true,true);
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
     else
         updateGL();
     
@@ -1538,4 +1539,10 @@ int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent, const float *ma
     return 1;
 }
 
-
+void ViewerGL::disconnectViewer(){
+    ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work
+    blankInfoForViewer();
+    fitToFormat(displayWindow());
+    ctrlPTR->getModel()->setVideoEngineRequirements(NULL);
+    clearViewer();
+}

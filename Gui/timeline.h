@@ -21,7 +21,10 @@
 class TimeSlider : public QWidget{
     Q_OBJECT
     
-    int _first,_last,_minimum,_maximum,_current;
+    int _first,_last; // the first and last frames, bounded by the user
+    int _minimum,_maximum; // the extremas displayed on the timeline
+    int _current; // the current frame
+    
     std::vector<int> _values;
     QList<int> _displayedValues;
     std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
@@ -44,30 +47,21 @@ public:
     TimeSlider(QWidget* parent=0);
     virtual ~TimeSlider(){}
     
+    /*Tells the timeline to indicate that the frame f is cached*/
     void addCachedFrame(int f);
+    
+    /*Removes the last recently used cache frame. Called by the ViewerCache*/
     void removeCachedFrame();
+    
+    /*clears out cached frames*/
     void clearCachedFrames(){_cached.clear();repaint();}
 
+    /*initialises the frame range displayed*/
+    void setFrameRange(int min,int max);
     
-    void setFrameRange(int min,int max,bool initBoundaries=true){
-        _minimum=min;
-        _maximum=max;
-        if(initBoundaries){
-            _first=min;
-            _last=max;
-        }
-        if((_maximum - _minimum)==0){
-            _minimum = 0;
-            _maximum = 100;
-            _first =0;
-            _last=0;
-            _current = 0;
-        }else{
-            
-            _current=min;
-        }
-        updateScale();
-    }
+    /*initialises the boundaries on the timeline*/
+    void setBoundaries(int first,int last);
+    
     int firstFrame() const{return _first;}
     int lastFrame() const{return _last;}
     int currentFrame() const{return _current;}

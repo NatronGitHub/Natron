@@ -100,9 +100,7 @@ public:
     std::string removePrefixSpaces(std::string str);
     std::string getNextWord(std::string str);
 	
-    /*set pointer to the controler*/
-    void postInitialisation();
-
+  
 	/*Create a new node internally*/
     UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
 

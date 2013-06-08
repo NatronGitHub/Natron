@@ -12,11 +12,12 @@ class OperatorNode_ui : public NodeGui
 public:
     OperatorNode_ui(NodeGraph* dag,QVBoxLayout* dockContainer,
                     Node *node,qreal x, qreal y,QGraphicsItem* parent=0,QGraphicsScene* sc=0);
-     bool hasOutput(){return true;}
      QRectF boundingRect() const{return NodeGui::boundingRect();}
      void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
          NodeGui::paint(painter,options,parent);
      }
+    
+virtual bool hasOutput(){return true;}
 };
 
 #endif // OPERATORNODE_UI_H

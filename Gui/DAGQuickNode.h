@@ -6,7 +6,7 @@
 #ifndef SMARTINPUTDIALOG_H
 #define SMARTINPUTDIALOG_H
 
-#include <QtWidgets/QFrame>
+#include <QtWidgets/QDialog>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QComboBox>
@@ -17,12 +17,12 @@
 #include <QtGui/QKeyEvent>
 class NodeGraph;
 class Controler;
-class SmartInputDialog:public QFrame
+class SmartInputDialog:public QDialog
 {
 Q_OBJECT
 
 public:
-    SmartInputDialog(NodeGraph* graph, QWidget *parent=0);
+    SmartInputDialog(NodeGraph* graph);
     virtual ~SmartInputDialog(){}
     void keyPressEvent(QKeyEvent *e);
     bool eventFilter(QObject * obj, QEvent * e);

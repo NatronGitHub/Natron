@@ -425,3 +425,16 @@ void TimeSlider::removeCachedFrame(){
     _cached.erase(_cached.begin());
    // repaint();
 }
+
+void TimeSlider::setFrameRange(int min,int max){
+    _minimum=min;
+    _maximum=max;
+    updateScale();
+}
+/*initialises the boundaries on the timeline*/
+void TimeSlider::setBoundaries(int first,int last){
+    _first = first;
+    _last = last;
+    repaint();
+}
+

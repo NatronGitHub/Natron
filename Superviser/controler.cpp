@@ -19,7 +19,6 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
     _gui=new Gui();
 
     _gui->createGui();
-	model->postInitialisation();
     loadingScreen->hide();
 
 #ifdef __POWITER_OSX__

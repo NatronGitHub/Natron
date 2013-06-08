@@ -8,40 +8,40 @@
 #include "Core/model.h"
 
 using namespace std;
-Settings::Caching::Caching(){
+Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;
     maxDiskCache = 9000000000;
     maxTextureCache = 256000000;
 }
 
-Settings::Viewer::Viewer(){
+Settings::ViewerSettings::ViewerSettings(){
     byte_mode=1;
     stereo_mode=false;
 }
 
-Settings::General::General(){
+Settings::GeneralSettings::GeneralSettings(){
     
 }
 
 
-Settings::Readers::Readers(){
+Settings::ReadersSettings::ReadersSettings(){
     
 }
 
 /*changes the decoder for files identified by the filetype*/
-void Settings::Readers::changeMapping(std::string filetype,PluginID* decoder){
+void Settings::ReadersSettings::changeMapping(std::string filetype,PluginID* decoder){
     _fileTypesMap.insert(make_pair(filetype, decoder));
 }
 
 /*use to initialise default mapping*/
-void Settings::Readers::fillMap(std::map<std::string,PluginID*>& defaultMap){
+void Settings::ReadersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
     for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();it++){
         _fileTypesMap.insert(*it);
     }
 }
 
-PluginID* Settings::Readers::decoderForFiletype(std::string type){
+PluginID* Settings::ReadersSettings::decoderForFiletype(std::string type){
     std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
     if (found!=_fileTypesMap.end()) {
         return found->second;

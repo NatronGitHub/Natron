@@ -23,31 +23,31 @@ public:
 
     Settings():_cacheSettings(),_viewerSettings(),_generalSettings(),_readersSettings(){}
         
-    class Caching{
+    class CachingSettings{
     public:
         double maxCacheMemoryPercent ; // percentage of the total  RAM
         double maxPlayBackMemoryPercent; //percentage of maxCacheMemoryPercent
         U64 maxDiskCache ; // total size of disk space used
         U64 maxTextureCache; //total size of the texture cache
         
-        Caching();
+        CachingSettings();
     };
-    class Viewer{
+    class ViewerSettings{
     public:
         float byte_mode;
         bool stereo_mode;
         
-        Viewer();
+        ViewerSettings();
     };
-    class General{
+    class GeneralSettings{
     public:
         
-        General();
+        GeneralSettings();
     };
-    class Readers{
+    class ReadersSettings{
     public:
         
-        Readers();
+        ReadersSettings();
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
@@ -64,10 +64,10 @@ public:
     };
     
     
-    Caching _cacheSettings;
-    Viewer _viewerSettings;
-    General _generalSettings;
-    Readers _readersSettings;
+    CachingSettings _cacheSettings;
+    ViewerSettings _viewerSettings;
+    GeneralSettings _generalSettings;
+    ReadersSettings _readersSettings;
     
 };
 

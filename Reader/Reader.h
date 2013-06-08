@@ -15,6 +15,29 @@
  to decode a certain image format.
 */
 using namespace Powiter_Enums;
+
+
+/*special ReaderInfo deriving node Infos. This class add just a file name
+ to a frame, it is used internally to find frames in the buffer.*/
+class ReaderInfo : public Node::Info{
+public:
+    ReaderInfo():Node::Info(){}
+    virtual ~ReaderInfo(){}
+    
+    void setCurrentFrameName(std::string str){_currentFrameName = str;}
+    std::string getCurrentFrameName(){return _currentFrameName;}
+    
+    void operator=(const ReaderInfo& other){
+        dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
+        _currentFrameName = other._currentFrameName;
+    }
+    
+    
+private:
+    std::string _currentFrameName;
+};
+
+
 class ViewerGL;
 class Read;
 class ViewerCache;
@@ -22,6 +45,8 @@ class Reader : public InputNode
 {
     
 public:
+        
+    
     /*Internal enum used to determine whether we need to open both views from
      * files that support stereo( e.g : OpenEXR multiview files)*/
     enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE,DO_NOT_DECODE};
@@ -71,22 +96,21 @@ public:
         /*This class represents a frame residing in the buffer.*/
         class DecodedFrameDescriptor{
         public:
-            DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,
-                                   ReaderInfo* frameInfo,const char* cachedFrame,
+            DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,ReaderInfo* readInfo,const char* cachedFrame,
                                    QFutureWatcher<const char*>* cacheWatcher,std::string filename,
                                    ScanLineContext *slContext = 0):
-            _asynchTask(asynchTask),_readHandle(readHandle),_frameInfo(frameInfo),_cachedFrame(cachedFrame),
+            _asynchTask(asynchTask),_readHandle(readHandle),_readInfo(readInfo),_cachedFrame(cachedFrame),
             _cacheWatcher(cacheWatcher),_filename(filename),_slContext(slContext)
             {}
-            DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_frameInfo(0),_cachedFrame(0),_cacheWatcher(0)
-            ,_filename(""),_slContext(0){}
+            DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_cachedFrame(0),_cacheWatcher(0)
+            ,_filename(""),_slContext(0),_readInfo(0){}
             DecodedFrameDescriptor(const DecodedFrameDescriptor& other):
-            _asynchTask(other._asynchTask),_readHandle(other._readHandle),_frameInfo(other._frameInfo),
+            _asynchTask(other._asynchTask),_readHandle(other._readHandle),_readInfo(other._readInfo),
             _cachedFrame(other._cachedFrame),_cacheWatcher(other._cacheWatcher),_filename(other._filename),
             _slContext(other._slContext)
             {}
             
-            bool isEmpty(){return !_asynchTask && !_readHandle && !_frameInfo && !_cachedFrame &&
+            bool isEmpty(){return !_asynchTask && !_readHandle && !_cachedFrame &&
                 !_cacheWatcher && !_slContext && _filename.empty();}
             
             /*This member is not 0 if the decoding for the frame was done in an asynchronous manner
@@ -97,9 +121,9 @@ public:
              Read handle that operated/is operating the decoding.*/
             Read* _readHandle;
             
-            /*The info of the frame (i.e: dataWindow,displayWindow,channels, etc...).Maybe 0
-             if the decoding is asynchronous and the task is not finished yet.*/
-            ReaderInfo* _frameInfo;
+            /*info read from the Read*. It is directly accessible here as cached frame
+             do not have a read handle.*/
+            ReaderInfo* _readInfo;
             
             /*A pointer to the frame data if it comes from the diskCache. Otherwise 0.*/
             const char* _cachedFrame;
@@ -124,10 +148,10 @@ public:
         
         Buffer():_bufferSize(2){}
         ~Buffer(){clear();}
-        Reader::Buffer::DecodedFrameDescriptor insert(QString filename,
+        Reader::Buffer::DecodedFrameDescriptor insert(std::string filename,
                                                       QFuture<void> *future,
-                                                      ReaderInfo* info,
                                                       Read* readHandle,
+                                                      ReaderInfo* readInfo,
                                                       const char* cachedFrame,
                                                       ScanLineContext *slContext = 0,
                                                       QFutureWatcher<const char*>* cacheWatcher=NULL);
@@ -149,17 +173,13 @@ public:
         int _bufferSize; // maximum size of the buffer
     };
     
-    Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache);
+    Reader(Node* node,ViewerCache* cache);
     Reader(Reader& ref);
 
     void showFilePreview();
     void getVideoSequenceFromFilesList();
 	bool hasFrames(){return fileNameList.size()>0;}
-	void incrementCurrentFrameIndex();
-    void decrementCurrentFrameIndex();
-    void seekFirstFrame();
-    void seekLastFrame();
-    void randomFrame(int f);
+
     
     /*Chooses the appropriate Read* to open the file named by filename.
      *If mode is stereo, it will try to open frames as stereo if the Read* supports stereo.
@@ -195,9 +215,9 @@ public:
     
     int firstFrame();
 	int lastFrame();
-    int currentFrame();
-	int frame(){return current_frame;}
-    std::string getCurrentFrameName();
+    
+    int clampToRange(int f);
+    
     std::string getRandomFrameName(int f);
 	bool hasPreview(){return has_preview;}
 	void hasPreview(bool b){has_preview=b;}
@@ -209,6 +229,8 @@ public:
     virtual std::string description();
 
 	File_Type fileType(){return filetype;}
+    
+    virtual void _validate(bool forReal);
 	
 	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
     
@@ -232,9 +254,7 @@ public:
     /*Returns false if it couldn't find the current frame in the buffer or if
      * the frame is not finished*/
     bool makeCurrentDecodedFrame();
-    
-    void removeCurrentFrameFromBuffer();
-    
+     
     void removeCachedFramesFromBuffer();
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
@@ -251,11 +271,9 @@ private:
     bool _fitFrameToViewer;
 	Read* readHandle;
 	File_Type filetype;
-	ViewerGL* ui_context;
     ViewerCache* _cache;
     int _pboIndex;
     std::map<int,QString> files; // frames
-    int current_frame;
     Buffer _buffer;
 };
 

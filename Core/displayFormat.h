@@ -24,7 +24,7 @@ public:
     Format();
     virtual ~Format(){}
     std::string name() const ;
-    void name(std::string n){this->_name = n;}
+    void name(std::string n) const{this->_name = n;}
     const double pixel_aspect() const;
     void pixel_aspect( float p) ;
 	
@@ -44,7 +44,7 @@ public:
     
 private:
 	double _pixel_aspect;
-    std::string _name;
+    mutable std::string _name;
 };
 
 

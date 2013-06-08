@@ -79,80 +79,81 @@ public:
             }
             _cur = Channel_black;
         }
-bool operator==(const iterator& other){
-    return _mask==other._mask && _cur==other._cur;
-}
-bool operator!=(const iterator& other){
-    return _mask!=other._mask || _cur!=other._cur;
-}
-};
-typedef iterator const_iterator;
-
-
-ChannelSet() : mask(0),_size(0) {}
-ChannelSet(const ChannelSet &source);
-ChannelSet(ChannelSetInit v);
-ChannelSet(Channel v) : _size(1) {mask = v;}
-~ChannelSet() {}
-const ChannelSet& operator=(const ChannelSet& source);
-const ChannelSet& operator=(ChannelSetInit source) ;
-const ChannelSet& operator=(Channel z);
-
-void clear() { mask = 0; _size = 0;}
-operator bool() const { return mask ; }// allow to do stuff like if(channelsA & channelsB)
-bool empty() const { return !mask; }
-
-bool operator==(const ChannelSet& source) const;
-bool operator!=(const ChannelSet& source) const { return !(*this == source); }
-bool operator<(const ChannelSet& source) const;
-bool operator==(ChannelSetInit v) const { return mask == U32(v); }
-bool operator!=(ChannelSetInit v) const { return !(*this == v); }
-bool operator==(Channel z) const;
-bool operator!=(Channel z) const { return !(*this == z); }
-
-/*add a channel with +=*/
-void operator+=(const ChannelSet& source);
-void operator+=(ChannelSetInit source);
-void operator+=(Channel z);
-void insert(Channel z) { *this += z; }
-
-/*turn off a channel with -=*/
-void operator-=(const ChannelSet& source);
-void operator-=(ChannelSetInit source);
-void operator-=(Channel z);
-void erase(Channel z) { *this -= z; }
-
-void operator&=(const ChannelSet& source);
-void operator&=(ChannelSetInit source) ;
-void operator&=(Channel z);
-
-
-ChannelSet operator&(const ChannelSet& c) const;
-ChannelSet operator&(ChannelSetInit c) const;
-ChannelSet operator&(Channel z) const;
-bool contains(const ChannelSet& source) const;
-bool contains(ChannelSetInit source) const { return !(~mask & source); }
-bool contains(Channel z) const;
-unsigned size() const;
-Channel first() const;
-Channel next(Channel k) const;
-Channel last() const;
-Channel previous(Channel k) const;
-
-U32 value() const {return mask;}
-
-iterator begin(){return iterator(mask,first());}
-
-iterator end(){
-    Channel _last = this->last();
-    return iterator(mask,(Channel)(_last+1));
-}
-
-
+        bool operator==(const iterator& other){
+            return _mask==other._mask && _cur==other._cur;
+        }
+        bool operator!=(const iterator& other){
+            return _mask!=other._mask || _cur!=other._cur;
+        }
+    };
+    typedef iterator const_iterator;
+    
+    
+    ChannelSet() : mask(0),_size(0) {}
+    ChannelSet(const ChannelSet &source);
+    ChannelSet(ChannelSetInit v);
+    ChannelSet(Channel v) : _size(1) {mask = v;}
+    ~ChannelSet() {}
+    const ChannelSet& operator=(const ChannelSet& source);
+    const ChannelSet& operator=(ChannelSetInit source) ;
+    const ChannelSet& operator=(Channel z);
+    
+    void clear() { mask = 0; _size = 0;}
+    operator bool() const { return mask ; }// allow to do stuff like if(channelsA & channelsB)
+    bool empty() const { return !mask; }
+    
+    bool operator==(const ChannelSet& source) const;
+    bool operator!=(const ChannelSet& source) const { return !(*this == source); }
+    bool operator<(const ChannelSet& source) const;
+    bool operator==(ChannelSetInit v) const { return mask == U32(v); }
+    bool operator!=(ChannelSetInit v) const { return !(*this == v); }
+    bool operator==(Channel z) const;
+    bool operator!=(Channel z) const { return !(*this == z); }
+    
+    /*add a channel with +=*/
+    void operator+=(const ChannelSet& source);
+    void operator+=(ChannelSetInit source);
+    void operator+=(Channel z);
+    void insert(Channel z) { *this += z; }
+    
+    /*turn off a channel with -=*/
+    void operator-=(const ChannelSet& source);
+    void operator-=(ChannelSetInit source);
+    void operator-=(Channel z);
+    void erase(Channel z) { *this -= z; }
+    
+    void operator&=(const ChannelSet& source);
+    void operator&=(ChannelSetInit source) ;
+    void operator&=(Channel z);
+    
+    
+    ChannelSet operator&(const ChannelSet& c) const;
+    ChannelSet operator&(ChannelSetInit c) const;
+    ChannelSet operator&(Channel z) const;
+    bool contains(const ChannelSet& source) const;
+    bool contains(ChannelSetInit source) const { return !(~mask & source); }
+    bool contains(Channel z) const;
+    unsigned size() const;
+    Channel first() const;
+    Channel next(Channel k) const;
+    Channel last() const;
+    Channel previous(Channel k) const;
+    
+    U32 value() const {return mask;}
+    
+    iterator begin(){return iterator(mask,first());}
+    
+    iterator end(){
+        Channel _last = this->last();
+        return iterator(mask,(Channel)(_last+1));
+    }
+    void printOut();
+    
 #define foreachChannels(CUR, CHANNELS) \
-for (Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))
+    for (Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))
 
-};
+
+        };
 typedef ChannelSet ChannelMask;
 
 

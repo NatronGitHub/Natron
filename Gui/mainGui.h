@@ -15,7 +15,7 @@
 
 using namespace Powiter_Enums;
 class QAction;
-class QTabWidget;
+class TabWidget;
 class Controler;
 class QDockWidget;
 class QScrollArea;
@@ -39,11 +39,36 @@ public:
     virtual ~Gui();
 	
 
-  
+    
     void createGui();
     void createNodeGUI(UI_NODE_TYPE type,Node *node,double x,double y);
     bool eventFilter(QObject *target, QEvent *event);
 
+    ViewerTab* getCurrentViewerTab(){return _currentViewerTab;}
+    
+        
+    void makeCurrentViewerTab(ViewerTab* tab);
+    
+    void makeNoCurrentViewerTab();
+    
+    void addViewerTab();
+    
+    void removeViewerTab(ViewerTab* tab);
+
+    
+    
+public slots:
+    void makeCurrentViewerTab(int i){
+        if(i < _viewerTabs.size())
+            makeCurrentViewerTab(_viewerTabs[i]);
+    }
+    void removeViewerTab(int i){
+        if(i < _viewerTabs.size())
+            removeViewerTab(_viewerTabs[i]);
+    }
+    
+
+    
 protected:
     virtual void keyPressEvent(QKeyEvent* e);
     
@@ -51,6 +76,7 @@ private:
 
     TextureCache* _textureCache;
 
+    ViewerTab* _currentViewerTab;
     
     void clearTextureCache();
 
@@ -88,12 +114,12 @@ public:
 	/*VIEWERS*/
 	//======================
     
-    QTabWidget *viewersTabContainer;
-    ViewerTab *viewer_tab;
+    TabWidget *viewersTabContainer;
+    std::vector<ViewerTab*> _viewerTabs;
     
     /*GRAPH*/
     //======================
-    QTabWidget *WorkShop;
+    TabWidget *WorkShop;
     QWidget *GraphEditor;
     QVBoxLayout *verticalLayout_3;
     QGraphicsScene* graph_scene;

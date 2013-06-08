@@ -17,10 +17,14 @@
 #include "Core/mappedfile.h"
 #include "Gui/mainGui.h"
 #include "Gui/timeline.h"
+#include "Reader/Reader.h"
+
 using namespace std;
 using Powiter_Enums::MMAPfile_mode;
 
-ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxCacheSize,qint64 maxRamSize) : cacheSize(0),MAX_VIEWER_CACHE_SIZE(maxCacheSize),MAX_RAM_CACHE(maxRamSize)
+#define gl_viewer currentViewer->viewer
+
+ViewerCache::ViewerCache(qint64 maxCacheSize,qint64 maxRamSize) : cacheSize(0),MAX_VIEWER_CACHE_SIZE(maxCacheSize),MAX_RAM_CACHE(maxRamSize)
 {
     QDir root(ROOT);
     QStringList entries = root.entryList();
@@ -36,8 +40,6 @@ ViewerCache::ViewerCache(ViewerGL* gl_viewer,qint64 maxCacheSize,qint64 maxRamSi
         root.setCurrent(ROOT"Cache");
         root.mkdir("ViewerCache");
     }
-    
-    this->gl_viewer = gl_viewer;
     
     restoreCache();
     
@@ -71,12 +73,16 @@ ViewerCache::~ViewerCache(){
     
 }
 
+ViewerCache::FrameID::FrameID():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualH(0),_actualW(0){
+    _frameInfo = new ReaderInfo;
+}
+
 ViewerCache::FrameID::FrameID(float zoom,float exp,float lut,int rank,U64 treeVers,
                               std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH):
 _zoom(zoom), _exposure(exp),_lut(lut),_rank(rank),_treeVers(treeVers),
 _cacheIndex(cacheIndex),_byteMode(byteMode),_actualW(actualW),_actualH(actualH){
     _frameInfo = new ReaderInfo;
-    _frameInfo->copy(info);
+    *_frameInfo = *info;
 }
 
 ViewerCache::FrameID::FrameID(const ViewerCache::FrameID& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
@@ -84,9 +90,39 @@ _rank(other._rank),_treeVers(other._treeVers),
 _cacheIndex(other._cacheIndex),_byteMode(other._byteMode),_actualW(other._actualW),_actualH(other._actualH)
 {
     _frameInfo = new ReaderInfo;
-    _frameInfo->copy(other._frameInfo);
+    *_frameInfo = *other._frameInfo;
 }
 
+ViewerCache::FrameID::~FrameID(){
+    delete _frameInfo;
+}
+
+
+void ViewerCache::FrameID::operator=(const FrameID& other){
+    _exposure=other._exposure;
+    _lut = other._lut;
+    _rank = other._rank;
+    _zoom = other._zoom;
+    _treeVers = other._treeVers;
+    *_frameInfo = *other._frameInfo;
+    _actualW = other._actualW;
+    _actualH = other._actualH;
+    _cacheIndex=other._cacheIndex;
+    _byteMode=other._byteMode;
+}
+
+bool ViewerCache::FrameID::operator==(const FrameID& other){
+    return _exposure == other._exposure &&
+    _lut == other._lut &&
+    _zoom == other._zoom &&
+    _treeVers == other._treeVers &&
+    _byteMode == other._byteMode &&
+    _frameInfo->channels() == other._frameInfo->channels() &&
+    _frameInfo->getDataWindow() == other._frameInfo->getDataWindow() &&
+    _frameInfo->getDisplayWindow() == other._frameInfo->getDisplayWindow() &&
+    _frameInfo->getCurrentFrameName() == other._frameInfo->getCurrentFrameName() &&
+    _actualH == other._actualH &&
+    _actualW == other._actualW;}
 
 
 
@@ -98,19 +134,19 @@ void ViewerCache::saveCache(){
     ViewerCache::FramesIterator it = _frames.begin();
     for(;it!=_frames.end();it++){
         FrameID frame(it->second);
-        std::string filename = frame._frameInfo->currentFrameName().toStdString();
+        std::string filename = frame._frameInfo->getCurrentFrameName();
         out <<  filename.c_str() << " " << frame._zoom << " " << frame._exposure << " " << frame._lut << " "
         << frame._rank << " " <<  frame._treeVers << " "<<  frame._cacheIndex.c_str() ;
         out << " " << frame._byteMode << " ";
         out << frame._actualW << " " << frame._actualH << " ";
-        ChannelSet channels = frame._frameInfo->channels();
+        const ChannelSet &channels = frame._frameInfo->channels();
         foreachChannels(z, channels){
             out << getChannelName(z).c_str() << "|";
         }
-        out << " " << frame._frameInfo->currentFrame() << " " << frame._frameInfo->firstFrame() << " "
+        out << " " << frame._frameInfo->firstFrame() << " "
         << frame._frameInfo->lastFrame() << " ";
-        Format format = frame._frameInfo->displayWindow();
-        Box2D bbox = frame._frameInfo->dataWindow();
+        const Format &format = frame._frameInfo->getDisplayWindow();
+        const Box2D &bbox = frame._frameInfo->getDataWindow();
         out << format.x() << " " << format.y() << " " << format.right() << " " << format.top() <<" " <<format.pixel_aspect() <<  " ";
         out << bbox.x() << " " << bbox.y() << " " << bbox.right() << " " << bbox.top() << " ";
         out << "\n";
@@ -140,7 +176,7 @@ void ViewerCache::restoreCache(){
                 QString zoomStr,expStr,lutStr,rankStr,treeVers,cacheIndexStr,fileNameStr,channelsStr;
                 QString formatX,formatY,formatR,formatT,formatAP;
                 QString bboxX,bboxY,bboxR,bboxT;
-                QString byteModeStr,currentFrameStr,firstFrameStr,lastFrameStr;
+                QString byteModeStr,firstFrameStr,lastFrameStr;
                 QString actualWStr,actualHStr;
                 while(line.at(i)!=QChar(' ')) {fileNameStr.append(line.at(i));i++;}
                 i++;
@@ -163,8 +199,6 @@ void ViewerCache::restoreCache(){
                 while(line.at(i)!=QChar(' ')) {actualHStr.append(line.at(i));i++;}
                 i++;
                 while(line.at(i)!=QChar(' ')) {channelsStr.append(line.at(i));i++;}
-                i++;
-                while(line.at(i)!=QChar(' ')) {currentFrameStr.append(line.at(i));i++;}
                 i++;
                 while(line.at(i)!=QChar(' ')) {firstFrameStr.append(line.at(i));i++;}
                 i++;
@@ -222,8 +256,13 @@ void ViewerCache::restoreCache(){
                 int actualH = actualHStr.toInt();
                 Format format(formatX.toInt(),formatY.toInt(),formatR.toInt(),formatT.toInt(),"",formatAP.toDouble());
                 Box2D bbox(bboxX.toInt(),bboxY.toInt(),bboxR.toInt(),bboxT.toInt());
-                ReaderInfo* infos = new ReaderInfo(format,bbox,fileNameStr,channels,
-                                                   -1,true,currentFrameStr.toInt(),firstFrameStr.toInt(),lastFrameStr.toInt());
+                ReaderInfo* infos = new ReaderInfo;
+                infos->set(bbox);
+                infos->setDisplayWindow(format);
+                infos->firstFrame(firstFrameStr.toInt());
+                infos->lastFrame(lastFrameStr.toInt());
+                infos->set_channels(channels);
+                infos->setCurrentFrameName(fileNameStr.toStdString());
                 ViewerCache::FrameID _id( zoom , exposure  , lut,
                                          rank,treeHash,_cachedIndex,byteMode,infos,actualW,actualH);
                 _frames.insert(make_pair(fileName,_id));
@@ -320,9 +359,7 @@ std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string fi
                                                                   float zoomFactor,
                                                                   float exposure,
                                                                   float lut,
-                                                                  float byteMode,
-                                                                  Format format,
-                                                                  Box2D bbox){
+                                                                  float byteMode){
 
     pair< ViewerCache::FramesIterator,ViewerCache::FramesIterator> range = _frames.equal_range(filename);
     for(ViewerCache::FramesIterator it=range.first;it!=range.second;it++){
@@ -330,9 +367,7 @@ std::pair<ViewerCache::FramesIterator,bool> ViewerCache::isCached(std::string fi
            (it->second._exposure == exposure) &&
            (it->second._lut == lut) &&
            (it->second._treeVers== treeVersion) &&
-           (it->second._byteMode == byteMode) &&
-           (it->second._frameInfo->dataWindow() == bbox) &&
-           (it->second._frameInfo->displayWindow() == format)){
+           (it->second._byteMode == byteMode)){
             return make_pair(it,true);
         }
     }
@@ -358,7 +393,7 @@ void ViewerCache::appendFrame(ViewerCache::FrameID _info){
             ritFrames++;
         }
     }
-    _frames.insert(make_pair(_info._frameInfo->currentFrameName().toStdString(), _info));
+    _frames.insert(make_pair(_info._frameInfo->getCurrentFrameName(), _info));
     _rankMap.insert(make_pair(_info._rank,_info));
     
 }
@@ -393,7 +428,7 @@ const char* ViewerCache::retrieveFrame(int frameNb,ViewerCache::FramesIterator i
         _playbackCacheSize += dataSize;
         
         // also adding the feedback on the timeline for this frame
-       ctrlPTR->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNb);
+       currentViewer->frameSeeker->addCachedFrame(frameNb);
         
     }
     
@@ -464,8 +499,8 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
     name.append(".cache");
     newCacheBlockIndex++;
     ReaderInfo* frameInfo = new ReaderInfo;
-    frameInfo->copy(gl_viewer->getCurrentReaderInfo());
-    frameInfo->currentFrameName(QString::fromStdString(filename));
+    dynamic_cast<Node::Info&>(*frameInfo) = dynamic_cast<Node::Info&>(*gl_viewer->getCurrentViewerInfos());
+    frameInfo->setCurrentFrameName(filename);
     ViewerCache::FrameID _info(gl_viewer->getZoomFactor(),gl_viewer->exposure,
                                gl_viewer->_lut,0,treeVers,name,gl_viewer->_byteMode,
                                frameInfo,width,height);
@@ -489,13 +524,13 @@ std::pair<char*,ViewerCache::FrameID> ViewerCache::mapNewFrame(int frameNB,
     _playbackCache.push_back(make_pair(_info,mf));
     
     // also adding feedback on the timeline for this frame
-    ctrlPTR->getGui()->viewer_tab->frameSeeker->addCachedFrame(frameNB);
+    currentViewer->frameSeeker->addCachedFrame(frameNB);
     
     return make_pair(mf->data(),_info);
 }
 void ViewerCache::closeMappedFile(){
     vector<pair<ViewerCache::FrameID,MMAPfile*> >::iterator it = _playbackCache.begin();
-    ctrlPTR->getGui()->viewer_tab->frameSeeker->removeCachedFrame();
+    currentViewer->frameSeeker->removeCachedFrame();
     MMAPfile* mf =  it->second;
     _playbackCacheSize-=mf->size();
     mf->close();
@@ -510,7 +545,7 @@ void ViewerCache::clearPlayBackCache(){
         _playbackCache[i].second->close();
         delete _playbackCache[i].second;
     }
-    ctrlPTR->getGui()->viewer_tab->frameSeeker->clearCachedFrames();
+    currentViewer->frameSeeker->clearCachedFrames();
     _playbackCache.clear();
     _playbackCacheSize = 0;
 }

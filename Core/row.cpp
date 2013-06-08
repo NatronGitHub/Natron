@@ -5,6 +5,7 @@
 //  contact: immarespond at gmail dot com
 #include "Core/row.h"
 #include "Core/node.h"
+#include <algorithm>
 
 Row::Row(){
     _cached = false;
@@ -76,8 +77,10 @@ void Row::copy(const Row *source,ChannelSet channels,int o,int r){
     }
 }
 void Row::erase(Channel c){
-    if(buffers[c])
+    if(buffers[c]){
         memset(buffers[c], 0, sizeof(float)*(r-x));
+     //   std::fill_n(buffers[c],(r-x),0); // < safer, but not needed
+    }
 }
 
 

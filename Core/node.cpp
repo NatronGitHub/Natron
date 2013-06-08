@@ -61,13 +61,13 @@ ostream& operator<< (ostream &out, Node &node){
         out << getChannelName(z) << "\t";
     }
     out << endl;
-//    out << "------------------------------" << endl;
-//    out << "Rows contained in cache:\t";
-//    std::map<int,Row*>::iterator it;
-//    for( it = node.get_row_cache().begin(); it != node.get_row_cache().end();it++){
-//        out << (*it).first << " ";
-//    }
-//    out << endl;
+    //    out << "------------------------------" << endl;
+    //    out << "Rows contained in cache:\t";
+    //    std::map<int,Row*>::iterator it;
+    //    for( it = node.get_row_cache().begin(); it != node.get_row_cache().end();it++){
+    //        out << (*it).first << " ";
+    //    }
+    //    out << endl;
     out << "------------------------------" << endl;
     return out;
 }
@@ -87,31 +87,44 @@ void Node::Info::turnOffChannels(ChannelMask &m){
 	_channels-=m;
 }
 
-void Node::copy_info(){
-	Node* parent=_parents[0];
+void Node::copy_info(Node* parent,bool forReal){
+	parent->validate(forReal);
+    clear_info();
+    const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());
 	_info->firstFrame(parent->getInfo()->firstFrame());
 	_info->lastFrame(parent->getInfo()->lastFrame());
 	_info->setYdirection(parent->getInfo()->getYdirection());
 	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
 	_info->set_channels(parent->getInfo()->channels());
-	_info->merge(*(parent->getInfo()));
+    if(_info->hasBeenModified()){
+        _info->merge(*(parent->getInfo()));
+    }else{
+        _info->x(bboxParent->x());
+        _info->y(bboxParent->y());
+        _info->top(bboxParent->top());
+        _info->right(bboxParent->right());
+    }
     _info->rgbMode(parent->getInfo()->rgbMode());
 }
 void Node::clear_info(){
-	_info->firstFrame(-1);
-	_info->lastFrame(-1);
-	_info->setYdirection(0);
-	_info->set_channels(Mask_None);
-    _info->x(0);
-    _info->y(0);
-    _info->right(0);
-    _info->top(0);
+	_info->reset();
     _requestedChannels=Mask_None;
     _requestedBox.set(0, 0, 0, 0);
-
+    
 }
-void Node::merge_info(){
-	
+void Node::Info::reset(){
+    _firstFrame = -1;
+    _lastFrame = -1;
+    _ydirection = 0;
+    _channels = Mask_None;
+    set(0, 0, 0, 0);
+    _modified = false;
+}
+
+void Node::merge_info(bool forReal){
+	foreach(Node* parent,_parents){
+		parent->validate(forReal);
+	}
 	int final_direction=0;
 	Node* first=_parents[0];
 	Format expectedFormat=first->getInfo()->getDisplayWindow();
@@ -135,41 +148,52 @@ void Node::merge_info(){
 }
 void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
 	
-		if (otherFirstFrame<_info->firstFrame())
-		{
-			_info->firstFrame(otherFirstFrame);
-		}
-		if(otherLastFrame>_info->lastFrame()){
-			_info->lastFrame(otherLastFrame);
-		}
+    if (otherFirstFrame<_info->firstFrame())
+    {
+        _info->firstFrame(otherFirstFrame);
+    }
+    if(otherLastFrame>_info->lastFrame()){
+        _info->lastFrame(otherLastFrame);
+    }
 	
 }
 bool Node::Info::operator==( Node::Info &other){
 	if(other.channels()==this->channels() &&
-		other.firstFrame()==this->_firstFrame &&
-		other.lastFrame()==this->_lastFrame &&
-		other.getYdirection()==this->_ydirection &&
-		other.getDisplayWindow()==this->_displayWindow
-		){
-			return true;
+       other.firstFrame()==this->_firstFrame &&
+       other.lastFrame()==this->_lastFrame &&
+       other.getYdirection()==this->_ydirection &&
+       other.getDisplayWindow()==this->_displayWindow
+       ){
+        return true;
 	}else{
 		return false;
 	}
-
+    
+}
+void Node::Info::operator=(const Node::Info &other){
+    _channels = other._channels;
+    _firstFrame = other._firstFrame;
+    _lastFrame = other._lastFrame;
+    _displayWindow = other._displayWindow;
+    setYdirection(other._ydirection);
+    set(other);
+    rgbMode(other._rgbMode);
+    _blackOutside = other._blackOutside;
 }
 
 
 
 Node::Node(const Node& ref):_parents(ref._parents),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
-    _mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
-    _freeSocketCount(ref._freeSocketCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
+_mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
+_freeSocketCount(ref._freeSocketCount),_outputChannels(ref._outputChannels),_requestedBox(ref._requestedBox),_requestedChannels(ref._requestedChannels),_marked(ref._marked){}
 
 Node::Node(Node* ptr){
     _marked = false;
     _info = new Info;
     _hashValue=new Hash();
 	_requestedChannels=Mask_None;
-
+    _outputChannels = Mask_All;
+    
 }
 Hash* Node::getHash() const{return _hashValue;}
 
@@ -178,20 +202,19 @@ void Node::addToKnobVector(Knob* knob){_knobsVector.push_back(knob);}
 std::vector<Node*> Node::getParents() const {return _parents;}
 std::vector<Node*> Node::getChildren() const {return _children;}
 
-bool Node::hasOutput(){return true;}
 
 int Node::getFreeOutputCount() const{return _freeSocketCount;}
 
 void Node::addChild(Node* child){
-
+    
     _children.push_back(child);
 }
 void Node::addParent(Node* parent){
-
+    
     _parents.push_back(parent);
 }
 void Node::removeChild(Node* child){
-
+    
     int i=0;
     while(i<_children.size()){
         Node* c=_children[i];
@@ -200,14 +223,14 @@ void Node::removeChild(Node* child){
             _children[i]=_children[_children.size()-1];
             _children[_children.size()-1]=tmp;
             _children.pop_back();
-
+            
             break;
         }
         i++;
     }
 }
 void Node::removeParent(Node* parent){
-
+    
     int i=0;
     while(i<_parents.size()){
         Node* p=_parents[i];
@@ -216,7 +239,7 @@ void Node::removeParent(Node* parent){
             _parents[i]=_parents[_parents.size()-1];
             _parents[_parents.size()-1]=tmp;
             _parents.pop_back();
-
+            
             break;
         }
         i++;
@@ -225,12 +248,12 @@ void Node::removeParent(Node* parent){
 
 
 void Node::releaseSocket(){
-    if(hasOutput()){
+    if(!isOutputNode() && getFreeOutputCount() > 0){
         _freeSocketCount--;
     }
 }
 void Node::lockSocket(){
-    if(hasOutput()){
+    if(!isOutputNode()){
         _freeSocketCount++;
     }
 }
@@ -243,9 +266,17 @@ void Node::initializeInputs(){
     applyLabelsToInputs();
     
 }
-int Node::totalInputsCount(){return 1;}
+int Node::maximumInputs(){return 1;}
 
+int Node::minimumInputs(){return 1;}
 
+Node* Node::input(int index){
+    if((U32)index < _parents.size()){
+        return _parents[index];
+    }else{
+        return NULL;
+    }
+}
 
 const std::map<int, std::string>& Node::getInputLabels() const {return _inputLabelsMap;}
 
@@ -274,75 +305,53 @@ void Node::applyLabelsToInputs(){
 }
 void Node::initInputLabelsMap(){
     int i=0;
-    while(i<totalInputsCount()){
+    while(i<maximumInputs()){
         char str[2];
         str[0] =i+65;
         str[1]='\0';
         _inputLabelsMap[i]=str;
         i++;
     }
- 
+    
 }
 
 
 
 std::string Node::className(){return "Node_Abstract_Class";}
 
-void Node::validate(bool first_time){
-	/*_validate(bool for_real)
-		check intersection between requested and info,if
-		some channels are missing from info,it sets them to 0*/
-	if(first_time){
-		_validate(first_time);
-		first_time=false;
-	}
-
-
+void Node::validate(bool forReal){
+    _validate(forReal);
+    _nodeGUI->updateChannelsTooltip();
 }
-void Node::_validate(bool first_time){
-
-	foreach(Node* parent,_parents){
-		parent->validate(first_time);
-	}
+void Node::_validate(bool forReal){
+    
+	
 	if(_parents.size()==1){
-		copy_info();
+		copy_info(_parents[0],forReal);
 	}
 	else if(_parents.size()>1){
 		clear_info();
-		merge_info();
+		merge_info(forReal);
 	}
-    _nodeGUI->updateChannelsTooltip();
-	set_output_channels(Mask_All);
+    set_output_channels(Mask_All);
 
+    
 }
 
-void Node::request(int y,int top,int offset, int range,ChannelMask channels){
-	/*set_requested_channels
-		set_requested_box
-		validate
-		if(not in cache box(channels))
-			_request(channels,box)
-			setup cache*/
+void Node::request(ChannelMask channels){
+	
 	_requestedChannels += channels;
-	_requestedBox.merge(offset,y,range,top);
-	
-	validate(true);
-
-
-	_request(y,top,offset,range,_requestedChannels);
-	
+	_request(_requestedChannels);
 	
 }
-void Node::_request(int y,int top,int offset,int range,ChannelMask channels){
+void Node::_request(ChannelMask channels){
 	int i=0;
 	foreach(Node* parent,_parents){
 		in_channels(i,channels);
-		parent->request(y,top,offset,range,channels);
+		parent->request(channels);
 		++i;
 	}
 }
-
-void Node::engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
@@ -373,7 +382,7 @@ void Node::initKnobs(Knob_Callback *cb){
     cb->initNodeKnobsVector();
 }
 void Node::createKnobDynamically(){
-
+    
 	_knobsCB->createKnobDynamically();
 }
 

@@ -8,30 +8,20 @@
 #include "Core/node.h"
 
 
-class Model;
 class OutputNode : public Node
 {
 public:
 
-    OutputNode(OutputNode& ref):Node(ref){_currentFrame=-1;}
+    OutputNode(OutputNode& ref):Node(ref){}
     OutputNode(Node* node);
    
     virtual ~OutputNode(){}
     
-    virtual bool hasOutput(){return false;}
     virtual bool isOutputNode(){return true;}
     virtual void setSocketCount(){_freeSocketCount=0;}
-    virtual int totalInputsCount(){return 1;}
    
-	int currentFrame(){return _currentFrame;}
-	void currentFrame(int c){_currentFrame=c;}
-
-protected:
-    int _currentFrame;
-private:
-
-
-    
+    virtual int maximumInputs(){return 1;}
+    virtual int minimumInputs(){return 1;}
 
 
 };

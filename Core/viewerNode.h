@@ -1,26 +1,37 @@
 #ifndef VIEWERNODE_H
 #define VIEWERNODE_H
-#include <cmath>
-#include "Gui/viewerTab.h"
+
 //  Powiter
 //
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
+#include <cmath>
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
 
-
+class ViewerTab;
 class  Viewer: public OutputNode
 {
 public:
-    Viewer(Viewer& ref):OutputNode(ref){}
-    Viewer(Node* node,ViewerGL* v);
-
-
-    virtual ~Viewer(){}
+    /*class deriving Node::Info and used by the current viewer. 
+     This is essentially the same but it is left this way instead of
+     a typedef if we'd like to pass more infos in the future.*/
+    class ViewerInfos : public Node::Info{
+    public:
+        ViewerInfos():Node::Info(){}
+        virtual ~ViewerInfos(){}
+    };
     
-	ViewerGL* ui_context(){return _ui_context;}
+    Viewer(Viewer& ref):OutputNode(ref){}
+    Viewer(Node* node);
+
+    virtual ~Viewer();
+    
+    /*tell the ViewerGL to use the current viewerInfos*/
+    void makeCurrentViewer();
+    Viewer::ViewerInfos* getViewerInfos(){return _viewerInfos;}
+    
     virtual std::string className(){return "Viewer";}
     virtual std::string description();
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);
@@ -28,9 +39,10 @@ protected:
 	
 	
 private:
-    void _validate(bool for_real);
-    bool _firstTime;
-	ViewerGL* _ui_context;
+    virtual void _validate(bool forReal);
+    Viewer::ViewerInfos* _viewerInfos;
+	ViewerTab* _uiContext;
+    
 
 };
 

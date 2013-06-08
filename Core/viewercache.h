@@ -18,14 +18,9 @@
 
 #include "Core/hash.h"
 #include "Core/row.h"
-#include "Reader/readerInfo.h"
+#include "Core/displayFormat.h"
 
-
-
-
-
-
-
+class ReaderInfo;
 class VideoEngine;
 class ViewerGL;
 class MMAPfile;
@@ -38,7 +33,7 @@ class ViewerCache
     qint64 MAX_RAM_CACHE; // total ram cache space allowed
     qint64 newCacheBlockIndex; // the number in cache of the new frame
     qint64 cacheSize; // current cache size
-    ViewerGL* gl_viewer; // pointer to the viewer
+   
 public:
     
 	/*The class associated to a Frame in cache.
@@ -57,41 +52,15 @@ public:
         std::string _cacheIndex;
         float _byteMode;
         int _actualH,_actualW; // zoomed H&W
-        FrameID():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualH(0),_actualW(0){
-            _frameInfo = new ReaderInfo;
-        }
+        FrameID();
         FrameID(float zoom,float exp,float lut,int rank,U64 treeVers,
                 std::string cacheIndex,float byteMode,ReaderInfo* info,int actualW,int actualH);
         FrameID(const FrameID& other);
         
-        ~FrameID(){
-            delete _frameInfo;
-        }
-        void operator=(const FrameID& other){
-            _exposure=other._exposure;
-            _lut = other._lut;
-            _rank = other._rank;
-            _zoom = other._zoom;
-            _treeVers = other._treeVers;
-            _frameInfo->copy(other._frameInfo);
-            _actualW = other._actualW;
-            _actualH = other._actualH;
-            _cacheIndex=other._cacheIndex;
-            _byteMode=other._byteMode;
-        }
+        ~FrameID();
+        void operator=(const FrameID& other);
         
-        bool operator==(const FrameID& other){
-            return _exposure == other._exposure &&
-            _lut == other._lut &&
-            _zoom == other._zoom &&
-            _treeVers == other._treeVers &&
-            _byteMode == other._byteMode &&
-            _frameInfo->channels() == other._frameInfo->channels() &&
-            _frameInfo->dataWindow() == other._frameInfo->dataWindow() &&
-            _frameInfo->displayWindow() == other._frameInfo->displayWindow() &&
-            _frameInfo->currentFrameName() == other._frameInfo->currentFrameName() &&
-            _actualH == other._actualH &&
-            _actualW == other._actualW;}
+        bool operator==(const FrameID& other);
         
         
     };
@@ -142,9 +111,7 @@ public:
                                                          float zoomFactor,
                                                          float exposure,
                                                          float lut ,
-                                                         float byteMode,
-                                                         Format format,
-                                                         Box2D bbox);
+                                                         float byteMode);
     
     /*This is the function called to finilize caching once the frame has been written to the pointer
      returned by mapNew<Frame*/
@@ -165,7 +132,7 @@ public:
     
     void debugCache(bool verbose);
     
-    ViewerCache(ViewerGL* gl_viewer,qint64 maxDiskSize,qint64 maxRamSize);
+    ViewerCache(qint64 maxDiskSize,qint64 maxRamSize);
     
     ~ViewerCache();
 private:

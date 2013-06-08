@@ -61,7 +61,7 @@ void Knob::validateEvent(bool initViewer){
         //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(static_cast<OutputNode*>(viewer->getNode()));
-        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);
+        ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,initViewer,true,false);
     }
 }
 

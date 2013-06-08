@@ -4,7 +4,8 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include "Core/channels.h"
-
+#include <iostream>
+using namespace std;
 Channel getChannelByName(const char *name){
     if(strcmp(name,"Channel_unused")==0){
         return Channel_unused;
@@ -365,6 +366,12 @@ Channel ChannelSet::previous(Channel k) const{
     return Channel_black;
 }
 
+void ChannelSet::printOut(){
+    std::cout << "ChannelSet is ..." << std::endl;
+    for (Channel CUR = this->first(); CUR; CUR = this->next(CUR)){
+        std::cout << getChannelName(CUR) << endl;
+    }
+}
 
 bool hasAlpha(ChannelMask mask){
     return (mask & (1 << Channel_alpha));

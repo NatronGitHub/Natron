@@ -39,6 +39,8 @@ public:
 
     virtual void keyPressEvent(QKeyEvent *e);
     
+    virtual bool event(QEvent* event);
+    
     void autoConnect(NodeGui* selected,NodeGui* created);
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}

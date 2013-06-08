@@ -43,13 +43,8 @@ Model::Model(): _videoEngine(0),_mutex(0)
     
     /*allocating lookup tables*/
     Lut::allocateLuts();
-
-}
-void Model::postInitialisation(){
-
-   
-    /*we can now create the videoEngine since the controler is set up*/
-    _videoEngine = new VideoEngine(ctrlPTR->getGui()->viewer_tab->viewer,this,_mutex);
+    
+    _videoEngine = new VideoEngine(this,_mutex);
     connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
     
     /*initializing list of all Formats available*/
@@ -113,7 +108,9 @@ void Model::postInitialisation(){
         addFormat(_frmt);
     }
     
+
 }
+
 
 
 Model::~Model(){
@@ -137,12 +134,13 @@ Model::~Model(){
     _readPluginsLoaded.clear();
     _pluginsLoaded.clear();
     _nodeCounters.clear();
+    delete _videoEngine;
+    _videoEngine = 0;
 	foreach(Node* n,_currentNodes) delete n;
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
     delete _mutex;
-    delete _videoEngine;
 }
 
 
@@ -280,7 +278,6 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         str.append(c);
         node->setName(str);
     }
-	node->setSocketCount();
     _currentNodes.push_back(node);
     string outputNodeSymbol="OutputNode";
     string inputNodeSymbol="InputNode";
@@ -301,16 +298,18 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node,ctrlPTR->getGui()->viewer_tab->viewer,_videoEngine->getViewerCache());
+		node=new Reader(node,_videoEngine->getViewerCache());
         node->setMutex(m);
         node->initializeInputs();
+        node->setSocketCount();
 		type=initCounterAndGetDescription(node);
 		return type;
 	}else if(name =="Viewer"){
 		UI_NODE_TYPE type;
-		node=new Viewer(node,ctrlPTR->getGui()->viewer_tab->viewer);
+		node=new Viewer(node);
         node->setMutex(m);
         node->initializeInputs();
+        node->setSocketCount();
 		type=initCounterAndGetDescription(node);
 		return type;
 	}else{
@@ -328,6 +327,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 					node=builder(node);
                     node->setMutex(m);
                     node->initializeInputs();
+                    node->setSocketCount();
 					type=initCounterAndGetDescription(node);
                     
 				}     

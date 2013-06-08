@@ -16,6 +16,10 @@
 #include "Core/outputnode.h"
 #include "Core/settings.h"
 #include "Reader/Read.h"
+#include "Gui/timeline.h"
+#include "Gui/viewerTab.h"
+#include "Gui/mainGui.h"
+
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -31,8 +35,8 @@
 using namespace std;
 
 
-Reader::Reader(Node* node,ViewerGL* ui_context,ViewerCache* cache):InputNode(node),current_frame(0),video_sequence(0),
-readHandle(0),has_preview(false),ui_context(ui_context),_cache(cache),_pboIndex(0),preview(0){}
+Reader::Reader(Node* node,ViewerCache* cache):InputNode(node),video_sequence(0),
+readHandle(0),has_preview(false),_cache(cache),_pboIndex(0),preview(0){}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
 
@@ -53,14 +57,6 @@ void Reader::initKnobs(Knob_Callback *cb){
 }
 
 
-int Reader::currentFrame(){return current_frame;}
-
-void Reader::incrementCurrentFrameIndex(){current_frame<lastFrame() ? current_frame++ : current_frame;}
-void Reader::decrementCurrentFrameIndex(){current_frame>firstFrame() ? current_frame-- : current_frame;}
-void Reader::seekFirstFrame(){current_frame=firstFrame();}
-void Reader::seekLastFrame(){current_frame=lastFrame();}
-void Reader::randomFrame(int f){if(f>=firstFrame() && f<=lastFrame()) current_frame=f;}
-
 Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode mode,bool startNewThread){
     /*the future used to check asynchronous results if the read happens in a new thread*/
     QFuture<void> *future = 0;
@@ -79,15 +75,18 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     
     PluginID* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if(!decoder){
-        cout << "Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
+        cout << "ERROR : Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return Buffer::DecodedFrameDescriptor();
     }
     ReadBuilder builder = (ReadBuilder)(decoder->first);
     _read = builder(this);
     
-    if(_read == 0 || mode == DO_NOT_DECODE){
+    if(!_read){
+        return _buffer.insert(filename.toStdString(), NULL, _read, NULL,  NULL);
+    }
+    if(mode == DO_NOT_DECODE){
         _read->readHeader(filename, false);
-        return _buffer.insert(filename, NULL, _read->getReaderInfo(),_read,   NULL);
+        return _buffer.insert(filename.toStdString(), NULL, _read, _read->getReaderInfo(),  NULL);
     }
     
     /*checking whether the reader should open both views or not*/
@@ -96,28 +95,26 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     
     /*In case the read handle supports scanlines, we read the header to determine
      how many scan-lines we would need, depending also on the viewer context.*/
-    QByteArray ba = filename.toLatin1();
-    const char* filename_cstr=ba.constData();
+    std::string filenameStr = filename.toStdString();
     std::map<int,int> rows;
     /*the slContext is useful to check the equality of 2 scan-line based frames.*/
     Reader::Buffer::ScanLineContext *slContext = 0;
     if(_read->supportsScanLine()){
         slContext = new Reader::Buffer::ScanLineContext;
-        _read->readHeader(filename, openStereo);
         _read->readHeader(filename,openStereo);
         float zoomFactor;
-        Format dispW = _read->getReaderInfo()->displayWindow();
+        const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
         if(_fitFrameToViewer){
             float h = (float)(dispW.h());
-            zoomFactor = (float)ui_context->height()/h -0.05;
-            ui_context->fitToFormat(dispW);
+            zoomFactor = (float)currentViewer->viewer->height()/h -0.05;
+            currentViewer->viewer->fitToFormat(dispW);
         }else{
-            zoomFactor = ui_context->getZoomFactor();
+            zoomFactor = currentViewer->viewer->getZoomFactor();
         }
-        slContext->setRows(ui_context->computeRowSpan(dispW, zoomFactor));
+        slContext->setRows(currentViewer->viewer->computeRowSpan(dispW, zoomFactor));
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename_cstr,Buffer::NOT_CACHED_FRAME);
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::NOT_CACHED_FRAME);
     if(found !=_buffer.end()){
         if(found->_asynchTask && !found->_asynchTask->isFinished()){
             found->_asynchTask->waitForFinished();
@@ -158,14 +155,14 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
             }else{
                 *future = QtConcurrent::run(_read,&Read::readData,filename,openStereo);
             }
-            return _buffer.insert(filename, future, _read->getReaderInfo() , _read, NULL ,  slContext);
+            return _buffer.insert(filenameStr, future,  _read, _read->getReaderInfo() ,NULL ,  slContext);
         }else{
             if(_read->supportsScanLine()){
                 _read->readScanLineData(filename, slContext,false,openStereo);
             }else{
                 _read->readData(filename,openStereo);
             }
-            return _buffer.insert(filename, NULL, _read->getReaderInfo(), _read, NULL ,slContext);
+            return _buffer.insert(filenameStr, NULL,  _read,_read->getReaderInfo(), NULL ,slContext);
         }
     }
     
@@ -190,7 +187,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
     removeCachedFramesFromBuffer();
     
     ReaderInfo *info = new ReaderInfo;
-    info->copy(frame->second._frameInfo);
+    *info = *frame->second._frameInfo;
     int w = frame->second._actualW ;
     int h = frame->second._actualH ;
     size_t dataSize = 0;
@@ -202,7 +199,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
     /*allocating pbo*/
     
    
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,ui_context->getPBOId(_pboIndex));
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,currentViewer->viewer->getPBOId(_pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
@@ -212,16 +209,15 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
     const char* cachedFrame = 0 ;
     if(!startNewThread){
         cachedFrame =  _cache->retrieveFrame(frameNb,frame);
-        ui_context->fillPBO(cachedFrame, output, dataSize);
-        return _buffer.insert(info->currentFrameName(), 0 , info, 0 ,cachedFrame,NULL,watcher);
+        currentViewer->viewer->fillPBO(cachedFrame, output, dataSize);
+        return _buffer.insert(info->getCurrentFrameName(), 0 , 0, info ,cachedFrame,NULL,watcher);
     }else{
         future = new QFuture<const char*>;
         watcher = new QFutureWatcher<const char*>;
-        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(
-                                                                        info->currentFrameName(),
+        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(info->getCurrentFrameName(),
                                                                         0 ,
-                                                                        info,
-                                                                        0 ,
+                                                                        0,
+                                                                        info ,
                                                                         cachedFrame,
                                                                         NULL,
                                                                         watcher);
@@ -233,18 +229,16 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
 
 const char* Reader::retrieveCachedFrame(ViewerCache::FramesIterator frame,int frameNb,void* dst,size_t dataSize){
     const char* cachedFrame =  _cache->retrieveFrame(frameNb,frame);
-    ui_context->fillPBO(cachedFrame, dst, dataSize);
+    currentViewer->viewer->fillPBO(cachedFrame, dst, dataSize);
     return cachedFrame;
 }
 std::vector<Reader::Buffer::DecodedFrameDescriptor>
 Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
     
     std::vector<Reader::Buffer::DecodedFrameDescriptor> out;
+    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
     if(useCurrentThread){
         Buffer::DecodedFrameDescriptor ret = open(files[current_frame], mode , false);
-        if(ret.isEmpty()){
-            cout << "Reader:: ERROR" << endl;
-        }
         out.push_back(ret);
     }else{
         if(useOtherThread){
@@ -253,17 +247,11 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
             if(followingFrame > lastFrame()) followingFrame = firstFrame();
             if(followingFrame < firstFrame()) followingFrame = lastFrame();
             Buffer::DecodedFrameDescriptor ret = open(files[followingFrame], mode ,true);
-            if(ret.isEmpty()){
-                cout << "Reader:: ERROR" << endl;
-            }
             out.push_back(ret);
             // must review this part
         }
     }
     return out;
-}
-void Reader::removeCurrentFrameFromBuffer(){
-    _buffer.remove(getCurrentFrameName());
 }
 
 void Reader::showFilePreview(){
@@ -273,14 +261,9 @@ void Reader::showFilePreview(){
     getVideoSequenceFromFilesList();
     
     fitFrameToViewer(false);
-    Buffer::DecodedFrameDescriptor ret = open(fileNameList.at(0), DO_NOT_DECODE ,false);
-    if(ret.isEmpty()){
-        cout <<" Reader:: ERROR " << endl;
-    }
-    
-    if(!makeCurrentDecodedFrame()){
-        cout << "Reader failed to open current frame file" << endl;
-    }
+    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+    Buffer::DecodedFrameDescriptor ret = open(files[current_frame], DO_NOT_DECODE ,false);
+    _validate(true);
     readHandle->make_preview();
     _buffer.clear();
 }
@@ -302,30 +285,38 @@ void Reader::Buffer::removeAllCachedFrames(){
 }
 
 bool Reader::makeCurrentDecodedFrame(){
+    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+    
     QString currentFile = files[current_frame];
     Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
                                                                     Buffer::ALL_FRAMES);
     if(frame == _buffer.end() || (frame->_asynchTask && !frame->_asynchTask->isFinished())) return false;
     
-    readHandle = frame->_readHandle;
-    ReaderInfo* readInfo = frame->_frameInfo;
-    if(!readInfo && frame->_asynchTask){
-        readInfo = readHandle->getReaderInfo();
+    Node::Info* infos = 0;
+    if(frame->_readInfo && !frame->_readHandle){ // cached frame
+        infos = dynamic_cast<Node::Info*>(frame->_readInfo);
+    }else{
+        readHandle = frame->_readHandle;
+        infos = dynamic_cast<Node::Info*>(readHandle->getReaderInfo());
+        assert(infos);
+        *_info = *infos;
     }
-    readInfo->currentFrame(currentFrame());
-    readInfo->firstFrame(firstFrame());
-    readInfo->lastFrame(lastFrame());
-    Box2D bbox = readInfo->dataWindow();
-    _info->set(bbox.x(), bbox.y(), bbox.right(), bbox.top());
-    _info->setDisplayWindow(readInfo->displayWindow());
-    _info->set_channels(readInfo->channels());
-    _info->setYdirection(readInfo->Ydirection());
-    _info->rgbMode(readInfo->rgbMode());
-    ctrlPTR->getModel()->getVideoEngine()->popReaderInfo(this);
-    ctrlPTR->getModel()->getVideoEngine()->pushReaderInfo(readInfo, this);
+    assert(infos);
+    *_info = *infos;
+    _info->firstFrame(firstFrame());
+    _info->lastFrame(lastFrame());
     return true;
 }
 
+void Reader::_validate(bool forReal){
+    if(forReal){
+        if(!makeCurrentDecodedFrame()){
+            cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
+            return;
+        }
+    }
+    set_output_channels(Mask_All);
+}
 
 void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
 	readHandle->engine(y,offset,range,c,out);
@@ -338,10 +329,10 @@ void Reader::createKnobDynamically(){
 }
 
 
-Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
+Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(std::string filename,
                                                               QFuture<void> *future,
-                                                              ReaderInfo* info,
                                                               Read* readHandle,
+                                                              ReaderInfo* readInfo,
                                                               const char* cachedFrame,
                                                               ScanLineContext* slContext,
                                                               QFutureWatcher<const char*>* cacheWatcher){
@@ -357,8 +348,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(QString filename,
             }
         }
     }
-    std::string _name  = filename.toStdString();
-    DecodedFrameDescriptor desc(future,readHandle,info,cachedFrame,cacheWatcher,_name,slContext);
+    DecodedFrameDescriptor desc(future,readHandle,readInfo,cachedFrame,cacheWatcher,filename,slContext);
     _buffer.push_back(desc);
     return desc;
 }
@@ -376,8 +366,8 @@ void Reader::Buffer::remove(std::string filename){
             delete it->_asynchTask;//delete future
         if(it->_cacheWatcher)
             delete it->_cacheWatcher;//delete watcher for cached frame
-        if(it->_frameInfo)
-            delete it->_frameInfo; // delete readerInfo
+        if(it->_readInfo)
+            delete it->_readInfo; // delete readerInfo
         if(it->_readHandle)
             delete it->_readHandle; // delete readHandle
         _buffer.erase(it);
@@ -459,8 +449,8 @@ void Reader::Buffer::clear(){
             delete it->_asynchTask;//delete future
         if(it->_cacheWatcher)
             delete it->_cacheWatcher;//delete watcher for cached frame
-        if(it->_frameInfo)
-            delete it->_frameInfo; // delete readerInfo
+        if(it->_readInfo)
+            delete it->_readInfo; // delete readerInfo
         if(it->_readHandle)
             delete it->_readHandle; // delete readHandle
     }
@@ -471,8 +461,8 @@ void Reader::Buffer::erase(DecodedFrameIterator it){
         delete it->_asynchTask;//delete future
     if(it->_cacheWatcher)
         delete it->_cacheWatcher;//delete watcher for cached frame
-    if(it->_frameInfo)
-        delete it->_frameInfo; // delete readerInfo
+    if(it->_readInfo)
+        delete it->_readInfo; // delete readerInfo
     if(it->_readHandle)
         delete it->_readHandle; // delete readHandle
     _buffer.erase(it);}
@@ -527,35 +517,27 @@ void Reader::getVideoSequenceFromFilesList(){
             }
         }
     }
-    std::map<int,QString>::iterator it;
-    it=files.begin();
-    current_frame=(*it).first;
+    
 }
 int Reader::firstFrame(){
-    int minimum=INT_MAX;
-	for(std::map<int,QString>::iterator it=files.begin();it!=files.end();it++){
-        int nb=(*it).first;
-        if(nb<minimum){
-            minimum=nb;
-        }
-    }
-	
-	return minimum;
+    std::map<int,QString>::iterator it=files.begin();
+    if(it == files.end()) return INT_MIN;
+    return it->first;
 }
 int Reader::lastFrame(){
-	int maximum=-1;
-	for(std::map<int,QString>::iterator it=files.begin();it!=files.end();it++){
-        int nb=(*it).first;
-        if(nb>maximum){
-            maximum=nb;
-        }
-    }
-    return maximum;
+    std::map<int,QString>::iterator it=files.end();
+    if(it == files.begin()) return INT_MAX;
+    it--;
+    return it->first;
+}
+int Reader::clampToRange(int f){
+    int first = firstFrame();
+    int last = lastFrame();
+    if(f < first) return first;
+    if(f > last) return last;
+    return f;
 }
 
-std::string Reader::getCurrentFrameName(){
-    return files[current_frame].toStdString();
-}
 std::string Reader::getRandomFrameName(int f){
     return files[f].toStdString();
 }

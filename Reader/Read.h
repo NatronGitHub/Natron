@@ -17,7 +17,6 @@
 #include "Reader/Reader.h"
 class ViewerGL;
 class Lut;
-class ReaderInfo;
 class Read{
     
 public:
@@ -135,7 +134,7 @@ protected:
     bool _autoCreateAlpha;
 	Reader* op;
     Lut* _lut;
-	ReaderInfo* _readInfo;
+    ReaderInfo* _readInfo;
     
 };
 

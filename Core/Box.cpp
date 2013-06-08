@@ -6,7 +6,7 @@
 #include "Core/Box.h"
 #include <iostream>
 
-void Box2D::merge(const Box2D b){
+void Box2D::merge(const Box2D& b){
 	int x=b.x();
 	int y=b.y();
 	int r=b.right();
@@ -20,6 +20,7 @@ void Box2D::merge(const Box2D b){
 		_r=r;
 	if(t>this->top())
 		_t=t;
+    _modified = true;
 }
 
 void Box2D::merge(int x, int y){
@@ -27,6 +28,7 @@ void Box2D::merge(int x, int y){
 		_x=x;
 	if(y<this->y())
 		_y=y;
+    _modified = true;
 }
 
 void Box2D::merge(int x, int y, int r, int t){
@@ -38,6 +40,7 @@ void Box2D::merge(int x, int y, int r, int t){
 		_r=r;
 	if(t>this->top())
 		_t=t;
+    _modified = true;
 }
 
 void Box2D::intersect(const Box2D b){
