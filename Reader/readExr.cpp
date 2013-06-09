@@ -381,11 +381,11 @@ void ReadExr::readScanLine(int y){
 	// Invert to EXR y coordinate:
 	int exrY = dispwin.max.y - y;
     const Box2D& bbox = _readInfo->getDataWindow();
-    const Format& dispW = _readInfo->getDisplayWindow();
-    int r = 0;
-    bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
-    int x=0;
-    bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
+   // const Format& dispW = _readInfo->getDisplayWindow();
+    int r = bbox.right();
+    //bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
+    int x= bbox.x();
+    //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
     const ChannelSet& channels = _readInfo->channels();
     Row* out = new Row(x,y,r,channels);
     out->allocate();

@@ -33,7 +33,7 @@ Row::Row(int x,int y, int range, ChannelSet channels)
 }
 void Row::allocate(){
     foreachChannels(z, _channels){
-        buffers[z] = (float*)malloc((r-x)*sizeof(float));
+        buffers[z] = (float*)calloc((r-x),sizeof(float));
     }    
 }
 

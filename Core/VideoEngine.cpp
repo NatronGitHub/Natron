@@ -313,7 +313,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     }
     output->request(gl_viewer->displayChannels());
     const Format &_dispW = output->getInfo()->getDisplayWindow();
-    const Box2D &_dataW = output->getInfo()->getDataWindow();
+    //const Box2D &_dataW = output->getInfo()->getDataWindow();
     // AT THIS POINT EVERY OPERATOR HAS ITS INFO SET!! AS WELL AS REQUESTED_BOX AND REQUESTED_CHANNELS
     
     //outChannels are the intersection between what the viewer requests and the ones available in the viewer node
@@ -328,12 +328,12 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     std::map<int,int> rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
     
     // selecting the right anchor of the row
-    int right = 0; 
-    _dataW.right() > _dispW.right() ? right = _dataW.right() : right = _dispW.right();
+    int right = _dispW.right();
+  //  _dataW.right() > _dispW.right() ? right = _dataW.right() : right = _dispW.right();
     
     // selecting the left anchor of the row
-	int offset=0;
-    _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
+	int offset= _dispW.x();
+   // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
     map<int,int>::iterator it = rows.begin();
     map<int,int>::iterator last = rows.end();
     ViewerGL::CACHING_MODE mode = ViewerGL::TEXTURE_CACHE;
