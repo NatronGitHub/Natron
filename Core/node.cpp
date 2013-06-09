@@ -50,10 +50,10 @@ ostream& operator<< (ostream &out, Node &node){
     }
     out << endl;
     out << "------------------------------" << endl;
-    out << "Requested box: " << " x:" << node.get_requested_box().x()
-    << " y:" << node.get_requested_box().y()
-    << " r:" << node.get_requested_box().right()
-    << " t:" << node.get_requested_box().top() << endl;
+    out << "Requested box: " << " x:" << node.getRequestedBox().x()
+    << " y:" << node.getRequestedBox().y()
+    << " r:" << node.getRequestedBox().right()
+    << " t:" << node.getRequestedBox().top() << endl;
     out << "------------------------------" << endl;
     out << "Requested Channels:" << endl;
     ChannelSet requestedSet = node.getRequestedChannels();
@@ -73,20 +73,6 @@ ostream& operator<< (ostream &out, Node &node){
 }
 
 
-void Node::Info::add_to_channels(Channel z){
-    _channels+=z;
-}
-void Node::Info::add_to_channels(ChannelMask &m){
-	_channels+=m;
-}
-
-void Node::Info::turnOffChannel(Channel z){
-    _channels-=z;
-}
-void Node::Info::turnOffChannels(ChannelMask &m){
-	_channels-=m;
-}
-
 void Node::copy_info(Node* parent,bool forReal){
 	parent->validate(forReal);
     clear_info();
@@ -95,7 +81,7 @@ void Node::copy_info(Node* parent,bool forReal){
 	_info->lastFrame(parent->getInfo()->lastFrame());
 	_info->setYdirection(parent->getInfo()->getYdirection());
 	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
-	_info->set_channels(parent->getInfo()->channels());
+	_info->setChannels(parent->getInfo()->channels());
     if(_info->hasBeenModified()){
         _info->merge(*(parent->getInfo()));
     }else{
@@ -142,7 +128,7 @@ void Node::merge_info(bool forReal){
         }
 	}
     final_direction/=_parents.size();
-	_info->set_channels(chans);
+	_info->setChannels(chans);
     _info->rgbMode(displayMode);
     _info->setYdirection(final_direction);
 }
@@ -333,7 +319,7 @@ void Node::_validate(bool forReal){
 		clear_info();
 		merge_info(forReal);
 	}
-    set_output_channels(Mask_All);
+    setOutputChannels(Mask_All);
 
     
 }

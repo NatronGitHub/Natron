@@ -55,11 +55,8 @@ public:
 		void lastFrame(int nb){_lastFrame=nb;}
 		int firstFrame(){return _firstFrame;}
 		int lastFrame(){return _lastFrame;}
-		void add_to_channels(Channel z);
-		void add_to_channels(ChannelMask &m);
-		void turnOffChannel(Channel z);
-		void turnOffChannels(ChannelMask &m);
-		void set_channels(ChannelMask mask){_channels=mask;}	
+		void setChannels(ChannelMask mask){_channels=mask;}	
+		ChannelMask& channelsRef(){return _channels;}
 		const ChannelMask& channels(){return _channels;}
 		bool blackOutside(){return _blackOutside;}
 		void blackOutside(bool bo){_blackOutside=bo;}
@@ -124,7 +121,7 @@ public:
 	void clear_info();
 	ChannelMask& getOutputChannels(){return _outputChannels;}
 	ChannelMask& getRequestedChannels(){return _requestedChannels;}
-	Box2D& get_requested_box(){return _requestedBox;}
+	Box2D& getRequestedBox(){return _requestedBox;}
     int width(){return _info->getDisplayWindow().w();}
     int height(){return _info->getDisplayWindow().h();}
 	/*================================*/
@@ -180,7 +177,7 @@ public:
     
     /*overlay support:
      *Just overload this function in your operator.
-     *No need to include any openGL related header.
+     *No need to include any OpenGL related header.
      *The coordinate space is  defined by the displayWindow
      *(i.e: (0,0) = bottomLeft and  width() and height() being
      * respectivly the width and height of the frame.)
@@ -193,7 +190,7 @@ public:
     
 protected:
 
-	void set_output_channels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
+	void setOutputChannels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
 	// and _info.channels()
 
 	virtual void in_channels(int inputNb,ChannelMask &mask){}

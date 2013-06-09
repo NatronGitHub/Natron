@@ -75,7 +75,7 @@ void Read::setReaderInfo(Format dispW,
 	bool rgb ){
     _readInfo->setDisplayWindow(dispW);
     _readInfo->set(dataW);
-    _readInfo->set_channels(channels);
+    _readInfo->setChannels(channels);
     _readInfo->setYdirection(Ydirection);
     _readInfo->rgbMode(rgb);
     _readInfo->setCurrentFrameName(file.toStdString());

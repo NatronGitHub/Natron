@@ -73,7 +73,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 void ViewerGL::initConstructor(){
     _hasHW=true;
     _blankViewerInfos = new Viewer::ViewerInfos;
-    _blankViewerInfos->set_channels(Mask_RGBA);
+    _blankViewerInfos->setChannels(Mask_RGBA);
     _blankViewerInfos->setYdirection(1);
     _blankViewerInfos->rgbMode(true);
     Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);

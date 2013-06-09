@@ -122,6 +122,7 @@
     <ClCompile Include="..\..\..\Gui\operatornode_ui.cpp" />
     <ClCompile Include="..\..\..\Gui\outputnode_ui.cpp" />
     <ClCompile Include="..\..\..\Gui\ScaleSlider.cpp" />
+    <ClCompile Include="..\..\..\Gui\tabwidget.cpp" />
     <ClCompile Include="..\..\..\Gui\textRenderer.cpp" />
     <ClCompile Include="..\..\..\Gui\texturecache.cpp" />
     <ClCompile Include="..\..\..\Gui\timeline.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="..\..\..\Core\viewercache.h" />
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
     <ClInclude Include="..\..\..\Gui\framefiledialog.h" />
+    <ClInclude Include="..\..\..\Gui\tabwidget.h" />
     <ClInclude Include="..\..\..\Gui\texturecache.h" />
     <CustomBuild Include="..\..\..\Core\model.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>

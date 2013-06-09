@@ -149,9 +149,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionClearBufferCache ->setText(QApplication::translate("Powiter","Clear buffer cache"));
     actionClearTextureCache ->setText(QApplication::translate("Powiter","Clear texture cache"));
     
-#ifdef __POWITER_WIN32__
-	viewersTabContainer->setTabText(viewersTabContainer->indexOf(viewer_tab), QApplication::translate("Powiter", "Viewer 1"));
-#endif
+
 	WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
     
 	WorkShop->setTabText(WorkShop->indexOf(GraphEditor), QApplication::translate("Powiter", "Graph Editor"));

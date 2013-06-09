@@ -315,7 +315,7 @@ void Reader::_validate(bool forReal){
             return;
         }
     }
-    set_output_channels(Mask_All);
+    setOutputChannels(Mask_All);
 }
 
 void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){

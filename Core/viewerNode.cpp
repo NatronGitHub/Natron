@@ -24,7 +24,7 @@ void Viewer::_validate(bool forReal){
     if(_parents.size()==1){
 		copy_info(_parents[0],forReal);
 	}
-    set_output_channels(Mask_All);
+    setOutputChannels(Mask_All);
     
     if(_viewerInfos){
         delete _viewerInfos;
