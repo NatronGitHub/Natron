@@ -6,14 +6,11 @@
 #ifndef GUI_H
 #define GUI_H
 #include <QtCore/QVariant>
-#include "Gui/DAG.h"
-#include "Gui/viewerTab.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QMainWindow>
 #include <boost/noncopyable.hpp>
 #define RIGHTDOCK_WIDTH 380
 
-using namespace Powiter_Enums;
 class QAction;
 class TabWidget;
 class Controler;
@@ -31,6 +28,10 @@ class QStatusBar;
 class QTreeView;
 class Controler;
 class TextureCache;
+class NodeGraph;
+class ViewerTab;
+class Node;
+class QGraphicsScene;
 class Gui:public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
@@ -41,7 +42,7 @@ public:
 
     
     void createGui();
-    void createNodeGUI(UI_NODE_TYPE type,Node *node,double x,double y);
+    void createNodeGUI(Powiter_Enums::UI_NODE_TYPE type,Node *node,double x,double y);
     bool eventFilter(QObject *target, QEvent *event);
 
     ViewerTab* getCurrentViewerTab(){return _currentViewerTab;}
@@ -100,7 +101,7 @@ public:
 	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
-    QAction *actionClearBufferCache;
+    QAction *actionClearNodeCache;
     QAction *actionClearTextureCache;
     /*CENTRAL ZONE SPLITING*/
     //======================

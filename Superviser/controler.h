@@ -7,7 +7,6 @@
 #ifndef CONTROLER_H
 #define CONTROLER_H
 #include <QtCore/QObject>
-#include "Gui/node_ui.h"
 #include "Superviser/powiterFn.h"
 #include "Core/singleton.h"
 using namespace Powiter_Enums;
@@ -16,7 +15,7 @@ using namespace Powiter_Enums;
 #define ctrlPTR Controler::instance()
 
 #define currentViewer ctrlPTR->getGui()->getCurrentViewerTab()
-
+class NodeGui;
 class Model;
 class Gui;
 class QLabel;

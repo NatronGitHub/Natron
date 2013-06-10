@@ -5,9 +5,13 @@
 //  contact: immarespond at gmail dot com
 
 #include <climits>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QCheckBox>
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
+#include "Core/outputnode.h"
 #include "Gui/node_ui.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"

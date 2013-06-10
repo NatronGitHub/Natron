@@ -13,7 +13,8 @@ public:
 
     FlowOperator(FlowOperator& ref):Op(ref){}
     FlowOperator(Node* node);
-
+    
+    virtual bool cacheData(){return false;}
 
     virtual ~FlowOperator(){}
 };

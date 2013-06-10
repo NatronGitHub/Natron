@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <QtWidgets/QWidget>
-#include <QtGui/qevent.h>
 #include "Superviser/powiterFn.h"
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10
@@ -18,6 +17,7 @@
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
 
+class QMouseEvent;
 class TimeSlider : public QWidget{
     Q_OBJECT
     

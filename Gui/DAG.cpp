@@ -25,6 +25,9 @@
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QGraphicsLineItem>
 #include "Gui/timeline.h"
+#include "Gui/outputnode_ui.h"
+#include "Gui/inputnode_ui.h"
+#include "Gui/operatornode_ui.h"
 #include <cstdlib>
 
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),

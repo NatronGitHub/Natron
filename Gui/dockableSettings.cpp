@@ -7,6 +7,8 @@
 #include "Gui/dockableSettings.h"
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"
+#include "Core/node.h"
+#include "Gui/knob.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
 

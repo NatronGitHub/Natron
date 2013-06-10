@@ -30,7 +30,7 @@
 #include "Reader/Read.h"
 
 using namespace Powiter_Enums;
-
+class Row;
 class ReaderInfo;
 class ChannelName
 {

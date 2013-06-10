@@ -14,19 +14,19 @@
 #include <QtConcurrent/QtConcurrent>
 #include <boost/bind.hpp>
 #include <map>
-#include "Core/viewercache.h"
 #include "Core/hash.h"
-#include "Reader/Reader.h"
-#include "outputnode.h"
 #include <boost/noncopyable.hpp>
+#include "Reader/Reader.h"
+
+class FrameEntry;
 class InputNode;
+class OutputNode;
 class ViewerGL;
 class Node;
 class Row;
 class ReaderInfo;
 class Reader;
 class Model;
-class MMAPfile;
 class Timer;
 
 // Class that handles the core engine for video sequences, that's where all the work is done
@@ -145,8 +145,8 @@ private:
         
     std::vector<Task> _waitingTasks;
     
-    ViewerCache* _viewerCache ; // disk cache (physically stored, saved between 2 runs).    
     Model* _coreEngine;
+    
 	bool _working;
        
     DAG _dag; // object encapsulating the graph
@@ -252,16 +252,6 @@ public:
     void drawOverlay();
 	
     
-	/*Inserts a new frame in the disk cache*/
-    std::pair<char*,ViewerCache::FrameID> mapNewFrame(int frameNb,
-                                                      std::string filename,
-                                                      int width,
-                                                      int height,
-                                                      int nbFrameHint);
-
-	/*Close the LRU frame in the disk cache*/
-    void closeMappedFile();
-    
     /*starts the videoEngine.
      *frameCount is the number of frame you want to cycle. For all the sequence frameCount = -1
      *fitFrameToViewer is true if you want the first frame that will be played to fit to the viewer.
@@ -275,7 +265,7 @@ public:
     /*the function cycling through the DAG for one scan-line*/
     void metaEnginePerRow(Row* row,OutputNode* output);
     
-    typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,ViewerCache::FramesIterator > ReadFrame;
+    typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,FrameEntry*> ReadFrame;
     typedef std::vector< ReadFrame > FramesVector;
     
     
@@ -283,7 +273,6 @@ public:
     
     void resetReadingBuffers();
     
-    ViewerCache* getViewerCache(){return _viewerCache;}
     
     U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
     
@@ -307,7 +296,7 @@ private:
     void runTasks();
     
     /*Used internally by the computeFrameRequest func for cached frames*/
-    void cachedFrameEngine(ViewerCache::FramesIterator fram);
+    void cachedFrameEngine(FrameEntry* frame);
     
     /*reset variables used by the videoEngine*/
     void stopEngine();

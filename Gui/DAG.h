@@ -11,11 +11,12 @@
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include <QtWidgets/QInputDialog>
-#include "Gui/outputnode_ui.h"
-#include "Gui/inputnode_ui.h"
-#include "Gui/operatornode_ui.h"
+
 #include "Superviser/powiterFn.h"
 using namespace Powiter_Enums;
+class QVBoxLayout;
+class Node;
+class NodeGui;
 class Controler;
 class Edge;
 class SmartInputDialog;

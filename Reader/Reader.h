@@ -6,16 +6,13 @@
 #ifndef READER_H
 #define READER_H
 #include "Core/inputnode.h"
-#include "Superviser/powiterFn.h"
-#include "Gui/knob.h"
-#include <QtGui/QImage>
 #include <QtConcurrent/QtConcurrent>
-#include "Core/viewercache.h"
 /* Reader is the node associated to all image format readers. The reader creates the appropriate Read*
  to decode a certain image format.
 */
 using namespace Powiter_Enums;
 
+class FrameEntry;
 
 /*special ReaderInfo deriving node Infos. This class add just a file name
  to a frame, it is used internally to find frames in the buffer.*/
@@ -26,6 +23,12 @@ public:
     
     void setCurrentFrameName(std::string str){_currentFrameName = str;}
     std::string getCurrentFrameName(){return _currentFrameName;}
+    
+    /*Returns a string with all infos*/
+    std::string printOut();
+    
+    /*Constructs a new ReaderInfo from string*/
+    static ReaderInfo* fromString(QString from);
     
     void operator=(const ReaderInfo& other){
         dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
@@ -199,12 +202,12 @@ public:
      * _cacheWatcher!=NULL.
      *if startNewThread is on,the retrieval from the cache and the copy to the PBO will occur in a separate thread.
      **/
-    Reader::Buffer::DecodedFrameDescriptor openCachedFrame(ViewerCache::FramesIterator frame ,int frameNb,bool startNewThread);
+    Reader::Buffer::DecodedFrameDescriptor openCachedFrame(FrameEntry* frame ,int frameNb,bool startNewThread);
     
     /*This function is used internally by openCachedFrame(...) in case startNewThread is true.
      *It opens the frame identified by the FramesIterator in the diskcache and copies it to the
      * dst buffer(OpenGL mapped PBO).*/
-    const char* retrieveCachedFrame(ViewerCache::FramesIterator frame,int frameNb,void* dst,size_t dataSize);
+    const char* retrieveCachedFrame(FrameEntry* frame,int frameNb,void* dst,size_t dataSize);
     
     /*This function will decode one or more frames depending on its parameters.
      *It will not be called for a cached frame.
@@ -228,11 +231,12 @@ public:
     virtual std::string className();
     virtual std::string description();
 
-	File_Type fileType(){return filetype;}
     
     virtual void _validate(bool forReal);
 	
 	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    
+    virtual bool cacheData(){return true;}
     
 	virtual void createKnobDynamically();
     
@@ -270,7 +274,6 @@ private:
      how many scanlines we'd need*/
     bool _fitFrameToViewer;
 	Read* readHandle;
-	File_Type filetype;
     ViewerCache* _cache;
     int _pboIndex;
     std::map<int,QString> files; // frames

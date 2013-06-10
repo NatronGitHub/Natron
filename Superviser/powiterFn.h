@@ -7,7 +7,7 @@
 #define PowiterOsX_powiterFn_h
 #include "Superviser/Enums.h"
 #include <string>
-
+#include <utility>
 #ifdef __APPLE__
 #define __POWITER_OSX__
 #define __POWITER_UNIX__
@@ -24,22 +24,23 @@
 #define ROOT "./"
 #define CACHE_ROOT_PATH ROOT"Cache/"
 #define VIEWER_CACHE_PATH CACHE_ROOT_PATH"ViewerCache/"
-#define NODE_CACHE_PATH CACHE_ROOT_PATH"NodeCache/"
 #define IMAGES_PATH ROOT"Images/"
 #define PLUGINS_PATH ROOT"Plugins"
+
+#define CACHE_VERSION "1.0.0"
 
 
 // debug flag
 #define PW_DEBUG
 
 #include <boost/cstdint.hpp>
-
-
-
 typedef boost::uint32_t U32;
 typedef boost::uint64_t U64;
 typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
+
+// use boost for cache internals instead of STL. Comment it to make use of STL version of the cache.
+#define CACHE_USE_BOOST
 
 
 namespace PowiterWindows{

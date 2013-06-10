@@ -11,7 +11,6 @@
 #include <map>
 #include <QtCore/QStringList>
 #include "Core/channels.h"
-#include "Core/row.h"
 #include "Core/displayFormat.h"
 #include <QtGui/QRgb>
 #include "Reader/Reader.h"

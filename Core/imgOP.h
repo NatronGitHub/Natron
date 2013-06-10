@@ -13,6 +13,7 @@ public:
     ImgOp(Node* node);
     ImgOp(ImgOp& ref):Op(ref){}
 
+    virtual bool cacheData()=0;
 
     virtual ~ImgOp(){}
 };

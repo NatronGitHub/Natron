@@ -17,6 +17,7 @@ public:
         NodeGui::paint(painter,options,parent);
     }
     
+    
     virtual bool hasOutput(){return false;}
 };
 

@@ -85,6 +85,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Core\abstractCache.cpp" />
     <ClCompile Include="..\..\..\Core\Box.cpp" />
     <ClCompile Include="..\..\..\Core\channels.cpp" />
     <ClCompile Include="..\..\..\Core\DataBuffer.cpp" />
@@ -98,6 +99,7 @@
     <ClCompile Include="..\..\..\Core\metadata.cpp" />
     <ClCompile Include="..\..\..\Core\model.cpp" />
     <ClCompile Include="..\..\..\Core\node.cpp" />
+    <ClCompile Include="..\..\..\Core\nodecache.cpp" />
     <ClCompile Include="..\..\..\Core\OP.cpp" />
     <ClCompile Include="..\..\..\Core\outputnode.cpp" />
     <ClCompile Include="..\..\..\Core\row.cpp" />
@@ -148,6 +150,7 @@
     <ClCompile Include="..\..\GeneratedFiles\VideoEngine_moc.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Core\abstractCache.h" />
     <ClInclude Include="..\..\..\Core\Box.h" />
     <ClInclude Include="..\..\..\Core\channels.h" />
     <ClInclude Include="..\..\..\Core\DataBuffer.h" />
@@ -160,6 +163,7 @@
     <ClInclude Include="..\..\..\Core\lutclasses.h" />
     <ClInclude Include="..\..\..\Core\mappedfile.h" />
     <ClInclude Include="..\..\..\Core\metadata.h" />
+    <ClInclude Include="..\..\..\Core\nodecache.h" />
     <ClInclude Include="..\..\..\Core\viewercache.h" />
     <ClInclude Include="..\..\..\Gui\comboBox.h" />
     <ClInclude Include="..\..\..\Gui\framefiledialog.h" />

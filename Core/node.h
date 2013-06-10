@@ -14,15 +14,10 @@
 #include <QtCore/QString>
 #include "Core/channels.h"
 #include "Superviser/powiterFn.h"
-#include "Core/row.h"
-#include "Core/viewercache.h"
 #include "Core/displayFormat.h"
-#include "Core/Box.h"
 
-using namespace Powiter_Enums;
-
-
-
+class Row;
+class InputRow;
 class Model;
 class SettingsPanel;
 class Hash;
@@ -183,8 +178,19 @@ public:
      * respectivly the width and height of the frame.)
      */
     virtual void drawOverlay(){}
+    
+    /*cache related*/
+    
+    /*Returns in row, a row containing the results expected of this node
+     for the line y , channels and range (r-x). Data may come from the cache,
+     otherwise engine() gets called. 
+     */
+    void get(int y,int x,int r,ChannelSet channels,InputRow& row);
+    
+    /*Returns true if the node will cache rows in the node cache.
+     Otherwise results will not be cached.*/
+    virtual bool cacheData()=0;
 
-	
 	/*============================*/
     friend ostream& operator<< (ostream &out, Node &Node);
     

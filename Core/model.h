@@ -15,13 +15,10 @@
 #include <map>
 #include <vector>
 #include <ImfStandardAttributes.h>
-#include "Core/inputnode.h"
 #include <boost/noncopyable.hpp>
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
-
-using namespace Powiter_Enums;
 
 #ifdef __POWITER_WIN32__
 class PluginID{
@@ -66,14 +63,17 @@ public:
     std::string second;
 };
 
-
-
+class Format;
+class InputNode;
+class NodeCache;
+class ViewerCache;
 class Controler;
 class OutputNode;
 class Viewer;
 class Hash;
 class VideoEngine;
 class QMutex;
+class Node;
 class Model: public QObject,public boost::noncopyable
 {
     Q_OBJECT
@@ -102,7 +102,7 @@ public:
 	
   
 	/*Create a new node internally*/
-    UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
+    Powiter_Enums::UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     QStringList& getNodeNameList(){return _nodeNames;}
@@ -144,7 +144,7 @@ private:
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
 	 *to know whether it is an outputNode,InputNode or an operator.*/
-    UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
+    Powiter_Enums::UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
 
 
     VideoEngine* _videoEngine; // Video Engine
@@ -160,8 +160,9 @@ private:
     QStringList _nodeNames;
 
 
+    NodeCache* _nodeCache;
     
-
+    ViewerCache* _viewerCache;
 
 };
 

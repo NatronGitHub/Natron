@@ -9,6 +9,7 @@
 #include <cstdio>
 #include "Core/model.h"
 #include "Core/outputnode.h"
+#include "Core/inputnode.h"
 #include "Superviser/controler.h"
 #include "Core/hash.h"
 #include "Core/node.h"
@@ -26,6 +27,8 @@
 #include "Reader/readffmpeg.h"
 #include "Reader/readQt.h"
 #include "Core/lookUpTables.h"
+#include "Core/nodecache.h"
+#include "Core/viewercache.h"
 #include <cassert>
 using namespace std;
 Model::Model(): _videoEngine(0),_mutex(0)
@@ -33,6 +36,20 @@ Model::Model(): _videoEngine(0),_mutex(0)
     /*general mutex shared by all nodes*/
     _mutex = new QMutex;
 
+    /*node cache initialisation & restoration*/
+    _nodeCache = NodeCache::getNodeCache();
+    _nodeCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache*2.0/3.0));
+    _nodeCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
+                                       Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
+    _nodeCache->restore();
+    
+    
+    /*viewer cache initialisation & restoration*/
+    _viewerCache = ViewerCache::getViewerCache();
+    _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache*1.0/3.0));
+    _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
+    _viewerCache->restore();
+    
     /*loading node plugins*/
     loadPluginsAndInitNameList();
     loadBuiltinPlugins();
@@ -114,7 +131,8 @@ Model::Model(): _videoEngine(0),_mutex(0)
 
 
 Model::~Model(){
-   
+    _nodeCache->save();
+    _viewerCache->save();
     Lut::deallocateLuts();
     _videoEngine->abort();
     foreach(PluginID* p,_pluginsLoaded) delete p;
@@ -278,7 +296,11 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         str.append(c);
         node->setName(str);
     }
+    
+    /*adding nodes to the current nodes and 
+     adding its cache to the watched caches.*/
     _currentNodes.push_back(node);
+    
     string outputNodeSymbol="OutputNode";
     string inputNodeSymbol="InputNode";
     string flowOpSymbol="FlowOperator";

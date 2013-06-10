@@ -6,9 +6,6 @@
 
 #ifndef __PowiterOsX__textRenderer__
 #define __PowiterOsX__textRenderer__
-#include <QtCore/QChar>
-#include <QtGui/QFont>
-#include <QtCore/QHash>
 #include <QtGui/QColor>
 #include <iostream>
 #include <FTGL/ftgl.h>

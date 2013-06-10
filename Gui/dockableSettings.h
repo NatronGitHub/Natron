@@ -8,9 +8,10 @@
 
 
 #include <QtWidgets/QFrame>
-#include "Core/node.h"
-#include "Gui/knob.h"
 
+class QLineEdit;
+class Node;
+class Knob;
 class NodeGui;
 class Knob_Callback;
 class QVBoxLayout;

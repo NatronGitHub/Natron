@@ -10,6 +10,7 @@
 #include "Gui/mainGui.h"
 #include "Core/model.h"
 #include "Gui/viewerTab.h"
+#include "Gui/node_ui.h"
 
 
 Controler::Controler():_model(0),_gui(0){}

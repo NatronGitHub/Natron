@@ -13,7 +13,7 @@
 #include <QtGui/QImage>
 
 
-
+class Row;
 class ReadQt : public Read {
 
     QImage* _img;

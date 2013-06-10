@@ -99,6 +99,7 @@ static bool IsCodecBlacklisted(const char* name)
     }
     return false;
 }
+class Row;
 class FFMPEGFile : public ReferenceCountedObject{
     
     struct Stream

@@ -4,6 +4,7 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include <QtGui/QPainter>
+#include <QtGui/QMouseEvent>
 #include "Gui/timeline.h"
 
 using namespace std;
@@ -20,7 +21,7 @@ _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_
     setMouseTracking(true);
         
 }
-void TimeSlider::updateScale(){
+void TimeSlider::updateScale(){ 
     _values.clear();
     _displayedValues.clear();
 //    int _maximum = _first;

@@ -12,6 +12,7 @@
 #include <QtGui/QImage>
 #include <QtGui/QFont>
 #include <QtWidgets/QDockWidget>
+#include <QtOpenGL/QGLShaderProgram>
 #include <cmath>
 #include <cassert>
 #include <map>
@@ -30,6 +31,10 @@
 #include "Gui/timeline.h"
 #include "Gui/texturecache.h"
 #include "Core/viewercache.h"
+#include "Core/row.h"
+#include "Core/viewerNode.h"
+#include <QtCore/QEvent>
+#include <QtGui/QKeyEvent>
 #include "Superviser/powiterFn.h"
 
 using namespace Imf;
@@ -1545,4 +1550,42 @@ void ViewerGL::disconnectViewer(){
     fitToFormat(displayWindow());
     ctrlPTR->getModel()->setVideoEngineRequirements(NULL);
     clearViewer();
+}
+
+/*Convenience function.
+ *Ydirection is the order of fill of the display texture:
+ either bottom to top or top to bottom.*/
+int ViewerGL::Ydirection(){return getCurrentViewerInfos()->getYdirection();}
+
+/*rgbMode is true when we have rgba data.
+ False means it is luminance chroma*/
+bool ViewerGL::rgbMode(){return getCurrentViewerInfos()->rgbMode();}
+
+/*The dataWindow of the currentFrame(BBOX)*/
+const Box2D& ViewerGL::dataWindow(){return getCurrentViewerInfos()->getDataWindow();}
+
+/*The displayWindow of the currentFrame(Resolution)*/
+const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->getDisplayWindow();}
+
+
+/*overload of QT enter/leave/resize events*/
+void ViewerGL::enterEvent(QEvent *event)
+{   QGLWidget::enterEvent(event);
+    setFocus();
+    grabMouse();
+    grabKeyboard();
+}
+void ViewerGL::leaveEvent(QEvent *event)
+{
+    QGLWidget::leaveEvent(event);
+    setFocus();
+    releaseMouse();
+    releaseKeyboard();
+}
+void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
+    makeCurrent();
+    if(isVisible()){
+        QGLWidget::resizeEvent(event);
+        setVisible(true);
+    }
 }

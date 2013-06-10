@@ -15,6 +15,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/lookUpTables.h"
 #include "Core/lutclasses.h"
+#include "Core/row.h"
 using namespace std;
 
 void ReadExr::lookupChannels(std::set<Channel>& channel, const char* name)

@@ -14,14 +14,14 @@
 #include "Core/VideoEngine.h"
 #include "Core/inputnode.h"
 #include "Core/outputnode.h"
-#include "Core/mappedfile.h"
 #include "Core/viewerNode.h"
 #include "Core/settings.h"
 #include "Core/model.h"
 #include "Core/hash.h"
 #include "Core/Timer.h"
-#include "Core/mappedfile.h"
 #include "Core/lookUpTables.h"
+#include "Core/viewercache.h"
+
 
 #include "Gui/mainGui.h"
 #include "Gui/viewerTab.h"
@@ -32,6 +32,7 @@
 
 #include "Superviser/controler.h"
 #include "Superviser/MemoryInfo.h"
+
 
 
 #define gl_viewer currentViewer->viewer
@@ -206,7 +207,10 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     /*1 slot in the vector corresponds to 1 frame read by a reader. The second member indicates whether the frame
      was in cache or not.*/
     FramesVector readFrames = startReading(readers, true , true);
-        
+    
+    _dag.getOutput()->validate(true);// < validating infos
+
+    
     for(U32 i = 0; i < readFrames.size();i++){
         ReadFrame readFrame = readFrames[i];
         if (readFrame.second != _viewerCache->end()) {
@@ -241,7 +245,6 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     }
 }
 void VideoEngine::finishComputeFrameRequest(){
-    foreach(Row* r, _sequenceToWork) delete r;
     _sequenceToWork.clear();
     
     *_enginePostProcessResults = QtConcurrent::run(gl_viewer,
@@ -249,7 +252,7 @@ void VideoEngine::finishComputeFrameRequest(){
     _engineLoopWatcher->setFuture(*_enginePostProcessResults);
 }
 
-void VideoEngine::cachedFrameEngine(ViewerCache::FramesIterator frame){
+void VideoEngine::cachedFrameEngine(FrameEntry* frame){
     int w = frame->second._actualW ;
     int h = frame->second._actualH ;
     size_t dataSize = 0;
@@ -258,7 +261,6 @@ void VideoEngine::cachedFrameEngine(ViewerCache::FramesIterator frame){
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
     }
-    _dag.getOutput()->validate(true);// < validating infos
     /*resizing texture if needed, the calls must be made in that order*/
     gl_viewer->initTextureBGRA(w,h,gl_viewer->getDefaultTextureID());
     gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
@@ -307,7 +309,6 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer,int followingComputationsNb){
-    output->validate(true);
     if(fitFrameToViewer && currentViewer && _outputIsViewer){
         gl_viewer->fitToFormat(gl_viewer->displayWindow());
     }
@@ -489,23 +490,25 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
-    if(!row->cached())
-        row->allocate();
-    
-    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){
-        Node* node = *it;
-        if((node->getOutputChannels() & node->getInfo()->channels())){
-            
-            if(!row->cached()){
-                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-            }else{
-                if(node == output){
-                    node->engine(row->y(),row->offset(),row->right(),
-                                 node->getRequestedChannels() & node->getInfo()->channels(),row);
-                }
-            }
-        }
+    row->allocate();
+    if((output->getOutputChannels() & output->getInfo()->channels())){
+        output->engine(row->y(), row->offset(), row->right(), output->getRequestedChannels(), row);
     }
+    delete row;
+//    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){
+//        Node* node = *it;
+//        if((node->getOutputChannels() & node->getInfo()->channels())){
+//            
+//            if(!row->cached()){
+//                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
+//            }else{
+//                if(node == output){
+//                    node->engine(row->y(),row->offset(),row->right(),
+//                                 node->getRequestedChannels() & node->getInfo()->channels(),row);
+//                }
+//            }
+//        }
+//    }
 }
 
 void VideoEngine::updateProgressBar(){
@@ -549,10 +552,6 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     
 }
 
-void VideoEngine::clearDiskCache(){
-    _viewerCache->clearCache();
-}
-
 VideoEngine::~VideoEngine(){
     _enginePostProcessResults->waitForFinished();
     _workerThreadsResults->waitForFinished();
@@ -573,37 +572,6 @@ void VideoEngine::clearInfos(Node* out){
     }
 }
 
-//void VideoEngine::pushReaderInfo(ReaderInfo* info,Reader* reader){
-//    std::map<Reader*, ReaderInfo* >::iterator it = readersInfos.find(reader);
-//    if(it!=readersInfos.end()){
-//        if(*(it->second) == *info){
-//            it->second->currentFrame(info->currentFrame());
-//            it->second->currentFrameName(info->currentFrameName());
-//            //delete info;
-//            return;
-//        }
-//        it->second->copy(info);
-//        //        it->second = info;
-//    }else{
-//        readersInfos.insert(make_pair(reader ,info));
-//    }
-//    _readerInfoHasChanged = true;
-//}
-//void VideoEngine::popReaderInfo(Reader* reader){
-//    std::map<Reader*, ReaderInfo* >::iterator it = readersInfos.find(reader);
-//    if(it!=readersInfos.end()){
-//        readersInfos.erase(it);
-//    }
-//}
-//void VideoEngine::makeReaderInfoCurrent(Reader* reader){
-//    std::map<Reader*, ReaderInfo* >::iterator it = readersInfos.find(reader);
-//    if(it != readersInfos.end() && it->second)
-//    {
-//        gl_viewer->setCurrentReaderInfo(it->second,false,_readerInfoHasChanged);
-//        _readerInfoHasChanged = false;
-//    }
-//
-//}
 void VideoEngine::setDesiredFPS(double d){
     _timer->setDesiredFrameRate(d);
 }
@@ -818,17 +786,7 @@ void VideoEngine::changeTreeVersion(){
     _treeVersion.computeHash();
     
 }
-std::pair<char*,ViewerCache::FrameID> VideoEngine::mapNewFrame(int frameNb,
-                                                               std::string filename,
-                                                               int width,
-                                                               int height,
-                                                               int nbFrameHint){
-    return _viewerCache->mapNewFrame(frameNb,filename, width, height, nbFrameHint,_treeVersion.getHashValue());
-}
 
-void VideoEngine::closeMappedFile(){_viewerCache->closeMappedFile();}
-
-void VideoEngine::clearPlayBackCache(){_viewerCache->clearPlayBackCache();}
 
 void VideoEngine::DAG::fillGraph(Node* n){
     if(std::find(_graph.begin(),_graph.end(),n)==_graph.end()){

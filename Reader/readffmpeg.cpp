@@ -9,6 +9,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/channels.h"
 #include "Gui/node_ui.h"
+#include "Core/row.h"
 using namespace std;
 using namespace Powiter_Enums;
 

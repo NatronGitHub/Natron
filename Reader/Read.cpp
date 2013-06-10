@@ -12,6 +12,8 @@
 #include "Superviser/controler.h"
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
+#include "Core/row.h"
+
 Read::Read(Reader* op):is_stereo(false), _autoCreateAlpha(false),_premult(false)
 {
 	_lut=NULL;
