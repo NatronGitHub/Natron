@@ -10,18 +10,20 @@
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
 
+/*class deriving Node::Info and used by the current viewer.
+ This is essentially the same but it is left this way instead of
+ a typedef if we'd like to pass more infos in the future.*/
+class ViewerInfos : public Node::Info{
+public:
+    ViewerInfos():Node::Info(){}
+    virtual ~ViewerInfos(){}
+};
+
 class ViewerTab;
 class  Viewer: public OutputNode
 {
 public:
-    /*class deriving Node::Info and used by the current viewer. 
-     This is essentially the same but it is left this way instead of
-     a typedef if we'd like to pass more infos in the future.*/
-    class ViewerInfos : public Node::Info{
-    public:
-        ViewerInfos():Node::Info(){}
-        virtual ~ViewerInfos(){}
-    };
+    
     
     Viewer(Viewer& ref):OutputNode(ref){}
     Viewer(Node* node);
@@ -30,7 +32,7 @@ public:
     
     /*tell the ViewerGL to use the current viewerInfos*/
     void makeCurrentViewer();
-    Viewer::ViewerInfos* getViewerInfos(){return _viewerInfos;}
+    ViewerInfos* getViewerInfos(){return _viewerInfos;}
     
     virtual std::string className(){return "Viewer";}
     virtual std::string description();
@@ -40,7 +42,7 @@ protected:
 	
 private:
     virtual void _validate(bool forReal);
-    Viewer::ViewerInfos* _viewerInfos;
+    ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
     
 

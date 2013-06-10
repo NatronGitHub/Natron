@@ -22,6 +22,7 @@ public:
    
     virtual int maximumInputs(){return 1;}
     virtual int minimumInputs(){return 1;}
+    virtual bool cacheData(){return false;}
 
 
 };

@@ -9,6 +9,7 @@
 #include "Superviser/controler.h"
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
+#include "Core/row.h"
 Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0)
 {
     ctrlPTR->getGui()->addViewerTab();
@@ -38,7 +39,9 @@ std::string Viewer::description(){
 }
 
 void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
-    _uiContext->viewer->drawRow(out); // we  ask for the GLViewer to draw this row
+    InputRow row;
+    input(0)->get(y, offset, range, channels, row);
+    _uiContext->viewer->drawRow(row.getInternalRow()); // we  ask for the GLViewer to draw this row
 }
 
 void Viewer::makeCurrentViewer(){

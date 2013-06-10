@@ -9,8 +9,10 @@
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
 #include <math.h>
-#include "Core/hash.h"
+#include "Superviser/powiterFn.h"
 #include "Superviser/MemoryInfo.h"
+
+using namespace Powiter_Enums;
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
 

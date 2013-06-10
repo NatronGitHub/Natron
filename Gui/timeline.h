@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <QtWidgets/QWidget>
-#include <QtGui/qevent.h>
 #include "Superviser/powiterFn.h"
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10

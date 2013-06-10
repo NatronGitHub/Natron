@@ -12,6 +12,9 @@ public:
 
     Op(Op& ref):Node(ref){}
     Op(Node* node);
+    
+    virtual bool cacheData()=0;
+    
     virtual ~Op(){}
 
 

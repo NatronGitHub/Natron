@@ -9,11 +9,12 @@
 
 #include <string>
 #include <cstring>
-#include <boost/foreach.hpp>
+//#include <boost/foreach.hpp>
+#include <QtCore/QForeachContainer>
 #include <vector>
 #include "Superviser/powiterFn.h"
-#undef foreach
-#define foreach BOOST_FOREACH
+#undef foreach 
+#define foreach Q_FOREACH
 
 using namespace Powiter_Enums;
 using namespace std;

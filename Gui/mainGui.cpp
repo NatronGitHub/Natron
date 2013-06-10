@@ -15,6 +15,9 @@
 #include "Gui/tabwidget.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/timeline.h"
+#include "Gui/DAG.h"
+#include "Gui/viewerTab.h"
+
 using namespace std;
 
 Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),
@@ -29,7 +32,7 @@ actionProject_settings(0),
 actionSplitViewersTab(0),
 actionClearDiskCache(0),
 actionClearPlayBackCache(0),
-actionClearBufferCache(0),
+actionClearNodeCache(0),
 actionClearTextureCache(0),
 centralwidget(0),
 verticalLayout(0),
@@ -146,7 +149,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle multi-view area"));
 	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
 	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
-	actionClearBufferCache ->setText(QApplication::translate("Powiter","Clear buffer cache"));
+	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear per-node cache"));
     actionClearTextureCache ->setText(QApplication::translate("Powiter","Clear texture cache"));
     
 
@@ -215,10 +218,10 @@ void Gui::setupUi()
 	actionClearPlayBackCache->setObjectName(QString::fromUtf8("actionClearPlayBackCache"));
 	actionClearPlayBackCache->setCheckable(false);
 	actionClearPlayBackCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_P));
-	actionClearBufferCache = new QAction(this);
-	actionClearBufferCache->setObjectName(QString::fromUtf8("actionClearBufferCache"));
-	actionClearBufferCache->setCheckable(false);
-	actionClearBufferCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
+	actionClearNodeCache = new QAction(this);
+	actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
+	actionClearNodeCache->setCheckable(false);
+	actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
     actionClearTextureCache = new QAction(this);
 	actionClearTextureCache->setObjectName(QString::fromUtf8("actionClearTextureCache"));
 	actionClearTextureCache->setCheckable(false);
@@ -383,7 +386,7 @@ void Gui::setupUi()
 	viewersMenu->addAction(actionSplitViewersTab);
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
-	cacheMenu->addAction(actionClearBufferCache);
+	cacheMenu->addAction(actionClearNodeCache);
     cacheMenu->addAction(actionClearTextureCache);
 	retranslateUi(this);
     
@@ -424,7 +427,7 @@ void Gui::setupUi()
     VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),vengine,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),vengine,SLOT(clearPlayBackCache()));
-    QObject::connect(actionClearBufferCache, SIGNAL(triggered()),vengine,SLOT(clearRowCache()));
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),vengine,SLOT(clearRowCache()));
     
 	QMetaObject::connectSlotsByName(this);
     

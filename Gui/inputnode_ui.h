@@ -16,6 +16,7 @@ public:
      void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
          NodeGui::paint(painter,options,parent);
      }
+    
 };
 
 #endif // INPUTNODE_UI_H

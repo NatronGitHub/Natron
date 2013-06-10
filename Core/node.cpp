@@ -12,7 +12,13 @@
 #include "Core/channels.h"
 #include "Core/model.h"
 #include "Core/displayFormat.h"
-
+#include "Core/nodecache.h"
+#include "Reader/Reader.h"
+#include "Superviser/controler.h"
+#include "Gui/timeline.h"
+#include "Gui/viewerTab.h"
+#include "Core/row.h"
+#include "Gui/mainGui.h"
 
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
@@ -374,6 +380,34 @@ void Node::createKnobDynamically(){
 
 std::string Node::description(){
     return "";
+}
+
+void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
+    NodeCache* cache = NodeCache::getNodeCache();
+    std::string filename;
+    Reader* reader = dynamic_cast<Reader*>(this);
+    if(reader){
+        filename = reader->getRandomFrameName(currentViewer->frameSeeker->currentFrame());
+    }
+    Row* out = 0;
+    U64 key = _hashValue->getHashValue();
+    pair<U64,Row*> entry = cache->get(key , filename, x, r, y, channels);
+    if(entry.second && entry.first!=0) out = entry.second;
+    if(out){
+        row.setInternalRow(out);
+        return;
+    }else{
+        if(cacheData()){
+            out = cache->add(entry.first,x, r, y, channels, filename);
+            row.setInternalRow(out);
+        }else{
+            out = new Row(x,y,r,channels,Powiter_Enums::IN_MEMORY);
+            out->allocate();
+        }
+        engine(y, x, r, channels, out);
+        row.setInternalRow(out);
+        return;
+    }
 }
 
 Node::~Node(){

@@ -4,6 +4,7 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include <cassert>
+#include "Superviser/powiterFn.h"
 #include "Reader/Reader.h"
 #include "Reader/readffmpeg.h"
 #include "Reader/readExr.h"
@@ -19,6 +20,10 @@
 #include "Gui/timeline.h"
 #include "Gui/viewerTab.h"
 #include "Gui/mainGui.h"
+#include "Core/viewercache.h"
+#include "Gui/knob.h"
+#include <QtGui/QImage>
+#include <sstream>
 
 /*#ifdef __cplusplus
  extern "C" {
@@ -168,7 +173,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     
 }
 
-Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::FramesIterator frame,int frameNb,bool startNewThread){
+Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame,int frameNb,bool startNewThread){
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first,
                                                                     Buffer::CACHED_FRAME);
     if(found !=_buffer.end()){
@@ -227,7 +232,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(ViewerCache::Fram
     }
 }
 
-const char* Reader::retrieveCachedFrame(ViewerCache::FramesIterator frame,int frameNb,void* dst,size_t dataSize){
+const char* Reader::retrieveCachedFrame(FrameEntry* frame,int frameNb,void* dst,size_t dataSize){
     const char* cachedFrame =  _cache->retrieveFrame(frameNb,frame);
     currentViewer->viewer->fillPBO(cachedFrame, dst, dataSize);
     return cachedFrame;
@@ -571,4 +576,84 @@ void Reader::Buffer::ScanLineContext::merge(){
         _rows.insert(make_pair(_rowsToRead[i],0));
     }
     _rowsToRead.clear();
+}
+
+
+//int _firstFrame;
+//int _lastFrame;
+//int _ydirection;
+//bool _blackOutside;
+//bool _rgbMode;
+//Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
+//ChannelMask _channels;
+std::string ReaderInfo::printOut(){
+    Format &dispW = getDisplayWindow();
+    ChannelSet& channels = channels();
+    ostringstream oss;
+    oss << _currentFrameName <<  "<" << firstFrame() << "."
+    << lastFrame() << "."
+    << rgbMode() << "."
+    << dispW.x() << "."
+    << dispW.y() << "."
+    << dispW.right() << "."
+    << dispW.top() << "."
+    << x() << "."
+    << y() << "."
+    << right() << "."
+    << top() << ".";
+    foreachChannels(z, channels){
+        oss << getChannelName(z) << "|";
+    }
+    oss << endl;
+    return oss.str();
+}
+
+ReaderInfo* ReaderInfo::fromString(QString from){
+    ReaderInfo* out = new ReaderInfo;
+    QString name;
+    QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;
+    QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
+    
+    int i = 0;
+    while(from.at(i) != QChar('<')){name.append(from.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(firstFrameStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(lastFrameStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(rgbStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(frmtXStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(frmtYStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(frmtRStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(frmtTStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(bboxXStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(bboxYStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(bboxRStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('.')){name.append(bboxTStr.at(i)); i++}
+    i++;
+    while(from.at(i) != QChar('\n')){name.append(channelsStr.at(i)); i++}
+    i++;
+    ChannelSet channels;
+    i = 0;
+    while(channelsStr.at(i) != QChar('\n')){
+        QString chan;
+        while(channelsStr.at(i) != QChar('|')){
+            chan.append(channelsStr.at(i));
+            i++;
+        }
+        i++;
+        string chanStd = chan.toStdString();
+        channels += getChannelByName(chanStd.c_str());
+    }
+    out->set
+    
+    
 }

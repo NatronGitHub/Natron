@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D719CC4D1764783E0006D7B8 /* nodecache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D719CC4B1764783E0006D7B8 /* nodecache.cpp */; };
+		D719CC4E1764783E0006D7B8 /* nodecache.h in Headers */ = {isa = PBXBuildFile; fileRef = D719CC4C1764783E0006D7B8 /* nodecache.h */; };
+		D719CC551764BDBF0006D7B8 /* abstractCache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D719CC531764BDBF0006D7B8 /* abstractCache.cpp */; };
+		D719CC561764BDBF0006D7B8 /* abstractCache.h in Headers */ = {isa = PBXBuildFile; fileRef = D719CC541764BDBF0006D7B8 /* abstractCache.h */; };
 		D72B89F01760F7A600E5F53C /* tabwidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D72B89EE1760F7A600E5F53C /* tabwidget.cpp */; };
 		D72B89F11760F7A600E5F53C /* tabwidget.h in Headers */ = {isa = PBXBuildFile; fileRef = D72B89EF1760F7A600E5F53C /* tabwidget.h */; };
 		D75667A71741189A002DCBA8 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A31741189A002DCBA8 /* QtConcurrent.framework */; };
@@ -186,6 +190,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D719CC4B1764783E0006D7B8 /* nodecache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = nodecache.cpp; sourceTree = "<group>"; };
+		D719CC4C1764783E0006D7B8 /* nodecache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nodecache.h; sourceTree = "<group>"; };
+		D719CC531764BDBF0006D7B8 /* abstractCache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = abstractCache.cpp; sourceTree = "<group>"; };
+		D719CC541764BDBF0006D7B8 /* abstractCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = abstractCache.h; sourceTree = "<group>"; };
 		D72B89EE1760F7A600E5F53C /* tabwidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tabwidget.cpp; sourceTree = "<group>"; };
 		D72B89EF1760F7A600E5F53C /* tabwidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tabwidget.h; sourceTree = "<group>"; };
 		D75667A31741189A002DCBA8 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtConcurrent.framework; sourceTree = "<group>"; };
@@ -459,6 +467,10 @@
 				D7FD99EA17101E8700D1DCEA /* viewerNode.h */,
 				D7B4811E174E9FAB0011055D /* viewercache.cpp */,
 				D7B4811F174E9FAB0011055D /* viewercache.h */,
+				D719CC4B1764783E0006D7B8 /* nodecache.cpp */,
+				D719CC4C1764783E0006D7B8 /* nodecache.h */,
+				D719CC531764BDBF0006D7B8 /* abstractCache.cpp */,
+				D719CC541764BDBF0006D7B8 /* abstractCache.h */,
 			);
 			name = Core;
 			path = ../../Core;
@@ -613,6 +625,8 @@
 				D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */,
 				D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */,
 				D72B89F11760F7A600E5F53C /* tabwidget.h in Headers */,
+				D719CC4E1764783E0006D7B8 /* nodecache.h in Headers */,
+				D719CC561764BDBF0006D7B8 /* abstractCache.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -748,6 +762,8 @@
 				D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */,
 				D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */,
 				D72B89F01760F7A600E5F53C /* tabwidget.cpp in Sources */,
+				D719CC4D1764783E0006D7B8 /* nodecache.cpp in Sources */,
+				D719CC551764BDBF0006D7B8 /* abstractCache.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -775,8 +791,8 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -816,8 +832,8 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;

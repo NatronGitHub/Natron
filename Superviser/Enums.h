@@ -14,9 +14,7 @@ namespace Powiter_Enums{
     enum Knob_Types{FILE_KNOB,CHANNELS_KNOB,INT_KNOB,FLOAT_KNOB,STRING_KNOB,BOOL_KNOB};
     
     enum Knob_Flags{INVISIBLE=0x1,READ_ONLY=0x2};
-    
-    enum File_Type{EXR,DPX,TIFF,JPEG,FFMPEG,PNG,OTHER};
-    
+        
     enum Scale_Type{LINEAR_SCALE,LOG_SCALE,EXP_SCALE};
     
     enum UI_NODE_TYPE{OUTPUT,INPUT_NODE,OPERATOR,UNDEFINED};
@@ -85,9 +83,15 @@ namespace Powiter_Enums{
     };
 
     
-    enum MMAPfile_mode{ReadOnly,ReadWrite,Priv};
+    enum MMAPfile_mode{if_exists_fail_if_not_exists_create,
+        if_exists_keep_if_dont_exists_fail,
+        if_exists_keep_if_dont_exists_create,
+        if_exists_truncate_if_not_exists_fail,
+        if_exists_truncate_if_not_exists_create};
     
-    
+    enum RowStorageMode{IN_MEMORY,BACKED_ON_DISK};
 }
+
+
 
 #endif // INCLUDED_ENUMS_H

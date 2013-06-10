@@ -7,20 +7,13 @@
 #define KNOB_H
 #include <vector>
 #include <QtCore/QString>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QLineEdit>
 #include <QtWidgets/QSpinBox>
-#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QWidget>
 #include <QtCore/QStringList>
+#include <QtWidgets/QLineEdit>
 #include "Superviser/powiterFn.h"
 #include "Core/channels.h"
-#ifdef __POWITER_WIN32__
-typedef unsigned _int32 uint32_t;
-#elif defined(__POWITER_UNIX__)
-#include "stdint.h"
-#endif
+
 
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
@@ -41,8 +34,8 @@ using namespace Powiter_Enums;
 typedef unsigned int Knob_Mask;
 std::vector<Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
 
-
-
+class QHBoxLayout;
+class QCheckBox;
 class SettingsPanel;
 class Node;
 class Knob_Callback;
