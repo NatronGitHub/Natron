@@ -261,7 +261,7 @@ void ViewerCache::restoreCache(){
                 infos->setDisplayWindow(format);
                 infos->firstFrame(firstFrameStr.toInt());
                 infos->lastFrame(lastFrameStr.toInt());
-                infos->setChannels(channels);
+                infos->setChannels    (channels);
                 infos->setCurrentFrameName(fileNameStr.toStdString());
                 ViewerCache::FrameID _id( zoom , exposure  , lut,
                                          rank,treeHash,_cachedIndex,byteMode,infos,actualW,actualH);
