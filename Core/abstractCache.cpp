@@ -50,7 +50,7 @@ void MemoryMappedEntry::deallocate(){
 }
 
 bool MemoryMappedEntry::reOpen(){
-    if(_path.empty() || !_mappedFile) return false;
+    if(_path.empty()) return false;
     try{
         _mappedFile = new MemoryFile(_path.c_str(),Powiter_Enums::if_exists_keep_if_dont_exists_fail);
     }catch(const char* str){
@@ -336,7 +336,7 @@ void AbstractDiskCache::restore(){
                 }
                 
                 /*cache is filled , debug*/
-                debug();
+               // debug();
                 
             }else{
                 cout << cacheName() << ":The entries count in the restore file does not equal the number of actual data files. Reseting." << endl;

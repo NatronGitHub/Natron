@@ -748,12 +748,12 @@ bool ViewerGL::determineFrameDataContainer(std::string filename,int nbFrameHint,
         U64 treeVersion = ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion();
         U64 key = FrameEntry::computeHashKey(filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), dataWindow(), displayWindow());
         
-        cout << " ADD : key computed with \n " << filename << " "
-        << treeVersion << " " <<  _zoomCtx.getZoomFactor() << " " << exposure << " " << _lut
-        << " " << byteMode() << " " << dataWindow().x() << " " << dataWindow().y() << " "  << dataWindow().right() << " "
-        << dataWindow().top() << " " << displayWindow().x() << " " << displayWindow().y() << " " <<
-        displayWindow().right() << " " << displayWindow().top() << endl;
-        cout << " KEY: " << key << endl;
+//        cout << " ADD : key computed with \n " << filename << " "
+//        << treeVersion << " " <<  _zoomCtx.getZoomFactor() << " " << exposure << " " << _lut
+//        << " " << byteMode() << " " << dataWindow().x() << " " << dataWindow().y() << " "  << dataWindow().right() << " "
+//        << dataWindow().top() << " " << displayWindow().x() << " " << displayWindow().y() << " " <<
+//        displayWindow().right() << " " << displayWindow().top() << endl;
+//        cout << " KEY: " << key << endl;
         
         FrameEntry* entry = ViewerCache::getViewerCache()->add(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
         

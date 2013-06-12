@@ -217,18 +217,16 @@ FrameEntry* ViewerCache::get(std::string filename,
                                             const Box2D& bbox,
                                             const Format& dispW){
     
-    cout << " GET : key computed with \n " << filename << " "
-    << treeVersion << " " << zoomFactor << " " << exposure << " " << lut
-    << " " << byteMode << " " << bbox.x() << " " << bbox.y() << " "  << bbox.right() << " "
-    << bbox.top() << " " << dispW.x() << " " << dispW.y() << " " << dispW.right() << " " << dispW.top() << endl;
-    
+//    cout << " GET : key computed with \n " << filename << " "
+//    << treeVersion << " " << zoomFactor << " " << exposure << " " << lut
+//    << " " << byteMode << " " << bbox.x() << " " << bbox.y() << " "  << bbox.right() << " "
+//    << bbox.top() << " " << dispW.x() << " " << dispW.y() << " " << dispW.right() << " " << dispW.top() << endl;
+//    
     U64 key = FrameEntry::computeHashKey(filename, treeVersion, zoomFactor, exposure, lut, byteMode,bbox,dispW);
-    
-    cout << "KEY : " << key << endl;
+//    
+//    cout << "KEY : " << key << endl;
     CacheIterator it = isInMemory(key);
-    
-    debug();
-    
+        
     if (it == endMemoryCache()) {// not in memory
         it = isCached(key);
         if(it == end()){ //neither on disk
