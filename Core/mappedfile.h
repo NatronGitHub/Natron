@@ -107,7 +107,7 @@ class MemoryFile {
 public:
     MemoryFile(const char *pathname, Powiter_Enums::MMAPfile_mode open_mode);
     ~MemoryFile();
-    char* data() { return data_; }
+    char* data() const { return data_; }
     void resize(size_t new_size);
     void reserve(size_t new_capacity);
     size_t size() const { return size_; }

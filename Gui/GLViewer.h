@@ -53,11 +53,13 @@ class ViewerGL : public QGLWidget
 
 		/*basic state switching for mouse events*/
 		enum MOUSE_STATE{DRAGGING,UNDEFINED};
-
+public:
 	/*enum used by the handleTextureAndViewerCache function to determine the behaviour
 	to have depending on the caching mode*/
 	enum CACHING_MODE{TEXTURE_CACHE,VIEWER_CACHE};
-
+    
+private:
+    
 	class ZoomContext{
 	public:
 		ZoomContext():zoomX(0),zoomY(0),zoomFactor(1),restToZoomX(0),restToZoomY(0)
@@ -77,9 +79,9 @@ class ViewerGL : public QGLWidget
 
 public:
 	/*3 different constructors, that all take a different parameter related to OpenGL or Qt widget parenting*/
-	ViewerGL(float byteMode,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-	ViewerGL(float byteMode,const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-	ViewerGL(float byteMode,QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
+	ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
 
 	virtual ~ViewerGL();
 
@@ -134,6 +136,9 @@ public:
 	/*these are the channels the viewer wants to display*/
 	ChannelMask displayChannels(){return _channelsToDraw;}
 
+    /*Returns 1.f if the viewer is using 8bit textures.
+     Returns 0.f if the viewer is using 32bit f.p textures.*/
+    float byteMode();
 
 
 	/*(ROI), not used yet*/
@@ -256,7 +261,7 @@ public:
 	* The caller should then abort any computation and set for current texture the one returned.
 	* otherwise returns false.
 	*/
-	bool handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode);
+	bool determineFrameDataContainer(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
 
@@ -291,8 +296,6 @@ public:
 	U32 getCurrentTexture(){return currentTexture;}
 
 	GLuint getDefaultTextureID(){return texId[0];}
-
-	float byteMode(){return _byteMode;}
 
 	bool hasHardware(){return _hasHW;}
 
@@ -384,7 +387,6 @@ private:
 	QString _topRightBBOXoverlay;
 
 	bool _overlay;
-	float _byteMode; // boolean
 	bool _hasHW;
 	bool _fullscreen;
 

@@ -140,7 +140,7 @@ ViewerTab::ViewerTab(QWidget* parent):QWidget(parent),initialized_(false)
 	/*=============================================*/
     
 	/*openGL viewer*/
-	viewer=new ViewerGL(Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode,this);
+	viewer=new ViewerGL(this);
 	viewer->setObjectName(QString::fromUtf8("viewer"));
     viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	viewer_tabLayout->addWidget(viewer);

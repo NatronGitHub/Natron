@@ -23,11 +23,8 @@
 
 #define ROOT "./"
 #define CACHE_ROOT_PATH ROOT"Cache/"
-#define VIEWER_CACHE_PATH CACHE_ROOT_PATH"ViewerCache/"
 #define IMAGES_PATH ROOT"Images/"
 #define PLUGINS_PATH ROOT"Plugins"
-
-#define CACHE_VERSION "1.0.0"
 
 
 // debug flag
@@ -40,6 +37,10 @@ typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
 // use boost for cache internals instead of STL. Comment it to make use of STL version of the cache.
+
+//#define USE_VARIADIC_TEMPLATES
+
+#define CACHE_USE_HASH
 #define CACHE_USE_BOOST
 
 

@@ -45,7 +45,7 @@ _byteMode(byteMode),_actualW(actualW),_actualH(actualH){
     *_frameInfo = *info;
 }
 
-FrameEntry::FrameEntry(const ViewerCache::FrameEntry& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
+FrameEntry::FrameEntry(const FrameEntry& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
 _treeVers(other._treeVers),_byteMode(other._byteMode),_actualW(other._actualW),_actualH(other._actualH)
 {
     _frameInfo = new ReaderInfo;
@@ -58,40 +58,39 @@ FrameEntry::~FrameEntry(){
 
 std::string FrameEntry::printOut(){
     ostringstream oss;
-    oss << getMappedFile()->path() << " " <<_zoom << " "
+    oss << _path << " " <<_zoom << " "
     << _exposure << " "
     << _lut << " "
     << _treeVers << " "
     << _byteMode << " "
-    << _frameInfo->printOut() << " "
+    << _frameInfo->printOut()
     << _actualW << " "
     << _actualH << " " << endl;
     return oss.str();
 }
 
 /*Recover an entry from string*/
-std::pair<U64,MemoryMappedEntry*> FrameEntry::recoverEntryFromString(QString str){
-    ViewerCache::FrameEntry* entry = new FrameEntry;
-    QString path;
+FrameEntry* FrameEntry::recoverFromString(QString str){
+    FrameEntry* entry = new FrameEntry;
+    
     QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,actualWStr,actualHStr;
     int i =0 ;
-    while(str.at(i)!= QChar(' ')){path.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){expStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){expStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){lutStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){lutStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){treeStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){treeStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){byteStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){byteStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));i++}
+    while(str.at(i)!= QChar(' ')){actualWStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){actualWStr.append(str.at(i));i++}
-    i++;
-    while(str.at(i)!= QChar('\n')){actualHStr.append(str.at(i));i++}
+    while(i < str.size()){actualHStr.append(str.at(i));i++;}
+    
     entry->_zoom = zoomStr.toFloat();
     entry->_exposure = expStr.toFloat();
     entry->_lut = lutStr.toFloat();
@@ -101,46 +100,93 @@ std::pair<U64,MemoryMappedEntry*> FrameEntry::recoverEntryFromString(QString str
     entry->_actualW = actualWStr.toInt();
     entry->_actualH = actualHStr.toInt();
     
+    return entry;
+}
+
+std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString str){
+    if(str.isEmpty()) return make_pair(0, (MemoryMappedEntry*)NULL);
+    QString path,entryStr;
+    int i =0 ;
+    while(str.at(i)!= QChar(' ')){path.append(str.at(i));i++;}
+    i++;
+    while(i < str.size()){entryStr.append(str.at(i));i++;}
+    i++;
+    
+    if (!QFile::exists(path)) {
+        return make_pair(0, (MemoryMappedEntry*)NULL);;
+    }
+    
+    FrameEntry* entry = FrameEntry::recoverFromString(entryStr);
+    if(!entry){
+        cout << "Invalid entry : " << qPrintable(path) << endl;
+        return make_pair(0,(FrameEntry*)NULL);
+    }else{
+        U64 dataSize ;
+        if(entry->_byteMode == 1){
+            dataSize = entry->_actualH * entry->_actualW * 4;
+        }else{
+            dataSize = entry->_actualH * entry->_actualW * 4 * sizeof(float);
+        }
+        string pathStd = path.toStdString();
+        if(!entry->allocate(dataSize,pathStd.c_str())){
+            QFile::remove(path);
+            delete entry;
+            return make_pair(0, (MemoryMappedEntry*)NULL);
+        }
+    }
     QString hashKey;
     int j = path.size() - 1;
     while(path.at(j) != QChar('.')) j--;
     j--;
-    while(path.at(j) != QChar('/')){hashKey.append(path.at(j));j--;}
-    U64 key = hashKey.toULongLong();
+    while(path.at(j) != QChar('/')){hashKey.prepend(path.at(j));j--;}
+    j--;
+    while (path.at(j) != QChar('/')) {
+        hashKey.prepend(path.at(j));
+        j--;
+    }
+    bool ok;
+    U64 key = hashKey.toULongLong(&ok,16);
+    
     return make_pair(key,entry);
 }
-
 
 ViewerCache* ViewerCache::getViewerCache(){
     return ViewerCache::instance();
 }
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
-FrameEntry* add(U64 key,
-                std::string filename,
-                U64 treeVersion,
-                float zoomFactor,
-                float exposure,
-                float lut ,
-                float byteMode,
-                int w,
-                int h,
-                ReaderInfo* info){
+FrameEntry* ViewerCache::add(U64 key,
+                             std::string filename,
+                             U64 treeVersion,
+                             float zoomFactor,
+                             float exposure,
+                             float lut ,
+                             float byteMode,
+                             int w,
+                             int h,
+                             const Box2D& bbox,
+                             const Format& dispW){
+    ReaderInfo* info = new ReaderInfo;
+    info->setCurrentFrameName(filename);
+    info->setDisplayWindow(dispW);
+    info->set(bbox);
+    FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
+                                      treeVersion,byteMode,info,w,h);
     
-    FrameEntry* out = new FrameEntry(zoomFactor,exposure,lut,
-                                     treeVersion,byteMode,info,w,h);
     string name(getCachePath().toStdString());
     {
-        QMutexLocker guard(&_mutex);
+        //QReadLocker guard(&_lock);
         ostringstream oss1;
-        oss1 << hex << (key >> 56);
+        oss1 << hex << (key >> 60);
+        oss1 << hex << ((key << 4) >> 60);
+
         name.append(oss1.str());
         ostringstream oss2;
         oss2 << hex << ((key << 8) >> 8);
         QDir subfolder(name.c_str());
         if(!subfolder.exists()){
             cout << "Something is wrong in cache... couldn't find : " << name << endl;
-
+            
         }else{
             name.append("/");
             name.append(oss2.str());
@@ -153,27 +199,83 @@ FrameEntry* add(U64 key,
     }else{
         dataSize = w*h*4*sizeof(float);
     }
-    out->allocate(dataSize,name.c_str());
+
+    if(!out->allocate(dataSize,name.c_str())){
+        delete out;
+        return NULL;
+    }
     AbstractDiskCache::add(key, out);
-    
+    return out;
 }
 
-std::pair<U64,FrameEntry*> ViewerCache::get(std::string filename,
+FrameEntry* ViewerCache::get(std::string filename,
                                             U64 treeVersion,
                                             float zoomFactor,
                                             float exposure,
                                             float lut ,
                                             float byteMode,
-                                            int w,
-                                            int h,
-                                            ReaderInfo* info){
+                                            const Box2D& bbox,
+                                            const Format& dispW){
     
+    cout << " GET : key computed with \n " << filename << " "
+    << treeVersion << " " << zoomFactor << " " << exposure << " " << lut
+    << " " << byteMode << " " << bbox.x() << " " << bbox.y() << " "  << bbox.right() << " "
+    << bbox.top() << " " << dispW.x() << " " << dispW.y() << " " << dispW.right() << " " << dispW.top() << endl;
     
+    U64 key = FrameEntry::computeHashKey(filename, treeVersion, zoomFactor, exposure, lut, byteMode,bbox,dispW);
     
+    cout << "KEY : " << key << endl;
+    CacheIterator it = isInMemory(key);
+    
+    debug();
+    
+    if (it == endMemoryCache()) {// not in memory
+        it = isCached(key);
+        if(it == end()){ //neither on disk
+            return NULL;
+        }else{ // found on disk
+            CacheEntry* entry = AbstractCache::getValueFromIterator(it);
+            FrameEntry* frameEntry = static_cast<FrameEntry*>(entry);
+            assert(frameEntry);
+            if(!frameEntry->reOpen()){
+                return NULL;
+            }
+            return frameEntry;
+        }
+    }else{ // found in memory
+        CacheEntry* entry = AbstractCache::getValueFromIterator(it);
+        FrameEntry* frameEntry = static_cast<FrameEntry*>(entry);
+        assert(frameEntry);
+        return frameEntry;
+    }
+    return NULL;
 }
 
 
-
-
-
+U64 FrameEntry::computeHashKey(std::string filename,
+                          U64 treeVersion,
+                          float zoomFactor,
+                          float exposure,
+                          float lut ,
+                          float byteMode,
+                          const Box2D& bbox,
+                          const Format& dispW){
+    Hash _hash;
+    _hash.appendQStringToHash(QString(filename.c_str()));
+    _hash.appendNodeHashToHash(treeVersion);
+    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
+    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&exposure)));
+    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&lut)));
+    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&byteMode)));
+    _hash.appendNodeHashToHash(bbox.x());
+    _hash.appendNodeHashToHash(bbox.y());
+    _hash.appendNodeHashToHash(bbox.top());
+    _hash.appendNodeHashToHash(bbox.right());
+    _hash.appendNodeHashToHash(dispW.x());
+    _hash.appendNodeHashToHash(dispW.y());
+    _hash.appendNodeHashToHash(dispW.top());
+    _hash.appendNodeHashToHash(dispW.right());
+    _hash.computeHash();
+    return _hash.getHashValue();
+}
 

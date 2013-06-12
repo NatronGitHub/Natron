@@ -424,10 +424,10 @@ void Gui::setupUi()
 	addDockWidget(Qt::RightDockWidgetArea, rightDock);
 	rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
     QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
-    VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
-    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),vengine,SLOT(clearDiskCache()));
-    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),vengine,SLOT(clearPlayBackCache()));
-    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),vengine,SLOT(clearRowCache()));
+    Model* model = ctrlPTR->getModel();
+    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearViewerAndNodeCaches()));
+    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearInMemoryCaches()));
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearTotallyNodeCache()));
     
 	QMetaObject::connectSlotsByName(this);
     

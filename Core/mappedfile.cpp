@@ -91,15 +91,31 @@ file_handle_(-1)
         }
         const size_t min_file_size = 4096;
         file_handle_ = ::open(pathname, posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-        if (file_handle_ == -1) return;
+        if (file_handle_ == -1){
+            string str("MemoryFile EXC : Failed to open ");
+            str.append(pathname);
+            throw str.c_str();
+            return;
+        }
         struct stat sbuf;
-        if (::fstat(file_handle_, &sbuf) == -1) return;
+        if (::fstat(file_handle_, &sbuf) == -1){
+            string str("MemoryFile EXC : Failed to get file infos: ");
+            str.append(pathname);
+            throw str.c_str();
+            return;
+        }
         size_t initial_file_size = sbuf.st_size;
         size_t adjusted_file_size = initial_file_size == 0 ? min_file_size : initial_file_size;
         ::ftruncate(file_handle_, adjusted_file_size);
         data_ = static_cast<char*>(::mmap(
                                           0, adjusted_file_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
-        if (data_ == MAP_FAILED) data_ = 0;
+        if (data_ == MAP_FAILED){
+            data_ = 0;
+            string str("MemoryFile EXC : Failed to create mapping: ");
+            str.append(pathname);
+            throw str.c_str();
+            
+        }
         else {
             size_ = initial_file_size;
             capacity_ = adjusted_file_size;
@@ -126,17 +142,31 @@ file_handle_(-1)
                 case Powiter_Enums::if_exists_truncate_if_not_exists_create:
                     windows_open_mode = CREATE_ALWAYS;
                     break;
-                default: return;
+                default:
+                    string str("MemoryFile EXC : Invalid open mode. ");
+                    str.append(pathname);
+                    throw str.c_str();
+                    return;
             }
             const size_t min_file_size = 4096;
             file_handle_ = ::CreateFile(pathname, GENERIC_READ | GENERIC_WRITE,
                                         0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
-            if (file_handle_ == INVALID_HANDLE_VALUE) return;
+            if (file_handle_ == INVALID_HANDLE_VALUE){
+                string str("MemoryFile EXC : Failed to open file ");
+                str.append(pathname);
+                throw str.c_str();
+                return;
+            }
             size_t initial_file_size = ::GetFileSize(file_handle_, 0);
             size_t adjusted_file_size = initial_file_size == 0 ? min_file_size : initial_file_size;
             file_mapping_handle_ = ::CreateFileMapping(
                                                        file_handle_, 0, PAGE_READWRITE, 0, adjusted_file_size, 0);
-            if (file_mapping_handle_ == INVALID_HANDLE_VALUE) return;
+            if (file_mapping_handle_ == INVALID_HANDLE_VALUE){
+                string str("MemoryFile EXC : Failed to create mapping :  ");
+                str.append(pathname);
+                throw str.c_str();
+                return;
+            }
             data_ = static_cast<char*>(::MapViewOfFile(
                                                        file_mapping_handle_, FILE_MAP_WRITE, 0, 0, 0));
             if (data_) {

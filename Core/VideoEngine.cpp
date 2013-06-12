@@ -21,7 +21,8 @@
 #include "Core/Timer.h"
 #include "Core/lookUpTables.h"
 #include "Core/viewercache.h"
-
+#include "Core/nodecache.h"
+#include "Core/row.h"
 
 #include "Gui/mainGui.h"
 #include "Gui/viewerTab.h"
@@ -142,14 +143,12 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     if(_outputIsViewer){
         frameSeeker = currentViewer->frameSeeker;
     }
-    /*autovalidate will set the frame range correctly for all nodes,but not other infos 
+    /*autovalidate will set the frame range correctly for all nodes,but not other infos
      like channels, bbox etc...since we didn't read files already from Readers.*/
     if(!recursiveCall){
         _outputIsViewer ? currentFrame = frameSeeker->currentFrame() : currentFrame = 0; // FIX THIS FOR WRITERS
         if(!sameFrame){
-            /*harmonize node infos across the DAG
-             Must be called always after startReading has been called
-             since it relies on InputNodes Infos.*/
+            /*validate false will just merge frame range across all the DAG*/
             _dag.getOutput()->validate(false);
             firstFrame = _dag.firstFrame();
             lastFrame = _dag.lastFrame();
@@ -167,6 +166,9 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         }
         
     }else{ // if the call is recursive, i.e: the next frame in the sequence
+        
+        NodeCache::getNodeCache()->clearDiskCache();
+        
         lastFrame = _dag.lastFrame();
         firstFrame = _dag.firstFrame();
         if(_forward){
@@ -209,11 +211,11 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     FramesVector readFrames = startReading(readers, true , true);
     
     _dag.getOutput()->validate(true);// < validating infos
-
+    
     
     for(U32 i = 0; i < readFrames.size();i++){
         ReadFrame readFrame = readFrames[i];
-        if (readFrame.second != _viewerCache->end()) {
+        if (readFrame.second) {
             cachedFrameEngine(readFrame.second);
             if(_paused){
                 stopEngine();
@@ -253,14 +255,8 @@ void VideoEngine::finishComputeFrameRequest(){
 }
 
 void VideoEngine::cachedFrameEngine(FrameEntry* frame){
-    int w = frame->second._actualW ;
-    int h = frame->second._actualH ;
-    size_t dataSize = 0;
-    if(frame->second._byteMode==1.0){
-        dataSize  = w * h * sizeof(U32) ;
-    }else{
-        dataSize  = w * h  * sizeof(float) * 4;
-    }
+    int w = frame->_actualW ;
+    int h = frame->_actualH ;
     /*resizing texture if needed, the calls must be made in that order*/
     gl_viewer->initTextureBGRA(w,h,gl_viewer->getDefaultTextureID());
     gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
@@ -330,11 +326,11 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     
     // selecting the right anchor of the row
     int right = _dispW.right();
-  //  _dataW.right() > _dispW.right() ? right = _dataW.right() : right = _dispW.right();
+    //  _dataW.right() > _dispW.right() ? right = _dataW.right() : right = _dispW.right();
     
     // selecting the left anchor of the row
 	int offset= _dispW.x();
-   // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
+    // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
     map<int,int>::iterator it = rows.begin();
     map<int,int>::iterator last = rows.end();
     ViewerGL::CACHING_MODE mode = ViewerGL::TEXTURE_CACHE;
@@ -358,7 +354,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     int w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
     int h = rows.size();
     //starting viewer pre-process : i.e initialize the cached frame
-    bool isTextureCached = gl_viewer->handleTextureAndViewerCache(filename,followingComputationsNb,w,h,mode);
+    bool isTextureCached = gl_viewer->determineFrameDataContainer(filename,followingComputationsNb,w,h,mode);
     /*if a texture was found in cache, notify the viewer and skip immediately to the loop*/
     if(isTextureCached){
         QCoreApplication::processEvents();
@@ -378,9 +374,8 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
             stopEngine();
             return;
         }
-        Row* row = 0;
         int y = it->first;
-        row=new Row(offset,y,right,outChannels);
+        Row* row =new Row(offset,y,right,outChannels);
         row->zoomedY(counter);
         _sequenceToWork.push_back(row);
         counter++;
@@ -395,7 +390,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     void* gpuMappedBuffer = gl_viewer->allocateAndMapPBO(dataSize,gl_viewer->getPBOId(0));
     _gpuTransferInfo.set(gl_viewer->getFrameData(), gpuMappedBuffer, dataSize);
     
-    *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,this,_1,output));
+    *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,_1,output));
     _workerThreadsWatcher->setFuture(*_workerThreadsResults);
     
 }
@@ -413,14 +408,15 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
             Reader* reader = readers[i];
             std::string currentFrameName = reader->getRandomFrameName(currentViewer->frameSeeker->currentFrame());
             std::vector<Reader::Buffer::DecodedFrameDescriptor> ret;
-            pair<ViewerCache::FramesIterator,bool> iscached =
-            _viewerCache->isCached(currentFrameName,
-                                   _treeVersion.getHashValue(),
-                                   gl_viewer->getZoomFactor(),
-                                   gl_viewer->getExposure(),
-                                   gl_viewer->lutType(),
-                                   gl_viewer->_byteMode);
-            if(!iscached.second){
+            FrameEntry* iscached =_coreEngine->getViewerCache()->get(currentFrameName,
+                                                                     _treeVersion.getHashValue(),
+                                                                     gl_viewer->getZoomFactor(),
+                                                                     gl_viewer->getExposure(),
+                                                                     gl_viewer->lutType(),
+                                                                     gl_viewer->byteMode(),
+                                                                     gl_viewer->dataWindow(),
+                                                                     gl_viewer->displayWindow());
+            if(!iscached){
                 if(useOtherThreadOnNextLoop && useOtherThread){
                     ret = reader->decodeFrames(mode, false, true , _forward);
                 }else{
@@ -428,13 +424,13 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
                 }
                 useOtherThreadOnNextLoop = !useOtherThreadOnNextLoop;
                 for(U32 j = 0; j < ret.size() ; j ++){
-                    frames.push_back(make_pair(ret[j],_viewerCache->end()));
+                    frames.push_back(make_pair(ret[j],(FrameEntry*)NULL));
                 }
             }else{
-                int cur = currentViewer->frameSeeker->currentFrame();
-                int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : cur;
-                frames.push_back(make_pair(reader->openCachedFrame(iscached.first,frameNb,false),
-                                           iscached.first));
+                //int cur = currentViewer->frameSeeker->currentFrame();
+                //int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : cur;
+                frames.push_back(make_pair(reader->openCachedFrame(iscached,false),
+                                           iscached));
             }
         }
         for(U32 i = 0 ;i < frames.size() ;i++){
@@ -455,21 +451,24 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
         if(followingFrame < reader->firstFrame()) followingFrame = reader->lastFrame();
         
         std::string followingFrameName = reader->getRandomFrameName(followingFrame);
-        pair<ViewerCache::FramesIterator,bool> iscached = _viewerCache->isCached(followingFrameName,
-                                                                                 _treeVersion.getHashValue(),
-                                                                                 gl_viewer->getZoomFactor(),
-                                                                                 gl_viewer->getExposure(),
-                                                                                 gl_viewer->lutType(),
-                                                                                 gl_viewer->_byteMode);
-        if(!iscached.second){
+        FrameEntry* iscached =_coreEngine->getViewerCache()->get(followingFrameName,
+                                                                 _treeVersion.getHashValue(),
+                                                                 gl_viewer->getZoomFactor(),
+                                                                 gl_viewer->getExposure(),
+                                                                 gl_viewer->lutType(),
+                                                                 gl_viewer->byteMode(),
+                                                                 gl_viewer->dataWindow(),
+                                                                 gl_viewer->displayWindow());
+
+        if(!iscached){
             ret = reader->decodeFrames(mode, false, true, _forward);
             for(U32 j = 0; j < ret.size() ; j ++){
-                frames.push_back(make_pair(ret[j],_viewerCache->end()));
+                frames.push_back(make_pair(ret[j],(FrameEntry*)NULL));
             }
         }else{
-            int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : followingFrame;
-            frames.push_back(make_pair(reader->openCachedFrame(iscached.first,frameNb,true),
-                                       iscached.first));
+            //int frameNb = _frameRequestsCount==1 && reader->firstFrame() == reader->lastFrame() ? 0 : followingFrame;
+            frames.push_back(make_pair(reader->openCachedFrame(iscached,true),
+                                       iscached));
         }
         
     }
@@ -490,25 +489,24 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
-    row->allocate();
     if((output->getOutputChannels() & output->getInfo()->channels())){
         output->engine(row->y(), row->offset(), row->right(), output->getRequestedChannels(), row);
     }
     delete row;
-//    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){
-//        Node* node = *it;
-//        if((node->getOutputChannels() & node->getInfo()->channels())){
-//            
-//            if(!row->cached()){
-//                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-//            }else{
-//                if(node == output){
-//                    node->engine(row->y(),row->offset(),row->right(),
-//                                 node->getRequestedChannels() & node->getInfo()->channels(),row);
-//                }
-//            }
-//        }
-//    }
+    //    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){
+    //        Node* node = *it;
+    //        if((node->getOutputChannels() & node->getInfo()->channels())){
+    //
+    //            if(!row->cached()){
+    //                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
+    //            }else{
+    //                if(node == output){
+    //                    node->engine(row->y(),row->offset(),row->right(),
+    //                                 node->getRequestedChannels() & node->getInfo()->channels(),row);
+    //                }
+    //            }
+    //        }
+    //    }
 }
 
 void VideoEngine::updateProgressBar(){
@@ -545,10 +543,6 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     
     _timer=new Timer();
     
-    qint64 maxDiskCacheSize = Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache;
-    qint64 maxMemoryCacheSize = (double)getSystemTotalRAM() *
-    Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent;
-    _viewerCache = new ViewerCache(maxDiskCacheSize/2, maxMemoryCacheSize);
     
 }
 
@@ -559,7 +553,6 @@ VideoEngine::~VideoEngine(){
     delete _workerThreadsWatcher;
     delete _engineLoopWatcher;
     delete _enginePostProcessResults;
-    delete _viewerCache;
     delete _timer;
 }
 

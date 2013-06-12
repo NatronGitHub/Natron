@@ -27,7 +27,7 @@ public:
     
     static T* instance() ;
     static void Destroy();
-    static QMutex* _lock;
+    static QMutex* _mutex;
     
     
 private:
@@ -44,8 +44,8 @@ private:
 
 template<class T> T* Singleton<T>::instance() {
     if ( Singleton::instance_ == 0 ) {
-        if(_lock){
-            QMutexLocker guard(_lock);
+        if(_mutex){
+            QMutexLocker guard(_mutex);
         }
         if ( Singleton::instance_ == 0 ) {
             Singleton::instance_ = CreateInstance();
@@ -71,7 +71,7 @@ template<typename T> void Singleton<T>::DestroyInstance(T* p) {
 }
 
 template<class T> T* Singleton<T>::instance_ = 0;
-template<class T> QMutex* Singleton<T>::_lock = 0;
+template<class T> QMutex* Singleton<T>::_mutex = 0;
 
 
 #endif

@@ -35,7 +35,7 @@ Model::Model(): _videoEngine(0),_mutex(0)
 {
     /*general mutex shared by all nodes*/
     _mutex = new QMutex;
-
+    
     /*node cache initialisation & restoration*/
     _nodeCache = NodeCache::getNodeCache();
     _nodeCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache*2.0/3.0));
@@ -125,7 +125,7 @@ Model::Model(): _videoEngine(0),_mutex(0)
         addFormat(_frmt);
     }
     
-
+    
 }
 
 
@@ -186,7 +186,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 				while(filename.at(index) != QChar('.')) index--;
 				className = filename.left(index);
 				_nodeNames.append(QString(className));
-
+                
 #ifdef __POWITER_WIN32__
 				HINSTANCE lib;
 				string dll;
@@ -205,7 +205,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 						_pluginsLoaded.push_back(plugin);
 					}
 				}
-
+                
 #elif defined(__POWITER_UNIX__)
 				string dll;
                 dll.append(PLUGINS_PATH);
@@ -297,7 +297,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         node->setName(str);
     }
     
-    /*adding nodes to the current nodes and 
+    /*adding nodes to the current nodes and
      adding its cache to the watched caches.*/
     _currentNodes.push_back(node);
     
@@ -320,7 +320,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node,_videoEngine->getViewerCache());
+		node=new Reader(node);
         node->setMutex(m);
         node->initializeInputs();
         node->setSocketCount();
@@ -343,7 +343,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
             
 			if(str==name.toStdString()){
 				
-
+                
 				NodeBuilder builder=(NodeBuilder)pair->first;
 				if(builder!=NULL){
 					node=builder(node);
@@ -352,7 +352,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
                     node->setSocketCount();
 					type=initCounterAndGetDescription(node);
                     
-				}     
+				}
 				return type;
 			}
             
@@ -377,7 +377,7 @@ void Model::displayLoadedPlugins(){
 void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
 Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
-
+    
 	for(int i =0;i< _formats.size();i++){
 		Format* frmt = _formats[i];
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
@@ -516,11 +516,11 @@ void Model::loadBuiltinReads(){
     std::vector<std::string> extensions = readExr->fileTypesDecoded();
     std::string decoderName = readExr->decoderName();
 #ifdef __POWITER_WIN32__
-	 PluginID *EXRplugin = new PluginID((HINSTANCE)&ReadExr::BuildRead,decoderName.c_str());
+    PluginID *EXRplugin = new PluginID((HINSTANCE)&ReadExr::BuildRead,decoderName.c_str());
 #else
-	 PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
 #endif
-   
+    
     for (U32 i = 0 ; i < extensions.size(); i++) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],EXRplugin));
     }
@@ -557,4 +557,22 @@ void Model::loadBuiltinPlugins(){
     // these  are built-in nodes
 	_nodeNames.append("Reader");
 	_nodeNames.append("Viewer");
+}
+
+void Model::clearInMemoryCaches(){
+    _viewerCache->clearInMemoryCache();
+    _nodeCache->clearInMemoryCache();
+}
+void Model::clearInMemoryViewerCache(){
+    _viewerCache->clearInMemoryCache();
+}
+
+void Model::clearViewerAndNodeCaches(){
+    _nodeCache->clearDiskCache();
+    _viewerCache->clearDiskCache();
+}
+
+
+void  Model::clearTotallyNodeCache(){
+    _nodeCache->clearDiskCache();
 }

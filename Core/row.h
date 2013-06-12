@@ -54,8 +54,8 @@ public:
 	
     /*Must be called explicitly after the constructor and BEFORE any usage
      of the Row object. Specify a path for a file name if the row must be backed by
-     a file.*/
-    void allocate(const char* path = 0);
+     a file. Returns true on success, false otherwise.*/
+    bool allocate(const char* path = 0);
    
 
     /*Should be called when you're done using the row.
@@ -64,8 +64,9 @@ public:
     void release();
     
     /*only for rows backed by a file : restores the channels from
-     the backing file, opening it into the application's address space.*/
-    void restoreFromBackingFile();
+     the backing file, opening it into the application's address space.
+     Returns false if it failed.*/
+    bool restoreMapping();
     
 	/*Returns a writable pointer to the channel c.
 	 *WARNING : the pointer returned is pointing to 0.
@@ -125,11 +126,8 @@ public:
     static U64 computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y);
     
 private:
-    /*internally used by allocate when backed by a file*/
-    virtual void allocate(U64 size,const char* path = 0);
+   
     
-    std::string _path;
-    MemoryFile* _backingFile;
     ChannelsToFile* _channelsToFileMapping;
     
     Powiter_Enums::RowStorageMode _storageMode;
@@ -187,7 +185,10 @@ public:
     void setInternalRow(Row* ptr){_row = ptr;}
     Row* getInternalRow() const {return _row;}
         
-    ~InputRow(){_row->release();}
+    ~InputRow(){
+        if(_row)
+            _row->release();
+    }
 };
 
 #endif // ROW_H

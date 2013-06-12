@@ -21,6 +21,7 @@
 		D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D78C15F51737E6510011B5FD /* libftgl.a */; };
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
+		D792662A1767654000FA3354 /* LRUcache.h in Headers */ = {isa = PBXBuildFile; fileRef = D79266291767654000FA3354 /* LRUcache.h */; };
 		D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7AC026C1758E5D1009548B6 /* texturecache.cpp */; };
 		D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7AC026D1758E5D1009548B6 /* texturecache.h */; };
 		D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7B4811E174E9FAB0011055D /* viewercache.cpp */; };
@@ -211,6 +212,7 @@
 		D78C15F51737E6510011B5FD /* libftgl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libftgl.a; path = /usr/local/lib/libftgl.a; sourceTree = "<absolute>"; };
 		D78C15FF173861FD0011B5FD /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../Superviser/main.cpp; sourceTree = SOURCE_ROOT; };
 		D78C1606173862860011B5FD /* controler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = controler.cpp; path = ../../Superviser/controler.cpp; sourceTree = SOURCE_ROOT; };
+		D79266291767654000FA3354 /* LRUcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LRUcache.h; sourceTree = "<group>"; };
 		D7AC026C1758E5D1009548B6 /* texturecache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = texturecache.cpp; sourceTree = "<group>"; };
 		D7AC026D1758E5D1009548B6 /* texturecache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = texturecache.h; sourceTree = "<group>"; };
 		D7B4811E174E9FAB0011055D /* viewercache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewercache.cpp; sourceTree = "<group>"; };
@@ -471,6 +473,7 @@
 				D719CC4C1764783E0006D7B8 /* nodecache.h */,
 				D719CC531764BDBF0006D7B8 /* abstractCache.cpp */,
 				D719CC541764BDBF0006D7B8 /* abstractCache.h */,
+				D79266291767654000FA3354 /* LRUcache.h */,
 			);
 			name = Core;
 			path = ../../Core;
@@ -627,6 +630,7 @@
 				D72B89F11760F7A600E5F53C /* tabwidget.h in Headers */,
 				D719CC4E1764783E0006D7B8 /* nodecache.h in Headers */,
 				D719CC561764BDBF0006D7B8 /* abstractCache.h in Headers */,
+				D792662A1767654000FA3354 /* LRUcache.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -792,7 +796,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -833,7 +837,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
-				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_EMPTY_BODY = YES;

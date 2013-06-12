@@ -41,7 +41,11 @@ std::string Viewer::description(){
 void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     InputRow row;
     input(0)->get(y, offset, range, channels, row);
-    _uiContext->viewer->drawRow(row.getInternalRow()); // we  ask for the GLViewer to draw this row
+    Row* internal = row.getInternalRow();
+    if(internal){
+        internal->zoomedY(out->zoomedY());
+        _uiContext->viewer->drawRow(internal); // we  ask for the GLViewer to draw this row
+    }
 }
 
 void Viewer::makeCurrentViewer(){

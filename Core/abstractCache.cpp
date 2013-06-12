@@ -10,6 +10,7 @@
 #include "Superviser/powiterFn.h"
 #include "Core/mappedfile.h"
 #include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QTextStream>
 #include <sstream>
 using namespace std;
@@ -18,9 +19,28 @@ using namespace std;
 MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
 }
-void MemoryMappedEntry::allocate(U64 byteCount,const char* path){
-    _mappedFile = new MemoryFile(path,Powiter_Enums::if_exists_truncate_if_not_exists_create);
+bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
+#ifdef PW_DEBUG
+    if(QFile::exists(path)){
+        cout << "WARNING: A file with the same name already exist : " << path << endl;
+    }
+#endif
+    try{
+        _mappedFile = new MemoryFile(path,Powiter_Enums::if_exists_keep_if_dont_exists_create);
+    }catch(const char* str){
+        cout << str << endl;
+        deallocate();
+        if(QFile::exists(path)){
+            QFile::remove(path);
+        }
+        return false;
+    }
     _mappedFile->resize(byteCount);
+    _size += _mappedFile->size();
+    string newPath(path);
+    if(_path.empty()) _path.append(path);
+    else if(_path != newPath) _path = newPath;
+    return true;
 }
 void MemoryMappedEntry::deallocate(){
     if(_mappedFile){
@@ -28,15 +48,34 @@ void MemoryMappedEntry::deallocate(){
     }
     _mappedFile = 0;
 }
+
+bool MemoryMappedEntry::reOpen(){
+    if(_path.empty() || !_mappedFile) return false;
+    try{
+        _mappedFile = new MemoryFile(_path.c_str(),Powiter_Enums::if_exists_keep_if_dont_exists_fail);
+    }catch(const char* str){
+        deallocate();
+        if(QFile::exists(_path.c_str())){
+            QFile::remove(_path.c_str());
+        }
+        cout << str << endl;
+        return false;
+    }
+    return true;
+}
+
 MemoryMappedEntry::~MemoryMappedEntry(){
     deallocate();
+    
 }
 
 InMemoryEntry::InMemoryEntry():_data(0){
     
 }
-void InMemoryEntry::allocate(U64 byteCount,const char* path){
+bool InMemoryEntry::allocate(U64 byteCount,const char* path){
     _data = (char*)malloc(byteCount);
+    if(!_data) return false;
+    return true;
 }
 void InMemoryEntry::deallocate(){
     free(_data);
@@ -56,7 +95,10 @@ AbstractCache::~AbstractCache(){
 }
 
 void AbstractCache::clear(){
-    QReadLocker guard(&_lock);
+    QWriteLocker guard(&_cache._rwLock);
+    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
+        delete it->second;
+    }
     _cache.clear();
     _size = 0;
 }
@@ -64,35 +106,38 @@ void AbstractCache::clear(){
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
 AbstractCache::CacheIterator AbstractCache::isCached(const U64& key)  {
-    QReadLocker guard(&_lock);
     return _cache(key);
 }
 
 
 bool AbstractCache::add(U64 key,CacheEntry* entry){
-    QReadLocker guard(&_lock);
     bool evict = false;
-    if (_size >= _maximumCacheSize) {
-        evict = true;
+    {
+        QWriteLocker guard(&_cache._rwLock);
+        if (_size >= _maximumCacheSize) {
+            evict = true;
+        }
+        _size += entry->size();
     }
-    _size += entry->size();
     std::pair<U64,CacheEntry*> evicted = _cache.insert(key,entry,evict);
     if(evicted.second){
-        _size -= evicted.second->size();
-        
+        {
+            QWriteLocker guard(&_cache._rwLock);
+            _size -= evicted.second->size();
+        }
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
-        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
+        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(evicted.second);
         if(mmEntry){
+            delete evicted.second;
             std::string path = mmEntry->getMappedFile()->path();
             QFile::remove(path.c_str());
         }
-        delete evicted.second;
     }
     return evict;
 }
 
 bool AbstractMemoryCache::add(U64 key,CacheEntry* entry){
-    assert(dynamic_cast<InMemoryEntry*>(entry));
+    assert(static_cast<InMemoryEntry*>(entry));
     return AbstractCache::add(key, entry);
 }
 
@@ -101,27 +146,30 @@ AbstractDiskCache::AbstractDiskCache(double inMemoryUsage):_inMemorySize(0){
 }
 
 bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
-    MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(entry);
+    MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(entry);
     assert(mmEntry);
     bool mustEvictFromMemory = false;
-    QReadLocker guard(&_lock);
-    if(_inMemorySize > _maximumInMemorySize*getMaximumSize()){
-        mustEvictFromMemory = true;
+    {
+        QWriteLocker guard(&_cache._rwLock);
+        if(_inMemorySize > _maximumInMemorySize*getMaximumSize()){
+            mustEvictFromMemory = true;
+        }
+        _inMemorySize += mmEntry->size();
     }
-    _inMemorySize += mmEntry->size();
     std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
     if(evicted.second){
         /*switch the evicted entry from memory to the disk.*/
         mmEntry->deallocate();
-        _inMemorySize -= mmEntry->size();
+        {
+            QWriteLocker guard(&_cache._rwLock);
+            _inMemorySize -= mmEntry->size();
+        }
         return AbstractCache::add(evicted.first, evicted.second);
-    }else{
-        return AbstractCache::add(key, mmEntry);
     }
+    return true;
 }
 
 AbstractCache::CacheIterator AbstractDiskCache::isInMemory(const U64 &key) {
-    QReadLocker guard(&_lock);
     return _inMemoryPortion(key);
 }
 
@@ -190,14 +238,19 @@ AbstractDiskCache::~AbstractDiskCache(){
 }
 
 void AbstractDiskCache::clearInMemoryCache(){
-    QReadLocker guard(&_lock);
     _inMemorySize = 0;
-    for (CacheIterator it = beginMemoryCache(); it!=endMemoryCache(); it++) {
-        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
+    while(_inMemoryPortion.size() > 0){
+        std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
+        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(evicted.second);
         assert(mmEntry);
         mmEntry->deallocate();
-        AbstractCache::add(it->first, it->second);
+        AbstractCache::add(evicted.first, evicted.second);
     }
+}
+
+void AbstractDiskCache::clearDiskCache(){
+    clearInMemoryCache();
+    clear();
 }
 
 void AbstractDiskCache::save(){
@@ -205,17 +258,19 @@ void AbstractDiskCache::save(){
     newCachePath.append(cacheName().c_str());
     newCachePath.append("/restoreFile.powc");
     QFile _restoreFile(newCachePath);
-    _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+    _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
     QTextStream out(&_restoreFile);
     /*clearing in-memory cache so only the on-disk portion has entries left.*/
     clearInMemoryCache();
     
     for(CacheIterator it = begin(); it!= end() ; it++){
-        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
+        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
         assert(mmEntry);
         out << mmEntry->printOut().c_str() << endl;
     }
     _restoreFile.close();
+    
+    clear();
 }
 
 void AbstractDiskCache::restore(){
@@ -224,23 +279,71 @@ void AbstractDiskCache::restore(){
     QString settingsFilePath(newCachePath);
     settingsFilePath.append("/restoreFile.powc");
     if(QFile::exists(settingsFilePath)){
+        QDir directory(newCachePath);
+        QStringList files = directory.entryList();
+        
+        
+        /*Now counting actual data files in the cache*/
+        /*check if there's 256 subfolders, otherwise reset cache.*/
+        int count = 0; // -1 because of the restoreFile
+        int subFolderCount = 0;
+        for(int i =0 ; i< files.size() ;i++){
+            QString subFolder(newCachePath);
+            subFolder.append("/");
+            subFolder.append(files[i]);
+            if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
+            QDir d(subFolder);
+            if(d.exists()){
+                subFolderCount++;
+                QStringList items = d.entryList();
+                for(int j = 0 ; j < items.size();j++){
+                    if(items[j] != QString(".") && items[j] != QString("..")) count++;
+                }
+            }
+        }
+        if(subFolderCount<256){
+            cout << cacheName() << " doesn't contain sub-folders indexed from 00 to FF. Reseting." << endl;
+            cleanUpDiskAndReset();
+        }
+        
         QFile _restoreFile(settingsFilePath);
         _restoreFile.open(QIODevice::ReadWrite);
         QTextStream in(&_restoreFile);
+        
+        
         QString line = in.readLine();
+        std::vector<std::pair<U64,MemoryMappedEntry*> > entries;
         if(line.contains(QString(cacheVersion().c_str()))){
             line = in.readLine();
             while(!line.isNull()){
-                
+                if (line.isEmpty()) {
+                    line = in.readLine();
+                    continue;
+                }
                 std::pair<U64,MemoryMappedEntry*> entry = recoverEntryFromString(line);
                 if(entry.second){
-                    add(entry.first,entry.second);
+                    entries.push_back(entry);
+                }else{
+                    cout <<"WARNING: " <<  cacheName() << " failed to recover entry, discarding it." << endl;
                 }
                 line = in.readLine();
             }
+            _restoreFile.close();
+            if (count == entries.size()) {
+                for (U32 i = 0; i < entries.size(); i++) {
+                    std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
+                    add(entry.first,entry.second);
+                }
+                
+                /*cache is filled , debug*/
+                debug();
+                
+            }else{
+                cout << cacheName() << ":The entries count in the restore file does not equal the number of actual data files. Reseting." << endl;
+                cleanUpDiskAndReset();
+            }
             
             /*now that we're done using it, clear it*/
-            _restoreFile.close();
             QFile::remove(settingsFilePath);
             QFile newFile(settingsFilePath);
             newFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
@@ -248,15 +351,10 @@ void AbstractDiskCache::restore(){
             outsetti << cacheVersion().c_str() << endl;
             newFile.close();
 
-        }else{
+        }else{ /*cache version is different*/
             /*re-create the cache*/
             _restoreFile.resize(0);
-            QDir directory(newCachePath);
-            QStringList files = directory.entryList();
-            for(int i =0 ; i< files.size() ;i++){
-                directory.remove(files[i]);
-            }
-            initializeSubDirectories();
+            cleanUpDiskAndReset();
             /*re-create settings file*/
             QFile _restoreFile(settingsFilePath);
             _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
@@ -264,14 +362,35 @@ void AbstractDiskCache::restore(){
             outsetti << cacheVersion().c_str() << endl;
             _restoreFile.close();
         }
-    }else{
+    }else{ // restore file doesn't exist
         /*re-create cache*/
-        QDir directory(newCachePath);
-        QStringList files = directory.entryList();
-        for(int i =0 ; i< files.size() ;i++){
-            directory.remove(files[i]);
+        QDir root(ROOT);
+        QStringList rootEntries = root.entryList();
+        bool foundCache = false;
+        for (int i =0 ; i< rootEntries.size(); i++) {
+            if (rootEntries[i] == QString("Cache")) {
+                foundCache = true;
+                break;
+            }
         }
-        initializeSubDirectories();
+        if(!foundCache){
+            root.mkdir("Cache");
+        }
+        QDir cacheDir(CACHE_ROOT_PATH);
+        QStringList cacheRootEntries = root.entryList();
+        bool foundCacheName = false;
+        for (int i =0 ; i< cacheRootEntries.size(); i++) {
+            if (cacheRootEntries[i] == QString(cacheName().c_str())) {
+                foundCacheName = true;
+                break;
+            }
+        }
+        if(!foundCacheName){
+            cacheDir.mkdir(cacheName().c_str());
+        }
+        
+        cleanUpDiskAndReset();
+        
         /*re-create settings file*/
         QFile _restoreFile(settingsFilePath);
         _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
@@ -279,5 +398,52 @@ void AbstractDiskCache::restore(){
         outsetti << cacheVersion().c_str() << endl;
         _restoreFile.close();
     }
+}
+
+void AbstractDiskCache::cleanUpDiskAndReset(){
+    QString cachePath(CACHE_ROOT_PATH);
+    cachePath.append(cacheName().c_str());
+    QDir dir(cachePath);
+    if(dir.exists()){
+        dir.removeRecursively();
+    }
+    initializeSubDirectories();
+    
+}
+
+QString AbstractDiskCache::getCachePath(){
+    QString str(CACHE_ROOT_PATH);
+    str.append(cacheName().c_str());
+    str.append("/");
+    return str;
+}
+
+void AbstractDiskCache::debug(){
+    cout << "====================DEBUGING: " << cacheName() << " =========" << endl;
+    cout << "-------------------IN MEMORY ENTRIES-------------------" << endl;
+    for (CacheIterator it = beginMemoryCache(); it!=endMemoryCache(); it++) {
+        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(it->second);
+        assert(entry);
+        cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
+        if(entry->getMappedFile()->data()){
+            cout << "Entry has a valid ptr." << endl;
+        }else{
+            cout << "Entry has a NULL ptr." << endl;
+        }
+    }
+    cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
+    for (CacheIterator it = begin(); it!=end(); it++) {
+        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(it->second);
+        assert(entry);
+        cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
+        if(entry->getMappedFile()){
+            cout << "Entry is still allocated!!" << endl;
+        }else{
+            cout << "Entry is normally deallocated." << endl;
+        }
+    }
+    cout << "Total entries count : " << _inMemoryPortion.size()+_cache.size() << endl;
+    cout << "-===========END DEBUGGING: " << cacheName() << " ===========" << endl;
+    
 }
 

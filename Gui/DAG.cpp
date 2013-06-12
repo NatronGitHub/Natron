@@ -190,7 +190,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         _arrowSelected->initLine();
         scene()->update();
-        ctrlPTR->getModel()->getVideoEngine()->clearPlayBackCache();
+        ctrlPTR->getModel()->clearInMemoryViewerCache();
         if(foundSrc){
             NodeGui* viewer = NodeGui::hasViewerConnected(_arrowSelected->getDest());
             if(viewer){

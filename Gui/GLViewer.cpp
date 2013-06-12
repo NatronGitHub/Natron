@@ -31,10 +31,12 @@
 #include "Gui/timeline.h"
 #include "Gui/texturecache.h"
 #include "Core/viewercache.h"
+#include "Core/settings.h"
 #include "Core/row.h"
 #include "Core/viewerNode.h"
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
+#include "Core/mappedfile.h"
 #include "Superviser/powiterFn.h"
 
 using namespace Imf;
@@ -77,7 +79,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 }
 void ViewerGL::initConstructor(){
     _hasHW=true;
-    _blankViewerInfos = new Viewer::ViewerInfos;
+    _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->setChannels(Mask_RGBA);
     _blankViewerInfos->setYdirection(1);
     _blankViewerInfos->rgbMode(true);
@@ -104,15 +106,15 @@ void ViewerGL::initConstructor(){
     _mustFreeFrameData = false;
 }
 
-ViewerGL::ViewerGL(float byteMode,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
+:QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_textRenderer(this)
 {
     
     initConstructor();
     
 }
-ViewerGL::ViewerGL(float byteMode,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
+:QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_textRenderer(this)
 
 {
 
@@ -120,8 +122,8 @@ ViewerGL::ViewerGL(float byteMode,const QGLFormat& format,QWidget* parent ,const
     
 }
 
-ViewerGL::ViewerGL(float byteMode,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_byteMode(byteMode),_textRenderer(this)
+ViewerGL::ViewerGL(QWidget* parent,const QGLWidget* shareWidget)
+:QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),_textRenderer(this)
 {
     initConstructor();
     
@@ -488,7 +490,7 @@ void ViewerGL::activateShaderLC(){
 	shaderLC->setUniformValue("yw",1.0,1.0,1.0);
     shaderLC->setUniformValue("expMult",  exposure);
     shaderLC->setUniformValue("lut", _lut);
-    shaderLC->setUniformValue("byteMode", _byteMode);
+    shaderLC->setUniformValue("byteMode", byteMode());
     
 }
 void ViewerGL::activateShaderRGB(){
@@ -499,7 +501,7 @@ void ViewerGL::activateShaderRGB(){
 	}
     
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("byteMode", _byteMode);
+    shaderRGB->setUniformValue("byteMode", byteMode());
 	shaderRGB->setUniformValue("expMult",  exposure);
     shaderRGB->setUniformValue("lut", _lut);
     
@@ -580,7 +582,7 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
     
     
     
-    if(_byteMode==1 || !_hasHW){
+    if(byteMode()==1 || !_hasHW){
         glTexImage2D (GL_TEXTURE_2D,
                       0,			// level
                       GL_RGBA8, //internalFormat
@@ -589,7 +591,7 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
                       GL_BGRA,		// format
                       GL_UNSIGNED_INT_8_8_8_8_REV,	// type
                       0);			// pixels
-    }else if(_byteMode==0 && _hasHW){
+    }else if(byteMode()==0 && _hasHW){
         glTexImage2D (GL_TEXTURE_2D,
                       0,			// level
                       GL_RGBA32F_ARB, //internalFormat
@@ -701,7 +703,7 @@ void ViewerGL::drawRow(Row* row){
     float zoomFactor;
     _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
     int w = floorf(displayWindow().w() * zoomFactor);
-    if(_byteMode==0 && _hasHW){
+    if(byteMode()==0 && _hasHW){
         convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
                                       w,row->zoomedY(),(*row)[Channel_alpha]);
     }
@@ -712,7 +714,7 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode){
+bool ViewerGL::determineFrameDataContainer(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode){
     if(_mustFreeFrameData){
         free(frameData);
         _mustFreeFrameData = false;
@@ -720,7 +722,7 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
     
     if(mode == TEXTURE_CACHE){ // texture caching
         TextureCache::TextureKey key(exposure,_lut,_zoomCtx.zoomFactor,
-                                     w,h,_byteMode,filename,
+                                     w,h,byteMode(),filename,
                                      ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion(),
                                      _rowSpan.first,_rowSpan.second);
         TextureCache::TextureIterator found = _textureCache->isCached(key);
@@ -734,7 +736,7 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
         }else{
             ret = _textureCache->append(key);
             size_t dataSize = 0;
-            _byteMode == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+            byteMode() == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
             frameData = (char*)malloc(dataSize);
             _mustFreeFrameData = true;
             initTextures(w,h,(GLuint)ret);
@@ -743,14 +745,27 @@ bool ViewerGL::handleTextureAndViewerCache(std::string filename,int nbFrameHint,
         }
     }else{ // viewer caching
         // init mmaped file
-        int frameCount = getCurrentViewerInfos()->lastFrame() - getCurrentViewerInfos()->firstFrame() +1;
-        pair<char*,ViewerCache::FrameID> p = ctrlPTR->getModel()->getVideoEngine()->mapNewFrame(frameCount == 1 ? 0 : currentViewer->frameSeeker->currentFrame(),
-                                                                  filename,
-                                                                  w, h,
-                                                                  nbFrameHint);
-        frameData = p.first;
-        frameInfo = p.second;
-        ctrlPTR->getModel()->getVideoEngine()->getViewerCache()->appendFrame(frameInfo);
+        U64 treeVersion = ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion();
+        U64 key = FrameEntry::computeHashKey(filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), dataWindow(), displayWindow());
+        
+        cout << " ADD : key computed with \n " << filename << " "
+        << treeVersion << " " <<  _zoomCtx.getZoomFactor() << " " << exposure << " " << _lut
+        << " " << byteMode() << " " << dataWindow().x() << " " << dataWindow().y() << " "  << dataWindow().right() << " "
+        << dataWindow().top() << " " << displayWindow().x() << " " << displayWindow().y() << " " <<
+        displayWindow().right() << " " << displayWindow().top() << endl;
+        cout << " KEY: " << key << endl;
+        
+        FrameEntry* entry = ViewerCache::getViewerCache()->add(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
+        
+        if(entry){
+            frameData = entry->getMappedFile()->data();
+        }else{ // something happen, fallback to in-memory only version : no-caching
+            cout << "WARNING: caching does not seem to work properly..falling back to pure RAM version, caching disabled." << endl;
+            size_t dataSize = 0;
+            byteMode() == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+            frameData = (char*)malloc(dataSize);
+            _mustFreeFrameData = true;
+        }
         initTextures(w,h,texId[0]);
         setCurrentTexture(texId[0]);
         return false;
@@ -781,7 +796,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     }
     
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_byteMode==1 || !_hasHW){
+    if(byteMode()==1 || !_hasHW){
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0,				// xoffset, yoffset
@@ -791,7 +806,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
                          0);
         
         
-    }else if(_byteMode ==0 && _hasHW){
+    }else if(byteMode() ==0 && _hasHW){
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0 ,				// xoffset, yoffset
@@ -808,7 +823,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
                                           int w,int yOffset,const float* alpha){
-    /*Converting one row (float32) to 8bit BGRA texture. We apply a dithering algorithm based on error diffusion.
+    /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
      This error diffusion will produce stripes in any image that has identical scanlines.
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
@@ -1093,7 +1108,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             }
         }
         if(_drawing){
-            ctrlPTR->getModel()->getVideoEngine()->_viewerCache->clearPlayBackCache();
+            ctrlPTR->getModel()->clearInMemoryViewerCache();
             ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();
@@ -1108,7 +1123,7 @@ void ViewerGL::zoomSlot(int v){
         if(value <0.1) value = 0.1;
         _zoomCtx.zoomFactor = value;
         if(_drawing){
-            ctrlPTR->getModel()->getVideoEngine()->_viewerCache->clearPlayBackCache();
+            ctrlPTR->getModel()->clearInMemoryViewerCache();
             ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();
@@ -1174,7 +1189,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
     if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
         return QVector4D(0,0,0,0);
-    if(_byteMode==1 || !_hasHW){
+    if(byteMode()==1 || !_hasHW){
         U32 pixel;
         glReadPixels( x, winY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
         U8 r=0,g=0,b=0,a=0;
@@ -1183,7 +1198,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         r |= (pixel >> 16);
         a |= (pixel >> 24);
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
-    }else if(_byteMode==0 && _hasHW){
+    }else if(byteMode()==0 && _hasHW){
         GLfloat pixel[4];
         glReadPixels( x, winY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
         return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
@@ -1231,7 +1246,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
     
 }
-void ViewerGL::setCurrentViewerInfos(Viewer::ViewerInfos* viewerInfos,bool onInit,bool initBoundaries){
+void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit,bool initBoundaries){
     _currentViewerInfos = viewerInfos;
     Format* df=ctrlPTR->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
@@ -1294,7 +1309,7 @@ void ViewerGL::updateColorSpace(QString str){
         return;
     }
     
-    if(_byteMode==1 || !_hasHW)
+    if(byteMode()==1 || !_hasHW)
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
     else
         updateGL();
@@ -1303,7 +1318,7 @@ void ViewerGL::updateColorSpace(QString str){
 void ViewerGL::updateExposure(double d){
     exposure = d;
     currentViewer->frameSeeker->clearCachedFrames();
-    if((_byteMode==1 || !_hasHW) && _drawing)
+    if((byteMode()==1 || !_hasHW) && _drawing)
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
     else
         updateGL();
@@ -1588,4 +1603,7 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
         QGLWidget::resizeEvent(event);
         setVisible(true);
     }
+}
+float ViewerGL::byteMode(){
+    return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
 }

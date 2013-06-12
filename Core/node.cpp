@@ -400,6 +400,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
         if(cacheData()){
             out = cache->add(entry.first,x, r, y, channels, filename);
             row.setInternalRow(out);
+            if(!out) return;
         }else{
             out = new Row(x,y,r,channels,Powiter_Enums::IN_MEMORY);
             out->allocate();

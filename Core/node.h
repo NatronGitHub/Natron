@@ -36,9 +36,10 @@ public:
 			  _lastFrame(last_frame),
 			  _ydirection(ydirection),
 			  _displayWindow(full_size_format),
-			  _channels(channels)
+			  _channels(channels),
+            _rgbMode(true)
 		  {}
-	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_channels(),_displayWindow(){}
+	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_channels(),_displayWindow(),_rgbMode(true){}
 		void setYdirection(int direction){_ydirection=direction;}
 		int getYdirection(){return _ydirection;}
 		void setDisplayWindow(Format format){_displayWindow=format;}

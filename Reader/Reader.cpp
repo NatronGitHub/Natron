@@ -12,6 +12,7 @@
 #include "Core/node.h"
 #include "Gui/node_ui.h"
 #include "Gui/GLViewer.h"
+#include "Core/mappedfile.h"
 #include "Superviser/controler.h"
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
@@ -25,6 +26,8 @@
 #include "Gui/knob.h"
 #include <QtGui/QImage>
 #include <sstream>
+#include "Core/Box.h"
+#include "Core/displayFormat.h"
 
 /*#ifdef __cplusplus
  extern "C" {
@@ -41,8 +44,8 @@
 using namespace std;
 
 
-Reader::Reader(Node* node,ViewerCache* cache):InputNode(node),video_sequence(0),
-readHandle(0),has_preview(false),_cache(cache),_pboIndex(0),preview(0){}
+Reader::Reader(Node* node):InputNode(node),video_sequence(0),
+readHandle(0),has_preview(false),_pboIndex(0),preview(0){}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
 
@@ -174,15 +177,14 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     
 }
 
-Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame,int frameNb,bool startNewThread){
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->first,
+Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame,bool startNewThread){
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->_frameInfo->getCurrentFrameName(),
                                                                     Buffer::CACHED_FRAME);
     if(found !=_buffer.end()){
-        if(found->_cacheWatcher || found->_cachedFrame){
-            if(found->_cacheWatcher){
-                if(!found->_cacheWatcher->isFinished())
-                    found->_cacheWatcher->waitForFinished();
-                found->_cachedFrame = found->_cacheWatcher->result();
+        if(found->_cachedFrame){
+            if(found->_asynchTask){
+                if(!found->_asynchTask->isFinished())
+                    found->_asynchTask->waitForFinished();
             }
             return *found;
         }else{
@@ -193,11 +195,11 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
     removeCachedFramesFromBuffer();
     
     ReaderInfo *info = new ReaderInfo;
-    *info = *frame->second._frameInfo;
-    int w = frame->second._actualW ;
-    int h = frame->second._actualH ;
+    *info = *frame->_frameInfo;
+    int w = frame->_actualW ;
+    int h = frame->_actualH ;
     size_t dataSize = 0;
-    if(frame->second._byteMode==1.0){
+    if(frame->_byteMode==1.0){
         dataSize  = w * h * sizeof(U32) ;
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
@@ -210,33 +212,26 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     _pboIndex = (_pboIndex+1)%2;
-    QFutureWatcher<const char*>* watcher = 0;
-    QFuture<const char*>* future = 0;
-    const char* cachedFrame = 0 ;
+    QFuture<void>* future = 0;
+    const char* cachedFrame = frame->getMappedFile()->data();
     if(!startNewThread){
-        cachedFrame =  _cache->retrieveFrame(frameNb,frame);
         currentViewer->viewer->fillPBO(cachedFrame, output, dataSize);
-        return _buffer.insert(info->getCurrentFrameName(), 0 , 0, info ,cachedFrame,NULL,watcher);
+        return _buffer.insert(info->getCurrentFrameName(), 0 , 0, info ,cachedFrame,NULL);
     }else{
-        future = new QFuture<const char*>;
-        watcher = new QFutureWatcher<const char*>;
+        future = new QFuture<void>;
         Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(info->getCurrentFrameName(),
                                                                         0 ,
                                                                         0,
                                                                         info ,
                                                                         cachedFrame,
-                                                                        NULL,
-                                                                        watcher);
-        *future = QtConcurrent::run(this,&Reader::retrieveCachedFrame,frame,frameNb,output,dataSize);
-        watcher->setFuture(*future);
+                                                                        NULL);
+        *future = QtConcurrent::run(this,&Reader::retrieveCachedFrame,cachedFrame,output,dataSize);
         return newFrame;
     }
 }
 
-const char* Reader::retrieveCachedFrame(FrameEntry* frame,int frameNb,void* dst,size_t dataSize){
-    const char* cachedFrame =  _cache->retrieveFrame(frameNb,frame);
+void Reader::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
     currentViewer->viewer->fillPBO(cachedFrame, dst, dataSize);
-    return cachedFrame;
 }
 std::vector<Reader::Buffer::DecodedFrameDescriptor>
 Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
@@ -280,7 +275,7 @@ void Reader::removeCachedFramesFromBuffer(){
 void Reader::Buffer::removeAllCachedFrames(){
     bool recursive = false;
     for(DecodedFrameIterator it = _buffer.begin();it != _buffer.end();it++){
-        if(it->_cachedFrame || it->_cacheWatcher){
+        if(it->_cachedFrame){
             erase(it);
             recursive = true;
             break;
@@ -309,8 +304,7 @@ bool Reader::makeCurrentDecodedFrame(){
     }
     assert(infos);
     *_info = *infos;
-    _info->firstFrame(firstFrame());
-    _info->lastFrame(lastFrame());
+    
     return true;
 }
 
@@ -321,6 +315,8 @@ void Reader::_validate(bool forReal){
             return;
         }
     }
+    _info->firstFrame(firstFrame());
+    _info->lastFrame(lastFrame());
     setOutputChannels(Mask_All);
 }
 
@@ -340,21 +336,19 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(std::string filena
                                                               Read* readHandle,
                                                               ReaderInfo* readInfo,
                                                               const char* cachedFrame,
-                                                              ScanLineContext* slContext,
-                                                              QFutureWatcher<const char*>* cacheWatcher){
+                                                              ScanLineContext* slContext){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == _bufferSize){
         for(U32 i = 0 ; i < _buffer.size() ;i++){
             DecodedFrameDescriptor frameToRemove = _buffer[i];
-            if((!frameToRemove._asynchTask && !frameToRemove._cacheWatcher) ||
-               (frameToRemove._asynchTask && frameToRemove._asynchTask->isFinished()) ||
-               (frameToRemove._cacheWatcher && frameToRemove._cacheWatcher->isFinished())){
+            if((!frameToRemove._asynchTask) ||
+               (frameToRemove._asynchTask && frameToRemove._asynchTask->isFinished())){
                 erase(_buffer.begin()+i);
                 break;
             }
         }
     }
-    DecodedFrameDescriptor desc(future,readHandle,readInfo,cachedFrame,cacheWatcher,filename,slContext);
+    DecodedFrameDescriptor desc(future,readHandle,readInfo,cachedFrame,filename,slContext);
     _buffer.push_back(desc);
     return desc;
 }
@@ -370,8 +364,6 @@ void Reader::Buffer::remove(std::string filename){
     if(it!=_buffer.end()){
         if(it->_asynchTask)
             delete it->_asynchTask;//delete future
-        if(it->_cacheWatcher)
-            delete it->_cacheWatcher;//delete watcher for cached frame
         if(it->_readInfo)
             delete it->_readInfo; // delete readerInfo
         if(it->_readHandle)
@@ -389,13 +381,12 @@ QFuture<void>* Reader::Buffer::getFuture(std::string filename){
 }
 bool Reader::Buffer::decodeFinished(std::string filename){
     Buffer::DecodedFrameIterator it = find(filename);
-    return (it->_asynchTask && it->_asynchTask->isFinished())
-    || (it->_cacheWatcher && it->_cacheWatcher->isFinished());
+    return (it!=_buffer.end() && ((it->_asynchTask && it->_asynchTask->isFinished()) || !it->_asynchTask));
 }
 void Reader::Buffer::debugBuffer(){
     cout << "=========BUFFER DUMP=============" << endl;
     for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++){
-        if(it->_cachedFrame || it->_cacheWatcher)
+        if(it->_cachedFrame)
             cout << it->_filename << " (cached) " << endl;
         else
             cout << it->_filename << endl;
@@ -407,7 +398,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
     if(searchMode == CACHED_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
-            if(ret->_cachedFrame || ret->_cacheWatcher){
+            if(ret->_cachedFrame){
                 return ret;
             }else{
                 return _buffer.end();
@@ -453,8 +444,6 @@ void Reader::Buffer::clear(){
     for(;it!=_buffer.end();it++){
         if(it->_asynchTask)
             delete it->_asynchTask;//delete future
-        if(it->_cacheWatcher)
-            delete it->_cacheWatcher;//delete watcher for cached frame
         if(it->_readInfo)
             delete it->_readInfo; // delete readerInfo
         if(it->_readHandle)
@@ -465,8 +454,6 @@ void Reader::Buffer::clear(){
 void Reader::Buffer::erase(DecodedFrameIterator it){
     if(it->_asynchTask)
         delete it->_asynchTask;//delete future
-    if(it->_cacheWatcher)
-        delete it->_cacheWatcher;//delete watcher for cached frame
     if(it->_readInfo)
         delete it->_readInfo; // delete readerInfo
     if(it->_readHandle)
@@ -588,8 +575,8 @@ void Reader::Buffer::ScanLineContext::merge(){
 //Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 //ChannelMask _channels;
 std::string ReaderInfo::printOut(){
-    Format &dispW = getDisplayWindow();
-    ChannelSet& channels = channels();
+    const Format &dispW = getDisplayWindow();
+    const ChannelSet& chan = channels();
     ostringstream oss;
     oss << _currentFrameName <<  "<" << firstFrame() << "."
     << lastFrame() << "."
@@ -602,10 +589,10 @@ std::string ReaderInfo::printOut(){
     << y() << "."
     << right() << "."
     << top() << ".";
-    foreachChannels(z, channels){
+    foreachChannels(z, chan){
         oss << getChannelName(z) << "|";
     }
-    oss << endl;
+    oss << " " ;
     return oss.str();
 }
 
@@ -618,33 +605,33 @@ ReaderInfo* ReaderInfo::fromString(QString from){
     int i = 0;
     while(from.at(i) != QChar('<')){name.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(firstFrameStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(lastFrameStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(rgbStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(frmtXStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(frmtYStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(frmtRStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(frmtTStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(bboxXStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(bboxYStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(bboxRStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('.')){name.append(bboxTStr.at(i)); i++;}
+    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); i++;}
     i++;
-    while(from.at(i) != QChar('\n')){name.append(channelsStr.at(i)); i++;}
+    while(i < from.size()){channelsStr.append(from.at(i)); i++;}
     i++;
     ChannelSet channels;
     i = 0;
-    while(channelsStr.at(i) != QChar('\n')){
+    while(i < channelsStr.size()){
         QString chan;
         while(channelsStr.at(i) != QChar('|')){
             chan.append(channelsStr.at(i));
@@ -654,7 +641,13 @@ ReaderInfo* ReaderInfo::fromString(QString from){
         string chanStd = chan.toStdString();
         channels += getChannelByName(chanStd.c_str());
     }
-    out->set
-    
+    Format dispW(frmtXStr.toInt(),frmtYStr.toInt(),frmtRStr.toInt(),frmtTStr.toInt(),"");
+    out->set(bboxXStr.toInt(),bboxYStr.toInt(),bboxRStr.toInt(),bboxTStr.toInt());
+    out->setChannels(channels);
+    out->rgbMode((bool)rgbStr.toInt());
+    out->setDisplayWindow(dispW);
+    out->firstFrame(firstFrameStr.toInt());
+    out->lastFrame(lastFrameStr.toInt());
+    return out;
     
 }

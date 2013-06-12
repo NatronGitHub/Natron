@@ -133,6 +133,9 @@ public:
 	/*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
     
+    ViewerCache* getViewerCache(){return _viewerCache;}
+    
+    void clearInMemoryViewerCache();
     
     typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
     
@@ -140,7 +143,16 @@ signals:
     void vengineNeeded(int nbFrames);
     
     
+public slots:
+    void clearInMemoryCaches();
+    
+    void clearViewerAndNodeCaches();
+    
+    void clearTotallyNodeCache();
+    
 private:
+    
+    
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
 	 *to know whether it is an outputNode,InputNode or an operator.*/

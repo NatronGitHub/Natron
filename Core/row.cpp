@@ -34,7 +34,6 @@ std::string ChannelsToFile::printMapping(){
 
 Row::Row(Powiter_Enums::RowStorageMode mode ){
     buffers = 0;
-    _backingFile = 0;
     _channelsToFileMapping = 0;
     _storageMode = mode;
 }
@@ -58,47 +57,42 @@ Row::Row(int x,int y, int range, ChannelSet channels,Powiter_Enums::RowStorageMo
     this->r=range;
     _channels = channels;
     _storageMode = mode;
-    _backingFile = 0;
     _channelsToFileMapping = 0;
     buffers = (float**)malloc(MAX_BUFFERS_PER_ROW*sizeof(float*));
     memset(buffers, 0, sizeof(float*)*MAX_BUFFERS_PER_ROW);
     
 }
-void Row::allocate(const char* path){
+bool Row::allocate(const char* path){
     if(_storageMode == IN_MEMORY){
         foreachChannels(z, _channels){
             buffers[z] = (float*)calloc((r-x),sizeof(float));
         }
+        return true;
     }else{
         size_t size = _channels.size() * (r-x) * sizeof(float);
-        allocate(size,path);
-        _channelsToFileMapping = new ChannelsToFile(_channels,x,r,_backingFile->size());
+        if(!MemoryMappedEntry::allocate(size,path)) return false;
+        _channelsToFileMapping = new ChannelsToFile(_channels,x,r,_mappedFile->size());
         ChannelsToFile::MappingIterator it = _channelsToFileMapping->begin();
-        char* data = _backingFile->data();
+        char* data = _mappedFile->data();
         for(;it!=_channelsToFileMapping->end();it++){
             buffers[it->first] = reinterpret_cast<float*>(data+it->second.first);
         }
+        return true;
     }
 }
 
-void Row::allocate(U64 size,const char* path){
-    _backingFile = new MemoryFile(path,Powiter_Enums::if_exists_keep_if_dont_exists_create);
-    _backingFile->resize(size);
-}
-
-
-void Row::restoreFromBackingFile(){
-    if(_backingFile) return;
+bool Row::restoreMapping(){
+    if(_mappedFile) return true;
     
     /*re-open the mapping*/
-    _backingFile = new MemoryFile(_path.c_str(),Powiter_Enums::if_exists_keep_if_dont_exists_fail);
+    if(!MemoryMappedEntry::reOpen()) return false;
     
     ChannelsToFile::MappingIterator it = _channelsToFileMapping->begin();
-    char* data = _backingFile->data();
+    char* data = _mappedFile->data();
     for(;it!=_channelsToFileMapping->end();it++){
         buffers[it->first] = reinterpret_cast<float*>(data+it->second.first);
     }
-    
+    return true;
 }
 
 void Row::range(int offset,int right){
@@ -121,7 +115,8 @@ void Row::range(int offset,int right){
 Row::~Row(){
     if(_storageMode == IN_MEMORY){
         foreachChannels(z, _channels){
-            free(buffers[(int)z]);
+            if(buffers[(int)z])
+                free(buffers[(int)z]);
         }
     }else{
         delete _channelsToFileMapping;
@@ -181,26 +176,29 @@ void Row::release(){
 }
 
 std::string Row::printOut(){
-    string out(_path);
-    out.append(".");
+    ostringstream oss;
+    oss << _path;
+    oss << "<";
     char tmp[50];
     sprintf(tmp,"%i",x);
-    out.append(tmp);
+    oss << tmp;
+    oss << ".";
     sprintf(tmp, "%i",r);
-    out.append(".");
-    out.append(tmp);
-    out.append(".");
+    oss << tmp;
+    oss << ".";
     sprintf(tmp,"%i",y());
-    out.append(".");
-    out.append(_channelsToFileMapping->printMapping());
-    out.append("\n");
-    return out;
+    oss << tmp;
+    oss << ".";
+    oss << _channelsToFileMapping->printMapping();
+    oss << endl;
+    return oss.str();
 }
 
 std::pair<U64,Row*> Row::recoverFromString(QString str){
+    if(str.isEmpty()) return make_pair(0,(Row*)NULL);
     QString path,xStr,yStr,rStr,channelsMapping;
     int i =0;
-    while(str.at(i) != QChar('.')){path.append(str.at(i)); i++;}
+    while(str.at(i) != QChar('<')){path.append(str.at(i)); i++;}
     i++;
     while(str.at(i) != QChar('.')){xStr.append(str.at(i)); i++;}
     i++;
@@ -208,10 +206,10 @@ std::pair<U64,Row*> Row::recoverFromString(QString str){
     i++;
     while(str.at(i) != QChar('.')){yStr.append(str.at(i)); i++;}
     i++;
-    while(str.at(i) != QChar('\n')){path.append(channelsMapping.at(i)); i++;}
+    while(i < str.size()){channelsMapping.append(str.at(i)); i++;}
     ChannelSet channels;
     int c = 0;
-    while(channelsMapping.at(c) != QChar('\n')){
+    while(c < channelsMapping.size()){
         QString chanStr;
         while(channelsMapping.at(c) != QChar(' ')){chanStr.append(channelsMapping.at(c)); c++;}
         c++;
@@ -219,12 +217,17 @@ std::pair<U64,Row*> Row::recoverFromString(QString str){
         channels += getChannelByName(chanStdStr.c_str());
     }
     if (!QFile::exists(path)) {
-        return make_pair(-1,(Row*)NULL);
+        cout << "Invalid entry : " << qPrintable(path) << endl;
+        return make_pair(0,(Row*)NULL);
     }
     
     Row* out = new Row(xStr.toInt(),yStr.toInt(),rStr.toInt(),channels,Powiter_Enums::BACKED_ON_DISK);
     string pathStr = path.toStdString();
-    out->allocate(pathStr.c_str());
+    if(!out->allocate(pathStr.c_str())){
+        QFile::remove(path);
+        cout << "Invalid entry : " << qPrintable(path) << endl;
+        return make_pair(0,(Row*)NULL);
+    }
     QString hashKey;
     int j = path.size() - 1;
     while(path.at(j) != QChar('.')) j--;

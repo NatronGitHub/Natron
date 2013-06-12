@@ -20,14 +20,6 @@ NodeCache::~NodeCache(){
     
 }
 
-
-QString NodeCache::getCachePath(){
-    QString str(CACHE_ROOT_PATH);
-    str.append(cacheName().c_str());
-    str.append("/");
-    return str;
-}
-
 NodeCache* NodeCache::getNodeCache(){
    return NodeCache::instance();
 }
@@ -39,12 +31,12 @@ std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int
     if (it == endMemoryCache()) {// not in memory
         it = isCached(hashKey);
         if(it == end()){ //neither on disk
-            return make_pair(0,(Row*)NULL);
+            return make_pair(hashKey,(Row*)NULL);
         }else{ // found on disk
             CacheEntry* entry = AbstractCache::getValueFromIterator(it);
             Row* rowEntry = dynamic_cast<Row*>(entry);
             assert(rowEntry);
-            rowEntry->restoreFromBackingFile();
+            if(!rowEntry->restoreMapping()) return make_pair(0,(Row*)NULL);
             return make_pair(it->first,rowEntry);
         }
     }else{ // found in memory
@@ -53,16 +45,25 @@ std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int
         assert(rowEntry);
         return make_pair(it->first,rowEntry);
     }
-    return make_pair(0,(Row*)NULL);
+    return make_pair(hashKey,(Row*)NULL);
 }
 
 Row* NodeCache::add(U64 key,int x, int r, int y, ChannelSet &channels,std::string filename){
-    Row* out = new Row(x,y,r,channels,Powiter_Enums::BACKED_ON_DISK);
+    Row* out = 0;
+    try{
+       out = new Row(x,y,r,channels,Powiter_Enums::BACKED_ON_DISK);
+    }catch(const char* str){
+        cout << "Failed to create row: " << str << endl;
+        delete out;
+        return NULL;
+    }
     string name(getCachePath().toStdString());
     {
-        QMutexLocker guard(&_mutex);
+        
+        QWriteLocker guard(&_cache._rwLock);
         ostringstream oss1;
-        oss1 << hex << (key >> 56);
+        oss1 << hex << (key >> 60);
+        oss1 << hex << ((key << 4) >> 60);
         name.append(oss1.str());
         ostringstream oss2;
         oss2 << hex << ((key << 8) >> 8);
@@ -75,8 +76,13 @@ Row* NodeCache::add(U64 key,int x, int r, int y, ChannelSet &channels,std::strin
             name.append(".powc");
         }
     }
-    out->allocate(name.c_str());
-    AbstractDiskCache::add(key, out);
+    if(!out->allocate(name.c_str())){
+        cout << "Failed to allocate row..." << endl;
+        delete out;
+        return NULL;
+    }else{
+        AbstractDiskCache::add(key, out);
+    }
     return out;
     
 }

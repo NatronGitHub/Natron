@@ -207,8 +207,6 @@ public slots:
     void seekRandomFrame(int f);
     void seekRandomFrame(double d){seekRandomFrame((int)d);} // convenience func for the FeedBackSpinbox class
     void changeTreeVersion();
-    void clearDiskCache();
-    void clearPlayBackCache();
 
     void engineLoop();
     
@@ -263,7 +261,7 @@ public:
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
     
     /*the function cycling through the DAG for one scan-line*/
-    void metaEnginePerRow(Row* row,OutputNode* output);
+    static void metaEnginePerRow(Row* row,OutputNode* output);
     
     typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,FrameEntry*> ReadFrame;
     typedef std::vector< ReadFrame > FramesVector;

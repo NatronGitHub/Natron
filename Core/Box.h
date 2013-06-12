@@ -97,7 +97,7 @@ public:
     float middle_column() const { return (_y + _t) / 2.0f; }
     
    
-    virtual void set(int x, int y, int r, int t) { _x = x;
+    void set(int x, int y, int r, int t) { _x = x;
         _y = y;
         _r = r;
         _t = t;
@@ -105,7 +105,7 @@ public:
     }
     
    
-    virtual void set(const Box2D& b) { *this = b; }
+    void set(const Box2D& b) { *this = b; }
     
     
     bool is1x1() const { return _r <= _x + 1 && _t <= _y + 1; }
