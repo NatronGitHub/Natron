@@ -89,7 +89,6 @@ namespace Powiter_Enums{
         if_exists_truncate_if_not_exists_fail,
         if_exists_truncate_if_not_exists_create};
     
-    enum RowStorageMode{IN_MEMORY,BACKED_ON_DISK};
 }
 
 

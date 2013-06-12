@@ -420,7 +420,7 @@ void TimeSlider::mouseReleaseEvent(QMouseEvent* e){
 
 void TimeSlider::addCachedFrame(int f){
     _cached.push_back(f);
-   // repaint();
+   repaint();
 }
 void TimeSlider::removeCachedFrame(){
     _cached.erase(_cached.begin());

@@ -13,43 +13,18 @@
 #include <boost/noncopyable.hpp>
 #define MAX_BUFFERS_PER_ROW 100
 
-/*Utility class used by the Row when using the BACKED_BY_FILE
- mode. It retains a mapping of channels and an offset into a buffer.*/
-class ChannelsToFile {
-    std::map<Channel,std::pair<size_t,size_t> > _mapping; // stores a mapping between channels
-    size_t _totalSize;
-    // and a pair of <offset in file, size of chunk>
-public:
-    typedef std::map<Channel,std::pair<size_t,size_t> >::iterator MappingIterator;
-    
-    MappingIterator begin(){return _mapping.begin();}
-    
-    MappingIterator end(){return _mapping.end();}
-    
-    size_t totalSize() const {return _totalSize;}
-
-    
-    std::string printMapping();
-    
-    
-    /*builds the mapping. totalSize must be exactly equal to
-     mapping.size() * (r-x) * sizeof(float) , otherwise an assertion
-     is thrown.*/
-    ChannelsToFile(ChannelSet& mapping,int x, int r,size_t totalSize);
-};
-
 /*This class represent one line in the image.
  *One line is a set of buffers (channels) defined
  *in the range [x,r]*/
 class MemoryFile;
 class Node;
-class Row : public MemoryMappedEntry
+class Row : public InMemoryEntry
 {
     
 public:
     
-    Row(Powiter_Enums::RowStorageMode mode = IN_MEMORY);
-    Row(int x,int y,int right,ChannelSet channels,Powiter_Enums::RowStorageMode mode = IN_MEMORY);
+    Row();
+    Row(int x,int y,int right,ChannelSet channels);
     virtual ~Row();
 	
     /*Must be called explicitly after the constructor and BEFORE any usage
@@ -63,11 +38,7 @@ public:
      it will just do nothing.*/
     void release();
     
-    /*only for rows backed by a file : restores the channels from
-     the backing file, opening it into the application's address space.
-     Returns false if it failed.*/
-    bool restoreMapping();
-    
+  
 	/*Returns a writable pointer to the channel c.
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
@@ -112,14 +83,12 @@ public:
     int offset() const {return x;}
 
     /*Do not pay heed to these, they're used internally so the viewer
-     know how to fill the texture.*/
+     know how to fill the display texture.*/
     int zoomedY(){return _zoomedY;}
     void zoomedY(int z){_zoomedY = z;}
     
-    virtual std::string printOut();
-    
-    static std::pair<U64,Row*> recoverFromString(QString str);
-    
+    void notifyCacheForDeletion(){_cacheWillDelete = true;}
+        
     const ChannelMask& channels() const {return _channels;}
    
     /*Returns a key computed from the parameters.*/
@@ -127,10 +96,7 @@ public:
     
 private:
    
-    
-    ChannelsToFile* _channelsToFileMapping;
-    
-    Powiter_Enums::RowStorageMode _storageMode;
+    bool _cacheWillDelete;
     int _y; // the line index in the fullsize image
     int _zoomedY; // the line index in the zoomed version as it appears on the viewer
     ChannelMask _channels; // channels held by the row

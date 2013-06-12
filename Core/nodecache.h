@@ -31,7 +31,7 @@ class Row;
  */
 #include <QtCore/QString>
 
-class NodeCache : public AbstractDiskCache, public Singleton<NodeCache> {
+class NodeCache : public AbstractMemoryCache, public Singleton<NodeCache> {
     
 public:
     NodeCache();
@@ -41,9 +41,6 @@ public:
     virtual std::string cacheName(){return "NodeCache";}
     
     virtual std::string cacheVersion(){return "v1.0.0";}
-    
-    /*Recover an entry from string*/
-    virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
     
     static NodeCache* getNodeCache();
         

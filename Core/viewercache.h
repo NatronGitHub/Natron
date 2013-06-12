@@ -99,6 +99,7 @@ public:
                     const Format& dispW);
     
     
+    void clearInMemoryPortion();
 };
 
 

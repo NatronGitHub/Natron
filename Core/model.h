@@ -135,7 +135,6 @@ public:
     
     ViewerCache* getViewerCache(){return _viewerCache;}
     
-    void clearInMemoryViewerCache();
     
     typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
     
@@ -144,11 +143,11 @@ signals:
     
     
 public slots:
-    void clearInMemoryCaches();
+    void clearPlaybackCache();
     
-    void clearViewerAndNodeCaches();
+    void clearDiskCache();
     
-    void clearTotallyNodeCache();
+    void clearNodeCache();
     
 private:
     

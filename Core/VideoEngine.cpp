@@ -167,7 +167,9 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         
     }else{ // if the call is recursive, i.e: the next frame in the sequence
         
-        NodeCache::getNodeCache()->clearDiskCache();
+        /*clear the node cache, as it is very unlikely the user will re-use
+         data from previous frame.*/
+        NodeCache::getNodeCache()->clear();
         
         lastFrame = _dag.lastFrame();
         firstFrame = _dag.firstFrame();

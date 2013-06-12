@@ -16,6 +16,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/mappedfile.h"
 #include "Gui/mainGui.h"
+#include "Gui/viewerTab.h"
 #include "Gui/timeline.h"
 #include <sstream>
 #include "Reader/Reader.h"
@@ -204,8 +205,17 @@ FrameEntry* ViewerCache::add(U64 key,
         delete out;
         return NULL;
     }
-    AbstractDiskCache::add(key, out);
+    currentViewer->frameSeeker->addCachedFrame(currentViewer->frameSeeker->currentFrame());
+    if(AbstractDiskCache::add(key, out)){
+        currentViewer->frameSeeker->removeCachedFrame();
+    }
+
     return out;
+}
+
+void ViewerCache::clearInMemoryPortion(){
+    currentViewer->frameSeeker->clearCachedFrames();
+    clearInMemoryCache();
 }
 
 FrameEntry* ViewerCache::get(std::string filename,

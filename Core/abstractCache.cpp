@@ -128,10 +128,11 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
         MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(evicted.second);
         if(mmEntry){
-            delete evicted.second;
             std::string path = mmEntry->getMappedFile()->path();
             QFile::remove(path.c_str());
         }
+        delete evicted.second;
+
     }
     return evict;
 }
@@ -166,7 +167,7 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         }
         return AbstractCache::add(evicted.first, evicted.second);
     }
-    return true;
+    return false;
 }
 
 AbstractCache::CacheIterator AbstractDiskCache::isInMemory(const U64 &key) {

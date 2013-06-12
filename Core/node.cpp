@@ -399,10 +399,11 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     }else{
         if(cacheData()){
             out = cache->add(entry.first,x, r, y, channels, filename);
+            out->notifyCacheForDeletion();
             row.setInternalRow(out);
             if(!out) return;
         }else{
-            out = new Row(x,y,r,channels,Powiter_Enums::IN_MEMORY);
+            out = new Row(x,y,r,channels);
             out->allocate();
         }
         engine(y, x, r, channels, out);

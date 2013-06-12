@@ -425,9 +425,9 @@ void Gui::setupUi()
 	rightDock->setMinimumWidth(RIGHTDOCK_WIDTH);
     QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
     Model* model = ctrlPTR->getModel();
-    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearViewerAndNodeCaches()));
-    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearInMemoryCaches()));
-    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearTotallyNodeCache()));
+    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
+    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearNodeCache()));
     
 	QMetaObject::connectSlotsByName(this);
     

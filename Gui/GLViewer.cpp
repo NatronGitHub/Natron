@@ -1108,7 +1108,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             }
         }
         if(_drawing){
-            ctrlPTR->getModel()->clearInMemoryViewerCache();
+            ctrlPTR->getModel()->clearPlaybackCache();
             ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();
@@ -1123,7 +1123,7 @@ void ViewerGL::zoomSlot(int v){
         if(value <0.1) value = 0.1;
         _zoomCtx.zoomFactor = value;
         if(_drawing){
-            ctrlPTR->getModel()->clearInMemoryViewerCache();
+            ctrlPTR->getModel()->clearPlaybackCache();
             ctrlPTR->getModel()->getVideoEngine()->videoEngine(true,1,false,true,true);
         }else{
             updateGL();

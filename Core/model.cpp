@@ -38,15 +38,15 @@ Model::Model(): _videoEngine(0),_mutex(0)
     
     /*node cache initialisation & restoration*/
     _nodeCache = NodeCache::getNodeCache();
-    _nodeCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache*2.0/3.0));
-    _nodeCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
-                                       Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
-    _nodeCache->restore();
+    U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
+                            Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*
+                            getSystemTotalRAM();
+    _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);
     
     
     /*viewer cache initialisation & restoration*/
     _viewerCache = ViewerCache::getViewerCache();
-    _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache*1.0/3.0));
+    _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
     _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
     _viewerCache->restore();
     
@@ -131,7 +131,6 @@ Model::Model(): _videoEngine(0),_mutex(0)
 
 
 Model::~Model(){
-    _nodeCache->save();
     _viewerCache->save();
     Lut::deallocateLuts();
     _videoEngine->abort();
@@ -559,20 +558,16 @@ void Model::loadBuiltinPlugins(){
 	_nodeNames.append("Viewer");
 }
 
-void Model::clearInMemoryCaches(){
-    _viewerCache->clearInMemoryCache();
-    _nodeCache->clearInMemoryCache();
-}
-void Model::clearInMemoryViewerCache(){
-    _viewerCache->clearInMemoryCache();
+void Model::clearPlaybackCache(){
+    _viewerCache->clearInMemoryPortion();
 }
 
-void Model::clearViewerAndNodeCaches(){
-    _nodeCache->clearDiskCache();
+
+void Model::clearDiskCache(){
     _viewerCache->clearDiskCache();
 }
 
 
-void  Model::clearTotallyNodeCache(){
-    _nodeCache->clearDiskCache();
+void  Model::clearNodeCache(){
+    _nodeCache->clear();
 }
