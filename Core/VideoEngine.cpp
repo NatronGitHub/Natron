@@ -492,7 +492,7 @@ void VideoEngine::_drawOverlay(Node *output){
 
 void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
     if((output->getOutputChannels() & output->getInfo()->channels())){
-        output->engine(row->y(), row->offset(), row->right(), output->getRequestedChannels(), row);
+        output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     }
     delete row;
     //    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){

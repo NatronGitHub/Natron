@@ -459,15 +459,16 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 	const int R = min(range, datawin.max.x + dataOffset +1);
     
     Row* from = 0;
-    //  colorspace conversion
     map<int,Row*>::iterator it = _img.find(exrY);
     if(it == _img.end()){
         cout << "couldn't read: " << exrY << endl;
+        return;
     }
     from = it->second;
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
     }
+    //  colorspace conversion
     const float* alpha = (*from)[Channel_alpha];
     if(alpha) alpha+= X;
     foreachChannels(z, channels){

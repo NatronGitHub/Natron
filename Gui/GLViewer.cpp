@@ -206,8 +206,8 @@ void ViewerGL::paintGL()
         glBindTexture(GL_TEXTURE_2D, currentTexture);
         
         // debug (so the openGL debugger can make a breakpoint here)
-                GLfloat d;
-                glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+              //  GLfloat d;
+               // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         
         if(rgbMode())
             activateShaderRGB();
