@@ -13,6 +13,10 @@
 		D719CC561764BDBF0006D7B8 /* abstractCache.h in Headers */ = {isa = PBXBuildFile; fileRef = D719CC541764BDBF0006D7B8 /* abstractCache.h */; };
 		D72B89F01760F7A600E5F53C /* tabwidget.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D72B89EE1760F7A600E5F53C /* tabwidget.cpp */; };
 		D72B89F11760F7A600E5F53C /* tabwidget.h in Headers */ = {isa = PBXBuildFile; fileRef = D72B89EF1760F7A600E5F53C /* tabwidget.h */; };
+		D74DF1571769D035002513D7 /* Writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74DF1551769D034002513D7 /* Writer.cpp */; };
+		D74DF1581769D035002513D7 /* Writer.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF1561769D034002513D7 /* Writer.h */; };
+		D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74DF15A1769D3A6002513D7 /* Write.cpp */; };
+		D74DF15D1769D3A6002513D7 /* Write.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF15B1769D3A6002513D7 /* Write.h */; };
 		D75667A71741189A002DCBA8 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A31741189A002DCBA8 /* QtConcurrent.framework */; };
 		D75667A81741189A002DCBA8 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A41741189A002DCBA8 /* QtCore.framework */; };
 		D75667A91741189A002DCBA8 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A51741189A002DCBA8 /* QtGui.framework */; };
@@ -197,6 +201,10 @@
 		D719CC541764BDBF0006D7B8 /* abstractCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = abstractCache.h; sourceTree = "<group>"; };
 		D72B89EE1760F7A600E5F53C /* tabwidget.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tabwidget.cpp; sourceTree = "<group>"; };
 		D72B89EF1760F7A600E5F53C /* tabwidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tabwidget.h; sourceTree = "<group>"; };
+		D74DF1551769D034002513D7 /* Writer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Writer.cpp; path = ../../Writer/Writer.cpp; sourceTree = "<group>"; };
+		D74DF1561769D034002513D7 /* Writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Writer.h; path = ../../Writer/Writer.h; sourceTree = "<group>"; };
+		D74DF15A1769D3A6002513D7 /* Write.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Write.cpp; path = ../../Writer/Write.cpp; sourceTree = "<group>"; };
+		D74DF15B1769D3A6002513D7 /* Write.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Write.h; path = ../../Writer/Write.h; sourceTree = "<group>"; };
 		D75667A31741189A002DCBA8 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtConcurrent.framework; sourceTree = "<group>"; };
 		D75667A41741189A002DCBA8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtCore.framework; sourceTree = "<group>"; };
 		D75667A51741189A002DCBA8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtGui.framework; sourceTree = "<group>"; };
@@ -369,15 +377,27 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D74DF1591769D048002513D7 /* Writer */ = {
+			isa = PBXGroup;
+			children = (
+				D74DF1561769D034002513D7 /* Writer.h */,
+				D74DF1551769D034002513D7 /* Writer.cpp */,
+				D74DF15A1769D3A6002513D7 /* Write.cpp */,
+				D74DF15B1769D3A6002513D7 /* Write.h */,
+			);
+			name = Writer;
+			sourceTree = "<group>";
+		};
 		D76ED158170E2C0900AB21D7 = {
 			isa = PBXGroup;
 			children = (
-				D7FD9AA317101EBA00D1DCEA /* Superviser */,
 				D7FD99BA17101E8700D1DCEA /* Core */,
 				D7FD99ED17101E8700D1DCEA /* Gui */,
-				D7FD9A1E17101E8700D1DCEA /* Reader */,
 				D76ED1A2170E351F00AB21D7 /* libs */,
 				D76ED162170E2C0900AB21D7 /* Products */,
+				D7FD9A1E17101E8700D1DCEA /* Reader */,
+				D7FD9AA317101EBA00D1DCEA /* Superviser */,
+				D74DF1591769D048002513D7 /* Writer */,
 			);
 			sourceTree = "<group>";
 		};
@@ -393,29 +413,29 @@
 		D76ED1A2170E351F00AB21D7 /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				D75667A31741189A002DCBA8 /* QtConcurrent.framework */,
-				D75667A41741189A002DCBA8 /* QtCore.framework */,
-				D75667A51741189A002DCBA8 /* QtGui.framework */,
-				D75667A61741189A002DCBA8 /* QtWidgets.framework */,
+				D76ED196170E351300AB21D7 /* libavcodec.a */,
+				D76ED197170E351300AB21D7 /* libavdevice.a */,
+				D76ED198170E351300AB21D7 /* libavfilter.a */,
+				D76ED199170E351300AB21D7 /* libavformat.a */,
+				D76ED19A170E351300AB21D7 /* libavutil.a */,
 				D78C15F51737E6510011B5FD /* libftgl.a */,
-				D75667AB17411D45002DCBA8 /* QtOpenGL.framework */,
 				D7F417AE170F8816000182E8 /* libHalf.a */,
 				D7F417AF170F8816000182E8 /* libIex.a */,
 				D7F417B0170F8816000182E8 /* libIexMath.a */,
 				D7F417B1170F8816000182E8 /* libIlmImf.a */,
 				D7F417B2170F8816000182E8 /* libIlmThread.a */,
 				D7F417B3170F8816000182E8 /* libImath.a */,
-				D7F41735170F687D000182E8 /* OpenGL.framework */,
-				D7F4101D170F5D57000182E8 /* QtCore.framework */,
-				D7F4101E170F5D57000182E8 /* QtGui.framework */,
-				D7F4101F170F5D57000182E8 /* QtOpenGL.framework */,
 				D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */,
-				D76ED196170E351300AB21D7 /* libavcodec.a */,
-				D76ED197170E351300AB21D7 /* libavdevice.a */,
-				D76ED198170E351300AB21D7 /* libavfilter.a */,
-				D76ED199170E351300AB21D7 /* libavformat.a */,
-				D76ED19A170E351300AB21D7 /* libavutil.a */,
 				D76ED19B170E351300AB21D7 /* libswscale.a */,
+				D7F41735170F687D000182E8 /* OpenGL.framework */,
+				D75667A31741189A002DCBA8 /* QtConcurrent.framework */,
+				D75667A41741189A002DCBA8 /* QtCore.framework */,
+				D7F4101D170F5D57000182E8 /* QtCore.framework */,
+				D75667A51741189A002DCBA8 /* QtGui.framework */,
+				D7F4101E170F5D57000182E8 /* QtGui.framework */,
+				D75667AB17411D45002DCBA8 /* QtOpenGL.framework */,
+				D7F4101F170F5D57000182E8 /* QtOpenGL.framework */,
+				D75667A61741189A002DCBA8 /* QtWidgets.framework */,
 			);
 			name = libs;
 			sourceTree = "<group>";
@@ -631,6 +651,8 @@
 				D719CC4E1764783E0006D7B8 /* nodecache.h in Headers */,
 				D719CC561764BDBF0006D7B8 /* abstractCache.h in Headers */,
 				D792662A1767654000FA3354 /* LRUcache.h in Headers */,
+				D74DF1581769D035002513D7 /* Writer.h in Headers */,
+				D74DF15D1769D3A6002513D7 /* Write.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -768,6 +790,8 @@
 				D72B89F01760F7A600E5F53C /* tabwidget.cpp in Sources */,
 				D719CC4D1764783E0006D7B8 /* nodecache.cpp in Sources */,
 				D719CC551764BDBF0006D7B8 /* abstractCache.cpp in Sources */,
+				D74DF1571769D035002513D7 /* Writer.cpp in Sources */,
+				D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

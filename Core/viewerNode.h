@@ -26,6 +26,7 @@ public:
     
     
     Viewer(Viewer& ref):OutputNode(ref){}
+    
     Viewer(Node* node);
 
     virtual ~Viewer();
@@ -37,6 +38,7 @@ public:
     ViewerTab* getUiContext(){return _uiContext;}
     
     virtual std::string className(){return "Viewer";}
+    
     virtual std::string description();
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);
 protected:

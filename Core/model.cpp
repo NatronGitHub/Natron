@@ -15,6 +15,7 @@
 #include "Core/node.h"
 #include "Core/channels.h"
 #include "Reader/Reader.h"
+#include "Writer/Writer.h"
 #include "Core/viewerNode.h"
 #include "Gui/mainGui.h"
 #include "Core/inputnode.h"
@@ -347,7 +348,15 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
         node->setSocketCount();
 		type=initCounterAndGetDescription(node);
 		return type;
-	}else{
+	}else if(name == "Writer"){
+        UI_NODE_TYPE type;
+		node=new Writer(node);
+        node->setMutex(m);
+        node->initializeInputs();
+        node->setSocketCount();
+		type=initCounterAndGetDescription(node);
+		return type;
+    }else{
         
         UI_NODE_TYPE type=UNDEFINED;
         
