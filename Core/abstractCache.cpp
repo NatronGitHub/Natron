@@ -97,7 +97,8 @@ AbstractCache::~AbstractCache(){
 void AbstractCache::clear(){
     QWriteLocker guard(&_cache._rwLock);
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
-        delete it->second;
+        CacheEntry* entry = getValueFromIterator(it);
+        delete entry;
     }
     _cache.clear();
     _size = 0;
@@ -423,7 +424,7 @@ void AbstractDiskCache::debug(){
     cout << "====================DEBUGING: " << cacheName() << " =========" << endl;
     cout << "-------------------IN MEMORY ENTRIES-------------------" << endl;
     for (CacheIterator it = beginMemoryCache(); it!=endMemoryCache(); it++) {
-        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(it->second);
+        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()->data()){
@@ -434,7 +435,7 @@ void AbstractDiskCache::debug(){
     }
     cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
     for (CacheIterator it = begin(); it!=end(); it++) {
-        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(it->second);
+        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()){

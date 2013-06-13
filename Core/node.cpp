@@ -191,8 +191,8 @@ Hash* Node::getHash() const{return _hashValue;}
 
 std::vector<Knob*> Node::getKnobs() const{return _knobsVector;}
 void Node::addToKnobVector(Knob* knob){_knobsVector.push_back(knob);}
-std::vector<Node*> Node::getParents() const {return _parents;}
-std::vector<Node*> Node::getChildren() const {return _children;}
+const std::vector<Node*>& Node::getParents() const {return _parents;}
+const std::vector<Node*>& Node::getChildren() const {return _children;}
 
 
 int Node::getFreeOutputCount() const{return _freeSocketCount;}
@@ -209,13 +209,9 @@ void Node::removeChild(Node* child){
     
     int i=0;
     while(i<_children.size()){
-        Node* c=_children[i];
-        if(c->getName()==child->getName()){
-            Node* tmp=_children[i];
-            _children[i]=_children[_children.size()-1];
-            _children[_children.size()-1]=tmp;
-            _children.pop_back();
-            
+        if(_children[i]==child){
+            _freeSocketCount++;
+            _children.erase(_children.begin()+i);
             break;
         }
         i++;
@@ -225,19 +221,26 @@ void Node::removeParent(Node* parent){
     
     int i=0;
     while(i<_parents.size()){
-        Node* p=_parents[i];
-        if(p->getName()==parent->getName()){
-            Node* tmp=_parents[i];
-            _parents[i]=_parents[_parents.size()-1];
-            _parents[_parents.size()-1]=tmp;
-            _parents.pop_back();
-            
+        if(_parents[i]==parent){
+            _parents.erase(_parents.begin()+i);
             break;
         }
         i++;
     }
 }
 
+void Node::removeFromParents(){
+    for(U32 i = 0 ; i < _parents.size() ; i++){
+        _parents[i]->removeChild(this);
+    }
+}
+
+void Node::removeFromChildren(){
+    for(U32 i = 0 ; i < _children.size() ; i++){
+        _children[i]->removeParent(this);
+    }
+
+}
 
 void Node::releaseSocket(){
     if(!isOutputNode() && getFreeOutputCount() > 0){

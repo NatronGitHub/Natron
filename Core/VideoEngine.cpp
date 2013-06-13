@@ -1,4 +1,5 @@
 
+
 //  Powiter
 //
 //  Created by Alexandre Gauthier-Foichat on 06/12
@@ -495,20 +496,6 @@ void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
         output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     }
     delete row;
-    //    for(DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++){
-    //        Node* node = *it;
-    //        if((node->getOutputChannels() & node->getInfo()->channels())){
-    //
-    //            if(!row->cached()){
-    //                node->engine(row->y(),row->offset(),row->right(),node->getRequestedChannels() & node->getInfo()->channels(),row);
-    //            }else{
-    //                if(node == output){
-    //                    node->engine(row->y(),row->offset(),row->right(),
-    //                                 node->getRequestedChannels() & node->getInfo()->channels(),row);
-    //                }
-    //            }
-    //        }
-    //    }
 }
 
 void VideoEngine::updateProgressBar(){
@@ -736,8 +723,21 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
 
 void VideoEngine::_changeDAGAndStartEngine(int frameNB, int frameCount, bool initViewer,bool forward,OutputNode* output){
     _dag.resetAndSort(output);
+    bool hasFrames = false;
+    bool hasInputDifferentThanReader = false;
+    for (U32 i = 0; i< _dag.getInputs().size(); i++) {
+        Reader* r = static_cast<Reader*>(_dag.getInputs()[i]);
+        if (r) {
+            if (r->hasFrames()) {
+                hasFrames = true;
+            }
+        }else{
+            hasInputDifferentThanReader = true;
+        }
+    }
     changeTreeVersion();
-    videoEngine(true,-1,initViewer,_forward);
+    if(hasInputDifferentThanReader || hasFrames)
+        videoEngine(true,-1,initViewer,_forward);
 }
 
 void VideoEngine::debugTree(){
@@ -818,6 +818,14 @@ void VideoEngine::DAG::_depthCycle(Node* n){
     }
     _sorted.push_back(n);
 }
+
+void VideoEngine::DAG::reset(){
+    _output = 0;
+    _validate = &VideoEngine::DAG::validate;
+    _hasValidated = false;
+    clearGraph();
+}
+
 void VideoEngine::DAG::resetAndSort(OutputNode* out){
     _output = out;
     _validate = &VideoEngine::DAG::validate;

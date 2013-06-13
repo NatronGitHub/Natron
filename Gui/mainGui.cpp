@@ -497,7 +497,7 @@ void Gui::makeNoCurrentViewerTab(){
         QObject::disconnect(currentTab->firstFrame_Button,SIGNAL(clicked()),vengine,SLOT(firstFrame()));
         QObject::disconnect(currentTab->lastFrame_Button,SIGNAL(clicked()),vengine,SLOT(lastFrame()));
         QObject::disconnect(currentTab->frameNumberBox,SIGNAL(valueChanged(double)),vengine,SLOT(seekRandomFrame(double)));
-        QObject::disconnect(currentTab->frameSeeker,SIGNAL(positionChanged(int)), vengine, SLOT(seekRandomFrameWithStart(int)));}
+        QObject::disconnect(currentTab->frameSeeker,SIGNAL(positionChanged(int)), vengine, SLOT(seekRandomFrame(int)));}
     _currentViewerTab = NULL;
 }
 
@@ -518,7 +518,7 @@ void Gui::makeCurrentViewerTab(ViewerTab *tab){
         QObject::disconnect(currentTab->firstFrame_Button,SIGNAL(clicked()),vengine,SLOT(firstFrame()));
         QObject::disconnect(currentTab->lastFrame_Button,SIGNAL(clicked()),vengine,SLOT(lastFrame()));
         QObject::disconnect(currentTab->frameNumberBox,SIGNAL(valueChanged(double)),vengine,SLOT(seekRandomFrame(double)));
-        QObject::disconnect(currentTab->frameSeeker,SIGNAL(positionChanged(int)), vengine, SLOT(seekRandomFrameWithStart(int)));
+        QObject::disconnect(currentTab->frameSeeker,SIGNAL(positionChanged(int)), vengine, SLOT(seekRandomFrame(int)));
     }
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), tab->fpsBox, SLOT(setValue(double)));
     QObject::connect(tab->fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));

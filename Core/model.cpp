@@ -153,7 +153,6 @@ Model::~Model(){
     _nodeCounters.clear();
     delete _videoEngine;
     _videoEngine = 0;
-	foreach(Node* n,_currentNodes) delete n;
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
@@ -261,9 +260,24 @@ std::string Model::removePrefixSpaces(std::string str){
 
 
 
-void Model::setVideoEngineRequirements(OutputNode *output){
+std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output){
     _videoEngine->getCurrentDAG().resetAndSort(output);
     _videoEngine->changeTreeVersion();
+    
+    std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();
+    bool hasFrames = false;
+    bool hasInputDifferentThanReader = false;
+    for (U32 i = 0; i< inputs.size(); i++) {
+        Reader* r = static_cast<Reader*>(inputs[i]);
+        if (r) {
+            if (r->hasFrames()) {
+                hasFrames = true;
+            }
+        }else{
+            hasInputDifferentThanReader = true;
+        }
+    }
+    return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
 }
 
 UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
@@ -570,4 +584,20 @@ void Model::clearDiskCache(){
 
 void  Model::clearNodeCache(){
     _nodeCache->clear();
+}
+
+
+void Model::removeNode(Node* n){
+    /*We DON'T delete as it was already done by the NodeGui associated.*/
+    for(U32 i = 0 ; i < _currentNodes.size();i++){
+        if(_currentNodes[i] == n){
+            _currentNodes.erase(_currentNodes.begin()+i);
+        }
+    }
+}
+
+void Model::resetInternalDAG(){
+    if(_videoEngine){
+        _videoEngine->resetDAG();
+    }
 }

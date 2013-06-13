@@ -9,6 +9,7 @@
 #include "Gui/dockableSettings.h"
 #include "Reader/Reader.h"
 #include "Core/node.h"
+#include "Gui/DAG.h"
 #include "Superviser/controler.h"
 #include <QtWidgets/QtWidgets>
 #include <cassert>
@@ -101,6 +102,22 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 }
 
 NodeGui::~NodeGui(){
+    node->removeFromChildren();
+    node->removeFromParents();
+    foreach(NodeGui* p,parents){
+        p->substractChild(this);
+    }
+    std::vector<NodeGui*> tmpChildrenCopy;
+    foreach(NodeGui* c,children){
+        tmpChildrenCopy.push_back(c);
+        Edge* e = c->findConnectedEdge(this);
+        e->removeSource();
+        c->substractParent(this);
+    }
+    foreach(NodeGui*c,tmpChildrenCopy){
+        _dag->checkIfViewerConnectedAndRefresh(c);
+    }
+    delete node;
     if(settings)
         delete settings;
     foreach(Edge* a,inputs) delete a;
@@ -208,31 +225,21 @@ bool NodeGui::isNearby(QPointF &point){
 void  NodeGui::substractChild(NodeGui* c){
 	if(!children.empty()){
 		for(U32 i=0;i<children.size();i++){
-			NodeGui* node=children[i];
-			if(node->getNode()->getName()==c->getNode()->getName()){
-				NodeGui* tmp=node;
-				children[i]=children[children.size()-1];
-				children[children.size()-1]=tmp;
-				children.pop_back();
-                
-				break;
-			}
-		}
+            if(children[i] == c){
+                children.erase(children.begin()+i);
+                break;
+            }
+        }
 	}
 }
 void  NodeGui::substractParent(NodeGui* p){
 	if(!parents.empty()){
 		for(U32 i=0;i<parents.size();i++){
-			NodeGui* node=parents[i];
-			if(node->getNode()->getName()==p->getNode()->getName()){
-				NodeGui* tmp=node;
-				parents[i]=parents[parents.size()-1];
-				parents[parents.size()-1]=tmp;
-				parents.pop_back();
-                
-				break;
-			}
-		}
+            if(parents[i] == p){
+                parents.erase(parents.begin()+i);
+                break;
+            }
+        }
 	}
 }
 
@@ -282,4 +289,15 @@ void NodeGui::setSelected(bool b){
     _selected = b;
     update();
     if(settings)
-        settings->update();}
+        settings->update();
+}
+
+Edge* NodeGui::findConnectedEdge(NodeGui* parent){
+    for (U32 i =0 ; i < inputs.size(); i++) {
+        Edge* e = inputs[i];
+        if (e->getSource() == parent) {
+            return e;
+        }
+    }
+    return NULL;
+}

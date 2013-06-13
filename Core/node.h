@@ -96,12 +96,14 @@ public:
     /*============================*/
 
     /*Parents & children nodes related functions*/
-    std::vector<Node*> getParents() const;
-    std::vector<Node*> getChildren() const;
+    const std::vector<Node*>& getParents() const;
+    const std::vector<Node*>& getChildren() const;
     void addChild(Node* child);
     void addParent(Node* parent);
     void removeChild(Node* child);
     void removeParent(Node* parent);
+    void removeFromParents();
+    void removeFromChildren();
     /*============================*/
 
     /*DAG related*/

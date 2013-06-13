@@ -33,6 +33,8 @@ public:
     virtual ~NodeGraph();
  
     void createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type,Node *node,double x,double y);
+    
+    void removeNode(NodeGui* n);
 
     virtual void enterEvent(QEvent *event);
     
@@ -46,7 +48,7 @@ public:
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
 
-	
+    void checkIfViewerConnectedAndRefresh(NodeGui* n);
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -62,6 +64,9 @@ protected:
     void scaleView(qreal scaleFactor,QPointF center);
 
 private:
+    
+    void deleteSelectedNode();
+    
     bool smartNodeCreationEnabled;
     QPointF old_pos;
     QPointF oldp;

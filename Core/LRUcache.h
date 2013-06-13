@@ -93,7 +93,7 @@ public:
     
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUCache(value_type (*f)(const key_type&),size_t c){}
+    StlLRUCache(){}
     
     // Obtain value of the cached function for k
     typename key_to_value_type::iterator operator()(const key_type& k)  {
@@ -273,7 +273,7 @@ public:
     
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUTreeCache(value_type (*f)(const key_type&),size_t c){}
+    StlLRUTreeCache(){}
     
     // Obtain value of the cached function for k
     typename key_to_value_type::iterator operator()(const key_type& k)  {
@@ -325,7 +325,7 @@ public:
     std::pair<key_type,value_type> evict() {
         // Assert method is never called when cache is empty
         assert(!_key_tracker.empty());
-        const typename key_to_value_type::iterator it;
+        typename key_to_value_type::iterator it;
         {
             QReadLocker g(&_rwLock);
             // Identify least recently used key
@@ -342,7 +342,7 @@ public:
         }
         return ret;
     }
-    U32 size(){return _container.size();}
+    U32 size(){return _key_to_value.size();}
     
     //public member so your cache implem can use it
     QReadWriteLock _rwLock;

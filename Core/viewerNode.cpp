@@ -16,7 +16,8 @@ Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0)
     _uiContext = currentViewer;
 }
 Viewer::~Viewer(){
-    ctrlPTR->getGui()->removeViewerTab(_uiContext);
+    if(ctrlPTR->getGui())
+        ctrlPTR->getGui()->removeViewerTab(_uiContext);
     if(_viewerInfos)
         delete _viewerInfos;
 }

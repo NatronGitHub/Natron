@@ -103,6 +103,8 @@ public:
   
 	/*Create a new node internally*/
     Powiter_Enums::UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
+    
+    void removeNode(Node* n);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     QStringList& getNodeNameList(){return _nodeNames;}
@@ -121,7 +123,7 @@ public:
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
 
 	/*Set the output of the graph used by the videoEngine.*/
-    void setVideoEngineRequirements(OutputNode* output);
+    std::pair<int,bool> setVideoEngineRequirements(OutputNode* output);
 
 
     VideoEngine* getVideoEngine(){return _videoEngine;}
@@ -148,6 +150,8 @@ public slots:
     void clearDiskCache();
     
     void clearNodeCache();
+    
+    void resetInternalDAG();
     
 private:
     

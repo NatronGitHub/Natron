@@ -44,9 +44,12 @@ public:
         
         DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate){}
         
-        /*Clear the structure and sorts the graph
+        /*Clears the structure and sorts the graph
          *represented by the OutputNode out*/
         void resetAndSort(OutputNode* out);
+        
+        /*Clears the dag.*/
+        void reset();
         
         /*Accessors to the sorted graph. Must be called
          *after resetAndSort(...) has been called*/
@@ -220,6 +223,8 @@ public:
   
     void changeDAGAndStartEngine(OutputNode* output);
     
+    void resetDAG(){_dag.reset();}
+    
     DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
@@ -234,17 +239,6 @@ public:
     VideoEngine(Model* engine,QMutex* lock);
     virtual ~VideoEngine();
     
-    /*Associates the info to the reader in the map*/
-	//void pushReaderInfo(ReaderInfo* info,Reader* reader);
-
-	/*Removes the readerInfo associated to reader in the map*/
-	//void popReaderInfo(Reader* reader);
-
-	/*Tells the GlViewer that the current readerInfo will be the info
-	 *of the Reader "reader"*/
-	//void makeReaderInfoCurrent(Reader* reader);
-
-	//ReaderInfo* getReaderInfo(Reader* reader){return readersInfos[reader];}
 
 	/*Tell all the nodes in the grpah to draw overlays*/
     void drawOverlay();

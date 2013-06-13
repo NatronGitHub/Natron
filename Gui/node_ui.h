@@ -62,7 +62,7 @@ public:
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
-    std::vector<Edge*>& getInputsArrows(){return inputs;}
+    const std::vector<Edge*>& getInputsArrows() const {return inputs;}
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -118,6 +118,10 @@ public:
     
     /*Returns a pointer to the first available input. Otherwise returns NULL*/
     Edge* firstAvailableEdge();
+    
+    /*find the edge connecting this as dst and the parent as src.
+     Return a valid ptr to the edge if it found it, otherwise returns NULL.*/
+    Edge* findConnectedEdge(NodeGui* parent);
     
 private:
     /*used internally by hasViewerConnected.*/

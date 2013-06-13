@@ -34,6 +34,8 @@ public:
     void makeCurrentViewer();
     ViewerInfos* getViewerInfos(){return _viewerInfos;}
     
+    ViewerTab* getUiContext(){return _uiContext;}
+    
     virtual std::string className(){return "Viewer";}
     virtual std::string description();
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);

@@ -133,7 +133,7 @@ public:
 #ifdef CACHE_USE_HASH
     typedef BoostLRUHashCache<U64, CacheEntry*> CacheContainer;
 #else
-    typedef BoostLRUTreeCache<U64, CacheEntry* , boost::bimaps::set_of> CacheContainer;
+    typedef BoostLRUTreeCache<U64, CacheEntry* > CacheContainer;
 #endif
     typedef CacheContainer::container_type::left_iterator CacheIterator;
     typedef CacheContainer::container_type::left_const_iterator ConstCacheIterator;
@@ -141,10 +141,10 @@ public:
     
 #else // cache use STL and tree (std map)
     
-    typedef StlLRUTreeCache<U64,CacheEntry*, std::map> CacheContainer;
+    typedef StlLRUTreeCache<U64,CacheEntry*> CacheContainer;
     typedef CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-    static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second;}
+    static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second.first;}
 #endif // CACHE_USE_BOOST
     
 #endif // USE_VARIADIC_TEMPLATES

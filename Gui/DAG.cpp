@@ -114,7 +114,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             found=true;
             break;
         }else{
-            std::vector<Edge*>& arrows = n->getInputsArrows();
+            const std::vector<Edge*>& arrows = n->getInputsArrows();
             int j=0;
             while(j<arrows.size()){
                 Edge* a=arrows[j];
@@ -139,6 +139,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
                 _lastSelectedPos = n->pos();
             }
             n->setSelected(false);
+            _nodeSelected = 0;
         }
         _evtState=MOVING_AREA;
     }
@@ -191,25 +192,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         _arrowSelected->initLine();
         scene()->update();
         ctrlPTR->getModel()->clearPlaybackCache();
-        if(foundSrc){
-            NodeGui* viewer = NodeGui::hasViewerConnected(_arrowSelected->getDest());
-            if(viewer){
-                if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-                    ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
-                }else{
-                    ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
-                    ctrlPTR->getModel()->startVideoEngine(1);
-                }
-            }
-            
-        }
-        if(!_arrowSelected->hasSource() && _arrowSelected->getDest()->getNode()->className() == std::string("Viewer")){
-            ViewerGL* gl_viewer = currentViewer->viewer;
-            gl_viewer->disconnectViewer();
-        }
-        scene()->update();
+        
+        checkIfViewerConnectedAndRefresh(_arrowSelected->getDest());
         
     }
+    scene()->update();
+    
     _evtState=DEFAULT;
     setCursor(QCursor(Qt::ArrowCursor));
     viewport()->setCursor(QCursor(Qt::ArrowCursor));
@@ -330,6 +318,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
             ctrlPTR->getGui()->viewersTabContainer->show();
         }
         
+    }else if(e->key() == Qt::Key_Backspace){
+        /*delete current node.*/
+        if(_nodeSelected)
+            deleteSelectedNode();
     }
     
     
@@ -428,4 +420,46 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 ctrlPTR->getModel()->startVideoEngine(1);
         }
     }
+}
+
+void NodeGraph::deleteSelectedNode(){
+    ctrlPTR->getModel()->removeNode(_nodeSelected->getNode());
+    removeNode(_nodeSelected);
+    _nodeSelected = 0;
+    ctrlPTR->getModel()->resetInternalDAG();
+}
+
+
+void NodeGraph::removeNode(NodeGui* n){
+    for(int i =0 ; i < _nodes.size();i++){
+        if (n == _nodes[i]) {
+            
+            delete n;
+            _nodes.erase(_nodes.begin()+i);
+            break;
+        }
+    }
+}
+
+void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
+    NodeGui* viewer = NodeGui::hasViewerConnected(n);
+    if(viewer){
+        //if(foundSrc){
+        if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
+            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
+        }else{
+            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+            if(ret.second){
+                ctrlPTR->getModel()->startVideoEngine(1);
+            }
+            else if(ret.first == 0){ // no inputs, disconnect viewer
+                Viewer* v = static_cast<Viewer*>(viewer->getNode());
+                if(v){
+                    ViewerTab* tab = v->getUiContext();
+                    tab->viewer->disconnectViewer();
+                }
+            }
+        }
+    }
+
 }
