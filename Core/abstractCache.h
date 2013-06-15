@@ -10,7 +10,7 @@
 
 #include "Core/LRUcache.h"
 #include "Core/singleton.h"
-
+#include <vector>
 
 class MemoryFile;
 
