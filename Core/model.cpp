@@ -23,6 +23,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/displayFormat.h"
 #include "Core/settings.h"
+#include "Writer/Write.h"
 #include "Reader/Read.h"
 #include "Reader/readExr.h"
 #include "Reader/readffmpeg.h"
@@ -30,6 +31,8 @@
 #include "Core/lookUpTables.h"
 #include "Core/nodecache.h"
 #include "Core/viewercache.h"
+#include "Gui/knob.h"
+#include "Writer/writeQt.h"
 #include <cassert>
 using namespace std;
 Model::Model(): _videoEngine(0),_mutex(0)
@@ -57,7 +60,12 @@ Model::Model(): _videoEngine(0),_mutex(0)
     
     /*loading read plugins*/
     loadReadPlugins();
-    displayLoadedPlugins();
+    
+    /*loading write plugins*/
+    loadWritePlugins();
+    
+    _knobFactory = KnobFactory::instance();
+    
     
     /*allocating lookup tables*/
     Lut::allocateLuts();
@@ -579,6 +587,140 @@ void Model::loadBuiltinPlugins(){
     // these  are built-in nodes
 	_nodeNames.append("Reader");
 	_nodeNames.append("Viewer");
+    _nodeNames.append("Writer");
+}
+
+/*loads extra writer plug-ins*/
+void Model::loadWritePlugins(){
+    QDir d(PLUGINS_PATH);
+    if (d.isReadable())
+    {
+        QStringList filters;
+#ifdef __POWITER_WIN32__
+        filters << "*.dll";
+#elif defined(__POWITER_OSX__)
+        filters << "*.dylib";
+#elif defined(__POWITER_LINUX__)
+        filters << "*.so";
+#endif
+        d.setNameFilters(filters);
+		QStringList fileList = d.entryList();
+        for(int i = 0 ; i < fileList.size() ;i ++)
+        {
+            QString filename = fileList.at(i);
+            if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+                QString className;
+                int index = filename.size() -1;
+                while(filename.at(index) != QChar('.')) index--;
+                className = filename.left(index);
+                PluginID* plugin = 0;
+#ifdef __POWITER_WIN32__
+                HINSTANCE lib;
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+                dll.append(".dll");
+                lib=LoadLibrary(dll.c_str());
+                if(lib==NULL){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    WriteBuilder builder=(WriteBuilder)GetProcAddress(lib,"BuildRead");
+                    if(builder!=NULL){
+                        Write* write=builder(NULL);
+                        std::vector<std::string> extensions = write->fileTypesEncoded();
+                        std::string encoderName = write->encoderName();
+                        plugin = new PluginID((HINSTANCE)builder,encoderName.c_str());
+                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                            _writePluginsLoaded.push_back(make_pair(extensions[i],plugin));
+                        }
+                        delete write;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildRead" << endl;
+                        continue;
+                    }
+                    
+                }
+                
+#elif defined(__POWITER_UNIX__)
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+#ifdef __POWITER_OSX__
+                dll.append(".dylib");
+#elif defined(__POWITER_LINUX__)
+                dll.append(".so");
+#endif
+                void* lib=dlopen(dll.c_str(),RTLD_LAZY);
+                if(!lib){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }
+                else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    WriteBuilder builder=(WriteBuilder)dlsym(lib,"BuildRead");
+                    if(builder!=NULL){
+                        Write* write=builder(NULL);
+                        std::vector<std::string> extensions = write->fileTypesEncoded();
+                        std::string encoderName = write->encoderName();
+                        plugin = new PluginID((void*)builder,encoderName.c_str());
+                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                            _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
+                        }
+                        delete write;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildRead" << endl;
+                        continue;
+                    }
+                }
+#endif
+            }else{
+                continue;
+            }
+        }
+    }
+    loadBuiltinWrites();
+    
+    std::map<std::string, PluginID*> defaultMapping;
+    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); it++) {
+        if(it->first == "exr" && it->second->second == "OpenEXR"){
+            defaultMapping.insert(*it);
+        }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
+            defaultMapping.insert(*it);
+        }else if((it->first == "jpg" ||
+                  it->first == "bmp" ||
+                  it->first == "jpeg"||
+                  it->first == "gif" ||
+                  it->first == "png" ||
+                  it->first == "pbm" ||
+                  it->first == "pgm" ||
+                  it->first == "ppm" ||
+                  it->first == "xbm" ||
+                  it->first == "xpm") && it->second->second == "QImage (Qt)"){
+            defaultMapping.insert(*it);
+            
+        }
+    }
+    Settings::getPowiterCurrentSettings()->_writersSettings.fillMap(defaultMapping);
+}
+
+/*loads writes that are built-ins*/
+void Model::loadBuiltinWrites(){
+    Write* writeQt = WriteQt::BuildWrite(NULL);
+    std::vector<std::string> extensions = writeQt->fileTypesEncoded();
+    string encoderName = writeQt->encoderName();
+#ifdef __POWITER_WIN32__
+	PluginID *QtWritePlugin = new PluginID((HINSTANCE)&WriteQt::BuildWrite,encoderName.c_str());
+#else
+	PluginID *QtWritePlugin = new PluginID((void*)&WriteQt::BuildWrite,encoderName.c_str());
+#endif
+    for (U32 i = 0 ; i < extensions.size(); i++) {
+        _writePluginsLoaded.push_back(make_pair(extensions[i],QtWritePlugin));
+    }
+    delete writeQt;
 }
 
 void Model::clearPlaybackCache(){

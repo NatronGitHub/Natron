@@ -220,6 +220,8 @@ signals:
     void fpsChanged(double d);
 
 public:
+    
+    bool isOutputAViewer(){return _outputIsViewer;}
   
     void changeDAGAndStartEngine(OutputNode* output);
     
@@ -228,7 +230,7 @@ public:
     DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer,int followingComputationsNb);
+    void computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer);
     
 	/*clears-out all the node-infos in the graph*/
     void clearInfos(Node* out);

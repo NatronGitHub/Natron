@@ -4,7 +4,6 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include <iostream>
-#include <QtGui/QRgb>
 #include "Core/lutclasses.h"
 
 #ifndef FLT_MAX
@@ -49,8 +48,6 @@ void Lut::fillFromTable()
 
 }
 
-/*Forces fillToTable() and fillFromTable() to fill the tables again and calls them, and calculates a value for hash().
- The constructor calls this, but subclasses may want to call this directly if the LUT has other controls that can change it's results. */
 void Lut::validate()
 {
     if (!linear_) {
@@ -155,10 +152,74 @@ void Lut::from_float(float* to, const float* from, const float* alpha, int W, in
     
 }
 
-void Linear::from_byte(float* to, const uchar* from, int W, int delta ){
-    for(int i =0;i < W ; i+=delta){
-        to[i] = Linear::fromFloatFast(from[i]/255.f);
+
+void Lut::to_byte(uchar* to, const float* from, int W, int delta ) {
+    unsigned char* end = to+W*delta;
+    int start = rand()%W;
+    const float* q;
+    unsigned char* p;
+    unsigned error;
+    /* go fowards from starting point to end of line: */
+    error = 0x80;
+    for (p = to+start*delta, q = from+start; p < end; p += delta) {
+        error = (error&0xff) + to_byte_table[highFloatPart(q)]; ++q;
+        *p = (error>>8);
     }
+    /* go backwards from starting point to start of line: */
+    error = 0x80;
+    for (p = to+(start-1)*delta, q = from+start; p >= to; p -= delta) {
+        --q; error = (error&0xff) + to_byte_table[highFloatPart(q)];
+        *p = (error>>8);
+    }
+}
+void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int delta ){
+    
+    unsigned char* end = to+W*delta;
+    int start = rand()%W;
+    const float* q;
+    const float* a = alpha;
+    unsigned char* p;
+    unsigned error;
+    /* go fowards from starting point to end of line: */
+    error = 0x80;
+    for (p = to+start*delta, q = from+start,a+=start; p < end; p += delta) {
+        const float v = *q * *a;
+        error = (error&0xff) + to_byte_table[highFloatPart(&v)]; ++q; ++a;
+        *p = (error>>8);
+    }
+    /* go backwards from starting point to start of line: */
+    error = 0x80;
+    for (p = to+(start-1)*delta, q = from+start , a = alpha+start; p >= to; p -= delta) {
+        const float v = *q * *a;
+        --q;--a; error = (error&0xff) + to_byte_table[highFloatPart(&v)];
+        *p = (error>>8);
+    }
+
+}
+
+void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ){
+    cout << "Lut::to_short not implemented yet." << endl;
+}
+void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bits , int delta ){
+    cout << "Lut::to_short not implemented yet." << endl;
+}
+
+void Lut::to_float(float* to, const float* from, int W, int delta ){
+    for(int i=0;i< W;i+=delta){
+        to[i]=toFloatFast(from[i]);
+    }
+}
+void Lut::to_float(float* to, const float* from, const float* alpha, int W, int delta ){
+    for(int i=0;i< W;i+=delta){
+        to[i]=toFloatFast(from[i])*alpha[i];
+    }
+}
+
+
+void Linear::from_byte(float* to, const uchar* from, int W, int delta ){
+    from += (W-1)*delta;
+    to += W;
+    for (; --W >= 0; from -= delta) *--to = *from*(1.0f/255.f);
 }
 void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta ){
     typedef int(*ChannelLookup)(QRgb);
@@ -202,6 +263,49 @@ void Linear::from_float(float* to, const float* from, int W, int delta ){
         to[i]=fromFloatFast(from[i]);
     }
 }
+
+void Linear::to_byte(uchar* to, const float* from, int W, int delta ){
+    unsigned char* end = to+W*delta;
+    int start = rand()%W;
+    const float* q;
+    unsigned char* p;
+    /* go fowards from starting point to end of line: */
+    float error = .5;
+    for (p = to+start*delta, q = from+start; p < end; p += delta) {
+        float G = error + *q++ * 255.0f;
+        if (G <= 0) {
+            *p = 0;
+        } else if (G < 255) {
+            int i = (int)G;
+            *p = i;
+            error = G-i;
+        } else {
+            *p = 255;
+        }
+    }
+    /* go backwards from starting point to start of line: */
+    error = .5;
+    for (p = to+(start-1)*delta, q = from+start; p >= to; p -= delta) {
+        float G = error + *--q * 255.0f;
+        if (G <= 0) {
+            *p = 0;
+        } else if (G < 255) {
+            int i = (int)G;
+            *p = i;
+            error = G-i;
+        } else {
+            *p = 255;
+        }
+    }
+}
+
+void Linear::to_short(U16* to, const float* from, int W, int bits , int delta ){
+    cout << "Linear::to_short not implemented yet." << endl;
+}
+void Linear::to_float(float* to, const float* from, int W, int delta ){
+    memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
+}
+
 Lut* Lut::getLut(DataType type){
     std::map<DataType,Lut*>::iterator found = Lut::_luts.find(type);
     if(found != Lut::_luts.end()){

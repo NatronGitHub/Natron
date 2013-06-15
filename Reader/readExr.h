@@ -5,21 +5,7 @@
 //  contact: immarespond at gmail dot com
 #ifndef __READ_EXR_H__
 #define __READ_EXR_H__
-#include <ImfPreviewImage.h>
-#include <ImfInputFile.h>
-#include <ImfChannelList.h>
-#include <ImfStringAttribute.h>
-#include <ImfIntAttribute.h>
-#include <ImfFloatAttribute.h>
-#include <ImfVecAttribute.h>
-#include <ImfBoxAttribute.h>
-#include <ImfStringVectorAttribute.h>
-#include <ImfTimeCodeAttribute.h>
-#include <ImfStandardAttributes.h>
-#include <ImfMatrixAttribute.h>
-#include <ImfRgba.h>
-#include <ImfRgbaFile.h>
-#include <ImfArray.h>
+#include "Reader/exrCommons.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <fstream>

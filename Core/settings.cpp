@@ -48,3 +48,27 @@ PluginID* Settings::ReadersSettings::decoderForFiletype(std::string type){
     }
     return NULL;
 }
+
+Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
+
+/*Returns a pluginID if it could find an encoder for the filetype,
+ otherwise returns NULL.*/
+PluginID* Settings::WritersSettings::encoderForFiletype(std::string type){
+    std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
+    if (found!=_fileTypesMap.end()) {
+        return found->second;
+    }
+    return NULL;
+}
+
+/*changes the encoder for files identified by the filetype*/
+void Settings::WritersSettings::changeMapping(std::string filetype,PluginID* encoder){
+    _fileTypesMap.insert(make_pair(filetype, encoder));
+}
+
+/*use to initialise default mapping*/
+void Settings::WritersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
+    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();it++){
+        _fileTypesMap.insert(*it);
+    }
+}

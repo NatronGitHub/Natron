@@ -261,7 +261,7 @@ public:
 	* The caller should then abort any computation and set for current texture the one returned.
 	* otherwise returns false.
 	*/
-	bool determineFrameDataContainer(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode);
+	bool determineFrameDataContainer(std::string filename,int w,int h,ViewerGL::CACHING_MODE mode);
 
 	std::pair<int,int> getTextureSize(){return _textureSize;}
 

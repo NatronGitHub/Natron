@@ -19,6 +19,8 @@
 #include "Gui/viewerTab.h"
 #include "Core/row.h"
 #include "Gui/mainGui.h"
+#include "Writer/Writer.h"
+#include "Core/VideoEngine.h"
 
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
@@ -100,8 +102,7 @@ void Node::copy_info(Node* parent,bool forReal){
 }
 void Node::clear_info(){
 	_info->reset();
-    _requestedChannels=Mask_None;
-    _requestedBox.set(0, 0, 0, 0);
+   
     
 }
 void Node::Info::reset(){
@@ -390,7 +391,13 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
-        filename = reader->getRandomFrameName(currentViewer->frameSeeker->currentFrame());
+        int current_frame;
+        Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
+        if(!writer)
+            current_frame = reader->clampToRange(currentViewer->frameSeeker->currentFrame());
+        else
+            current_frame = writer->currentFrame();
+        filename = reader->getRandomFrameName(current_frame);
     }
     Row* out = 0;
     U64 key = _hashValue->getHashValue();

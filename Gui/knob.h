@@ -6,6 +6,7 @@
 #ifndef KNOB_H
 #define KNOB_H
 #include <vector>
+#include <map>
 #include <QtCore/QString>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QWidget>
@@ -13,8 +14,10 @@
 #include <QtWidgets/QLineEdit>
 #include "Superviser/powiterFn.h"
 #include "Core/channels.h"
-
-
+#include "Core/model.h"
+#include "Core/singleton.h"
+#include "Gui/FeedbackSpinBox.h"
+#include "Gui/comboBox.h"
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
  the GUI stuff. If you want say an int_knob for your operator, then just call Knob::int_knob(...) in the function initKnobs(..)
@@ -31,8 +34,7 @@ using namespace Powiter_Enums;
 
 
 
-typedef unsigned int Knob_Mask;
-std::vector<Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
+
 
 class QHBoxLayout;
 class QCheckBox;
@@ -44,19 +46,18 @@ class Knob_Callback;
 //================================
 class Knob:public QWidget
 {
-    
 public:
-    Knob(Knob_Types type,Knob_Callback* cb);
+    enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2};
+    
+    
+    Knob(Knob_Callback* cb);
     std::vector<U64> getValues(){return values;}
     virtual ~Knob();
-    static Knob* file_Knob(Knob_Callback* cb,QString& description,QStringList& filePath,Knob_Mask flags=0);
-    static Knob* channels_Knob(ChannelMask* channels,Knob_Callback* cb,Knob_Mask flags=0);
-    static Knob* int_Knob(int* integer,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
-    static Knob* float_Knob(float* floating,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
-    static Knob* string_Knob(QString* str,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
-    static Knob* bool_Knob(bool& boolean,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
 	Knob_Callback* getCallBack(){return cb;}
-    Knob_Types getType() const {return _type;}
+    
+    /*Must return the name of the knob. This name will be used by the KnobFactory
+     to create an instance of this knob.*/
+    virtual std::string name()=0;
     
     //to be called on events functions to tell the engine to start processing
     //made public to allow other class that knob depends on to call validateEvent
@@ -69,12 +70,48 @@ protected:
     QHBoxLayout* layout;
     std::vector<QWidget*> elements;
     std::vector<U64> values;
-    Knob_Types _type;
+    
     
 private:
     
     
 };
+
+typedef unsigned int Knob_Mask;
+std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
+
+
+/*Class inheriting Knob, must have a function named BuildKnob with the following signature:
+ Knob* BuildKnob(Knob_Callback* cb,QString& description,Knob_Mask flags); This function
+ should in turn call a specific class-based static function with the appropriate param.
+ E.G : static Knob* int_Knob(int* integer,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
+ and return a pointer to the knob. */
+typedef Knob* (*KnobBuilder)(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+
+
+class KnobFactory : public Singleton<KnobFactory>{
+    
+    std::map<std::string,PluginID*> _loadedKnobs;
+    
+    void loadKnobPlugins();
+    
+    void loadBultinKnobs();
+    
+public:
+    
+    
+    KnobFactory();
+    
+    ~KnobFactory();
+    
+    const std::map<std::string,PluginID*>& getLoadedKnobs(){return _loadedKnobs;}
+    
+    /*Calls the unique instance of the KnobFactory and
+     calls the appropriate pointer to function to create a knob.*/
+    static Knob* createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags);
+    
+};
+
 //================================
 class FileQLineEdit;
 
@@ -84,24 +121,31 @@ class File_Knob:public Knob
     Q_OBJECT
     
 public:
-    File_Knob(Knob_Callback *cb,QString& description,QStringList& filePath,Knob_Mask flags=0);
+    
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    
+    File_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    virtual ~File_Knob(){}
     virtual void setValues();
-    void setStr(QStringList str){
+    virtual std::string name(){return "InputFile";}
+    
+    void setPointer(QStringList* list){str = list;}
+    void setStr(QStringList& str){
 		for(int i =0;i< str.size();i++){
             
             QString el = str[i];
 			
-			this->str.append(el);
+			this->str->append(el);
 		}
 	}
-    QStringList& getStr(){return str;}
+    QStringList* getStr(){return str;}
     public slots:
     void open_file();
     
 private:
     void updateLastOpened(QString str);
-    QStringList& str;
-    FileQLineEdit* name;
+    QStringList* str;
+    FileQLineEdit* _name;
     QString _lastOpened;
 };
 //the following class is necessary for the File_Knob Class
@@ -113,15 +157,38 @@ public:
 private:
     File_Knob* knob;
 };
-
 //================================
-class Channels_Knob:public Knob
+class OutputFileQLineEdit;
+class OutputFile_Knob:public Knob
 {
+    Q_OBJECT
 public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    
+    OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    virtual ~OutputFile_Knob(){}
     virtual void setValues();
-    Channels_Knob(ChannelMask *channels, Knob_Callback *cb,Knob_Mask flags=0);
+    virtual std::string name(){return "OutputFile";}
+    
+    void setPointer(std::string* filename){str = filename;}
+    
+    std::string * getStr(){return str;}
+public slots:
+    void open_file();
+    void setStr(const QString& str){
+		*(this->str) = str.toStdString();
+	}
 private:
-    ChannelMask* channels;
+    std::string *str;
+    OutputFileQLineEdit* _name;
+};
+
+class OutputFileQLineEdit:public QLineEdit{
+public:
+    OutputFileQLineEdit(OutputFile_Knob* knob);
+    void keyPressEvent(QKeyEvent *);
+private:
+    OutputFile_Knob* knob;
 };
 //================================
 class IntQSpinBox;
@@ -129,37 +196,67 @@ class IntQSpinBox;
 class Int_Knob:public Knob
 {
 public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    
     virtual void setValues();
-    Int_Knob(int* integer,Knob_Callback *cb,QString& description,Knob_Mask flags=0);
-    void setInteger(int* integer){this->integer=integer;}
+    virtual std::string name(){return "Int";}
+    void setPointer(int* value){integer = value;}
+    
+    Int_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    virtual ~Int_Knob(){}
+    void setInteger(int& value){*integer = value;}
 private:
     int* integer;
     IntQSpinBox* box;
 };
 
 //the following class is necessary for the Int_Knob Class
-class IntQSpinBox:public QSpinBox{
+class IntQSpinBox:public FeedBackSpinBox{
 public:
-    IntQSpinBox(Int_Knob* knob);
-    void keyPressEvent(QKeyEvent *event);
+    IntQSpinBox(Int_Knob* knob,QWidget* parent = 0);
+    virtual void keyPressEvent(QKeyEvent *event);
 private:
     Int_Knob* knob;
 };
 
 //================================
-class Float_Knob: public Knob
+class DoubleQSpinBox;
+class Double_Knob: public Knob
 {
+    double *_value;
+    DoubleQSpinBox* box;
 public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    void setPointer(double* value){_value = value;}
     virtual void setValues();
-    Float_Knob(float* floating,Knob_Callback *cb,QString& description,Knob_Mask flags=0);
+    virtual std::string name(){return "Float";}
+    Double_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
     
+    virtual ~Double_Knob(){}
+    void setDouble(double& value){*_value = value;}
+    
+};
+
+//the following class is necessary for the Int_Knob Class
+class DoubleQSpinBox:public FeedBackSpinBox{
+public:
+    DoubleQSpinBox(Double_Knob* knob,QWidget* parent = 0);
+    virtual void keyPressEvent(QKeyEvent *event);
+private:
+    Double_Knob* knob;
 };
 //================================
 class String_Knob:public Knob
 {
+    std::string* _string;
+    
 public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    void setPointer(std::string* str){_string = str;}
     virtual void setValues();
-    String_Knob(QString* str,Knob_Callback *cb,QString& description,Knob_Mask flags=0);
+    virtual std::string name(){return "String";}
+    String_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    virtual ~String_Knob(){}
     
 };
 //================================
@@ -168,13 +265,60 @@ class Bool_Knob:public Knob
 	Q_OBJECT
 public:
     
-    Bool_Knob(bool& boolean,Knob_Callback *cb,QString& description,Knob_Mask flags=0);
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    void setPointer(bool* val){_boolean = val;}
+    Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
 	virtual void setValues();
+    virtual std::string name(){return "Bool";}
+    virtual ~Bool_Knob(){}
     public slots:
 	void change_checkBox(int checkBoxState);
 private:
-	bool boolean;
+	bool *_boolean;
 	QCheckBox* checkbox;
+};
+//================================
+class QPushButton;
+class Button_Knob : public Knob
+{
+    Q_OBJECT
+public:
+    
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    void connectButtonToSlot(QObject* object,const char* slot);
+    
+    virtual std::string name(){return "Button";}
+    virtual void setValues(){}
+    virtual ~Button_Knob(){}
+    
+    
+private:
+    QPushButton* button;
+};
+
+//================================
+class ComboBox_Knob : public Knob
+{
+    Q_OBJECT
+public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    
+    void populate(std::vector<std::string>& entries);
+    
+    void setPointer(std::string* str);
+    
+    virtual void setValues();
+    virtual ~ComboBox_Knob(){}
+    
+    virtual std::string name(){return "ComboBox";}
+
+public slots:
+    void setCurrentItem(QString);
+private:
+    ComboBox* _comboBox;
+    std::string* _currentItem;
 };
 
 #endif // KNOB_H

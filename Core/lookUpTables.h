@@ -3,6 +3,34 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
+
+/*
+ *
+ * High-speed conversion between 8 bit and floating point image data.
+ *
+ * Copyright 2002 Bill Spitzak and Digital Domain, Inc.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ * USA.
+ *
+ * For use in closed-source software please contact Digital Domain,
+ * 300 Rose Avenue, Venice, CA 90291 310-314-2800
+ *
+ */
+
+
 #ifndef __LUT_CLASS_H__
 #define __LUT_CLASS_H__
 
@@ -11,7 +39,7 @@
 #include <math.h>
 #include "Superviser/powiterFn.h"
 #include "Superviser/MemoryInfo.h"
-
+#include <QtGui/QRgb>
 using namespace Powiter_Enums;
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
@@ -46,10 +74,38 @@ public:
     // the value after color-space conversion is in [0 - 255.f]
     virtual float to_byte(float)  = 0;
     
+    float toFloat(float v)  { return to_byte(v) / 255.f; }
+    float toFloatFast(float v) ;
+    
+    /*! Convert an array of linear floating point pixel values to an
+     array of destination lut values, with error diffusion to avoid posterizing
+     artifacts.
+     
+     \a W is the number of pixels to convert.  \a delta is the distance
+     between the output bytes (useful for interlacing them into a buffer
+     for screen display).
+     
+     The input and output buffers must not overlap in memory.
+     */
+    void to_byte(uchar* to, const float* from, int W, int delta = 1) ;    
+    /*used to pre-multiply by alpha*/
+    void to_byte(uchar* to, const float* from, const float* alpha, int W,int delta = -1);
+    
+    void to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1);
+    void to_short(U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
+    
+    void to_float(float* to, const float* from, int W, int delta = 1);
+    void to_float(float* to, const float* from, const float* alpha, int W, int delta = 1);
+    
+    
+    
     // takes in input a float clamped to [0 - 255.f] and do the math to convert it
-    // to have the opposite effect of to_byte(float), returns it between [0-1f]
+    // to have the opposite effect of to_byte(float), returns it between [0 - 1.f]
     virtual float from_byte(float)  = 0;
 
+    float fromFloat(float v)  { return from_byte(v * 255.f); }
+    float fromFloatFast(float v) ;
+    
     void from_byte(float* to, const uchar* from, int W, int delta = 1) ;
     void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) ;
     void from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta = 1) ;
@@ -60,13 +116,8 @@ public:
     void from_float(float* to, const float* from, int W, int delta = 1) ;
     void from_float(float* to, const float* from, const float* alpha, int W, int delta = 1) ;
     
-    float fromFloat(float v)  { return from_byte(v * 255.f); }
-    float fromFloatFast(float v) ;
-    float toFloat(float v)  { return to_byte(v) / 255.f; }
-    float toFloatFast(float v) ;
     
-    
-    static  void U24_to_rgb(float *r,float *g,float *b,const uchar* ptr){
+    static void U24_to_rgb(float *r,float *g,float *b,const uchar* ptr){
         *r = *ptr;
         *g = *(ptr+1);
         *b = *(ptr+2);
@@ -75,9 +126,9 @@ public:
 	/*used to fill the to_byte lut*/
     float index_to_float(const U16 i);
 
-    static U16 highFloatPart(float *f){return *((unsigned short*)f + 1);}
+    static U16 highFloatPart(const float *f){return *((unsigned short*)f + 1);}
 
-    static U16 lowFloatPart(float *f){return *((unsigned short*)f);}
+    static U16 lowFloatPart(const float *f){return *((unsigned short*)f);}
     
 
     static float clamp(float v, float min = 0.f, float max= 1.f){
@@ -127,7 +178,6 @@ class Linear
 {
 public:
 
-	// OPTIMIZATION : Make similar functions but taking out ptrs to r,g,b,a so copy is done all at once
 	static float from_byte(float f) { return f * (1.0f / 255.0f); }
 
     static void from_byte(float* to, const uchar* from, int W, int delta = 1);
@@ -136,6 +186,20 @@ public:
     static void from_float(float* to, const float* from, int W, int delta = 1);
     
 	static float to_byte(float f) { return f * 255.0f; }
+    
+    /*! Convert an array of floating point pixel values to an array of
+     bytes by multiplying by 255 and doing error diffusion to avoid
+     banding. This should be used to convert mattes and alpha channels.
+     
+     \a W is the number of pixels to convert.  \a delta is the distance
+     between the output bytes (useful for interlacing them into a buffer
+     for screen display).
+     
+     The input and output buffers must not overlap in memory.
+     */
+    static void to_byte(uchar* to, const float* from, int W, int delta = 1);
+    static void to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1);
+    static void to_float(float* to, const float* from, int W, int delta = 1);
     
 	static float fromFloat(float v) { return v; }
     static float fromFloatFast(float v) { return v; }

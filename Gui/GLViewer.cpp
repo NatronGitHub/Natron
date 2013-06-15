@@ -714,7 +714,7 @@ void ViewerGL::drawRow(Row* row){
     }
 }
 
-bool ViewerGL::determineFrameDataContainer(std::string filename,int nbFrameHint,int w,int h,ViewerGL::CACHING_MODE mode){
+bool ViewerGL::determineFrameDataContainer(std::string filename,int w,int h,ViewerGL::CACHING_MODE mode){
     if(_mustFreeFrameData){
         free(frameData);
         _mustFreeFrameData = false;

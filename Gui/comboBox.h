@@ -19,7 +19,7 @@ public:
         _style = QStyleFactory::create("windows");
         setStyle(_style);
     }
-    virtual ~ComboBox(){delete _style;}
+    virtual ~ComboBox(){}
     
 private:
     QStyle* _style;

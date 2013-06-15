@@ -87,17 +87,18 @@ public:
     /*Returns true if the file is stereo*/
     bool fileStereo(){return is_stereo;};
     
-    /*Must implement it to initialize the appropriate colorspace  for
-     the file type. You can initialize the _lut member by calling the
-     function Lut::getLut(datatype) */
-    virtual void initializeColorSpace()=0;
-    
     /*Returns true if the file has alpha premultiplied data*/
     bool premultiplied(){return _premult;}
     
     /*Returns true if the user checked autoAlpha:
      this feature creates automatically an empty alpha channel*/
     bool autoAlpha(){return _autoCreateAlpha;}
+    
+    
+    /*Must implement it to initialize the appropriate colorspace  for
+     the file type. You can initialize the _lut member by calling the
+     function Lut::getLut(datatype) */
+    virtual void initializeColorSpace()=0;
     
     /*Returns the reader colorspace*/
     Lut* lut(){return _lut;}
@@ -120,13 +121,7 @@ protected:
     void from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta = 1);
     void from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
     void from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
-   // void from_byte(float* r,float* g,float* b, const uchar* from, bool hasAlpha, int W, int delta ,float* a,bool qtbuf = true);
    
-   // void from_short(float* r,float* g,float* b, const U16* from, const U16* alpha, int W, int bits, int delta ,float* a);
-   
-//	void from_float(float* r,float* g,float* b, const float* fromR,const float* fromG,
- //                   const float* fromB, int W, int delta ,const float* fromA,float* a);
-    
         
 	bool is_stereo;
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on

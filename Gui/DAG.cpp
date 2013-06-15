@@ -301,13 +301,30 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         Node* reader = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = reader->getKnobs();
         foreach(Knob* k,knobs){
-            if(k->getType() == FILE_KNOB){
+            if(k->name() == "InputFile"){
                 File_Knob* fk = static_cast<File_Knob*>(k);
                 fk->open_file();
                 break;
             }
         }
         
+    }else if(e->key() == Qt::Key_W){
+        try{
+            
+            ctrlPTR->createNode("Writer");
+        }catch(...){
+            std::cout << "(NodeGraph::keyPressEvent) Couldn't create writer. " << std::endl;
+            
+        }
+        Node* writer = _nodes[_nodes.size()-1]->getNode();
+        std::vector<Knob*> knobs = writer->getKnobs();
+        foreach(Knob* k,knobs){
+            if(k->name() == "OutputFile"){
+                OutputFile_Knob* fk = static_cast<OutputFile_Knob*>(k);
+                fk->open_file();
+                break;
+            }
+        }
     }else if(e->key() == Qt::Key_Space){
         
         if(!_fullscreen){

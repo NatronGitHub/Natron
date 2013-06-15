@@ -22,7 +22,14 @@ Row::Row():_cacheWillDelete(false){
 void Row::turnOn(Channel c){
     if( c & _channels) return;
     _channels += c;
-    buffers[c] = (float*)malloc((r-x)*sizeof(float));
+    if(c != Channel_alpha)
+        buffers[c] = (float*)calloc((r-x),sizeof(float));
+    else{
+        buffers[c] = (float*)malloc((r-x)*sizeof(float));
+        for(int i =0 ;i <  (r-x) ;i++){
+            buffers[c][i] = 1.f;
+        }
+    }
 }
 
 

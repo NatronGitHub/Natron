@@ -20,7 +20,7 @@ class FeedBackSpinBox : public QLineEdit
     double _increment;
     double _mini,_maxi;
 public:
-    FeedBackSpinBox(QWidget* parent=0,bool mode=0);
+    FeedBackSpinBox(QWidget* parent=0,bool mode=false);
     void decimals(int d){
         _decimals=d;
         setMaxLength(_decimals+3);

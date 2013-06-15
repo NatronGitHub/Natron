@@ -28,7 +28,7 @@
 #include <sstream>
 #include "Core/Box.h"
 #include "Core/displayFormat.h"
-
+#include "Writer/Writer.h"
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -50,6 +50,7 @@ readHandle(0),has_preview(false),_pboIndex(0),preview(0){}
 Reader::Reader(Reader& ref):InputNode(ref){}
 
 Reader::~Reader(){
+    _buffer.clear();
 	delete preview;
 }
 std::string Reader::className(){return "Reader";}
@@ -58,10 +59,11 @@ std::string Reader::description(){
     return "InputNode";
 }
 void Reader::initKnobs(Knob_Callback *cb){
-	QString desc("File");
-	
-	Knob::file_Knob(cb,desc,fileNameList);
-	
+    std::string desc("File");
+    Knob* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
+    File_Knob* file = static_cast<File_Knob*>(knob);
+    assert(file);
+	file->setPointer(&fileNameList);
 	Node::initKnobs(cb);
 }
 
@@ -237,7 +239,12 @@ std::vector<Reader::Buffer::DecodedFrameDescriptor>
 Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
     
     std::vector<Reader::Buffer::DecodedFrameDescriptor> out;
-    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+    int current_frame;
+    Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
+    if(!writer)
+        current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+    else
+        current_frame = writer->currentFrame();
     if(useCurrentThread){
         Buffer::DecodedFrameDescriptor ret = open(files[current_frame], mode , false);
         out.push_back(ret);
@@ -262,9 +269,14 @@ void Reader::showFilePreview(){
     getVideoSequenceFromFilesList();
     
     fitFrameToViewer(false);
-    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
-    Buffer::DecodedFrameDescriptor ret = open(files[current_frame], DO_NOT_DECODE ,false);
-    _validate(true);
+    
+    Buffer::DecodedFrameDescriptor ret = open(files[firstFrame()], DO_NOT_DECODE ,false);
+    if(!makeCurrentDecodedFrame(false)){
+        cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
+        return;
+    }
+    _info->firstFrame(firstFrame());
+    _info->lastFrame(lastFrame());
     readHandle->make_preview();
     _buffer.clear();
 }
@@ -285,8 +297,17 @@ void Reader::Buffer::removeAllCachedFrames(){
         removeAllCachedFrames();
 }
 
-bool Reader::makeCurrentDecodedFrame(){
-    int current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+bool Reader::makeCurrentDecodedFrame(bool forReal){
+    int current_frame;
+    if(!forReal)
+        current_frame = firstFrame();
+    else{
+        Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
+        if(!writer)
+            current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+        else
+            current_frame = writer->currentFrame();
+    }
     
     QString currentFile = files[current_frame];
     Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
@@ -310,7 +331,7 @@ bool Reader::makeCurrentDecodedFrame(){
 
 void Reader::_validate(bool forReal){
     if(forReal){
-        if(!makeCurrentDecodedFrame()){
+        if(!makeCurrentDecodedFrame(true)){
             cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
             return;
         }

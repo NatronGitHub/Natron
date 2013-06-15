@@ -69,6 +69,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent)
     layout=new QVBoxLayout(this);
     layout_labels=new QVBoxLayout();
     layout_settings=new QVBoxLayout();
+    layout_settings->setContentsMargins(0, 0, 0, 0);
     tab=new QTabWidget(this);
     
     settings=new QWidget(tab);

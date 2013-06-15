@@ -63,12 +63,37 @@ public:
         std::map<std::string,PluginID*> _fileTypesMap;
     };
     
+    class WritersSettings{
+    public:
+        WritersSettings();
+        
+        /*Returns a pluginID if it could find an encoder for the filetype,
+         otherwise returns NULL.*/
+        PluginID* encoderForFiletype(std::string type);
+        
+        /*changes the encoder for files identified by the filetype*/
+        void changeMapping(std::string filetype,PluginID* encoder);
+        
+        /*use to initialise default mapping*/
+        void fillMap(std::map<std::string,PluginID*>& defaultMap);
+        
+        const std::map<std::string,PluginID*>& getFileTypesMap(){return _fileTypesMap;}
+        
+        
+        int _maximumBufferSize;
+        
+    private:
+        
+        
+        std::map<std::string,PluginID*> _fileTypesMap;
+        
+    };
     
     CachingSettings _cacheSettings;
     ViewerSettings _viewerSettings;
     GeneralSettings _generalSettings;
     ReadersSettings _readersSettings;
-    
+    WritersSettings _writersSettings;
 };
 
 #endif // PROJECT_H

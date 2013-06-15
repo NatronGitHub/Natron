@@ -66,7 +66,7 @@ void Read::from_float(Channel z, float* to, const float* from, const float* alph
 
 
 void Read::createKnobDynamically(){
-
+    op->createKnobDynamically();
 }
 
 void Read::setReaderInfo(Format dispW,

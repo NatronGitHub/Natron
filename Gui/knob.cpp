@@ -20,14 +20,15 @@
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
+#include <QtCore/QString>
 
-std::vector<Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
+std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;
-    std::vector<Knob_Flags> flags;
+    std::vector<Knob::Knob_Flags> flags;
     if(m!=0){
         while(i<0x4){
             if((m & i)==i){
-                flags.push_back((Knob_Flags)i);
+                flags.push_back((Knob::Knob_Flags)i);
             }
             i*=2;
         }
@@ -35,10 +36,194 @@ std::vector<Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     return flags;
 }
 
-Knob::Knob(Knob_Types type, Knob_Callback *cb):QWidget()
+
+KnobFactory::KnobFactory(){
+    loadKnobPlugins();
+}
+
+KnobFactory::~KnobFactory(){
+    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; it++) {
+        delete it->second;
+    }
+    _loadedKnobs.clear();
+}
+
+void KnobFactory::loadKnobPlugins(){
+    QDir d(PLUGINS_PATH);
+    if (d.isReadable())
+    {
+        QStringList filters;
+#ifdef __POWITER_WIN32__
+        filters << "*.dll";
+#elif defined(__POWITER_OSX__)
+        filters << "*.dylib";
+#elif defined(__POWITER_LINUX__)
+        filters << "*.so";
+#endif
+        d.setNameFilters(filters);
+		QStringList fileList = d.entryList();
+        for(int i = 0 ; i < fileList.size() ;i ++)
+        {
+            QString filename = fileList.at(i);
+            if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+                QString className;
+                int index = filename.size() -1;
+                while(filename.at(index) != QChar('.')) index--;
+                className = filename.left(index);
+                PluginID* plugin = 0;
+#ifdef __POWITER_WIN32__
+                HINSTANCE lib;
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+                dll.append(".dll");
+                lib=LoadLibrary(dll.c_str());
+                if(lib==NULL){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    KnobBuilder builder=(KnobBuilder)GetProcAddress(lib,"BuildRead");
+                    if(builder!=NULL){
+                        std::string str("");
+                        Knob* knob=builder(NULL,str,0);
+                        plugin = new PluginID((HINSTANCE)builder,knob->name().c_str());
+                        _loadedKnobs.push_back(make_pair(knob->name(),plugin));
+                        delete knob;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildKnob" << endl;
+                        continue;
+                    }
+                    
+                }
+                
+#elif defined(__POWITER_UNIX__)
+                string dll;
+                dll.append(PLUGINS_PATH);
+                dll.append(className.toStdString());
+#ifdef __POWITER_OSX__
+                dll.append(".dylib");
+#elif defined(__POWITER_LINUX__)
+                dll.append(".so");
+#endif
+                void* lib=dlopen(dll.c_str(),RTLD_LAZY);
+                if(!lib){
+                    cout << " couldn't open library " << qPrintable(className) << endl;
+                }
+                else{
+                    // successfully loaded the library, we create now an instance of the class
+                    //to find out the extensions it can decode and the name of the decoder
+                    KnobBuilder builder=(KnobBuilder)dlsym(lib,"BuildKnob");
+                    if(builder!=NULL){
+                        std::string str("");
+                        Knob* knob=builder(NULL,str,0);
+                        plugin = new PluginID((void*)builder,knob->name().c_str());
+                        _loadedKnobs.insert(make_pair(knob->name(),plugin));
+                        delete knob;
+                        
+                    }else{
+                        cout << "RunTime: couldn't call " << "BuildKnob" << endl;
+                        continue;
+                    }
+                }
+#endif
+            }else{
+                continue;
+            }
+        }
+    }
+    loadBultinKnobs();
+    
+}
+
+void KnobFactory::loadBultinKnobs(){
+    std::string stub;
+    Knob* fileKnob = File_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *FILEKnobPlugin = new PluginID((HINSTANCE)&File_Knob::BuildKnob,fileKnob->name().c_str());
+#else
+    PluginID *FILEKnobPlugin = new PluginID((void*)&File_Knob::BuildKnob,fileKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(fileKnob->name(),FILEKnobPlugin));
+    delete fileKnob;
+    
+    Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *INTKnobPlugin = new PluginID((HINSTANCE)&Int_Knob::BuildKnob,intKnob->name().c_str());
+#else
+    PluginID *INTKnobPlugin = new PluginID((void*)&Int_Knob::BuildKnob,intKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(intKnob->name(),INTKnobPlugin));
+    delete intKnob;
+    
+    Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *DOUBLEKnobPlugin = new PluginID((HINSTANCE)&Double_Knob::BuildKnob,doubleKnob->name().c_str());
+#else
+    PluginID *DOUBLEKnobPlugin = new PluginID((void*)&Double_Knob::BuildKnob,doubleKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
+    delete doubleKnob;
+    
+    Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *BOOLKnobPlugin = new PluginID((HINSTANCE)&Bool_Knob::BuildKnob,boolKnob->name().c_str());
+#else
+    PluginID *BOOLKnobPlugin = new PluginID((void*)&Bool_Knob::BuildKnob,boolKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(boolKnob->name(),BOOLKnobPlugin));
+    delete boolKnob;
+    
+    Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *BUTTONKnobPlugin = new PluginID((HINSTANCE)&Button_Knob::BuildKnob,buttonKnob->name().c_str());
+#else
+    PluginID *BUTTONKnobPlugin = new PluginID((void*)&Button_Knob::BuildKnob,buttonKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(buttonKnob->name(),BUTTONKnobPlugin));
+    delete buttonKnob;
+    
+    Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *OUTPUTFILEKnobPlugin = new PluginID((HINSTANCE)&OutputFile_Knob::BuildKnob,outputFileKnob->name().c_str());
+#else
+    PluginID *OUTPUTFILEKnobPlugin = new PluginID((void*)&OutputFile_Knob::BuildKnob,outputFileKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(outputFileKnob->name(),OUTPUTFILEKnobPlugin));
+    delete outputFileKnob;
+    
+    Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *ComboBoxKnobPlugin = new PluginID((HINSTANCE)&ComboBox_Knob::BuildKnob,comboBoxKnob->name().c_str());
+#else
+    PluginID *ComboBoxKnobPlugin = new PluginID((void*)&ComboBox_Knob::BuildKnob,comboBoxKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(comboBoxKnob->name(),ComboBoxKnobPlugin));
+    delete comboBoxKnob;
+}
+
+/*Calls the unique instance of the KnobFactory and
+ calls the appropriate pointer to function to create a knob.*/
+Knob* KnobFactory::createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags){
+    const std::map<std::string,PluginID*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
+    std::map<std::string,PluginID*>::const_iterator it = loadedPlugins.find(name);
+    if(it == loadedPlugins.end()){
+        return NULL;
+    }else{
+        KnobBuilder builder = (KnobBuilder)(it->second->first);
+        if(builder){
+            Knob* ret = builder(callback,description,flags);
+            return ret;
+        }else{
+            return NULL;
+        }
+    }
+}
+
+Knob::Knob( Knob_Callback *cb):QWidget()
 {
     this->cb=cb;
-    this->_type = type;
     layout=new QHBoxLayout(this);
     foreach(QWidget* ele,elements){
         layout->addWidget(ele);
@@ -70,70 +255,35 @@ void Knob::validateEvent(bool initViewer){
 }
 
 //================================================================
-Knob* Knob::channels_Knob(ChannelMask *channels, Knob_Callback *cb, Knob_Mask flags){
-    
-    Channels_Knob* knob=new Channels_Knob(channels,cb,flags);
-    cb->addKnob(knob);
-    return knob;
-    
-    
-}
-
-Channels_Knob::Channels_Knob(ChannelMask* channels,Knob_Callback *cb,Knob_Mask flags):Knob(CHANNELS_KNOB,cb)
-{
-    this->channels=channels;
-    QLabel* boxtext=new QLabel(QString("Channels:"));
-    QComboBox* box=new QComboBox();
-    ChannelSet chanset= *this->channels;
-    foreachChannels( z,chanset){
-        box->addItem(QString(getChannelName(z).c_str()));
-    }
-    
-    layout->addWidget(boxtext);
-    layout->addWidget(box);
-    std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
-    foreach(Knob_Flags flag,f){
-        if(flag==INVISIBLE){
-            setVisible(false);
-        }else if(flag==READ_ONLY){
-            // nothing to do yet
-        }
-        
-    }
-}
-void Channels_Knob::setValues(){
-    values.clear();
-}
 
 //================================================================
-IntQSpinBox::IntQSpinBox(Int_Knob *knob):QSpinBox(){
+IntQSpinBox::IntQSpinBox(Int_Knob *knob,QWidget* parent):FeedBackSpinBox(parent){
     this->knob=knob;
-    lineEdit()->setReadOnly(false);
 }
 void IntQSpinBox::keyPressEvent(QKeyEvent *event){
     if(event->key()==Qt::Key_Return){
-        int integer=this->value();
-        knob->setInteger(&integer);
+        int value = this->value();
+        knob->setInteger(value);
         knob->setValues();
         // std::cout << "Missing implementation: keypressevent IntQSpinBox, to validate the integer" << std::endl;
     }
-    QSpinBox::keyPressEvent(event);
+    FeedBackSpinBox::keyPressEvent(event);
 }
 
-Knob* Knob::int_Knob(int *integer, Knob_Callback *cb, QString &description,Knob_Mask flags){
-    Int_Knob* knob=new Int_Knob(integer,cb,description,flags);
-    cb->addKnob(knob);
+Knob* Int_Knob::BuildKnob(Knob_Callback *cb, std::string &description, Knob_Mask flags){
+    Int_Knob* knob=new Int_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
     return knob;
 }
 
-Int_Knob::Int_Knob(int *integer, Knob_Callback *cb,QString& description, Knob_Mask flags):Knob(INT_KNOB,cb){
-    this->integer=integer;
-    QLabel* desc=new QLabel(description);
-    box=new IntQSpinBox(this);
+Int_Knob::Int_Knob(Knob_Callback *cb,std::string& description, Knob_Mask flags):Knob(cb),integer(0){
+    QLabel* desc=new QLabel(description.c_str());
+    box=new IntQSpinBox(this,this);
     
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
-    box->setValue(*integer);
+    box->setValue(0);
     layout->addWidget(desc);
     layout->addWidget(box);
     std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
@@ -148,18 +298,18 @@ Int_Knob::Int_Knob(int *integer, Knob_Callback *cb,QString& description, Knob_Ma
 }
 void Int_Knob::setValues(){
     values.clear();
-    values.push_back((U64)*integer);
+    values.push_back((U64)integer);
 }
 
 //================================================================
-FileQLineEdit::FileQLineEdit(File_Knob *knob):QLineEdit(){
+FileQLineEdit::FileQLineEdit(File_Knob *knob):QLineEdit(knob){
     this->knob=knob;
 }
 void FileQLineEdit::keyPressEvent(QKeyEvent *e){
     if(e->key()==Qt::Key_Return){
         QString str=this->text();
 		QStringList strlist(str);
-		if(strlist!=knob->getStr()){
+		if(strlist!=*(knob->getStr())){
 			knob->setStr(strlist);
 			knob->setValues();
             std::string className=knob->getCallBack()->getNode()->className();
@@ -173,13 +323,14 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 	QLineEdit::keyPressEvent(e);
 }
 
-Knob* Knob::file_Knob( Knob_Callback *cb, QString &description, QStringList &filePath,Knob_Mask flags){
-    File_Knob* knob=new File_Knob(cb,description,filePath,flags);
-    cb->addKnob(knob);
+Knob* File_Knob::BuildKnob(Knob_Callback *cb, std::string &description, Knob_Mask flags){
+    File_Knob* knob=new File_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
     return knob;
 }
 void File_Knob::open_file(){
-    str.clear(); 
+    str->clear();
 
 
 
@@ -194,7 +345,7 @@ void File_Knob::open_file(){
 
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
-        name->setText(strlist.at(0));
+        _name->setText(strlist.at(0));
         setStr(strlist);
         setValues();
         std::string className=getCallBack()->getNode()->className();
@@ -214,23 +365,23 @@ void File_Knob::updateLastOpened(QString str){
     _lastOpened = str.left(index);
 }
 
-File_Knob::File_Knob(Knob_Callback *cb, QString &description, QStringList &filePath, Knob_Mask flags):Knob(FILE_KNOB,cb),str(filePath)
+File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flags):Knob(cb),str(0)
 {
     
     setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
-    QLabel* desc=new QLabel(description);
+    QLabel* desc=new QLabel(description.c_str());
     _lastOpened =QString(ROOT);
-    name=new FileQLineEdit(this);
-    name->setPlaceholderText(QString("File path..."));
+    _name=new FileQLineEdit(this);
+    _name->setPlaceholderText(QString("File path..."));
 	
-    QPushButton* openFile=new QPushButton(name);
+    QPushButton* openFile=new QPushButton(_name);
     QImage img(IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
     layout->addWidget(desc);
-    layout->addWidget(name);
+    layout->addWidget(_name);
     layout->addWidget(openFile);
     
     //flags handling: no Knob_Flags makes sense (yet) for the File_Knob. We keep it in parameters in case in the future there're some changes to be made.
@@ -241,34 +392,204 @@ void File_Knob::setValues(){
     // filenames should not be involved in hash key computation as it defeats all the purpose of the cache
 }
 
-//================================================================
-Knob* Knob::bool_Knob(bool& boolean,Knob_Callback* cb,QString& description,Knob_Mask flags){
-	Bool_Knob* knob=new Bool_Knob(boolean,cb,description,flags);
-	cb->addKnob(knob);
+Knob* Bool_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+	Bool_Knob* knob=new Bool_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
 	return knob;
     
 }
 void Bool_Knob::change_checkBox(int checkBoxState){
 	if(checkBoxState==0){
-		boolean=false;
+		*_boolean=false;
 	}else if(checkBoxState==2){
-		boolean=true;
+		*_boolean=true;
 	}
 	this->setValues();
 }
 void Bool_Knob::setValues(){
     values.clear();
-	if(boolean){
+	if(*_boolean){
 		values.push_back(1);
 	}else{
 		values.push_back(0);
 	}
 }
 
-Bool_Knob::Bool_Knob(bool& boolean,Knob_Callback *cb,QString& description,Knob_Mask flags/* =0 */):Knob(BOOL_KNOB,cb) ,boolean(boolean){
+Bool_Knob::Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
 	
-	checkbox=new QCheckBox(description,this);
-	checkbox->setChecked(boolean);
+	checkbox=new QCheckBox(description.c_str(),this);
+    checkbox->setStyleSheet("color:rgb(200,200,200) ;");
+	checkbox->setChecked(false);
 	QObject::connect(checkbox,SIGNAL(stateChanged(int)),this,SLOT(change_checkBox(int)));
 	layout->addWidget(checkbox);
+}
+//================================================================
+
+void Double_Knob::setValues(){
+    values.clear();
+    values.push_back(*(reinterpret_cast<U64*>(_value)));
+}
+Double_Knob::Double_Knob(Knob_Callback * cb,std::string& description,Knob_Mask flags):Knob(cb),_value(0){
+    QLabel* desc=new QLabel(description.c_str());
+    box=new DoubleQSpinBox(this,this);
+    
+    box->setMaximum(INT_MAX);
+    box->setMinimum(INT_MIN);
+    box->setValue(0);
+    layout->addWidget(desc);
+    layout->addWidget(box);
+    std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
+    foreach(Knob_Flags flag,f){
+        if(flag==INVISIBLE){
+            setVisible(false);
+        }else if(flag==READ_ONLY){
+            box->setReadOnly(true);
+        }
+        
+    }
+}
+
+Knob* Double_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+    Double_Knob* knob=new Double_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+
+DoubleQSpinBox::DoubleQSpinBox(Double_Knob* knob,QWidget* parent):FeedBackSpinBox(parent,true),knob(knob){
+    
+}
+void DoubleQSpinBox::keyPressEvent(QKeyEvent *event){
+    if(event->key()==Qt::Key_Return){
+        double value=this->value();
+        knob->setDouble(value);
+        knob->setValues();
+        // std::cout << "Missing implementation: keypressevent IntQSpinBox, to validate the integer" << std::endl;
+    }
+    FeedBackSpinBox::keyPressEvent(event);
+}
+/*******/
+
+Knob* Button_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+    Button_Knob* knob=new Button_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+Button_Knob::Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),button(0){
+    button = new QPushButton(QString(description.c_str()),this);
+    button->setStyleSheet("color:rgb(200,200,200) ;");
+    layout->addWidget(button);
+}
+void Button_Knob::connectButtonToSlot(QObject* object,const char* slot){
+    QObject::connect(button, SIGNAL(pressed()), object, slot);
+}
+/*******/
+
+
+Knob* OutputFile_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+    OutputFile_Knob* knob=new OutputFile_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+
+OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),str(0){
+    setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
+    QLabel* desc=new QLabel(description.c_str());
+    _name=new OutputFileQLineEdit(this);
+    _name->setPlaceholderText(QString("File path..."));
+	
+    QPushButton* openFile=new QPushButton(_name);
+    QImage img(IMAGES_PATH"open-file.png");
+    QPixmap pix=QPixmap::fromImage(img);
+    pix.scaled(10,10);
+    openFile->setIcon(QIcon(pix));
+    QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
+    QObject::connect(_name,SIGNAL(textChanged(const QString&)),this,SLOT(setStr(const QString&)));
+    layout->addWidget(desc);
+    layout->addWidget(_name);
+    layout->addWidget(openFile);
+}
+
+void OutputFile_Knob::setValues(){
+    values.clear();
+
+}
+
+void OutputFile_Knob::open_file(){
+    str->clear();
+    
+    
+    
+        QString outFile=QFileDialog::getSaveFileName(this,QString("Save File")
+                                                          ,QString(ROOT)
+                                                          ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+//    QStringList strlist;
+//    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+//    if(dialog.exec()){
+//        strlist = dialog.selectedFiles();
+//    }
+    
+    if(!outFile.isEmpty()){
+        _name->setText(outFile);
+        setStr(outFile);
+        setValues();
+        std::string className=getCallBack()->getNode()->className();
+    }
+}
+
+OutputFileQLineEdit::OutputFileQLineEdit(OutputFile_Knob* knob):QLineEdit(knob){
+    this->knob = knob;
+}
+
+void OutputFileQLineEdit::keyPressEvent(QKeyEvent *e){
+    if(e->key()==Qt::Key_Return){
+        QString str=this->text();
+		if(str.toStdString()!=*(knob->getStr())){
+			knob->setStr(str);
+			knob->setValues();
+		}
+    }
+	QLineEdit::keyPressEvent(e);
+}
+/*===============================*/
+
+Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+    ComboBox_Knob* knob=new ComboBox_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+
+}
+ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),_currentItem(0){
+    _comboBox = new ComboBox(this);
+    _comboBox->addItem("/");
+    setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
+    QLabel* desc = new QLabel(description.c_str());
+    QObject::connect(_comboBox, SIGNAL(activated(QString)), this, SLOT(setCurrentItem(QString)));
+    layout->addWidget(desc);
+    layout->addWidget(_comboBox);
+}
+void ComboBox_Knob::populate(std::vector<std::string>& entries){
+    for (U32 i = 0; i < entries.size(); i++) {
+        QString str(entries[i].c_str());
+        _comboBox->addItem(str);
+    }
+}
+
+void ComboBox_Knob::setCurrentItem(QString str){
+    *_currentItem = str.toStdString();
+}
+
+void ComboBox_Knob::setPointer(std::string* str){
+    _currentItem = str;
+}
+
+void ComboBox_Knob::setValues(){
+    QString out(_currentItem->c_str());
+    for (int i =0; i< out.size(); i++) {
+        values.push_back(out.at(i).unicode());
+    }
 }

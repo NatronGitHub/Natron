@@ -250,7 +250,7 @@ public:
     
     /*Returns false if it couldn't find the current frame in the buffer or if
      * the frame is not finished*/
-    bool makeCurrentDecodedFrame();
+    bool makeCurrentDecodedFrame(bool forReal);
      
     void removeCachedFramesFromBuffer();
     

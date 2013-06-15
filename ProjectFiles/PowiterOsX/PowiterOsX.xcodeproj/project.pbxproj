@@ -17,6 +17,7 @@
 		D74DF1581769D035002513D7 /* Writer.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF1561769D034002513D7 /* Writer.h */; };
 		D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74DF15A1769D3A6002513D7 /* Write.cpp */; };
 		D74DF15D1769D3A6002513D7 /* Write.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF15B1769D3A6002513D7 /* Write.h */; };
+		D74DF15F176A0108002513D7 /* exrCommons.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF15E176A0108002513D7 /* exrCommons.h */; };
 		D75667A71741189A002DCBA8 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A31741189A002DCBA8 /* QtConcurrent.framework */; };
 		D75667A81741189A002DCBA8 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A41741189A002DCBA8 /* QtCore.framework */; };
 		D75667A91741189A002DCBA8 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A51741189A002DCBA8 /* QtGui.framework */; };
@@ -26,12 +27,15 @@
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
 		D792662A1767654000FA3354 /* LRUcache.h in Headers */ = {isa = PBXBuildFile; fileRef = D79266291767654000FA3354 /* LRUcache.h */; };
+		D7A7538A176A6B6E002D5E1B /* Writer.h in Sources */ = {isa = PBXBuildFile; fileRef = D74DF1561769D034002513D7 /* Writer.h */; };
 		D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7AC026C1758E5D1009548B6 /* texturecache.cpp */; };
 		D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7AC026D1758E5D1009548B6 /* texturecache.h */; };
 		D7B48120174E9FAB0011055D /* viewercache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7B4811E174E9FAB0011055D /* viewercache.cpp */; };
 		D7B48121174E9FAB0011055D /* viewercache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7B4811F174E9FAB0011055D /* viewercache.h */; };
 		D7C099C9174FE73A008EBC41 /* framefiledialog.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */; };
 		D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */ = {isa = PBXBuildFile; fileRef = D7C099C8174FE73A008EBC41 /* framefiledialog.h */; };
+		D7D70F31176B3E5A00CE71EB /* writeQt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7D70F2F176B3E5A00CE71EB /* writeQt.cpp */; };
+		D7D70F32176B3E5A00CE71EB /* writeQt.h in Headers */ = {isa = PBXBuildFile; fileRef = D7D70F30176B3E5A00CE71EB /* writeQt.h */; };
 		D7F4174E170F7072000182E8 /* libPowiterOsX_x86_64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D76ED161170E2C0900AB21D7 /* libPowiterOsX_x86_64.a */; };
 		D7F4174F170F7078000182E8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F41735170F687D000182E8 /* OpenGL.framework */; };
 		D7F41753170F7078000182E8 /* libstdc++.6.0.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */; };
@@ -205,6 +209,7 @@
 		D74DF1561769D034002513D7 /* Writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Writer.h; path = ../../Writer/Writer.h; sourceTree = "<group>"; };
 		D74DF15A1769D3A6002513D7 /* Write.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Write.cpp; path = ../../Writer/Write.cpp; sourceTree = "<group>"; };
 		D74DF15B1769D3A6002513D7 /* Write.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Write.h; path = ../../Writer/Write.h; sourceTree = "<group>"; };
+		D74DF15E176A0108002513D7 /* exrCommons.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = exrCommons.h; sourceTree = "<group>"; };
 		D75667A31741189A002DCBA8 /* QtConcurrent.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtConcurrent.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtConcurrent.framework; sourceTree = "<group>"; };
 		D75667A41741189A002DCBA8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtCore.framework; sourceTree = "<group>"; };
 		D75667A51741189A002DCBA8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../../../../Qt5.0.2/5.0.2/clang_64/lib/QtGui.framework; sourceTree = "<group>"; };
@@ -227,6 +232,8 @@
 		D7B4811F174E9FAB0011055D /* viewercache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viewercache.h; sourceTree = "<group>"; };
 		D7C099C7174FE73A008EBC41 /* framefiledialog.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = framefiledialog.cpp; sourceTree = "<group>"; };
 		D7C099C8174FE73A008EBC41 /* framefiledialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = framefiledialog.h; sourceTree = "<group>"; };
+		D7D70F2F176B3E5A00CE71EB /* writeQt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = writeQt.cpp; path = ../../Writer/writeQt.cpp; sourceTree = "<group>"; };
+		D7D70F30176B3E5A00CE71EB /* writeQt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = writeQt.h; path = ../../Writer/writeQt.h; sourceTree = "<group>"; };
 		D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.6.0.9.dylib"; path = "usr/lib/libstdc++.6.0.9.dylib"; sourceTree = SDKROOT; };
 		D7F4101D170F5D57000182E8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../libs/Qt_Osx/QtCore.framework; sourceTree = "<group>"; };
 		D7F4101E170F5D57000182E8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../libs/Qt_Osx/QtGui.framework; sourceTree = "<group>"; };
@@ -382,8 +389,10 @@
 			children = (
 				D74DF1561769D034002513D7 /* Writer.h */,
 				D74DF1551769D034002513D7 /* Writer.cpp */,
-				D74DF15A1769D3A6002513D7 /* Write.cpp */,
 				D74DF15B1769D3A6002513D7 /* Write.h */,
+				D74DF15A1769D3A6002513D7 /* Write.cpp */,
+				D7D70F2F176B3E5A00CE71EB /* writeQt.cpp */,
+				D7D70F30176B3E5A00CE71EB /* writeQt.h */,
 			);
 			name = Writer;
 			sourceTree = "<group>";
@@ -564,6 +573,7 @@
 				D7FD9A2717101E8700D1DCEA /* readffmpeg.h */,
 				D7FD9A2817101E8700D1DCEA /* readQt.cpp */,
 				D7FD9A2917101E8700D1DCEA /* readQt.h */,
+				D74DF15E176A0108002513D7 /* exrCommons.h */,
 			);
 			name = Reader;
 			path = ../../Reader;
@@ -653,6 +663,8 @@
 				D792662A1767654000FA3354 /* LRUcache.h in Headers */,
 				D74DF1581769D035002513D7 /* Writer.h in Headers */,
 				D74DF15D1769D3A6002513D7 /* Write.h in Headers */,
+				D74DF15F176A0108002513D7 /* exrCommons.h in Headers */,
+				D7D70F32176B3E5A00CE71EB /* writeQt.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -727,6 +739,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7A7538A176A6B6E002D5E1B /* Writer.h in Sources */,
 				D78C1607173862860011B5FD /* controler.cpp in Sources */,
 				D7FD9AB317101F1500D1DCEA /* model.h in Sources */,
 				D7FD9AB417101F1500D1DCEA /* VideoEngine.h in Sources */,
@@ -792,6 +805,7 @@
 				D719CC551764BDBF0006D7B8 /* abstractCache.cpp in Sources */,
 				D74DF1571769D035002513D7 /* Writer.cpp in Sources */,
 				D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */,
+				D7D70F31176B3E5A00CE71EB /* writeQt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -77,7 +77,8 @@ public:
 	 *call you can access the old data.*/
 	void range(int offset,int right);
 
-	/*activate the channel C for this row and allocates memory for it*/
+	/*activate the channel C for this row and allocates memory for it.
+     All (r-x) range for this channel will be set to 0.*/
     void turnOn(Channel c);
 
     int offset() const {return x;}
@@ -132,6 +133,8 @@ public:
     
     int right() const {return _row->right();}
     
+    int offset() const {return _row->offset();}
+    
     /*Returns a writable pointer to the channel c.
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
@@ -142,7 +145,9 @@ public:
 	 *in the range [o,r}*/
     void copy(const Row *source,ChannelSet channels,int o,int r){_row->copy(source,channels,o,r);}
     
-	
+	/*activate the channel C for this row and allocates memory for it*/
+    void turnOn(Channel c){_row->turnOn(c);}
+    
 	/*set to 0s the entirety of the chnnel c*/
     void erase(Channel c){_row->erase(c);}
     void erase(ChannelSet set){_row->erase(set);}

@@ -63,6 +63,7 @@ public:
     std::string second;
 };
 
+class KnobFactory;
 class Format;
 class InputNode;
 class NodeCache;
@@ -95,6 +96,11 @@ public:
     /*loads reads that are incorporated to Powiter*/
     void loadBuiltinReads();
     
+    /*loads extra writer plug-ins*/
+    void loadWritePlugins();
+    
+    /*loads writes that are built-ins*/
+    void loadBuiltinWrites();
 
     /*utility functions used to parse*/
     std::string removePrefixSpaces(std::string str);
@@ -139,7 +145,7 @@ public:
     
     
     typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
-    
+    typedef ReadPluginsIterator WritePluginsIterator;
 signals:
     void vengineNeeded(int nbFrames);
     
@@ -172,9 +178,11 @@ private:
     std::vector<CounterID*> _nodeCounters;
     std::vector<PluginID*> _pluginsLoaded;
     std::vector< std::pair< std::string,PluginID*> > _readPluginsLoaded;
+    std::vector< std::pair< std::string,PluginID*> > _writePluginsLoaded;
     QStringList _nodeNames;
 
-
+    KnobFactory* _knobFactory;
+    
     NodeCache* _nodeCache;
     
     ViewerCache* _viewerCache;
