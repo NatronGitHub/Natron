@@ -14,7 +14,7 @@
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
  initializeColorSpace. This function is called after the constructor and before any
  reading occurs.*/
-Write::Write(Writer* writer):op(writer),_lut(0),_premult(false){
+Write::Write(Writer* writer):op(writer),_lut(0),_premult(false),_optionalKnobs(0){
     
 }
 
@@ -22,9 +22,6 @@ Write::~Write(){
     
 }
 
-void Write::createKnobDynamically(){
-    op->createKnobDynamically();
-}
 
 void Write::writeAndDelete(){
     writeAllData();
@@ -64,3 +61,9 @@ void Write::to_float(Channel z, float* to, const float* from, const float* alpha
         Linear::to_float(to, from, W,delta);
     }
 }
+
+void WriteKnobs::initKnobs(Knob_Callback* callback,std::string& fileType){
+    
+    _op->createKnobDynamically();
+}
+

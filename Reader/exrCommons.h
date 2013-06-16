@@ -29,28 +29,44 @@
 
 namespace EXR {
     
-    static const Imf::Compression compressionTypes[6] = {
-        Imf::NO_COMPRESSION,
-        Imf::ZIPS_COMPRESSION,
-        Imf::ZIP_COMPRESSION,
-        Imf::PIZ_COMPRESSION,
-        Imf::RLE_COMPRESSION,
-        Imf::B44_COMPRESSION
-    };
 
     
     static std::string const compressionNames[6]={
-        "none",
+        "No compression",
         "Zip (1 scanline)",
         "Zip (16 scanlines)",
         "PIZ Wavelet (32 scanlines)",
         "RLE",
         "B44"
     };
+    
+    static Imf::Compression stringToCompression(std::string& str){
+        if(str == compressionNames[0]){
+            return Imf::NO_COMPRESSION;
+        }else if(str == compressionNames[1]){
+            return Imf::ZIPS_COMPRESSION;
+        }else if(str == compressionNames[2]){
+            return Imf::ZIP_COMPRESSION;
+        }else if(str == compressionNames[3]){
+            return Imf::PIZ_COMPRESSION;
+        }else if(str == compressionNames[4]){
+            return Imf::RLE_COMPRESSION;
+        }else{
+            return Imf::B44_COMPRESSION;
+        }
+    }
+    
     static  std::string const depthNames[2] = {
         "16 bit half", "32 bit float"
     };
     
+    static int depthNameToInt(std::string& name){
+        if(name == depthNames[0]){
+            return 16;
+        }else{
+            return 32;
+        }
+    }
     
     static Channel fromExrChannel(std::string from)
     {

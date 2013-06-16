@@ -12,6 +12,13 @@ Knob_Callback::Knob_Callback(SettingsPanel *panel, Node *node){
     this->node=node;
 
 }
+
+Knob_Callback::~Knob_Callback(){
+    for (U32 i = 0 ; i< knobs.size(); i++) {
+        delete knobs[i];
+    }
+    knobs.clear();
+}
 void Knob_Callback::initNodeKnobsVector(){
     for(int i=0;i<knobs.size();i++){
         Knob* pair=knobs[i];
@@ -20,7 +27,7 @@ void Knob_Callback::initNodeKnobsVector(){
 
 }
 void Knob_Callback::createKnobDynamically(){
-	std::vector<Knob*> node_knobs=node->getKnobs();
+	const std::vector<Knob*>& node_knobs=node->getKnobs();
 	foreach(Knob* knob,knobs){
 		bool already_exists=false;
 		for(int i=0;i<node_knobs.size();i++){
@@ -29,8 +36,19 @@ void Knob_Callback::createKnobDynamically(){
 			}
 		}
 		if(!already_exists){
-			node_knobs.push_back(knob);
+			node->addToKnobVector(knob);
 			panel->addKnobDynamically(knob);
 		}
 	}
+}
+
+void Knob_Callback::removeAndDeleteKnob(Knob* knob){
+    node->removeKnob(knob);
+    for (U32 i = 0; i< knobs.size(); i++) {
+        if (knobs[i] == knob) {
+            knobs.erase(knobs.begin()+i);
+            break;
+        }
+    }
+    panel->removeAndDeleteKnob(knob);
 }

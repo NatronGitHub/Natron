@@ -18,6 +18,7 @@
 #include <QtCore/QObject>
 class Write;
 class Row;
+class WriteKnobs;
 class Knob_Callback;
 class Writer: public QObject, public OutputNode{
     
@@ -110,6 +111,7 @@ public:
     
 public slots:
     void notifyWriterForCompletion();
+    void fileTypeChanged(std::string&);
     void startRendering();
     
 protected:
@@ -124,6 +126,7 @@ private:
     bool _premult;
     Buffer _buffer;
     Write* _writeHandle;
+    WriteKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;
     

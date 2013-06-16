@@ -86,8 +86,12 @@ public:
     /*============================*/
 
     /*Knobs related functions*/
-    std::vector<Knob*> getKnobs() const;
+    const std::vector<Knob*>& getKnobs() const;
     void addToKnobVector(Knob* knob);
+    
+    /*Do not call this function. It is used
+     internally by the Knob_Callback.*/
+    void removeKnob(Knob* knob);
     virtual void initKnobs(Knob_Callback *cb);
 	virtual void createKnobDynamically();
 	Knob_Callback* getKnobCallBack(){return _knobsCB;}

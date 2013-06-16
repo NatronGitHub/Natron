@@ -28,6 +28,7 @@ public:
     SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
     virtual ~SettingsPanel();
 	void addKnobDynamically(Knob* knob);
+    void removeAndDeleteKnob(Knob* knob);
     
     virtual void paintEvent(QPaintEvent * event);
 public slots:

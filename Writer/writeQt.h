@@ -30,10 +30,7 @@ public:
     
     /*Must be implemented to tell whether this file type supports stereovision*/
 	virtual bool supports_stereo();
-    
-    /*can be overloaded to add knobs dynamically to the writer depending on the file type*/
-	virtual void createKnobDynamically();
-    
+       
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
      function Lut::getLut(datatype) */

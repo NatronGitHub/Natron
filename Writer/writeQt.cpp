@@ -37,9 +37,6 @@ bool WriteQt::supports_stereo(){
     return false;
 }
 
-/*can be overloaded to add knobs dynamically to the writer depending on the file type*/
-void WriteQt::createKnobDynamically(){
-}
 
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the

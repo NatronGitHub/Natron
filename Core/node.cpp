@@ -190,8 +190,17 @@ Node::Node(Node* ptr){
 }
 Hash* Node::getHash() const{return _hashValue;}
 
-std::vector<Knob*> Node::getKnobs() const{return _knobsVector;}
+const std::vector<Knob*>& Node::getKnobs() const{return _knobsVector;}
 void Node::addToKnobVector(Knob* knob){_knobsVector.push_back(knob);}
+void Node::removeKnob(Knob* knob){
+    for(U32 i = 0 ; i < _knobsVector.size() ; i++){
+        if (knob == _knobsVector[i]) {
+            _knobsVector.erase(_knobsVector.begin()+i);
+            break;
+        }
+    }
+}
+
 const std::vector<Node*>& Node::getParents() const {return _parents;}
 const std::vector<Node*>& Node::getChildren() const {return _children;}
 
@@ -425,7 +434,6 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
 Node::~Node(){
     _parents.clear();
     _children.clear();
-	foreach(Knob* k,_knobsVector) delete k;
     _knobsVector.clear();
     _inputLabelsMap.clear();
     delete _hashValue;

@@ -15,14 +15,19 @@ class Knob_Callback
 {
     SettingsPanel* getSettingsPanel(){return panel;}
 public:
-    void addKnob(Knob* knob){
-       
-        knobs.push_back(knob);
-    }
-    void initNodeKnobsVector();
     Knob_Callback(SettingsPanel* panel,Node* node);
+    ~Knob_Callback();
+
+    
+    void addKnob(Knob* knob){knobs.push_back(knob);}
+    
+    void initNodeKnobsVector();
+    
 	Node* getNode(){return node;}
+    
 	void createKnobDynamically();
+    
+    void removeAndDeleteKnob(Knob* knob);
 
 private:
     Node* node;

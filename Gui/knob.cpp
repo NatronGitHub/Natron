@@ -201,6 +201,16 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(comboBoxKnob->name(),ComboBoxKnobPlugin));
     delete comboBoxKnob;
+    
+    
+    Knob* separatorKnob = Separator_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *SeparatorKnobPlugin = new PluginID((HINSTANCE)&Separator_Knob::BuildKnob,separatorKnob->name().c_str());
+#else
+    PluginID *SeparatorKnobPlugin = new PluginID((void*)&Separator_Knob::BuildKnob,separatorKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
+    delete separatorKnob;
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -240,6 +250,10 @@ Knob::~Knob(){
     elements.clear();
     delete layout;
     values.clear();
+}
+
+void Knob::enqueueForDeletion(){
+    cb->removeAndDeleteKnob(this);
 }
 
 void Knob::validateEvent(bool initViewer){
@@ -580,7 +594,9 @@ void ComboBox_Knob::populate(std::vector<std::string>& entries){
 }
 
 void ComboBox_Knob::setCurrentItem(QString str){
-    *_currentItem = str.toStdString();
+    std::string stdStr = str.toStdString();
+    *_currentItem = stdStr;
+    emit entryChanged(stdStr);
 }
 
 void ComboBox_Knob::setPointer(std::string* str){
@@ -592,4 +608,21 @@ void ComboBox_Knob::setValues(){
     for (int i =0; i< out.size(); i++) {
         values.push_back(out.at(i).unicode());
     }
+}
+
+/*============================*/
+
+Knob* Separator_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+    Separator_Knob* knob=new Separator_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+Separator_Knob::Separator_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb){
+    QLabel* name = new QLabel(description.c_str(),this);
+    layout->addWidget(name);
+    line = new QFrame(this);
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    layout->addWidget(line);
 }

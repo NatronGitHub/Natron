@@ -51,8 +51,9 @@ public:
     
     
     Knob(Knob_Callback* cb);
-    std::vector<U64> getValues(){return values;}
     virtual ~Knob();
+
+    std::vector<U64> getValues(){return values;}
 	Knob_Callback* getCallBack(){return cb;}
     
     /*Must return the name of the knob. This name will be used by the KnobFactory
@@ -63,6 +64,13 @@ public:
     //made public to allow other class that knob depends on to call validateEvent
     //but shouldn't be called by any other class.
     void validateEvent(bool initViewer);
+    
+    /*Calling this will tell the callback to delete this
+     knob and remove it properly from the GUI.
+     The knob will also be removed to the node's vector
+     it belongs to.*/
+    void enqueueForDeletion();
+    
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
     
@@ -70,11 +78,6 @@ protected:
     QHBoxLayout* layout;
     std::vector<QWidget*> elements;
     std::vector<U64> values;
-    
-    
-private:
-    
-    
 };
 
 typedef unsigned int Knob_Mask;
@@ -314,11 +317,31 @@ public:
     
     virtual std::string name(){return "ComboBox";}
 
+signals:
+    void entryChanged(std::string&);
+    
 public slots:
     void setCurrentItem(QString);
 private:
     ComboBox* _comboBox;
     std::string* _currentItem;
+};
+
+//=========================
+class Separator_Knob : public Knob
+{
+public:
+    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    Separator_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    
+    virtual void setValues(){}
+    
+    virtual std::string name(){return "Separator";}
+
+    
+    virtual ~Separator_Knob(){}
+private:
+    QFrame* line;
 };
 
 #endif // KNOB_H

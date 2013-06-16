@@ -347,7 +347,7 @@ void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
 }
 
 void Reader::createKnobDynamically(){
-	readHandle->createKnobDynamically();
+	//readHandle->createKnobDynamically();
 	Node::createKnobDynamically();
 }
 

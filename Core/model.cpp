@@ -33,6 +33,7 @@
 #include "Core/viewercache.h"
 #include "Gui/knob.h"
 #include "Writer/writeQt.h"
+#include "Writer/writeExr.h"
 #include <cassert>
 using namespace std;
 Model::Model(): _videoEngine(0),_mutex(0)
@@ -721,6 +722,19 @@ void Model::loadBuiltinWrites(){
         _writePluginsLoaded.push_back(make_pair(extensions[i],QtWritePlugin));
     }
     delete writeQt;
+    
+    Write* writeEXR = WriteExr::BuildWrite(NULL);
+    std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
+    string encoderNameExr = writeEXR->encoderName();
+#ifdef __POWITER_WIN32__
+	PluginID *ExrWritePlugin = new PluginID((HINSTANCE)&WriteExr::BuildWrite,encoderNameExr.c_str());
+#else
+	PluginID *ExrWritePlugin = new PluginID((void*)&WriteExr::BuildWrite,encoderNameExr.c_str());
+#endif
+    for (U32 i = 0 ; i < extensionsExr.size(); i++) {
+        _writePluginsLoaded.push_back(make_pair(extensionsExr[i],ExrWritePlugin));
+    }
+    delete writeEXR;
 }
 
 void Model::clearPlaybackCache(){

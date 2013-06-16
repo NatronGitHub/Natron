@@ -82,7 +82,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent)
     initialize_knobs();
     layout->addWidget(box);
     layout->addWidget(tab);
-    layout->setSpacing(1);
+    layout->setSpacing(0);
     this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setVisible(true);
     
@@ -102,7 +102,10 @@ void SettingsPanel::initialize_knobs(){
 void SettingsPanel::addKnobDynamically(Knob* knob){
 	layout_settings->addWidget(knob);
 }
-
+void SettingsPanel::removeAndDeleteKnob(Knob* knob){
+    layout_settings->removeWidget(knob);
+    delete knob;
+}
 void SettingsPanel::close(){
     
     NodeUi->setSettingsPanelEnabled(false);

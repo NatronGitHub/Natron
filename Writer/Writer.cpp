@@ -18,20 +18,23 @@
 
 using namespace std;
 
-Writer::Writer(Node* node):OutputNode(node),_writeHandle(0),_currentFrame(0),
+Writer::Writer(Node* node):OutputNode(node),_writeHandle(0),_currentFrame(0),_writeOptions(0),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),_premult(false){
     
     /*debug*/
     _requestedChannels = Mask_RGB;
 }
 
-Writer::Writer(Writer& ref):OutputNode(ref),_writeHandle(0),_currentFrame(0),
+Writer::Writer(Writer& ref):OutputNode(ref),_writeHandle(0),_currentFrame(0),_writeOptions(ref._writeOptions),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),_premult(ref._premult){
     
 }
 
 Writer::~Writer(){
-    
+    if(_writeOptions){
+        _writeOptions->cleanUpKnobs();
+        delete _writeOptions;
+    }
 }
 
 std::string Writer::className(){
@@ -84,6 +87,7 @@ void Writer::_validate(bool forReal){
                     i--; /*i was at the '.' character, we put it one letter before so we can insert the frame number*/
                     filename.insert(i, frameNumber);
                 }
+                write->setOptionalKnobsPtr(_writeOptions);
                 write->setupFile(filename.toStdString());
                 write->initializeColorSpace();
                 _writeHandle = write;
@@ -97,7 +101,6 @@ void Writer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 }
 
 void Writer::createKnobDynamically(){
-    _writeHandle->createKnobDynamically();
     Node::createKnobDynamically();
 }
 void Writer::initKnobs(Knob_Callback *cb){
@@ -116,6 +119,7 @@ void Writer::initKnobs(Knob_Callback *cb){
 
     std::string filetypeStr("File type");
     ComboBox_Knob* filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
+    QObject::connect(filetypeCombo, SIGNAL(entryChanged(std::string&)), this, SLOT(fileTypeChanged(std::string&)));
     vector<string> entries;
     const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
@@ -208,4 +212,22 @@ void Writer::startRendering(){
         ctrlPTR->getModel()->setVideoEngineRequirements(this);
         ctrlPTR->getModel()->startVideoEngine();
     }
+}
+
+void Writer::fileTypeChanged(std::string& fileType){
+    if(_writeOptions){
+        _writeOptions->cleanUpKnobs();
+        delete _writeOptions;
+        _writeOptions = 0;
+    }
+    PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    if(!isValid) return;
+    
+    /*checking if channels are supported*/
+    WriteBuilder builder = (WriteBuilder)isValid->first;
+    Write* write = builder(this);
+    _writeOptions = write->initSpecificKnobs();
+    if(_writeOptions)
+        _writeOptions->initKnobs(getKnobCallBack(),fileType);
+    delete write;
 }
