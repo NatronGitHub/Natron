@@ -175,7 +175,7 @@ public:
 	for the given displayWindow with the  zoom factor and  current zoom center.
 	They will be stored from bottom to top. The values are returned
 	as a map of displayWindow coordinates mapped to viewport cooridnates*/
-	std::map<int,int> computeRowSpan(Format displayWindow,float zoomFactor);
+	std::map<int,int> computeRowSpan(const Box2D& displayWindow,float zoomFactor);
 	/*computes the inverse matrix of m and stores it in out*/
 	int _glInvertMatrix(float *m, float *out);
 	/*multiply matrix1 by matrix2 and stores the result in result*/

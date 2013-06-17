@@ -10,10 +10,11 @@
 #include "Core/lookUpTables.h"
 #include "Gui/knob.h"
 #include "Core/row.h"
-#include "Reader/exrCommons.h"
+#include <QtCore/QMutexLocker>
+#include <QtCore/QMutex>
 using namespace std;
 
-WriteExr::WriteExr(Writer* writer):Write(writer){
+WriteExr::WriteExr(Writer* writer):Write(writer),outfile(0),_lock(0){
     
 }
 WriteExr::~WriteExr(){
@@ -33,7 +34,7 @@ void ExrWriteKnobs::initKnobs(Knob_Callback* callback,std::string& fileType){
     
     std::string compressionCBDesc("Compression");
     compressionCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                                           compressionCBDesc, Knob::NONE));
+                                                                            compressionCBDesc, Knob::NONE));
     vector<string> compressionEntries;
     for (int i =0; i < 6; i++) {
         compressionEntries.push_back(EXR::compressionNames[i]);
@@ -43,13 +44,13 @@ void ExrWriteKnobs::initKnobs(Knob_Callback* callback,std::string& fileType){
     
     std::string depthCBDesc("Data type");
     depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                                     depthCBDesc, Knob::NONE));
+                                                                      depthCBDesc, Knob::NONE));
     vector<string> depthEntries;
     for(int i = 0 ; i < 2 ; i++){
         depthEntries.push_back(EXR::depthNames[i]);
     }
     depthCBKnob->populate(depthEntries);
-    depthCBKnob->setPointer(&_compression);
+    depthCBKnob->setPointer(&_dataType);
     
     /*calling base-class version at the end*/
     WriteKnobs::initKnobs(callback,fileType);
@@ -58,6 +59,10 @@ void ExrWriteKnobs::cleanUpKnobs(){
     sepKnob->enqueueForDeletion();
     compressionCBKnob->enqueueForDeletion();
     depthCBKnob->enqueueForDeletion();
+}
+
+bool ExrWriteKnobs::allValid(){
+    return _dataType!="/" && _compression!="/";
 }
 
 /*Must implement it to initialize the appropriate colorspace  for
@@ -82,53 +87,67 @@ void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
         float* to = toRow->writable(z)+row.offset();
         to_float(z, to , from, a, row.right()- row.offset());
     }
-    _img.push_back(toRow);
+    QMutexLocker g(_lock);
+    _img.insert(make_pair(y,toRow));
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
 void WriteExr::setupFile(std::string filename){
+    _lock = new QMutex;
+    
     ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
-    Imf::Compression compression = EXR::stringToCompression(knobs->_compression);
-    int depth = EXR::depthNameToInt(knobs->_dataType);
+    compression = EXR::stringToCompression(knobs->_compression);
+    depth = EXR::depthNameToInt(knobs->_dataType);
     const Format& dispW = op->getInfo()->getDisplayWindow();
     const Box2D& dataW = op->getInfo()->getDataWindow();
-    
-    Box2D _dataW;
+    const ChannelSet& channels = op->getRequestedChannels();
+    _dataW = new Box2D;
     if(op->getInfo()->blackOutside()){
         if(dataW.x() +2 < dataW.right()){
-            _dataW.x(dataW.x()+1);
-            _dataW.right(dataW.right()-1);
+            _dataW->x(dataW.x()+1);
+            _dataW->right(dataW.right()-1);
         }
         if(dataW.y() +2 < dataW.top()){
-            _dataW.y(dataW.y()+1);
-            _dataW.top(dataW.top()-1);
+            _dataW->y(dataW.y()+1);
+            _dataW->top(dataW.top()-1);
         }
     }else{
-        _dataW.set(dataW);
+        _dataW->set(dataW);
     }
-    Imath::Box2i exrDataW;
-    Imath::Box2i exrDispW;
-    exrDataW.min.x = _dataW.x();
-    exrDataW.min.y = dispW.h() - _dataW.top();
-    exrDataW.max.x = _dataW.right()-1;
-    exrDataW.max.y = dispW.h() -  _dataW.y() -1;
+    exrDataW = new Imath::Box2i;
+    exrDispW = new Imath::Box2i;
+    exrDataW->min.x = _dataW->x();
+    exrDataW->min.y = dispW.h() - _dataW->top();
+    exrDataW->max.x = _dataW->right()-1;
+    exrDataW->max.y = dispW.h() -  _dataW->y() -1;
     
-    exrDispW.min.x = 0;
-    exrDispW.min.y = 0;
-    exrDispW.max.x = dispW.w() -1;
-    exrDispW.max.y = dispW.h() -1;
+    exrDispW->min.x = 0;
+    exrDispW->min.y = 0;
+    exrDispW->max.x = dispW.w() -1;
+    exrDispW->max.y = dispW.h() -1;
     
-    try{
-        Imf::OutputFile* outfile;
-        
-        
-        delete outfile;
-    }catch (const std::exception& exc) {
-        cout << "OpenEXR error" << exc.what() << endl;
-        return;
+    Imf::Header exrheader(*exrDispW, *exrDataW,dispW.pixel_aspect(),
+                          Imath::V2f(0, 0), 1, Imf::INCREASING_Y, compression);
+    
+    foreachChannels(z, channels){
+        std::string channame = EXR::toExrChannel(z);
+        if (depth == 32) {
+            exrheader.channels().insert(channame.c_str(), Imf::Channel(Imf::FLOAT));
+        }
+        else {
+            exrheader.channels().insert(channame.c_str(), Imf::Channel(Imf::HALF));
+        }
     }
+  //  try{
+    outfile = new Imf::OutputFile(filename.c_str(), exrheader);
+//    }catch (const std::exception& exc) {
+//        cout << "OpenEXR error" << exc.what() << endl;
+//        return;
+//    }
+    
+    
     
 }
 
@@ -136,5 +155,60 @@ void WriteExr::setupFile(std::string filename){
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
 void WriteExr::writeAllData(){
+    try{
+        const ChannelSet& channels = op->getRequestedChannels();
+        for (int y = _dataW->top()-1; y >= _dataW->y(); y--) {
+            Imf::FrameBuffer fbuf;
+            Row* row = _img[y];
+            assert(row);
+            if (depth == 32) {
+                foreachChannels(z, channels){
+                    std::string channame = EXR::toExrChannel(z);
+                    fbuf.insert(channame.c_str(),
+                                Imf::Slice(Imf::FLOAT, (char*)row->writable(z),
+                                           sizeof(float), 0));
+            }
+            }else{
+                Imf::Array2D<half> halfwriterow(channels.size() , _dataW->right() - _dataW->x());
+                int cur = 0;
+                foreachChannels(z, channels){
+                    std::string channame = EXR::toExrChannel(z);
+                    fbuf.insert(channame.c_str(),
+                                Imf::Slice(Imf::HALF,
+                                           (char*)(&halfwriterow[channels.size() + cur][0] - exrDataW->min.x),
+                                           sizeof(halfwriterow[ channels.size() * cur][0]), 0));
+                    const float* from = (*row)[z];
+                    for(int i = exrDataW->min.x ; i < exrDataW->max.x ; i++){
+                        halfwriterow[channels.size() + cur][i - exrDataW->min.x] = from[i];
+                    }
+                    cur++;
+                }
+            }
+            outfile->setFrameBuffer(fbuf);
+            outfile->writePixels(1);
+        }
+        
+        delete outfile;
+        delete exrDataW;
+        delete exrDispW;
+        delete _lock;
+
+    }catch (const std::exception& exc) {
+        cout << "OpenEXR error" << exc.what() << endl;
+        return;
+    }
     
+}
+
+void WriteExr::debug(){
+    int notValidC = 0;
+    for (map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); it++) {
+        cout << "img[" << it->first << "] = ";
+        if(it->second) cout << "valid row" << endl;
+        else{
+            cout << "NOT VALID" << endl;
+            notValidC++;
+        }
+    }
+    cout << "Img size : " << _img.size() << " . Invalid rows = " << notValidC << endl;
 }

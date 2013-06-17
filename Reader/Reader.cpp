@@ -113,16 +113,27 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
     if(_read->supportsScanLine()){
         slContext = new Reader::Buffer::ScanLineContext;
         _read->readHeader(filename,openStereo);
-        float zoomFactor;
-        const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
-        if(_fitFrameToViewer){
-            float h = (float)(dispW.h());
-            zoomFactor = (float)currentViewer->viewer->height()/h -0.05;
-            currentViewer->viewer->fitToFormat(dispW);
+        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
+            float zoomFactor;
+            const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
+            if(_fitFrameToViewer){
+                float h = (float)(dispW.h());
+                zoomFactor = (float)currentViewer->viewer->height()/h -0.05;
+                currentViewer->viewer->fitToFormat(dispW);
+            }else{
+                zoomFactor = currentViewer->viewer->getZoomFactor();
+            }
+            
+            slContext->setRows(currentViewer->viewer->computeRowSpan(dispW, zoomFactor));
         }else{
-            zoomFactor = currentViewer->viewer->getZoomFactor();
+            const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
+            std::map<int,int> rows;
+            for (int i =dataW.y() ; i < dataW.top(); i++) {
+                rows.insert(make_pair(i,i));
+            }
+            slContext->setRows(rows);
+            
         }
-        slContext->setRows(currentViewer->viewer->computeRowSpan(dispW, zoomFactor));
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::NOT_CACHED_FRAME);

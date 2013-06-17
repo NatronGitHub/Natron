@@ -48,6 +48,10 @@ public:
      This also means you need to store pointers to
      your knobs to clean them up afterwards.*/
     virtual void cleanUpKnobs()=0;
+    
+    /*Must return true if the content of all knobs is valid
+     to start rendering.*/
+    virtual bool allValid()=0;
 
 };
 

@@ -69,13 +69,6 @@ ostream& operator<< (ostream &out, Node &node){
         out << getChannelName(z) << "\t";
     }
     out << endl;
-    //    out << "------------------------------" << endl;
-    //    out << "Rows contained in cache:\t";
-    //    std::map<int,Row*>::iterator it;
-    //    for( it = node.get_row_cache().begin(); it != node.get_row_cache().end();it++){
-    //        out << (*it).first << " ";
-    //    }
-    //    out << endl;
     out << "------------------------------" << endl;
     return out;
 }
@@ -99,6 +92,7 @@ void Node::copy_info(Node* parent,bool forReal){
         _info->right(bboxParent->right());
     }
     _info->rgbMode(parent->getInfo()->rgbMode());
+    _info->blackOutside(parent->getInfo()->blackOutside());
 }
 void Node::clear_info(){
 	_info->reset();
@@ -112,6 +106,7 @@ void Node::Info::reset(){
     _channels = Mask_None;
     set(0, 0, 0, 0);
     _modified = false;
+    _blackOutside = false;
 }
 
 void Node::merge_info(bool forReal){
@@ -132,6 +127,9 @@ void Node::merge_info(bool forReal){
 		}
         if(parent->getInfo()->rgbMode()!=displayMode){
             std::cout << "Warning: merge_info: inputs of" << className() << " have a different display mode" << std::endl;
+        }
+        if(parent->getInfo()->blackOutside()){
+            _info->blackOutside(true);
         }
 	}
     final_direction/=_parents.size();

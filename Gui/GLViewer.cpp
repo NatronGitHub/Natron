@@ -350,7 +350,7 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-std::map<int,int> ViewerGL::computeRowSpan(Format displayWindow,float zoomFactor){
+std::map<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow,float zoomFactor){
     std::map<int,int> ret;
     saveGLState();
     glMatrixMode (GL_PROJECTION);
@@ -409,12 +409,12 @@ std::map<int,int> ViewerGL::computeRowSpan(Format displayWindow,float zoomFactor
     if(!_glMultMat44Vect_onlyYComponent(&res, inv, p)){
         cout << "failed unprojection (row-span computation)" << endl;
     }
-    if(res >= displayWindow.h()){// all the image is below the viewer
+    if(res >= displayWindow.top()){// all the image is below the viewer
         restoreGLState();
         return ret;
     }else{
         if(res >= displayWindow.y()){
-            if(res < displayWindow.h()){
+            if(res < displayWindow.top()){
                 ret[res] = 0;
             }else{
                 restoreGLState();
@@ -430,7 +430,7 @@ std::map<int,int> ViewerGL::computeRowSpan(Format displayWindow,float zoomFactor
             cout << "failed unprojection (row-span computation)" << endl;
         }
         if(res >= displayWindow.y()){
-            if(res < displayWindow.h()){
+            if(res < displayWindow.top()){
                 ret[res] = y;
             }else{
                 restoreGLState();

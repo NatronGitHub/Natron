@@ -601,6 +601,8 @@ void ComboBox_Knob::setCurrentItem(QString str){
 
 void ComboBox_Knob::setPointer(std::string* str){
     _currentItem = str;
+    setCurrentItem("/"); /*initialises the pointer*/
+
 }
 
 void ComboBox_Knob::setValues(){

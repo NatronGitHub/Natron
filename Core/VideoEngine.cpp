@@ -331,6 +331,8 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     }
     output->request(toRequest);
     const Format &_dispW = output->getInfo()->getDisplayWindow();
+    const Box2D& dataW = output->getInfo()->getDataWindow();
+
     //const Box2D &_dataW = output->getInfo()->getDataWindow();
     // AT THIS POINT EVERY OPERATOR HAS ITS INFO SET!! AS WELL AS REQUESTED_BOX AND REQUESTED_CHANNELS
     
@@ -379,17 +381,17 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
             return;
         }
     }else{
-        for (int i = _dispW.y(); i < _dispW.top(); i++) {
+        for (int i = dataW.y(); i < dataW.top(); i++) {
             rows.insert(make_pair(i,i));
         }
         it = rows.begin();
     }
     // selecting the right anchor of the row
-    int right = _dispW.right();
+    int right = dataW.right();
     //  _dataW.right() > _dispW.right() ? right = _dataW.right() : right = _dispW.right();
     
     // selecting the left anchor of the row
-	int offset= _dispW.x();
+	int offset= dataW.x();
     // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
     int counter = 0;
     for(; it!=rows.end() ; it++){

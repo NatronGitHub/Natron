@@ -10,11 +10,17 @@
 
 #include <iostream>
 #include "Writer/Write.h"
+#include <map>
 #include <vector>
+#include "Reader/exrCommons.h"
+#include <ImfOutputFile.h>
+
 class ComboBox_Knob;
 class Separator_Knob;
 class Knob_Callback;
 class Row;
+class QMutex;
+class Box2D;
 class Writer;
 
 /*This class is used by Writer to load the filetype-specific knobs.
@@ -37,6 +43,8 @@ public:
     virtual void initKnobs(Knob_Callback* callback,std::string& fileType);
     
     virtual void cleanUpKnobs();
+    
+    virtual bool allValid();
 };
 
 
@@ -44,8 +52,15 @@ class WriteExr :public Write{
     
    
     std::string _filename;
-    std::vector<Row*> _img;
+    std::map<int,Row*> _img;
     
+    Imf::Compression compression;
+    int depth;
+    Imf::OutputFile* outfile;
+    Imath::Box2i *exrDataW;
+    Imath::Box2i *exrDispW;
+    Box2D* _dataW;
+    QMutex* _lock;
 public:
     
     static Write* BuildWrite(Writer* writer){return new WriteExr(writer);}
@@ -85,6 +100,8 @@ public:
     
     /*Doesn't throw any exception since OpenEXR can write all channels*/
     virtual void supportsChannelsForWriting(ChannelSet& channels){}
+    
+    void debug();
     
     
 };

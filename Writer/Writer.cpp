@@ -202,7 +202,12 @@ bool Writer::validInfosForRendering(){
     /*check if frame range makes sense*/
     if(_frameRange.first > _frameRange.second) return false;
     
-    
+    /*check if write specific knobs have valid values*/
+    if (_writeOptions) {
+        if (!_writeOptions->allValid()) {
+            return false;
+        }
+    }
     
     return true;
 }
