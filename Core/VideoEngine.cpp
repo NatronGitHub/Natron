@@ -10,6 +10,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtGui/QVector2D>
 #include <QtWidgets/QAction>
+#include <QtCore/QThread>
 #include <iterator>
 #include <cassert>
 #include "Core/VideoEngine.h"
@@ -36,6 +37,7 @@
 #include "Superviser/controler.h"
 #include "Superviser/MemoryInfo.h"
 
+#include <ImfThreading.h>
 
 
 #define gl_viewer currentViewer->viewer
@@ -577,6 +579,9 @@ _forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sam
     connect(_engineLoopWatcher, SIGNAL(finished()), this, SLOT(engineLoop()));
     this->_coreEngine = engine;
     this->_lock= lock;
+    
+    /*Adjusting multi-threading for OpenEXR library.*/
+    Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
     _timer=new Timer();
     

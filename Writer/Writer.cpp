@@ -133,9 +133,9 @@ void Writer::initKnobs(Knob_Callback *cb){
 
 
 void Writer::write(Write* write,QFutureWatcher<void>* watcher){
-    while (_buffer.size() >= _buffer.getMaximumBufferSize()) {
-        //active waiting for this thread
-    }
+//    while (_buffer.size() >= _buffer.getMaximumBufferSize()) {
+//        //active waiting for this thread
+//    }
     _buffer.appendTask(write, watcher);
     if(!write) return;
     write->writeAndDelete();
@@ -143,13 +143,11 @@ void Writer::write(Write* write,QFutureWatcher<void>* watcher){
 }
 
 void Writer::startWriting(){
-    if(_buffer.size() < _buffer.getMaximumBufferSize()){
         QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
         QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));
         QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeHandle,watcher);
         _writeHandle = 0;
         watcher->setFuture(future);
-    }
 }
 
 void Writer::notifyWriterForCompletion(){
