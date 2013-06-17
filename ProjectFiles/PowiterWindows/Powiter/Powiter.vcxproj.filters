@@ -17,6 +17,9 @@
     <Filter Include="Superviser">
       <UniqueIdentifier>{cb8417f0-58a0-4a1a-80d8-8b58f5bb163b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Writer">
+      <UniqueIdentifier>{5ae070d0-1178-40b5-8472-6901fddda1d0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Core\Box.cpp">
@@ -208,6 +211,18 @@
     <ClCompile Include="..\..\..\Core\nodecache.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Writer\Write.cpp">
+      <Filter>Writer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Writer\writeQt.cpp">
+      <Filter>Writer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Writer\Writer.cpp">
+      <Filter>Writer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\Writer_moc.cpp">
+      <Filter>Writer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -354,6 +369,18 @@
     <ClInclude Include="..\..\..\Core\nodecache.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Reader\exrCommons.h">
+      <Filter>Reader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Writer\Write.h">
+      <Filter>Writer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Writer\writeQt.h">
+      <Filter>Writer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Core\LRUcache.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\Core\model.h">
@@ -394,6 +421,9 @@
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\timeline.h">
       <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Writer\Writer.h">
+      <Filter>Writer</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

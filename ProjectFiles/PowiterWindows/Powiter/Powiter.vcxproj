@@ -135,6 +135,9 @@
     <ClCompile Include="..\..\..\Reader\readffmpeg.cpp" />
     <ClCompile Include="..\..\..\Reader\readQt.cpp" />
     <ClCompile Include="..\..\..\Superviser\controler.cpp" />
+    <ClCompile Include="..\..\..\Writer\Write.cpp" />
+    <ClCompile Include="..\..\..\Writer\writeQt.cpp" />
+    <ClCompile Include="..\..\..\Writer\Writer.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\DAGQuickNode_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\DAG_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\dockableSettings_moc.cpp" />
@@ -148,6 +151,7 @@
     <ClCompile Include="..\..\GeneratedFiles\ScaleSlider_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\timeline_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\VideoEngine_moc.cpp" />
+    <ClCompile Include="..\..\GeneratedFiles\Writer_moc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\abstractCache.h" />
@@ -160,6 +164,7 @@
     <ClInclude Include="..\..\..\Core\imgOP.h" />
     <ClInclude Include="..\..\..\Core\inputnode.h" />
     <ClInclude Include="..\..\..\Core\lookUpTables.h" />
+    <ClInclude Include="..\..\..\Core\LRUcache.h" />
     <ClInclude Include="..\..\..\Core\lutclasses.h" />
     <ClInclude Include="..\..\..\Core\mappedfile.h" />
     <ClInclude Include="..\..\..\Core\metadata.h" />
@@ -169,6 +174,18 @@
     <ClInclude Include="..\..\..\Gui\framefiledialog.h" />
     <ClInclude Include="..\..\..\Gui\tabwidget.h" />
     <ClInclude Include="..\..\..\Gui\texturecache.h" />
+    <ClInclude Include="..\..\..\Writer\Write.h" />
+    <ClInclude Include="..\..\..\Writer\writeQt.h" />
+    <CustomBuild Include="..\..\..\Writer\Writer.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+    </CustomBuild>
     <CustomBuild Include="..\..\..\Core\model.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
@@ -317,6 +334,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
     </CustomBuild>
     <ClInclude Include="..\..\..\Gui\viewerTab.h" />
+    <ClInclude Include="..\..\..\Reader\exrCommons.h" />
     <ClInclude Include="..\..\..\Reader\Read.h" />
     <ClInclude Include="..\..\..\Reader\Reader.h" />
     <ClInclude Include="..\..\..\Reader\readerInfo.h" />

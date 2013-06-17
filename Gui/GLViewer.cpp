@@ -6,7 +6,7 @@
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
-
+#include "Gui/GLViewer.h"
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
@@ -17,7 +17,6 @@
 #include <cassert>
 #include <map>
 #include "Gui/tabwidget.h"
-#include "Gui/GLViewer.h"
 #include "Core/VideoEngine.h"
 #include "Gui/shaders.h"
 #include "Core/lookUpTables.h"

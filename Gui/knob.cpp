@@ -88,7 +88,7 @@ void KnobFactory::loadKnobPlugins(){
                         std::string str("");
                         Knob* knob=builder(NULL,str,0);
                         plugin = new PluginID((HINSTANCE)builder,knob->name().c_str());
-                        _loadedKnobs.push_back(make_pair(knob->name(),plugin));
+                        _loadedKnobs.insert(make_pair(knob->name(),plugin));
                         delete knob;
                         
                     }else{
