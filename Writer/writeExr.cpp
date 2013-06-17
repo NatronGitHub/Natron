@@ -140,14 +140,10 @@ void WriteExr::setupFile(std::string filename){
             exrheader.channels().insert(channame.c_str(), Imf::Channel(Imf::HALF));
         }
     }
-  //  try{
+
     outfile = new Imf::OutputFile(filename.c_str(), exrheader);
-//    }catch (const std::exception& exc) {
-//        cout << "OpenEXR error" << exc.what() << endl;
-//        return;
-//    }
-    
-    
+
+        
     
 }
 
@@ -157,8 +153,10 @@ void WriteExr::setupFile(std::string filename){
 void WriteExr::writeAllData(){
     try{
         const ChannelSet& channels = op->getRequestedChannels();
+
         for (int y = _dataW->top()-1; y >= _dataW->y(); y--) {
             Imf::FrameBuffer fbuf;
+            Imf::Array2D<half>* halfwriterow = 0 ;
             Row* row = _img[y];
             assert(row);
             if (depth == 32) {
@@ -167,27 +165,30 @@ void WriteExr::writeAllData(){
                     fbuf.insert(channame.c_str(),
                                 Imf::Slice(Imf::FLOAT, (char*)row->writable(z),
                                            sizeof(float), 0));
-            }
+                }
             }else{
-                Imf::Array2D<half> halfwriterow(channels.size() , _dataW->right() - _dataW->x());
+                halfwriterow = new Imf::Array2D<half>(channels.size() , _dataW->right() - _dataW->x());
+                
                 int cur = 0;
                 foreachChannels(z, channels){
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
                                 Imf::Slice(Imf::HALF,
-                                           (char*)(&halfwriterow[channels.size() + cur][0] - exrDataW->min.x),
-                                           sizeof(halfwriterow[ channels.size() * cur][0]), 0));
+                                           (char*)(&(*halfwriterow)[cur][0] - exrDataW->min.x),
+                                           sizeof((*halfwriterow)[cur][0]), 0));
                     const float* from = (*row)[z];
-                    for(int i = exrDataW->min.x ; i < exrDataW->max.x ; i++){
-                        halfwriterow[channels.size() + cur][i - exrDataW->min.x] = from[i];
+                    for(int i = exrDataW->min.x; i < exrDataW->max.x ; i++){
+                        (*halfwriterow)[cur][i - exrDataW->min.x] = from[i];
                     }
                     cur++;
                 }
+                delete halfwriterow;
             }
+
             outfile->setFrameBuffer(fbuf);
             outfile->writePixels(1);
         }
-        
+
         delete outfile;
         delete exrDataW;
         delete exrDispW;
