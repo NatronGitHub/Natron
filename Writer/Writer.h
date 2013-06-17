@@ -17,6 +17,7 @@
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QObject>
 class Write;
+class QMutex;
 class Row;
 class WriteKnobs;
 class Knob_Callback;
@@ -122,10 +123,11 @@ private:
     
     int _currentFrame; // the current frame being rendered
     std::pair<int,int> _frameRange; // the range to render
-    
+    QMutex* _lock;
     bool _premult;
     Buffer _buffer;
     Write* _writeHandle;
+    std::vector<Write*> _writeQueue;
     WriteKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;

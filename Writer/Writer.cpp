@@ -6,6 +6,8 @@
 
 
 #include "Writer/Writer.h"
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include "Gui/knob_callback.h"
 #include "Core/row.h"
 #include "Writer/Write.h"
@@ -23,6 +25,8 @@ _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSi
     
     /*debug*/
     _requestedChannels = Mask_RGB;
+    
+    _lock = new QMutex;
 }
 
 Writer::Writer(Writer& ref):OutputNode(ref),_writeHandle(0),_currentFrame(0),_writeOptions(ref._writeOptions),
@@ -35,6 +39,7 @@ Writer::~Writer(){
         _writeOptions->cleanUpKnobs();
         delete _writeOptions;
     }
+    delete _lock;
 }
 
 std::string Writer::className(){
@@ -133,9 +138,7 @@ void Writer::initKnobs(Knob_Callback *cb){
 
 
 void Writer::write(Write* write,QFutureWatcher<void>* watcher){
-//    while (_buffer.size() >= _buffer.getMaximumBufferSize()) {
-//        //active waiting for this thread
-//    }
+
     _buffer.appendTask(write, watcher);
     if(!write) return;
     write->writeAndDelete();
@@ -143,15 +146,32 @@ void Writer::write(Write* write,QFutureWatcher<void>* watcher){
 }
 
 void Writer::startWriting(){
+    if(_buffer.size() < _buffer.getMaximumBufferSize()){
         QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
         QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));
         QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeHandle,watcher);
         _writeHandle = 0;
         watcher->setFuture(future);
+    }else{
+        _writeQueue.push_back(_writeHandle);
+        _writeHandle = 0;
+    }
 }
 
 void Writer::notifyWriterForCompletion(){
     _buffer.emptyTrash();
+    
+    /*Several threads may fight here to try to start another task.
+     We ensure that at least 1 thread get into the condition, as more
+     are not needed. */
+    QMutexLocker guard(_lock);
+    if(_writeQueue.size() > 0 && _buffer.size() < _buffer.getMaximumBufferSize()){
+        QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
+        QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));
+        QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeQueue[0],watcher);
+        _writeQueue.erase(_writeQueue.begin());
+        watcher->setFuture(future);
+    }
 }
 
 void Writer::Buffer::appendTask(Write* task,QFutureWatcher<void>* future){

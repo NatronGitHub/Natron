@@ -97,6 +97,7 @@ void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 void WriteExr::setupFile(std::string filename){
     _lock = new QMutex;
     
+    _filename = filename;
     ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
@@ -128,20 +129,19 @@ void WriteExr::setupFile(std::string filename){
     exrDispW->max.x = dispW.w() -1;
     exrDispW->max.y = dispW.h() -1;
     
-    Imf::Header exrheader(*exrDispW, *exrDataW,dispW.pixel_aspect(),
+    header=new Imf::Header(*exrDispW, *exrDataW,dispW.pixel_aspect(),
                           Imath::V2f(0, 0), 1, Imf::INCREASING_Y, compression);
     
     foreachChannels(z, channels){
         std::string channame = EXR::toExrChannel(z);
         if (depth == 32) {
-            exrheader.channels().insert(channame.c_str(), Imf::Channel(Imf::FLOAT));
+            header->channels().insert(channame.c_str(), Imf::Channel(Imf::FLOAT));
         }
         else {
-            exrheader.channels().insert(channame.c_str(), Imf::Channel(Imf::HALF));
+            header->channels().insert(channame.c_str(), Imf::Channel(Imf::HALF));
         }
     }
 
-    outfile = new Imf::OutputFile(filename.c_str(), exrheader);
 
         
     
@@ -151,7 +151,9 @@ void WriteExr::setupFile(std::string filename){
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
 void WriteExr::writeAllData(){
+    
     try{
+        outfile = new Imf::OutputFile(_filename.c_str(), *header);
         const ChannelSet& channels = op->getRequestedChannels();
 
         for (int y = _dataW->top()-1; y >= _dataW->y(); y--) {
@@ -193,6 +195,7 @@ void WriteExr::writeAllData(){
         delete exrDataW;
         delete exrDispW;
         delete _lock;
+        delete header;
 
     }catch (const std::exception& exc) {
         cout << "OpenEXR error" << exc.what() << endl;

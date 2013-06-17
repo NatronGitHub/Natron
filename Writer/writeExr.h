@@ -57,6 +57,7 @@ class WriteExr :public Write{
     Imf::Compression compression;
     int depth;
     Imf::OutputFile* outfile;
+    Imf::Header* header;
     Imath::Box2i *exrDataW;
     Imath::Box2i *exrDispW;
     Box2D* _dataW;
