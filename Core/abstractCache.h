@@ -19,10 +19,17 @@ class MemoryFile;
  Entries are not copyable, you must create a new object if you want to copy infos.*/
 class CacheEntry {
     
+    bool _doNotEvict;
     
 public:
-    CacheEntry():_size(0){}
+    CacheEntry():_size(0),_doNotEvict(false){}
     virtual ~CacheEntry(){}
+    
+    void preventFromDeletion(){_doNotEvict = true;}
+    
+    void returnToNormalPriority(){_doNotEvict = false;}
+    
+    bool isRemovable() const {return _doNotEvict;}
     
     const U64 size() const {return _size;}
     
@@ -166,7 +173,8 @@ public:
     ~AbstractCache();
     
     /*Adds a new entry to the cache. Returns true if it removed
-     another entry before inserting the new one, false otherwise.*/
+     another entry before inserting the new one, false otherwise.
+     */
     virtual bool add(U64 key,CacheEntry* entry);
     
     

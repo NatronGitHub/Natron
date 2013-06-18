@@ -393,7 +393,7 @@ std::string Node::description(){
     return "";
 }
 
-void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
+void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCached){
     NodeCache* cache = NodeCache::getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
@@ -411,11 +411,13 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     pair<U64,Row*> entry = cache->get(key , filename, x, r, y, channels);
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
+        entry.second->preventFromDeletion();
         row.setInternalRow(out);
         return;
     }else{
         if(cacheData()){
             out = cache->add(entry.first,x, r, y, channels, filename);
+            out->preventFromDeletion();
             out->notifyCacheForDeletion();
             row.setInternalRow(out);
             if(!out) return;

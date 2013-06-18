@@ -29,6 +29,9 @@
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
 		D792662A1767654000FA3354 /* LRUcache.h in Headers */ = {isa = PBXBuildFile; fileRef = D79266291767654000FA3354 /* LRUcache.h */; };
+		D79964EF176FBB450000C22C /* interest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D79964ED176FBB450000C22C /* interest.cpp */; };
+		D79964F0176FBB450000C22C /* interest.h in Headers */ = {isa = PBXBuildFile; fileRef = D79964EE176FBB450000C22C /* interest.h */; };
+		D79964F1176FC8810000C22C /* interest.h in Sources */ = {isa = PBXBuildFile; fileRef = D79964EE176FBB450000C22C /* interest.h */; };
 		D7A7538A176A6B6E002D5E1B /* Writer.h in Sources */ = {isa = PBXBuildFile; fileRef = D74DF1561769D034002513D7 /* Writer.h */; };
 		D7AC026E1758E5D1009548B6 /* texturecache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7AC026C1758E5D1009548B6 /* texturecache.cpp */; };
 		D7AC026F1758E5D1009548B6 /* texturecache.h in Headers */ = {isa = PBXBuildFile; fileRef = D7AC026D1758E5D1009548B6 /* texturecache.h */; };
@@ -230,6 +233,8 @@
 		D78C15FF173861FD0011B5FD /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../Superviser/main.cpp; sourceTree = SOURCE_ROOT; };
 		D78C1606173862860011B5FD /* controler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = controler.cpp; path = ../../Superviser/controler.cpp; sourceTree = SOURCE_ROOT; };
 		D79266291767654000FA3354 /* LRUcache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LRUcache.h; sourceTree = "<group>"; };
+		D79964ED176FBB450000C22C /* interest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = interest.cpp; sourceTree = "<group>"; };
+		D79964EE176FBB450000C22C /* interest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = interest.h; sourceTree = "<group>"; };
 		D7AC026C1758E5D1009548B6 /* texturecache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = texturecache.cpp; sourceTree = "<group>"; };
 		D7AC026D1758E5D1009548B6 /* texturecache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = texturecache.h; sourceTree = "<group>"; };
 		D7B4811E174E9FAB0011055D /* viewercache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viewercache.cpp; sourceTree = "<group>"; };
@@ -474,6 +479,8 @@
 				D7FD99CA17101E8700D1DCEA /* imgOP.h */,
 				D7FD99CB17101E8700D1DCEA /* inputnode.cpp */,
 				D7FD99CC17101E8700D1DCEA /* inputnode.h */,
+				D79964ED176FBB450000C22C /* interest.cpp */,
+				D79964EE176FBB450000C22C /* interest.h */,
 				D7FD99CD17101E8700D1DCEA /* lookUpTables.cpp */,
 				D7FD99CE17101E8700D1DCEA /* lookUpTables.h */,
 				D7FD99CF17101E8700D1DCEA /* lutclasses.h */,
@@ -672,6 +679,7 @@
 				D74DF15F176A0108002513D7 /* exrCommons.h in Headers */,
 				D7D70F32176B3E5A00CE71EB /* writeQt.h in Headers */,
 				D730000A176D90FC0097FD33 /* writeExr.h in Headers */,
+				D79964F0176FBB450000C22C /* interest.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -746,6 +754,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D79964F1176FC8810000C22C /* interest.h in Sources */,
 				D7A7538A176A6B6E002D5E1B /* Writer.h in Sources */,
 				D78C1607173862860011B5FD /* controler.cpp in Sources */,
 				D7FD9AB317101F1500D1DCEA /* model.h in Sources */,
@@ -814,6 +823,7 @@
 				D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */,
 				D7D70F31176B3E5A00CE71EB /* writeQt.cpp in Sources */,
 				D7300009176D90FC0097FD33 /* writeExr.cpp in Sources */,
+				D79964EF176FBB450000C22C /* interest.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

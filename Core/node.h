@@ -191,9 +191,10 @@ public:
     
     /*Returns in row, a row containing the results expected of this node
      for the line y , channels and range (r-x). Data may come from the cache,
-     otherwise engine() gets called. 
+     otherwise engine() gets called. You should never call get() with keepCached on.
+     This parameter is only used by the Interest class internally.
      */
-    void get(int y,int x,int r,ChannelSet channels,InputRow& row);
+    void get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCached = false);
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/

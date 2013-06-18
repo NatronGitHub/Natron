@@ -121,13 +121,20 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
         _size += entry->size();
     }
     std::pair<U64,CacheEntry*> evicted = _cache.insert(key,entry,evict);
+    
+    /*while we removed an entry from the cache that must not be removed, we insert it again.
+     If all the entries in the cache cannot be removed (in theory it should never happen), the
+     last one will be evicted.*/
+    while(!evicted.second->isRemovable()) {
+       evicted = _cache.insert(key,entry,true);
+    }
     if(evicted.second){
         {
             QWriteLocker guard(&_cache._rwLock);
             _size -= evicted.second->size();
         }
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
-        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(evicted.second);
+        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         if(mmEntry){
             std::string path = mmEntry->getMappedFile()->path();
             QFile::remove(path.c_str());
