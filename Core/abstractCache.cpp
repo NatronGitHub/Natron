@@ -122,13 +122,15 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
     }
     std::pair<U64,CacheEntry*> evicted = _cache.insert(key,entry,evict);
     
-    /*while we removed an entry from the cache that must not be removed, we insert it again.
-     If all the entries in the cache cannot be removed (in theory it should never happen), the
-     last one will be evicted.*/
-    while(!evicted.second->isRemovable()) {
-       evicted = _cache.insert(key,entry,true);
-    }
     if(evicted.second){
+        /*while we removed an entry from the cache that must not be removed, we insert it again.
+         If all the entries in the cache cannot be removed (in theory it should never happen), the
+         last one will be evicted.*/
+        
+        while(!evicted.second->isRemovable()) {
+            evicted = _cache.insert(key,entry,true);
+        }
+        
         {
             QWriteLocker guard(&_cache._rwLock);
             _size -= evicted.second->size();
@@ -140,7 +142,7 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
             QFile::remove(path.c_str());
         }
         delete evicted.second;
-
+        
     }
     return evict;
 }
@@ -218,7 +220,7 @@ void AbstractDiskCache::initializeSubDirectories(){
                 oss << hex <<  i;
                 oss << hex << j ;
                 string str = oss.str();
-                newCache.mkdir(str.c_str());                
+                newCache.mkdir(str.c_str());
             }
         }
     }else{
@@ -345,7 +347,7 @@ void AbstractDiskCache::restore(){
                 }
                 
                 /*cache is filled , debug*/
-               // debug();
+                // debug();
                 
             }else{
                 cout << cacheName() << ":The entries count in the restore file does not equal the number of actual data files. Reseting." << endl;
@@ -359,7 +361,7 @@ void AbstractDiskCache::restore(){
             QTextStream outsetti(&newFile);
             outsetti << cacheVersion().c_str() << endl;
             newFile.close();
-
+            
         }else{ /*cache version is different*/
             /*re-create the cache*/
             _restoreFile.resize(0);

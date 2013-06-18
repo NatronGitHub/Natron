@@ -31,6 +31,7 @@ class TextureCache;
 class NodeGraph;
 class ViewerTab;
 class Node;
+class Viewer;
 class QGraphicsScene;
 class Gui:public QMainWindow,public boost::noncopyable
 {
@@ -52,7 +53,7 @@ public:
     
     void makeNoCurrentViewerTab();
     
-    void addViewerTab();
+    void addViewerTab(Viewer* node);
     
     void removeViewerTab(ViewerTab* tab);
 

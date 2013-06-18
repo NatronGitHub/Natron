@@ -9,19 +9,20 @@
 #include <QtConcurrent/QtConcurrentMap>
 #include <boost/bind.hpp>
 Interest::Interest(Node* node, int x, int y, int r, int t, ChannelMask channels):_isFinished(false),
-_x(x),_y(y),_r(r),_t(t),_channels(channels){
+_x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_results(0){
     for (int i = y; i <= t; i++) {
         InputRow* row = new InputRow;
         _interest.insert(std::make_pair(y,row));
         _sequence.push_back(row);
-    }//y x r chan
+    }
+}
+
+void Interest::claimInterest(){
     _results = new QFutureWatcher<void>;
     QObject::connect(_results, SIGNAL(resultReadyAt(int)), this, SLOT(notifyFinishedAt(int)));
     QObject::connect(_results, SIGNAL(finished()), this, SLOT(setFinished()));
-    QFuture<void> future = QtConcurrent::map(_sequence.begin(),_sequence.end(),boost::bind(&Interest::getInputRow,this,node,_1));
+    QFuture<void> future = QtConcurrent::map(_sequence.begin(),_sequence.end(),boost::bind(&Interest::getInputRow,this,_node,_1));
     _results->setFuture(future);
-    
-    
 }
 
 void Interest::getInputRow(Node* node,InputRow* row){
@@ -38,6 +39,10 @@ const InputRow& Interest::at(int y) const {
 }
 
 Interest::~Interest(){
+    for (U32 i = 0; i < _sequence.size(); i++) {
+        _sequence[i]->getInternalRow()->returnToNormalPriority();
+        delete _sequence[i];
+    }
     delete _results;
 }
 void Interest::setFinished(){_isFinished = true; emit hasFinishedCompletly();}

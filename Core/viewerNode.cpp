@@ -12,9 +12,14 @@
 #include "Core/row.h"
 Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0)
 {
-    ctrlPTR->getGui()->addViewerTab();
+    
+}
+
+void Viewer::initializeViewerTab(){
+    ctrlPTR->getGui()->addViewerTab(this);
     _uiContext = currentViewer;
 }
+
 Viewer::~Viewer(){
     if(ctrlPTR->getGui())
         ctrlPTR->getGui()->removeViewerTab(_uiContext);

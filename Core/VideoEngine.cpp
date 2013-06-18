@@ -108,7 +108,7 @@ void VideoEngine::resetReadingBuffers(){
             glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
         }
     }
-    std::vector<InputNode*>& inputs = _dag.getInputs();
+    const std::vector<InputNode*>& inputs = _dag.getInputs();
     for(int j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
@@ -131,14 +131,17 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
 #ifdef PW_DEBUG
         assert(writer);
 #endif
-        firstFrame = writer->firstFrame();
-        lastFrame = writer->lastFrame();
+        
         if(!recursiveCall){
             _dag.getOutput()->validate(false);
+            firstFrame = writer->firstFrame();
+            lastFrame = writer->lastFrame();
             currentFrame = writer->firstFrame();
             writer->setCurrentFrameToStart();
 
         }else{
+            firstFrame = writer->firstFrame();
+            lastFrame = writer->lastFrame();
             writer->incrementCurrentFrame();
             currentFrame = writer->currentFrame();
         }
@@ -221,7 +224,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     }
     
     std::vector<Reader*> readers;
-    std::vector<InputNode*>& inputs = _dag.getInputs();
+    const std::vector<InputNode*>& inputs = _dag.getInputs();
     for(int j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
@@ -298,7 +301,7 @@ void VideoEngine::engineLoop(){
     }
     if(_frameRequestsCount!=0 && !_paused){
         std::vector<Reader*> readers;
-        std::vector<InputNode*>& inputs = _dag.getInputs();
+        const std::vector<InputNode*>& inputs = _dag.getInputs();
         for(int j=0;j<inputs.size();j++){
             InputNode* currentInput=inputs[j];
             if(currentInput->className() == string("Reader")){
@@ -625,6 +628,10 @@ void VideoEngine::startPause(bool c){
         return;
     }
     
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
+    
     if(c && _dag.getOutput()){
         videoEngine(true,-1,false,true);
     }
@@ -642,6 +649,10 @@ void VideoEngine::startBackward(bool c){
         pause();
         return;
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
+    
     if(c && _dag.getOutput()){
         videoEngine(true,-1,false,false);
     }
@@ -658,6 +669,9 @@ void VideoEngine::previousFrame(){
        || currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     if(!_working)
         _startEngine(currentViewer->frameSeeker->currentFrame()-1, 1, false,false);
     //    else
@@ -669,6 +683,9 @@ void VideoEngine::nextFrame(){
        || currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     if(!_working)
         _startEngine(currentViewer->frameSeeker->currentFrame()+1, 1, false,true);
     //    else
@@ -680,6 +697,9 @@ void VideoEngine::firstFrame(){
        || currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     TimeSlider* frameSeeker = currentViewer->frameSeeker;
     if(!_working)
         _startEngine(frameSeeker->firstFrame(), 1, false,false);
@@ -692,6 +712,9 @@ void VideoEngine::lastFrame(){
        ||  currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     TimeSlider* frameSeeker = currentViewer->frameSeeker;
     if(!_working)
         _startEngine(frameSeeker->lastFrame(), 1, false,true);
@@ -704,6 +727,9 @@ void VideoEngine::previousIncrement(){
        ||  currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     int frame = currentViewer->frameSeeker->currentFrame()- currentViewer->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,false);
@@ -719,6 +745,9 @@ void VideoEngine::nextIncrement(){
        ||  currentViewer->play_Backward_Button->isChecked()){
         pause();
     }
+    /*The user might have done some writing before, we rebuild the internal dag
+     just in case.*/
+    resetAndMakeNewDag(currentViewer->getInternalNode());
     int frame = currentViewer->frameSeeker->currentFrame()+currentViewer->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,true);
@@ -732,6 +761,7 @@ void VideoEngine::seekRandomFrame(int f){
     //  ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
     pause();
     // }
+    
     if(!_working)
         _startEngine(f, 1, false,true);
     else
@@ -907,13 +937,13 @@ void VideoEngine::DAG::validate(bool forReal){
 
 /*same as validate(), but it refreshes info only for inputNodes.
  This*/
-void VideoEngine::DAG::validateInputs(bool forReal){
+void VideoEngine::DAG::validateInputs(bool forReal) {
     foreach(InputNode* i,_inputs) i->validate(forReal);
 }
-int VideoEngine::DAG::firstFrame(){
+int VideoEngine::DAG::firstFrame() const {
     return _output->getInfo()->firstFrame();
 }
-int VideoEngine::DAG::lastFrame(){
+int VideoEngine::DAG::lastFrame() const{
     return _output->getInfo()->lastFrame();
 }
 
@@ -945,4 +975,8 @@ void VideoEngine::debugRowSequence(){
     name.append(tmp);
     name.append(".png");
     img.save(name.c_str());
+}
+
+void VideoEngine::resetAndMakeNewDag(OutputNode* output){
+    _dag.resetAndSort(output);
 }

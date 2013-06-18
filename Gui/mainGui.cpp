@@ -16,6 +16,7 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/timeline.h"
 #include "Gui/DAG.h"
+#include "Core/viewerNode.h"
 #include "Gui/viewerTab.h"
 
 using namespace std;
@@ -438,16 +439,12 @@ void Gui::clearTextureCache(){
     _textureCache->clearCache(currentTexture);
 }
 
-void Gui::addViewerTab(){
-    ViewerTab* tab = new ViewerTab(viewersTabContainer);
+void Gui::addViewerTab(Viewer* node){
+    ViewerTab* tab = new ViewerTab(node,viewersTabContainer);
     _viewerTabs.push_back(tab);
     tab->setTextureCache(_textureCache);
     int index = _viewerTabs.size();
-    QString name("Viewer ");
-    char tmp[50];
-    sprintf(tmp, "%i",index);
-    name.append(tmp);
-    viewersTabContainer->addTab(tab, name);
+    viewersTabContainer->addTab(tab, node->getName());
     viewersTabContainer->setCurrentIndex(index);
     makeCurrentViewerTab(tab);
 }

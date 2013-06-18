@@ -28,10 +28,11 @@ class FeedBackSpinBox;
 class ScaleSlider;
 class TimeSlider;
 class TextureCache;
+class Viewer;
 class ViewerTab: public QWidget 
 {
 public:
-	ViewerTab(QWidget* parent=0);
+	ViewerTab(Viewer* node,QWidget* parent=0);
 	virtual ~ViewerTab();
     
     void setTextureCache(TextureCache* cache);
@@ -83,8 +84,11 @@ public:
 	TimeSlider* frameSeeker;
     
     bool initialized(){return initialized_;}
+    
+    Viewer* getInternalNode(){return _viewerNode;}
 private:
   
+    Viewer* _viewerNode;// < pointer to the internal node
     bool initialized_;
 };
 

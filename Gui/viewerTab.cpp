@@ -27,7 +27,7 @@
 #include "Gui/comboBox.h"
 
 
-ViewerTab::ViewerTab(QWidget* parent):QWidget(parent),initialized_(false)
+ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(false),_viewerNode(node)
 {
     
     viewer_tabLayout=viewer_tabLayout=new QVBoxLayout(parent);

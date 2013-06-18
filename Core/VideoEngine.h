@@ -37,10 +37,10 @@ public:
     /*Class describing the DAG internally */
     class DAG{
     public:
-        typedef std::vector<Node*>::iterator DAGIterator;
-        typedef std::vector<Node*>::reverse_iterator DAGReverseIterator;
+        typedef std::vector<Node*>::const_iterator DAGIterator;
+        typedef std::vector<Node*>::const_reverse_iterator DAGReverseIterator;
         typedef void (VideoEngine::DAG::*ValidateFunc)(bool);
-        typedef std::vector<InputNode*>::iterator InputsIterator;
+        typedef std::vector<InputNode*>::const_iterator InputsIterator;
         
         DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate){}
         
@@ -53,15 +53,15 @@ public:
         
         /*Accessors to the sorted graph. Must be called
          *after resetAndSort(...) has been called*/
-        DAGIterator begin(){return _sorted.begin();}
-        DAGIterator end(){return _sorted.end();}
-        DAGReverseIterator rbegin(){return _sorted.rbegin();}
-        DAGReverseIterator rend(){return _sorted.rend();}
-        Node* operator[](int index){return _sorted[index];}
-        OutputNode* getOutput(){return _output;}
+        DAGIterator begin() const {return _sorted.begin();}
+        DAGIterator end() const {return _sorted.end();}
+        DAGReverseIterator rbegin() const {return _sorted.rbegin();}
+        DAGReverseIterator rend() const {return _sorted.rend();}
+        Node* operator[](int index) const {return _sorted[index];}
+        OutputNode* getOutput() const {return _output;}
         
         /*Accessors to the inputs of the graph*/
-        std::vector<InputNode*>& getInputs(){return _inputs;}
+        const std::vector<InputNode*>& getInputs()const{return _inputs;}
         
         /*Depending if this is the first time for this DAG or not,
          different versions of validates are called : validate() is called
@@ -72,8 +72,8 @@ public:
         
         /*handy function to get the frame range
          of input nodes in the dag based on node infos*/
-        int firstFrame();
-        int lastFrame();
+        int firstFrame() const ;
+        int lastFrame() const;
         
         /*debug*/
         void debug();
@@ -227,7 +227,9 @@ public:
     
     void resetDAG(){_dag.reset();}
     
-    DAG& getCurrentDAG(){return _dag;}
+    void resetAndMakeNewDag(OutputNode* output);
+    
+    const DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
     void computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer);

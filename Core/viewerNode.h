@@ -31,6 +31,9 @@ public:
 
     virtual ~Viewer();
     
+    /*Add a new viewer tab to the GUI*/
+    void initializeViewerTab();
+    
     /*tell the ViewerGL to use the current viewerInfos*/
     void makeCurrentViewer();
     ViewerInfos* getViewerInfos(){return _viewerInfos;}

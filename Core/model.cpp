@@ -271,10 +271,10 @@ std::string Model::removePrefixSpaces(std::string str){
 
 
 std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output){
-    _videoEngine->getCurrentDAG().resetAndSort(output);
+    _videoEngine->resetAndMakeNewDag(output);
     _videoEngine->changeTreeVersion();
     
-    std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();
+    const std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< inputs.size(); i++) {
@@ -356,6 +356,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
         node->initializeInputs();
         node->setSocketCount();
 		type=initCounterAndGetDescription(node);
+        dynamic_cast<Viewer*>(node)->initializeViewerTab();
 		return type;
 	}else if(name == "Writer"){
         UI_NODE_TYPE type;

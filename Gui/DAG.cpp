@@ -64,7 +64,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node
         n->setSelected(false);
     }
     
-    int yOffset = rand() % 100 + 100;
+    int yOffset = rand() % 50 + 50;
     if(x == INT_MAX)
         x = _lastSelectedPos.x();
     if(type==OUTPUT){
@@ -424,8 +424,8 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
             ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
-            VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
-            vector<InputNode*>& inputs = dag.getInputs();
+            const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+            const vector<InputNode*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); i++) {
                 if (inputs[0]->className() == "Reader") {
