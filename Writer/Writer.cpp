@@ -232,7 +232,7 @@ bool Writer::validInfosForRendering(){
 
 void Writer::startRendering(){
     if(validInfosForRendering()){
-        ctrlPTR->getModel()->setVideoEngineRequirements(this);
+        ctrlPTR->getModel()->setVideoEngineRequirements(this,false);
         ctrlPTR->getModel()->startVideoEngine();
     }
 }

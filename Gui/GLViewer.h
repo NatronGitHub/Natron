@@ -47,6 +47,7 @@ class Lut;
 class InfoViewerWidget;
 class Controler;
 class TextureCache;
+class ViewerTab;
 class ViewerGL : public QGLWidget
 {
 	Q_OBJECT
@@ -79,9 +80,9 @@ private:
 
 public:
 	/*3 different constructors, that all take a different parameter related to OpenGL or Qt widget parenting*/
-	ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-	ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-	ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(ViewerTab* viewerTab,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+	ViewerGL(ViewerTab* viewerTab,const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
+	ViewerGL(ViewerTab* viewerTab,QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
 
 	virtual ~ViewerGL();
 
@@ -335,6 +336,8 @@ private:
 	void initBlackTex();// init the black texture when viewer is disconnected
 	void drawBlackTex(); // draw the black texture
 
+    
+    ViewerTab* _viewerTab;
 
 	TextRenderer _textRenderer;
 

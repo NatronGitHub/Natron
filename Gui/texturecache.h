@@ -61,7 +61,7 @@ public:
     U32 append(TextureCache::TextureKey key);
     
     /*clears out the texture cache*/
-    void clearCache(U32 currentlyDisplayedTex);
+    void clearCache(const std::vector<U32>& currentlyDisplayedTex);
     
     /*Returns the current size of the cache*/
     U64 size(){return _size;}

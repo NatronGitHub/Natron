@@ -25,6 +25,8 @@
 		D75667A91741189A002DCBA8 /* QtGui.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A51741189A002DCBA8 /* QtGui.framework */; };
 		D75667AA1741189A002DCBA8 /* QtWidgets.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667A61741189A002DCBA8 /* QtWidgets.framework */; };
 		D75667AC17411D45002DCBA8 /* QtOpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D75667AB17411D45002DCBA8 /* QtOpenGL.framework */; };
+		D77C6B5C1770F56B0027E056 /* tabwidget.h in Sources */ = {isa = PBXBuildFile; fileRef = D72B89EF1760F7A600E5F53C /* tabwidget.h */; };
+		D77C6B5D1770F56F0027E056 /* viewerTab.h in Sources */ = {isa = PBXBuildFile; fileRef = D7FD9A1D17101E8700D1DCEA /* viewerTab.h */; };
 		D78C15F61737E6510011B5FD /* libftgl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D78C15F51737E6510011B5FD /* libftgl.a */; };
 		D78C1601173862230011B5FD /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C15FF173861FD0011B5FD /* main.cpp */; };
 		D78C1607173862860011B5FD /* controler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D78C1606173862860011B5FD /* controler.cpp */; };
@@ -754,6 +756,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D77C6B5D1770F56F0027E056 /* viewerTab.h in Sources */,
+				D77C6B5C1770F56B0027E056 /* tabwidget.h in Sources */,
 				D79964F1176FC8810000C22C /* interest.h in Sources */,
 				D7A7538A176A6B6E002D5E1B /* Writer.h in Sources */,
 				D78C1607173862860011B5FD /* controler.cpp in Sources */,

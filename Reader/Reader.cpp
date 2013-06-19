@@ -29,6 +29,7 @@
 #include "Core/Box.h"
 #include "Core/displayFormat.h"
 #include "Writer/Writer.h"
+#include "Core/viewerNode.h"
 /*#ifdef __cplusplus
  extern "C" {
  #endif
@@ -118,13 +119,13 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
             const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
             if(_fitFrameToViewer){
                 float h = (float)(dispW.h());
-                zoomFactor = (float)currentViewer->viewer->height()/h -0.05;
-                currentViewer->viewer->fitToFormat(dispW);
+                zoomFactor = (float)currentViewer->getUiContext()->height()/h -0.05;
+                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
             }else{
-                zoomFactor = currentViewer->viewer->getZoomFactor();
+                zoomFactor = currentViewer->getUiContext()->viewer->getZoomFactor();
             }
             
-            slContext->setRows(currentViewer->viewer->computeRowSpan(dispW, zoomFactor));
+            slContext->setRows(currentViewer->getUiContext()->viewer->computeRowSpan(dispW, zoomFactor));
         }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             std::map<int,int> rows;
@@ -220,7 +221,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
     /*allocating pbo*/
     
    
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,currentViewer->viewer->getPBOId(_pboIndex));
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,currentViewer->getUiContext()->viewer->getPBOId(_pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
@@ -228,7 +229,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
     QFuture<void>* future = 0;
     const char* cachedFrame = frame->getMappedFile()->data();
     if(!startNewThread){
-        currentViewer->viewer->fillPBO(cachedFrame, output, dataSize);
+        currentViewer->getUiContext()->viewer->fillPBO(cachedFrame, output, dataSize);
         return _buffer.insert(info->getCurrentFrameName(), 0 , 0, info ,cachedFrame,NULL);
     }else{
         future = new QFuture<void>;
@@ -244,7 +245,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
 }
 
 void Reader::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
-    currentViewer->viewer->fillPBO(cachedFrame, dst, dataSize);
+    currentViewer->getUiContext()->viewer->fillPBO(cachedFrame, dst, dataSize);
 }
 std::vector<Reader::Buffer::DecodedFrameDescriptor>
 Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
@@ -253,7 +254,7 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
     int current_frame;
     Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
     if(!writer)
-        current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+        current_frame = clampToRange(currentViewer->currentFrame());
     else
         current_frame = writer->currentFrame();
     if(useCurrentThread){
@@ -315,7 +316,7 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     else{
         Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
         if(!writer)
-            current_frame = clampToRange(currentViewer->frameSeeker->currentFrame());
+            current_frame = clampToRange(currentViewer->currentFrame());
         else
             current_frame = writer->currentFrame();
     }

@@ -10,14 +10,14 @@
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
 #include "Core/row.h"
-Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0)
+#include "Gui/timeline.h"
+Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0),_uiContext(0)
 {
     
 }
 
 void Viewer::initializeViewerTab(){
-    ctrlPTR->getGui()->addViewerTab(this);
-    _uiContext = currentViewer;
+   _uiContext = ctrlPTR->getGui()->addViewerTab(this);
 }
 
 Viewer::~Viewer(){
@@ -57,5 +57,17 @@ void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
 void Viewer::makeCurrentViewer(){
     _viewerInfos = new ViewerInfos;
     dynamic_cast<Node::Info&>(*_viewerInfos) = dynamic_cast<const Node::Info&>(*_info);
-    currentViewer->viewer->setCurrentViewerInfos(_viewerInfos,false,false);
+    _uiContext->viewer->setCurrentViewerInfos(_viewerInfos,false,false);
+}
+
+int Viewer::firstFrame() const{
+    return _uiContext->frameSeeker->firstFrame();
+}
+
+int Viewer::lastFrame() const{
+    return _uiContext->frameSeeker->lastFrame();
+}
+
+int Viewer::currentFrame() const{
+    return _uiContext->frameSeeker->currentFrame();
 }

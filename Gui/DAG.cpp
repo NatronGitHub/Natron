@@ -269,7 +269,7 @@ bool NodeGraph::event(QEvent* event){
                 QPoint global = mapToGlobal(oldp.toPoint());
                 SmartInputDialog* nodeCreation=new SmartInputDialog(this);
                 nodeCreation->move(global.x(), global.y());
-                QPoint position=ctrlPTR->getGui()->WorkShop->pos();
+                QPoint position=ctrlPTR->getGui()->_workshopPane->pos();
                 position+=QPoint(ctrlPTR->getGui()->width()/2,0);
                 nodeCreation->move(position);
                 setMouseTracking(false);
@@ -329,10 +329,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_fullscreen){
             _fullscreen = true;
-            ctrlPTR->getGui()->viewersTabContainer->hide();
+            ctrlPTR->getGui()->_viewersPane->hide();
         }else{
             _fullscreen = false;
-            ctrlPTR->getGui()->viewersTabContainer->show();
+            ctrlPTR->getGui()->_viewersPane->show();
         }
         
     }else if(e->key() == Qt::Key_Backspace){
@@ -423,7 +423,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
-            ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+            ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
             const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
             const vector<InputNode*>& inputs = dag.getInputs();
             bool start = false;
@@ -465,7 +465,7 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
         if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
             ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
         }else{
-            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()));
+            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
             if(ret.second){
                 ctrlPTR->getModel()->startVideoEngine(1);
             }

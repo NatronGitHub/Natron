@@ -36,6 +36,7 @@ public:
     
     /*tell the ViewerGL to use the current viewerInfos*/
     void makeCurrentViewer();
+    
     ViewerInfos* getViewerInfos(){return _viewerInfos;}
     
     ViewerTab* getUiContext(){return _uiContext;}
@@ -43,7 +44,18 @@ public:
     virtual std::string className(){return "Viewer";}
     
     virtual std::string description();
+    
     void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    
+    /*Convenience functions. They query the values from the timeline.*/
+    int firstFrame() const;
+    
+    int lastFrame() const;
+    
+    int currentFrame() const;
+    
+    
+    
 protected:
 	
 	

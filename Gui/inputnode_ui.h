@@ -11,6 +11,7 @@ class InputNode_ui : public NodeGui
 public:
     InputNode_ui(NodeGraph* dag,QVBoxLayout* dockContainer,
                  Node *node,qreal x, qreal y,QGraphicsItem* parent=0,QGraphicsScene* sc=0);
+    virtual ~InputNode_ui(){}
      bool hasOutput(){return true;}
      QRectF boundingRect() const{return NodeGui::boundingRect();}
      void paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){

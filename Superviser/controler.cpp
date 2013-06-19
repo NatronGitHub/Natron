@@ -11,6 +11,7 @@
 #include "Core/model.h"
 #include "Gui/viewerTab.h"
 #include "Gui/node_ui.h"
+#include "Core/VideoEngine.h"
 
 
 Controler::Controler():_model(0),_gui(0){}
@@ -69,4 +70,14 @@ void Controler::createNode(QString name,double x,double y){
 
 
 
+}
+
+Viewer* Controler::getCurrentViewer(){
+    Controler* ctrl = Controler::instance();
+    return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsViewer();
+}
+
+Writer* Controler::getCurrentWriter(){
+    Controler* ctrl = Controler::instance();
+    return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsWriter();
 }

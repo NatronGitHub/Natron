@@ -25,12 +25,12 @@
 #include "Core/settings.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/comboBox.h"
-
+#include "Core/viewerNode.h"
 
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(false),_viewerNode(node)
 {
     
-    viewer_tabLayout=viewer_tabLayout=new QVBoxLayout(parent);
+    viewer_tabLayout=new QVBoxLayout(this);
     setLayout(viewer_tabLayout);
 	this->setObjectName(QString::fromUtf8("Viewer_tab1"));
     viewer_tabLayout->QLayout::setSpacing(0);
@@ -316,8 +316,67 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     QObject::connect(gainBox, SIGNAL(valueChanged(double)), gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumberBox, SLOT(setValue(int)));
     QObject::connect(frameNumberBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
-         
+    
+    VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
+    
+    QObject::connect(vengine, SIGNAL(fpsChanged(double)), fpsBox, SLOT(setValue(double)));
+    QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
+    QObject::connect(play_Forward_Button,SIGNAL(toggled(bool)),this,SLOT(startPause(bool)));
+    QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abort()));
+    QObject::connect(play_Backward_Button,SIGNAL(toggled(bool)),this,SLOT(startBackward(bool)));
+    QObject::connect(previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()));
+    QObject::connect(nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()));
+    QObject::connect(previousIncrement_Button,SIGNAL(clicked()),this,SLOT(previousIncrement()));
+    QObject::connect(nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
+    QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
+    QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
+    QObject::connect(frameNumberBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
+    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
+    
     initialized_=true;
+}
+
+/*In case they're several viewer around, we need to reset the dag and tell it
+ explicitly we want to use this viewer and not another one.*/
+void ViewerTab::startPause(bool b){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->startPause(b);
+}
+void ViewerTab::abort(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->abort();
+}
+void ViewerTab::startBackward(bool b){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->startBackward(b);
+}
+void ViewerTab::previousFrame(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->previousFrame();
+}
+void ViewerTab::nextFrame(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->nextFrame();
+}
+void ViewerTab::previousIncrement(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->previousIncrement();
+}
+void ViewerTab::nextIncrement(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->nextIncrement();
+}
+void ViewerTab::firstFrame(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->firstFrame();
+}
+void ViewerTab::lastFrame(){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->lastFrame();
+}
+void ViewerTab::seekRandomFrame(int f){
+    ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(f);
 }
 
 ViewerTab::~ViewerTab()

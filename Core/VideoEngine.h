@@ -27,6 +27,8 @@ class Row;
 class ReaderInfo;
 class Reader;
 class Model;
+class Viewer;
+class Writer;
 class Timer;
 
 // Class that handles the core engine for video sequences, that's where all the work is done
@@ -42,11 +44,11 @@ public:
         typedef void (VideoEngine::DAG::*ValidateFunc)(bool);
         typedef std::vector<InputNode*>::const_iterator InputsIterator;
         
-        DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate){}
+        DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate),_isViewer(false){}
         
         /*Clears the structure and sorts the graph
          *represented by the OutputNode out*/
-        void resetAndSort(OutputNode* out);
+        void resetAndSort(OutputNode* out, bool isViewer);
         
         /*Clears the dag.*/
         void reset();
@@ -60,6 +62,13 @@ public:
         Node* operator[](int index) const {return _sorted[index];}
         OutputNode* getOutput() const {return _output;}
         
+        /*Convenience functions. Returns NULL in case
+         the outputNode is not of the requested type.*/
+        Viewer* outputAsViewer() const;
+        Writer* outputAsWriter() const;
+        
+        bool isOutputAViewer() const {return _isViewer;}
+        
         /*Accessors to the inputs of the graph*/
         const std::vector<InputNode*>& getInputs()const{return _inputs;}
         
@@ -71,7 +80,7 @@ public:
         void autoValidate(bool forReal){(*this.*_validate)(forReal);}
         
         /*handy function to get the frame range
-         of input nodes in the dag based on node infos*/
+         of input nodes in the dag based on node infos.*/
         int firstFrame() const ;
         int lastFrame() const;
         
@@ -107,6 +116,8 @@ public:
         ValidateFunc _validate;
         /*true if validate() has already been called for this DAG*/
         bool _hasValidated;
+        
+        bool _isViewer; // true if the outputNode is a viewer, it avoids many dynamic_casts
     };
     
 private:
@@ -176,7 +187,6 @@ private:
         
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
     
-    bool _outputIsViewer;//on if the output is a viewer, off if it is a writer
     
     QFutureWatcher<void>* _engineLoopWatcher;
     QFuture<void>* _enginePostProcessResults;
@@ -221,13 +231,14 @@ signals:
 
 public:
     
-    bool isOutputAViewer(){return _outputIsViewer;}
+    bool isOutputAViewer(){return _dag.isOutputAViewer();}
   
+    /*Do not call this. This is called internally by the DAG GUI*/
     void changeDAGAndStartEngine(OutputNode* output);
     
     void resetDAG(){_dag.reset();}
     
-    void resetAndMakeNewDag(OutputNode* output);
+    void resetAndMakeNewDag(OutputNode* output,bool isViewer);
     
     const DAG& getCurrentDAG(){return _dag;}
     
@@ -253,7 +264,7 @@ public:
      *fitFrameToViewer is true if you want the first frame that will be played to fit to the viewer.
      *forward is true if you want the engine to go forward when cycling through frames. It goes backwards otherwise
      *sameFrame is true if the engine will play the same frame as before. It is exclusively used when zooming.*/
-    void videoEngine(bool outputIsViewer,int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /*used internally by the zoom or the videoEngine, do not call this*/
     void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);

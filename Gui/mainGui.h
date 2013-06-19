@@ -9,7 +9,16 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QMainWindow>
 #include <boost/noncopyable.hpp>
+#include <QtWidgets/QSplitter>
 #define RIGHTDOCK_WIDTH 380
+
+
+class Splitter : public QSplitter{
+    
+public:
+    Splitter(QWidget* parent = 0);
+    virtual ~Splitter(){}
+};
 
 class QAction;
 class TabWidget;
@@ -18,7 +27,7 @@ class QDockWidget;
 class QScrollArea;
 class QWidget;
 class QVBoxLayout;
-class QSplitter;
+//class QSplitter;
 class QHBoxLayout;
 class QFrame;
 class QMenu;
@@ -32,44 +41,46 @@ class NodeGraph;
 class ViewerTab;
 class Node;
 class Viewer;
+class QToolBar;
 class QGraphicsScene;
-class Gui:public QMainWindow,public boost::noncopyable
+
+/*This object encapsulate a nodegraph GUI*/
+class NodeGraphTab{
+public:
+
+    QVBoxLayout *_graphEditorLayout;
+    QGraphicsScene* _graphScene;
+    NodeGraph *_nodeGraphArea;
+    
+    NodeGraphTab(QWidget* parent);
+    virtual ~NodeGraphTab(){}
+};
+
+class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
 public:
     Gui(QWidget* parent=0);
+    
     virtual ~Gui();
-	
-
     
     void createGui();
+    
     void createNodeGUI(Powiter_Enums::UI_NODE_TYPE type,Node *node,double x,double y);
+    
     bool eventFilter(QObject *target, QEvent *event);
 
-    ViewerTab* getCurrentViewerTab(){return _currentViewerTab;}
     
-        
-    void makeCurrentViewerTab(ViewerTab* tab);
+    /*Called internally by the viewer node. It adds
+     a new Viewer tab GUI and returns a pointer to it.*/
+    ViewerTab* addViewerTab(Viewer* node);
     
-    void makeNoCurrentViewerTab();
-    
-    void addViewerTab(Viewer* node);
-    
+    /*Called internally by the viewer node when
+     it gets deleted. This removes the 
+     associated GUI.*/
     void removeViewerTab(ViewerTab* tab);
 
     
-    
-public slots:
-    void makeCurrentViewerTab(int i){
-        if(i < _viewerTabs.size())
-            makeCurrentViewerTab(_viewerTabs[i]);
-    }
-    void removeViewerTab(int i){
-        if(i < _viewerTabs.size())
-            removeViewerTab(_viewerTabs[i]);
-    }
-    
-
     
 protected:
     virtual void keyPressEvent(QKeyEvent* e);
@@ -77,16 +88,14 @@ protected:
 private:
 
     TextureCache* _textureCache;
-
-    ViewerTab* _currentViewerTab;
-    
     void clearTextureCache();
 
 public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
     void clearTexCache(){clearTextureCache();}
-
+    void addNodeGraph();
+    void removeNodeGraph(NodeGraphTab* tab);
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -104,38 +113,43 @@ public:
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
     QAction *actionClearTextureCache;
-    /*CENTRAL ZONE SPLITING*/
-    //======================
-    QWidget *centralwidget;
-    QVBoxLayout *verticalLayout;
-    QFrame *centralFrame;
-    QVBoxLayout *verticalLayout_2;
-    QSplitter *splitter;
     
+    
+    QWidget *_centralWidget;
+    QHBoxLayout* _mainLayout;
+    
+    TabWidget* _toolsPane;
+    
+    TabWidget* _viewersPane;
+    TabWidget* _workshopPane;
+    QSplitter* _viewerWorkshopSplitter;
+    
+    TabWidget* _propertiesPane;
+    QSplitter* _middleRightSplitter;
+
+    QSplitter* _leftRightSplitter;
     
 	/*VIEWERS*/
 	//======================
-    
-    TabWidget *viewersTabContainer;
     std::vector<ViewerTab*> _viewerTabs;
     
-    /*GRAPH*/
+    /*GRAPHS*/
     //======================
-    TabWidget *WorkShop;
-    QWidget *GraphEditor;
-    QVBoxLayout *verticalLayout_3;
-    QGraphicsScene* graph_scene;
-    NodeGraph *nodeGraphArea;
-    QWidget *scrollAreaWidgetContents;
     
-    /*CURVE*/
+    NodeGraphTab* _nodeGraphTab;
+    
+    
+    /*TOOLBAR*/
+    QToolBar* _toolBar;
+    
+    /*PROPERTIES*/
     //======================
-    QWidget *CurveEditor;
+    QScrollArea *_propertiesScrollArea;
+    QWidget *_propertiesContainer;
+    QVBoxLayout *_layoutPropertiesBin;
     
-    /*PROGRESS BAR*/
-    //======================
-    QProgressBar *progressBar;
     
+ 
     /*MENU*/
     //======================
     QMenuBar *menubar;
@@ -145,22 +159,7 @@ public:
     QMenu *menuOptions;
 	QMenu *viewersMenu;
     QMenu *cacheMenu;
-    /*LEFT DOCK*/
-    //======================
-    QDockWidget *ToolDock;
-    QWidget *ToolDockContent;
-    QVBoxLayout *verticalLayout_5;
-    QTreeView *ToolChooser;
-    /*RIGHT DOCK*/
-    //======================
-    QDockWidget* rightDock;
-    QDockWidget *PropertiesDock;
-    QScrollArea *PropertiesDockContent;
-    QWidget *propertiesContainer;
-    QVBoxLayout *layout_settings;
-    /*STATUS BAR*/
-    //======================
-    QStatusBar *statusbar;
+    
     
     void setupUi();
    

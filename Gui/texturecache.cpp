@@ -113,16 +113,25 @@ U32 TextureCache::initializeTexture(){
     return (U32)texID;
 }
 
-void TextureCache::clearCache(U32 currentlyDisplayedTex){
-    TextureKey currentlyDisplayedKey;
+void TextureCache::clearCache(const std::vector<U32>& currentlyDisplayedTex){
+    std::vector<TextureKey> texturesToKeep;
     for(TextureIterator it = _cache.begin(); it!= _cache.end() ; it++){
-        if(it->second == currentlyDisplayedTex){
-            currentlyDisplayedKey = it->first;
-        }else{
+        bool used = false;
+        for (U32 i = 0 ; i < currentlyDisplayedTex.size(); i++) {
+            if (it->second == currentlyDisplayedTex[i]) {
+                used = true;
+                texturesToKeep.push_back(it->first);
+            }
+        }
+        if(!used){
             glDeleteTextures(1, &it->second);
         }
+        
     }
+    
     _cache.clear();
-    append(currentlyDisplayedKey);
+    for (U32 i = 0; i< texturesToKeep.size(); i++) {
+        append(texturesToKeep[i]);
+    }
 }
 

@@ -16,8 +16,8 @@ FeedBackSpinBox::FeedBackSpinBox(QWidget* parent,bool mode):QLineEdit(parent),_m
 //        _validator=new QIntValidator(this);
 //    }
     QObject::connect(this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()));
-    setStyleSheet("selection-color: rgba(255, 255, 255, 0);background-color: rgba(81,81,81,255);"
-                 "color:rgba(200,200,200,255);");
+//    setStyleSheet("selection-color: rgba(255, 255, 255, 0);background-color: rgba(81,81,81,255);"
+//                 "color:rgba(200,200,200,255);");
     setValue(0);
     setMaximumWidth(50);
     setMinimumWidth(35);

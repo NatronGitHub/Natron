@@ -21,6 +21,7 @@
 #include "Gui/mainGui.h"
 #include "Writer/Writer.h"
 #include "Core/VideoEngine.h"
+#include "Core/viewerNode.h"
 
 ostream& operator<< (ostream &out, Node &node){
     out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
@@ -401,7 +402,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
         int current_frame;
         Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
         if(!writer)
-            current_frame = reader->clampToRange(currentViewer->frameSeeker->currentFrame());
+            current_frame = reader->clampToRange(currentViewer->currentFrame());
         else
             current_frame = writer->currentFrame();
         filename = reader->getRandomFrameName(current_frame);

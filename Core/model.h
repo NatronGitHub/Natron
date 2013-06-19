@@ -129,7 +129,7 @@ public:
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
 
 	/*Set the output of the graph used by the videoEngine.*/
-    std::pair<int,bool> setVideoEngineRequirements(OutputNode* output);
+    std::pair<int,bool> setVideoEngineRequirements(OutputNode* output,bool isViewer);
 
 
     VideoEngine* getVideoEngine(){return _videoEngine;}

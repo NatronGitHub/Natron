@@ -24,7 +24,7 @@
 #include <QtCore/QFile>
 #include "Core/row.h"
 #include "Core/displayFormat.h"
-
+#include "Core/viewerNode.h"
 using namespace std;
 
 #define gl_viewer currentViewer->viewer
@@ -205,16 +205,17 @@ FrameEntry* ViewerCache::add(U64 key,
         delete out;
         return NULL;
     }
-    currentViewer->frameSeeker->addCachedFrame(currentViewer->frameSeeker->currentFrame());
+    currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
     if(AbstractDiskCache::add(key, out)){
-        currentViewer->frameSeeker->removeCachedFrame();
+        currentViewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
 
     return out;
 }
 
 void ViewerCache::clearInMemoryPortion(){
-    currentViewer->frameSeeker->clearCachedFrames();
+    if(currentViewer)
+        currentViewer->getUiContext()->frameSeeker->clearCachedFrames();
     clearInMemoryCache();
 }
 

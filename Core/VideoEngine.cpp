@@ -39,9 +39,6 @@
 
 #include <ImfThreading.h>
 
-
-#define gl_viewer currentViewer->viewer
-
 /* Here's a drawing that represents how the video Engine works:
  
  [thread pool]                       [OtherThread]
@@ -71,7 +68,7 @@
  
  */
 
-void VideoEngine::videoEngine(bool outputIsViewer,int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
+void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
     if (_working || !_enginePostProcessResults->isFinished()) {
         return;
     }
@@ -81,13 +78,12 @@ void VideoEngine::videoEngine(bool outputIsViewer,int frameCount,bool fitFrameTo
     _forward = forward;
     _paused = false;
     _aborted = false;
-    _outputIsViewer = outputIsViewer;
     computeFrameRequest(sameFrame,forward,fitFrameToViewer,false);
 }
 void VideoEngine::stopEngine(){
-    if(_outputIsViewer){
-        currentViewer->play_Forward_Button->setChecked(false);
-        currentViewer->play_Backward_Button->setChecked(false);
+    if(_dag.isOutputAViewer()){
+        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
     }
     _frameRequestsCount = 0;
     _working = false;
@@ -100,7 +96,7 @@ void VideoEngine::stopEngine(){
     
 }
 void VideoEngine::resetReadingBuffers(){
-    if(_outputIsViewer){
+    if(_dag.isOutputAViewer()){
         GLint boundBuffer;
         glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &boundBuffer);
         if(boundBuffer != 0){
@@ -123,11 +119,11 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     _sameFrame = sameFrame;
     int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
     TimeSlider* frameSeeker = 0;
-    if(_outputIsViewer){
-        frameSeeker = currentViewer->frameSeeker;
+    if(_dag.isOutputAViewer()){
+        frameSeeker = currentViewer->getUiContext()->frameSeeker;
     }
     Writer* writer = static_cast<Writer*>(_dag.getOutput());
-    if (!_outputIsViewer) {
+    if (!_dag.isOutputAViewer()) {
 #ifdef PW_DEBUG
         assert(writer);
 #endif
@@ -160,19 +156,19 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         runTasks();
         stopEngine();
         return;
-    }else if(_outputIsViewer &&  recursiveCall && _dag.lastFrame() == _dag.firstFrame() && _frameRequestsCount == -1 && _frameRequestIndex == 1){
+    }else if(_dag.isOutputAViewer() &&  recursiveCall && _dag.lastFrame() == _dag.firstFrame() && _frameRequestsCount == -1 && _frameRequestIndex == 1){
         /*1 frame is the sequence and we already compute it*/
         stopEngine();
         runTasks();
         stopEngine();
         return;
-    }else if(!_outputIsViewer && currentFrame == lastFrame+1){
+    }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
         /*stoping the engine for writers*/
         stopEngine();
         return;
     }
     
-    if(_outputIsViewer){
+    if(_dag.isOutputAViewer()){
         /*Determine what is the current frame when output is a viewer*/
         /*!recursiveCall means this is the first time it's called for the sequence.*/
         if(!recursiveCall){
@@ -199,7 +195,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
             lastFrame = _dag.lastFrame();
             firstFrame = _dag.firstFrame();
             if(_forward){
-                currentFrame = currentViewer->frameSeeker->currentFrame()+1;
+                currentFrame = currentViewer->currentFrame()+1;
                 if(currentFrame > lastFrame){
                     if(_loopMode)
                         currentFrame = firstFrame;
@@ -209,9 +205,9 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
                     }
                 }
             }else{
-                currentFrame = currentFrame = currentViewer->frameSeeker->currentFrame()-1;
+                currentFrame = currentFrame = currentViewer->currentFrame()-1;
                 if(currentFrame < firstFrame){
-                    if(_loopMode && _outputIsViewer)
+                    if(_loopMode)
                         currentFrame = lastFrame;
                     else{
                         _frameRequestsCount = 0;
@@ -264,13 +260,13 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
 }
 void VideoEngine::finishComputeFrameRequest(){
     _sequenceToWork.clear();
-    if(_outputIsViewer){
-        *_enginePostProcessResults = QtConcurrent::run(gl_viewer,
+    if(_dag.isOutputAViewer()){
+        *_enginePostProcessResults = QtConcurrent::run(currentViewer->getUiContext()->viewer,
                                                        &ViewerGL::fillPBO,_gpuTransferInfo.src,_gpuTransferInfo.dst,_gpuTransferInfo.byteCount);
         _engineLoopWatcher->setFuture(*_enginePostProcessResults);
 
     }else{
-        static_cast<Writer*>(_dag.getOutput())->startWriting();
+        _dag.outputAsWriter()->startWriting();
         engineLoop();
     }
 }
@@ -279,6 +275,7 @@ void VideoEngine::cachedFrameEngine(FrameEntry* frame){
     int w = frame->_actualW ;
     int h = frame->_actualH ;
     /*resizing texture if needed, the calls must be made in that order*/
+    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
     gl_viewer->initTextureBGRA(w,h,gl_viewer->getDefaultTextureID());
     gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
     gl_viewer->drawing(true);
@@ -295,9 +292,9 @@ void VideoEngine::engineLoop(){
     
     _frameRequestIndex++;
     
-    if(_outputIsViewer){
-        std::pair<int,int> texSize = gl_viewer->getTextureSize();
-        gl_viewer->copyPBOtoTexture(texSize.first, texSize.second); // fill texture, returns instantly
+    if(_dag.isOutputAViewer()){
+        std::pair<int,int> texSize =  currentViewer->getUiContext()->viewer->getTextureSize();
+        currentViewer->getUiContext()->viewer->copyPBOtoTexture(texSize.first, texSize.second); // fill texture, returns instantly
     }
     if(_frameRequestsCount!=0 && !_paused){
         std::vector<Reader*> readers;
@@ -312,7 +309,7 @@ void VideoEngine::engineLoop(){
         }
         startReading(readers , false , true);
     }
-    if(_outputIsViewer){
+    if(_dag.isOutputAViewer()){
         _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
         if((_frameRequestIndex%24)==0){
             emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
@@ -326,11 +323,12 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer){
-    if(_outputIsViewer && fitFrameToViewer && currentViewer){
+    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
+    if(_dag.isOutputAViewer() && fitFrameToViewer){
         gl_viewer->fitToFormat(gl_viewer->displayWindow());
     }
     ChannelSet toRequest;
-    if(_outputIsViewer) toRequest = gl_viewer->displayChannels();
+    if(_dag.isOutputAViewer()) toRequest = gl_viewer->displayChannels();
     else{// channels requested are those requested by the user
         toRequest = static_cast<Writer*>(_dag.getOutput())->getRequestedChannels();
     }
@@ -344,7 +342,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     //outChannels are the intersection between what the viewer requests and the ones available in the viewer node
     // in case of a writer, it's just the output channels
     ChannelSet outChannels;
-    if(_outputIsViewer)
+    if(_dag.isOutputAViewer())
         outChannels  = output->getRequestedChannels() & output->getInfo()->channels();
     else
         outChannels = toRequest;
@@ -352,7 +350,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     std::map<int,int> rows;
     map<int,int>::iterator it;
     int w=0,h=0;
-    if(_outputIsViewer){
+    if(_dag.isOutputAViewer()){
         float zoomFactor = gl_viewer->getZoomFactor();
         rows = gl_viewer->computeRowSpan(_dispW, zoomFactor);
         it = rows.begin();
@@ -417,7 +415,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
         _sequenceToWork.push_back(row);
         counter++;
     }
-    if(_outputIsViewer){
+    if(_dag.isOutputAViewer()){
         size_t dataSize = 0;
         if(gl_viewer->byteMode() == 1 || !gl_viewer->hasHardware()){
             dataSize =  w*h*sizeof(U32);
@@ -444,15 +442,16 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
         bool useOtherThreadOnNextLoop = false;
         for(U32 i = 0;i < readers.size(); i++){
             Reader* reader = readers[i];
-            Writer* writer = dynamic_cast<Writer*>(_dag.getOutput());
+            Writer* writer = _dag.outputAsWriter();
             std::string currentFrameName ;
-            if(_outputIsViewer)
-                currentFrameName = reader->getRandomFrameName(currentViewer->frameSeeker->currentFrame());
+            if(_dag.isOutputAViewer())
+                currentFrameName = reader->getRandomFrameName(currentViewer->currentFrame());
             else
                 currentFrameName = reader->getRandomFrameName(writer->currentFrame());
             std::vector<Reader::Buffer::DecodedFrameDescriptor> ret;
             FrameEntry* iscached = 0;
-            if(_outputIsViewer){
+            if(_dag.isOutputAViewer()){
+                ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
                 iscached =_coreEngine->getViewerCache()->get(currentFrameName,
                                                              _treeVersion.getHashValue(),
                                                              gl_viewer->getZoomFactor(),
@@ -488,8 +487,8 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
     }else{
         if(!useOtherThread) return frames;
         int cur ;
-        if(_outputIsViewer)
-            cur = currentViewer->frameSeeker->currentFrame();
+        if(_dag.isOutputAViewer())
+            cur = currentViewer->currentFrame();
         else{
             Writer* writer = dynamic_cast<Writer*>(_dag.getOutput());
             cur = writer->currentFrame();
@@ -504,7 +503,8 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
         
         std::string followingFrameName = reader->getRandomFrameName(followingFrame);
         FrameEntry* iscached = 0;
-        if(_outputIsViewer){
+        if(_dag.isOutputAViewer()){
+            ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
             iscached =_coreEngine->getViewerCache()->get(followingFrameName,
                                                          _treeVersion.getHashValue(),
                                                          gl_viewer->getZoomFactor(),
@@ -553,6 +553,7 @@ void VideoEngine::updateProgressBar(){
     //update progress bar
 }
 void VideoEngine::updateDisplay(){
+    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
     int width = gl_viewer->width();
     int height = gl_viewer->height();
     float ap = gl_viewer->displayWindow().pixel_aspect();
@@ -623,21 +624,18 @@ void VideoEngine::pause(){
     
 }
 void VideoEngine::startPause(bool c){
-    if(currentViewer->play_Backward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         abort();
         return;
     }
     
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
     
     if(c && _dag.getOutput()){
-        videoEngine(true,-1,false,true);
+        videoEngine(-1,false,true);
     }
     else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        currentViewer->play_Forward_Button->setChecked(false);
-        currentViewer->play_Backward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
         
     }else{
         pause();
@@ -645,92 +643,73 @@ void VideoEngine::startPause(bool c){
 }
 void VideoEngine::startBackward(bool c){
     
-    if(currentViewer->play_Forward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()){
         pause();
         return;
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    
-    if(c && _dag.getOutput()){
-        videoEngine(true,-1,false,false);
+       if(c && _dag.getOutput()){
+        videoEngine(-1,false,false);
     }
     else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        currentViewer->play_Forward_Button->setChecked(false);
-        currentViewer->play_Backward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
         
     }else{
         pause();
     }
 }
 void VideoEngine::previousFrame(){
-    if( currentViewer->play_Forward_Button->isChecked()
-       || currentViewer->play_Backward_Button->isChecked()){
+    if( currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    if(!_working)
-        _startEngine(currentViewer->frameSeeker->currentFrame()-1, 1, false,false);
+        if(!_working)
+        _startEngine(currentViewer->currentFrame()-1, 1, false,false);
     //    else
     //        appendTask(gl_viewer->getCurrentReaderInfo()->currentFrame()-1, 1, false,&VideoEngine::_previousFrame);
 }
 
 void VideoEngine::nextFrame(){
-    if(currentViewer->play_Forward_Button->isChecked()
-       || currentViewer->play_Backward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
+   
     if(!_working)
-        _startEngine(currentViewer->frameSeeker->currentFrame()+1, 1, false,true);
+        _startEngine(currentViewer->currentFrame()+1, 1, false,true);
     //    else
     //        appendTask(gl_viewer->getCurrentReaderInfo()->currentFrame()+1, 1, false,&VideoEngine::_nextFrame);
 }
 
 void VideoEngine::firstFrame(){
-    if( currentViewer->play_Forward_Button->isChecked()
-       || currentViewer->play_Backward_Button->isChecked()){
+    if( currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    TimeSlider* frameSeeker = currentViewer->frameSeeker;
+   
     if(!_working)
-        _startEngine(frameSeeker->firstFrame(), 1, false,false);
+        _startEngine(currentViewer->firstFrame(), 1, false,false);
     //    else
     //        appendTask(frameSeeker->firstFrame(), 1, false, &VideoEngine::_firstFrame);
 }
 
 void VideoEngine::lastFrame(){
-    if(currentViewer->play_Forward_Button->isChecked()
-       ||  currentViewer->play_Backward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    TimeSlider* frameSeeker = currentViewer->frameSeeker;
     if(!_working)
-        _startEngine(frameSeeker->lastFrame(), 1, false,true);
+        _startEngine(currentViewer->lastFrame(), 1, false,true);
     //    else
     //        appendTask(frameSeeker->lastFrame(), 1, false, &VideoEngine::_lastFrame);
 }
 
 void VideoEngine::previousIncrement(){
-    if(currentViewer->play_Forward_Button->isChecked()
-       ||  currentViewer->play_Backward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    int frame = currentViewer->frameSeeker->currentFrame()- currentViewer->incrementSpinBox->value();
+    int frame = currentViewer->currentFrame()- currentViewer->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,false);
     //    else{
@@ -741,14 +720,11 @@ void VideoEngine::previousIncrement(){
 }
 
 void VideoEngine::nextIncrement(){
-    if(currentViewer->play_Forward_Button->isChecked()
-       ||  currentViewer->play_Backward_Button->isChecked()){
+    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
+       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
         pause();
     }
-    /*The user might have done some writing before, we rebuild the internal dag
-     just in case.*/
-    resetAndMakeNewDag(currentViewer->getInternalNode());
-    int frame = currentViewer->frameSeeker->currentFrame()+currentViewer->incrementSpinBox->value();
+    int frame = currentViewer->currentFrame()+currentViewer->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,true);
     //    else
@@ -774,9 +750,9 @@ void VideoEngine::seekRandomFrame(int f){
 void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
     pause();
     if(!_working)
-        _changeDAGAndStartEngine(currentViewer->frameSeeker->currentFrame(), -1, false,true,output);
+        _changeDAGAndStartEngine(currentViewer->currentFrame(), -1, false,true,output);
     else
-        appendTask(currentViewer->frameSeeker->currentFrame(), -1, false,true, output, &VideoEngine::_changeDAGAndStartEngine);
+        appendTask(currentViewer->currentFrame(), -1, false,true, output, &VideoEngine::_changeDAGAndStartEngine);
 }
 
 void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,OutputNode* output, VengineFunction func){
@@ -795,17 +771,16 @@ void VideoEngine::runTasks(){
 
 void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
-        TimeSlider* frameSeeker = currentViewer->frameSeeker;
-        if(frameNB < frameSeeker->firstFrame() || frameNB > frameSeeker->lastFrame())
+        if(frameNB < currentViewer->firstFrame() || frameNB > currentViewer->lastFrame())
             return;
-        frameSeeker->seek(frameNB);
-        videoEngine(true,frameCount,initViewer,forward);
+        currentViewer->getUiContext()->frameSeeker->seek(frameNB);
+        videoEngine(frameCount,initViewer,forward);
         
     }
 }
 
 void VideoEngine::_changeDAGAndStartEngine(int frameNB, int frameCount, bool initViewer,bool forward,OutputNode* output){
-    _dag.resetAndSort(output);
+    _dag.resetAndSort(output,true);
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< _dag.getInputs().size(); i++) {
@@ -820,7 +795,7 @@ void VideoEngine::_changeDAGAndStartEngine(int frameNB, int frameCount, bool ini
     }
     changeTreeVersion();
     if(hasInputDifferentThanReader || hasFrames)
-        videoEngine(true,-1,initViewer,_forward);
+        videoEngine(-1,initViewer,_forward);
 }
 
 void VideoEngine::debugTree(){
@@ -909,8 +884,23 @@ void VideoEngine::DAG::reset(){
     clearGraph();
 }
 
-void VideoEngine::DAG::resetAndSort(OutputNode* out){
+Viewer* VideoEngine::DAG::outputAsViewer() const {
+    if(_output && _isViewer)
+        return dynamic_cast<Viewer*>(_output);
+    else
+        return NULL;
+}
+
+Writer* VideoEngine::DAG::outputAsWriter() const {
+    if(_output && !_isViewer)
+        return dynamic_cast<Writer*>(_output);
+    else
+        return NULL;
+}
+
+void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
     _output = out;
+    _isViewer = isViewer;
     _validate = &VideoEngine::DAG::validate;
     _hasValidated = false;
     clearGraph();
@@ -977,6 +967,6 @@ void VideoEngine::debugRowSequence(){
     img.save(name.c_str());
 }
 
-void VideoEngine::resetAndMakeNewDag(OutputNode* output){
-    _dag.resetAndSort(output);
+void VideoEngine::resetAndMakeNewDag(OutputNode* output,bool isViewer){
+    _dag.resetAndSort(output,isViewer);
 }

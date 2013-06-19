@@ -86,7 +86,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	if(node->className() != string("Viewer")){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
-		settings=new SettingsPanel(this);
+		settings=new SettingsPanel(this,dockContainer->widget());
         
 		dockContainer->addWidget(settings);
 	}
@@ -118,8 +118,10 @@ NodeGui::~NodeGui(){
         _dag->checkIfViewerConnectedAndRefresh(c);
     }
     delete node;
-    if(settings)
-        delete settings;
+//    if(settings){
+//        delete settings;
+//        settings = 0;
+//    }
     foreach(Edge* a,inputs) delete a;
 }
 

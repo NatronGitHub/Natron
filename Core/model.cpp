@@ -270,8 +270,8 @@ std::string Model::removePrefixSpaces(std::string str){
 
 
 
-std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output){
-    _videoEngine->resetAndMakeNewDag(output);
+std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output,bool isViewer){
+    _videoEngine->resetAndMakeNewDag(output,isViewer);
     _videoEngine->changeTreeVersion();
     
     const std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();

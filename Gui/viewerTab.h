@@ -31,6 +31,12 @@ class TextureCache;
 class Viewer;
 class ViewerTab: public QWidget 
 {
+    Q_OBJECT
+    
+    
+    Viewer* _viewerNode;// < pointer to the internal node
+    bool initialized_;
+    
 public:
 	ViewerTab(Viewer* node,QWidget* parent=0);
 	virtual ~ViewerTab();
@@ -79,17 +85,27 @@ public:
 	QSpacerItem* spacerOnRight;
     QLabel* fpsName;
     FeedBackSpinBox* fpsBox;
-
+    
 	/*frame seeker*/
 	TimeSlider* frameSeeker;
     
     bool initialized(){return initialized_;}
     
     Viewer* getInternalNode(){return _viewerNode;}
-private:
-  
-    Viewer* _viewerNode;// < pointer to the internal node
-    bool initialized_;
+    
+public slots:
+    
+    void startPause(bool);
+    void abort();
+    void startBackward(bool);
+    void previousFrame();
+    void nextFrame();
+    void previousIncrement();
+    void nextIncrement();
+    void firstFrame();
+    void lastFrame();
+    void seekRandomFrame(int);
+    void seekRandomFrame(double value){seekRandomFrame((int)value);}
 };
 
 #endif // __VIEWER_TAB_H_

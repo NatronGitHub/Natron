@@ -14,9 +14,14 @@ using namespace Powiter_Enums;
 /*macro to get a pointer to the controler*/
 #define ctrlPTR Controler::instance()
 
-#define currentViewer ctrlPTR->getGui()->getCurrentViewerTab()
+#define currentViewer Controler::getCurrentViewer()
+
+#define currentWriter Controler::getCurrentWriter()
+
 class NodeGui;
 class Model;
+class Viewer;
+class Writer;
 class Gui;
 class QLabel;
 
@@ -53,6 +58,17 @@ public:
     /*initialize the pointers to the model and the view. It also call 
      gui->createGUI() and build a viewer node.*/
     void initControler(Model* model,QLabel* loadingScreen);
+    
+    /*Returns a pointer to the Viewer currently used
+     by the VideoEngine. If the output is not a viewer,
+     it will return NULL.*/
+    static Viewer* getCurrentViewer();
+    
+    /*Returns a pointer to the Writer currently used
+     by the VideoEngine. If the output is not a writer,
+     it will return NULL.*/
+    static Writer* getCurrentWriter();
+    
 private:
 	 
     

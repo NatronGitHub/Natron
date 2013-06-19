@@ -12,157 +12,141 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
 
-SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent)
+
+SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false)
 {
     
-    this->NodeUi=NodeUi;
-    //setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+    _mainLayout=new QVBoxLayout(this);
+    _mainLayout->setSpacing(0);
+    _mainLayout->setContentsMargins(0, 0, 0, 0);
+    setLayout(_mainLayout);
+    setObjectName((_nodeGUI->getNode()->getName()));
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
     
-    this->setMinimumWidth(MINIMUM_WIDTH);
-    setFrameShape(QFrame::StyledPanel);
-    minimized=false;
-    QGroupBox* box=new QGroupBox(this);
-    box->setObjectName("box");
-    box->setStyleSheet(QString("QGroupBox#box{padding :-15 px;background-color:rgb(50,50,50);}"));
+    setMinimumWidth(MINIMUM_WIDTH);
+    setFrameShape(QFrame::Box);
+    
+    _headerWidget = new QFrame(this);
+    _headerWidget->setFrameShape(QFrame::Box);
+    
+    _headerLayout = new QHBoxLayout(_headerWidget);
+    _headerLayout->setContentsMargins(0, 0, 0, 0);
+    _headerLayout->setSpacing(0);
+    _headerWidget->setLayout(_headerLayout);
     
     
-    QWidget* buttonFont=new QWidget(box);
-    QHBoxLayout* buttonFontLayout=new QHBoxLayout(buttonFont);
     QImage imgM(IMAGES_PATH"minimize.png");
-    
     QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM.scaled(10,10);
+    pixM.scaled(15,15);
     QImage imgC(IMAGES_PATH"close.png");
-    
     QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC.scaled(10,10);
-    minimize=new QPushButton(QIcon(pixM),"");
-    minimize->setFixedSize(20,20);
-    minimize->setCheckable(true);
-    QObject::connect(minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
+    pixC.scaled(15,15);
+    _minimize=new QPushButton(QIcon(pixM),"",_headerWidget);
+    _minimize->setFixedSize(15,15);
+    _minimize->setCheckable(true);
+    QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
+    _cross=new QPushButton(QIcon(pixC),"",_headerWidget);
+    _cross->setFixedSize(15,15);
+    QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
+   
+    
+    _nodeName = new QLineEdit(_headerWidget);
+    _nodeName->setText(_nodeGUI->getNode()->getName());
+    QObject::connect(_nodeName,SIGNAL(textChanged(QString)),_nodeGUI,SLOT(setName(QString)));
+    _headerLayout->addWidget(_nodeName);
+    _headerLayout->insertSpacing(1,40);
+    _headerLayout->addWidget(_minimize);
+    _headerLayout->addWidget(_cross);
+   
+    _mainLayout->addWidget(_headerWidget);
+
+    _tabWidget = new QTabWidget(this);
+    _mainLayout->addWidget(_tabWidget);
     
     
-    cross=new QPushButton(QIcon(pixC),"");
-    cross->setFixedSize(20,20);
-    QObject::connect(cross,SIGNAL(clicked()),this,SLOT(close()));
     
-    QSpacerItem* spacerRight = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    buttonFontLayout->addItem(spacerRight);
-    buttonFontLayout->addWidget(minimize);
-    buttonFontLayout->addWidget(cross);
-    buttonFontLayout->setSpacing(10);
-    buttonFont->setLayout(buttonFontLayout);
+    _settingsTab = new QWidget(_tabWidget);
+    _layoutSettings=new QVBoxLayout(_settingsTab);
+    _settingsTab->setLayout(_layoutSettings);
+    _tabWidget->addTab(_settingsTab,"Settings");
+
     
-    QHBoxLayout* layoutBox=new QHBoxLayout(box);
-    nodeName = new QLineEdit(box);
-    nodeName->setStyleSheet("color:rgb(200,200,200);");
-    nodeName->setText(NodeUi->getNode()->getName());
-    // QLabel* nodeName=new QLabel((NodeUi->getNode()->getName()));
-    QObject::connect(nodeName,SIGNAL(textChanged(QString)),NodeUi,SLOT(setName(QString)));
-    
-    layoutBox->addWidget(nodeName);
-    layoutBox->addWidget(buttonFont);
-    layoutBox->setSpacing(0);
-    box->setLayout(layoutBox);
+    _labelWidget=new QWidget(_tabWidget);
+    _layoutLabel=new QVBoxLayout(_labelWidget);
+    _labelWidget->setLayout(_layoutLabel);
+    _tabWidget->addTab(_labelWidget,"Label");
     
     
-    layout=new QVBoxLayout(this);
-    layout_labels=new QVBoxLayout();
-    layout_settings=new QVBoxLayout();
-    layout_settings->setContentsMargins(0, 0, 0, 0);
-    tab=new QTabWidget(this);
-    
-    settings=new QWidget(tab);
-    settings->setLayout(layout_settings);
-    labels=new QWidget(tab);
-    labels->setLayout(layout_labels);
-    tab->addTab(settings,"Settings");
-    tab->addTab(labels,"Label");
-    this->setObjectName((NodeUi->getNode()->getName()));
     initialize_knobs();
-    layout->addWidget(box);
-    layout->addWidget(tab);
-    layout->setSpacing(0);
-    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setVisible(true);
     
 }
-SettingsPanel::~SettingsPanel(){delete cb;}
+SettingsPanel::~SettingsPanel(){delete _cb;}
 
 void SettingsPanel::initialize_knobs(){
     
-    cb=new Knob_Callback(this,NodeUi->getNode());
-    NodeUi->getNode()->initKnobs(cb);
-    std::vector<Knob*> knobs=NodeUi->getNode()->getKnobs();
+    _cb=new Knob_Callback(this,_nodeGUI->getNode());
+    _nodeGUI->getNode()->initKnobs(_cb);
+    std::vector<Knob*> knobs=_nodeGUI->getNode()->getKnobs();
     foreach(Knob* k,knobs){
-        layout_settings->addWidget(k);
+        _layoutSettings->addWidget(k);
     }
     
 }
 void SettingsPanel::addKnobDynamically(Knob* knob){
-	layout_settings->addWidget(knob);
+	_layoutSettings->addWidget(knob);
 }
 void SettingsPanel::removeAndDeleteKnob(Knob* knob){
-    layout_settings->removeWidget(knob);
+    _layoutSettings->removeWidget(knob);
     delete knob;
 }
 void SettingsPanel::close(){
     
-    NodeUi->setSettingsPanelEnabled(false);
-    QWidget* pr=NodeUi->getSettingsLayout()->parentWidget();
-    pr->setMinimumSize(NodeUi->getSettingsLayout()->sizeHint());
+    _nodeGUI->setSettingsPanelEnabled(false);
+    QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+    pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
     setVisible(false);
-    //delete this;
     
 }
 void SettingsPanel::minimizeOrMaximize(bool toggled){
-    minimized=toggled;
-    if(minimized){
+    _minimized=toggled;
+    if(_minimized){
         
         QImage imgM(IMAGES_PATH"maximize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
-        pixM.scaled(10,10);
-        minimize->setIcon(QIcon(pixM));
-        tab->setVisible(false);
+        pixM.scaled(15,15);
+        _minimize->setIcon(QIcon(pixM));
+        _tabWidget->setVisible(false);
         
         
-        QWidget* pr=NodeUi->getSettingsLayout()->parentWidget();
-        pr->setMinimumSize(NodeUi->getSettingsLayout()->sizeHint());
+        QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+        pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
         
         
     }else{
         QImage imgM(IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
-        pixM.scaled(10,10);
-        minimize->setIcon(QIcon(pixM));
-        tab->setVisible(true);
+        pixM.scaled(15,15);
+        _minimize->setIcon(QIcon(pixM));
+        _tabWidget->setVisible(true);
         
-        QWidget* pr=NodeUi->getSettingsLayout()->parentWidget();
-        pr->setMinimumSize(NodeUi->getSettingsLayout()->sizeHint());
+        QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+        pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
         
         
     }
 }
 
 void SettingsPanel::paintEvent(QPaintEvent * event){
-    if(NodeUi->isSelected()){
-        QPoint topLeft = this->pos(); topLeft.setX(topLeft.x()); topLeft.setY(topLeft.y());
-        QPoint topRight = topLeft; topRight.setX(topRight.x() + width()-1);
-        QPoint btmLeft = QPoint(topLeft.x(),topLeft.y()+this->height()-1);
-        QPoint btmRight = QPoint(btmLeft.x() + width() ,btmLeft.y());
-        QPainterPath path;
-        path.moveTo(topLeft);
-        path.lineTo(topRight);
-        path.lineTo(btmRight);
-        path.lineTo(btmLeft);
-        path.lineTo(topLeft);
-        
-        
-        QPainter p(this);
-        QColor selColor(255,255,0);
-        QPen pen(selColor,2,Qt::SolidLine);
-        p.setPen(pen);
-        p.drawPath(path);
+    if(_nodeGUI->isSelected()){
+        QPalette* palette = new QPalette();
+        palette->setColor(QPalette::Foreground,Qt::yellow);
+        setPalette(*palette);
+    }else{
+        QPalette* palette = new QPalette();
+        palette->setColor(QPalette::Foreground,Qt::black);
+        setPalette(*palette);
     }
     QFrame::paintEvent(event);
 }
