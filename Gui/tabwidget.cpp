@@ -12,8 +12,7 @@
 #include <QtGui/QIcon>
 TabWidget::TabWidget(QWidget* parent):QWidget(parent),_currentWidget(0){
     
-    setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding,
-                              QSizePolicy::TabWidget));
+//    setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding,QSizePolicy::TabWidget));
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     _mainLayout->setSpacing(0);
@@ -37,12 +36,14 @@ TabWidget::TabWidget(QWidget* parent):QWidget(parent),_currentWidget(0){
     _leftCornerButton = new QPushButton(_header);
     _leftCornerButton->setFixedSize(15,15);
     _headerLayout->addWidget(_leftCornerButton);
+    _headerLayout->addSpacing(10);
     
     _tabBar = new QTabBar(_header);
     _tabBar->setShape(QTabBar::RoundedNorth);
     _tabBar->setDrawBase(false);
     QObject::connect(_tabBar, SIGNAL(currentChanged(int)), this, SLOT(makeCurrentTab(int)));
     _headerLayout->addWidget(_tabBar);
+    _headerLayout->addStretch();
     
     _floatButton = new QPushButton(QIcon(pixM),"",_header);
     _floatButton->setFixedSize(15,15);

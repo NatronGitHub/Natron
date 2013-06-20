@@ -316,7 +316,7 @@ void Int_Knob::setValues(){
 }
 
 //================================================================
-FileQLineEdit::FileQLineEdit(File_Knob *knob):QLineEdit(knob){
+FileQLineEdit::FileQLineEdit(File_Knob *knob):LineEdit(knob){
     this->knob=knob;
 }
 void FileQLineEdit::keyPressEvent(QKeyEvent *e){
@@ -382,7 +382,6 @@ void File_Knob::updateLastOpened(QString str){
 File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flags):Knob(cb),str(0)
 {
     
-    setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
     QLabel* desc=new QLabel(description.c_str());
     _lastOpened =QString(ROOT);
     _name=new FileQLineEdit(this);
@@ -432,11 +431,13 @@ void Bool_Knob::setValues(){
 
 Bool_Knob::Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
 	
-	checkbox=new QCheckBox(description.c_str(),this);
-    checkbox->setStyleSheet("color:rgb(200,200,200) ;");
+    QLabel* _label = new QLabel(description.c_str(),this);
+	checkbox=new QCheckBox(this);
 	checkbox->setChecked(false);
 	QObject::connect(checkbox,SIGNAL(stateChanged(int)),this,SLOT(change_checkBox(int)));
+    layout->addWidget(_label);
 	layout->addWidget(checkbox);
+    layout->addStretch();
 }
 //================================================================
 
@@ -493,8 +494,8 @@ Knob* Button_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mas
 }
 Button_Knob::Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),button(0){
     button = new QPushButton(QString(description.c_str()),this);
-    button->setStyleSheet("color:rgb(200,200,200) ;");
     layout->addWidget(button);
+    layout->addStretch();
 }
 void Button_Knob::connectButtonToSlot(QObject* object,const char* slot){
     QObject::connect(button, SIGNAL(pressed()), object, slot);
@@ -510,7 +511,6 @@ Knob* OutputFile_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob
 }
 
 OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),str(0){
-    setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
     QLabel* desc=new QLabel(description.c_str());
     _name=new OutputFileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
@@ -554,7 +554,7 @@ void OutputFile_Knob::open_file(){
     }
 }
 
-OutputFileQLineEdit::OutputFileQLineEdit(OutputFile_Knob* knob):QLineEdit(knob){
+OutputFileQLineEdit::OutputFileQLineEdit(OutputFile_Knob* knob):LineEdit(knob){
     this->knob = knob;
 }
 
@@ -580,7 +580,6 @@ Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_M
 ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),_currentItem(0){
     _comboBox = new ComboBox(this);
     _comboBox->addItem("/");
-    setStyleSheet("color:rgb(200,200,200) ;QLineEdit{color:rgb(200,200,200);}");
     QLabel* desc = new QLabel(description.c_str());
     QObject::connect(_comboBox, SIGNAL(activated(QString)), this, SLOT(setCurrentItem(QString)));
     layout->addWidget(desc);
@@ -626,5 +625,7 @@ Separator_Knob::Separator_Knob(Knob_Callback *cb,std::string& description,Knob_M
     line = new QFrame(this);
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
+    line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(line);
+    
 }

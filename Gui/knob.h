@@ -18,6 +18,7 @@
 #include "Core/singleton.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/comboBox.h"
+#include "Gui/lineEdit.h"
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
  the GUI stuff. If you want say an int_knob for your operator, then just call Knob::int_knob(...) in the function initKnobs(..)
@@ -152,7 +153,7 @@ private:
     QString _lastOpened;
 };
 //the following class is necessary for the File_Knob Class
-class FileQLineEdit:public QLineEdit{
+class FileQLineEdit:public LineEdit{
     
 public:
     FileQLineEdit(File_Knob* knob);
@@ -186,7 +187,7 @@ private:
     OutputFileQLineEdit* _name;
 };
 
-class OutputFileQLineEdit:public QLineEdit{
+class OutputFileQLineEdit:public LineEdit{
 public:
     OutputFileQLineEdit(OutputFile_Knob* knob);
     void keyPressEvent(QKeyEvent *);

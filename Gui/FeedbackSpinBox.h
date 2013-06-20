@@ -10,8 +10,8 @@
 #include <iostream>
 #include <QtWidgets/qlineedit.h>
 #include <QtGui/qevent.h>
-
-class FeedBackSpinBox : public QLineEdit
+#include "Gui/lineEdit.h"
+class FeedBackSpinBox : public LineEdit
 {
     Q_OBJECT
     

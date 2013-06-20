@@ -36,7 +36,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     viewer_tabLayout->QLayout::setSpacing(0);
 	/*VIEWER SETTINGS*/
 	viewerSettings=new QGroupBox(this);
-    viewerSettings->setStyleSheet("QPushButton{background-color:rgb(71,71,71);}QPushButton{icon-size: 20px 25px;}");
     QHBoxLayout* viewerSettingsLayout = new QHBoxLayout(viewerSettings);
     viewerSettingsLayout->setSpacing(0);
     viewerSettingsLayout->setContentsMargins(0, 0, 0, 0);
@@ -75,7 +74,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
 	layoutFirst->addWidget(dimensionChoosal);
     //
     zoomName=new QLabel("zoom:",viewerSettings);
-    zoomName->setStyleSheet("color:rgb(200,200,200);");
 	layoutFirst->addWidget(zoomName);
     //
     zoomSpinbox=new FeedBackSpinBox(viewerSettings);
@@ -152,7 +150,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     /*=============================================*/
 	/*timeLine buttons*/
 	timeButtons=new QGroupBox(this);
-    timeButtons->setStyleSheet("QPushButton{background-color:rgb(71,71,71);}QPushButton{icon-size: 16px 20px;}");
 	timeButtons->setObjectName(QString::fromUtf8("timeButtons"));
 	timeButtonsLayout=new QHBoxLayout(timeButtons);
 	timeButtonsLayout->setObjectName(QString::fromUtf8("timeButtonsLayout"));

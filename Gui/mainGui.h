@@ -9,16 +9,8 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QMainWindow>
 #include <boost/noncopyable.hpp>
-#include <QtWidgets/QSplitter>
-#define RIGHTDOCK_WIDTH 380
 
 
-class Splitter : public QSplitter{
-    
-public:
-    Splitter(QWidget* parent = 0);
-    virtual ~Splitter(){}
-};
 
 class QAction;
 class TabWidget;
@@ -27,7 +19,7 @@ class QDockWidget;
 class QScrollArea;
 class QWidget;
 class QVBoxLayout;
-//class QSplitter;
+class QSplitter;
 class QHBoxLayout;
 class QFrame;
 class QMenu;

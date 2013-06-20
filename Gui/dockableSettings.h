@@ -9,7 +9,7 @@
 
 #include <QtWidgets/QFrame>
 
-class QLineEdit;
+class LineEdit;
 class Node;
 class Knob;
 class NodeGui;
@@ -43,7 +43,7 @@ class SettingsPanel:public QFrame
     /*Header related*/
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
-    QLineEdit* _nodeName;
+    LineEdit* _nodeName;
     QPushButton* _minimize;
     QPushButton* _cross;
     

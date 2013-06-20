@@ -9,6 +9,7 @@
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
 #include "Gui/knob.h"
+#include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
 
@@ -51,11 +52,11 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
    
     
-    _nodeName = new QLineEdit(_headerWidget);
+    _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName());
     QObject::connect(_nodeName,SIGNAL(textChanged(QString)),_nodeGUI,SLOT(setName(QString)));
     _headerLayout->addWidget(_nodeName);
-    _headerLayout->insertSpacing(1,40);
+    _headerLayout->addStretch();
     _headerLayout->addWidget(_minimize);
     _headerLayout->addWidget(_cross);
    

@@ -157,10 +157,21 @@ void Gui::setupUi()
 	QRect screen=desktop->screenGeometry(-1);
 	resize(screen.width(),screen.height());
 	setDockNestingEnabled(false);
-	setStyleSheet("QPushButton{background-color:rgba(71,71,71,255);}"
+	setStyleSheet("QWidget{background-color:rgba(50,50,50,255); }"
+                  "QPushButton{background-color:rgba(71,71,71,255);color:rgba(200,200,200,255);}"
                   "QMainWindow{background-color:rgba(50,50,50,255);}"
-                  "QGraphicsView{background-color:rgba(71,71,71,255);}"
-                  "QWidget{background-color:rgba(50,50,50,255);}"
+                  "QCheckBox::indicator:unchecked {"
+                  "image: url(Images/checkbox.png);"
+                  "}"
+                  "QCheckBox::indicator:checked {"
+                  "image: url(Images/checkbox_checked.png);"
+                  "}"
+                  "QCheckBox::indicator:checked:hover {"
+                  "image: url(Images/checkbox_checked_hovered.png);"
+                  "}"
+                  "QCheckBox::indicator:unchecked:hover {"
+                  "image: url(Images/checkbox_hovered.png);"
+                  "}"
                   "QGraphicsView{background-color:rgba(71,71,71,255);}"
                   "QScrollArea{background-color:rgba(50,50,50,255);}"
                   "QGroupBox{color:rgba(200,200,200,255);background-color:rgba(50,50,50,255);border:0px;}"
@@ -172,11 +183,16 @@ void Gui::setupUi()
                   "background:rgba(71,71,71,255);color:rgb(200,200,200);"
                   "}"
                   "QDockWidget::title{background:rgb(71,71,71);}QDockWidget{color:rgb(200,200,200);}"
-                  "QTabBar::tab{background:rgb(71,71,71);}QTabBar{color:rgb(200,200,200);}"
-                  "QTabBar::tab:selected{background:rgb(31,31,31);}"
                   "QTabWidget::pane{border:0px;}"
-                  "QLineEdit{border:0px}"
-                  "QLineEdit{selection-color: rgba(255, 255, 255, 0);color:rgba(200,200,200,255);}"
+                  "QLabel{color: rgba(200,200,200,255);}"
+                  "QLineEdit{border:1px solid; border-radius:1; padding:1px; background-color : rgba(71,71,71,255);}"
+                  "QLineEdit{color:rgba(200,200,200,255);}"
+                  "QLineEdit:focus {"
+                      "selection-color: rgb(243, 149, 0);"
+                  "border: 2px groove rgb(243, 149, 0);"
+                   "   border-radius: 4px;"
+                  "padding: 2px 4px;"
+                  "}"
                   "QSplitter::handle:horizontal{background-color:"
                   "qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(71, 71, 71, 255), stop:0.55 rgba(50, 50, 50, 255), "
                   "stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));"
@@ -188,7 +204,46 @@ void Gui::setupUi()
                   "QSplitter::handle::horizontal{"
                   "width: 3px;}"
                   "QSplitter::handle::vertical{"
-                  "height: 3px;}");
+                  "height: 3px;}"
+                  "QTabBar::tab {"
+                  "color:rgba(200,200,200,255);"
+                  "background: rgb(39,39,39);"
+                  "border: 1px solid ;"
+                  "    border-bottom-color: rgb(50,50,50);"
+                  "    min-width: 8ex;"
+                  "padding: 0px;"
+                  "    border-top-right-radius: 5px;"
+                  "    border-top-left-radius: 5px;"
+                  "}"
+                  "QTabBar::tab:hover {"
+                  "background: rgb(243,149,0);"
+                  "}"
+                  "QTabBar::tab:selected {"
+                  "background: rgb(50,50,50);"
+                  "    border-bottom-style:none;"
+                  "}"
+                  "QTabBar::tab:!selected {"
+                  "    margin-top: 3px; /* make non-selected tabs look smaller */"
+                  "}"
+                  "/* make use of negative margins for overlapping tabs */"
+                  "QTabBar::tab:selected {"
+                  "    /* expand/overlap to the left and right by 4px */"
+                  "    margin-left: -3px;"
+                  "    margin-right: -3px;"
+                  "}"
+                  "QTabBar::tab:first:selected {"
+                  "    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */"
+                  "}"
+                  "QTabBar::tab:last:selected {"
+                  "    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */"
+                  "}"
+                  "QTabBar::tab:only-one {"
+                  "margin: 0; /* if there is only one tab, we don't want overlapping margins */"
+                  "}"
+                  "QTabWidget::tab-bar {"
+                  "alignment: left;"
+                  "}"
+                  );
 	/*TOOL BAR ACTIONS*/
 	//======================
 	actionNew_project = new QAction(this);
@@ -404,8 +459,4 @@ NodeGraphTab::NodeGraphTab(QWidget* parent){
 
 }
 
-Splitter::Splitter(QWidget* parent) : QSplitter(parent){
-    
-    
-}
 
