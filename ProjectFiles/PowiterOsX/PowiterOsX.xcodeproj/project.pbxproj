@@ -16,6 +16,7 @@
 		D7300009176D90FC0097FD33 /* writeExr.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7300007176D90FC0097FD33 /* writeExr.cpp */; };
 		D730000A176D90FC0097FD33 /* writeExr.h in Headers */ = {isa = PBXBuildFile; fileRef = D7300008176D90FC0097FD33 /* writeExr.h */; };
 		D74C17A91773186900FC64E7 /* lineEdit.h in Headers */ = {isa = PBXBuildFile; fileRef = D74C17A81773186900FC64E7 /* lineEdit.h */; };
+		D74C17AB17731A5E00FC64E7 /* button.h in Headers */ = {isa = PBXBuildFile; fileRef = D74C17AA17731A5E00FC64E7 /* button.h */; };
 		D74DF1571769D035002513D7 /* Writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74DF1551769D034002513D7 /* Writer.cpp */; };
 		D74DF1581769D035002513D7 /* Writer.h in Headers */ = {isa = PBXBuildFile; fileRef = D74DF1561769D034002513D7 /* Writer.h */; };
 		D74DF15C1769D3A6002513D7 /* Write.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D74DF15A1769D3A6002513D7 /* Write.cpp */; };
@@ -216,6 +217,7 @@
 		D7300007176D90FC0097FD33 /* writeExr.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = writeExr.cpp; path = ../../Writer/writeExr.cpp; sourceTree = "<group>"; };
 		D7300008176D90FC0097FD33 /* writeExr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = writeExr.h; path = ../../Writer/writeExr.h; sourceTree = "<group>"; };
 		D74C17A81773186900FC64E7 /* lineEdit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = lineEdit.h; sourceTree = "<group>"; };
+		D74C17AA17731A5E00FC64E7 /* button.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = button.h; sourceTree = "<group>"; };
 		D74DF1551769D034002513D7 /* Writer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Writer.cpp; path = ../../Writer/Writer.cpp; sourceTree = "<group>"; };
 		D74DF1561769D034002513D7 /* Writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Writer.h; path = ../../Writer/Writer.h; sourceTree = "<group>"; };
 		D74DF15A1769D3A6002513D7 /* Write.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Write.cpp; path = ../../Writer/Write.cpp; sourceTree = "<group>"; };
@@ -530,6 +532,7 @@
 			children = (
 				D7FD99EE17101E8700D1DCEA /* arrowGUI.cpp */,
 				D7FD99EF17101E8700D1DCEA /* arrowGUI.h */,
+				D74C17AA17731A5E00FC64E7 /* button.h */,
 				D7F9DE2A172D518A00D8640C /* comboBox.h */,
 				D7FD99F017101E8700D1DCEA /* DAG.cpp */,
 				D7FD99F117101E8700D1DCEA /* DAG.h */,
@@ -686,6 +689,7 @@
 				D730000A176D90FC0097FD33 /* writeExr.h in Headers */,
 				D79964F0176FBB450000C22C /* interest.h in Headers */,
 				D74C17A91773186900FC64E7 /* lineEdit.h in Headers */,
+				D74C17AB17731A5E00FC64E7 /* button.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

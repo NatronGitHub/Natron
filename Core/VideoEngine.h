@@ -231,7 +231,9 @@ signals:
 
 public:
     
-    bool isOutputAViewer(){return _dag.isOutputAViewer();}
+    bool isOutputAViewer() const {return _dag.isOutputAViewer();}
+    
+    bool dagHasInputs() const {return !_dag.getInputs().empty();}
   
     /*Do not call this. This is called internally by the DAG GUI*/
     void changeDAGAndStartEngine(OutputNode* output);

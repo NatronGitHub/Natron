@@ -21,6 +21,7 @@
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
 #include <QtCore/QString>
+#include "Gui/Button.h"
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;
@@ -387,7 +388,7 @@ File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flag
     _name=new FileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
 	
-    QPushButton* openFile=new QPushButton(_name);
+    QPushButton* openFile=new Button(_name);
     QImage img(IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
@@ -493,7 +494,7 @@ Knob* Button_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mas
     return knob;
 }
 Button_Knob::Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),button(0){
-    button = new QPushButton(QString(description.c_str()),this);
+    button = new Button(QString(description.c_str()),this);
     layout->addWidget(button);
     layout->addStretch();
 }
@@ -515,7 +516,7 @@ OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob
     _name=new OutputFileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
 	
-    QPushButton* openFile=new QPushButton(_name);
+    QPushButton* openFile=new Button(_name);
     QImage img(IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
@@ -584,6 +585,7 @@ ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mas
     QObject::connect(_comboBox, SIGNAL(activated(QString)), this, SLOT(setCurrentItem(QString)));
     layout->addWidget(desc);
     layout->addWidget(_comboBox);
+    layout->addStretch();
 }
 void ComboBox_Knob::populate(std::vector<std::string>& entries){
     for (U32 i = 0; i < entries.size(); i++) {

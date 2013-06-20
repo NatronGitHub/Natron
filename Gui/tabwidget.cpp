@@ -10,6 +10,7 @@
 #include <QtGui/QImage>
 #include <QtGui/QPixmap>
 #include <QtGui/QIcon>
+#include "Gui/Button.h"
 TabWidget::TabWidget(QWidget* parent):QWidget(parent),_currentWidget(0){
     
 //    setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding,QSizePolicy::TabWidget));
@@ -33,7 +34,7 @@ TabWidget::TabWidget(QWidget* parent):QWidget(parent),_currentWidget(0){
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(15,15);
     
-    _leftCornerButton = new QPushButton(_header);
+    _leftCornerButton = new Button(_header);
     _leftCornerButton->setFixedSize(15,15);
     _headerLayout->addWidget(_leftCornerButton);
     _headerLayout->addSpacing(10);
@@ -45,11 +46,11 @@ TabWidget::TabWidget(QWidget* parent):QWidget(parent),_currentWidget(0){
     _headerLayout->addWidget(_tabBar);
     _headerLayout->addStretch();
     
-    _floatButton = new QPushButton(QIcon(pixM),"",_header);
+    _floatButton = new Button(QIcon(pixM),"",_header);
     _floatButton->setFixedSize(15,15);
     _headerLayout->addWidget(_floatButton);
     
-    _closeButton = new QPushButton(QIcon(pixC),"",_header);
+    _closeButton = new Button(QIcon(pixC),"",_header);
     _closeButton->setFixedSize(15,15);
     _headerLayout->addWidget(_closeButton);
     

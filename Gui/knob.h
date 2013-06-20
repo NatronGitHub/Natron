@@ -282,7 +282,7 @@ private:
 	QCheckBox* checkbox;
 };
 //================================
-class QPushButton;
+class Button;
 class Button_Knob : public Knob
 {
     Q_OBJECT
@@ -298,7 +298,7 @@ public:
     
     
 private:
-    QPushButton* button;
+    Button* button;
 };
 
 //================================

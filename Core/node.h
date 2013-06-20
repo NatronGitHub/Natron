@@ -208,6 +208,16 @@ protected:
 	void setOutputChannels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
 	// and _info.channels()
 
+    /*By default does nothing. It takes in input the channels requested to this node.
+     If this node needs to request more channels to the input "inputNb" to actually
+     produce the requested channels, just add to the mask the channels you need. 
+     E.g: if you're requested RGB, but to produce RGB you also need Z from input(0)
+     just do this in this function:
+     
+     if(inputNb == 0)
+        mask += Channel_Z;
+     
+     */
 	virtual void in_channels(int inputNb,ChannelMask &mask){}
 	virtual void _validate(bool forReal);
     virtual void _request(ChannelMask channels);

@@ -7,7 +7,7 @@
 //  contact: immarespond at gmail dot com
 #include <QtCore/QMutex>
 #include <QtCore/qcoreapplication.h>
-#include <QtWidgets/QPushButton>
+#include "Gui/Button.h"
 #include <QtGui/QVector2D>
 #include <QtWidgets/QAction>
 #include <QtCore/QThread>
@@ -618,6 +618,8 @@ void VideoEngine::setDesiredFPS(double d){
 
 void VideoEngine::abort(){
     _aborted=true;
+    currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
+    currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
 }
 void VideoEngine::pause(){
     _paused=true;

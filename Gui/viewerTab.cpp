@@ -12,7 +12,6 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QPushButton>
 #include <QtWidgets/QAbstractItemView>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
@@ -26,7 +25,7 @@
 #include "Gui/ScaleSlider.h"
 #include "Gui/comboBox.h"
 #include "Core/viewerNode.h"
-
+#include "Gui/Button.h"
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(false),_viewerNode(node)
 {
     
@@ -97,7 +96,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter_Enums::LOG_SCALE,5,viewerSettings);
     layoutSecond->addWidget(gainSlider);
     //
-	refreshButton = new QPushButton(viewerSettings);
+	refreshButton = new Button(viewerSettings);
 	refreshButton->setObjectName(QString::fromUtf8("refreshButtons"));
     layoutSecond->addWidget(refreshButton);
     //
@@ -164,48 +163,48 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
 	spacerOnLeft=new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 	timeButtonsLayout->addItem(spacerOnLeft);
     
-	firstFrame_Button = new QPushButton(timeButtons);
+	firstFrame_Button = new Button(timeButtons);
 	firstFrame_Button->setObjectName(QString::fromUtf8("firstFrame_Button"));
 	timeButtonsLayout->addWidget(firstFrame_Button);
     //
-    previousKeyFrame_Button=new QPushButton(timeButtons);
+    previousKeyFrame_Button=new Button(timeButtons);
     previousKeyFrame_Button->setObjectName(QString::fromUtf8("previousKeyFrame_Button"));
     timeButtonsLayout->addWidget(previousKeyFrame_Button);
     //
-    play_Backward_Button=new QPushButton(timeButtons);
+    play_Backward_Button=new Button(timeButtons);
     play_Backward_Button->setObjectName(QString::fromUtf8("play_Backward_Button"));
     play_Backward_Button->setCheckable(true);
     timeButtonsLayout->addWidget(play_Backward_Button);
     //
-	previousFrame_Button = new QPushButton(timeButtons);
+	previousFrame_Button = new Button(timeButtons);
 	previousFrame_Button->setObjectName(QString::fromUtf8("previousFrame_Button"));
 	timeButtonsLayout->addWidget(previousFrame_Button);
     //
-    stop_Button = new QPushButton(timeButtons);
+    stop_Button = new Button(timeButtons);
 	stop_Button->setObjectName(QString::fromUtf8("stop_Button"));
 	timeButtonsLayout->addWidget(stop_Button);
     //
-    nextFrame_Button = new QPushButton(timeButtons);
+    nextFrame_Button = new Button(timeButtons);
 	nextFrame_Button->setObjectName(QString::fromUtf8("nextFrame_Button"));
 	timeButtonsLayout->addWidget(nextFrame_Button);
     //
-	play_Forward_Button = new QPushButton(timeButtons);
+	play_Forward_Button = new Button(timeButtons);
 	play_Forward_Button->setObjectName(QString::fromUtf8("play_Forward_Button"));
     play_Forward_Button->setCheckable(true);
 	timeButtonsLayout->addWidget(play_Forward_Button);
 	//
-    nextKeyFrame_Button = new QPushButton(timeButtons);
+    nextKeyFrame_Button = new Button(timeButtons);
 	nextKeyFrame_Button->setObjectName(QString::fromUtf8("nextKeyFrame_Button"));
 	timeButtonsLayout->addWidget(nextKeyFrame_Button);
     //
-	lastFrame_Button = new QPushButton(timeButtons);
+	lastFrame_Button = new Button(timeButtons);
 	lastFrame_Button->setObjectName(QString::fromUtf8("lastFrame_Button"));
 	timeButtonsLayout->addWidget(lastFrame_Button);
     //
 	spacerOnRight=new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 	timeButtonsLayout->addItem(spacerOnRight);
     //
-    previousIncrement_Button = new QPushButton(timeButtons);
+    previousIncrement_Button = new Button(timeButtons);
 	previousIncrement_Button->setObjectName(QString::fromUtf8("previousIncrement_Button"));
 	timeButtonsLayout->addWidget(previousIncrement_Button);
     //
@@ -214,7 +213,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     incrementSpinBox->setValue(10);
     timeButtonsLayout->addWidget(incrementSpinBox);
     //
-    nextIncrement_Button = new QPushButton(timeButtons);
+    nextIncrement_Button = new Button(timeButtons);
 	nextIncrement_Button->setObjectName(QString::fromUtf8("nextIncrement_Button"));
 	timeButtonsLayout->addWidget(nextIncrement_Button);
     //
@@ -263,7 +262,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     QPixmap pixNextIncr=QPixmap::fromImage(imgNextINCR);
     QPixmap pixRefresh = QPixmap::fromImage(imgRefresh);
     
-    int iW=20,iH=10;
+    int iW=20,iH=20;
     pixFirst.scaled(iW,iH);
     pixPrevKF.scaled(iW,iH);
     pixRewind.scaled(iW,iH);
@@ -289,6 +288,20 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     previousIncrement_Button->setIcon(QIcon(pixPrevIncr));
     nextIncrement_Button->setIcon(QIcon(pixNextIncr));
     refreshButton->setIcon(QIcon(pixRefresh));
+    
+    firstFrame_Button->setFixedSize(iW, iH);
+    previousKeyFrame_Button->setFixedSize(iW, iH);
+    play_Backward_Button->setFixedSize(iW, iH);
+    previousFrame_Button->setFixedSize(iW, iH);
+    stop_Button->setFixedSize(iW, iH);
+    nextFrame_Button->setFixedSize(iW, iH);
+    play_Forward_Button->setFixedSize(iW, iH);
+    nextKeyFrame_Button->setFixedSize(iW, iH);
+    lastFrame_Button->setFixedSize(iW, iH);
+    previousIncrement_Button->setFixedSize(iW, iH);
+    nextIncrement_Button->setFixedSize(iW, iH);
+    refreshButton->setFixedSize(iW, iH);
+    
 	/*=================================================*/
     
 	/*frame seeker*/
@@ -337,7 +350,10 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->startPause(b);
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->startPause(b);
+    else
+        play_Forward_Button->setChecked(false);
 }
 void ViewerTab::abort(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
@@ -345,35 +361,45 @@ void ViewerTab::abort(){
 }
 void ViewerTab::startBackward(bool b){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->startBackward(b);
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->startBackward(b);
+    else
+        play_Backward_Button->setChecked(false);
 }
 void ViewerTab::previousFrame(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->previousFrame();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->previousFrame();
 }
 void ViewerTab::nextFrame(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->nextFrame();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->nextFrame();
 }
 void ViewerTab::previousIncrement(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->previousIncrement();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->previousIncrement();
 }
 void ViewerTab::nextIncrement(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->nextIncrement();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->nextIncrement();
 }
 void ViewerTab::firstFrame(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->firstFrame();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->firstFrame();
 }
 void ViewerTab::lastFrame(){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->lastFrame();
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->lastFrame();
 }
 void ViewerTab::seekRandomFrame(int f){
     ctrlPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(f);
+    if(ctrlPTR->getModel()->getVideoEngine()->dagHasInputs())
+        ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(f);
 }
 
 ViewerTab::~ViewerTab()

@@ -15,7 +15,7 @@ class QTabBar;
 class QHBoxLayout;
 class QPushButton;
 class QVBoxLayout;
-
+class Button;
 
 class TabWidget : public QWidget {
     
@@ -30,9 +30,9 @@ class TabWidget : public QWidget {
     
     QHBoxLayout* _headerLayout;
     QTabBar* _tabBar; // the header containing clickable pages
-    QPushButton* _leftCornerButton;
-    QPushButton* _floatButton;
-    QPushButton* _closeButton;
+    Button* _leftCornerButton;
+    Button* _floatButton;
+    Button* _closeButton;
     
     QWidget* _currentWidget;
     

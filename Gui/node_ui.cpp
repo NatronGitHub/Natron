@@ -83,7 +83,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     initInputArrows();
     
     /*building settings panel*/
-	if(node->className() != string("Viewer")){
+	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
 		settings=new SettingsPanel(this,dockContainer->widget());
@@ -91,14 +91,10 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 		dockContainer->addWidget(settings);
 	}
     
-    
-    
     // needed for the layout to work correctly
     QWidget* pr=dockContainer->parentWidget();
     pr->setMinimumSize(dockContainer->sizeHint());
-    
-    //  scene->addItem(this);
-    
+        
 }
 
 NodeGui::~NodeGui(){
@@ -290,8 +286,11 @@ Edge* NodeGui::firstAvailableEdge(){
 void NodeGui::setSelected(bool b){
     _selected = b;
     update();
-    if(settings)
+    if(settings){
+        dockContainer->removeWidget(settings);
+        dockContainer->insertWidget(0, settings);
         settings->update();
+    }
 }
 
 Edge* NodeGui::findConnectedEdge(NodeGui* parent){

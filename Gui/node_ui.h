@@ -88,10 +88,10 @@ public:
 	void substractParent(NodeGui* p);
     
     /*Returns a ref to the vector of the parents of this nodes.*/
-    std::vector<NodeGui*>& getParents(){return parents;}
+    const std::vector<NodeGui*>& getParents(){return parents;}
     
     /*Returns a ref to the vector of children of this node.*/
-    std::vector<NodeGui*>& getChildren(){return children;}
+    const std::vector<NodeGui*>& getChildren(){return children;}
     
     /*Returns a pointer to the settings panel of this node.*/
     SettingsPanel* getSettingPanel(){return settings;}

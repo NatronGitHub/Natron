@@ -16,8 +16,9 @@ class NodeGui;
 class Knob_Callback;
 class QVBoxLayout;
 class QTabWidget;
-class QPushButton;
+class Button;
 class QHBoxLayout;
+
 #define MINIMUM_WIDTH 340
 
 /*Represent 1 node settings panel in the right dock.
@@ -34,6 +35,7 @@ class SettingsPanel:public QFrame
 {
     Q_OBJECT
     
+    
     /*Pointer to the node GUI*/
     NodeGui* _nodeGUI;
     
@@ -44,8 +46,8 @@ class SettingsPanel:public QFrame
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
     LineEdit* _nodeName;
-    QPushButton* _minimize;
-    QPushButton* _cross;
+    Button* _minimize;
+    Button* _cross;
     
     /*Tab related*/
     QTabWidget* _tabWidget;

@@ -12,7 +12,7 @@
  a tab , and several ViewerTab should run in parallel seemlessly.*/
 
 
-class QPushButton;
+class Button;
 class QVBoxLayout;
 class QSlider;
 class ComboBox;
@@ -50,7 +50,7 @@ public:
     QWidget* firstRow,*secondRow;
     QHBoxLayout* layoutFirst,*layoutSecond;
     QVBoxLayout* layoutContainer_layout;
-	QPushButton* refreshButton;
+	Button* refreshButton;
 	ComboBox* viewerLayers;
 	ComboBox* viewerChannels;
 	ComboBox* dimensionChoosal;
@@ -70,18 +70,18 @@ public:
 	QHBoxLayout* timeButtonsLayout;
 	FeedBackSpinBox* frameNumberBox;
 	QSpacerItem* spacerOnLeft;
-	QPushButton* firstFrame_Button;
-    QPushButton* previousKeyFrame_Button;
-    QPushButton* play_Backward_Button;
-	QPushButton* previousFrame_Button;
-    QPushButton* stop_Button;
-    QPushButton* nextFrame_Button;
-	QPushButton* play_Forward_Button;
-    QPushButton* nextKeyFrame_Button;
-	QPushButton* lastFrame_Button;
-    QPushButton* previousIncrement_Button;
+	Button* firstFrame_Button;
+    Button* previousKeyFrame_Button;
+    Button* play_Backward_Button;
+	Button* previousFrame_Button;
+    Button* stop_Button;
+    Button* nextFrame_Button;
+	Button* play_Forward_Button;
+    Button* nextKeyFrame_Button;
+	Button* lastFrame_Button;
+    Button* previousIncrement_Button;
     FeedBackSpinBox* incrementSpinBox;
-    QPushButton* nextIncrement_Button;
+    Button* nextIncrement_Button;
 	QSpacerItem* spacerOnRight;
     QLabel* fpsName;
     FeedBackSpinBox* fpsBox;

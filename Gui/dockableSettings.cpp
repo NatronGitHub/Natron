@@ -12,10 +12,9 @@
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
+#include "Gui/Button.h"
 
-
-SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false)
-{
+SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false){
     
     _mainLayout=new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -43,11 +42,11 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QImage imgC(IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC.scaled(15,15);
-    _minimize=new QPushButton(QIcon(pixM),"",_headerWidget);
+    _minimize=new Button(QIcon(pixM),"",_headerWidget);
     _minimize->setFixedSize(15,15);
     _minimize->setCheckable(true);
     QObject::connect(_minimize,SIGNAL(toggled(bool)),this,SLOT(minimizeOrMaximize(bool)));
-    _cross=new QPushButton(QIcon(pixC),"",_headerWidget);
+    _cross=new Button(QIcon(pixC),"",_headerWidget);
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
    
