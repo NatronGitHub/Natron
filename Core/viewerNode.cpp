@@ -16,8 +16,8 @@ Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0),_uiContext(0)
     
 }
 
-void Viewer::initializeViewerTab(){
-   _uiContext = ctrlPTR->getGui()->addViewerTab(this);
+void Viewer::initializeViewerTab(TabWidget* where){
+   _uiContext = ctrlPTR->getGui()->addViewerTab(this,where);
 }
 
 Viewer::~Viewer(){

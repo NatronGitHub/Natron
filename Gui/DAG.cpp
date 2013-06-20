@@ -58,11 +58,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node
     QGraphicsScene* sc=scene();
     NodeGui* node_ui;
     
-    /*remove previously selected node*/
-    for(U32 i = 0 ; i < _nodes.size() ;i++){
-        NodeGui* n = _nodes[i];
-        n->setSelected(false);
-    }
+   
     
     int yOffset = rand() % 50 + 50;
     if(x == INT_MAX)
@@ -86,7 +82,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node
     if(_nodeSelected)
         autoConnect(_nodeSelected, node_ui);
     
-    node_ui->setSelected(true);
+    selectNode(node_ui);
     _nodeSelected = node_ui;
     _lastSelectedPos = QPoint(x,y);
     
@@ -103,11 +99,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
         if(n->contains(evpt)){
             
             _nodeSelected=n;
-            /*now remove previously selected node*/
-            for(U32 i = 0 ; i < _nodes.size() ;i++){
-                _nodes[i]->setSelected(false);
-            }
-            n->setSelected(true);
+            selectNode(n);
             _lastSelectedPos = n->pos();
             
             _evtState=NODE_DRAGGING;
@@ -133,17 +125,21 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
         i++;
     }
     if(!found){
-        for(U32 i = 0 ; i < _nodes.size() ;i++){
-            NodeGui* n = _nodes[i];
-            if(n->isSelected()){
-                _lastSelectedPos = n->pos();
-            }
-            n->setSelected(false);
-            _nodeSelected = 0;
-        }
+        deselect();
         _evtState=MOVING_AREA;
     }
 }
+void NodeGraph::deselect(){
+    for(U32 i = 0 ; i < _nodes.size() ;i++){
+        NodeGui* n = _nodes[i];
+        if(n->isSelected()){
+            _lastSelectedPos = n->pos();
+        }
+        n->setSelected(false);
+        _nodeSelected = 0;
+    }
+}
+
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         if(_arrowSelected->hasSource()){
@@ -250,10 +246,12 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
                 n->setSettingsPanelEnabled(true);
                 n->getSettingPanel()->setVisible(true);
                 // needed for the layout to work correctly
-                QWidget* pr=n->getDockContainer()->parentWidget();
-                pr->setMinimumSize(n->getDockContainer()->sizeHint());
+               // QWidget* pr=n->getDockContainer()->parentWidget();
+               // pr->setMinimumSize(n->getDockContainer()->sizeHint());
                 
             }
+            n->putSettingsPanelFirst();
+
             break;
         }
         i++;
@@ -456,6 +454,13 @@ void NodeGraph::removeNode(NodeGui* n){
             break;
         }
     }
+}
+void NodeGraph::selectNode(NodeGui* n){
+    /*now remove previously selected node*/
+    for(U32 i = 0 ; i < _nodes.size() ;i++){
+        _nodes[i]->setSelected(false);
+    }
+    n->setSelected(true);
 }
 
 void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){

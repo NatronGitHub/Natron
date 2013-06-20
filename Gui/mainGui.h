@@ -33,7 +33,7 @@ class NodeGraph;
 class ViewerTab;
 class Node;
 class Viewer;
-class QToolBar;
+class QToolBox;
 class QGraphicsScene;
 
 /*This object encapsulate a nodegraph GUI*/
@@ -65,7 +65,7 @@ public:
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addViewerTab(Viewer* node);
+    ViewerTab* addViewerTab(Viewer* node,TabWidget* where);
     
     /*Called internally by the viewer node when
      it gets deleted. This removes the 
@@ -73,6 +73,11 @@ public:
     void removeViewerTab(ViewerTab* tab);
 
     
+    void setNewViewerAnchor(TabWidget* where){_nextViewerTabPlace = where;}
+    
+    void moveNodeGraph(TabWidget* where);
+    
+    void movePropertiesBin(TabWidget* where);
     
 protected:
     virtual void keyPressEvent(QKeyEvent* e);
@@ -81,13 +86,13 @@ private:
 
     TextureCache* _textureCache;
     void clearTextureCache();
+    void addNodeGraph();
+
 
 public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
     void clearTexCache(){clearTextureCache();}
-    void addNodeGraph();
-    void removeNodeGraph(NodeGraphTab* tab);
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -113,6 +118,12 @@ public:
     TabWidget* _toolsPane;
     
     TabWidget* _viewersPane;
+    
+    // this one is a ptr to others TabWidget.
+    //It tells where to put the viewer when making a new one
+    // If null it places it on default tab widget
+    TabWidget* _nextViewerTabPlace;
+    
     TabWidget* _workshopPane;
     QSplitter* _viewerWorkshopSplitter;
     
@@ -129,13 +140,14 @@ public:
     //======================
     
     NodeGraphTab* _nodeGraphTab;
+    TabWidget* _nodeGraphLocation;// <ptr to the widget holding the node graph
     
-    
-    /*TOOLBAR*/
-    QToolBar* _toolBar;
+    /*TOOLBOX*/
+    QToolBox* _toolBox;
     
     /*PROPERTIES*/
     //======================
+    TabWidget* _propertiesBinLocation;// <ptr to the widget holding the properties
     QScrollArea *_propertiesScrollArea;
     QWidget *_propertiesContainer;
     QVBoxLayout *_layoutPropertiesBin;

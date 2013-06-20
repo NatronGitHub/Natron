@@ -13,6 +13,7 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
 #include "Gui/Button.h"
+#include "Gui/DAG.h"
 
 SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false){
     
@@ -24,7 +25,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     
-    setMinimumWidth(MINIMUM_WIDTH);
     setFrameShape(QFrame::Box);
     
     _headerWidget = new QFrame(this);
@@ -68,6 +68,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _settingsTab = new QWidget(_tabWidget);
     _layoutSettings=new QVBoxLayout(_settingsTab);
+    _layoutSettings->setSpacing(0);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");
 
@@ -79,7 +80,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     
     initialize_knobs();
-    setVisible(true);
     
 }
 SettingsPanel::~SettingsPanel(){delete _cb;}
@@ -88,7 +88,7 @@ void SettingsPanel::initialize_knobs(){
     
     _cb=new Knob_Callback(this,_nodeGUI->getNode());
     _nodeGUI->getNode()->initKnobs(_cb);
-    std::vector<Knob*> knobs=_nodeGUI->getNode()->getKnobs();
+    const std::vector<Knob*>& knobs=_nodeGUI->getNode()->getKnobs();
     foreach(Knob* k,knobs){
         _layoutSettings->addWidget(k);
     }
@@ -104,10 +104,22 @@ void SettingsPanel::removeAndDeleteKnob(Knob* knob){
 void SettingsPanel::close(){
     
     _nodeGUI->setSettingsPanelEnabled(false);
-    QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-    pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
     setVisible(false);
-    
+
+    QVBoxLayout* container = _nodeGUI->getDockContainer();
+    vector<QWidgetItem*> _panels;
+    for(int i =0 ; i < container->count(); i++){
+        if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+            _panels.push_back(myItem);
+            container->removeItem(myItem);
+        }
+    }
+    for (U32 i =0 ; i < _panels.size(); i++) {
+        container->insertItem(0,_panels[i]);
+    }
+ //   QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+  //  pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
+    update();
 }
 void SettingsPanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
@@ -119,11 +131,20 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         _minimize->setIcon(QIcon(pixM));
         _tabWidget->setVisible(false);
         
-        
-        QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-        pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
-        
-        
+        QVBoxLayout* container = _nodeGUI->getDockContainer();
+        vector<QWidgetItem*> _panels;
+        for(int i =0 ; i < container->count(); i++){
+            if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+                _panels.push_back(myItem);
+                container->removeItem(myItem);
+            }
+        }
+        for (U32 i =0 ; i < _panels.size(); i++) {
+            container->insertItem(0,_panels[i]);
+        }
+    
+       // QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+       // pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
     }else{
         QImage imgM(IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
@@ -131,11 +152,22 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         _minimize->setIcon(QIcon(pixM));
         _tabWidget->setVisible(true);
         
-        QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-        pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
-        
+        QVBoxLayout* container = _nodeGUI->getDockContainer();
+        vector<QWidgetItem*> _panels;
+        for(int i =0 ; i < container->count(); i++){
+            if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+                _panels.push_back(myItem);
+                container->removeItem(myItem);
+            }
+        }
+        for (U32 i =0 ; i < _panels.size(); i++) {
+            container->insertItem(0,_panels[i]);
+        }
+     //   QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
+     //   pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
         
     }
+    update();
 }
 
 void SettingsPanel::paintEvent(QPaintEvent * event){
@@ -149,4 +181,9 @@ void SettingsPanel::paintEvent(QPaintEvent * event){
         setPalette(*palette);
     }
     QFrame::paintEvent(event);
+}
+
+void SettingsPanel::mousePressEvent(QMouseEvent* e){
+    _nodeGUI->getDagGui()->selectNode(_nodeGUI);
+    QFrame::mousePressEvent(e);
 }

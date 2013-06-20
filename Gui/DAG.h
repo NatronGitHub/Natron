@@ -11,7 +11,7 @@
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include <QtWidgets/QInputDialog>
-
+#include <boost/noncopyable.hpp>
 #include "Superviser/powiterFn.h"
 using namespace Powiter_Enums;
 class QVBoxLayout;
@@ -22,7 +22,7 @@ class Edge;
 class SmartInputDialog;
 class SettingsPanel;
 
-class NodeGraph: public QGraphicsView{
+class NodeGraph: public QGraphicsView , public boost::noncopyable{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
     Q_OBJECT
 
@@ -49,6 +49,10 @@ public:
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
 
     void checkIfViewerConnectedAndRefresh(NodeGui* n);
+    
+    void selectNode(NodeGui* n);
+    
+    void deselect();
 protected:
 
     void mousePressEvent(QMouseEvent *event);

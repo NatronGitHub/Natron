@@ -10,11 +10,13 @@
 #include <iostream>
 #include <vector>
 #include <QtWidgets/QWidget>
+#include <QtCore/QPoint>
 class QStyle;
 class QTabBar;
 class QHBoxLayout;
 class QPushButton;
 class QVBoxLayout;
+class QMenu;
 class Button;
 
 class TabWidget : public QWidget {
@@ -31,14 +33,16 @@ class TabWidget : public QWidget {
     QHBoxLayout* _headerLayout;
     QTabBar* _tabBar; // the header containing clickable pages
     Button* _leftCornerButton;
+    
     Button* _floatButton;
     Button* _closeButton;
     
     QWidget* _currentWidget;
     
+    bool _decorate;
 public:
     
-    TabWidget(QWidget* parent = 0);
+    TabWidget(bool decorate,QWidget* parent = 0);
     
     virtual ~TabWidget();
     
@@ -68,6 +72,13 @@ public slots:
      index out of range will have no effect.*/
     void makeCurrentTab(int index);
     
+    void createMenu();
+    
+    void addNewViewer();
+    
+    void moveNodeGraphHere();
+    
+    void movePropertiesBinHere();
 };
 
 #endif /* defined(__PowiterOsX__tabwidget__) */

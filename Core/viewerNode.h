@@ -18,7 +18,7 @@ public:
     ViewerInfos():Node::Info(){}
     virtual ~ViewerInfos(){}
 };
-
+class TabWidget;
 class ViewerTab;
 class  Viewer: public OutputNode
 {
@@ -32,7 +32,7 @@ public:
     virtual ~Viewer();
     
     /*Add a new viewer tab to the GUI*/
-    void initializeViewerTab();
+    void initializeViewerTab(TabWidget* where);
     
     /*tell the ViewerGL to use the current viewerInfos*/
     void makeCurrentViewer();

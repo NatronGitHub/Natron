@@ -20,6 +20,7 @@
 #include "Gui/mainGui.h"
 #include "Core/inputnode.h"
 #include "Gui/GLViewer.h"
+#include "Gui/tabwidget.h"
 #include "Core/VideoEngine.h"
 #include "Core/displayFormat.h"
 #include "Core/settings.h"
@@ -356,7 +357,13 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
         node->initializeInputs();
         node->setSocketCount();
 		type=initCounterAndGetDescription(node);
-        dynamic_cast<Viewer*>(node)->initializeViewerTab();
+        TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
+        if(!where){
+            where = ctrlPTR->getGui()->_viewersPane;
+        }else{
+            ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
+        }
+        dynamic_cast<Viewer*>(node)->initializeViewerTab(where);
 		return type;
 	}else if(name == "Writer"){
         UI_NODE_TYPE type;

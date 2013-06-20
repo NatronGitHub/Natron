@@ -19,9 +19,7 @@ class QTabWidget;
 class Button;
 class QHBoxLayout;
 
-#define MINIMUM_WIDTH 340
-
-/*Represent 1 node settings panel in the right dock.
+/*Represents 1 node settings panel in the right dock.
  A panel is structured as following :
  QFrame
     | QFrame with horizontal layout -> header widget (for buttons)
@@ -69,9 +67,16 @@ class SettingsPanel:public QFrame
 public:
 
     SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
+    
     virtual ~SettingsPanel();
+    
 	void addKnobDynamically(Knob* knob);
+    
     void removeAndDeleteKnob(Knob* knob);
+    
+    bool isMinimized() const {return _minimized;}
+    
+    virtual void mousePressEvent(QMouseEvent* e);
     
     virtual void paintEvent(QPaintEvent * event);
 public slots:

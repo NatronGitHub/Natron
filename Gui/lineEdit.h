@@ -16,8 +16,9 @@ public:
     
     virtual void paintEvent(QPaintEvent* e){
         QPalette p = this->palette();
-        p.setColor( QPalette::Highlight, Qt::red );
-        p.setColor( QPalette::HighlightedText, Qt::red );
+        QColor c(200,200,200,255);
+        p.setColor( QPalette::Highlight, c );
+        p.setColor( QPalette::HighlightedText, c );
         this->setPalette( p );
         QLineEdit::paintEvent(e);
     }

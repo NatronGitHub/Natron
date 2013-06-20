@@ -37,6 +37,9 @@ public:
     /*returns a ptr to the internal node*/
     Node* getNode(){return node;}
     
+    /*Returns a pointer to the dag gui*/
+    NodeGraph* getDagGui(){return _dag;}
+    
     /*Must be implemented by class deriving NodeGUI to inform 
      *the dag if they will have an output*/
     virtual bool hasOutput()=0;
@@ -122,6 +125,9 @@ public:
     /*find the edge connecting this as dst and the parent as src.
      Return a valid ptr to the edge if it found it, otherwise returns NULL.*/
     Edge* findConnectedEdge(NodeGui* parent);
+    
+    /*Moves the settings panel on top of the list of panels.*/
+    void putSettingsPanelFirst();
     
 private:
     /*used internally by hasViewerConnected.*/

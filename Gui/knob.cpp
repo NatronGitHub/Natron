@@ -236,6 +236,7 @@ Knob::Knob( Knob_Callback *cb):QWidget()
 {
     this->cb=cb;
     layout=new QHBoxLayout(this);
+    layout->setContentsMargins(0,0,0,0);
     foreach(QWidget* ele,elements){
         layout->addWidget(ele);
     }

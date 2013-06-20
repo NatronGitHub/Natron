@@ -618,8 +618,10 @@ void VideoEngine::setDesiredFPS(double d){
 
 void VideoEngine::abort(){
     _aborted=true;
-    currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
-    currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
+    if(currentViewer){
+        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
+        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
+    }
 }
 void VideoEngine::pause(){
     _paused=true;

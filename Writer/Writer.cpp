@@ -36,7 +36,7 @@ _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSi
 
 Writer::~Writer(){
     if(_writeOptions){
-        _writeOptions->cleanUpKnobs();
+    //    _writeOptions->cleanUpKnobs();
         delete _writeOptions;
     }
     delete _lock;

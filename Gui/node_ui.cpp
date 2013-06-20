@@ -86,14 +86,14 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
-		settings=new SettingsPanel(this,dockContainer->widget());
+		settings=new SettingsPanel(this);
         
 		dockContainer->addWidget(settings);
 	}
     
     // needed for the layout to work correctly
-    QWidget* pr=dockContainer->parentWidget();
-    pr->setMinimumSize(dockContainer->sizeHint());
+  //  QWidget* pr=dockContainer->parentWidget();
+  //  pr->setMinimumSize(dockContainer->sizeHint());
         
 }
 
@@ -282,13 +282,16 @@ Edge* NodeGui::firstAvailableEdge(){
     return NULL;
 }
 
+void NodeGui::putSettingsPanelFirst(){
+    dockContainer->removeWidget(settings);
+    dockContainer->insertWidget(0, settings);
+}
 
 void NodeGui::setSelected(bool b){
     _selected = b;
     update();
     if(settings){
-        dockContainer->removeWidget(settings);
-        dockContainer->insertWidget(0, settings);
+        
         settings->update();
     }
 }

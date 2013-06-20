@@ -47,7 +47,7 @@ _nodeGraphTab(0),
 _propertiesScrollArea(0),
 _propertiesContainer(0),
 _layoutPropertiesBin(0),
-_toolBar(0),
+_toolBox(0),
 menubar(0),
 menuFile(0),
 menuEdit(0),
@@ -55,9 +55,11 @@ menuDisplay(0),
 menuOptions(0),
 viewersMenu(0),
 cacheMenu(0),
-_leftRightSplitter(0)
+_leftRightSplitter(0),
+_nextViewerTabPlace(0),
+_propertiesBinLocation(0),
+_nodeGraphLocation(0)
 {
-    
 }
 Gui::~Gui(){
     
@@ -149,7 +151,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
 	cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
     
-} // retranslateUi
+} 
 void Gui::setupUi()
 {
 	
@@ -243,9 +245,16 @@ void Gui::setupUi()
                   "QTabWidget::tab-bar {"
                   "alignment: left;"
                   "}"
-                  );
-	/*TOOL BAR ACTIONS*/
-	//======================
+                  "QMenu {"
+                      "background-color: rgb(50,50,50); /* sets background of the menu */"
+                  "border: 0px;"
+                  "margin: 0px;"
+                  "color : rgb(200,200,200);"
+                  "}"
+                  "QMenu::item:selected { /* when user selects item using mouse or keyboard */"
+                      "background-color: rgb(243,149,0); ;"
+                  "}");
+	
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
 	actionOpen_project = new QAction(this);
@@ -290,10 +299,9 @@ void Gui::setupUi()
     _mainLayout->setContentsMargins(0, 0, 0, 0);
 	_centralWidget->setLayout(_mainLayout);
     
-    _toolsPane = new TabWidget(_centralWidget);
-    _toolBar = new QToolBar(_toolsPane);
-    _toolBar->setOrientation(Qt::Vertical);
-    _toolsPane->appendTab("Tools", _toolBar);
+    _toolsPane = new TabWidget(false,_centralWidget);
+    _toolBox = new QToolBox(_toolsPane);
+    _toolsPane->appendTab("", _toolBox);
     _toolsPane->setMaximumWidth(50);
     
     _leftRightSplitter = new QSplitter(_centralWidget);
@@ -304,10 +312,14 @@ void Gui::setupUi()
 	_viewerWorkshopSplitter = new QSplitter(_centralWidget);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
 	_viewerWorkshopSplitter->setOrientation(Qt::Vertical);
+    QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
+    QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
+    sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
+    _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
-	_viewersPane = new TabWidget(_viewerWorkshopSplitter);
+	_viewersPane = new TabWidget(true,_viewerWorkshopSplitter);
     _viewersPane->resize(_viewersPane->width(), screen.height()/4);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     
@@ -317,9 +329,10 @@ void Gui::setupUi()
     
 	/*WORKSHOP PANE*/
 	//======================
-	_workshopPane = new TabWidget(_viewerWorkshopSplitter);    
+	_workshopPane = new TabWidget(true,_viewerWorkshopSplitter);
     /*creating DAG gui*/
 	addNodeGraph();
+    _nodeGraphLocation = _workshopPane;
 	
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
 	
@@ -330,7 +343,8 @@ void Gui::setupUi()
     
 	/*PROPERTIES DOCK*/
 	//======================
-	_propertiesPane = new TabWidget(this);
+	_propertiesPane = new TabWidget(true,this);
+    _propertiesBinLocation = _propertiesPane;
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
 	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
@@ -345,8 +359,8 @@ void Gui::setupUi()
     
     _middleRightSplitter->addWidget(_propertiesPane);
     QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
-    QList<int> sizes; sizes << (int)((float)horizontalSplitterSize.width()*4.f/5.f);
-    sizes  << (int)((float)horizontalSplitterSize.width()*1.f/5.f);
+    QList<int> sizes; sizes <<   240;
+    sizes  <<horizontalSplitterSize.width()- 240;
     _middleRightSplitter->setSizes(sizes);
 	
     _leftRightSplitter->addWidget(_middleRightSplitter);
@@ -409,11 +423,11 @@ void Gui::clearTextureCache(){
     _textureCache->clearCache(currentlyUsedTex);
 }
 
-ViewerTab* Gui::addViewerTab(Viewer* node){
+ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
     _viewerTabs.push_back(tab);
     tab->setTextureCache(_textureCache);
-    _viewersPane->appendTab(node->getName(),tab);
+    where->appendTab(node->getName(),tab);
     return tab;
 }
 
@@ -445,8 +459,17 @@ void Gui::addNodeGraph(){
     _nodeGraphTab = tab;
     _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
 }
-void Gui::removeNodeGraph(NodeGraphTab* tab){
-    
+
+void Gui::moveNodeGraph(TabWidget* where){
+    _nodeGraphLocation->removeTab(_nodeGraphTab->_nodeGraphArea);
+    _nodeGraphLocation = where;
+    _nodeGraphLocation->appendTab("Node graph",_nodeGraphTab->_nodeGraphArea);
+}
+
+void Gui::movePropertiesBin(TabWidget* where){
+    _propertiesBinLocation->removeTab(_propertiesScrollArea);
+    _propertiesBinLocation = where;
+    _propertiesBinLocation->appendTab("Properties",_propertiesScrollArea);
 }
 
 NodeGraphTab::NodeGraphTab(QWidget* parent){
