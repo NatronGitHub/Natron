@@ -15,7 +15,7 @@
 #include <QtCore/QFuture>
 #include "Core/row.h"
 class Node;
-/*This class is useful for spatial operators that need several rows, up to the whole image, of input
+/*This class is useful for spatial operators that need several rows, up to the whole image, of an input
  nodes. This object is kind of a generalisation of the node->get() function.
  Note that this object launches new threads to actually get the rows.*/
 class Interest : public QObject{

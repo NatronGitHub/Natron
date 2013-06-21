@@ -34,10 +34,14 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     QImage imgM(IMAGES_PATH"maximize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(15,15);
+    QImage imgL(IMAGES_PATH"layout.png");
+    QPixmap pixL=QPixmap::fromImage(imgL);
+    pixL.scaled(15,15);
+
     
     if(_decorate){
         
-        _leftCornerButton = new Button(_header);
+        _leftCornerButton = new Button(QIcon(pixL),"",_header);
         _leftCornerButton->setFixedSize(15,15);
         _headerLayout->addWidget(_leftCornerButton);
         _headerLayout->addSpacing(10);
@@ -73,8 +77,8 @@ void TabWidget::createMenu(){
     menu->addAction(tr("Split horizontal"), this, SLOT(test_slot()));
     menu->addSeparator();
     menu->addAction(tr("New viewer"), this, SLOT(addNewViewer()));
-    menu->addAction(tr("Move node graph"), this, SLOT(moveNodeGraphHere()));
-    menu->addAction(tr("Move properties bin"), this, SLOT(movePropertiesBinHere()));
+    menu->addAction(tr("Node graph here"), this, SLOT(moveNodeGraphHere()));
+    menu->addAction(tr("Properties bin here"), this, SLOT(movePropertiesBinHere()));
     menu->exec(_leftCornerButton->mapToGlobal(_leftCornerButton->pos()));
 }
 
