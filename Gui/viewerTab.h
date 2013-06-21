@@ -26,7 +26,7 @@ class InfoViewerWidget;
 class Controler;
 class FeedBackSpinBox;
 class ScaleSlider;
-class TimeSlider;
+class TimeLine;
 class TextureCache;
 class Viewer;
 class ViewerTab: public QWidget 
@@ -85,7 +85,7 @@ public:
     FeedBackSpinBox* fpsBox;
     
 	/*frame seeker*/
-	TimeSlider* frameSeeker;
+	TimeLine* frameSeeker;
     
     bool initialized(){return initialized_;}
     

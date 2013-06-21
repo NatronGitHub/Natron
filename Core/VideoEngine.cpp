@@ -118,7 +118,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     _working = true;
     _sameFrame = sameFrame;
     int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
-    TimeSlider* frameSeeker = 0;
+    TimeLine* frameSeeker = 0;
     if(_dag.isOutputAViewer()){
         frameSeeker = currentViewer->getUiContext()->frameSeeker;
     }

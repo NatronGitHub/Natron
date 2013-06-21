@@ -223,6 +223,15 @@
     <ClCompile Include="..\..\GeneratedFiles\Writer_moc.cpp">
       <Filter>Writer</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\tabwidget_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\viewerTab_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Writer\writeExr.cpp">
+      <Filter>Writer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -312,9 +321,6 @@
     <ClInclude Include="..\..\..\Gui\textRenderer.h">
       <Filter>Gui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Gui\viewerTab.h">
-      <Filter>Gui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Superviser\controler.h">
       <Filter>Superviser</Filter>
     </ClInclude>
@@ -360,9 +366,6 @@
     <ClInclude Include="..\..\..\Gui\texturecache.h">
       <Filter>Gui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Gui\tabwidget.h">
-      <Filter>Gui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Core\abstractCache.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -380,6 +383,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Core\LRUcache.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Gui\lineEdit.h">
+      <Filter>Gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Writer\writeExr.h">
+      <Filter>Writer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -424,6 +433,12 @@
     </CustomBuild>
     <CustomBuild Include="..\..\..\Writer\Writer.h">
       <Filter>Writer</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\viewerTab.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\tabwidget.h">
+      <Filter>Gui</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

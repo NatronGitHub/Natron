@@ -9,7 +9,7 @@
 
 using namespace std;
 using namespace Powiter_Enums;
-TimeSlider::TimeSlider(QWidget* parent):QWidget(parent),
+TimeLine::TimeLine(QWidget* parent):QWidget(parent),
 _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_state(IDLE)
 {
     
@@ -21,7 +21,7 @@ _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_
     setMouseTracking(true);
         
 }
-void TimeSlider::updateScale(){ 
+void TimeLine::updateScale(){ 
     _values.clear();
     _displayedValues.clear();
 //    int _maximum = _first;
@@ -90,7 +90,7 @@ void TimeSlider::updateScale(){
     }
 }
 
-void TimeSlider::paintEvent(QPaintEvent *e){
+void TimeLine::paintEvent(QPaintEvent *e){
     QColor bg(50,50,50,255);
     int w = size().width();
     int h = size().height();
@@ -242,7 +242,7 @@ void TimeSlider::paintEvent(QPaintEvent *e){
 
     
 }
-void TimeSlider::drawTicks(QPainter *p,QColor& scaleColor){
+void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
     int w = size().width();
     double scaleW = (w-BORDER_OFFSET_) - BORDER_OFFSET_ ;
     double incr=1;
@@ -281,7 +281,7 @@ void TimeSlider::drawTicks(QPainter *p,QColor& scaleColor){
     
 }
 
-double TimeSlider::getScalePosition(double pos){
+double TimeLine::getScalePosition(double pos){
     if(pos <= _XValues [0])
         return _values[0];
     if(pos >= _XValues[_XValues.size()-1])
@@ -298,7 +298,7 @@ double TimeSlider::getScalePosition(double pos){
     return -1;
 
 }
-double TimeSlider::getCoordPosition(double pos){
+double TimeLine::getCoordPosition(double pos){
     if(pos < _values[0]){
         return _XValues[0];
     }
@@ -315,16 +315,16 @@ double TimeSlider::getCoordPosition(double pos){
     }
     return -1;
 }
-void TimeSlider::changeFirst(int v){
+void TimeLine::changeFirst(int v){
     _first = v;
     repaint();
 }
-void TimeSlider::changeLast(int v){
+void TimeLine::changeLast(int v){
     _last = v;
     repaint();
 }
 
-void TimeSlider::fillCoordLut(){
+void TimeLine::fillCoordLut(){
     _XValues.clear();
     double c = BORDER_OFFSET_;
     double scaleW = (size().width()-BORDER_OFFSET_) - BORDER_OFFSET_ ;
@@ -335,16 +335,16 @@ void TimeSlider::fillCoordLut(){
     }
 
 }
-void TimeSlider::seek(int v){
+void TimeLine::seek(int v){
     if(v >=_first && v<=_last)
         _current = v;
     repaint();
 }
-void TimeSlider::changeFirstAndLast(QString str){
+void TimeLine::changeFirstAndLast(QString str){
     
 }
 
-void TimeSlider::mousePressEvent(QMouseEvent* e){
+void TimeLine::mousePressEvent(QMouseEvent* e){
     
     int c = getScalePosition(e->x());
     if(e->modifiers().testFlag(Qt::ControlModifier)){
@@ -373,7 +373,7 @@ void TimeSlider::mousePressEvent(QMouseEvent* e){
     repaint();
 
 }
-void TimeSlider::mouseMoveEvent(QMouseEvent* e){
+void TimeLine::mouseMoveEvent(QMouseEvent* e){
     _alphaCursor=true;
     _Mouse = e->pos();
     if(_state==DRAGGING_CURSOR){
@@ -401,39 +401,39 @@ void TimeSlider::mouseMoveEvent(QMouseEvent* e){
     repaint();
 
 }
-void TimeSlider::enterEvent(QEvent* e){
+void TimeLine::enterEvent(QEvent* e){
     _alphaCursor = true;
     grabMouse();
     QWidget::enterEvent(e);
 };
-void TimeSlider::leaveEvent(QEvent* e){
+void TimeLine::leaveEvent(QEvent* e){
     _alphaCursor = false;
     repaint();
     releaseMouse();
     QWidget::leaveEvent(e);
 }
 
-void TimeSlider::mouseReleaseEvent(QMouseEvent* e){
+void TimeLine::mouseReleaseEvent(QMouseEvent* e){
     _state = IDLE;
 }
 
 
-void TimeSlider::addCachedFrame(int f){
+void TimeLine::addCachedFrame(int f){
     _cached.push_back(f);
    repaint();
 }
-void TimeSlider::removeCachedFrame(){
+void TimeLine::removeCachedFrame(){
     _cached.erase(_cached.begin());
    // repaint();
 }
 
-void TimeSlider::setFrameRange(int min,int max){
+void TimeLine::setFrameRange(int min,int max){
     _minimum=min;
     _maximum=max;
     updateScale();
 }
 /*initialises the boundaries on the timeline*/
-void TimeSlider::setBoundaries(int first,int last){
+void TimeLine::setBoundaries(int first,int last){
     _first = first;
     _last = last;
     repaint();

@@ -18,7 +18,7 @@
 #define CURSOR_HEIGHT 8
 
 class QMouseEvent;
-class TimeSlider : public QWidget{
+class TimeLine : public QWidget{
     Q_OBJECT
     
     int _first,_last; // the first and last frames, bounded by the user
@@ -44,8 +44,8 @@ public slots:
         
 public:
     
-    TimeSlider(QWidget* parent=0);
-    virtual ~TimeSlider(){}
+    TimeLine(QWidget* parent=0);
+    virtual ~TimeLine(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/
     void addCachedFrame(int f);
