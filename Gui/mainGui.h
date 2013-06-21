@@ -95,7 +95,7 @@ public:
     
     void splitPaneVertically(TabWidget* what);
     
-    void floatPane(TabWidget* what);
+    void floatWidget(QWidget* what);
     
     void closePane(TabWidget* what);
     

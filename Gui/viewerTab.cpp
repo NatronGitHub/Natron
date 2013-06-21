@@ -108,7 +108,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     
     viewerSettingsLayout->addWidget(layoutContainer);
     viewerSettings->setLayout(viewerSettingsLayout);
-    viewerSettings->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+   // viewerSettings->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
 	viewer_tabLayout->addWidget(viewerSettings);
     
 	viewerChannels->clear();
@@ -160,8 +160,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     frameNumberBox->setMaximum(0);
 	timeButtonsLayout->addWidget(frameNumberBox);
     //
-	spacerOnLeft=new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-	timeButtonsLayout->addItem(spacerOnLeft);
+	timeButtonsLayout->addStretch();
     
 	firstFrame_Button = new Button(timeButtons);
 	firstFrame_Button->setObjectName(QString::fromUtf8("firstFrame_Button"));
@@ -201,8 +200,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
 	lastFrame_Button->setObjectName(QString::fromUtf8("lastFrame_Button"));
 	timeButtonsLayout->addWidget(lastFrame_Button);
     //
-	spacerOnRight=new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-	timeButtonsLayout->addItem(spacerOnRight);
+	timeButtonsLayout->addStretch();
     //
     previousIncrement_Button = new Button(timeButtons);
 	previousIncrement_Button->setObjectName(QString::fromUtf8("previousIncrement_Button"));
@@ -307,12 +305,10 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
 	/*frame seeker*/
 	frameSeeker = new TimeSlider(this);
 	frameSeeker->setObjectName(QString::fromUtf8("frameSeeker"));
-    //frameSeeker->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
 	viewer_tabLayout->addWidget(frameSeeker);
     viewer_tabLayout->setContentsMargins(0, 0, 0, 0);
 	/*================================================*/
     
-	//this->setLayout(viewer_tabLayout);
     
     /*slots & signals*/
     QObject::connect(viewerColorSpace, SIGNAL(activated(QString)), viewer,SLOT(updateColorSpace(QString)));

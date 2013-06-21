@@ -69,7 +69,6 @@ public:
 	QGroupBox* timeButtons;
 	QHBoxLayout* timeButtonsLayout;
 	FeedBackSpinBox* frameNumberBox;
-	QSpacerItem* spacerOnLeft;
 	Button* firstFrame_Button;
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
@@ -82,7 +81,6 @@ public:
     Button* previousIncrement_Button;
     FeedBackSpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
-	QSpacerItem* spacerOnRight;
     QLabel* fpsName;
     FeedBackSpinBox* fpsBox;
     

@@ -140,6 +140,15 @@ public:
     void closePane();
     
     void floatPane();
+    
+    void closeFloatingPane();
+    
+    void floatCurrentWidget();
+    
+    void closeCurrentWidget();
+    
+private:
+    void destroyTab(QWidget* tab);
 
 };
 

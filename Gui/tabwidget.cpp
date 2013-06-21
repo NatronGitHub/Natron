@@ -23,7 +23,7 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     
     if(decorations!=NONE)
         setAcceptDrops(true);
-    
+    setFrameShape(QFrame::NoFrame);
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     _mainLayout->setSpacing(0);
@@ -65,11 +65,13 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
         _floatButton = new Button(QIcon(pixM),"",_header);
         _floatButton->setToolTip(tr("Create a new window with the currently displayed tab."));
         _floatButton->setFixedSize(15,15);
+        QObject::connect(_floatButton, SIGNAL(clicked()), this, SLOT(floatCurrentWidget()));
         _headerLayout->addWidget(_floatButton);
         
         _closeButton = new Button(QIcon(pixC),"",_header);
         _closeButton->setToolTip(tr("Close the currently displayed tab."));
         _closeButton->setFixedSize(15,15);
+        QObject::connect(_closeButton, SIGNAL(clicked()), this, SLOT(closeCurrentWidget()));
         _headerLayout->addWidget(_closeButton);
         
         
@@ -85,17 +87,24 @@ TabWidget::~TabWidget(){
 }
 
 void TabWidget::destroyTabs(){
+    
+    for (U32 i = 0; i < _tabs.size(); i++) {
+        destroyTab(_tabs[i]);
+    }
+}
+void TabWidget::destroyTab(QWidget* tab){
     /*special care is taken if this is a viewer: we also
      need to delete the viewer node.*/
-    for (U32 i = 0; i < _tabs.size(); i++) {
-        ViewerTab* isViewer = dynamic_cast<ViewerTab*>(_tabs[i]);
-        if (isViewer) {
-            ctrlPTR->getGui()->removeViewerTab(isViewer,false);
-        }else{
-            /*Otherwise delete it normally*/
-            delete _tabs[i];
-        }
+    ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
+    if (isViewer) {
+        ctrlPTR->getGui()->removeViewerTab(isViewer,false);
+    }else if(tab->objectName() != "DAG_GUI" && tab->objectName() != "Properties_GUI"){
+        /*Otherwise delete it normally*/
+        delete tab;
+    }else{
+        tab->setVisible(false);
     }
+
 }
 
 void TabWidget::createMenu(){
@@ -129,13 +138,21 @@ void TabWidget::createMenu(){
     menu->exec(_leftCornerButton->mapToGlobal(_leftCornerButton->pos()));
 }
 
+void TabWidget::closeFloatingPane(){
+    if (!_isFloating) {
+        return;
+    }
+    QWidget* p = parentWidget();
+    p->close();
+}
+
 void TabWidget::closePane(){
     ctrlPTR->getGui()->closePane(this);
 }
 
 void TabWidget::floatPane(){
     _isFloating = true;
-    ctrlPTR->getGui()->floatPane(this);
+    ctrlPTR->getGui()->floatWidget(this);
 }
 
 void TabWidget::addNewViewer(){
@@ -162,6 +179,19 @@ QString TabWidget::getTabName(QWidget* tab) const{
     return "";
 }
 
+void TabWidget::floatCurrentWidget(){
+    if(!_currentWidget) return;
+    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE);
+    newTab->appendTab(getTabName(_currentWidget), _currentWidget);
+    newTab->floatPane();
+    removeTab(_currentWidget);
+}
+
+void TabWidget::closeCurrentWidget(){
+    if(!_currentWidget) return;
+    destroyTab(_currentWidget);
+    removeTab(_currentWidget);
+}
 void TabWidget::movePropertiesBinHere(){
     QWidget* what = dynamic_cast<QWidget*>(ctrlPTR->getGui()->_propertiesScrollArea);
     ctrlPTR->getGui()->moveTab(what, this);
@@ -250,7 +280,11 @@ QWidget*  TabWidget::removeTab(int index){
             makeCurrentTab(0);
         }
         else{
+            _currentWidget = 0;
             _mainLayout->addStretch();
+            if (_isFloating) {
+                closeFloatingPane();
+            }
         }
         return tab;
     }else{
@@ -265,7 +299,12 @@ void TabWidget::removeTab(QWidget* widget){
             if(_tabs.size() > 0){
                 makeCurrentTab(0);
             }else{
+                _currentWidget = 0;
                 _mainLayout->addStretch();
+                if (_isFloating) {
+                    closeFloatingPane();
+                }
+
             }
             break;
         }

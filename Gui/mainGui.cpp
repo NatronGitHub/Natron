@@ -459,9 +459,31 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
     TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
     
     if(!from) return;
-    if(from == where) return;
+    QString name;
+    if(from == where){
+        /*We check that even if it is the same TabWidget, it really exists.*/
+        bool found = false;
+        for (int i =0; i < from->count(); i++) {
+            if (what == from->tabAt(i)) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            return;
+        }else{
+            /*if it is not found we have to recover the name*/
+            if(what == _nodeGraphTab->_nodeGraphArea)
+                name = "Node Graph";
+            else if(what == _propertiesScrollArea)
+                name = "Properties";
+            else return;
+        }
+    }else{
+        name = from->getTabName(what);
+
+    }
     
-    QString name = from->getTabName(what);
     
     from->removeTab(what);
     where->appendTab(name, what);
@@ -535,7 +557,7 @@ void Gui::splitPaneVertically(TabWidget* what){
     /*Inserting back the new splitter at the original index*/
     container->insertWidget(oldIndex,newSplitter);
 }
-void Gui::floatPane(TabWidget* what){
+void Gui::floatWidget(QWidget* what){
     
     FloatingWidget* floatingW = new FloatingWidget(this);
     const QSize& size = what->size();
