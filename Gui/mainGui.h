@@ -9,9 +9,9 @@
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QMainWindow>
 #include <boost/noncopyable.hpp>
-
-
-
+#include <QtWidgets/QDialog>
+#include <map>
+class QString;
 class QAction;
 class TabWidget;
 class Controler;
@@ -36,7 +36,21 @@ class Viewer;
 class QToolBox;
 class QGraphicsScene;
 
-/*This object encapsulate a nodegraph GUI*/
+/*This class represents a floating pane that embeds a widget*/
+class FloatingWidget : public QWidget{
+    QWidget* _embeddedWidget;
+    QVBoxLayout* _layout;
+public:
+    FloatingWidget(QWidget* parent = 0);
+    virtual ~FloatingWidget(){}
+    
+    /*Set the embedded widget. Only 1 widget can be embedded
+     by FloatingWidget. Once set, this function does nothing
+     for subsequent calls..*/
+    void setWidget(const QSize& widgetSize,QWidget* w);
+};
+
+/*This class encapsulate a nodegraph GUI*/
 class NodeGraphTab{
 public:
 
@@ -69,15 +83,27 @@ public:
     
     /*Called internally by the viewer node when
      it gets deleted. This removes the 
-     associated GUI.*/
-    void removeViewerTab(ViewerTab* tab);
-
+     associated GUI. It may also be called from the TabWidget
+     that wants to close.*/
+    void removeViewerTab(ViewerTab* tab,bool initiatedFromNode);
     
     void setNewViewerAnchor(TabWidget* where){_nextViewerTabPlace = where;}
     
-    void moveNodeGraph(TabWidget* where);
+    void moveTab(QWidget* what,TabWidget* where);
     
-    void movePropertiesBin(TabWidget* where);
+    void splitPaneHorizontally(TabWidget* what);
+    
+    void splitPaneVertically(TabWidget* what);
+    
+    void floatPane(TabWidget* what);
+    
+    void closePane(TabWidget* what);
+    
+    /*Returns a valid tab if a tab with a matching name has been
+     found. Otherwise returns NULL.*/
+    QWidget* findExistingTab(const std::string& name) const;
+    
+    void registerTab(std::string name,QWidget* tab);
     
 protected:
     virtual void keyPressEvent(QKeyEvent* e);
@@ -136,18 +162,16 @@ public:
 	//======================
     std::vector<ViewerTab*> _viewerTabs;
     
-    /*GRAPHS*/
+    /*GRAPH*/
     //======================
     
     NodeGraphTab* _nodeGraphTab;
-    TabWidget* _nodeGraphLocation;// <ptr to the widget holding the node graph
     
     /*TOOLBOX*/
     QToolBox* _toolBox;
     
     /*PROPERTIES*/
     //======================
-    TabWidget* _propertiesBinLocation;// <ptr to the widget holding the properties
     QScrollArea *_propertiesScrollArea;
     QWidget *_propertiesContainer;
     QVBoxLayout *_layoutPropertiesBin;
@@ -164,6 +188,9 @@ public:
 	QMenu *viewersMenu;
     QMenu *cacheMenu;
     
+    
+    /*Registered tabs: for drag&drop purpose*/
+    std::map<std::string,QWidget*> _registeredTabs;
     
     void setupUi();
    

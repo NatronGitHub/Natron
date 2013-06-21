@@ -35,6 +35,8 @@ _fullscreen(false),
 _evtState(DEFAULT),
 _lastSelectedPos(0,0),
 _nodeSelected(0){
+    
+    setObjectName("DAG_GUI");
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(BoundingRectViewportUpdate);

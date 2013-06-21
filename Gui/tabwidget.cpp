@@ -13,8 +13,16 @@
 #include "Gui/Button.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
-TabWidget::TabWidget(bool decorate,QWidget* parent):QWidget(parent),_currentWidget(0),_decorate(decorate),
-_header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_closeButton(0){
+#include "Gui/DAG.h"
+#include <QtWidgets/QScrollArea>
+#include "Gui/viewerTab.h"
+#include "Core/viewerNode.h"
+
+TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):QFrame(parent),_currentWidget(0),_decorations(decorations),
+_header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_closeButton(0),_isFloating(false),_drawDropRect(false){
+    
+    if(decorations!=NONE)
+        setAcceptDrops(true);
     
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -39,25 +47,28 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     pixL.scaled(15,15);
 
     
-    if(_decorate){
+    if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);
+         _leftCornerButton->setToolTip(tr("Manage the layouts for this pane."));
         _leftCornerButton->setFixedSize(15,15);
         _headerLayout->addWidget(_leftCornerButton);
         _headerLayout->addSpacing(10);
     }
-    _tabBar = new QTabBar(_header);
+    _tabBar = new TabBar(this,_header);
     _tabBar->setShape(QTabBar::RoundedNorth);
     _tabBar->setDrawBase(false);
     QObject::connect(_tabBar, SIGNAL(currentChanged(int)), this, SLOT(makeCurrentTab(int)));
     _headerLayout->addWidget(_tabBar);
     _headerLayout->addStretch();
-    if(_decorate){
+    if(decorations != NONE){
         _floatButton = new Button(QIcon(pixM),"",_header);
+        _floatButton->setToolTip(tr("Create a new window with the currently displayed tab."));
         _floatButton->setFixedSize(15,15);
         _headerLayout->addWidget(_floatButton);
         
         _closeButton = new Button(QIcon(pixC),"",_header);
+        _closeButton->setToolTip(tr("Close the currently displayed tab."));
         _closeButton->setFixedSize(15,15);
         _headerLayout->addWidget(_closeButton);
         
@@ -69,17 +80,62 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     _mainLayout->addStretch();
 }
 
-TabWidget::~TabWidget(){}
+TabWidget::~TabWidget(){
+     
+}
+
+void TabWidget::destroyTabs(){
+    /*special care is taken if this is a viewer: we also
+     need to delete the viewer node.*/
+    for (U32 i = 0; i < _tabs.size(); i++) {
+        ViewerTab* isViewer = dynamic_cast<ViewerTab*>(_tabs[i]);
+        if (isViewer) {
+            ctrlPTR->getGui()->removeViewerTab(isViewer,false);
+        }else{
+            /*Otherwise delete it normally*/
+            delete _tabs[i];
+        }
+    }
+}
 
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_leftCornerButton);
-    menu->addAction(tr("Split vertical"), this, SLOT(test_slot()));
-    menu->addAction(tr("Split horizontal"), this, SLOT(test_slot()));
+    QImage imgV(IMAGES_PATH"splitVertically.png");
+    QPixmap pixV=QPixmap::fromImage(imgV);
+    pixV.scaled(12,12);
+    QImage imgH(IMAGES_PATH"splitHorizontally.png");
+    QPixmap pixH=QPixmap::fromImage(imgH);
+    QImage imgC(IMAGES_PATH"close.png");
+    QPixmap pixC=QPixmap::fromImage(imgC);
+    pixC.scaled(12,12);
+    QImage imgM(IMAGES_PATH"maximize.png");
+    QPixmap pixM=QPixmap::fromImage(imgM);
+    pixM.scaled(12,12);
+    pixH.scaled(12,12);
+    menu->addAction(QIcon(pixV),tr("Split vertical"), this, SLOT(splitVertically()));
+    menu->addAction(QIcon(pixH),tr("Split horizontal"), this, SLOT(splitHorizontally()));
+    menu->addSeparator();
+    menu->addAction(QIcon(pixM),tr("Float pane"), this, SLOT(floatPane()));
+    QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), this);
+    if (_decorations == NOT_CLOSABLE) {
+        closeAction->setEnabled(false);
+    }
+    QObject::connect(closeAction, SIGNAL(triggered()), this, SLOT(closePane()));
+    menu->addAction(closeAction);
     menu->addSeparator();
     menu->addAction(tr("New viewer"), this, SLOT(addNewViewer()));
     menu->addAction(tr("Node graph here"), this, SLOT(moveNodeGraphHere()));
     menu->addAction(tr("Properties bin here"), this, SLOT(movePropertiesBinHere()));
     menu->exec(_leftCornerButton->mapToGlobal(_leftCornerButton->pos()));
+}
+
+void TabWidget::closePane(){
+    ctrlPTR->getGui()->closePane(this);
+}
+
+void TabWidget::floatPane(){
+    _isFloating = true;
+    ctrlPTR->getGui()->floatPane(this);
 }
 
 void TabWidget::addNewViewer(){
@@ -88,16 +144,44 @@ void TabWidget::addNewViewer(){
 }
 
 void TabWidget::moveNodeGraphHere(){
-    if(ctrlPTR->getGui()->_nodeGraphLocation != this)
-        ctrlPTR->getGui()->moveNodeGraph(this);
+    QWidget* what = dynamic_cast<QWidget*>(ctrlPTR->getGui()->_nodeGraphTab->_nodeGraphArea);
+    ctrlPTR->getGui()->moveTab(what,this);
+}
+/*Get the header name of the tab at index "index".*/
+QString TabWidget::getTabName(int index) const {
+    if(index >= _tabBar->count()) return "";
+    return _tabBar->tabText(index);
+}
+
+QString TabWidget::getTabName(QWidget* tab) const{
+    for (U32 i = 0; i < _tabs.size(); i++) {
+        if (_tabs[i] == tab) {
+            return _tabBar->tabText(i);
+        }
+    }
+    return "";
 }
 
 void TabWidget::movePropertiesBinHere(){
-    if(ctrlPTR->getGui()->_propertiesBinLocation != this)
-        ctrlPTR->getGui()->movePropertiesBin(this);
+    QWidget* what = dynamic_cast<QWidget*>(ctrlPTR->getGui()->_propertiesScrollArea);
+    ctrlPTR->getGui()->moveTab(what, this);
 }
 
-void TabWidget::appendTab(const QString& title,QWidget* widget){
+void TabWidget::splitHorizontally(){
+    ctrlPTR->getGui()->splitPaneHorizontally(this);
+}
+
+void TabWidget::splitVertically(){
+    ctrlPTR->getGui()->splitPaneVertically(this);
+}
+
+
+bool TabWidget::appendTab(const QString& title,QWidget* widget){
+    if(_decorations!=NONE && title.isEmpty()) return false;
+    
+    /*registering this tab for drag&drop*/
+    ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
+    
     _tabs.push_back(widget);
     _tabBar->addTab(title);
     if(_tabs.size() == 1){
@@ -106,12 +190,17 @@ void TabWidget::appendTab(const QString& title,QWidget* widget){
             if(item)
                 _mainLayout->removeItem(item);
         }
-        
     }
     makeCurrentTab(_tabs.size()-1);
     _tabBar->setCurrentIndex(_tabs.size()-1);
+    return true;
 }
-void TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget){
+bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget){
+    if(_decorations!=NONE && title.isEmpty()) return false;
+    
+    /*registering this tab for drag&drop*/
+    ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
+    
     _tabs.push_back(widget);
     _tabBar->addTab(icon,title);
     if(_tabs.size() == 1){
@@ -120,14 +209,17 @@ void TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
             if(item)
                 _mainLayout->removeItem(item);
         }
-        //makeCurrentTab(0);
     }
     makeCurrentTab(_tabs.size()-1);
     _tabBar->setCurrentIndex(_tabs.size()-1);
+    return true;
 }
 
 void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidget* widget){
     if (index < _tabs.size()) {
+        /*registering this tab for drag&drop*/
+        ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
+        
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,icon ,title);
     }else{
@@ -138,6 +230,9 @@ void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidg
 
 void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
     if (index < _tabs.size()) {
+        /*registering this tab for drag&drop*/
+        ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
+        
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,title);
     }else{
@@ -181,9 +276,85 @@ void TabWidget::makeCurrentTab(int index){
     if(index < _tabs.size()){
         /*Removing previous widget if any*/
         if(_currentWidget){
+            _currentWidget->setVisible(false);
             _mainLayout->removeWidget(_currentWidget);
+            _currentWidget->setParent(0);
         }
         _mainLayout->addWidget(_tabs[index]);
         _currentWidget = _tabs[index];
+        _currentWidget->setVisible(true);
+        _currentWidget->setParent(this);
     }
+}
+
+void TabWidget::dragEnterEvent(QDragEnterEvent* event){
+    // Only accept if it's an tab-reordering request
+    const QMimeData* m = event->mimeData();
+    QStringList formats = m->formats();
+    if (formats.contains("Tab")) {
+        event->acceptProposedAction();
+        _drawDropRect = true;
+        setFrameShape(QFrame::Box);
+    }
+    repaint();
+}
+
+void TabWidget::dragLeaveEvent(QDragLeaveEvent* event){
+    _drawDropRect = false;
+    setFrameShape(QFrame::NoFrame);
+    repaint();
+}
+
+void TabWidget::paintEvent(QPaintEvent* event){
+    if (_drawDropRect) {
+        
+        QColor c(243,149,0,255);
+        QPalette* palette = new QPalette();
+        palette->setColor(QPalette::Foreground,c);
+        setPalette(*palette);
+    }
+    QFrame::paintEvent(event);
+}
+
+void TabWidget::dropEvent(QDropEvent* event){
+    event->accept();
+    QString name(event->mimeData()->data("Tab"));
+    QWidget* w = ctrlPTR->getGui()->findExistingTab(name.toStdString());
+    if(w){
+        ctrlPTR->getGui()->moveTab(w, this);
+    }
+    _drawDropRect = false;
+    setFrameShape(QFrame::NoFrame);
+    repaint();
+}
+
+
+TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar (parent) , _tabWidget(tabWidget){
+    
+}
+
+void TabBar::mousePressEvent(QMouseEvent* event){
+    if (event->button() == Qt::LeftButton)
+        _dragPos = event->pos(); // m_dragStartPos is a QPoint defined in the header
+    QTabBar::mousePressEvent(event);
+}
+
+void TabBar::mouseMoveEvent(QMouseEvent* event){
+    // If the left button isn't pressed anymore then return
+    if (!(event->buttons() & Qt::LeftButton))
+        return;
+    // If the distance is too small then return
+    if ((event->pos() - _dragPos).manhattanLength() < QApplication::startDragDistance())
+        return;
+    
+    // initiate Drag
+    QDrag* drag = new QDrag(this);
+    QMimeData* mimeData = new QMimeData;
+    // a crude way to distinguish tab-reodering drags from other drags
+    QString text = _tabWidget->getTabName(_tabWidget->currentWidget());
+    mimeData->setData("Tab", text.toLatin1());
+    drag->setMimeData(mimeData);
+    QPixmap pix = _tabWidget->grab();
+    drag->setPixmap(pix);
+    drag->exec();
 }

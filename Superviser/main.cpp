@@ -44,6 +44,10 @@ int main(int argc, char *argv[])
     Controler* ctrl= Controler::instance();
 	/*we create the GUI in the initControler function*/
     ctrl->initControler(coreEngine,splashScreen);
+    
+    
+    
+    
     return app.exec();
 
 

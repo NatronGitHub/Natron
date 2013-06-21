@@ -56,9 +56,7 @@ menuOptions(0),
 viewersMenu(0),
 cacheMenu(0),
 _leftRightSplitter(0),
-_nextViewerTabPlace(0),
-_propertiesBinLocation(0),
-_nodeGraphLocation(0)
+_nextViewerTabPlace(0)
 {
 }
 Gui::~Gui(){
@@ -140,7 +138,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear per-node cache"));
     actionClearTextureCache ->setText(QApplication::translate("Powiter","Clear texture cache"));
     
-
+    
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
     
 	//WorkShop->setTabText(WorkShop->indexOf(GraphEditor), QApplication::translate("Powiter", "Graph Editor"));
@@ -151,7 +149,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
 	cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
     
-} 
+}
 void Gui::setupUi()
 {
 	
@@ -190,9 +188,9 @@ void Gui::setupUi()
                   "QLineEdit{border:1px solid; border-radius:1; padding:1px; background-color : rgba(71,71,71,255);}"
                   "QLineEdit{color:rgba(200,200,200,255);}"
                   "QLineEdit:focus {"
-                      "selection-color: rgb(243, 149, 0);"
+                  "selection-color: rgb(243, 149, 0);"
                   "border: 2px groove rgb(243, 149, 0);"
-                   "   border-radius: 4px;"
+                  "   border-radius: 4px;"
                   "padding: 2px 4px;"
                   "}"
                   "QSplitter::handle:horizontal{background-color:"
@@ -246,13 +244,16 @@ void Gui::setupUi()
                   "alignment: left;"
                   "}"
                   "QMenu {"
-                      "background-color: rgb(50,50,50); /* sets background of the menu */"
+                  "background-color: rgb(50,50,50); /* sets background of the menu */"
                   "border: 0px;"
                   "margin: 0px;"
                   "color : rgb(200,200,200);"
                   "}"
                   "QMenu::item:selected { /* when user selects item using mouse or keyboard */"
-                      "background-color: rgb(243,149,0); ;"
+                  "background-color: rgb(243,149,0); ;"
+                  "}"
+                  "QMenu::item:!enabled { /* when user selects item using mouse or keyboard */"
+                  "color : rgb(120,120,120);"
                   "}");
 	
 	actionNew_project = new QAction(this);
@@ -299,7 +300,7 @@ void Gui::setupUi()
     _mainLayout->setContentsMargins(0, 0, 0, 0);
 	_centralWidget->setLayout(_mainLayout);
     
-    _toolsPane = new TabWidget(false,_centralWidget);
+    _toolsPane = new TabWidget(TabWidget::NONE,_centralWidget);
     _toolBox = new QToolBox(_toolsPane);
     _toolsPane->appendTab("", _toolBox);
     _toolsPane->setMaximumWidth(50);
@@ -319,7 +320,7 @@ void Gui::setupUi()
     
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
-	_viewersPane = new TabWidget(true,_viewerWorkshopSplitter);
+	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _viewersPane->resize(_viewersPane->width(), screen.height()/4);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     
@@ -329,10 +330,9 @@ void Gui::setupUi()
     
 	/*WORKSHOP PANE*/
 	//======================
-	_workshopPane = new TabWidget(true,_viewerWorkshopSplitter);
+	_workshopPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     /*creating DAG gui*/
 	addNodeGraph();
-    _nodeGraphLocation = _workshopPane;
 	
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
 	
@@ -343,13 +343,13 @@ void Gui::setupUi()
     
 	/*PROPERTIES DOCK*/
 	//======================
-	_propertiesPane = new TabWidget(true,this);
-    _propertiesBinLocation = _propertiesPane;
+	_propertiesPane = new TabWidget(TabWidget::NOT_CLOSABLE,this);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
+    _propertiesScrollArea->setObjectName("Properties_GUI");
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
 	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
 	_layoutPropertiesBin->setSpacing(0);
-    _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
+    _layoutPropertiesBin->setContentsMargins(0, 0, 15, 0);
 	_propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	_propertiesContainer->setLayout(_layoutPropertiesBin);
     
@@ -404,7 +404,7 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearNodeCache);
     cacheMenu->addAction(actionClearTextureCache);
 	retranslateUi(this);
-        
+    
     QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
     Model* model = ctrlPTR->getModel();
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
@@ -425,32 +425,27 @@ void Gui::clearTextureCache(){
 
 ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
-    _viewerTabs.push_back(tab);
     tab->setTextureCache(_textureCache);
+    _viewerTabs.push_back(tab);
     where->appendTab(node->getName(),tab);
     return tab;
 }
 
-void Gui::removeViewerTab(ViewerTab* tab){
-    ViewerTab* otherViewer = 0;
-    for(U32 i = 0 ; i < _viewerTabs.size() ; i++){
-        if (_viewerTabs[i] != tab) {
-            otherViewer = _viewerTabs[i];
+void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode){
+    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+        if (_viewerTabs[i] == tab) {
+            _viewerTabs.erase(_viewerTabs.begin()+i);
             break;
         }
     }
     
-    int index = -1;
-    for(U32 i = 0 ; i < _viewerTabs.size() ; i++){
-        if (_viewerTabs[i] == tab) {
-            _viewerTabs.erase(_viewerTabs.begin()+i);
-            index = i;
-            break;
-        }
-    }
-    if(index != -1){
-        _viewersPane->removeTab(index);
-        delete tab;
+    if (!initiatedFromNode) {
+        _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
+        ctrlPTR->getModel()->removeNode(tab->getInternalNode());
+    }else{
+        
+        TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
+        container->removeTab(tab);
     }
     
 }
@@ -460,17 +455,19 @@ void Gui::addNodeGraph(){
     _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
 }
 
-void Gui::moveNodeGraph(TabWidget* where){
-    _nodeGraphLocation->removeTab(_nodeGraphTab->_nodeGraphArea);
-    _nodeGraphLocation = where;
-    _nodeGraphLocation->appendTab("Node graph",_nodeGraphTab->_nodeGraphArea);
+void Gui::moveTab(QWidget* what,TabWidget *where){
+    TabWidget* from = dynamic_cast<TabWidget*>(what->parentWidget());
+    
+    if(!from) return;
+    if(from == where) return;
+    
+    QString name = from->getTabName(what);
+    
+    from->removeTab(what);
+    where->appendTab(name, what);
 }
 
-void Gui::movePropertiesBin(TabWidget* where){
-    _propertiesBinLocation->removeTab(_propertiesScrollArea);
-    _propertiesBinLocation = where;
-    _propertiesBinLocation->appendTab("Properties",_propertiesScrollArea);
-}
+
 
 NodeGraphTab::NodeGraphTab(QWidget* parent){
     _graphScene=new QGraphicsScene(parent);
@@ -479,7 +476,155 @@ NodeGraphTab::NodeGraphTab(QWidget* parent){
     _nodeGraphArea->grabKeyboard();
     _nodeGraphArea->releaseKeyboard();
     _nodeGraphArea->setFocus();
-
+    
 }
 
+void Gui::splitPaneHorizontally(TabWidget* what){
+    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
+    if(!container) return;
+    
+    /*We need to know the position in the container layout of the old tab widget*/
+    int oldIndex = container->indexOf(what);
+    
+    QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setContentsMargins(0, 0, 0, 0);
+    newSplitter->setOrientation(Qt::Horizontal);
+    what->setVisible(false);
+    what->setParent(newSplitter);
+    newSplitter->addWidget(what);
+    what->setVisible(true);
+    
+    
+    /*Adding now a new tab*/
+    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    newSplitter->addWidget(newTab);
+    
+    QSize splitterSize = newSplitter->sizeHint();
+    QList<int> sizes; sizes <<   splitterSize.width()/2;
+    sizes  << splitterSize.width()/2;
+    newSplitter->setSizes(sizes);
+    
+    /*Inserting back the new splitter at the original index*/
+    container->insertWidget(oldIndex,newSplitter);
+    
+}
 
+void Gui::splitPaneVertically(TabWidget* what){
+    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
+    if(!container) return;
+    
+    /*We need to know the position in the container layout of the old tab widget*/
+    int oldIndex = container->indexOf(what);
+    
+    QSplitter* newSplitter = new QSplitter(container);
+    newSplitter->setContentsMargins(0, 0, 0, 0);
+    newSplitter->setOrientation(Qt::Vertical);
+    what->setVisible(false);
+    what->setParent(newSplitter);
+    newSplitter->addWidget(what);
+    what->setVisible(true);
+    
+    /*Adding now a new tab*/
+    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    newSplitter->addWidget(newTab);
+    
+    QSize splitterSize = newSplitter->sizeHint();
+    QList<int> sizes; sizes <<   splitterSize.height()/2;
+    sizes  << splitterSize.height()/2;
+    newSplitter->setSizes(sizes);
+    /*Inserting back the new splitter at the original index*/
+    container->insertWidget(oldIndex,newSplitter);
+}
+void Gui::floatPane(TabWidget* what){
+    
+    FloatingWidget* floatingW = new FloatingWidget(this);
+    const QSize& size = what->size();
+    what->setVisible(false);
+    what->setParent(0);
+    floatingW->setWidget(size,what);
+    
+}
+
+void Gui::closePane(TabWidget* what){
+    QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
+    if(!container) return;
+    
+    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
+    if (what->isFloating()) {
+        what->destroyTabs();
+        delete what;
+        return;
+    }
+    
+    /*Only sub-panes are closable. That means the splitter owning them must also
+     have a splitter as parent*/
+    QSplitter* mainContainer = dynamic_cast<QSplitter*>(container->parentWidget());
+    if(!mainContainer) return;
+    
+    /*identifying the other tab*/
+    TabWidget* other = 0;
+    for (int i = 0; i < container->count(); i++) {
+        TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
+        if (tab) {
+            other = tab;
+            break;
+        }
+    }
+    
+    /*Removing "what" from the container and delete it*/
+    what->setVisible(false);
+    what->destroyTabs();
+   // delete what;
+    
+    /*Removing the container from the mainContainer*/
+    int subSplitterIndex = 0;
+    for (int i = 0; i < mainContainer->count(); i++) {
+        QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
+        if (subSplitter && subSplitter == container) {
+            subSplitterIndex = i;
+            container->setVisible(false);
+            container->setParent(0);
+            break;
+        }
+    }
+    /*moving the other to the mainContainer*/
+    other->setVisible(true);
+    other->setParent(mainContainer);
+    mainContainer->insertWidget(subSplitterIndex, other);
+    
+    /*deleting the subSplitter*/
+    delete container;
+    
+}
+
+FloatingWidget::FloatingWidget(QWidget* parent) : QWidget(parent), _embeddedWidget(0){
+    
+    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
+    _layout = new QVBoxLayout(this);
+    _layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(_layout);
+    
+}
+void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w){
+    if (_embeddedWidget) {
+        return;
+    }
+    w->setParent(this);
+    _layout->addWidget(w);
+    w->setVisible(true);
+    resize(widgetSize);
+    show();
+}
+
+void Gui::registerTab(std::string name,QWidget* tab){
+    _registeredTabs.insert(make_pair(name,tab));
+}
+
+QWidget* Gui::findExistingTab(const std::string& name) const{
+    std::map<std::string,QWidget*>::const_iterator it = _registeredTabs.find(name);
+    if (it != _registeredTabs.end()) {
+        return it->second;
+    }else{
+        return NULL;
+    }
+}

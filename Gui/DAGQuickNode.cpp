@@ -8,8 +8,7 @@
 
 SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
 {
-   //this->setParent(dynamic_cast<QWidget*>(ctrlPTR->getGui()));
-        this->graph=graph;
+    this->graph=graph;
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));

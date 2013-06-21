@@ -22,7 +22,7 @@ void Viewer::initializeViewerTab(TabWidget* where){
 
 Viewer::~Viewer(){
     if(ctrlPTR->getGui())
-        ctrlPTR->getGui()->removeViewerTab(_uiContext);
+        ctrlPTR->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
 }

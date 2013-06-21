@@ -107,18 +107,17 @@ void SettingsPanel::close(){
     setVisible(false);
 
     QVBoxLayout* container = _nodeGUI->getDockContainer();
-    vector<QWidgetItem*> _panels;
+    vector<QWidget*> _panels;
     for(int i =0 ; i < container->count(); i++){
-        if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+        if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
             _panels.push_back(myItem);
-            container->removeItem(myItem);
+            container->removeWidget(myItem);
         }
     }
     for (U32 i =0 ; i < _panels.size(); i++) {
-        container->insertItem(0,_panels[i]);
+        container->addWidget(_panels[i]);
     }
- //   QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-  //  pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
+ 
     update();
 }
 void SettingsPanel::minimizeOrMaximize(bool toggled){
@@ -132,19 +131,17 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         _tabWidget->setVisible(false);
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
-        vector<QWidgetItem*> _panels;
+        vector<QWidget*> _panels;
         for(int i =0 ; i < container->count(); i++){
-            if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+            if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
-                container->removeItem(myItem);
+                container->removeWidget(myItem);
             }
         }
         for (U32 i =0 ; i < _panels.size(); i++) {
-            container->insertItem(0,_panels[i]);
+            container->addWidget(_panels[i]);
         }
     
-       // QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-       // pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
     }else{
         QImage imgM(IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
@@ -153,19 +150,16 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         _tabWidget->setVisible(true);
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
-        vector<QWidgetItem*> _panels;
+        vector<QWidget*> _panels;
         for(int i =0 ; i < container->count(); i++){
-            if (QWidgetItem *myItem = dynamic_cast <QWidgetItem*>(container->itemAt(i))){
+            if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
-                container->removeItem(myItem);
+                container->removeWidget(myItem);
             }
         }
         for (U32 i =0 ; i < _panels.size(); i++) {
-            container->insertItem(0,_panels[i]);
-        }
-     //   QWidget* pr=_nodeGUI->getSettingsLayout()->parentWidget();
-     //   pr->setMinimumSize(_nodeGUI->getSettingsLayout()->sizeHint());
-        
+            container->addWidget(_panels[i]);
+        }        
     }
     update();
 }

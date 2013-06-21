@@ -29,9 +29,9 @@
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(false),_viewerNode(node)
 {
     
+    setObjectName(node->getName());
     viewer_tabLayout=new QVBoxLayout(this);
     setLayout(viewer_tabLayout);
-	this->setObjectName(QString::fromUtf8("Viewer_tab1"));
     viewer_tabLayout->QLayout::setSpacing(0);
 	/*VIEWER SETTINGS*/
 	viewerSettings=new QGroupBox(this);
