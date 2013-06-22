@@ -303,7 +303,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
 	/*=================================================*/
     
 	/*frame seeker*/
-	frameSeeker = new TimeSlider(this);
+	frameSeeker = new TimeLine(this);
 	frameSeeker->setObjectName(QString::fromUtf8("frameSeeker"));
 	viewer_tabLayout->addWidget(frameSeeker);
     viewer_tabLayout->setContentsMargins(0, 0, 0, 0);
