@@ -35,29 +35,29 @@ class ViewerTab: public QWidget
     
     
     Viewer* _viewerNode;// < pointer to the internal node
-    bool initialized_;
     
 public:
 	ViewerTab(Viewer* node,QWidget* parent=0);
+    
 	virtual ~ViewerTab();
     
     void setTextureCache(TextureCache* cache);
-    QVBoxLayout* viewer_tabLayout;
+    
+    QVBoxLayout* _mainLayout;
 
 	/*Viewer Settings*/
-	QGroupBox* viewerSettings;
-    QWidget* layoutContainer;
-    QWidget* firstRow,*secondRow;
-    QHBoxLayout* layoutFirst,*layoutSecond;
-    QVBoxLayout* layoutContainer_layout;
-	Button* refreshButton;
-	ComboBox* viewerLayers;
-	ComboBox* viewerChannels;
-	ComboBox* dimensionChoosal;
-    ComboBox* viewerColorSpace;
-    FeedBackSpinBox* gainBox;
-    FeedBackSpinBox* zoomSpinbox;
-    ScaleSlider* gainSlider;
+    QWidget* _firstSettingsRow,*_secondSettingsRow;
+    QHBoxLayout* _firstRowLayout,*_secondRowLayout;
+    
+	ComboBox* _viewerLayers;
+	ComboBox* _viewerChannels;
+    ComboBox* _viewerColorSpace;
+    FeedBackSpinBox* _zoomSpinbox;
+
+    FeedBackSpinBox* _gainBox;
+    ScaleSlider* _gainSlider;
+
+    Button* _refreshButton;
     QLabel* zoomName;
 
 	/*openGL viewer*/
@@ -87,7 +87,6 @@ public:
 	/*frame seeker*/
 	TimeSlider* frameSeeker;
     
-    bool initialized(){return initialized_;}
     
     Viewer* getInternalNode(){return _viewerNode;}
     

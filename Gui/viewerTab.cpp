@@ -339,7 +339,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     QObject::connect(frameNumberBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     
-    initialized_=true;
 }
 
 /*In case they're several viewer around, we need to reset the dag and tell it
