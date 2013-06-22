@@ -46,7 +46,14 @@ Row::Row(int x,int y, int range, ChannelSet channels)
 }
 bool Row::allocate(const char* path){
     foreachChannels(z, _channels){
-        buffers[z] = (float*)calloc((r-x),sizeof(float));
+        if(z != Channel_alpha)
+            buffers[z] = (float*)calloc((r-x),sizeof(float));
+        else{
+            buffers[z] = (float*)malloc((r-x)*sizeof(float));
+            for(int i =0 ;i <  (r-x) ;i++){
+                buffers[z][i] = 1.f;
+            }
+        }
     }
     return true;
 }

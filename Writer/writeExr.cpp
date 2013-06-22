@@ -103,7 +103,7 @@ void WriteExr::setupFile(std::string filename){
     depth = EXR::depthNameToInt(knobs->_dataType);
     const Format& dispW = op->getInfo()->getDisplayWindow();
     const Box2D& dataW = op->getInfo()->getDataWindow();
-    const ChannelSet& channels = op->getRequestedChannels();
+    const ChannelSet& channels = op->requestedChannels();
     _dataW = new Box2D;
     if(op->getInfo()->blackOutside()){
         if(dataW.x() +2 < dataW.right()){
@@ -154,7 +154,7 @@ void WriteExr::writeAllData(){
     
     try{
         outfile = new Imf::OutputFile(_filename.c_str(), *header);
-        const ChannelSet& channels = op->getRequestedChannels();
+        const ChannelSet& channels = op->requestedChannels();
 
         for (int y = _dataW->top()-1; y >= _dataW->y(); y--) {
             Imf::FrameBuffer fbuf;

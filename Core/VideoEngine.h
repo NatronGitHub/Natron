@@ -44,7 +44,7 @@ public:
         typedef void (VideoEngine::DAG::*ValidateFunc)(bool);
         typedef std::vector<InputNode*>::const_iterator InputsIterator;
         
-        DAG():_output(0),_hasValidated(false),_validate(&VideoEngine::DAG::validate),_isViewer(false){}
+        DAG():_output(0),_isViewer(false){}
         
         /*Clears the structure and sorts the graph
          *represented by the OutputNode out*/
@@ -72,28 +72,21 @@ public:
         /*Accessors to the inputs of the graph*/
         const std::vector<InputNode*>& getInputs()const{return _inputs;}
         
-        /*Depending if this is the first time for this DAG or not,
-         different versions of validates are called : validate() is called
-         the 1st time and set infos across all nodes, then validateInputs()
-         is called. This function will call the appropriate function when
-         needed.*/
-        void autoValidate(bool forReal){(*this.*_validate)(forReal);}
-        
+            
         /*handy function to get the frame range
          of input nodes in the dag based on node infos.*/
         int firstFrame() const ;
         int lastFrame() const;
         
+        /*sets infos accordingly across all the DAG
+         and check if it is correct. (channels, frame
+         range, etc...)*/
+        bool validate(bool forReal);
+        
         /*debug*/
         void debug();
     private:
-        /*sets infos accordingly across all the DAG*/
-        void validate(bool forReal);
-        
-        /*same as validate(), but it refreshes info only for inputNodes.
-         This*/
-        void validateInputs(bool forReal);
-        
+      
         /*recursive topological sort*/
         void topologicalSort();
         /*function called internally by the sorting
@@ -112,10 +105,6 @@ public:
         std::vector<Node*> _sorted;
         /*all the inputs of the dag*/
         std::vector<InputNode*> _inputs;
-        /*the validate function called to validate node infos*/
-        ValidateFunc _validate;
-        /*true if validate() has already been called for this DAG*/
-        bool _hasValidated;
         
         bool _isViewer; // true if the outputNode is a viewer, it avoids many dynamic_casts
     };

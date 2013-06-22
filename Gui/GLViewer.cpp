@@ -175,13 +175,14 @@ void ViewerGL::resizeGL(int width, int height){
 	if(transX!=0 || transY!=0){
 		_ms = DRAGGING;
 	}
+    checkGLErrors();
     _ms = UNDEFINED;
     if(_drawing)
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
-	checkGLErrors();
 }
 void ViewerGL::paintGL()
 {
+
     if(_drawing){
         float w = (float)width();
 		float h = (float)height();
@@ -194,7 +195,7 @@ void ViewerGL::paintGL()
         float top = h/2.f + dispW.h()/2.f ;
         
         glOrtho(left, right, bottom, top, -1, 1);
-        
+
         glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity();
         
@@ -210,7 +211,6 @@ void ViewerGL::paintGL()
         // debug (so the openGL debugger can make a breakpoint here)
               //  GLfloat d;
                // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-        
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
@@ -241,10 +241,10 @@ void ViewerGL::paintGL()
     if(_overlay){
         drawOverlay();
     }
-    checkGLErrors();
 }
 
 void ViewerGL::drawOverlay(){
+    checkGLErrors();
     glDisable(GL_TEXTURE_2D);
     _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
     
@@ -268,6 +268,7 @@ void ViewerGL::drawOverlay(){
     glVertex3f(btmRight.x(),btmRight.y(),1);
     
     glEnd();
+    checkGLErrors();
     if(displayWindow() != dataWindow()){
         
         _textRenderer.print(dataWindow().right(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
@@ -305,6 +306,7 @@ void ViewerGL::drawOverlay(){
         vengine->drawOverlay();
     //reseting color for next pass
     glColor4f(1, 1, 1, 1);
+    checkGLErrors();
 }
 
 void ViewerGL::paintEvent(QPaintEvent* event){
@@ -572,13 +574,13 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
     
     // if the texture is zoomed, do not produce antialiasing so the user can
     // zoom to the pixel
-    if(_zoomCtx.zoomFactor >= 0.5){
+   // if(_zoomCtx.zoomFactor >= 0.5){
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }else{
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
+//    }else{
+//        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//    }
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
@@ -603,6 +605,7 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
                       GL_FLOAT,	// type
                       0);			// pixels
     }
+    checkGLErrors();
 }
 void ViewerGL::initBlackTex(){
     makeCurrent();

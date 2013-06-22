@@ -441,6 +441,7 @@ void AbstractDiskCache::debug(){
         }else{
             cout << "Entry has a NULL ptr." << endl;
         }
+        cout << "Key:" << it->first << endl;
     }
     cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
     for (CacheIterator it = begin(); it!=end(); it++) {
@@ -452,6 +453,7 @@ void AbstractDiskCache::debug(){
         }else{
             cout << "Entry is normally deallocated." << endl;
         }
+        cout << "Key:" << it->first << endl;
     }
     cout << "Total entries count : " << _inMemoryPortion.size()+_cache.size() << endl;
     cout << "-===========END DEBUGGING: " << cacheName() << " ===========" << endl;

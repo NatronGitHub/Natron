@@ -167,10 +167,12 @@ FrameEntry* ViewerCache::add(U64 key,
                              int h,
                              const Box2D& bbox,
                              const Format& dispW){
+    
     ReaderInfo* info = new ReaderInfo;
     info->setCurrentFrameName(filename);
     info->setDisplayWindow(dispW);
     info->set(bbox);
+    info->setChannels(Mask_RGBA);
     FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
                                       treeVersion,byteMode,info,w,h);
     
@@ -232,10 +234,10 @@ FrameEntry* ViewerCache::get(std::string filename,
 //    << treeVersion << " " << zoomFactor << " " << exposure << " " << lut
 //    << " " << byteMode << " " << bbox.x() << " " << bbox.y() << " "  << bbox.right() << " "
 //    << bbox.top() << " " << dispW.x() << " " << dispW.y() << " " << dispW.right() << " " << dispW.top() << endl;
-//    
+    
     U64 key = FrameEntry::computeHashKey(filename, treeVersion, zoomFactor, exposure, lut, byteMode,bbox,dispW);
-//    
-//    cout << "KEY : " << key << endl;
+    
+   // cout << "KEY : " << key << endl;
     CacheIterator it = isInMemory(key);
         
     if (it == endMemoryCache()) {// not in memory

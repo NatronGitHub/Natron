@@ -60,7 +60,7 @@ void WriteQt::setupFile(std::string filename){
  destructor of Write.*/
 void WriteQt::writeAllData(){
     const Format& frmt = op->getInfo()->getDisplayWindow();
-    const ChannelSet& channels = op->getRequestedChannels();
+    const ChannelSet& channels = op->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
         type = QImage::Format_ARGB32_Premultiplied;

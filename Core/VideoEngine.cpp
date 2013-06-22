@@ -78,6 +78,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     _forward = forward;
     _paused = false;
     _aborted = false;
+    _dag.validate(false); // < validating sequence (mostly getting the same frame range for all nodes).
     computeFrameRequest(sameFrame,forward,fitFrameToViewer,false);
 }
 void VideoEngine::stopEngine(){
@@ -117,6 +118,7 @@ void VideoEngine::resetReadingBuffers(){
 void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall){
     _working = true;
     _sameFrame = sameFrame;
+    
     int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
     TimeSlider* frameSeeker = 0;
     if(_dag.isOutputAViewer()){
@@ -129,7 +131,6 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
 #endif
         
         if(!recursiveCall){
-            _dag.getOutput()->validate(false);
             firstFrame = writer->firstFrame();
             lastFrame = writer->lastFrame();
             currentFrame = writer->firstFrame();
@@ -174,8 +175,6 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
         if(!recursiveCall){
             currentFrame = frameSeeker->currentFrame();
             if(!sameFrame){
-                /*validate false will just merge frame range across all the DAG*/
-                _dag.getOutput()->validate(false);
                 firstFrame = _dag.firstFrame();
                 lastFrame = _dag.lastFrame();
                 
@@ -234,8 +233,10 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
      was in cache or not.*/
     FramesVector readFrames = startReading(readers, true , true);
     
-    _dag.getOutput()->validate(true);// < validating infos
-    
+    if(!_dag.validate(true)){
+        stopEngine();
+        return;
+    }
     
     for(U32 i = 0; i < readFrames.size();i++){
         ReadFrame readFrame = readFrames[i];
@@ -314,7 +315,6 @@ void VideoEngine::engineLoop(){
         if((_frameRequestIndex%24)==0){
             emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
         }
-        
         updateDisplay(); // updating viewer & pixel aspect ratio if needed
     }
     computeFrameRequest(false, _forward ,false,true); // recursive call for following frame.
@@ -327,12 +327,11 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     if(_dag.isOutputAViewer() && fitFrameToViewer){
         gl_viewer->fitToFormat(gl_viewer->displayWindow());
     }
-    ChannelSet toRequest;
-    if(_dag.isOutputAViewer()) toRequest = gl_viewer->displayChannels();
+    ChannelSet outChannels;
+    if(_dag.isOutputAViewer()) outChannels = gl_viewer->displayChannels();
     else{// channels requested are those requested by the user
-        toRequest = static_cast<Writer*>(_dag.getOutput())->getRequestedChannels();
+        outChannels = static_cast<Writer*>(_dag.getOutput())->requestedChannels();
     }
-    output->request(toRequest);
     const Format &_dispW = output->getInfo()->getDisplayWindow();
     const Box2D& dataW = output->getInfo()->getDataWindow();
 
@@ -341,12 +340,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
     
     //outChannels are the intersection between what the viewer requests and the ones available in the viewer node
     // in case of a writer, it's just the output channels
-    ChannelSet outChannels;
-    if(_dag.isOutputAViewer())
-        outChannels  = output->getRequestedChannels() & output->getInfo()->channels();
-    else
-        outChannels = toRequest;
-    
+       
     std::map<int,int> rows;
     map<int,int>::iterator it;
     int w=0,h=0;
@@ -424,6 +418,7 @@ void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bo
         }
         gl_viewer->drawing(true);
         void* gpuMappedBuffer = gl_viewer->allocateAndMapPBO(dataSize,gl_viewer->getPBOId(0));
+        checkGLErrors();
         _gpuTransferInfo.set(gl_viewer->getFrameData(), gpuMappedBuffer, dataSize);
     }
     *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,_1,output));
@@ -543,9 +538,7 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
-    if((output->getOutputChannels() & output->getInfo()->channels())){
-        output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
-    }
+    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     delete row;
 }
 
@@ -883,8 +876,7 @@ void VideoEngine::DAG::_depthCycle(Node* n){
 
 void VideoEngine::DAG::reset(){
     _output = 0;
-    _validate = &VideoEngine::DAG::validate;
-    _hasValidated = false;
+    
     clearGraph();
 }
 
@@ -905,8 +897,7 @@ Writer* VideoEngine::DAG::outputAsWriter() const {
 void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
     _output = out;
     _isViewer = isViewer;
-    _validate = &VideoEngine::DAG::validate;
-    _hasValidated = false;
+  
     clearGraph();
     if(!_output){
         return;
@@ -923,17 +914,17 @@ void VideoEngine::DAG::debug(){
 }
 
 /*sets infos accordingly across all the DAG*/
-void VideoEngine::DAG::validate(bool forReal){
-    _output->validate(forReal);
-    _hasValidated = true;
-    _validate = &VideoEngine::DAG::validateInputs;
+bool VideoEngine::DAG::validate(bool forReal){
+    /*Validating the DAG in topological order*/
+    for (DAGIterator it = begin(); it!=end(); it++) {
+        if (!(*it)->validate(forReal)) {
+            return false;
+        }
+    }
+    return true;
 }
 
-/*same as validate(), but it refreshes info only for inputNodes.
- This*/
-void VideoEngine::DAG::validateInputs(bool forReal) {
-    foreach(InputNode* i,_inputs) i->validate(forReal);
-}
+
 int VideoEngine::DAG::firstFrame() const {
     return _output->getInfo()->firstFrame();
 }

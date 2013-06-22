@@ -258,6 +258,8 @@ public:
     
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
+    
+    virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
 private:
 	QImage *preview;
 	bool has_preview;

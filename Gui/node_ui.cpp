@@ -123,8 +123,8 @@ NodeGui::~NodeGui(){
 
 void NodeGui::updateChannelsTooltip(){
     QString tooltip;
-    ChannelSet chans= node->getRequestedChannels();
-    tooltip.append("Channels Requested: ");
+    ChannelSet chans= node->getInfo()->channels();
+    tooltip.append("Channels in input: ");
     foreachChannels( z,chans){
         tooltip.append("\n");
         tooltip.append(getChannelName(z).c_str());

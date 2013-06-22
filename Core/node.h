@@ -59,6 +59,7 @@ public:
 		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
         bool rgbMode(){return _rgbMode;}
+        void mergeDisplayWindow(const Format& other);
         
         void reset();
         
@@ -119,11 +120,10 @@ public:
 	/*Node infos*/
 	Info* getInfo(){return _info;}
 	void merge_frameRange(int otherFirstFrame,int otherLastFrame);
-	void merge_info(bool forReal);
-	void copy_info(Node* parent,bool forReal);
+	bool merge_info(bool forReal);
+	void copy_info(Node* parent);
 	void clear_info();
-	ChannelMask& getOutputChannels(){return _outputChannels;}
-	ChannelMask& getRequestedChannels(){return _requestedChannels;}
+	
 	Box2D& getRequestedBox(){return _requestedBox;}
     int width(){return _info->getDisplayWindow().w();}
     int height(){return _info->getDisplayWindow().h();}
@@ -146,6 +146,7 @@ public:
     void initializeInputs();
     virtual int maximumInputs();
     virtual int minimumInputs();
+    int inputCount() const ;
     Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const;
     virtual std::string setInputLabel(int inputNb);
@@ -172,8 +173,7 @@ public:
     /*============================*/
 
     /*Calculations related functions*/
-    virtual void validate(bool forReal);
-    virtual void request(ChannelMask channels);
+    bool validate(bool forReal);
     virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out){}
 	
     /*============================*/
@@ -205,25 +205,12 @@ public:
     
 protected:
 
-	void setOutputChannels(ChannelMask mask){_outputChannels=mask;} // set the output_channels, the channels in output will be the intersection of output_channels
-	// and _info.channels()
 
-    /*By default does nothing. It takes in input the channels requested to this node.
-     If this node needs to request more channels to the input "inputNb" to actually
-     produce the requested channels, just add to the mask the channels you need. 
-     E.g: if you're requested RGB, but to produce RGB you also need Z from input(0)
-     just do this in this function:
-     
-     if(inputNb == 0)
-        mask += Channel_Z;
-     
-     */
-	virtual void in_channels(int inputNb,ChannelMask &mask){}
-	virtual void _validate(bool forReal);
-    virtual void _request(ChannelMask channels);
+	virtual ChannelMask channelsNeeded(int inputNb)=0;
+    virtual void preProcess(){}
+	virtual void _validate(bool forReal){}
    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-	ChannelMask _outputChannels; // the channels that the operator outputs from the ones among _info.channels(), by default Mask_all
 	int _freeSocketCount;
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
@@ -235,7 +222,6 @@ protected:
 	std::vector<Knob*> _knobsVector;
 	Knob_Callback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children
-	ChannelMask _requestedChannels; // merge of all channels requested by children
 	NodeGui* _nodeGUI;
 private:
 	

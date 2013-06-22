@@ -220,7 +220,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame
     }
     /*allocating pbo*/
     
-   
+    
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,currentViewer->getUiContext()->viewer->getPBOId(_pboIndex));
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -275,7 +275,7 @@ Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,b
 }
 
 void Reader::showFilePreview(){
-
+    
     _buffer.clear();
     
     getVideoSequenceFromFilesList();
@@ -342,15 +342,13 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
 }
 
 void Reader::_validate(bool forReal){
-    if(forReal){
-        if(!makeCurrentDecodedFrame(true)){
-            cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
-            return;
-        }
+    if(forReal && !makeCurrentDecodedFrame(true)){
+        cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
+        return;
     }
+    
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
-    setOutputChannels(Mask_All);
 }
 
 void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
@@ -359,7 +357,6 @@ void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
 }
 
 void Reader::createKnobDynamically(){
-	//readHandle->createKnobDynamically();
 	Node::createKnobDynamically();
 }
 

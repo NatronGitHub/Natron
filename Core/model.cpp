@@ -751,6 +751,7 @@ void Model::clearPlaybackCache(){
 
 
 void Model::clearDiskCache(){
+    _viewerCache->clearInMemoryPortion();
     _viewerCache->clearDiskCache();
 }
 

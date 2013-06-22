@@ -36,7 +36,7 @@ _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSi
 
 Writer::~Writer(){
     if(_writeOptions){
-    //    _writeOptions->cleanUpKnobs();
+        //    _writeOptions->cleanUpKnobs();
         delete _writeOptions;
     }
     delete _lock;
@@ -51,20 +51,16 @@ std::string Writer::description(){
 }
 
 void Writer::_validate(bool forReal){
-    if(_parents.size()==1){
-		copy_info(_parents[0],forReal);
-	}
-    
-    /*Defaults writing range to readers range, but 
+    /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
     _frameRange.first = _info->firstFrame();
     _frameRange.second = _info->lastFrame();
     
-    setOutputChannels(Mask_All);
-    
-    if(forReal){
+    if (forReal) {
+        
+        
         if(_filename.size() > 0){
-                        
+            
             Write* write = 0;
             PluginID* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
             if(!encoder){
@@ -121,7 +117,7 @@ void Writer::initKnobs(Knob_Callback *cb){
     std::string premultString("Premultiply by alpha");
     Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, premultString, Knob::NONE));
     premult->setPointer(&_premult);
-
+    
     std::string filetypeStr("File type");
     ComboBox_Knob* filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
     QObject::connect(filetypeCombo, SIGNAL(entryChanged(std::string&)), this, SLOT(fileTypeChanged(std::string&)));
@@ -138,7 +134,7 @@ void Writer::initKnobs(Knob_Callback *cb){
 
 
 void Writer::write(Write* write,QFutureWatcher<void>* watcher){
-
+    
     _buffer.appendTask(write, watcher);
     if(!write) return;
     write->writeAndDelete();

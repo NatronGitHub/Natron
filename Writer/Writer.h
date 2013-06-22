@@ -109,6 +109,7 @@ public:
     
     void incrementCurrentFrame(){_currentFrame++;}
     
+    const ChannelMask& requestedChannels() const {return _requestedChannels;}
     
 public slots:
     void notifyWriterForCompletion();
@@ -118,9 +119,11 @@ public slots:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
+    virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
+    
 private:
     
-    
+    ChannelMask _requestedChannels;
     int _currentFrame; // the current frame being rendered
     std::pair<int,int> _frameRange; // the range to render
     QMutex* _lock;

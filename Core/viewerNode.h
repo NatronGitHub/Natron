@@ -54,13 +54,13 @@ public:
     
     int currentFrame() const;
     
-    
-    
 protected:
-	
+    
+	virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
 	
 private:
     virtual void _validate(bool forReal);
+    
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
     

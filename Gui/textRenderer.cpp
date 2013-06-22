@@ -48,7 +48,7 @@ void TextRenderer::print( int x, int y, const QString &string,QColor color )
 	if( ! m_glwidget ) return;
 	if( string.isEmpty() ) return;
 	glPushMatrix();
-	        
+    checkGLErrors();
     float zoomFactor = m_glwidget->getZoomFactor();
     glTranslatef( x, y , 0 );
     glScalef(1.f/zoomFactor,1.f/zoomFactor, 1);
@@ -61,7 +61,8 @@ void TextRenderer::print( int x, int y, const QString &string,QColor color )
     QByteArray ba = string.toLocal8Bit();
     glColor4f(color.redF(),color.greenF(),color.blueF(),color.alphaF());
     m_font->Render(ba.data());
-	glPopMatrix();
     
+    checkGLErrors();
+	glPopMatrix();
 	
 }

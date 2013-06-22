@@ -135,7 +135,7 @@ public:
 	float getExposure(){return exposure;}
 
 	/*these are the channels the viewer wants to display*/
-	ChannelMask displayChannels(){return _channelsToDraw;}
+	const ChannelMask& displayChannels(){return _channelsToDraw;}
 
     /*Returns 1.f if the viewer is using 8bit textures.
      Returns 0.f if the viewer is using 32bit f.p textures.*/
@@ -364,6 +364,7 @@ private:
 	float exposure ;		// Current exposure setting.  All pixels
 	// are multiplied by pow(2,exposure) before
 	// they appear on the screen
+    
 	ChannelMask _channelsToDraw;
 
 	ViewerInfos* _currentViewerInfos;
