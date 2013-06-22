@@ -49,26 +49,26 @@ public:
     QWidget* _firstSettingsRow,*_secondSettingsRow;
     QHBoxLayout* _firstRowLayout,*_secondRowLayout;
     
+    /*1st row*/
 	ComboBox* _viewerLayers;
 	ComboBox* _viewerChannels;
-    ComboBox* _viewerColorSpace;
-    FeedBackSpinBox* _zoomSpinbox;
+    ComboBox* _zoomCombobox;
 
+    /*2nd row*/
     FeedBackSpinBox* _gainBox;
     ScaleSlider* _gainSlider;
-
     Button* _refreshButton;
-    QLabel* zoomName;
+    ComboBox* _viewerColorSpace;
 
-	/*openGL viewer*/
+	/*OpenGL viewer*/
 	ViewerGL* viewer;
+    /*Infos*/
     InfoViewerWidget* _infosWidget;
     
 
-	/*timeLine buttons*/
-	QGroupBox* timeButtons;
-	QHBoxLayout* timeButtonsLayout;
-	FeedBackSpinBox* frameNumberBox;
+	/*TimeLine buttons*/
+	QHBoxLayout* _timeLineLayout;
+	FeedBackSpinBox* _currentFrameBox;
 	Button* firstFrame_Button;
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
