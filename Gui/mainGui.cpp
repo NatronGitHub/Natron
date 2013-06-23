@@ -210,14 +210,14 @@ void Gui::setupUi()
     QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
     QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
     sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
-   // _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
-  //  _viewersPane->resize(_viewersPane->width(), 50);
+    _viewersPane->resize(_viewersPane->width(), 50);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
-    
+    //_viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
+
 	
     
 	/*WORKSHOP PANE*/
