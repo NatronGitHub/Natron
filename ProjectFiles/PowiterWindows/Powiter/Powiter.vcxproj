@@ -109,6 +109,7 @@
     <ClCompile Include="..\..\..\Core\viewercache.cpp" />
     <ClCompile Include="..\..\..\Core\viewerNode.cpp" />
     <ClCompile Include="..\..\..\Gui\arrowGUI.cpp" />
+    <ClCompile Include="..\..\..\Gui\comboBox.cpp" />
     <ClCompile Include="..\..\..\Gui\DAG.cpp" />
     <ClCompile Include="..\..\..\Gui\DAGQuickNode.cpp" />
     <ClCompile Include="..\..\..\Gui\dockableSettings.cpp" />
@@ -139,6 +140,7 @@
     <ClCompile Include="..\..\..\Writer\writeExr.cpp" />
     <ClCompile Include="..\..\..\Writer\writeQt.cpp" />
     <ClCompile Include="..\..\..\Writer\Writer.cpp" />
+    <ClCompile Include="..\..\GeneratedFiles\comboBox_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\DAGQuickNode_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\DAG_moc.cpp" />
     <ClCompile Include="..\..\GeneratedFiles\dockableSettings_moc.cpp" />
@@ -173,7 +175,16 @@
     <ClInclude Include="..\..\..\Core\metadata.h" />
     <ClInclude Include="..\..\..\Core\nodecache.h" />
     <ClInclude Include="..\..\..\Core\viewercache.h" />
-    <ClInclude Include="..\..\..\Gui\comboBox.h" />
+    <CustomBuild Include="..\..\..\Gui\comboBox.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">MOC</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe  %(FullPath) -f -o C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MOC</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\%(Directory)..\ProjectFiles\GeneratedFiles\%(Filename)_moc.cpp</Outputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(QT_MOC_PATH)\moc.exe;$(InputPath)</AdditionalInputs>
+    </CustomBuild>
     <ClInclude Include="..\..\..\Gui\framefiledialog.h" />
     <ClInclude Include="..\..\..\Gui\lineEdit.h" />
     <CustomBuild Include="..\..\..\Gui\tabwidget.h">

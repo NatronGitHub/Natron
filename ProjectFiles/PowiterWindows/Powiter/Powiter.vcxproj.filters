@@ -232,6 +232,12 @@
     <ClCompile Include="..\..\..\Writer\writeExr.cpp">
       <Filter>Writer</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Gui\comboBox.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\GeneratedFiles\comboBox_moc.cpp">
+      <Filter>Gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Core\Box.h">
@@ -354,9 +360,6 @@
     <ClInclude Include="..\..\..\Reader\readQt.h">
       <Filter>Reader</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Gui\comboBox.h">
-      <Filter>Gui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Core\viewercache.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -438,6 +441,9 @@
       <Filter>Gui</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\..\Gui\tabwidget.h">
+      <Filter>Gui</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\Gui\comboBox.h">
       <Filter>Gui</Filter>
     </CustomBuild>
   </ItemGroup>

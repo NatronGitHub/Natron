@@ -117,7 +117,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     
 	/*OpenGL viewer*/
 	viewer=new ViewerGL(this,this);
-    //viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/
     /*info bbox & color*/
