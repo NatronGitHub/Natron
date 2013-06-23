@@ -105,9 +105,8 @@ public:
     
     void registerTab(std::string name,QWidget* tab);
     
-protected:
-    virtual void keyPressEvent(QKeyEvent* e);
-    
+    void loadStyleSheet();
+
 private:
 
     TextureCache* _textureCache;

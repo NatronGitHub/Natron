@@ -26,214 +26,189 @@
 #include "Gui/comboBox.h"
 #include "Core/viewerNode.h"
 #include "Gui/Button.h"
-ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(false),_viewerNode(node)
+ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node)
 {
     
     setObjectName(node->getName());
-    viewer_tabLayout=new QVBoxLayout(this);
-    setLayout(viewer_tabLayout);
-    viewer_tabLayout->QLayout::setSpacing(0);
+    _mainLayout=new QVBoxLayout(this);
+    setLayout(_mainLayout);
+    _mainLayout->setSpacing(0);
+    _mainLayout->setContentsMargins(0, 0, 0, 0);
+    
 	/*VIEWER SETTINGS*/
-	viewerSettings=new QGroupBox(this);
-    QHBoxLayout* viewerSettingsLayout = new QHBoxLayout(viewerSettings);
-    viewerSettingsLayout->setSpacing(0);
-    viewerSettingsLayout->setContentsMargins(0, 0, 0, 0);
-    layoutContainer = new QWidget(viewerSettings);
-    layoutContainer_layout = new QVBoxLayout(layoutContainer);
-    firstRow = new QWidget(layoutContainer);
-    secondRow = new QWidget(layoutContainer);
-    layoutFirst = new QHBoxLayout(firstRow);
-    layoutSecond = new QHBoxLayout(secondRow);
-    layoutContainer_layout->QLayout::setSpacing(0);
-    layoutContainer_layout->setContentsMargins(0, 0, 0, 0);
-    layoutFirst->setSpacing(10);
-    layoutSecond->setSpacing(10);
-    layoutFirst->setContentsMargins(0, 0, 0, 0);
-    layoutSecond->setContentsMargins(0, 0, 0, 0);
-    firstRow->setLayout(layoutFirst);
-    secondRow->setLayout(layoutSecond);
-    layoutContainer_layout->addWidget(firstRow);
-    layoutContainer_layout->addWidget(secondRow);
-    layoutContainer->setLayout(layoutContainer_layout);
-    
-    //viewerSettings->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-	viewerSettings->setObjectName(QString::fromUtf8("viewerSettings"));
-    //
-    viewerLayers = new ComboBox(viewerSettings);
-	viewerLayers->setObjectName(QString::fromUtf8("viewerLayers"));
-    layoutFirst->addWidget(viewerLayers);
-
-    //
-    viewerChannels = new ComboBox(viewerSettings);
-	viewerChannels->setObjectName(QString::fromUtf8("viewerChannels"));
-	layoutFirst->addWidget(viewerChannels);
-    //
-    dimensionChoosal=new ComboBox(viewerSettings);
-	dimensionChoosal->setObjectName(QString::fromUtf8("dimensionChoosal"));
-	layoutFirst->addWidget(dimensionChoosal);
-    //
-    zoomName=new QLabel("zoom:",viewerSettings);
-	layoutFirst->addWidget(zoomName);
-    //
-    zoomSpinbox=new FeedBackSpinBox(viewerSettings);
-    zoomSpinbox->setMaximum(3000);
-    zoomSpinbox->setMinimum(10);
-    zoomSpinbox->setIncrement(10);
-    zoomSpinbox->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Minimum);
-	layoutFirst->addWidget(zoomSpinbox);
-    
-	
-
-    gainBox = new FeedBackSpinBox(viewerSettings,true);
-    gainBox->setIncrement(0.1);
-    gainBox->setValue(1.0);
-    gainBox->setMinimum(-99.0);
-    gainBox->setObjectName(QString::fromUtf8("gainBox"));
-    
-    layoutSecond->addWidget(gainBox);
-    
-    //
-    gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter_Enums::LOG_SCALE,5,viewerSettings);
-    layoutSecond->addWidget(gainSlider);
-    //
-	refreshButton = new Button(viewerSettings);
-	refreshButton->setObjectName(QString::fromUtf8("refreshButtons"));
-    layoutSecond->addWidget(refreshButton);
-    //
-		
-    viewerColorSpace=new ComboBox(viewerSettings);
-    viewerColorSpace->setObjectName("ViewerColorSpace");
    
-    layoutSecond->addWidget(viewerColorSpace);
+    /*1st row of buttons*/
+    _firstSettingsRow = new QWidget(this);
+    _firstRowLayout = new QHBoxLayout(_firstSettingsRow);
+    _firstSettingsRow->setLayout(_firstRowLayout);
+    _firstRowLayout->setContentsMargins(0, 0, 0, 0);
+    _firstRowLayout->setSpacing(0);
+   // _firstSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    _mainLayout->addWidget(_firstSettingsRow);
     
-    viewerSettingsLayout->addWidget(layoutContainer);
-    viewerSettings->setLayout(viewerSettingsLayout);
-   // viewerSettings->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
-	viewer_tabLayout->addWidget(viewerSettings);
+    _viewerLayers = new ComboBox(_firstSettingsRow);
+    _firstRowLayout->addWidget(_viewerLayers);
     
-	viewerChannels->clear();
-	viewerChannels->insertItems(0, QStringList()
-                                << QApplication::translate("MainWindow", "rgba" )
-                                << QApplication::translate("MainWindow", "r" )
-                                << QApplication::translate("MainWindow", "g" )
-                                << QApplication::translate("MainWindow", "b" )
-                                );
-	dimensionChoosal->clear();
-	dimensionChoosal->insertItems(0,QStringList()
-                                  << QApplication::translate("MainWindow", "2D" )
-                                  << QApplication::translate("MainWindow", "3D" )
-                                  
-                                  );
-    viewerColorSpace->insertItems(0, QStringList()
-                                  << QString("Linear(None)")
-                                  << QString("sRGB")
-                                  << QString("Rec.709")
-                                  );
+    _viewerChannels = new ComboBox(_firstSettingsRow);
+	_firstRowLayout->addWidget(_viewerChannels);
+    
+    _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
+    _viewerChannels->addItem("RGB",QIcon(),QKeySequence(Qt::SHIFT+Qt::Key_R));
+    _viewerChannels->addItem("R",QIcon(),QKeySequence(Qt::Key_R));
+    _viewerChannels->addItem("G",QIcon(),QKeySequence(Qt::Key_G));
+    _viewerChannels->addItem("B",QIcon(),QKeySequence(Qt::Key_B));
+    _viewerChannels->addItem("A",QIcon(),QKeySequence(Qt::Key_A));
+     
+    _zoomCombobox = new ComboBox(_firstSettingsRow);
+    _zoomCombobox->addItem("10%");
+    _zoomCombobox->addItem("25%");
+    _zoomCombobox->addItem("50%");
+    _zoomCombobox->addItem("75%");
+    _zoomCombobox->addItem("100%");
+    _zoomCombobox->addItem("125%");
+    _zoomCombobox->addItem("150%");
+    _zoomCombobox->addItem("200%");
+    _zoomCombobox->addItem("400%");
+    _zoomCombobox->addItem("800%");
+    _zoomCombobox->addItem("1600%");
+    _zoomCombobox->addItem("2400%");
+    _zoomCombobox->addItem("3200%");
+    _zoomCombobox->addItem("6400%");
+    
+    _firstRowLayout->addWidget(_zoomCombobox);
+    
+    _firstRowLayout->addStretch();
+    
+    /*2nd row of buttons*/
+    _secondSettingsRow = new QWidget(this);
+    _secondRowLayout = new QHBoxLayout(_secondSettingsRow);
+    _secondSettingsRow->setLayout(_secondRowLayout);
+    _secondRowLayout->setSpacing(0);
+    _secondRowLayout->setContentsMargins(0, 0, 0, 0);
+  //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    _mainLayout->addWidget(_secondSettingsRow);
+    
+    _gainBox = new FeedBackSpinBox(_secondSettingsRow,true);
+    _gainBox->setIncrement(0.1);
+    _gainBox->setValue(1.0);
+    _gainBox->setMinimum(-99.0);
+    _secondRowLayout->addWidget(_gainBox);
     
     
-    int index= viewerColorSpace->findText(QString("sRGB"));
-    viewerColorSpace->setCurrentIndex(index);
+    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter_Enums::LOG_SCALE,5,_secondSettingsRow);
+    _secondRowLayout->addWidget(_gainSlider);
+    
+    
+	_refreshButton = new Button(_secondSettingsRow);
+    _secondRowLayout->addWidget(_refreshButton);
+    
+    _viewerColorSpace=new ComboBox(_secondSettingsRow);
+    _secondRowLayout->addWidget(_viewerColorSpace);
+    
+    _viewerColorSpace->addItem("Linear(None)");
+    _viewerColorSpace->addItem("sRGB");
+    _viewerColorSpace->addItem("Rec.709");
+    _viewerColorSpace->setCurrentIndex(1);
+  
+    
+    _secondRowLayout->addStretch();
     
 	/*=============================================*/
     
-	/*openGL viewer*/
-	viewer=new ViewerGL(this);
-	viewer->setObjectName(QString::fromUtf8("viewer"));
-    viewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	viewer_tabLayout->addWidget(viewer);
+	/*OpenGL viewer*/
+	viewer=new ViewerGL(this,this);
+    //viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+	_mainLayout->addWidget(viewer);
 	/*=============================================*/
     /*info bbox & color*/
     _infosWidget = new InfoViewerWidget(viewer,this);
-    viewer_tabLayout->addWidget(_infosWidget);
+  //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    _mainLayout->addWidget(_infosWidget);
     viewer->setInfoViewer(_infosWidget);
     /*=============================================*/
-	/*timeLine buttons*/
-	timeButtons=new QGroupBox(this);
-	timeButtons->setObjectName(QString::fromUtf8("timeButtons"));
-	timeButtonsLayout=new QHBoxLayout(timeButtons);
-	timeButtonsLayout->setObjectName(QString::fromUtf8("timeButtonsLayout"));
-    //
-	frameNumberBox=new FeedBackSpinBox(timeButtons,true);
-	frameNumberBox->setObjectName(QString::fromUtf8("frameNumberBox"));
-    frameNumberBox->setValue(0);
-    frameNumberBox->setMinimum(0);
-    frameNumberBox->setMaximum(0);
-	timeButtonsLayout->addWidget(frameNumberBox);
-    //
-	timeButtonsLayout->addStretch();
     
-	firstFrame_Button = new Button(timeButtons);
-	firstFrame_Button->setObjectName(QString::fromUtf8("firstFrame_Button"));
-	timeButtonsLayout->addWidget(firstFrame_Button);
-    //
-    previousKeyFrame_Button=new Button(timeButtons);
-    previousKeyFrame_Button->setObjectName(QString::fromUtf8("previousKeyFrame_Button"));
-    timeButtonsLayout->addWidget(previousKeyFrame_Button);
-    //
-    play_Backward_Button=new Button(timeButtons);
-    play_Backward_Button->setObjectName(QString::fromUtf8("play_Backward_Button"));
+	/*Player buttons*/
+    _playerButtonsContainer = new QWidget(this);
+	_playerLayout=new QHBoxLayout(_playerButtonsContainer);
+    _playerLayout->setSpacing(0);
+    _playerLayout->setContentsMargins(0, 0, 0, 0);
+    _playerButtonsContainer->setLayout(_playerLayout);
+ //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    _mainLayout->addWidget(_playerButtonsContainer);
+    
+	_currentFrameBox=new FeedBackSpinBox(_playerButtonsContainer,true);
+    _currentFrameBox->setValue(0);
+    _currentFrameBox->setMinimum(0);
+    _currentFrameBox->setMaximum(0);
+    _currentFrameBox->setToolTip(QApplication::translate("MainWindow", "<html><head/><body><p>Frame number</p></body></html>" ));
+	_playerLayout->addWidget(_currentFrameBox);
+    
+	_playerLayout->addStretch();
+    
+	firstFrame_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(firstFrame_Button);
+    
+    
+    previousKeyFrame_Button=new Button(_playerButtonsContainer);
+    _playerLayout->addWidget(previousKeyFrame_Button);
+    
+    
+    play_Backward_Button=new Button(_playerButtonsContainer);
     play_Backward_Button->setCheckable(true);
-    timeButtonsLayout->addWidget(play_Backward_Button);
-    //
-	previousFrame_Button = new Button(timeButtons);
-	previousFrame_Button->setObjectName(QString::fromUtf8("previousFrame_Button"));
-	timeButtonsLayout->addWidget(previousFrame_Button);
-    //
-    stop_Button = new Button(timeButtons);
-	stop_Button->setObjectName(QString::fromUtf8("stop_Button"));
-	timeButtonsLayout->addWidget(stop_Button);
-    //
-    nextFrame_Button = new Button(timeButtons);
-	nextFrame_Button->setObjectName(QString::fromUtf8("nextFrame_Button"));
-	timeButtonsLayout->addWidget(nextFrame_Button);
-    //
-	play_Forward_Button = new Button(timeButtons);
-	play_Forward_Button->setObjectName(QString::fromUtf8("play_Forward_Button"));
+    _playerLayout->addWidget(play_Backward_Button);
+    
+    
+	previousFrame_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(previousFrame_Button);
+    
+    
+    stop_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(stop_Button);
+    
+    
+    nextFrame_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(nextFrame_Button);
+    
+    
+	play_Forward_Button = new Button(_playerButtonsContainer);
     play_Forward_Button->setCheckable(true);
-	timeButtonsLayout->addWidget(play_Forward_Button);
-	//
-    nextKeyFrame_Button = new Button(timeButtons);
-	nextKeyFrame_Button->setObjectName(QString::fromUtf8("nextKeyFrame_Button"));
-	timeButtonsLayout->addWidget(nextKeyFrame_Button);
-    //
-	lastFrame_Button = new Button(timeButtons);
-	lastFrame_Button->setObjectName(QString::fromUtf8("lastFrame_Button"));
-	timeButtonsLayout->addWidget(lastFrame_Button);
-    //
-	timeButtonsLayout->addStretch();
-    //
-    previousIncrement_Button = new Button(timeButtons);
-	previousIncrement_Button->setObjectName(QString::fromUtf8("previousIncrement_Button"));
-	timeButtonsLayout->addWidget(previousIncrement_Button);
-    //
-    incrementSpinBox=new FeedBackSpinBox(timeButtons);
-    incrementSpinBox->setObjectName(QString::fromUtf8("incrementSpinBox"));
+	_playerLayout->addWidget(play_Forward_Button);
+	
+    
+    nextKeyFrame_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(nextKeyFrame_Button);
+    
+    
+	lastFrame_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(lastFrame_Button);
+    
+    
+	_playerLayout->addStretch();
+    
+    
+    previousIncrement_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(previousIncrement_Button);
+    
+    
+    incrementSpinBox=new FeedBackSpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
-    timeButtonsLayout->addWidget(incrementSpinBox);
-    //
-    nextIncrement_Button = new Button(timeButtons);
-	nextIncrement_Button->setObjectName(QString::fromUtf8("nextIncrement_Button"));
-	timeButtonsLayout->addWidget(nextIncrement_Button);
-    //
-    fpsName = new QLabel("fps",timeButtons);
-    timeButtonsLayout->addWidget(fpsName);
-    fpsBox = new FeedBackSpinBox(timeButtons,true);
+    _playerLayout->addWidget(incrementSpinBox);
+    
+    
+    nextIncrement_Button = new Button(_playerButtonsContainer);
+	_playerLayout->addWidget(nextIncrement_Button);
+    
+    
+    fpsName = new QLabel("fps",_playerButtonsContainer);
+    _playerLayout->addWidget(fpsName);
+    fpsBox = new FeedBackSpinBox(_playerButtonsContainer,true);
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
-    timeButtonsLayout->addWidget(fpsBox);
+    _playerLayout->addWidget(fpsBox);
         
-    timeButtons->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-	viewer_tabLayout->addWidget(timeButtons);
-    timeButtonsLayout->setSpacing(0);
-    timeButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    timeButtons->setContentsMargins(0, 0, 0, 0);
-	timeButtons->setLayout(timeButtonsLayout);
     
 
-#ifndef QT_NO_TOOLTIP
-	frameNumberBox->setToolTip(QApplication::translate("MainWindow", "<html><head/><body><p>Frame number</p></body></html>" ));
-#endif // QT_NO_TOOLTIP
     QImage imgFirst(IMAGES_PATH"firstFrame.png");
     QImage imgPrevKF(IMAGES_PATH"prevKF.png");
     QImage imgRewind(IMAGES_PATH"rewind.png");
@@ -285,7 +260,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     lastFrame_Button->setIcon(QIcon(pixLast));
     previousIncrement_Button->setIcon(QIcon(pixPrevIncr));
     nextIncrement_Button->setIcon(QIcon(pixNextIncr));
-    refreshButton->setIcon(QIcon(pixRefresh));
+    _refreshButton->setIcon(QIcon(pixRefresh));
     
     firstFrame_Button->setFixedSize(iW, iH);
     previousKeyFrame_Button->setFixedSize(iW, iH);
@@ -298,34 +273,33 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     lastFrame_Button->setFixedSize(iW, iH);
     previousIncrement_Button->setFixedSize(iW, iH);
     nextIncrement_Button->setFixedSize(iW, iH);
-    refreshButton->setFixedSize(iW, iH);
+    _refreshButton->setFixedSize(iW, iH);
     
 	/*=================================================*/
     
 	/*frame seeker*/
 	frameSeeker = new TimeLine(this);
-	frameSeeker->setObjectName(QString::fromUtf8("frameSeeker"));
-	viewer_tabLayout->addWidget(frameSeeker);
-    viewer_tabLayout->setContentsMargins(0, 0, 0, 0);
+  //  frameSeeker->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+	_mainLayout->addWidget(frameSeeker);
 	/*================================================*/
     
     
     /*slots & signals*/
-    QObject::connect(viewerColorSpace, SIGNAL(activated(QString)), viewer,SLOT(updateColorSpace(QString)));
-    QObject::connect(zoomSpinbox, SIGNAL(valueChanged(double)),viewer, SLOT(zoomSlot(double)));
-    QObject::connect(viewer, SIGNAL(zoomChanged(int)), zoomSpinbox, SLOT(setValue(int)));
-    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameNumberBox,SLOT(setValue(int)));
+    QObject::connect(_viewerColorSpace, SIGNAL(currentIndexChanged(QString)), viewer,SLOT(updateColorSpace(QString)));
+    QObject::connect(_zoomCombobox, SIGNAL(currentIndexChanged(QString)),viewer, SLOT(zoomSlot(QString)));
+    QObject::connect(viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
+    QObject::connect(viewer,SIGNAL(frameChanged(int)),_currentFrameBox,SLOT(setValue(int)));
     QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seek(int)));
-    QObject::connect(gainBox, SIGNAL(valueChanged(double)), viewer,SLOT(updateExposure(double)));
-    QObject::connect(gainSlider, SIGNAL(positionChanged(double)), gainBox, SLOT(setValue(double)));
-    QObject::connect(gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
-    QObject::connect(gainBox, SIGNAL(valueChanged(double)), gainSlider, SLOT(seekScalePosition(double)));
-    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), frameNumberBox, SLOT(setValue(int)));
-    QObject::connect(frameNumberBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
+    QObject::connect(_gainBox, SIGNAL(valueChanged(double)), viewer,SLOT(updateExposure(double)));
+    QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _gainBox, SLOT(setValue(double)));
+    QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
+    QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _gainSlider, SLOT(seekScalePosition(double)));
+    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), _currentFrameBox, SLOT(setValue(int)));
+    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
     
     VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
     
-    QObject::connect(vengine, SIGNAL(fpsChanged(double)), fpsBox, SLOT(setValue(double)));
+    QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(play_Forward_Button,SIGNAL(toggled(bool)),this,SLOT(startPause(bool)));
     QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abort()));
@@ -336,9 +310,17 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),initialized_(
     QObject::connect(nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
-    QObject::connect(frameNumberBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
+    QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     
+}
+
+void ViewerTab::updateZoomComboBox(int value){
+    QString str = QString::number(value);
+    str.append(QChar('%'));
+    str.prepend("  ");
+    str.append("  ");
+    _zoomCombobox->setCurrentText(str);
 }
 
 /*In case they're several viewer around, we need to reset the dag and tell it
@@ -404,5 +386,4 @@ ViewerTab::~ViewerTab()
 void ViewerTab::setTextureCache(TextureCache* cache){
     viewer->setTextureCache(cache);
 }
-
  

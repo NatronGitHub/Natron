@@ -86,7 +86,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
-		settings=new SettingsPanel(this);
+		settings=new SettingsPanel(this,dag);
         
 		dockContainer->addWidget(settings);
 	}

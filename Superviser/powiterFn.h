@@ -23,7 +23,7 @@
 
 #define ROOT "./"
 #define CACHE_ROOT_PATH ROOT"Cache/"
-#define IMAGES_PATH ROOT"Images/"
+#define IMAGES_PATH ROOT"Resources/Images/"
 #define PLUGINS_PATH ROOT"Plugins"
 
 

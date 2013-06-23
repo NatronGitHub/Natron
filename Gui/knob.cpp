@@ -583,7 +583,7 @@ ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mas
     _comboBox = new ComboBox(this);
     _comboBox->addItem("/");
     QLabel* desc = new QLabel(description.c_str());
-    QObject::connect(_comboBox, SIGNAL(activated(QString)), this, SLOT(setCurrentItem(QString)));
+    QObject::connect(_comboBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(setCurrentItem(QString)));
     layout->addWidget(desc);
     layout->addWidget(_comboBox);
     layout->addStretch();

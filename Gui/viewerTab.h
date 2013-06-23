@@ -43,6 +43,8 @@ public:
     
     void setTextureCache(TextureCache* cache);
     
+    Viewer* getInternalNode(){return _viewerNode;}
+    
     QVBoxLayout* _mainLayout;
 
 	/*Viewer Settings*/
@@ -67,7 +69,8 @@ public:
     
 
 	/*TimeLine buttons*/
-	QHBoxLayout* _timeLineLayout;
+    QWidget* _playerButtonsContainer;
+	QHBoxLayout* _playerLayout;
 	FeedBackSpinBox* _currentFrameBox;
 	Button* firstFrame_Button;
     Button* previousKeyFrame_Button;
@@ -88,8 +91,6 @@ public:
 	TimeLine* frameSeeker;
     
     
-    Viewer* getInternalNode(){return _viewerNode;}
-    
 public slots:
     
     void startPause(bool);
@@ -103,6 +104,9 @@ public slots:
     void lastFrame();
     void seekRandomFrame(int);
     void seekRandomFrame(double value){seekRandomFrame((int)value);}
+    
+    /*Updates the comboBox according to the real zoomFactor. Value is in % */
+    void updateZoomComboBox(int value);
 };
 
 #endif // __VIEWER_TAB_H_

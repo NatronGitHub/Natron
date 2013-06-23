@@ -89,21 +89,10 @@ void Gui::createGui(){
     setupUi();
     
     QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
-    //nodeGraphArea->installEventFilter(this);
-    //  viewer_tab->installEventFilter(this);
-    //rightDock->installEventFilter(this);
+   
 }
 
-void Gui::keyPressEvent(QKeyEvent *e){
-    
-    
-    if(e->modifiers().testFlag(Qt::AltModifier) &&
-       e->modifiers().testFlag(Qt::ControlModifier) &&
-       e->key() == Qt::Key_K){
-        
-    }
-    QMainWindow::keyPressEvent(e);
-}
+
 
 bool Gui::eventFilter(QObject *target, QEvent *event){
     
@@ -157,104 +146,8 @@ void Gui::setupUi()
 	QRect screen=desktop->screenGeometry(-1);
 	resize(screen.width(),screen.height());
 	setDockNestingEnabled(false);
-	setStyleSheet("QWidget{background-color:rgba(50,50,50,255); }"
-                  "QPushButton{background-color:rgba(71,71,71,255);color:rgba(200,200,200,255);}"
-                  "QMainWindow{background-color:rgba(50,50,50,255);}"
-                  "QCheckBox::indicator:unchecked {"
-                  "image: url(Images/checkbox.png);"
-                  "}"
-                  "QCheckBox::indicator:checked {"
-                  "image: url(Images/checkbox_checked.png);"
-                  "}"
-                  "QCheckBox::indicator:checked:hover {"
-                  "image: url(Images/checkbox_checked_hovered.png);"
-                  "}"
-                  "QCheckBox::indicator:unchecked:hover {"
-                  "image: url(Images/checkbox_hovered.png);"
-                  "}"
-                  "QGraphicsView{background-color:rgba(71,71,71,255);}"
-                  "QScrollArea{background-color:rgba(50,50,50,255);}"
-                  "QGroupBox{color:rgba(200,200,200,255);background-color:rgba(50,50,50,255);border:0px;}"
-                  "QComboBox{color:rgba(200,200,200,255);background-color:rgba(71,71,71,255);"
-                  "selection-color:rgba(243,149,0,255);selection-background-color:rgba(71,71,71,255);}"
-                  "QComboBox QAbstractItemView{"
-                  "border-radius:0px;"
-                  "border:0px;selection-background-color:rgba(71,71,71,255);"
-                  "background:rgba(71,71,71,255);color:rgb(200,200,200);"
-                  "}"
-                  "QDockWidget::title{background:rgb(71,71,71);}QDockWidget{color:rgb(200,200,200);}"
-                  "QTabWidget::pane{border:0px;}"
-                  "QLabel{color: rgba(200,200,200,255);}"
-                  "QLineEdit{border:1px solid; border-radius:1; padding:1px; background-color : rgba(71,71,71,255);}"
-                  "QLineEdit{color:rgba(200,200,200,255);}"
-                  "QLineEdit:focus {"
-                  "selection-color: rgb(243, 149, 0);"
-                  "border: 2px groove rgb(243, 149, 0);"
-                  "   border-radius: 4px;"
-                  "padding: 2px 4px;"
-                  "}"
-                  "QSplitter::handle:horizontal{background-color:"
-                  "qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(71, 71, 71, 255), stop:0.55 rgba(50, 50, 50, 255), "
-                  "stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));"
-                  "border: 0px;}"
-                  "QSplitter::handle:vertical{background-color:"
-                  "qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(71, 71, 71, 255), stop:0.55 rgba(50, 50, 50, 255), "
-                  "stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));"
-                  "border: 0px;}"
-                  "QSplitter::handle::horizontal{"
-                  "width: 3px;}"
-                  "QSplitter::handle::vertical{"
-                  "height: 3px;}"
-                  "QTabBar::tab {"
-                  "color:rgba(200,200,200,255);"
-                  "background: rgb(39,39,39);"
-                  "border: 1px solid ;"
-                  "    border-bottom-color: rgb(50,50,50);"
-                  "    min-width: 8ex;"
-                  "padding: 0px;"
-                  "    border-top-right-radius: 5px;"
-                  "    border-top-left-radius: 5px;"
-                  "}"
-                  "QTabBar::tab:hover {"
-                  "background: rgb(243,149,0);"
-                  "}"
-                  "QTabBar::tab:selected {"
-                  "background: rgb(50,50,50);"
-                  "    border-bottom-style:none;"
-                  "}"
-                  "QTabBar::tab:!selected {"
-                  "    margin-top: 3px; /* make non-selected tabs look smaller */"
-                  "}"
-                  "/* make use of negative margins for overlapping tabs */"
-                  "QTabBar::tab:selected {"
-                  "    /* expand/overlap to the left and right by 4px */"
-                  "    margin-left: -3px;"
-                  "    margin-right: -3px;"
-                  "}"
-                  "QTabBar::tab:first:selected {"
-                  "    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */"
-                  "}"
-                  "QTabBar::tab:last:selected {"
-                  "    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */"
-                  "}"
-                  "QTabBar::tab:only-one {"
-                  "margin: 0; /* if there is only one tab, we don't want overlapping margins */"
-                  "}"
-                  "QTabWidget::tab-bar {"
-                  "alignment: left;"
-                  "}"
-                  "QMenu {"
-                  "background-color: rgb(50,50,50); /* sets background of the menu */"
-                  "border: 0px;"
-                  "margin: 0px;"
-                  "color : rgb(200,200,200);"
-                  "}"
-                  "QMenu::item:selected { /* when user selects item using mouse or keyboard */"
-                  "background-color: rgb(243,149,0); ;"
-                  "}"
-                  "QMenu::item:!enabled { /* when user selects item using mouse or keyboard */"
-                  "color : rgb(120,120,120);"
-                  "}");
+	
+    loadStyleSheet();
 	
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
@@ -313,20 +206,19 @@ void Gui::setupUi()
 	_viewerWorkshopSplitter = new QSplitter(_centralWidget);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
 	_viewerWorkshopSplitter->setOrientation(Qt::Vertical);
+    _viewerWorkshopSplitter->setChildrenCollapsible(false);
     QSize viewerWorkshopSplitterSize = _viewerWorkshopSplitter->sizeHint();
     QList<int> sizesViewerSplitter; sizesViewerSplitter <<  viewerWorkshopSplitterSize.height()/2;
     sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
-    _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
+   // _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
-    _viewersPane->resize(_viewersPane->width(), screen.height()/4);
+  //  _viewersPane->resize(_viewersPane->width(), 50);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     
-	/*initializing texture cache*/
 	
-	// splitter->setCollapsible(0,false);
     
 	/*WORKSHOP PANE*/
 	//======================
@@ -347,6 +239,7 @@ void Gui::setupUi()
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
     _propertiesScrollArea->setObjectName("Properties_GUI");
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
+    _propertiesContainer->setObjectName("_propertiesContainer");
 	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
 	_layoutPropertiesBin->setSpacing(0);
     _layoutPropertiesBin->setContentsMargins(0, 0, 15, 0);
@@ -414,6 +307,17 @@ void Gui::setupUi()
 	QMetaObject::connectSlotsByName(this);
     
 } // setupUi
+
+void Gui::loadStyleSheet(){
+    QFile qss(ROOT"Resources/Stylesheets/mainstyle.qss");
+    if(qss.open(QIODevice::ReadOnly
+                    | QIODevice::Text))
+    {
+        QTextStream in(&qss);
+        QString content(in.readAll());
+        setStyleSheet(content);
+    }
+}
 
 void Gui::clearTextureCache(){
     std::vector<U32> currentlyUsedTex;

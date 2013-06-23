@@ -45,6 +45,8 @@
 		D7C099CA174FE73A008EBC41 /* framefiledialog.h in Headers */ = {isa = PBXBuildFile; fileRef = D7C099C8174FE73A008EBC41 /* framefiledialog.h */; };
 		D7D70F31176B3E5A00CE71EB /* writeQt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7D70F2F176B3E5A00CE71EB /* writeQt.cpp */; };
 		D7D70F32176B3E5A00CE71EB /* writeQt.h in Headers */ = {isa = PBXBuildFile; fileRef = D7D70F30176B3E5A00CE71EB /* writeQt.h */; };
+		D7DBFE371777135300E78C41 /* comboBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7DBFE361777135300E78C41 /* comboBox.cpp */; };
+		D7DBFE3817771E4400E78C41 /* comboBox.h in Sources */ = {isa = PBXBuildFile; fileRef = D7F9DE2A172D518A00D8640C /* comboBox.h */; };
 		D7F4174E170F7072000182E8 /* libPowiterOsX_x86_64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D76ED161170E2C0900AB21D7 /* libPowiterOsX_x86_64.a */; };
 		D7F4174F170F7078000182E8 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F41735170F687D000182E8 /* OpenGL.framework */; };
 		D7F41753170F7078000182E8 /* libstdc++.6.0.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */; };
@@ -249,6 +251,7 @@
 		D7C099C8174FE73A008EBC41 /* framefiledialog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = framefiledialog.h; sourceTree = "<group>"; };
 		D7D70F2F176B3E5A00CE71EB /* writeQt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = writeQt.cpp; path = ../../Writer/writeQt.cpp; sourceTree = "<group>"; };
 		D7D70F30176B3E5A00CE71EB /* writeQt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = writeQt.h; path = ../../Writer/writeQt.h; sourceTree = "<group>"; };
+		D7DBFE361777135300E78C41 /* comboBox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = comboBox.cpp; sourceTree = "<group>"; };
 		D7F4101B170EF3B3000182E8 /* libstdc++.6.0.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.6.0.9.dylib"; path = "usr/lib/libstdc++.6.0.9.dylib"; sourceTree = SDKROOT; };
 		D7F4101D170F5D57000182E8 /* QtCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtCore.framework; path = ../../libs/Qt_Osx/QtCore.framework; sourceTree = "<group>"; };
 		D7F4101E170F5D57000182E8 /* QtGui.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QtGui.framework; path = ../../libs/Qt_Osx/QtGui.framework; sourceTree = "<group>"; };
@@ -534,6 +537,7 @@
 				D7FD99EF17101E8700D1DCEA /* arrowGUI.h */,
 				D74C17AA17731A5E00FC64E7 /* button.h */,
 				D7F9DE2A172D518A00D8640C /* comboBox.h */,
+				D7DBFE361777135300E78C41 /* comboBox.cpp */,
 				D7FD99F017101E8700D1DCEA /* DAG.cpp */,
 				D7FD99F117101E8700D1DCEA /* DAG.h */,
 				D7FD99F317101E8700D1DCEA /* DAGQuickNode.cpp */,
@@ -764,6 +768,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7DBFE3817771E4400E78C41 /* comboBox.h in Sources */,
 				D77C6B5D1770F56F0027E056 /* viewerTab.h in Sources */,
 				D77C6B5C1770F56B0027E056 /* tabwidget.h in Sources */,
 				D79964F1176FC8810000C22C /* interest.h in Sources */,
@@ -836,6 +841,7 @@
 				D7D70F31176B3E5A00CE71EB /* writeQt.cpp in Sources */,
 				D7300009176D90FC0097FD33 /* writeExr.cpp in Sources */,
 				D79964EF176FBB450000C22C /* interest.cpp in Sources */,
+				D7DBFE371777135300E78C41 /* comboBox.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

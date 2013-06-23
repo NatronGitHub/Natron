@@ -25,7 +25,7 @@ public:
     void setUserRect(QPoint p){rectUser=p;}
     bool colorAndMouseVisible(){return _colorAndMouseVisible;}
     void colorAndMouseVisible(bool b){_colorAndMouseVisible=b;}
-        
+    
 public slots:
     void updateColor();
     void updateCoordMouse();
@@ -34,7 +34,8 @@ public slots:
     void changeUserRect();
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();
-    
+    void setFps(double v);
+
     
 private:
     bool _colorAndMouseVisible;
@@ -52,6 +53,8 @@ private:
     QLabel* color;
     QLabel* hvl_lastOption;
     bool floatingPoint;
+    QLabel* _fpsLabel;
+    float _fps;
     ViewerGL* viewer;
     
     

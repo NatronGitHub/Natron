@@ -68,6 +68,8 @@
  
  */
 
+#define gl_viewer currentViewer->getUiContext()->viewer
+
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
     if (_working || !_enginePostProcessResults->isFinished()) {
         return;
@@ -276,7 +278,6 @@ void VideoEngine::cachedFrameEngine(FrameEntry* frame){
     int w = frame->_actualW ;
     int h = frame->_actualH ;
     /*resizing texture if needed, the calls must be made in that order*/
-    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
     gl_viewer->initTextureBGRA(w,h,gl_viewer->getDefaultTextureID());
     gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
     gl_viewer->drawing(true);
@@ -323,7 +324,6 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer){
-    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
     if(_dag.isOutputAViewer() && fitFrameToViewer){
         gl_viewer->fitToFormat(gl_viewer->displayWindow());
     }
@@ -446,7 +446,6 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
             std::vector<Reader::Buffer::DecodedFrameDescriptor> ret;
             FrameEntry* iscached = 0;
             if(_dag.isOutputAViewer()){
-                ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
                 iscached =_coreEngine->getViewerCache()->get(currentFrameName,
                                                              _treeVersion.getHashValue(),
                                                              gl_viewer->getZoomFactor(),
@@ -499,7 +498,6 @@ VideoEngine::FramesVector VideoEngine::startReading(std::vector<Reader*>& reader
         std::string followingFrameName = reader->getRandomFrameName(followingFrame);
         FrameEntry* iscached = 0;
         if(_dag.isOutputAViewer()){
-            ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
             iscached =_coreEngine->getViewerCache()->get(followingFrameName,
                                                          _treeVersion.getHashValue(),
                                                          gl_viewer->getZoomFactor(),
@@ -546,7 +544,6 @@ void VideoEngine::updateProgressBar(){
     //update progress bar
 }
 void VideoEngine::updateDisplay(){
-    ViewerGL* gl_viewer = currentViewer->getUiContext()->viewer;
     int width = gl_viewer->width();
     int height = gl_viewer->height();
     float ap = gl_viewer->displayWindow().pixel_aspect();
@@ -559,9 +556,10 @@ void VideoEngine::updateDisplay(){
 }
 
 void VideoEngine::startEngine(int nbFrames){
-    bool outputIsViewer = false;
-    if(dynamic_cast<Viewer*>(_dag.getOutput())) outputIsViewer = true;
-    videoEngine(outputIsViewer,nbFrames,true,true);
+    if (dagHasInputs()) {
+        videoEngine(nbFrames,true,true);
+        
+    }
 }
 
 VideoEngine::VideoEngine(Model* engine,QMutex* lock):

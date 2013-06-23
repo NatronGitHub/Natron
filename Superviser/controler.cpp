@@ -12,7 +12,7 @@
 #include "Gui/viewerTab.h"
 #include "Gui/node_ui.h"
 #include "Core/VideoEngine.h"
-
+#include "Gui/tabwidget.h"
 
 Controler::Controler():_model(0),_gui(0){}
 

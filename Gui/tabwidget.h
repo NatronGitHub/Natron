@@ -146,7 +146,7 @@ public:
     void floatCurrentWidget();
     
     void closeCurrentWidget();
-    
+  
 private:
     void destroyTab(QWidget* tab);
 

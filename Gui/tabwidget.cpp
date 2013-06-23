@@ -21,8 +21,9 @@
 TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):QFrame(parent),_currentWidget(0),_decorations(decorations),
 _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_closeButton(0),_isFloating(false),_drawDropRect(false){
     
-    if(decorations!=NONE)
+    if(decorations!=NONE){
         setAcceptDrops(true);
+    }
     setFrameShape(QFrame::NoFrame);
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -30,7 +31,6 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     setLayout(_mainLayout);
     
     _header = new QWidget(this);
-    _mainLayout->addWidget(_header);
     
     _headerLayout = new QHBoxLayout(_header);
     _headerLayout->setContentsMargins(0, 0, 0, 0);
@@ -79,6 +79,8 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
         _leftCornerButton->setContextMenuPolicy(Qt::CustomContextMenu);
         QObject::connect(_leftCornerButton, SIGNAL(clicked()), this, SLOT(createMenu()));
     }
+    
+    _mainLayout->addWidget(_header);
     _mainLayout->addStretch();
 }
 
@@ -135,7 +137,7 @@ void TabWidget::createMenu(){
     menu->addAction(tr("New viewer"), this, SLOT(addNewViewer()));
     menu->addAction(tr("Node graph here"), this, SLOT(moveNodeGraphHere()));
     menu->addAction(tr("Properties bin here"), this, SLOT(movePropertiesBinHere()));
-    menu->exec(_leftCornerButton->mapToGlobal(_leftCornerButton->pos()));
+    menu->exec(_leftCornerButton->mapToGlobal(QPoint(0,0)));
 }
 
 void TabWidget::closeFloatingPane(){
@@ -304,7 +306,6 @@ void TabWidget::removeTab(QWidget* widget){
                 if (_isFloating) {
                     closeFloatingPane();
                 }
-
             }
             break;
         }
@@ -397,3 +398,5 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     drag->setPixmap(pix);
     drag->exec();
 }
+
+

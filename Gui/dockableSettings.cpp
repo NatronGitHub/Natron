@@ -28,6 +28,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     setFrameShape(QFrame::Box);
     
     _headerWidget = new QFrame(this);
+//    setStyleSheet();
     _headerWidget->setFrameShape(QFrame::Box);
     
     _headerLayout = new QHBoxLayout(_headerWidget);
@@ -67,6 +68,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     
     _settingsTab = new QWidget(_tabWidget);
+   // _settingsTab->setStyleSheet("background-color : rgb(50,50,50); color:(200,200,200);");
     _layoutSettings=new QVBoxLayout(_settingsTab);
     _layoutSettings->setSpacing(0);
     _settingsTab->setLayout(_layoutSettings);

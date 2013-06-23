@@ -77,6 +77,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
     setCurrentViewerInfos(_blankViewerInfos,onInit);
 }
 void ViewerGL::initConstructor(){
+       
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->setChannels(Mask_RGBA);
@@ -163,6 +164,9 @@ void ViewerGL::updateGL(){
 	QGLWidget::updateGL();
 }
 
+QSize ViewerGL::sizeHint() const{
+    return QSize(500,500);
+}
 void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
@@ -309,11 +313,6 @@ void ViewerGL::drawOverlay(){
     checkGLErrors();
 }
 
-void ViewerGL::paintEvent(QPaintEvent* event){
-    
-    updateGL();
-    
-}
 
 void ViewerGL::initializeGL(){
 	makeCurrent();
@@ -610,7 +609,7 @@ void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
 void ViewerGL::initBlackTex(){
     makeCurrent();
     
-    _viewerTab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
+    //_viewerTab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
     int w = floorf(displayWindow().w()*_zoomCtx.zoomFactor);
     int h = floorf(displayWindow().h()*_zoomCtx.zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
@@ -1135,6 +1134,10 @@ void ViewerGL::zoomSlot(int v){
         }
     }
 }
+void ViewerGL::zoomSlot(QString str){
+    str.remove(QChar('%'));
+    zoomSlot(str.toInt());
+}
 
 QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
     GLint viewport[4];
@@ -1258,8 +1261,8 @@ void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit,bool i
         _currentViewerInfos->getDisplayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
     if(!onInit){
-        _viewerTab->frameNumberBox->setMaximum(_currentViewerInfos->lastFrame());
-        _viewerTab->frameNumberBox->setMinimum(_currentViewerInfos->firstFrame());
+        _viewerTab->_currentFrameBox->setMaximum(_currentViewerInfos->lastFrame());
+        _viewerTab->_currentFrameBox->setMinimum(_currentViewerInfos->firstFrame());
         int curFirstFrame = _viewerTab->frameSeeker->firstFrame();
         int curLastFrame = _viewerTab->frameSeeker->lastFrame();
         if(_currentViewerInfos->firstFrame() != curFirstFrame || _currentViewerInfos->lastFrame() != curLastFrame){
@@ -1603,11 +1606,10 @@ void ViewerGL::leaveEvent(QEvent *event)
     releaseKeyboard();
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
-    makeCurrent();
-    if(isVisible()){
+   // if(isVisible()){
         QGLWidget::resizeEvent(event);
-        setVisible(true);
-    }
+   // }
+   
 }
 float ViewerGL::byteMode(){
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;

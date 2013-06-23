@@ -10,7 +10,7 @@
 #include "Core/Box.h"
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),
-mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false){
+mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false),_fps(0){
     
     this->viewer = v;
     setObjectName(QString::fromUtf8("infoViewer"));
@@ -42,6 +42,8 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false
     sprintf(tmp, "%i",viewer->dataWindow().top());
     bbox.append(tmp);
     bbox.append("</font>");
+    
+    _fpsLabel = new QLabel(this);
     
     coordDispWindow = new QLabel(bbox,this);
     coordDispWindow->setContentsMargins(0, 0, 0, 0);
@@ -123,6 +125,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false
     
     layout->addWidget(resolution);
     layout->addWidget(coordDispWindow);
+    layout->addWidget(_fpsLabel);
     layout->addWidget(coordMouse);
     layout->addWidget(rgbaValues);
     layout->addWidget(color);
@@ -134,6 +137,12 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false
 
     setLayout(layout);
     
+}
+
+void InfoViewerWidget::setFps(double v){
+    QString str = QString::number(v,'f',1);
+    str.append(" fps");
+    _fpsLabel->setText(str);
 }
 void InfoViewerWidget::showColorAndMouseInfo(){
 
@@ -214,7 +223,7 @@ void InfoViewerWidget::updateColor(){
     QColor hsl= c.toHsl();
     
     QString hsvlValues("<font color=\"#DBE0E0\">    H:");
-    sprintf(tmp, "%i",hsv.hslHue());
+    sprintf(tmp, "%.2f",hsv.hslHueF());
     hsvlValues.append(tmp);
     hsvlValues.append(" S:");
     sprintf(tmp, "%.2f",hsv.hslSaturationF());

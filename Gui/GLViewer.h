@@ -86,6 +86,8 @@ public:
 
 	virtual ~ViewerGL();
 
+    QSize sizeHint() const;
+    
 	/*drawRow is called by the viewer node. Row is a pointer to the
 	row to draw.*/
 	void drawRow(Row *row);
@@ -307,6 +309,7 @@ public:
 		void updateColorSpace(QString str);
 		void zoomSlot(int v);
 		void zoomSlot(double v){zoomSlot((int)v);} // convenience for FeedBackSpinBox
+        void zoomSlot(QString); // parse qstring and removes the % character
 		void updateExposure(double);
 signals:
 		void infoMousePosChanged();
@@ -321,7 +324,6 @@ protected :
 
 	virtual void paintGL();
 	void drawOverlay();
-	virtual void paintEvent(QPaintEvent* event);
 	virtual void keyPressEvent ( QKeyEvent * event );
 	void mousePressEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
