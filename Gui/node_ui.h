@@ -129,6 +129,8 @@ public:
     /*Moves the settings panel on top of the list of panels.*/
     void putSettingsPanelFirst();
     
+    void remove();
+    
 private:
     /*used internally by hasViewerConnected.*/
     static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);

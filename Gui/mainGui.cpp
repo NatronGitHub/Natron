@@ -214,7 +214,7 @@ void Gui::setupUi()
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
-    _viewersPane->resize(_viewersPane->width(), 50);
+    _viewersPane->resize(_viewersPane->width(), screen.height()/5);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     //_viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
 

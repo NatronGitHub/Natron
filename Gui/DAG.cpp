@@ -441,6 +441,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
 
 void NodeGraph::deleteSelectedNode(){
     ctrlPTR->getModel()->removeNode(_nodeSelected->getNode());
+    
     removeNode(_nodeSelected);
     _nodeSelected = 0;
     ctrlPTR->getModel()->resetInternalDAG();
@@ -451,7 +452,7 @@ void NodeGraph::removeNode(NodeGui* n){
     for(int i =0 ; i < _nodes.size();i++){
         if (n == _nodes[i]) {
             
-            delete n;
+            n->remove();
             _nodes.erase(_nodes.begin()+i);
             break;
         }

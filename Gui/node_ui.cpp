@@ -121,6 +121,12 @@ NodeGui::~NodeGui(){
     foreach(Edge* a,inputs) delete a;
 }
 
+void NodeGui::remove(){
+    dockContainer->removeWidget(settings);
+    delete settings;
+    delete this;
+}
+
 void NodeGui::updateChannelsTooltip(){
     QString tooltip;
     ChannelSet chans= node->getInfo()->channels();

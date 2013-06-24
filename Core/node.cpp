@@ -62,6 +62,7 @@ void Node::Info::reset(){
     _ydirection = 0;
     _channels = Mask_None;
     set(0, 0, 0, 0);
+    _displayWindow.set(0,0,0,0);
     _modified = false;
     _blackOutside = false;
 }
