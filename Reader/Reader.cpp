@@ -118,12 +118,10 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
             float zoomFactor;
             const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
             if(_fitFrameToViewer){
-                float h = (float)(dispW.h());
-                zoomFactor = (float)currentViewer->getUiContext()->height()/h -0.05;
                 currentViewer->getUiContext()->viewer->fitToFormat(dispW);
-            }else{
-                zoomFactor = currentViewer->getUiContext()->viewer->getZoomFactor();
             }
+            zoomFactor = currentViewer->getUiContext()->viewer->getZoomFactor();
+            
             
             slContext->setRows(currentViewer->getUiContext()->viewer->computeRowSpan(dispW, zoomFactor));
         }else{

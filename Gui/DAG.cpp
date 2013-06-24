@@ -329,10 +329,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_fullscreen){
             _fullscreen = true;
-            ctrlPTR->getGui()->_viewersPane->hide();
+            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
         }else{
             _fullscreen = false;
-            ctrlPTR->getGui()->_viewersPane->show();
+            ctrlPTR->getGui()->exitFullScreen();
         }
         
     }else if(e->key() == Qt::Key_Backspace){

@@ -193,14 +193,17 @@ void Gui::setupUi()
     _mainLayout->setContentsMargins(0, 0, 0, 0);
 	_centralWidget->setLayout(_mainLayout);
     
-    _toolsPane = new TabWidget(TabWidget::NONE,_centralWidget);
+    _leftRightSplitter = new QSplitter(_centralWidget);
+    _leftRightSplitter->setOrientation(Qt::Horizontal);
+    _leftRightSplitter->setContentsMargins(0, 0, 0, 0);
+    
+    _toolsPane = new TabWidget(TabWidget::NONE,_leftRightSplitter);
+    _panes.push_back(_toolsPane);
     _toolBox = new QToolBox(_toolsPane);
     _toolsPane->appendTab("", _toolBox);
     _toolsPane->setMaximumWidth(50);
     
-    _leftRightSplitter = new QSplitter(_centralWidget);
-    _leftRightSplitter->setOrientation(Qt::Horizontal);
-    _leftRightSplitter->setContentsMargins(0, 0, 0, 0);
+  
     _leftRightSplitter->addWidget(_toolsPane);
     
 	_viewerWorkshopSplitter = new QSplitter(_centralWidget);
@@ -214,15 +217,17 @@ void Gui::setupUi()
     /*VIEWERS related*/
     _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), screen.height()/5);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
-    //_viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
+  //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
 
 	
     
 	/*WORKSHOP PANE*/
 	//======================
 	_workshopPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+    _panes.push_back(_workshopPane);
     /*creating DAG gui*/
 	addNodeGraph();
 	
@@ -236,6 +241,7 @@ void Gui::setupUi()
 	/*PROPERTIES DOCK*/
 	//======================
 	_propertiesPane = new TabWidget(TabWidget::NOT_CLOSABLE,this);
+    _panes.push_back(_propertiesPane);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
     _propertiesScrollArea->setObjectName("Properties_GUI");
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
@@ -316,6 +322,20 @@ void Gui::loadStyleSheet(){
         QTextStream in(&qss);
         QString content(in.readAll());
         setStyleSheet(content);
+    }
+}
+
+void Gui::setFullScreen(TabWidget* what){
+    for (U32 i =0; i < _panes.size(); i++) {
+        if (_panes[i] != what) {
+            _panes[i]->hide();
+        }
+    }
+}
+
+void Gui::exitFullScreen(){
+    for (U32 i =0; i < _panes.size(); i++) {
+        _panes[i]->show();
     }
 }
 
@@ -423,6 +443,7 @@ void Gui::splitPaneHorizontally(TabWidget* what){
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    _panes.push_back(newTab);
     newSplitter->addWidget(newTab);
     
     QSize splitterSize = newSplitter->sizeHint();
@@ -452,6 +473,7 @@ void Gui::splitPaneVertically(TabWidget* what){
     
     /*Adding now a new tab*/
     TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    _panes.push_back(newTab);
     newSplitter->addWidget(newTab);
     
     QSize splitterSize = newSplitter->sizeHint();
@@ -475,12 +497,21 @@ void Gui::closePane(TabWidget* what){
     QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
     if(!container) return;
     
+    /*Removing it from the _panes vector*/
+    for (U32 i = 0; i < _panes.size(); i++) {
+        if (_panes[i] == what) {
+            _panes.erase(_panes.begin()+i);
+            break;
+        }
+    }
+    
     /*If it is floating we do not need to re-arrange the splitters containing the tab*/
     if (what->isFloating()) {
         what->destroyTabs();
         delete what;
         return;
     }
+
     
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/

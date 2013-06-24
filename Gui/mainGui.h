@@ -99,6 +99,10 @@ public:
     
     void closePane(TabWidget* what);
     
+    void setFullScreen(TabWidget* what);
+    
+    void exitFullScreen();
+    
     /*Returns a valid tab if a tab with a matching name has been
      found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string& name) const;
@@ -187,6 +191,9 @@ public:
 	QMenu *viewersMenu;
     QMenu *cacheMenu;
     
+    
+    /*all TabWidget's : used to know what to hide/show for fullscreen mode*/
+    std::vector<TabWidget*> _panes;
     
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;

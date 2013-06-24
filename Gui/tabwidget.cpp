@@ -50,7 +50,7 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     if(decorations != NONE){
         
         _leftCornerButton = new Button(QIcon(pixL),"",_header);
-         _leftCornerButton->setToolTip(tr("Manage the layouts for this pane."));
+        _leftCornerButton->setToolTip(tr("Manage the layouts for this pane."));
         _leftCornerButton->setFixedSize(15,15);
         _headerLayout->addWidget(_leftCornerButton);
         _headerLayout->addSpacing(10);
@@ -369,8 +369,12 @@ void TabWidget::dropEvent(QDropEvent* event){
 }
 
 
-TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar (parent) , _tabWidget(tabWidget){
+TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar(parent) , _tabWidget(tabWidget) /* ,_currentIndex(-1)*/{
     
+//    _mainLayout = new QHBoxLayout(this);
+//    _mainLayout->setContentsMargins(0, 0, 0, 0);
+//    _mainLayout->setSpacing(0);
+//    setLayout(_mainLayout);
 }
 
 void TabBar::mousePressEvent(QMouseEvent* event){
@@ -398,5 +402,97 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     drag->setPixmap(pix);
     drag->exec();
 }
+//
+//void TabBar::addTab(const QString& text){
+//    _mainLayout->addWidget(new Tab(QIcon(),text,this));
+//}
+//
+//void TabBar::addTab(const QIcon& icon,const QString& text){
+//    _mainLayout->addWidget(new Tab(icon,text,this));
+//}
+//
+//void TabBar::insertTab(int index,const QString& text){
+//    _mainLayout->insertWidget(index,new Tab(QIcon(),text,this));
+//}
+//
+//void TabBar::insertTab(int index,const QIcon& icon,const QString& text){
+//    _mainLayout->insertWidget(index,new Tab(icon,text,this));
+//}
 
+//void TabBar::removeTab(int index){
+//    _mainLayout->removeWidget(dynamic_cast<Tab*>(_mainLayout->itemAt(index)));
+//    setCurrentIndex(index-1);
+//}
+//
+//QString TabBar::tabText(int index) const{
+//    Tab* tab = dynamic_cast<Tab*>(_mainLayout->itemAt(index));
+//    QString ret;
+//    if (tab) {
+//        ret = tab->text();
+//    }
+//    return ret;
+//}
+//
+//int TabBar::count() const {
+//    return _mainLayout->count();
+//}
+//
+//void TabBar::setCurrentIndex(int index){
+//    if (index == -1) {
+//        _currentIndex = -1;
+//        emit currentChanged(-1);
+//    }
+//    for (int i =0 ; i < count(); i++) {
+//        Tab* tab = dynamic_cast<Tab*>(_mainLayout->itemAt(index));
+//        if (tab) {
+//            if (i == index) {
+//                _currentIndex = index;
+//                emit currentChanged(index);
+//                tab->setCurrent(true);
+//            }else{
+//                tab->setCurrent(false);
+//            }
+//        }
+//    }
+//}
 
+//int TabBar::currentIndex() const{
+//    return _currentIndex;
+//}
+//
+//Tab::Tab(const QIcon& icon,const QString& text,QWidget* parent): QFrame(parent),isCurrent(false){
+//    _layout = new QHBoxLayout(this);
+//    _layout->setContentsMargins(0, 0, 5, 0);
+//    setLayout(_layout);
+//    _icon = new QLabel(this);
+//    if (!icon.isNull()) {
+//        _icon->setPixmap(icon.pixmap(15, 15));
+//    }
+//    _text = new QLabel(text,this);
+//    _layout->addWidget(_icon);
+//    _layout->addWidget(_text);
+//    setFrameShape(QFrame::Box);
+//}
+
+//void Tab::setCurrent(bool cur){isCurrent = cur;}
+//    
+//bool Tab::current() const {return isCurrent;}
+//
+//void Tab::paintEvent(QPaintEvent* e){
+//    
+//    QFrame::paintEvent(e);
+//}
+//
+//void Tab::setIcon(const QIcon& icon){
+//    if (!icon.isNull()) {
+//        _icon->setPixmap(icon.pixmap(15, 15));
+//    }
+//}
+//
+//void Tab::setText(const QString& text){
+//    _text->setText(text);
+//}
+
+//QString Tab::text() const{
+//    return _text->text();
+//}

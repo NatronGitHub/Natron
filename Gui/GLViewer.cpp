@@ -1007,13 +1007,10 @@ void ViewerGL::keyPressEvent ( QKeyEvent * event ){
         releaseKeyboard();
         if(_fullscreen){
             _fullscreen=false;
-            ctrlPTR->getGui()->_propertiesPane->show();
-            ctrlPTR->getGui()->_workshopPane->show();
+            ctrlPTR->getGui()->exitFullScreen();
         }else{
             _fullscreen=true;
-            ctrlPTR->getGui()->_propertiesPane->hide();
-            ctrlPTR->getGui()->_workshopPane->hide();
-            
+            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(_viewerTab->parentWidget()));
         }
     }
     

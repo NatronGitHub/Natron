@@ -20,19 +20,92 @@ class QVBoxLayout;
 class QMenu;
 class Button;
 class QMouseEvent;
+class QLabel;
 class QDropEvent;
 class QDragEnterEvent;
 class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
 
+//class Tab : public QFrame{
+//    
+//    Q_OBJECT
+//    Q_PROPERTY( bool isCurrent READ current WRITE setCurrent)
+//    
+//    
+//    QHBoxLayout* _layout;
+//    QLabel* _icon;
+//    QLabel* _text;
+//    bool isCurrent;
+//    
+//public:
+//    
+//    Tab(const QIcon& icon,const QString& text,QWidget* parent= 0);
+//    
+//    virtual ~Tab(){}
+//    
+//    void setCurrent(bool cur);
+//    
+//    bool current() const ;
+//    
+//    void setIcon(const QIcon& icon);
+//    
+//    void setText(const QString& text);
+//    
+//    QString text() const;
+//    
+//    
+//protected:
+//    
+//    virtual void paintEvent(QPaintEvent* e);
+//    
+//};
+
+
 class TabBar : public QTabBar{
+    
+    Q_OBJECT
+    
+    
+    
     QPoint _dragPos;
     TabWidget* _tabWidget; // ptr to the tabWidget
+    
+  //  QHBoxLayout* _mainLayout;
+    
+  //  int _currentIndex;
+    
 public:
-    virtual ~TabBar(){}
     
     TabBar(TabWidget* tabWidget,QWidget* parent = 0);
+    
+//    void addTab(const QString& text);
+//    
+//    void addTab(const QIcon& icon,const QString& text);
+//    
+//    void insertTab(int index,const QString& text);
+//    
+//    void insertTab(int index,const QIcon& icon,const QString& text);
+//    
+//    void removeTab(int index);
+//    
+//    QString tabText(int index) const;
+//    
+//    int count() const ;
+//    
+//    int currentIndex() const;
+//
+    virtual ~TabBar(){}
+//
+//    public slots:
+//    
+//    void setCurrentIndex(int index);
+//    
+//signals:
+//    
+//    void currentChanged(int);
+    
+protected:
     
     virtual void mousePressEvent(QMouseEvent* event);
     
@@ -146,8 +219,11 @@ public:
     void floatCurrentWidget();
     
     void closeCurrentWidget();
-  
+    
+
+    
 private:
+    
     void destroyTab(QWidget* tab);
 
 };
