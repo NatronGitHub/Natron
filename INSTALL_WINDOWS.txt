@@ -46,6 +46,12 @@ Download it and compile it yourself from (FTGL download)[http://sourceforge.net/
 Boost headers are required, but not the libraries. You can download boost from 
 (boost download)[http://www.boost.org/users/download/]
 
+###glew
+On windows,OpenGL API is not up to date to the features we need. You'll need to download glew, that provides a recent version of the OpenGL API:
+
+(glew download)[http://glew.sourceforge.net/]
+
+
 We're done here for libraries.
 
 ###Add the config.pri file
@@ -61,40 +67,40 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 openexr2{
-    INCLUDEPATH += /usr/local/include/OpenEXR
-    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf
+    INCLUDEPATH += $$quote(C:\\Program Files\OpenExr_win32\include)
+    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Release) -lIlmimf -lIex -lImath -lHalf
 }
 
 ftgl{
-    INCLUDEPATH += /usr/local/include
-    LIBS += -L/usr/local/lib -lftgl
+    INCLUDEPATH +=  $$quote(C:\\Program Files\ftgl_win32\include)
+    LIBS += -L$$quote(C:\\Program Files\ftgl_win32\lib) -lftgl
 }
 ffmpeg{
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
-}
-
-freetype{
-    INCLUDEPATH += /opt/local/include/freetype2
-    LIBS += -L/opt/local/lib -lfreetype
+    INCLUDEPATH +=  $$quote(C:\\Program Files\ffmpeg_win32\include)
+    LIBS += -L$$quote(C:\\Program Files\ffmpeg_win32\lib)  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
 }
 
 freetype2{
-    INCLUDEPATH += /opt/local/include
+    INCLUDEPATH += $$quote(C:\\Program Files\freetype2_win32\include)
+    LIBS += -L$$quote(C:\\Program Files\freetype2_win32\lib) -lfreetype242MT
 }
 
 boost{
-    INCLUDEPATH += /opt/local/include
+    INCLUDEPATH +=  $$quote(C:\\)
 }
 
 qtincludes{
-    INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+    INCLUDEPATH +=  $$quote(C:\Qt\Qt5.0.2_opengl\5.0.2\msvc2010_opengl\include)
 }
 
-###(Optional) Build on Xcode:
+glew{
+    INCLUDEPATH +=  $$quote(C:\\glew\include)
+    LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
+}
+###(Optional) Build on Visual Studio:
 
-You can generate an Xcode project by typing the following command where Powiter.pro is located:
+You can generate a visual studio (2010) project by typing the following command where Powiter.pro is located:
 
-qmake -spec macx-xcode Powiter.pro
+qmake -spec win32-msvc2010 -tp vc Powiter.pro
 
 
