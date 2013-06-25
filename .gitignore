@@ -3,6 +3,7 @@
 *_moc.cpp
 build*
 DerivedData/*
+*.xcodeproj
 *.xcworkspace
 *xcuserdata
 *.perspectivev3
