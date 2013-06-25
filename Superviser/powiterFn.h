@@ -22,8 +22,8 @@
 
 
 #define ROOT "./"
-#define CACHE_ROOT_PATH ROOT"Cache/"
-#define IMAGES_PATH ROOT"Resources/Images/"
+#define CACHE_ROOT_PATH "./"
+#define IMAGES_PATH ":/Resources/Images/"
 #define PLUGINS_PATH ROOT"Plugins"
 
 
@@ -48,7 +48,7 @@ namespace PowiterWindows{
 #ifdef __POWITER_WIN32__
 
 	/*Converts a std::string to wide string*/
-    static std::wstring s2ws(const std::string& s)
+    inline std::wstring s2ws(const std::string& s)
     {
         int len;
         int slength = (int)s.length() + 1;
@@ -69,13 +69,13 @@ namespace PowiterWindows{
 #undef strlen
 /*Windows fix to have safe c string handling functions*/
 
-static size_t strlen(const char* src){
+inline size_t strlen(const char* src){
 	const char *eos = src;
 	while( *eos++ ) ;
 	return( eos - src - 1 );
 }
 
-static size_t strlcpy(char *dest, const char *src, size_t size)
+inline size_t strlcpy(char *dest, const char *src, size_t size)
 {
 	size_t res = strlen(src);
 	if (size > 0) {
@@ -86,7 +86,7 @@ static size_t strlcpy(char *dest, const char *src, size_t size)
 	return res;
 }
 
-static char* strcpy(char* dest,const char* src){
+inline char* strcpy(char* dest,const char* src){
 	size_t res = strlen(src);
 	if (res > 0) {
 		memcpy(dest, src, res);

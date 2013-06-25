@@ -14,14 +14,22 @@ _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_
 {
     
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
-    setMinimumSize(500,40);
+   // setMinimumSize(500,40);
     for(int i =0;i <=100;i++) _values.push_back(i);
     _displayedValues << 0 << 10 <<  20 << 30 << 40 << 50 << 60 << 70 << 80 << 90 << 100;
     _increment=10;
     setMouseTracking(true);
         
 }
-void TimeLine::updateScale(){ 
+
+QSize TimeLine::minimumSizeHint() const{
+    return QSize(500,40);
+}
+QSize TimeLine::sizeHint() const{
+    return QSize(500,40);
+}
+
+void TimeLine::updateScale(){
     _values.clear();
     _displayedValues.clear();
 //    int _maximum = _first;
@@ -371,6 +379,7 @@ void TimeLine::mousePressEvent(QMouseEvent* e){
     }
     
     repaint();
+    QWidget::mousePressEvent(e);
 
 }
 void TimeLine::mouseMoveEvent(QMouseEvent* e){
@@ -398,6 +407,7 @@ void TimeLine::mouseMoveEvent(QMouseEvent* e){
         }
 
     }
+    QWidget::mouseMoveEvent(e);
     repaint();
 
 }
@@ -415,6 +425,7 @@ void TimeLine::leaveEvent(QEvent* e){
 
 void TimeLine::mouseReleaseEvent(QMouseEvent* e){
     _state = IDLE;
+    QWidget::mouseReleaseEvent(e);
 }
 
 

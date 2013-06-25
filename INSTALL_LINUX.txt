@@ -49,3 +49,54 @@ Alternatively you can install boost from apt-get:
 
 We're done here for libraries.
 
+
+###Add the config.pri file
+
+You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
+
+- create the config.pri file next to the Powiter.pro file.
+
+You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system.
+
+INCLUDEPATH is the path to the include files
+
+LIBS is the path to the libs
+
+openexr2{
+    INCLUDEPATH += /usr/local/include/OpenEXR
+    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf
+}
+
+ftgl{
+    INCLUDEPATH += /usr/local/include
+    LIBS += -L/usr/local/lib -lftgl
+}
+ffmpeg{
+    INCLUDEPATH += /opt/local/include
+    LIBS += -L/opt/local/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+}
+
+freetype{
+    INCLUDEPATH += /opt/local/include/freetype2
+    LIBS += -L/opt/local/lib -lfreetype
+}
+
+freetype2{
+    INCLUDEPATH += /opt/local/include
+}
+
+boost{
+    INCLUDEPATH += /opt/local/include
+}
+
+qtincludes{
+    INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+}
+
+###(Optional) Build on Xcode:
+
+You can generate an Xcode project by typing the following command where Powiter.pro is located:
+
+qmake -spec macx-xcode Powiter.pro
+
+

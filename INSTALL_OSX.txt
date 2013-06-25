@@ -1,0 +1,103 @@
+Developer installation on mac osx
+=================================
+
+This file is supposed to guide you step by step to have working (compiling) version of Powiter on mac osx ( >= 10.6 ). 
+You need an up to date macports version. Just download it and install it from : 
+(Macports website)[http://www.macports.org]
+
+##Note
+
+If you're planning on writing a CMAKE based project file, and that you succeed in making it portable(windows/linux/osx), please send a mail at immarespond at gmail dot com.
+
+##Install libraries
+
+In order to have Powiter compiling, first you need to install the required libraries.
+
+###Qt 5
+
+You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads).Once downloaded, remember the path where you install it as we will need it into Xcode.
+
+###FFMPEG
+
+Open a terminal and type:
+	sudo port install ffmpeg
+It should install it to your macports download tree. By default it should be something along the lines of /opt/local 
+
+###OpenEXR 2.0.0
+
+This one is not on macports yet. You have two solutions, either you can get the binaries I compiled for osx 64bit on dropbox, or you can download it from :
+(OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself.
+
+Here's the dropbox link for 64bit binaries :(Dropbox link)[https://www.dropbox.com/sh/ru7cjns0fjvn7aa/U8iRn3xQEn]
+
+###freetype2
+
+You can either use macports:
+	sudo port install freetype
+or compile it by yourself from (Freetype download)[http://download.savannah.gnu.org/releases/freetype/] (make sure to download freetype 2.x)
+
+###ftgl
+
+Again with macports:
+	sudo port install ftgl
+Or download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]
+
+###boost
+
+Boost headers are required, but not the libraries. You can download boost from 
+(boost download)[http://www.boost.org/users/download/]
+or through macports, but it will also install the boost libraries:
+	sudo port install boost
+
+We're done here for libraries.
+
+###Add the config.pri file
+
+You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
+
+- create the config.pri file next to the Powiter.pro file.
+
+You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system.
+
+INCLUDEPATH is the path to the include files
+
+LIBS is the path to the libs
+
+openexr2{
+    INCLUDEPATH += /usr/local/include/OpenEXR
+    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf
+}
+
+ftgl{
+    INCLUDEPATH += /usr/local/include
+    LIBS += -L/usr/local/lib -lftgl
+}
+ffmpeg{
+    INCLUDEPATH += /opt/local/include
+    LIBS += -L/opt/local/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+}
+
+freetype{
+    INCLUDEPATH += /opt/local/include/freetype2
+    LIBS += -L/opt/local/lib -lfreetype
+}
+
+freetype2{
+    INCLUDEPATH += /opt/local/include
+}
+
+boost{
+    INCLUDEPATH += /opt/local/include
+}
+
+qtincludes{
+    INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+}
+
+###(Optional) Build on Xcode:
+
+You can generate an Xcode project by typing the following command where Powiter.pro is located:
+
+qmake -spec macx-xcode Powiter.pro
+
+

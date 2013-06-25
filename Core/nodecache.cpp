@@ -13,7 +13,7 @@
 #include <QtCore/QDir>
 using namespace std;
 
-NodeCache::NodeCache(){
+NodeCache::NodeCache() : AbstractMemoryCache() {
     
 }
 NodeCache::~NodeCache(){

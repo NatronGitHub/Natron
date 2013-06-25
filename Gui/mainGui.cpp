@@ -315,7 +315,7 @@ void Gui::setupUi()
 } // setupUi
 
 void Gui::loadStyleSheet(){
-    QFile qss(ROOT"Resources/Stylesheets/mainstyle.qss");
+    QFile qss(":/Resources/Stylesheets/mainstyle.qss");
     if(qss.open(QIODevice::ReadOnly
                     | QIODevice::Text))
     {

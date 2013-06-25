@@ -79,7 +79,13 @@ SOURCES += \
     ../../../../Superviser/controler.cpp \
     ../../../../Core/viewercache.cpp \
     ../../../../Gui/texturecache.cpp \
-    ../../../../Gui/framefiledialog.cpp
+    ../../../../Gui/framefiledialog.cpp \
+    ../../../../Writer/Writer.cpp \
+    ../../../../Writer/writeQt.cpp \
+    ../../../../Writer/writeExr.cpp \
+    ../../../../Writer/Write.cpp \
+    ../../../../Gui/tabwidget.cpp \
+    ../../../../Gui/comboBox.cpp
 
 HEADERS += \
     ../../../../Gui/arrowGUI.h \
@@ -128,7 +134,6 @@ HEADERS += \
     ../../../../Core/viewerNode.h \
     ../../../../Reader/Read.h \
     ../../../../Reader/Reader.h \
-    ../../../../Reader/readerInfo.h \
     ../../../../Reader/readExr.h \
     ../../../../Reader/readffmpeg.h \
     ../../../../Reader/readQt.h \
@@ -137,10 +142,18 @@ HEADERS += \
     ../../../../Superviser/gl_OsDependent.h \
     ../../../../Superviser/MemoryInfo.h \
     ../../../../Superviser/powiterFn.h \
-    ../../../../Superviser/PwStrings.h \
     ../../../../Core/viewercache.h \
     ../../../../Gui/texturecache.h \
-    ../../../../Gui/framefiledialog.h
+    ../../../../Gui/framefiledialog.h \
+    ../../../../Gui/tabwidget.h \
+    ../../../../Core/LRUcache.h \
+    ../../../../Core/interest.h \
+    ../../../../Reader/exrCommons.h \
+    ../../../../Writer/Writer.h \
+    ../../../../Writer/writeQt.h \
+    ../../../../Writer/writeExr.h \
+    ../../../../Writer/Write.h \
+    ../../../../Gui/lineEdit.h
 
 INSTALLS += target
 

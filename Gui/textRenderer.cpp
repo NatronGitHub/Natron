@@ -23,6 +23,7 @@
 //a trademark of Bitstream, Inc.
 
 #include <QtGui/QPainter>
+#include <QtCore/QFile>
 #include "Gui/GLViewer.h"
 #include "Gui/textRenderer.h"
 #include <iostream>
@@ -30,7 +31,9 @@ using namespace std;
 TextRenderer::TextRenderer(ViewerGL *glwidget)
 {
 	m_glwidget = glwidget;
-    m_font = new FTTextureFont(ROOT"/libs/fonts/DejaVuSans.ttf");
+    QFile font(":/Resources/fonts/DejaVuSans.ttf");
+    uchar* buf = font.map(0,font.size());
+    m_font = new FTTextureFont(buf,font.size());
     if(m_font->Error())
         cout << "error loading font " << endl;
     m_font->FaceSize(14);

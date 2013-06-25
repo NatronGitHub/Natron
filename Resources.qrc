@@ -1,0 +1,33 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Resources/Images/back1.png</file>
+        <file>Resources/Images/checkbox_checked_hovered.png</file>
+        <file>Resources/Images/checkbox_checked.png</file>
+        <file>Resources/Images/checkbox_hovered.png</file>
+        <file>Resources/Images/checkbox.png</file>
+        <file>Resources/Images/close.png</file>
+        <file>Resources/Images/combobox.png</file>
+        <file>Resources/Images/firstFrame.png</file>
+        <file>Resources/Images/forward1.png</file>
+        <file>Resources/Images/lastFrame.png</file>
+        <file>Resources/Images/layout.png</file>
+        <file>Resources/Images/maximize.png</file>
+        <file>Resources/Images/minimize.png</file>
+        <file>Resources/Images/nextIncr.png</file>
+        <file>Resources/Images/nextKF.png</file>
+        <file>Resources/Images/open-file.png</file>
+        <file>Resources/Images/play.png</file>
+        <file>Resources/Images/pressed_combobox.png</file>
+        <file>Resources/Images/previousIncr.png</file>
+        <file>Resources/Images/prevKF.png</file>
+        <file>Resources/Images/refresh.png</file>
+        <file>Resources/Images/rewind.png</file>
+        <file>Resources/Images/RGBAchannels.png</file>
+        <file>Resources/Images/splashscreen.png</file>
+        <file>Resources/Images/splitHorizontally.png</file>
+        <file>Resources/Images/splitVertically.png</file>
+        <file>Resources/Images/stop.png</file>
+        <file>Resources/Stylesheets/mainstyle.qss</file>
+        <file>Resources/fonts/DejaVuSans.ttf</file>
+    </qresource>
+</RCC>

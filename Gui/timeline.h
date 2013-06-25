@@ -73,6 +73,8 @@ protected:
     virtual void paintEvent(QPaintEvent* e);
     virtual void enterEvent(QEvent* e);
     virtual void leaveEvent(QEvent* e);
+    virtual QSize minimumSizeHint() const;
+    virtual QSize sizeHint() const;
 private:
     double getScalePosition(double); // input: scale value, output: corresponding coordinate on scale
     double getCoordPosition(double); // opposite
