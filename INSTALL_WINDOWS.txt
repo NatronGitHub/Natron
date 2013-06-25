@@ -31,6 +31,14 @@ Here's the dropbox link for 32bit binaries :(Dropbox link)[https://www.dropbox.c
 
 (64bit) will come soon.
 
+If you're having troubles to compile OpenEXR , here's some documentation: 
+
+http://hebbut.net/Public.Offerings/OpenEXR.html
+
+http://michael-stengel.com/blog/?p=51
+
+http://www.fixstars.com/en/lucille/docs/dev/index.php/How_to_build_OpenEXR_libs_for_Win_64bit
+
 ###freetype2
 
 
