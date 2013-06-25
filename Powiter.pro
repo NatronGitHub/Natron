@@ -5,18 +5,30 @@ CONFIG += app
 QT+= core opengl gui widgets concurrent
 CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg
 
+win32{
+    CONFIG += glew
+}
+
+
+
+CONFIG(release, debug|release) {
+    DESTDIR = release
+    OBJECTS_DIR = release/.obj
+    MOC_DIR = release/.moc
+    RCC_DIR = release/.rcc
+    UI_DIR = release/.ui
+}
+CONFIG(debug, debug|release) {
+    DESTDIR = debug
+    OBJECTS_DIR = debug/.obj
+    MOC_DIR = debug/.moc
+    RCC_DIR = debug/.rcc
+    UI_DIR = debug/.ui
+}
+
 include(config.pri)
 
-message(Now building Powiter...the working directory is:  $(POWITER_ROOT))
-
-
-#target.path = ($POWITER_ROOT)/ProjectFiles/build
-
-message(Now building Powiter...the working directory is:  $$PWD)
-
 INCLUDEPATH += $$PWD/
-
-#DEPENDPATH += $$PWD/
 
 
 SOURCES += \

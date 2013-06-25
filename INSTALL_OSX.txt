@@ -65,7 +65,7 @@ LIBS is the path to the libs
 
 openexr2{
     INCLUDEPATH += /usr/local/include/OpenEXR
-     LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
+   LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{

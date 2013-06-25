@@ -64,7 +64,7 @@ LIBS is the path to the libs
 
 openexr2{
     INCLUDEPATH += /usr/local/include/OpenEXR
-    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf
+    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
@@ -93,10 +93,15 @@ qtincludes{
     INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
 }
 
-###(Optional) Build on Xcode:
+###(Optional) Build :
 
-You can generate an Xcode project by typing the following command where Powiter.pro is located:
+You can generate a makefile by typing the following command where Powiter.pro is located:
 
-qmake -spec macx-xcode Powiter.pro
+qmake Powiter.pro
+
+build by typing 
+
+make
+
 
 
