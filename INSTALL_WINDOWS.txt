@@ -68,7 +68,7 @@ LIBS is the path to the libs
 
 openexr2{
     INCLUDEPATH += $$quote(C:\\Program Files\OpenExr_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Release) -lIlmimf -lIex -lImath -lHalf
+    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Release) -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
