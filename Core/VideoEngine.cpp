@@ -108,7 +108,7 @@ void VideoEngine::resetReadingBuffers(){
         }
     }
     const std::vector<InputNode*>& inputs = _dag.getInputs();
-    for(int j=0;j<inputs.size();j++){
+    for(U32 j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
             static_cast<Reader*>(currentInput)->removeCachedFramesFromBuffer();
@@ -222,7 +222,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool forward,bool fitFrameT
     
     std::vector<Reader*> readers;
     const std::vector<InputNode*>& inputs = _dag.getInputs();
-    for(int j=0;j<inputs.size();j++){
+    for(U32 j=0;j<inputs.size();j++){
         InputNode* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
             Reader* inp = static_cast<Reader*>(currentInput);
@@ -301,7 +301,7 @@ void VideoEngine::engineLoop(){
     if(_frameRequestsCount!=0 && !_paused){
         std::vector<Reader*> readers;
         const std::vector<InputNode*>& inputs = _dag.getInputs();
-        for(int j=0;j<inputs.size();j++){
+        for(U32 j=0;j<inputs.size();j++){
             InputNode* currentInput=inputs[j];
             if(currentInput->className() == string("Reader")){
                 Reader* inp =static_cast<Reader*>(currentInput);
@@ -793,20 +793,9 @@ void VideoEngine::_changeDAGAndStartEngine(int frameNB, int frameCount, bool ini
         videoEngine(-1,initViewer,_forward);
 }
 
-void VideoEngine::debugTree(){
-    int nb=0;
-    _debugTree(_dag.getOutput(),&nb);
-    cout << "The tree contains " << nb << " nodes. " << endl;
-}
-void VideoEngine::_debugTree(Node* n,int* nb){
-    *nb = *nb+1;
-    cout << *n << endl;
-    foreach(Node* c,n->getParents()){
-        _debugTree(c,nb);
-    }
-}
+
 void VideoEngine::computeTreeHash(std::vector< std::pair<std::string,U64> > &alreadyComputed, Node *n){
-    for(int i =0; i < alreadyComputed.size();i++){
+    for(U32 i =0; i < alreadyComputed.size();i++){
         if(alreadyComputed[i].first == n->getName().toStdString())
             return;
     }
@@ -828,7 +817,7 @@ void VideoEngine::changeTreeVersion(){
         return;
     }
     computeTreeHash(nodeHashs, _dag.getOutput());
-    for(int i =0 ;i < nodeHashs.size();i++){
+    for(U32 i =0 ;i < nodeHashs.size();i++){
         _treeVersion.appendNodeHashToHash(nodeHashs[i].second);
     }
     _treeVersion.computeHash();

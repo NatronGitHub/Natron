@@ -158,7 +158,7 @@ public:
         DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode);
         void clear();
         void setSize(int size){_bufferSize = size;}
-        bool isFull(){return _buffer.size() == _bufferSize;}
+        bool isFull(){return _buffer.size() == (U32)_bufferSize;}
         DecodedFrameIterator begin(){return _buffer.begin();}
         DecodedFrameIterator end(){return _buffer.end();}
         void erase(DecodedFrameIterator it);

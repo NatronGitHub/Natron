@@ -14,10 +14,9 @@
 #include "Core/VideoEngine.h"
 #include "Core/row.h"
 
-Read::Read(Reader* op):is_stereo(false), _autoCreateAlpha(false),_premult(false)
+Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
 {
-	_lut=NULL;
-	this->op=op;
+	
 	_readInfo = new ReaderInfo; // deleted by the reader which manages this read handle
 
 }

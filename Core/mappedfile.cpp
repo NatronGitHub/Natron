@@ -64,9 +64,10 @@ file_handle_(-1)
     }
     
     MemoryFile::MemoryFile(const char *pathname, Powiter_Enums::MMAPfile_mode open_mode):
+    _path(pathname),
     data_(0),
     size_(0),
-    _path(pathname),
+    capacity_(0),
 #if defined(__POWITER_UNIX__)
     file_handle_(-1)
     {
@@ -201,7 +202,7 @@ file_handle_(-1)
 #endif
         }
         
-            
+        
         MemoryFile::~MemoryFile() {
 #if defined(__POWITER_UNIX__)
             ::munmap(data_, size_);
@@ -440,7 +441,7 @@ file_handle_(-1)
         //#endif
         //}
         //void MMAPfile::clear(bool error){
-        //	
+        //
         //	_data = 0;
         //	_size = 0;
         //	_path.clear();
@@ -474,5 +475,5 @@ file_handle_(-1)
         //    if (error) {
         //        cout << "error closing mapped file" << endl;;
         //    }
-        //   
+        //
         //}

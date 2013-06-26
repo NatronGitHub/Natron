@@ -94,7 +94,7 @@ std::string getChannelName(Channel c){
     return "";
 }
 
-ChannelSet::ChannelSet(const ChannelSet &source):_size(source.size()),mask(source.mask){}
+ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.size()){}
 ChannelSet::ChannelSet(ChannelSetInit v) {
     if(v == Mask_All){
         mask = Mask_All;

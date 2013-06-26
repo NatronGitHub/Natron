@@ -384,6 +384,7 @@ void File_Knob::updateLastOpened(QString str){
 File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flags):Knob(cb),str(0)
 {
     
+    Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
     _lastOpened =QString(ROOT);
     _name=new FileQLineEdit(this);
@@ -432,7 +433,7 @@ void Bool_Knob::setValues(){
 }
 
 Bool_Knob::Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
-	
+	Q_UNUSED(flags);
     QLabel* _label = new QLabel(description.c_str(),this);
 	checkbox=new QCheckBox(this);
 	checkbox->setChecked(false);
@@ -495,6 +496,7 @@ Knob* Button_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mas
     return knob;
 }
 Button_Knob::Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),button(0){
+    Q_UNUSED(flags);
     button = new Button(QString(description.c_str()),this);
     layout->addWidget(button);
     layout->addStretch();
@@ -513,6 +515,7 @@ Knob* OutputFile_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob
 }
 
 OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),str(0){
+    Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
     _name=new OutputFileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
@@ -580,6 +583,7 @@ Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_M
 
 }
 ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),_currentItem(0){
+    Q_UNUSED(flags);
     _comboBox = new ComboBox(this);
     _comboBox->addItem("/");
     QLabel* desc = new QLabel(description.c_str());
@@ -623,6 +627,7 @@ Knob* Separator_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_
     return knob;
 }
 Separator_Knob::Separator_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb){
+    Q_UNUSED(flags);
     QLabel* name = new QLabel(description.c_str(),this);
     layout->addWidget(name);
     line = new QFrame(this);

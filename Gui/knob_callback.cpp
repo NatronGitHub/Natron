@@ -20,7 +20,7 @@ Knob_Callback::~Knob_Callback(){
     knobs.clear();
 }
 void Knob_Callback::initNodeKnobsVector(){
-    for(int i=0;i<knobs.size();i++){
+    for(U32 i=0;i<knobs.size();i++){
         Knob* pair=knobs[i];
         node->addToKnobVector(pair);
     }
@@ -30,7 +30,7 @@ void Knob_Callback::createKnobDynamically(){
 	const std::vector<Knob*>& node_knobs=node->getKnobs();
 	foreach(Knob* knob,knobs){
 		bool already_exists=false;
-		for(int i=0;i<node_knobs.size();i++){
+		for(U32 i=0;i<node_knobs.size();i++){
 			if(node_knobs[i]==knob){
 				already_exists=true;
 			}

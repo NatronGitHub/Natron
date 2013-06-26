@@ -42,7 +42,7 @@ public:
         
     };
     
-    TextureCache(U64 maxSize):_maxSizeAllowed(maxSize),_size(0){}
+    TextureCache(U64 maxSize):_size(0),_maxSizeAllowed(maxSize){}
     ~TextureCache(){}
     
     typedef std::vector< std::pair<TextureKey,U32> >::iterator TextureIterator;

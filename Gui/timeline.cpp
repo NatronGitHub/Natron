@@ -99,6 +99,8 @@ void TimeLine::updateScale(){
 }
 
 void TimeLine::paintEvent(QPaintEvent *e){
+    Q_UNUSED(e);
+    
     QColor bg(50,50,50,255);
     int w = size().width();
     int h = size().height();
@@ -238,7 +240,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
     else if(_increment==10)
         offset/=10.0;
     p.setPen(cachedColor);
-    for(int i =0 ; i < _cached.size() ; i++){
+    for(U32 i =0 ; i < _cached.size() ; i++){
         double pos = getCoordPosition(_cached[i]);
 
         p.drawLine(pos-offset/2.0,BORDER_HEIGHT_+LINE_START+2,pos+offset/2.0,BORDER_HEIGHT_+LINE_START+2);
@@ -261,7 +263,7 @@ void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
         incr=((scaleW)/(double)(_displayedValues.size()-1))/10.f;
     }
     QPointF pos(BORDER_OFFSET_-1,23+LINE_START);
-    for(unsigned int i =0;i<_displayedValues.size();i++){
+    for(int i =0;i<_displayedValues.size();i++){
         p->setPen(QColor(200,200,200));
         QString nbStr = QString::number(_displayedValues[i]);
         if(nbStr.size()==1){
@@ -349,7 +351,7 @@ void TimeLine::seek(int v){
     repaint();
 }
 void TimeLine::changeFirstAndLast(QString str){
-    
+    Q_UNUSED(str);
 }
 
 void TimeLine::mousePressEvent(QMouseEvent* e){

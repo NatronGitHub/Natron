@@ -156,7 +156,7 @@ ViewerCache* ViewerCache::getViewerCache(){
 }
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
-FrameEntry* ViewerCache::add(U64 key,
+FrameEntry* ViewerCache::addFrame(U64 key,
                              std::string filename,
                              U64 treeVersion,
                              float zoomFactor,

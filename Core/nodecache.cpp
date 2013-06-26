@@ -39,7 +39,7 @@ std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int
     return make_pair(hashKey,(Row*)NULL);
 }
 
-Row* NodeCache::add(U64 key,int x, int r, int y, ChannelSet &channels,std::string filename){
+Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::string filename){
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);

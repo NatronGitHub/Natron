@@ -4,6 +4,7 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 
+#include "Superviser/powiterFn.h"
 #include "Core/DataBuffer.h"
 DataBuffer::DataBuffer(){
 	this->_lock = new QMutex();
@@ -47,12 +48,12 @@ size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 	if(nb_bytes > _size){
 		extra = nb_bytes - _size;
 		int index=0;
-		for(int i=0; i < _size;i+=step){
+		for(U32 i=0; i < _size;i+=step){
 			_buffer[index++] = IN[i];
 		}
 	}else{
 		int index=0;
-		for(int i=0; i < nb_bytes;i+=step){
+		for(U32 i=0; i < nb_bytes;i+=step){
 			_buffer[index++] = IN[i];
 		}
 	}

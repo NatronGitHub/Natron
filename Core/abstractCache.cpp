@@ -74,6 +74,7 @@ InMemoryEntry::InMemoryEntry():_data(0){
     
 }
 bool InMemoryEntry::allocate(U64 byteCount,const char* path){
+    Q_UNUSED(path);
     _data = (char*)malloc(byteCount);
     if(!_data) return false;
     return true;
@@ -348,7 +349,7 @@ void AbstractDiskCache::restore(){
                 line = in.readLine();
             }
             _restoreFile.close();
-            if (count == entries.size()) {
+            if ((U32)count == entries.size()) {
                 for (U32 i = 0; i < entries.size(); i++) {
                     std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
                     add(entry.first,entry.second);

@@ -92,7 +92,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node
 void NodeGraph::mousePressEvent(QMouseEvent *event){
     old_pos=mapToScene(event->pos());
     oldp=event->pos();
-    int i=0;
+    U32 i=0;
     bool found=false;
     while(i<_nodes.size() && !found){
         NodeGui* n=_nodes[i];
@@ -109,7 +109,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             break;
         }else{
             const std::vector<Edge*>& arrows = n->getInputsArrows();
-            int j=0;
+            U32 j=0;
             while(j<arrows.size()){
                 Edge* a=arrows[j];
                 
@@ -158,7 +158,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             scene()->update();
             
         }
-        int i=0;
+        U32 i=0;
         bool foundSrc=false;
         while(i<_nodes.size()){
             NodeGui* n=_nodes[i];
@@ -237,7 +237,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     
 }
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
-    int i=0;
+    U32 i=0;
     while(i<_nodes.size()){
         NodeGui* n=_nodes[i];
         
@@ -449,7 +449,7 @@ void NodeGraph::deleteSelectedNode(){
 
 
 void NodeGraph::removeNode(NodeGui* n){
-    for(int i =0 ; i < _nodes.size();i++){
+    for(U32 i =0 ; i < _nodes.size();i++){
         if (n == _nodes[i]) {
             
             n->remove();

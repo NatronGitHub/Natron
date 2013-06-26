@@ -22,7 +22,7 @@ class CacheEntry {
     bool _doNotEvict;
     
 public:
-    CacheEntry():_size(0),_doNotEvict(false){}
+    CacheEntry():_doNotEvict(false),_size(0){}
     virtual ~CacheEntry(){}
     
     void preventFromDeletion(){_doNotEvict = true;}
@@ -31,7 +31,7 @@ public:
     
     bool isRemovable() const {return _doNotEvict;}
     
-    const U64 size() const {return _size;}
+    U64 size() const {return _size;}
     
 protected:
     U64 _size; //the size in bytes of the entry

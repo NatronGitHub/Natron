@@ -66,7 +66,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     }
 }
 bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
-
+    Q_UNUSED(obj);
 
     if(e->type()==QEvent::Close){
         graph->setSmartNodeCreationEnabled(true);

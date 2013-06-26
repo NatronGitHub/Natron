@@ -71,7 +71,7 @@ void ComboBox::createMenu(){
     _menu->clear();
     for (U32 i = 0 ; i < _actions.size(); i++) {
         for (U32 j = 0; j < _separators.size(); j++) {
-            if (_separators[j] == i) {
+            if (_separators[j] == (int)i) {
                 _menu->addSeparator();
                 break;
             }
@@ -187,7 +187,7 @@ void ComboBox::removeItem(const QString& item){
             }
             /*adjust separators that were placed after this item*/
             for (U32 j = 0; j < _separators.size(); j++) {
-                if (_separators[j] >= i) {
+                if (_separators[j] >= (int)i) {
                     _separators[j]--;
                 }
             }

@@ -46,7 +46,7 @@
 
 
 
-static size_t getSystemTotalRAM(){
+inline size_t getSystemTotalRAM(){
 #if defined(__APPLE__)
     int mib [] = { CTL_HW, HW_MEMSIZE };
     int64_t value = 0;
@@ -74,7 +74,7 @@ static size_t getSystemTotalRAM(){
     
 }
 // prints RAM value as KiB, MiB or GiB
-static std::string printAsRAM(size_t v){
+inline std::string printAsRAM(size_t v){
     QString toStr = QString::number(v);
     QString outStr;
     if(toStr.size()<=9 && toStr.size()>=7){ 
@@ -103,7 +103,7 @@ static std::string printAsRAM(size_t v){
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-static size_t getPeakRSS( )
+inline size_t getPeakRSS( )
 {
 #if defined(_WIN32)
 	/* Windows -------------------------------------------------- */
@@ -149,7 +149,7 @@ static size_t getPeakRSS( )
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-static size_t getCurrentRSS( )
+inline size_t getCurrentRSS( )
 {
 #if defined(_WIN32)
 	/* Windows -------------------------------------------------- */
@@ -186,7 +186,7 @@ static size_t getCurrentRSS( )
 #endif
 }
 /*return the endianness of the CPU*/
-static bool isBigEndian()
+inline bool isBigEndian()
 {
     union {
         uint32_t i;

@@ -248,7 +248,7 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
 }
 
 void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidget* widget){
-    if (index < _tabs.size()) {
+    if ((U32)index < _tabs.size()) {
         /*registering this tab for drag&drop*/
         ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
         
@@ -261,7 +261,7 @@ void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidg
 }
 
 void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
-    if (index < _tabs.size()) {
+    if (index < (int)_tabs.size()) {
         /*registering this tab for drag&drop*/
         ctrlPTR->getGui()->registerTab(title.toStdString(), widget);
         
@@ -274,7 +274,7 @@ void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
 }
 
 QWidget*  TabWidget::removeTab(int index){
-    if(index < _tabs.size()){
+    if(index < (int)_tabs.size()){
         QWidget* tab = _tabs[index];
         _tabs.erase(_tabs.begin()+index);
         _tabBar->removeTab(index);
@@ -313,7 +313,7 @@ void TabWidget::removeTab(QWidget* widget){
 }
 
 void TabWidget::makeCurrentTab(int index){
-    if(index < _tabs.size()){
+    if((U32)index < _tabs.size()){
         /*Removing previous widget if any*/
         if(_currentWidget){
             _currentWidget->setVisible(false);

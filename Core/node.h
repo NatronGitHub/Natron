@@ -32,15 +32,15 @@ public:
 	class Info:public Box2D{
 	public:
 		Info(int first_frame,int last_frame,int ydirection,Format full_size_format,ChannelMask channels):
-		  _firstFrame(first_frame),
-			  _lastFrame(last_frame),
-			  _ydirection(ydirection),
-			  _displayWindow(full_size_format),
-			  _channels(channels),
-            _rgbMode(true),
-        _blackOutside(false)
-		  {}
-	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_channels(),_displayWindow(),_rgbMode(true),_blackOutside(false){}
+        _firstFrame(first_frame),
+        _lastFrame(last_frame),
+        _ydirection(ydirection),
+        _blackOutside(false),
+        _rgbMode(true),
+        _displayWindow(full_size_format),
+        _channels(channels)
+        {}
+	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_blackOutside(false),_rgbMode(true),_displayWindow(),_channels(){}
 		void setYdirection(int direction){_ydirection=direction;}
 		int getYdirection(){return _ydirection;}
 		void setDisplayWindow(Format format){_displayWindow=format;}
@@ -52,7 +52,7 @@ public:
 		void lastFrame(int nb){_lastFrame=nb;}
 		int firstFrame(){return _firstFrame;}
 		int lastFrame(){return _lastFrame;}
-		void setChannels(ChannelMask mask){_channels=mask;}	
+		void setChannels(ChannelMask mask){_channels=mask;}
 		ChannelMask& channelsRef(){return _channels;}
 		const ChannelMask& channels(){return _channels;}
 		bool blackOutside(){return _blackOutside;}
@@ -73,20 +73,20 @@ public:
 		ChannelMask _channels; // all channels defined by the current Node ( that are allocated)
 	};
     
-
-
+    
+    
     /*CONSTRUCTORS AND DESTRUCTORS*/
     Node(const Node& ref);
     Node(Node* ptr);
     virtual ~Node();
     /*============================*/
-
+    
     /*Hash related functions*/
     Hash* getHash() const;
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
-
+    
     /*Knobs related functions*/
     const std::vector<Knob*>& getKnobs() const;
     void addToKnobVector(Knob* knob);
@@ -100,7 +100,7 @@ public:
 	void setNodeUi(NodeGui* ui){_nodeGUI=ui;}
 	NodeGui* getNodeUi(){return _nodeGUI;}
     /*============================*/
-
+    
     /*Parents & children nodes related functions*/
     const std::vector<Node*>& getParents() const;
     const std::vector<Node*>& getChildren() const;
@@ -111,7 +111,7 @@ public:
     void removeFromParents();
     void removeFromChildren();
     /*============================*/
-
+    
     /*DAG related*/
     void setMarked(bool mark){_marked = mark;}
     bool isMarked(){return _marked;}
@@ -129,19 +129,19 @@ public:
     int height(){return _info->getDisplayWindow().h();}
 	/*================================*/
     
-
+    
     /*OutputNB related functions*/
     int getFreeOutputCount() const;
     void releaseSocket();
     void lockSocket();
     virtual void setSocketCount();
     /*============================*/
-
+    
     /*Node type related functions*/
     virtual bool isInputNode();
     virtual bool isOutputNode();
     /*============================*/
-
+    
     /*Node Input related functions*/
     void initializeInputs();
     virtual int maximumInputs();
@@ -154,27 +154,33 @@ public:
     void applyLabelsToInputs();
     void initInputLabelsMap();
     /*============================*/
-
     
-
+    
+    
     /*node name related functions*/
     QString getName();
     void setName(QString name);
     /*============================*/
-
+    
     /*Node mutex related functions*/
     QMutex* getMutex() const;
     void setMutex(QMutex* m){this->_mutex=m;}
     /*============================*/
-
+    
     /*Node utility functions*/
     virtual std::string className();
     virtual std::string description();
     /*============================*/
-
+    
     /*Calculations related functions*/
     bool validate(bool forReal);
-    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out){}
+    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out){
+        Q_UNUSED(y);
+        Q_UNUSED(offset);
+        Q_UNUSED(range);
+        Q_UNUSED(channels);
+        Q_UNUSED(out);
+    }
 	
     /*============================*/
     
@@ -199,17 +205,16 @@ public:
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
     virtual bool cacheData()=0;
+    
 
-	/*============================*/
-    friend ostream& operator<< (ostream &out, Node &Node);
     
 protected:
-
-
+    
+    
 	virtual ChannelMask channelsNeeded(int inputNb)=0;
     virtual void preProcess(){}
 	virtual void _validate(bool forReal){}
-   
+    
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	int _freeSocketCount;
 	std::vector<Node*> _parents;
@@ -218,14 +223,14 @@ protected:
 	std::map<int, std::string> _inputLabelsMap;
 	QMutex* _mutex;
 	QString _name;
-	Hash* _hashValue; 
+	Hash* _hashValue;
 	std::vector<Knob*> _knobsVector;
 	Knob_Callback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children
 	NodeGui* _nodeGUI;
 private:
 	
-
+    
 };
 typedef Node* (*NodeBuilder)(void*);
 

@@ -112,6 +112,7 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
 }
 void Gui::retranslateUi(QMainWindow *MainWindow)
 {
+    Q_UNUSED(MainWindow);
 	setWindowTitle(QApplication::translate("Powiter", "Powiter"));
 	actionNew_project->setText(QApplication::translate("Powiter", "New project"));
 	actionOpen_project->setText(QApplication::translate("Powiter", "Open project"));

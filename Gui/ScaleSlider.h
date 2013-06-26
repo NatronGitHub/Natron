@@ -41,10 +41,10 @@ public:
     void changeScale(Powiter_Enums::Scale_Type type){_type = type; updateScale();}
     /*---------------------------------------------*/
     
-    const Powiter_Enums::Scale_Type type() const {return _type;}
-    const double minimum() const {return _minimum;}
-    const double maximum() const {return _maximum;}
-    const double precision() const{return _nbValues;}
+    Powiter_Enums::Scale_Type type() const {return _type;}
+    double minimum() const {return _minimum;}
+    double maximum() const {return _maximum;}
+    double precision() const {return _nbValues;}
 
     
 signals:

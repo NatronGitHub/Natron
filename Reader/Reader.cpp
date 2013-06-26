@@ -366,7 +366,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(std::string filena
                                                               const char* cachedFrame,
                                                               ScanLineContext* slContext){
     //if buffer is full, we remove previously computed frame
-    if(_buffer.size() == _bufferSize){
+    if(_buffer.size() == (U32)_bufferSize){
         for(U32 i = 0 ; i < _buffer.size() ;i++){
             DecodedFrameDescriptor frameToRemove = _buffer[i];
             if((!frameToRemove._asynchTask) ||

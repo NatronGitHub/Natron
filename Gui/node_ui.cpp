@@ -14,7 +14,7 @@
 #include <QtWidgets/QtWidgets>
 #include <cassert>
 const qreal pi=3.14159265358979323846264338327950288419717;
-NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) : QGraphicsItem(parent),QObject(parentObj),settings(0)
+NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) :QObject(parentObj), QGraphicsItem(parent),settings(0)
 {
     
     _selected = false;

@@ -176,7 +176,7 @@ void validchanname(const char* channelname, std::string& chan, std::string& laye
 	if ( newsplits.size() > 1 ){
 		
         
-		for (int i = 0 ; i < (newsplits.size() - 1); i++) {
+		for (U32 i = 0 ; i < (newsplits.size() - 1); i++) {
 			if (IsView(newsplits[i], views)) {
 				view = newsplits[i];
 			} else {

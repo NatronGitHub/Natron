@@ -74,7 +74,7 @@ public:
     virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
-	FrameEntry* add(U64 key,
+	FrameEntry* addFrame(U64 key,
                     std::string filename,
                     U64 treeVersion,
                     float zoomFactor,

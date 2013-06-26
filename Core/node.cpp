@@ -23,14 +23,6 @@
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
 
-ostream& operator<< (ostream &out, Node &node){
-    out << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    out << "DUMPING INFO FOR :" << endl;
-    out << endl;
-    out << "------------------------------" << endl;
-    return out;
-}
-
 
 void Node::copy_info(Node* parent){
     clear_info();
@@ -194,7 +186,7 @@ void Node::addParent(Node* parent){
 }
 void Node::removeChild(Node* child){
     
-    int i=0;
+    U32 i=0;
     while(i<_children.size()){
         if(_children[i]==child){
             _freeSocketCount++;
@@ -206,7 +198,7 @@ void Node::removeChild(Node* child){
 }
 void Node::removeParent(Node* parent){
     
-    int i=0;
+    U32 i=0;
     while(i<_parents.size()){
         if(_parents[i]==parent){
             _parents.erase(_parents.begin()+i);
@@ -313,12 +305,12 @@ bool Node::validate(bool forReal){
 
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
-    for(int i =0 ; i < alreadyComputedHash.size();i++){
+    for(U32 i =0 ; i < alreadyComputedHash.size();i++){
         if(alreadyComputedHash[i] == _name.toStdString())
             return;
     }
     _hashValue->reset();
-    for(int i=0;i<_knobsVector.size();i++){
+    for(U32 i=0;i<_knobsVector.size();i++){
         _hashValue->appendKnobToHash(_knobsVector[i]);
     }
     _hashValue->appendQStringToHash(QString(className().c_str()));
@@ -371,8 +363,10 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
         return;
     }else{
         if(cacheData()){
-            out = cache->add(entry.first,x, r, y, channels, filename);
-            out->preventFromDeletion();
+            out = cache->addRow(entry.first,x, r, y, channels, filename);
+            if(keepCached){
+                out->preventFromDeletion();
+            }
             out->notifyCacheForDeletion();
             row.setInternalRow(out);
             if(!out) return;

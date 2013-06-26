@@ -51,7 +51,7 @@ public:
     
     /*add a new Row(x,y,r,channels) to the cache with the U64 as key and
      returns a pointer to it.*/
-    Row* add(U64 key,int x,int r,int y,ChannelSet& channels,std::string filename);
+    Row* addRow(U64 key,int x,int r,int y,ChannelSet& channels,std::string filename);
 
     
 };

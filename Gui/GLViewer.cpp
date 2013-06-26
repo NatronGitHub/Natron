@@ -107,16 +107,15 @@ void ViewerGL::initConstructor(){
 }
 
 ViewerGL::ViewerGL(ViewerTab* viewerTab,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),
-_textRenderer(this),_viewerTab(viewerTab)
+:QGLWidget(context,parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
+
 {
     
     initConstructor();
     
 }
 ViewerGL::ViewerGL(ViewerTab* viewerTab,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),
-_textRenderer(this),_viewerTab(viewerTab)
+:QGLWidget(format,parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 
 {
 
@@ -125,8 +124,7 @@ _textRenderer(this),_viewerTab(viewerTab)
 }
 
 ViewerGL::ViewerGL(ViewerTab* viewerTab,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false),
-_textRenderer(this),_viewerTab(viewerTab)
+:QGLWidget(parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 {
     initConstructor();
     
@@ -759,7 +757,7 @@ bool ViewerGL::determineFrameDataContainer(std::string filename,int w,int h,View
 //        displayWindow().right() << " " << displayWindow().top() << endl;
 //        cout << " KEY: " << key << endl;
         
-        FrameEntry* entry = ViewerCache::getViewerCache()->add(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
+        FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
         
         if(entry){
             frameData = entry->getMappedFile()->data();

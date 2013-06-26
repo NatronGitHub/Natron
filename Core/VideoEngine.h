@@ -279,9 +279,6 @@ private:
     void updateDisplay();
     void _drawOverlay(Node *output);
     
-
-    void debugTree();
-    void _debugTree(Node* n,int* nb);
     void computeTreeHash(std::vector<std::pair<std::string, U64> > &alreadyComputed, Node* n);
     /*============================*/
     

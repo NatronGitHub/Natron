@@ -39,7 +39,7 @@ void ScaleSlider::updateScale(){
     }
     double incr = (double)(_values.size())/(double)(_displayedValues.size()-1);
     double index = 0;
-    for(int i =0;i< _displayedValues.size();i++){
+    for(U32 i =0;i< _displayedValues.size();i++){
         if(ceil(index) >= _values.size()){ _displayedValues[i]=_values.back();index+=incr; continue;}
         if(floor(index) <=0){_displayedValues[i]=_values[0];index+=incr;continue;}
         if(floor(index)==index){_displayedValues[i]=_values[index];index+=incr;continue;}
@@ -48,6 +48,7 @@ void ScaleSlider::updateScale(){
     }
 }
 void ScaleSlider::paintEvent(QPaintEvent *e){
+    Q_UNUSED(e);
     QColor bg(50,50,50,255);
     int w = size().width();
     int h = size().height();
@@ -135,6 +136,7 @@ void ScaleSlider::seekScalePosition(double d){
 }
 
 void ScaleSlider::mouseReleaseEvent(QMouseEvent* e){
+    Q_UNUSED(e);
     _dragging=false;
 }
 

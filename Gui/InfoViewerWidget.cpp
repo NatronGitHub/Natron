@@ -9,8 +9,8 @@
 #include "Gui/GLViewer.h"
 #include "Core/Box.h"
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),
-mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_colorAndMouseVisible(false),_fps(0){
+InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),
+mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
     this->viewer = v;
     setObjectName(QString::fromUtf8("infoViewer"));
