@@ -143,7 +143,8 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
            QWidget * parent)
  {
 
-
+     (void)parent;
+     (void)options;
      QPen myPen = pen();
 
      myPen.setColor(Qt::black);

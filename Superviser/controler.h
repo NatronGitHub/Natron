@@ -11,7 +11,7 @@
 #include "Core/singleton.h"
 using namespace Powiter_Enums;
 
-/*macro to get a pointer to the controler*/
+/*macro to get the unique pointer to the controler*/
 #define ctrlPTR Controler::instance()
 
 #define currentViewer Controler::getCurrentViewer()

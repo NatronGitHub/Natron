@@ -6,6 +6,7 @@
 #ifndef __VIEWER_TAB_H_
 #define __VIEWER_TAB_H_ 
 
+#include "Core/channels.h"
 #include <QtWidgets/QWidget>
 
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
@@ -29,12 +30,18 @@ class ScaleSlider;
 class TimeLine;
 class TextureCache;
 class Viewer;
+class ViewerInfos;
 class ViewerTab: public QWidget 
 {
     Q_OBJECT
     
     
     Viewer* _viewerNode;// < pointer to the internal node
+    
+    ChannelMask _channelsToDraw;
+    
+    /*True if the viewer is currently fullscreen*/
+	bool _fullscreen;
     
 public:
 	ViewerTab(Viewer* node,QWidget* parent=0);
@@ -90,6 +97,11 @@ public:
 	/*frame seeker*/
 	TimeLine* frameSeeker;
     
+    /*these are the channels the viewer wants to display*/
+	const ChannelMask& displayChannels(){return _channelsToDraw;}
+    
+    /*viewerInfo related functions)*/
+    void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);
     
 public slots:
     
@@ -107,6 +119,10 @@ public slots:
     
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
+    
+protected:
+    
+    virtual void keyPressEvent(QKeyEvent* e);
 };
 
 #endif // __VIEWER_TAB_H_

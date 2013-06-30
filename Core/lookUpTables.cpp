@@ -134,9 +134,20 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
 }
 
 void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) {
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)delta;
     cout << "Lut::from_short not yet implemented" << endl;
 }
 void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bits , int delta ) {
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)alpha;
+    (void)delta;
     cout << "Lut::from_short not yet implemented" << endl;
 }
 void Lut::from_float(float* to, const float* from, int W, int delta ) {
@@ -198,9 +209,20 @@ void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int d
 }
 
 void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ){
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)delta;
     cout << "Lut::to_short not implemented yet." << endl;
 }
 void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bits , int delta ){
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)alpha;
+    (void)delta;
     cout << "Lut::to_short not implemented yet." << endl;
 }
 
@@ -256,6 +278,11 @@ void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta
     
 }
 void Linear::from_short(float* to, const U16* from, int W, int bits , int delta ){
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)delta;
     cout << "Linear::from_short not yet implemented" << endl;
 }
 void Linear::from_float(float* to, const float* from, int W, int delta ){
@@ -300,9 +327,16 @@ void Linear::to_byte(uchar* to, const float* from, int W, int delta ){
 }
 
 void Linear::to_short(U16* to, const float* from, int W, int bits , int delta ){
+    (void)to;
+    (void)from;
+    (void)W;
+    (void)bits;
+    (void)delta;
     cout << "Linear::to_short not implemented yet." << endl;
 }
 void Linear::to_float(float* to, const float* from, int W, int delta ){
+
+    (void)delta;
     memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
 }
 

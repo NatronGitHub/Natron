@@ -389,7 +389,7 @@ void ReadExr::readScanLine(int y){
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
     const ChannelSet& channels = _readInfo->channels();
     Row* out = new Row(x,y,r,channels);
-    out->allocate();
+    out->allocateRow();
     _img.insert(make_pair(exrY,out));
 	// Figure out intersection of x,r with the data in exr file:
 	const int X = max(x, datawin.min.x + dataOffset);

@@ -178,6 +178,8 @@ QRectF NodeGui::boundingRect() const{
 
 void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
     
+    (void)parent;
+    (void)options;
     // Shadow
     QRectF rect=boundingRect();
     QRectF sceneRect =boundingRect();//this->sceneRect();

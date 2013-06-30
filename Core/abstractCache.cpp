@@ -23,7 +23,8 @@ MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
 bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
 #ifdef PW_DEBUG
     if(QFile::exists(path)){
-        cout << "WARNING: A file with the same name already exist : " << path << endl;
+        cout << "WARNING: A file with the same name already exist : " << path
+        << " (If displayed on startup ignore it, this is a debug message)."<< endl;
     }
 #endif
     try{
@@ -84,19 +85,15 @@ void InMemoryEntry::deallocate(){
     _data = 0;
 }
 InMemoryEntry::~InMemoryEntry(){
-    
+    deallocate();
 }
 
 
 
-AbstractCache::AbstractCache():_size(0),_maximumCacheSize(0){
+AbstractCache::AbstractCache():_maximumCacheSize(0),_size(0){
     
 }
 AbstractCache::~AbstractCache(){
-    clear();
-}
-
-void AbstractCache::clear(){
     QWriteLocker guard(&_cache._rwLock);
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
         CacheEntry* entry = getValueFromIterator(it);
@@ -104,6 +101,28 @@ void AbstractCache::clear(){
     }
     _cache.clear();
     _size = 0;
+
+}
+
+void AbstractCache::clear(){
+    QWriteLocker guard(&_cache._rwLock);
+    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
+        CacheEntry* entry = getValueFromIterator(it);
+        if(entry->isRemovable()){
+            MemoryMappedEntry* mmapEntry = dynamic_cast<MemoryMappedEntry*>(entry);
+            if(mmapEntry){
+                if(QFile::exists(mmapEntry->path().c_str())){
+                    QFile::remove(mmapEntry->path().c_str());
+                }
+            }
+            delete entry;
+            _size -= entry->size();
+            erase(it);
+        }
+    }
+}
+void AbstractCache::erase(CacheIterator it){
+    _cache.erase(it);
 }
 
 /*Returns an iterator to the cache. If found it points
@@ -150,7 +169,7 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
 }
 
 bool AbstractMemoryCache::add(U64 key,CacheEntry* entry){
-    assert(static_cast<InMemoryEntry*>(entry));
+    assert(dynamic_cast<InMemoryEntry*>(entry));
     return AbstractCache::add(key, entry);
 }
 
@@ -159,7 +178,7 @@ AbstractDiskCache::AbstractDiskCache(double inMemoryUsage):_inMemorySize(0){
 }
 
 bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
-    MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(entry);
+    MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(entry);
     assert(mmEntry);
     bool mustEvictFromMemory = false;
     {
@@ -254,7 +273,7 @@ void AbstractDiskCache::clearInMemoryCache(){
     _inMemorySize = 0;
     while(_inMemoryPortion.size() > 0){
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
-        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(evicted.second);
+        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         assert(mmEntry);
         mmEntry->deallocate();
         AbstractCache::add(evicted.first, evicted.second);
@@ -281,13 +300,13 @@ void AbstractDiskCache::save(){
     clearInMemoryCache();
     
     for(CacheIterator it = begin(); it!= end() ; it++){
-        MemoryMappedEntry* mmEntry = static_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
+        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
         assert(mmEntry);
         out << mmEntry->printOut().c_str() << endl;
     }
     _restoreFile.close();
     
-    clear();
+   
 }
 
 void AbstractDiskCache::restore(){
@@ -449,7 +468,7 @@ void AbstractDiskCache::debug(){
     cout << "====================DEBUGING: " << cacheName() << " =========" << endl;
     cout << "-------------------IN MEMORY ENTRIES-------------------" << endl;
     for (CacheIterator it = beginMemoryCache(); it!=endMemoryCache(); it++) {
-        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(getValueFromIterator(it));
+        MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()->data()){
@@ -461,7 +480,7 @@ void AbstractDiskCache::debug(){
     }
     cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
     for (CacheIterator it = begin(); it!=end(); it++) {
-        MemoryMappedEntry* entry = static_cast<MemoryMappedEntry*>(getValueFromIterator(it));
+        MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()){

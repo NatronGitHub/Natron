@@ -44,7 +44,9 @@ public:
                               float lut ,
                               float byteMode,
                               const Box2D& bbox,
-                              const Format& dispW);
+                              const Format& dispW,
+                              int firstRow,
+                              int lastRow);
     
 	virtual ~FrameEntry();
     
@@ -75,28 +77,21 @@ public:
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 	FrameEntry* addFrame(U64 key,
-                    std::string filename,
-                    U64 treeVersion,
-                    float zoomFactor,
-                    float exposure,
-                    float lut ,
-                    float byteMode,
-                    int w,
-                    int h,
-                    const Box2D& bbox,
-                    const Format& dispW);
+                         std::string filename,
+                         U64 treeVersion,
+                         float zoomFactor,
+                         float exposure,
+                         float lut ,
+                         float byteMode,
+                         int w,
+                         int h,
+                         const Box2D& bbox,
+                         const Format& dispW);
     
     
 	/*Returns a valid frameID if it could find one matching the parameters, otherwise
      returns NULL.*/
-	FrameEntry* get(std::string filename,
-                    U64 treeVersion,
-                    float zoomFactor,
-                    float exposure,
-                    float lut ,
-                    float byteMode,
-                    const Box2D& bbox,
-                    const Format& dispW);
+	FrameEntry* get(U64 key);
     
     
     void clearInMemoryPortion();

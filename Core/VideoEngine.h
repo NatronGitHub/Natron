@@ -126,7 +126,7 @@ private:
         VengineFunction _func;
         Task(int newFrameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func):
         _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),
-        _func(func),_output(output){}
+        _output(output),_func(func){}
         
     };
     /*Class holding informations about src and dst 
@@ -176,6 +176,7 @@ private:
         
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
     
+    bool _executingCachedFrame;
     
     QFutureWatcher<void>* _engineLoopWatcher;
     QFuture<void>* _enginePostProcessResults;
@@ -183,6 +184,8 @@ private:
     /*computing engine results*/
     QFutureWatcher<void>* _workerThreadsWatcher;
     QFuture<void>* _workerThreadsResults;
+   
+    
     /*The sequence of rows to process*/
     std::vector<Row*> _sequenceToWork;
     
@@ -209,17 +212,16 @@ public slots:
     void seekRandomFrame(int f);
     void seekRandomFrame(double d){seekRandomFrame((int)d);} // convenience func for the FeedBackSpinbox class
     void changeTreeVersion();
-
+    
     void engineLoop();
     
     /*called internally by computeTreeForFrame*/
     void finishComputeFrameRequest();
     
-signals:
+    signals:
     void fpsChanged(double d);
 
-public:
-    
+public:    
     bool isOutputAViewer() const {return _dag.isOutputAViewer();}
     
     bool dagHasInputs() const {return !_dag.getInputs().empty();}
@@ -234,7 +236,7 @@ public:
     const DAG& getCurrentDAG(){return _dag;}
     
 	/*Executes the tree for one frame*/
-    void computeTreeForFrame(std::string filename,OutputNode *output,bool fitFrameToViewer);
+    void computeTreeForFrame(const std::map<int,int>& rows,size_t dataSize,OutputNode *output);
     
 	/*clears-out all the node-infos in the graph*/
     void clearInfos(Node* out);
@@ -258,12 +260,12 @@ public:
     void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /*used internally by the zoom or the videoEngine, do not call this*/
-    void computeFrameRequest(bool sameFrame,bool forward,bool fitFrameToViewer,bool recursiveCall = false);
+    void computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
     
     /*the function cycling through the DAG for one scan-line*/
     static void metaEnginePerRow(Row* row,OutputNode* output);
     
-    typedef std::pair<Reader::Buffer::DecodedFrameDescriptor,FrameEntry*> ReadFrame;
+    typedef Reader::Buffer::DecodedFrameDescriptor ReadFrame;
     typedef std::vector< ReadFrame > FramesVector;
     
     
@@ -275,6 +277,8 @@ public:
     U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
     
 private:
+    
+    
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();
     void _drawOverlay(Node *output);
@@ -289,10 +293,7 @@ private:
     /*functions handling tasks*/
     void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func);
     void runTasks();
-    
-    /*Used internally by the computeFrameRequest func for cached frames*/
-    void cachedFrameEngine(FrameEntry* frame);
-    
+ 
     /*reset variables used by the videoEngine*/
     void stopEngine();
     

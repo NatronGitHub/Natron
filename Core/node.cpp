@@ -174,7 +174,7 @@ const std::vector<Node*>& Node::getParents() const {return _parents;}
 const std::vector<Node*>& Node::getChildren() const {return _children;}
 
 
-int Node::getFreeOutputCount() const{return _freeSocketCount;}
+int Node::getFreeSocketCount() const{return _freeSocketCount;}
 
 void Node::addChild(Node* child){
     
@@ -222,16 +222,16 @@ void Node::removeFromChildren(){
 }
 
 void Node::releaseSocket(){
-    if(!isOutputNode() && getFreeOutputCount() > 0){
-        _freeSocketCount--;
-    }
-}
-void Node::lockSocket(){
     if(!isOutputNode()){
         _freeSocketCount++;
     }
 }
-void Node::setSocketCount(){_freeSocketCount=1;}
+void Node::lockSocket(){
+    if(!isOutputNode() && getFreeSocketCount() > 0){
+        _freeSocketCount--;
+    }
+}
+int Node::maximumSocketCount(){return 1;}
 bool Node::isInputNode(){return false;}
 bool Node::isOutputNode(){return false;}
 
@@ -372,7 +372,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
             if(!out) return;
         }else{
             out = new Row(x,y,r,channels);
-            out->allocate();
+            out->allocateRow();
         }
         engine(y, x, r, channels, out);
         row.setInternalRow(out);

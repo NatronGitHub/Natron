@@ -51,7 +51,7 @@ return;\
 }\
 
 
-static bool IsCodecBlacklisted(const char* name)
+inline bool IsCodecBlacklisted(const char* name)
 {
     static const char* codecBlacklist[] =
     {

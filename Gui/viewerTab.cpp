@@ -26,7 +26,9 @@
 #include "Gui/comboBox.h"
 #include "Core/viewerNode.h"
 #include "Gui/Button.h"
-ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node)
+#include "Gui/mainGui.h"
+#include "Gui/tabwidget.h"
+ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
 {
     
     setObjectName(node->getName());
@@ -116,7 +118,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
 	/*=============================================*/
     
 	/*OpenGL viewer*/
-	viewer=new ViewerGL(this,this);
+	viewer=new ViewerGL(this);
     viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/
@@ -386,4 +388,33 @@ ViewerTab::~ViewerTab()
 void ViewerTab::setTextureCache(TextureCache* cache){
     viewer->setTextureCache(cache);
 }
+
+void ViewerTab::keyPressEvent ( QKeyEvent * event ){
+    
+    if(event->key() == Qt::Key_Space){
+        releaseKeyboard();
+        if(_fullscreen){
+            _fullscreen=false;
+            ctrlPTR->getGui()->exitFullScreen();
+        }else{
+            _fullscreen=true;
+            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
+        }
+    }
+    
+}
+void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
+    viewer->setCurrentViewerInfos(viewerInfos,onInit);
+    if(!onInit){
+        _currentFrameBox->setMaximum(viewerInfos->lastFrame());
+        _currentFrameBox->setMinimum(viewerInfos->firstFrame());
+        int curFirstFrame = frameSeeker->firstFrame();
+        int curLastFrame =  frameSeeker->lastFrame();
+        if(viewerInfos->firstFrame() != curFirstFrame || viewerInfos->lastFrame() != curLastFrame){
+            frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
+            frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
+        }
+    }
+}
+
  

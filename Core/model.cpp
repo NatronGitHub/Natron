@@ -35,6 +35,7 @@
 #include "Gui/knob.h"
 #include "Writer/writeQt.h"
 #include "Writer/writeExr.h"
+#include "Gui/mainGui.h"
 #include <cassert>
 using namespace std;
 Model::Model(): _videoEngine(0),_mutex(0)
@@ -130,7 +131,7 @@ Model::Model(): _videoEngine(0),_mutex(0)
     resolutions.push_back(square2K);
     
     assert(formatNames.size() == resolutions.size());
-    for(int i =0;i<formatNames.size();i++){
+    for(U32 i =0;i<formatNames.size();i++){
         std::vector<float> v = resolutions[i];
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
         addFormat(_frmt);
@@ -247,7 +248,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 
 std::string Model::getNextWord(string str){
     string res;
-    int i=0;
+    U32 i=0;
     while(i!=str.size() && str[i]==' '){
         i++;
     }
@@ -260,7 +261,7 @@ std::string Model::getNextWord(string str){
 
 std::string Model::removePrefixSpaces(std::string str){
     string res;
-    int i=0;
+    U32 i=0;
     while(i!=str.size() && str[i]==' '){
         i++;
     }
@@ -347,15 +348,15 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 		node=new Reader(node);
         node->setMutex(m);
         node->initializeInputs();
-        node->setSocketCount();
+        node->initializeSockets();
 		type=initCounterAndGetDescription(node);
 		return type;
 	}else if(name =="Viewer"){
 		UI_NODE_TYPE type;
-		node=new Viewer(node);
+		node=new Viewer(node,_viewerCache,ctrlPTR->getGui()->getTextureCache());
         node->setMutex(m);
         node->initializeInputs();
-        node->setSocketCount();
+        node->initializeSockets();
 		type=initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
         if(!where){
@@ -370,7 +371,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 		node=new Writer(node);
         node->setMutex(m);
         node->initializeInputs();
-        node->setSocketCount();
+        node->initializeSockets();
 		type=initCounterAndGetDescription(node);
 		return type;
     }else{
@@ -388,7 +389,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 					node=builder(node);
                     node->setMutex(m);
                     node->initializeInputs();
-                    node->setSocketCount();
+                    node->initializeSockets();
 					type=initCounterAndGetDescription(node);
                     
 				}
@@ -417,7 +418,7 @@ void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
 Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
     
-	for(int i =0;i< _formats.size();i++){
+	for(U32 i =0;i< _formats.size();i++){
 		Format* frmt = _formats[i];
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;

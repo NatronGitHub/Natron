@@ -10,10 +10,8 @@
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
-#include <QtGui/QFont>
 #include <QtWidgets/QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
-#include <cmath>
 #include <cassert>
 #include <map>
 #include "Gui/tabwidget.h"
@@ -23,16 +21,11 @@
 #include "Superviser/controler.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Core/model.h"
-#include "Gui/mainGui.h"
-#include "Gui/viewerTab.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Core/lutclasses.h"
 #include "Gui/timeline.h"
-#include "Gui/texturecache.h"
 #include "Core/viewercache.h"
 #include "Core/settings.h"
-#include "Core/row.h"
-#include "Core/viewerNode.h"
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include "Core/mappedfile.h"
@@ -81,7 +74,6 @@ void ViewerGL::initConstructor(){
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->setChannels(Mask_RGBA);
-    _blankViewerInfos->setYdirection(1);
     _blankViewerInfos->rgbMode(true);
     Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
     _blankViewerInfos->set(0, 0, 2048, 1556);
@@ -93,29 +85,27 @@ void ViewerGL::initConstructor(){
 	exposure = 1;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
-    _firstTime = true;
 	shaderLC=NULL;
 	shaderRGB=NULL;
     shaderBlack=NULL;
     _textureCache = NULL;
     _overlay=true;
-    _fullscreen = false;
-    _channelsToDraw = Mask_RGBA;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
     _mustFreeFrameData = false;
+    _currentTexture = 0;
 }
 
-ViewerGL::ViewerGL(ViewerTab* viewerTab,QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
+ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
+:QGLWidget(context,parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 
 {
     
     initConstructor();
     
 }
-ViewerGL::ViewerGL(ViewerTab* viewerTab,const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
+ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
+:QGLWidget(format,parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 
 {
 
@@ -123,8 +113,8 @@ ViewerGL::ViewerGL(ViewerTab* viewerTab,const QGLFormat& format,QWidget* parent 
     
 }
 
-ViewerGL::ViewerGL(ViewerTab* viewerTab,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),_viewerTab(viewerTab),_textRenderer(this),Ysampling(1),_roi(0,0,0,0),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
+ViewerGL::ViewerGL(QWidget* parent,const QGLWidget* shareWidget)
+:QGLWidget(parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 {
     initConstructor();
     
@@ -146,7 +136,7 @@ ViewerGL::~ViewerGL(){
         delete shaderBlack;
         
     }
-	glDeleteTextures(1,&texId[0]);
+    delete _texID;
     glDeleteTextures(1,&texBlack[0]);
     glDeleteBuffers(2, &texBuffer[0]);
     
@@ -208,7 +198,7 @@ void ViewerGL::paintGL()
         glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
         
         glEnable (GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, currentTexture);
+        glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
         
         // debug (so the openGL debugger can make a breakpoint here)
               //  GLfloat d;
@@ -233,11 +223,6 @@ void ViewerGL::paintGL()
             shaderLC->release();
         }
 	}else{
-        if(_firstTime){
-            _firstTime = false;
-            fitToFormat(displayWindow());
-            initBlackTex();
-        }
         drawBlackTex();
     }
     if(_overlay){
@@ -317,7 +302,7 @@ void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
  	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
-    glGenTextures (1, texId);
+    _texID = new TextureEntry;
     glGenTextures (1, texBlack);
     glGenBuffersARB(2, &texBuffer[0]);
     if(_hasHW){
@@ -331,7 +316,11 @@ void ViewerGL::initializeGL(){
         }
         initShaderGLSL();
     }
+
     
+    initBlackTex();
+    
+  
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -482,7 +471,6 @@ void ViewerGL::initAndCheckGlExtensions(){
 }
 
 void ViewerGL::activateShaderLC(){
-	makeCurrent();
     if(!_hasHW) return;
 	if(!shaderLC->bind()){
 		cout << qPrintable(shaderLC->log()) << endl;
@@ -495,7 +483,6 @@ void ViewerGL::activateShaderLC(){
     
 }
 void ViewerGL::activateShaderRGB(){
-	makeCurrent();
     if(!_hasHW) return;
 	if(!shaderRGB->bind()){
 		cout << qPrintable(shaderRGB->log()) << endl;
@@ -510,7 +497,6 @@ void ViewerGL::activateShaderRGB(){
 
 void ViewerGL::initShaderGLSL(){
     if(!_shaderLoaded && _hasHW){
-        makeCurrent();
         shaderRGB=new QGLShaderProgram(context());
         if(!shaderRGB->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
             cout << qPrintable(shaderRGB->log()) << endl;
@@ -551,63 +537,8 @@ void ViewerGL::restoreGLState()
 	glPopAttrib();
 }
 
-void ViewerGL::initTextures(int w,int h,GLuint texID){
-    initTextureBGRA(w,h,texID);
-    /*Returns immediately if shaders have already been
-     initialized*/
-	initShaderGLSL();
-}
-
-void ViewerGL::initTextureBGRA(int w,int h,GLuint texID){
-    
-    if(_textureSize.first==w && _textureSize.second==h && texID==currentTexture) return;
-    
-    _textureSize = make_pair(w, h);
-    
-	makeCurrent();
-    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-    glActiveTexture (GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, texID);
-    
-    // if the texture is zoomed, do not produce antialiasing so the user can
-    // zoom to the pixel
-   // if(_zoomCtx.zoomFactor >= 0.5){
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//    }else{
-//        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//    }
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
-    
-    
-    if(byteMode()==1 || !_hasHW){
-        glTexImage2D (GL_TEXTURE_2D,
-                      0,			// level
-                      GL_RGBA8, //internalFormat
-                      w, h,
-                      0,			// border
-                      GL_BGRA,		// format
-                      GL_UNSIGNED_INT_8_8_8_8_REV,	// type
-                      0);			// pixels
-    }else if(byteMode()==0 && _hasHW){
-        glTexImage2D (GL_TEXTURE_2D,
-                      0,			// level
-                      GL_RGBA32F_ARB, //internalFormat
-                      w, h,
-                      0,			// border
-                      GL_RGBA,		// format
-                      GL_FLOAT,	// type
-                      0);			// pixels
-    }
-    checkGLErrors();
-}
 void ViewerGL::initBlackTex(){
-    makeCurrent();
-    
-    //_viewerTab->zoomSpinbox->setValue(_zoomCtx.zoomFactor*100);
+    fitToFormat(displayWindow());
     int w = floorf(displayWindow().w()*_zoomCtx.zoomFactor);
     int h = floorf(displayWindow().h()*_zoomCtx.zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
@@ -701,77 +632,59 @@ void ViewerGL::drawBlackTex(){
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void ViewerGL::drawRow(Row* row){
+void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
     float zoomFactor;
     _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
     int w = floorf(displayWindow().w() * zoomFactor);
     if(byteMode()==0 && _hasHW){
-        convertRowToFitTextureBGRA_fp((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                      w,row->zoomedY(),(*row)[Channel_alpha]);
+        convertRowToFitTextureBGRA_fp(r,g,b,w,zoomedY,a);
     }
     else{
-        convertRowToFitTextureBGRA((*row)[Channel_red], (*row)[Channel_green], (*row)[Channel_blue],
-                                   w,row->zoomedY(),(*row)[Channel_alpha]);
+        convertRowToFitTextureBGRA(r,g,b,w,zoomedY,a);
    
     }
 }
 
-bool ViewerGL::determineFrameDataContainer(std::string filename,int w,int h,ViewerGL::CACHING_MODE mode){
+size_t ViewerGL::determineFrameDataContainer(U64 key,std::string filename,int w,int h,ViewerGL::CACHING_MODE mode){
     if(_mustFreeFrameData){
         free(frameData);
         _mustFreeFrameData = false;
     }
+    size_t dataSize = 0;
+    TextureEntry::DataType type;
+    if(byteMode() == 1 || !_hasHW){
+        dataSize = sizeof(U32)*w*h;
+        type = TextureEntry::BYTE;
+    }else{
+        dataSize = sizeof(float)*w*h*4;
+        type = TextureEntry::FLOAT;
+    }
     
+
     if(mode == TEXTURE_CACHE){ // texture caching
-        TextureCache::TextureKey key(exposure,_lut,_zoomCtx.zoomFactor,
-                                     w,h,byteMode(),filename,
-                                     ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion(),
-                                     _rowSpan.first,_rowSpan.second);
-        TextureCache::TextureIterator found = _textureCache->isCached(key);
-        U32 ret = 0;
-        if(found != _textureCache->end()){
-            setCurrentTexture((GLuint)found->second);
-            /*flaging that it will not be needed to copy data from the current PBO
-             to the texture as it already contains the results.*/
-            _noDataTransfer = true;
-            return true;
-        }else{
-            ret = _textureCache->append(key);
-            size_t dataSize = 0;
-            byteMode() == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
-            frameData = (char*)malloc(dataSize);
-            _mustFreeFrameData = true;
-            initTextures(w,h,(GLuint)ret);
-            setCurrentTexture((GLuint)ret);
-            return false;
-        }
+        TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
+        frameData = (char*)malloc(dataSize);
+        _mustFreeFrameData = true;
+        setCurrentTexture(ret);
+        
     }else{ // viewer caching
         // init mmaped file
         U64 treeVersion = ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion();
-        U64 key = FrameEntry::computeHashKey(filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), dataWindow(), displayWindow());
-        
-//        cout << " ADD : key computed with \n " << filename << " "
-//        << treeVersion << " " <<  _zoomCtx.getZoomFactor() << " " << exposure << " " << _lut
-//        << " " << byteMode() << " " << dataWindow().x() << " " << dataWindow().y() << " "  << dataWindow().right() << " "
-//        << dataWindow().top() << " " << displayWindow().x() << " " << displayWindow().y() << " " <<
-//        displayWindow().right() << " " << displayWindow().top() << endl;
-//        cout << " KEY: " << key << endl;
-        
         FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
         
         if(entry){
             frameData = entry->getMappedFile()->data();
         }else{ // something happen, fallback to in-memory only version : no-caching
+#ifdef PW_DEBUG
             cout << "WARNING: caching does not seem to work properly..falling back to pure RAM version, caching disabled." << endl;
-            size_t dataSize = 0;
-            byteMode() == 1 ? dataSize = sizeof(U32)*w*h : dataSize = sizeof(float)*w*h*4;
+#endif
             frameData = (char*)malloc(dataSize);
             _mustFreeFrameData = true;
         }
-        initTextures(w,h,texId[0]);
-        setCurrentTexture(texId[0]);
-        return false;
+        _texID->allocate(w, h, type);
+        setCurrentTexture(_texID);
     }
+    return dataSize;
 }
 
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
@@ -790,7 +703,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     }
     
     glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, currentTexture);
+    glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
@@ -798,7 +711,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
     }
     
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(byteMode()==1 || !_hasHW){
+    if(_currentTexture->type() == TextureEntry::BYTE){
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0,				// xoffset, yoffset
@@ -808,7 +721,7 @@ void ViewerGL::copyPBOtoTexture(int w,int h){
                          0);
         
         
-    }else if(byteMode() ==0 && _hasHW){
+    }else if(_currentTexture->type() == TextureEntry::FLOAT){
         glTexSubImage2D (GL_TEXTURE_2D,
                          0,				// level
                          0, 0 ,				// xoffset, yoffset
@@ -987,8 +900,6 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
 }
 
 
-/*actually converting to ARGB... but it is called BGRA by
- the texture format GL_UNSIGNED_INT_8_8_8_8_REV*/
 U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
     U32 res = 0x0;
     res |= b;
@@ -999,20 +910,6 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
     
 }
 
-void ViewerGL::keyPressEvent ( QKeyEvent * event ){
-    
-    if(event->key() == Qt::Key_Space){
-        releaseKeyboard();
-        if(_fullscreen){
-            _fullscreen=false;
-            ctrlPTR->getGui()->exitFullScreen();
-        }else{
-            _fullscreen=true;
-            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(_viewerTab->parentWidget()));
-        }
-    }
-    
-}
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     old_pos = event->pos();
     if(event->button() != Qt::MiddleButton ){
@@ -1208,19 +1105,6 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     }
     return QVector4D(0,0,0,0);
 }
-QVector4D ViewerGL::U32toBGRA(U32 &c){
-    QVector4D out;
-    int r=0,g=0,b=0,a=0;
-    b |= (c >> 24);
-    g |= (((c << 8) >> 8) >> 16);
-    r |= (((c << 16) >> 16) >> 8);
-    a |= (c << 24) >> 24;
-    out.setX((float)r/255.f);
-    out.setY((float)g/255.f);
-    out.setZ((float)b/255.f);
-    out.setW((float)a/255.f);
-    return out;
-}
 
 void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
@@ -1249,22 +1133,12 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     
     
 }
-void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit,bool initBoundaries){
+void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
     _currentViewerInfos = viewerInfos;
     Format* df=ctrlPTR->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
         _currentViewerInfos->getDisplayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
-    if(!onInit){
-        _viewerTab->_currentFrameBox->setMaximum(_currentViewerInfos->lastFrame());
-        _viewerTab->_currentFrameBox->setMinimum(_currentViewerInfos->firstFrame());
-        int curFirstFrame = _viewerTab->frameSeeker->firstFrame();
-        int curLastFrame = _viewerTab->frameSeeker->lastFrame();
-        if(_currentViewerInfos->firstFrame() != curFirstFrame || _currentViewerInfos->lastFrame() != curLastFrame){
-            _viewerTab->frameSeeker->setFrameRange(_currentViewerInfos->firstFrame(), _currentViewerInfos->lastFrame());
-            _viewerTab->frameSeeker->setBoundaries(_currentViewerInfos->firstFrame(), _currentViewerInfos->lastFrame());
-        }
-    }    
 }
 
 void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
@@ -1290,20 +1164,17 @@ void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
-            _viewerTab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::FLOAT);
         }
         _lut = 0;
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
-            _viewerTab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::VIEWER);
         }
         
         _lut = 1;
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
-            _viewerTab->frameSeeker->clearCachedFrames();
             _colorSpace = Lut::getLut(Lut::MONITOR);
         }
         _lut = 2;
@@ -1320,7 +1191,6 @@ void ViewerGL::updateColorSpace(QString str){
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    _viewerTab->frameSeeker->clearCachedFrames();
     if((byteMode()==1 || !_hasHW) && _drawing)
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
     else
@@ -1570,11 +1440,6 @@ void ViewerGL::disconnectViewer(){
     clearViewer();
 }
 
-/*Convenience function.
- *Ydirection is the order of fill of the display texture:
- either bottom to top or top to bottom.*/
-int ViewerGL::Ydirection(){return getCurrentViewerInfos()->getYdirection();}
-
 /*rgbMode is true when we have rgba data.
  False means it is luminance chroma*/
 bool ViewerGL::rgbMode(){return getCurrentViewerInfos()->rgbMode();}
@@ -1585,6 +1450,11 @@ const Box2D& ViewerGL::dataWindow(){return getCurrentViewerInfos()->getDataWindo
 /*The displayWindow of the currentFrame(Resolution)*/
 const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->getDisplayWindow();}
 
+/*display black in the viewer*/
+void ViewerGL::clearViewer(){
+    drawing(false);
+    updateGL();
+}
 
 /*overload of QT enter/leave/resize events*/
 void ViewerGL::enterEvent(QEvent *event)

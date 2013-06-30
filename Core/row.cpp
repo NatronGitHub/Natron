@@ -44,7 +44,7 @@ Row::Row(int x,int y, int range, ChannelSet channels)
     memset(buffers, 0, sizeof(float*)*MAX_BUFFERS_PER_ROW);
     
 }
-bool Row::allocate(const char* path){
+bool Row::allocateRow(const char*){
     foreachChannels(z, _channels){
         if(z != Channel_alpha)
             buffers[z] = (float*)calloc((r-x),sizeof(float));

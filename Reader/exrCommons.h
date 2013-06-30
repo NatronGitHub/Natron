@@ -40,7 +40,7 @@ namespace EXR {
         "B44"
     };
     
-    static Imf::Compression stringToCompression(std::string& str){
+    inline Imf::Compression stringToCompression(std::string& str){
         if(str == compressionNames[0]){
             return Imf::NO_COMPRESSION;
         }else if(str == compressionNames[1]){
@@ -60,7 +60,7 @@ namespace EXR {
         "16 bit half", "32 bit float"
     };
     
-    static int depthNameToInt(std::string& name){
+    inline int depthNameToInt(std::string& name){
         if(name == depthNames[0]){
             return 16;
         }else{
@@ -68,7 +68,7 @@ namespace EXR {
         }
     }
     
-    static Channel fromExrChannel(std::string from)
+    inline Channel fromExrChannel(std::string from)
     {
         if (from == "R")     return Powiter_Enums::Channel_red;
         if (from == "G")     return Powiter_Enums::Channel_green;
@@ -85,7 +85,7 @@ namespace EXR {
         }
     }
     
-    static std::string toExrChannel(Channel from){
+    inline std::string toExrChannel(Channel from){
         if(from == Powiter_Enums::Channel_red) return "R";
         if(from == Powiter_Enums::Channel_green) return "G";
         if(from == Powiter_Enums::Channel_blue) return "B";
@@ -102,7 +102,7 @@ namespace EXR {
         
     }
     
-    static bool timeCodeFromString(const std::string& str, Imf::TimeCode& attr)
+    inline bool timeCodeFromString(const std::string& str, Imf::TimeCode& attr)
     {
         if (str.length() != 11)
             return false;
@@ -122,7 +122,7 @@ namespace EXR {
         }
         return true;
     }
-    static bool edgeCodeFromString(const std::string& str, Imf::KeyCode& a)
+    inline bool edgeCodeFromString(const std::string& str, Imf::KeyCode& a)
     {
         int mfcCode, filmType, prefix, count, perfOffset;
         sscanf(str.c_str(), "%d %d %d %d %d", &mfcCode, &filmType, &prefix, &count, &perfOffset);

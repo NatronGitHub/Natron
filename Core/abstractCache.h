@@ -9,28 +9,33 @@
 #define __PowiterOsX__abstractCache__
 
 #include "Core/LRUcache.h"
-#include "Core/singleton.h"
 #include <vector>
 
 class MemoryFile;
-
 /*Base class for cache entries. This can be overloaded to fit parameters you'd
  like to track like offset in files, list of elements etc...
  Entries are not copyable, you must create a new object if you want to copy infos.*/
 class CacheEntry {
     
-    bool _doNotEvict;
+    bool _doNotEvict; // < When true it prevents the cache from deleting this entry
     
 public:
+    
     CacheEntry():_doNotEvict(false),_size(0){}
+    
     virtual ~CacheEntry(){}
     
+    /*Flag the entry so the cache doesn't remove it*/
     void preventFromDeletion(){_doNotEvict = true;}
     
+    /*Remove the priority flag thus allowing the cache
+     to remove this entry.*/
     void returnToNormalPriority(){_doNotEvict = false;}
     
+    /*Returns true if the cache can delete this entry*/
     bool isRemovable() const {return _doNotEvict;}
     
+    /*Returns the size of the entry in bytes.*/
     U64 size() const {return _size;}
     
 protected:
@@ -40,10 +45,9 @@ protected:
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
     virtual bool allocate(U64 byteCount, const char* path= 0)=0;
+    
+    /*Must implement the deallocation of the entry*/
     virtual void deallocate()=0;
-    
-    
-    
     
 };
 
@@ -52,20 +56,27 @@ protected:
 class MemoryMappedEntry: public CacheEntry{
     
 protected:
-    std::string _path;
-    MemoryFile* _mappedFile;
+    std::string _path; // < the path of the file backing the entry
+    MemoryFile* _mappedFile; // < the object holding mapped datas
 public:
+    
     MemoryMappedEntry();
     
+    /*Returns a pointer to the memory mapped object*/
     const MemoryFile* getMappedFile() const {return _mappedFile;}
     
     /*Must print a string representing all the data, terminated by a
      new line character.*/
     virtual std::string printOut()=0;
     
+    /*Returns the path of the file backing the entry*/
     std::string path() const {return _path;}
     
+    /*Allocates the mapped file*/
     virtual bool allocate(U64 byteCount, const char* path =0);
+    
+    /*Removes the mapped file from RAM, saving it on disk in the file
+     indicated by _path*/
     virtual void deallocate();
     
     /*Assumed that allocate has already been called once.
@@ -78,14 +89,20 @@ public:
 
 class InMemoryEntry : public CacheEntry{
 protected:
-    char* _data;
+    char* _data; // < the buffer holding data
 public:
     InMemoryEntry();
+    
+    /*allocates the buffer*/
     virtual bool allocate(U64 byteCount,const char* path = 0);
     
+    /*deallocate the buffer*/
     virtual void deallocate();
+    
     virtual ~InMemoryEntry();
 };
+
+
 
 /*Aims to provide an abstract base class for caches. 2 cache modes are availables:
  
@@ -102,10 +119,12 @@ public:
  You can derive either AbstractMemoryCache or AbstractDiskCache to implement your own cache.
  You must code yourself the function returning a U64 hash
  key for the elements you want to cache. Be sure to have a key that aims to scatter data
- the most. Check nodecache.h to see an example of how to use it.
+ the most.
  The entry must derive InMemoryEntry for memory caches and MemoryMappedEntry for disk caches.
  Each cache entry for disk-caches will be under the sub-folder whose name is the 1st byte
- of the hash key.*/
+ of the hash key.
+ You have an example of both AbstractMemoryCache and AbstractDiskCache with 
+ nodecache.h and viewercache.h .*/
 class AbstractCache {
     
 public:
@@ -163,13 +182,14 @@ private:
     
 protected:
     //protected so derived class can modify it
-    U64 _size; // current size of the cache
+    U64 _size; // current size of the cache in bytes
     
-    CacheContainer _cache; // the actual cache
+    CacheContainer _cache; // the actual cache 
 
 public:
     
     AbstractCache();
+    
     ~AbstractCache();
     
     /*Adds a new entry to the cache. Returns true if it removed
@@ -179,17 +199,20 @@ public:
     
     
     /*clears the content of the cache (and deletes cache entries).
-     This effectively resets the size of the cache.*/
+     Note that all entries that are not removable from the cache
+     (because someone explicitly called preventFromDeletion() on them)
+     will not get deleted. The size remaining will be 0 if there're no
+     unremovable entries, otherwise it will be the size of these entries.*/
     void clear();
     
     
     /*Returns the name  of the cache. It will
      serve as the root folder for this cache, and will
-     be located under Cache/<cacheName()>*/
+     be located under <CacheRoot>/<cacheName()>*/
     virtual std::string cacheName()=0;
     
     
-    /*Set the maximum cache size. It does not shrink the content of the cache,
+    /*Set the maximum cache size in bytes. It does not shrink the content of the cache,
      but prevent it to grow. You must clear it if you want to remove the data
      exceeding the size.*/
     void setMaximumCacheSize(U64 size){_maximumCacheSize = size;}
@@ -199,16 +222,23 @@ public:
     const U64& getCurrentSize() const {return _size;}
     
     /*Returns an iterator to the cache. If found it points
-     to a valid cache entry, otherwise it points to to end.
+     to a valid cache entry, otherwise it points  to end.
      */
     CacheIterator isCached(const U64& key) ;
     
-    
+    /*So you can compare the result of isCached by the result of this
+     function.*/
     CacheIterator begin(){return _cache.begin();}
     
     /*So you can compare the result of isCached by the result of this
-     function. Again, protected since it should be opaque for the end user.*/
+     function.*/
     CacheIterator end() {return _cache.end();}
+private:
+    
+    /*Erase one element from the cache. It is used
+     by the implementation of clear(), and shouldn't be
+     called elsewhere.*/
+    void erase(CacheIterator it);
     
     
 };
@@ -238,7 +268,7 @@ public:
  in-memory caches, but are a bit slower.*/
 class AbstractDiskCache : public AbstractCache {
     
-    U64 _inMemorySize; // the size of the in-memory portion of the cache
+    U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
     double _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
     
     /*Keeps track of the cache entries that reside in the virtual adress space of the process.

@@ -99,20 +99,20 @@ public:
         /*This class represents a frame residing in the buffer.*/
         class DecodedFrameDescriptor{
         public:
-            DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,ReaderInfo* readInfo,const char* cachedFrame,
+            DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,ReaderInfo* readInfo,
                                    std::string filename,ScanLineContext *slContext = 0):
-            _asynchTask(asynchTask),_readHandle(readHandle),_readInfo(readInfo),_cachedFrame(cachedFrame),
+            _asynchTask(asynchTask),_readHandle(readHandle),_readInfo(readInfo),
             _filename(filename),_slContext(slContext)
             {}
-            DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_cachedFrame(0)
-            ,_filename(""),_slContext(0),_readInfo(0){}
+            DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_readInfo(0)
+            ,_filename(""),_slContext(0){}
             DecodedFrameDescriptor(const DecodedFrameDescriptor& other):
             _asynchTask(other._asynchTask),_readHandle(other._readHandle),_readInfo(other._readInfo),
-            _cachedFrame(other._cachedFrame),_filename(other._filename),
+            _filename(other._filename),
             _slContext(other._slContext)
             {}
             
-            bool isEmpty(){return !_asynchTask && !_readHandle && !_cachedFrame &&
+            bool isEmpty(){return !_asynchTask && !_readHandle &&
                  !_slContext && _filename.empty();}
             
             /*This member is not 0 if the decoding for the frame was done in an asynchronous manner
@@ -127,9 +127,6 @@ public:
              do not have a read handle.*/
             ReaderInfo* _readInfo;
             
-            /*A pointer to the frame data if it comes from the diskCache. Otherwise 0.*/
-            const char* _cachedFrame;
-            
             /*The name of the frame in the buffer.*/
             std::string _filename;
             
@@ -141,7 +138,7 @@ public:
         
         /*Enum used to know what kind of frame is enqueued in the buffer, it is used by
          isEnqueued(...) and this function is used by open(...) and openCachedFrame(...)*/
-        enum SEARCH_TYPE{CACHED_FRAME = 1,SCANLINE_FRAME = 2 ,FULL_FRAME = 4 , NOT_CACHED_FRAME = 8,ALL_FRAMES = 16};
+        enum SEARCH_TYPE{SCANLINE_FRAME = 1 ,FULL_FRAME = 2 ,ALL_FRAMES = 4};
     
         
         Buffer():_bufferSize(2){}
@@ -150,7 +147,6 @@ public:
                                                       QFuture<void> *future,
                                                       Read* readHandle,
                                                       ReaderInfo* readInfo,
-                                                      const char* cachedFrame,
                                                       ScanLineContext *slContext = 0);
         void remove(std::string filename);
         QFuture<void>* getFuture(std::string filename);
@@ -164,7 +160,6 @@ public:
         void erase(DecodedFrameIterator it);
         DecodedFrameIterator find(std::string filename);
         void debugBuffer();
-        void removeAllCachedFrames();
     private:
         std::vector<  DecodedFrameDescriptor  > _buffer; // decoding buffer
         int _bufferSize; // maximum size of the buffer
@@ -187,20 +182,7 @@ public:
      **/
     Reader::Buffer::DecodedFrameDescriptor open(QString filename,DecodeMode mode,bool startNewThread);
     
-    /*Open from the diskcache the frame represented by the FramesIterator.
-     * This function allocates OpenGL the pbo, map it and fill it with the cached frame.
-     *It doesn't unmap the PBO as it is done in GLViewer::copyPBOtoTexture(...).
-     *It will insert a new DecodedFrameResult in the internal buffer. The buffer offer a way
-     *to know it is a frame taken from the diskcache, either with _cacheFrame!=NULL or
-     * _cacheWatcher!=NULL.
-     *if startNewThread is on,the retrieval from the cache and the copy to the PBO will occur in a separate thread.
-     **/
-    Reader::Buffer::DecodedFrameDescriptor openCachedFrame(FrameEntry* frame ,bool startNewThread);
     
-    /*This function is used internally by openCachedFrame(...) in case startNewThread is true.
-     *It copies it to the cached frame into
-     * dst buffer(OpenGL mapped PBO).*/
-    void retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize);
     
     /*This function will decode one or more frames depending on its parameters.
      *It will not be called for a cached frame.
@@ -251,15 +233,13 @@ public:
     /*Returns false if it couldn't find the current frame in the buffer or if
      * the frame is not finished*/
     bool makeCurrentDecodedFrame(bool forReal);
-     
-    void removeCachedFramesFromBuffer();
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
+    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Mask_None;}
 private:
 	QImage *preview;
 	bool has_preview;
@@ -269,7 +249,6 @@ private:
      how many scanlines we'd need*/
     bool _fitFrameToViewer;
 	Read* readHandle;
-    int _pboIndex;
     std::map<int,QString> files; // frames
     Buffer _buffer;
 };

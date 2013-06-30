@@ -31,8 +31,8 @@
 #include <cstdlib>
 
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
-_fullscreen(false),
 _evtState(DEFAULT),
+_fullscreen(false),
 _lastSelectedPos(0,0),
 _nodeSelected(0){
     
@@ -146,7 +146,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         if(_arrowSelected->hasSource()){
             
-            _arrowSelected->getSource()->getNode()->lockSocket();
+            _arrowSelected->getSource()->getNode()->releaseSocket();
             
             _arrowSelected->getSource()->getNode()->removeChild(_arrowSelected->getDest()->getNode());
             _arrowSelected->getSource()->substractChild(_arrowSelected->getDest());
@@ -170,12 +170,12 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     break;
                 }
                 
-                if(n->getNode()->getFreeOutputCount()>0){
+                if(n->getNode()->getFreeSocketCount()>0){
                     _arrowSelected->getDest()->getNode()->addParent(n->getNode());
                     _arrowSelected->getDest()->addParent(n);
                     n->getNode()->addChild(_arrowSelected->getDest()->getNode());
                     n->addChild(_arrowSelected->getDest());
-                    n->getNode()->releaseSocket();
+                    n->getNode()->lockSocket();
                     _arrowSelected->setSource(n);
                     foundSrc=true;
                     
@@ -393,12 +393,12 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(selected->getNode()->isOutputNode()){
         first = selected->firstAvailableEdge();
         if(first){
-            if(created->getNode()->getFreeOutputCount() > 0){
+            if(created->getNode()->getFreeSocketCount() > 0){
                 first->getDest()->getNode()->addParent(created->getNode());
                 first->getDest()->addParent(created);
                 created->getNode()->addChild(first->getDest()->getNode());
                 created->addChild(first->getDest());
-                created->getNode()->releaseSocket();
+                created->getNode()->lockSocket();
                 first->setSource(created);
                 first->initLine();
                 cont = true;
@@ -406,20 +406,21 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         }
     }else{
         /*dst is not outputnode*/
-        if (selected->getNode()->getFreeOutputCount() > 0) {
+        if (selected->getNode()->getFreeSocketCount() > 0) {
             first = created->firstAvailableEdge();
             if(first){
                 first->getDest()->getNode()->addParent(selected->getNode());
                 first->getDest()->addParent(selected);
                 selected->getNode()->addChild(first->getDest()->getNode());
                 selected->addChild(first->getDest());
-                selected->getNode()->releaseSocket();
+                selected->getNode()->lockSocket();
                 first->setSource(selected);
                 first->initLine();
                 cont = true;
             }
         }
     }
+    
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){

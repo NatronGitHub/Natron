@@ -233,7 +233,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
     p.fillPath(lastP, boundariesColor);
     
     
-    QColor cachedColor(143,201,103);
+    QColor cachedColor(143,201,103,255);
     double offset = (double)((w-BORDER_OFFSET_) - BORDER_OFFSET_ )/(double)(_displayedValues.size()-1);
     if(_increment==5)
         offset/=5.0;

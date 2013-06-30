@@ -11,9 +11,18 @@
 #include "Gui/GLViewer.h"
 #include "Core/row.h"
 #include "Gui/timeline.h"
-Viewer::Viewer(Node* node):OutputNode(node),_viewerInfos(0),_uiContext(0)
+#include "Core/viewerCache.h"
+#include "Reader/Reader.h"
+#include "Core/mappedfile.h"
+#include <QtConcurrent/QtConcurrentRun>
+#include "Core/model.h"
+#include "Core/VideoEngine.h"
+#include "Superviser/controler.h"
+Viewer::Viewer(Node* node,ViewerCache* cache,TextureCache* textureCache):OutputNode(node),_viewerInfos(0),_uiContext(0),_viewerCache(cache),
+_pboIndex(0),_textureCache(textureCache)
 {
-    
+    _cacheWatcher = new QFutureWatcher<void>;
+   QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));
 }
 
 void Viewer::initializeViewerTab(TabWidget* where){
@@ -29,9 +38,7 @@ Viewer::~Viewer(){
 
 void Viewer::_validate(bool forReal){
     
-    if(_viewerInfos){
-        delete _viewerInfos;
-    }
+    (void)forReal;
     makeCurrentViewer();
     
 }
@@ -46,14 +53,31 @@ void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     Row* internal = row.getInternalRow();
     if(internal){
         internal->zoomedY(out->zoomedY());
-        _uiContext->viewer->drawRow(internal); // we  ask for the GLViewer to draw this row
+        
+        /*drawRow will fill a portion of the RAM buffer holding the frame.
+         This will write to at the appropriate offset in the buffer thanks
+         to the zoomedY(). Note that this can be called concurrently since
+         2 rows do not overlap in memory.*/
+        _uiContext->viewer->drawRow(row[Channel_red],
+                                    row[Channel_green],
+                                    row[Channel_blue],
+                                    row[Channel_alpha],
+                                    internal->zoomedY());
     }
 }
 
 void Viewer::makeCurrentViewer(){
+    if(_viewerInfos){
+        delete _viewerInfos;
+    }
     _viewerInfos = new ViewerInfos;
-    dynamic_cast<Node::Info&>(*_viewerInfos) = dynamic_cast<const Node::Info&>(*_info);
-    _uiContext->viewer->setCurrentViewerInfos(_viewerInfos,false,false);
+    _viewerInfos->set(dynamic_cast<const Box2D&>(*_info));
+    _viewerInfos->setChannels(_info->channels());
+    _viewerInfos->setDisplayWindow(_info->getDisplayWindow());
+    _viewerInfos->firstFrame(_info->firstFrame());
+    _viewerInfos->lastFrame(_info->lastFrame());
+    
+    _uiContext->setCurrentViewerInfos(_viewerInfos,false);
 }
 
 int Viewer::firstFrame() const{
@@ -66,4 +90,104 @@ int Viewer::lastFrame() const{
 
 int Viewer::currentFrame() const{
     return _uiContext->frameSeeker->currentFrame();
+}
+
+
+void ViewerInfos::reset(){
+    _firstFrame = -1;
+    _lastFrame = -1;
+    _channels = Mask_None;
+    set(0, 0, 0, 0);
+    _displayWindow.set(0,0,0,0);
+}
+
+void ViewerInfos::mergeDisplayWindow(const Format& other){
+    _displayWindow.merge(other);
+    _displayWindow.pixel_aspect(other.pixel_aspect());
+    if(_displayWindow.name().empty()){
+        _displayWindow.name(other.name());
+    }
+}
+
+bool ViewerInfos::operator==( const ViewerInfos& other){
+	if(other.channels()==this->channels() &&
+       other.firstFrame()==this->_firstFrame &&
+       other.lastFrame()==this->_lastFrame &&
+       other.getDisplayWindow()==this->_displayWindow
+       ){
+        return true;
+	}else{
+		return false;
+	}
+    
+}
+void ViewerInfos::operator=(const ViewerInfos &other){
+    _channels = other._channels;
+    _firstFrame = other._firstFrame;
+    _lastFrame = other._lastFrame;
+    _displayWindow = other._displayWindow;
+    set(other);
+    rgbMode(other._rgbMode);
+}
+
+FrameEntry* Viewer::get(U64 key){
+    
+  return  _viewerCache->get(key);
+}
+bool Viewer::isTextureCached(U64 key){
+    
+    TextureEntry* found = _textureCache->get(key);
+    if(found != NULL){
+        _uiContext->viewer->setCurrentTexture(found);
+        /*flaging that it will not be needed to copy data from the current PBO
+         to the texture as it already contains the results.*/
+        _uiContext->viewer->_noDataTransfer = true;
+        return true;
+    }
+    return false;
+}
+
+void Viewer::cachedFrameEngine(FrameEntry* frame){
+    int w = frame->_actualW ;
+    int h = frame->_actualH ;
+    size_t dataSize = 0;
+    TextureEntry::DataType type;
+    if(frame->_byteMode==1.0){
+        dataSize  = w * h * sizeof(U32) ;
+        type = TextureEntry::BYTE;
+    }else{
+        dataSize  = w * h  * sizeof(float) * 4;
+        type = TextureEntry::FLOAT;
+    }
+    ViewerGL* gl_viewer = _uiContext->viewer;
+    if(_viewerInfos){
+        delete _viewerInfos;
+    }
+    _viewerInfos = new ViewerInfos;
+    _viewerInfos->set(dynamic_cast<const Box2D&>(*frame->_frameInfo));
+    _viewerInfos->setChannels(frame->_frameInfo->channels());
+    _viewerInfos->setDisplayWindow(frame->_frameInfo->getDisplayWindow());
+    _viewerInfos->firstFrame(_info->firstFrame());
+    _viewerInfos->lastFrame(_info->lastFrame());
+    _uiContext->setCurrentViewerInfos(_viewerInfos,false);
+    
+    
+    /*resizing texture if needed, the calls must be made in that order*/
+    gl_viewer->getDefaultTextureID()->allocate(w, h, type);
+    gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
+    gl_viewer->drawing(true);
+    /*allocating pbo*/
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,gl_viewer->getPBOId(_pboIndex));
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
+    void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    _pboIndex = (_pboIndex+1)%2;
+    const char* cachedFrame = frame->getMappedFile()->data();
+    QFuture<void> future = QtConcurrent::run(this,&Viewer::retrieveCachedFrame,cachedFrame,output,dataSize);
+    _cacheWatcher->setFuture(future);
+   
+    
+}
+void Viewer::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
+    _uiContext->viewer->fillPBO(cachedFrame, dst, dataSize);
 }

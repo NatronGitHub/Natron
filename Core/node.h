@@ -31,34 +31,33 @@ public:
 	 *and to know what we can request from a node.*/
 	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format full_size_format,ChannelMask channels):
+		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelMask channels):Box2D(),
         _firstFrame(first_frame),
         _lastFrame(last_frame),
         _ydirection(ydirection),
         _blackOutside(false),
         _rgbMode(true),
-        _displayWindow(full_size_format),
+        _displayWindow(displayWindow),
         _channels(channels)
         {}
-	    Info():_firstFrame(-1),_lastFrame(-1),_ydirection(0),_blackOutside(false),_rgbMode(true),_displayWindow(),_channels(){}
+	    Info():Box2D(),_firstFrame(-1),_lastFrame(-1),_ydirection(0),_blackOutside(false),_rgbMode(true),_displayWindow(),_channels(){}
 		void setYdirection(int direction){_ydirection=direction;}
-		int getYdirection(){return _ydirection;}
+		int getYdirection() const {return _ydirection;}
 		void setDisplayWindow(Format format){_displayWindow=format;}
-		const Format& getDisplayWindow(){return _displayWindow;}
-		const Box2D& getDataWindow(){return dynamic_cast<const Box2D&>(*this);}
+		const Format& getDisplayWindow() const {return _displayWindow;}
+		const Box2D& getDataWindow() const {return dynamic_cast<const Box2D&>(*this);}
 		bool operator==( Node::Info &other);
         void operator=(const Node::Info &other);
 		void firstFrame(int nb){_firstFrame=nb;}
 		void lastFrame(int nb){_lastFrame=nb;}
-		int firstFrame(){return _firstFrame;}
-		int lastFrame(){return _lastFrame;}
+		int firstFrame() const {return _firstFrame;}
+		int lastFrame() const {return _lastFrame;}
 		void setChannels(ChannelMask mask){_channels=mask;}
-		ChannelMask& channelsRef(){return _channels;}
-		const ChannelMask& channels(){return _channels;}
-		bool blackOutside(){return _blackOutside;}
+		const ChannelMask& channels() const {return _channels;}
+		bool blackOutside() const {return _blackOutside;}
 		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
-        bool rgbMode(){return _rgbMode;}
+        bool rgbMode() const {return _rgbMode;}
         void mergeDisplayWindow(const Format& other);
         
         void reset();
@@ -131,10 +130,11 @@ public:
     
     
     /*OutputNB related functions*/
-    int getFreeOutputCount() const;
+    int getFreeSocketCount() const;
     void releaseSocket();
     void lockSocket();
-    virtual void setSocketCount();
+    void initializeSockets(){ _freeSocketCount = maximumSocketCount();}
+    virtual int maximumSocketCount();
     /*============================*/
     
     /*Node type related functions*/
@@ -213,7 +213,7 @@ protected:
     
 	virtual ChannelMask channelsNeeded(int inputNb)=0;
     virtual void preProcess(){}
-	virtual void _validate(bool forReal){}
+	virtual void _validate(bool forReal){(void)forReal;}
     
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	int _freeSocketCount;

@@ -25,21 +25,21 @@ NodeCache* NodeCache::getNodeCache(){
 }
 
 
-std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int r,int y ,ChannelSet& channels){
+std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int r,int y ,ChannelSet& ){
     U64 hashKey = Row::computeHashKey(nodeKey, filename, x, r, y );
     CacheIterator it = isCached(hashKey);
     if (it == end()) {// not in memory
         return make_pair(hashKey,(Row*)NULL);
     }else{ // found in memory
         CacheEntry* entry = AbstractCache::getValueFromIterator(it);
-        Row* rowEntry = static_cast<Row*>(entry);
+        Row* rowEntry = dynamic_cast<Row*>(entry);
         assert(rowEntry);
         return make_pair(it->first,rowEntry);
     }
     return make_pair(hashKey,(Row*)NULL);
 }
 
-Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::string filename){
+Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::string){
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);
@@ -48,7 +48,7 @@ Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::st
         delete out;
         return NULL;
     }
-    if(!out->allocate()){
+    if(!out->allocateRow()){
         cout << "Failed to allocate row..." << endl;
         delete out;
         return NULL;

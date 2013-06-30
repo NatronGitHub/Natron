@@ -110,6 +110,8 @@ public:
     void registerTab(std::string name,QWidget* tab);
     
     void loadStyleSheet();
+    
+    TextureCache* getTextureCache() const{return _textureCache;}
 
 private:
 

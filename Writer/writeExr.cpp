@@ -81,7 +81,7 @@ void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
         a+=row.offset();
     }
     Row* toRow = new Row(offset,y,range,channels);
-    toRow->allocate();
+    toRow->allocateRow();
     foreachChannels(z, channels){
         const float* from = row[z] + row.offset();
         float* to = toRow->writable(z)+row.offset();

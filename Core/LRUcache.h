@@ -137,6 +137,10 @@ public:
             return std::make_pair(0,(value_type)NULL);
         }
     }
+    void erase(typename key_tracker_type::iterator it){
+        _key_tracker.erase(it);
+    }
+    
     void clear(){
         _key_to_value.clear();
         _key_tracker.clear();
@@ -236,6 +240,12 @@ public:
             return std::make_pair(0,(value_type)NULL);
         }
     }
+    void erase(typename container_type::left_iterator it){
+        typename container_type::right_iterator itRight = _container.project_right(it);
+        _container.right.erase(itRight);
+    }
+    
+    
     void clear(){
         _container.clear();
     }
@@ -315,6 +325,9 @@ public:
         }else{
             return std::make_pair(0,(value_type)NULL);
         }
+    }
+    void erase(typename key_tracker_type::iterator it){
+        _key_tracker.erase(it);
     }
     void clear(){
         _key_to_value.clear();
@@ -410,6 +423,11 @@ public:
             return std::make_pair(0,(value_type)NULL);
         }
     }
+    void erase(typename container_type::left_iterator it){
+        typename container_type::right_iterator itRight = _container.project_right(it);
+        _container.right.erase(itRight);
+    }
+    
     void clear(){
         _container.clear();
     }
@@ -485,6 +503,12 @@ public:
             return std::make_pair(0,(value_type)NULL);
         }
     }
+    void erase(typename container_type::left_iterator it){
+        typename container_type::right_iterator itRight = _container.project_right(it);
+        _container.right.erase(itRight);
+    }
+
+    
     void clear(){
         _container.clear();
     }

@@ -46,7 +46,11 @@ using namespace std;
 
 
 Reader::Reader(Node* node):InputNode(node),video_sequence(0),
-readHandle(0),has_preview(false),_pboIndex(0),preview(0){}
+has_preview(false),readHandle(0),preview(0){
+
+   
+
+}
 
 Reader::Reader(Reader& ref):InputNode(ref){}
 
@@ -135,7 +139,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
         }
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::NOT_CACHED_FRAME);
+    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
     if(found !=_buffer.end()){
         if(found->_asynchTask && !found->_asynchTask->isFinished()){
             found->_asynchTask->waitForFinished();
@@ -176,75 +180,21 @@ Reader::Buffer::DecodedFrameDescriptor Reader::open(QString filename,DecodeMode 
             }else{
                 *future = QtConcurrent::run(_read,&Read::readData,filename,openStereo);
             }
-            return _buffer.insert(filenameStr, future,  _read, _read->getReaderInfo() ,NULL ,  slContext);
+            return _buffer.insert(filenameStr, future,  _read, _read->getReaderInfo()  ,  slContext);
         }else{
             if(_read->supportsScanLine()){
                 _read->readScanLineData(filename, slContext,false,openStereo);
             }else{
                 _read->readData(filename,openStereo);
             }
-            return _buffer.insert(filenameStr, NULL,  _read,_read->getReaderInfo(), NULL ,slContext);
+            return _buffer.insert(filenameStr, NULL,  _read,_read->getReaderInfo() ,slContext);
         }
     }
     
 }
 
-Reader::Buffer::DecodedFrameDescriptor Reader::openCachedFrame(FrameEntry* frame,bool startNewThread){
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(frame->_frameInfo->getCurrentFrameName(),
-                                                                    Buffer::CACHED_FRAME);
-    if(found !=_buffer.end()){
-        if(found->_cachedFrame){
-            if(found->_asynchTask){
-                if(!found->_asynchTask->isFinished())
-                    found->_asynchTask->waitForFinished();
-            }
-            return *found;
-        }else{
-            /*if the frame is already present in the buffer but was not a cached frame, override it*/
-            _buffer.erase(found);
-        }
-    }
-    removeCachedFramesFromBuffer();
-    
-    ReaderInfo *info = new ReaderInfo;
-    *info = *frame->_frameInfo;
-    int w = frame->_actualW ;
-    int h = frame->_actualH ;
-    size_t dataSize = 0;
-    if(frame->_byteMode==1.0){
-        dataSize  = w * h * sizeof(U32) ;
-    }else{
-        dataSize  = w * h  * sizeof(float) * 4;
-    }
-    /*allocating pbo*/
-    
-    
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,currentViewer->getUiContext()->viewer->getPBOId(_pboIndex));
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-    void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    checkGLErrors();
-    _pboIndex = (_pboIndex+1)%2;
-    QFuture<void>* future = 0;
-    const char* cachedFrame = frame->getMappedFile()->data();
-    if(!startNewThread){
-        currentViewer->getUiContext()->viewer->fillPBO(cachedFrame, output, dataSize);
-        return _buffer.insert(info->getCurrentFrameName(), 0 , 0, info ,cachedFrame,NULL);
-    }else{
-        future = new QFuture<void>;
-        Reader::Buffer::DecodedFrameDescriptor newFrame =_buffer.insert(info->getCurrentFrameName(),
-                                                                        0 ,
-                                                                        0,
-                                                                        info ,
-                                                                        cachedFrame,
-                                                                        NULL);
-        *future = QtConcurrent::run(this,&Reader::retrieveCachedFrame,cachedFrame,output,dataSize);
-        return newFrame;
-    }
-}
 
-void Reader::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
-    currentViewer->getUiContext()->viewer->fillPBO(cachedFrame, dst, dataSize);
-}
+
 std::vector<Reader::Buffer::DecodedFrameDescriptor>
 Reader::decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward){
     
@@ -291,21 +241,7 @@ void Reader::showFilePreview(){
     _buffer.clear();
 }
 
-void Reader::removeCachedFramesFromBuffer(){
-    _buffer.removeAllCachedFrames();
-}
-void Reader::Buffer::removeAllCachedFrames(){
-    bool recursive = false;
-    for(DecodedFrameIterator it = _buffer.begin();it != _buffer.end();it++){
-        if(it->_cachedFrame){
-            erase(it);
-            recursive = true;
-            break;
-        }
-    }
-    if(recursive)
-        removeAllCachedFrames();
-}
+
 
 bool Reader::makeCurrentDecodedFrame(bool forReal){
     int current_frame;
@@ -363,7 +299,6 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(std::string filena
                                                               QFuture<void> *future,
                                                               Read* readHandle,
                                                               ReaderInfo* readInfo,
-                                                              const char* cachedFrame,
                                                               ScanLineContext* slContext){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == (U32)_bufferSize){
@@ -376,7 +311,7 @@ Reader::Buffer::DecodedFrameDescriptor Reader::Buffer::insert(std::string filena
             }
         }
     }
-    DecodedFrameDescriptor desc(future,readHandle,readInfo,cachedFrame,filename,slContext);
+    DecodedFrameDescriptor desc(future,readHandle,readInfo,filename,slContext);
     _buffer.push_back(desc);
     return desc;
 }
@@ -414,37 +349,19 @@ bool Reader::Buffer::decodeFinished(std::string filename){
 void Reader::Buffer::debugBuffer(){
     cout << "=========BUFFER DUMP=============" << endl;
     for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++){
-        if(it->_cachedFrame)
-            cout << it->_filename << " (cached) " << endl;
-        else
             cout << it->_filename << endl;
     }
     cout << "=================================" << endl;
 }
 
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode){
-    if(searchMode == CACHED_FRAME){
-        DecodedFrameIterator ret = find(filename);
-        if(ret != _buffer.end()){
-            if(ret->_cachedFrame){
-                return ret;
-            }else{
-                return _buffer.end();
-            }
-        }else{
-            return _buffer.end();
-        }
-    }else if(searchMode == SCANLINE_FRAME){
+    if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
             if(!ret->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
-            if(!ret->_cachedFrame){
-                return ret;
-            }else{
-                return _buffer.end();
-            }
+            return ret;
         }else{
             return _buffer.end();
         }
@@ -454,11 +371,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string file
             if(ret->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
-            if(!ret->_cachedFrame){
-                return ret;
-            }else{
-                return _buffer.end();
-            }
+            return ret;
         }else{
             return _buffer.end();
         }
@@ -676,6 +589,7 @@ ReaderInfo* ReaderInfo::fromString(QString from){
     out->setDisplayWindow(dispW);
     out->firstFrame(firstFrameStr.toInt());
     out->lastFrame(lastFrameStr.toInt());
+    out->setCurrentFrameName(name.toStdString());
     return out;
     
 }

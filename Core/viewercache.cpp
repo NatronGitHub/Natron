@@ -157,16 +157,16 @@ ViewerCache* ViewerCache::getViewerCache(){
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 FrameEntry* ViewerCache::addFrame(U64 key,
-                             std::string filename,
-                             U64 treeVersion,
-                             float zoomFactor,
-                             float exposure,
-                             float lut ,
-                             float byteMode,
-                             int w,
-                             int h,
-                             const Box2D& bbox,
-                             const Format& dispW){
+                                  std::string filename,
+                                  U64 treeVersion,
+                                  float zoomFactor,
+                                  float exposure,
+                                  float lut ,
+                                  float byteMode,
+                                  int w,
+                                  int h,
+                                  const Box2D& bbox,
+                                  const Format& dispW){
     
     ReaderInfo* info = new ReaderInfo;
     info->setCurrentFrameName(filename);
@@ -182,7 +182,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         ostringstream oss1;
         oss1 << hex << (key >> 60);
         oss1 << hex << ((key << 4) >> 60);
-
+        
         name.append(oss1.str());
         ostringstream oss2;
         oss2 << hex << ((key << 8) >> 8);
@@ -202,7 +202,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     }else{
         dataSize = w*h*4*sizeof(float);
     }
-
+    
     if(!out->allocate(dataSize,name.c_str())){
         delete out;
         return NULL;
@@ -211,7 +211,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     if(AbstractDiskCache::add(key, out)){
         currentViewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
-
+    
     return out;
 }
 
@@ -221,42 +221,29 @@ void ViewerCache::clearInMemoryPortion(){
     clearInMemoryCache();
 }
 
-FrameEntry* ViewerCache::get(std::string filename,
-                                            U64 treeVersion,
-                                            float zoomFactor,
-                                            float exposure,
-                                            float lut ,
-                                            float byteMode,
-                                            const Box2D& bbox,
-                                            const Format& dispW){
-    
-//    cout << " GET : key computed with \n " << filename << " "
-//    << treeVersion << " " << zoomFactor << " " << exposure << " " << lut
-//    << " " << byteMode << " " << bbox.x() << " " << bbox.y() << " "  << bbox.right() << " "
-//    << bbox.top() << " " << dispW.x() << " " << dispW.y() << " " << dispW.right() << " " << dispW.top() << endl;
-    
-    U64 key = FrameEntry::computeHashKey(filename, treeVersion, zoomFactor, exposure, lut, byteMode,bbox,dispW);
-    
-   // cout << "KEY : " << key << endl;
+FrameEntry* ViewerCache::get(U64 key){
+   
     CacheIterator it = isInMemory(key);
-        
+    
     if (it == endMemoryCache()) {// not in memory
         it = isCached(key);
         if(it == end()){ //neither on disk
             return NULL;
         }else{ // found on disk
             CacheEntry* entry = AbstractCache::getValueFromIterator(it);
-            FrameEntry* frameEntry = static_cast<FrameEntry*>(entry);
+            FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
             assert(frameEntry);
             if(!frameEntry->reOpen()){
                 return NULL;
             }
+            currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
             return frameEntry;
         }
     }else{ // found in memory
         CacheEntry* entry = AbstractCache::getValueFromIterator(it);
-        FrameEntry* frameEntry = static_cast<FrameEntry*>(entry);
+        FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
+        currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
         return frameEntry;
     }
     return NULL;
@@ -264,13 +251,15 @@ FrameEntry* ViewerCache::get(std::string filename,
 
 
 U64 FrameEntry::computeHashKey(std::string filename,
-                          U64 treeVersion,
-                          float zoomFactor,
-                          float exposure,
-                          float lut ,
-                          float byteMode,
-                          const Box2D& bbox,
-                          const Format& dispW){
+                               U64 treeVersion,
+                               float zoomFactor,
+                               float exposure,
+                               float lut ,
+                               float byteMode,
+                               const Box2D& bbox,
+                               const Format& dispW,
+                               int firstRow,
+                               int lastRow){
     Hash _hash;
     _hash.appendQStringToHash(QString(filename.c_str()));
     _hash.appendNodeHashToHash(treeVersion);
@@ -286,6 +275,8 @@ U64 FrameEntry::computeHashKey(std::string filename,
     _hash.appendNodeHashToHash(dispW.y());
     _hash.appendNodeHashToHash(dispW.top());
     _hash.appendNodeHashToHash(dispW.right());
+    _hash.appendNodeHashToHash(firstRow);
+    _hash.appendNodeHashToHash(lastRow);
     _hash.computeHash();
     return _hash.getHashValue();
 }

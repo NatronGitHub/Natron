@@ -216,7 +216,8 @@ void Gui::setupUi()
     sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
     
     /*VIEWERS related*/
-    _textureCache = new TextureCache(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
+    _textureCache = new TextureCache;
+    _textureCache->setMaximumCacheSize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), screen.height()/5);
@@ -341,11 +342,7 @@ void Gui::exitFullScreen(){
 }
 
 void Gui::clearTextureCache(){
-    std::vector<U32> currentlyUsedTex;
-    for (U32 i = 0; i < _viewerTabs.size(); i++) {
-        currentlyUsedTex.push_back(_viewerTabs[i]->viewer->getCurrentTexture());
-    }
-    _textureCache->clearCache(currentlyUsedTex);
+    _textureCache->clear();
 }
 
 ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){

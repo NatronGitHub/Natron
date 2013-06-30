@@ -18,6 +18,12 @@
  *in the range [x,r]*/
 class MemoryFile;
 class Node;
+
+
+/*The row is the  class that defines 1 line in an image. 
+ It stores as many buffers as there're channels enabled for this row.
+ Note that it inherits InMemoryEntry so it fits into the in-RAM NodeCache,
+ but it doesn't use the allocate() and deallocate() version of the base-class.*/
 class Row : public InMemoryEntry
 {
     
@@ -28,14 +34,13 @@ public:
     virtual ~Row();
 	
     /*Must be called explicitly after the constructor and BEFORE any usage
-     of the Row object. Specify a path for a file name if the row must be backed by
-     a file. Returns true on success, false otherwise.*/
-    bool allocate(const char* path = 0);
+     of the Row object.Returns true on success, false otherwise.*/
+    bool allocateRow(const char* path = 0);
    
 
-    /*Should be called when you're done using the row.
-     For In memory rows, it will call the destructor, otherwise
-     it will just do nothing.*/
+    /*Should be called when you're done using the row. Generally
+     you never call this, it is called automatically for you
+     when you manipulate the InputRow object.*/
     void release();
     
   
@@ -77,7 +82,7 @@ public:
 	 *call you can access the old data.*/
 	void range(int offset,int right);
 
-	/*activate the channel C for this row and allocates memory for it.
+	/*activates the channel C for this row and allocates memory for it.
      All (r-x) range for this channel will be set to 0.*/
     void turnOn(Channel c);
 
@@ -88,6 +93,8 @@ public:
     int zoomedY(){return _zoomedY;}
     void zoomedY(int z){_zoomedY = z;}
     
+    /*Called by the NodeCache so the destructor of Row doesn't
+     try to double-free the buffers.*/
     void notifyCacheForDeletion(){_cacheWillDelete = true;}
         
     const ChannelMask& channels() const {return _channels;}

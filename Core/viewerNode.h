@@ -9,26 +9,32 @@
 #include <cmath>
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
-
-/*class deriving Node::Info and used by the current viewer.
- This is essentially the same but it is left this way instead of
- a typedef if we'd like to pass more infos in the future.*/
-class ViewerInfos : public Node::Info{
-public:
-    ViewerInfos():Node::Info(){}
-    virtual ~ViewerInfos(){}
-};
+#include <QtCore/QFuture>
+#include "Gui/texturecache.h"
+#include <QtCore/QFutureWatcher>
+class ViewerCache;
+class ViewerInfos;
 class TabWidget;
 class ViewerTab;
-class  Viewer: public OutputNode
+class FrameEntry;
+class Viewer: public OutputNode
 {
+    
+    ViewerInfos* _viewerInfos;
+	ViewerTab* _uiContext;
+    ViewerCache* _viewerCache;
+    TextureCache* _textureCache;
+    int _pboIndex;
+    
+    QFutureWatcher<void> *_cacheWatcher;
+    
 public:
     
     
     Viewer(Viewer& ref):OutputNode(ref){}
     
-    Viewer(Node* node);
-
+    Viewer(Node* node,ViewerCache* cache,TextureCache* textureCache);
+    
     virtual ~Viewer();
     
     /*Add a new viewer tab to the GUI*/
@@ -54,30 +60,34 @@ public:
     
     int currentFrame() const;
     
+    FrameEntry* get(U64 key);
+    
+    bool isTextureCached(U64 key);
+    
+    void cachedFrameEngine(FrameEntry* frame);
 protected:
     
-	virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
+	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Mask_None;}
 	
 private:
+    
+    void retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize);
     virtual void _validate(bool forReal);
     
-    ViewerInfos* _viewerInfos;
-	ViewerTab* _uiContext;
     
-
 };
 
 /*#ifdef __cplusplus
-extern "C" {
-#endif
-#ifdef _WIN32
-VIEWER_EXPORT Viewer* BuildViewer(Node *node){return new Viewer(node);}
-#elif defined(unix) || defined(__unix__) || defined(__unix)
-Viewer* BuildViewer(Node *node){return new Viewer(node);}
-#endif
-#ifdef __cplusplus
-}
-#endif*/
+ extern "C" {
+ #endif
+ #ifdef _WIN32
+ VIEWER_EXPORT Viewer* BuildViewer(Node *node){return new Viewer(node);}
+ #elif defined(unix) || defined(__unix__) || defined(__unix)
+ Viewer* BuildViewer(Node *node){return new Viewer(node);}
+ #endif
+ #ifdef __cplusplus
+ }
+ #endif*/
 
 
 #endif // VIEWERNODE_H

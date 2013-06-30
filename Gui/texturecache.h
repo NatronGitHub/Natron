@@ -8,72 +8,69 @@
 #define __PowiterOsX__texturecache__
 
 #include <iostream>
-#include <vector>
-#include <utility>
+#include "Core/abstractCache.h"
 #include "Superviser/powiterFn.h"
 /*The texture cache is, as the name says, an object that stores texture previously drawn
  so they can be re-used in the future if we need exactly them. The texture cache is
- useful for panning & zooming. Hence the data structure used here is not the same
- as the one used for the viewerCache (i.e: a multimap with filename as a key).
- This is because all the textures will most likely come from a same filename if the 
- user panned around.
- Freeing policy is : most recently used*/
-class TextureCache{
+ useful for panning & zooming.
+ Note that a TextureEntry actually doesn't hold any memory, just the adress of the 
+ OpenGL texture, so the parameters passed to allocate can be ignored.
+ */
+
+
+class TextureEntry : public CacheEntry{
     
 public:
-    /*This class is a way to uniquely identify textures*/
-    class TextureKey{
-    public:
-        float _exposure;
-        float _lut;
-        float _zoomFactor;
-        int _w,_h;
-        float _byteMode;
-        std::string _filename;
-        U64 _treeVersion;
-        int _firstRow,_lastRow;
-        
-        TextureKey();
-        TextureKey(const TextureKey& other);
-        TextureKey(float exp,float lut,float zoom,int w,int h,float bytemode,
-                   std::string filename,U64 treeVersion,int firstRow,int lastRow);
-        bool operator==(const TextureKey& other);
-        void operator=(const TextureKey& other);
-        
-    };
+    enum DataType {BYTE = 0,FLOAT = 1};
+
+protected:
+    U32 _texID;
+    int _w,_h;
+    DataType _type;
+public:
     
-    TextureCache(U64 maxSize):_size(0),_maxSizeAllowed(maxSize){}
-    ~TextureCache(){}
     
-    typedef std::vector< std::pair<TextureKey,U32> >::iterator TextureIterator;
-    typedef std::vector< std::pair<TextureKey,U32> >::reverse_iterator TextureReverseIterator;
+    TextureEntry();
     
-    /*Returns true if the texture represented by the key is present in the cache.*/
-    TextureCache::TextureIterator isCached(TextureCache::TextureKey &key);
+    U32 getTexID() const {return _texID;}
     
-    TextureCache::TextureIterator end(){return _cache.end();}
+    int w() const {return _w;}
     
-    /*Frees approximatively 10% of the texture cache*/
-    void makeFreeSpace();
+    int h() const {return _h;}
     
-    /*Inserts a new texture,represented by key in the cache. This function must be called
-     only if  isCached(...) returned false with this key*/
-    U32 append(TextureCache::TextureKey key);
+    DataType type() const {return _type;}
     
-    /*clears out the texture cache*/
-    void clearCache(const std::vector<U32>& currentlyDisplayedTex);
+    /*allocates the texture*/
+    void allocate(int w, int h ,DataType type);
     
-    /*Returns the current size of the cache*/
-    U64 size(){return _size;}
+    /*deallocates the texture*/
+    virtual void deallocate();
+    
+    virtual ~TextureEntry();
     
 private:
-    /*Initialize an OpenGL texture and returns the texture ID*/
-    U32 initializeTexture();
     
+    /*private hack : we don't use this function here*/
+    virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
     
-    std::vector< std::pair<TextureKey,U32> > _cache; // key, texture Id
-    U64 _size;
-    U64 _maxSizeAllowed;
+};
+
+class TextureCache : public AbstractCache{
+    
+public:
+       
+    TextureCache():AbstractCache(){}
+    
+    ~TextureCache(){}
+    
+    virtual  std::string cacheName() {return "TextureCache";}
+    
+    /*Returns 0 if the texture represented by the key is not present in the cache.*/
+    TextureEntry* get(U64 key);
+    
+    /*Inserts a new texture,represented by key in the cache.*/
+    TextureEntry* addTexture(U64 key,int w , int h ,TextureEntry::DataType type);
+    
 };
 
 #endif /* defined(__PowiterOsX__texturecache__) */
