@@ -74,7 +74,7 @@ public:
             
             /*set the base scan-lines that represents the context*/
             void setRows(std::map<int,int> rows){_rows=rows;}
-            std::map<int,int>& getRows(){return _rows;}
+            const std::map<int,int>& getRows(){return _rows;}
             
             bool hasScanLines(){return _rows.size() > 0;}
             
@@ -134,18 +134,19 @@ public:
         public:
             ScanLineDescriptor(Read* readHandle,ReaderInfo* readInfo,
                        std::string filename,ScanLineContext *slContext):
-            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_slContext(slContext){}
+            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_slContext(slContext),_hasRead(false){}
             
-            ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0){}
+            ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0),_hasRead(false){}
             
             ScanLineDescriptor(const ScanLineDescriptor& other):Reader::Buffer::Descriptor(other),_slContext(other._slContext)
-            {}
+            ,_hasRead(other._hasRead){}
             
-            virtual bool hasToDecode(){ return _slContext->getRowsToRead().size() > 0;}
+            virtual bool hasToDecode(){ return !_hasRead || _slContext->getRowsToRead().size()==0;}
             
             virtual bool supportsScanLines() {return true;}
             
             ScanLineContext* _slContext;
+            bool _hasRead;
         };
         
         class FullFrameDescriptor : public Reader::Buffer::Descriptor{

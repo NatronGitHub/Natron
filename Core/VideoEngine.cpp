@@ -374,19 +374,6 @@ void VideoEngine::engineLoop(){
     if(_dag.isOutputAViewer()){
         currentViewer->getUiContext()->viewer->copyPBOtoTexture(); // fill texture, returns instantly
     }
-//    if(!_executingCachedFrame &&  _frameRequestsCount!=0 && !_paused){
-//        std::vector<Reader*> readers;
-//        const std::vector<InputNode*>& inputs = _dag.getInputs();
-//        for(U32 j=0;j<inputs.size();j++){
-//            InputNode* currentInput=inputs[j];
-//            if(currentInput->className() == string("Reader")){
-//                Reader* inp =static_cast<Reader*>(currentInput);
-//                inp->fitFrameToViewer(false);
-//                readers.push_back(inp);
-//            }
-//        }
-//        startReading(readers , false , true);
-//    }
     if(_dag.isOutputAViewer()){
         _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
         if((_frameRequestIndex%24)==0){
@@ -693,7 +680,7 @@ void VideoEngine::seekRandomFrame(int f){
     if(!_working)
         _startEngine(f, 1, false,true);
     else
-        appendTask(f, -1, false,true, _dag.getOutput(),&VideoEngine::_startEngine);
+        appendTask(f, -1, false,_forward, _dag.getOutput(),&VideoEngine::_startEngine);
 }
 
 

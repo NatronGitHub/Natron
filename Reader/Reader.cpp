@@ -110,7 +110,6 @@ bool Reader::readCurrentHeader(int current_frame){
     Reader::Buffer::ScanLineContext *slContext = 0;
     if(_read->supportsScanLine()){
         slContext = new Reader::Buffer::ScanLineContext;
-        _read->readHeader(filename,false);
         if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
             float zoomFactor;
             const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
@@ -125,7 +124,7 @@ bool Reader::readCurrentHeader(int current_frame){
         }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             std::map<int,int> rows;
-            for (int i =dataW.y() ; i < dataW.top(); i++) {
+            for (int i = dataW.y() ; i < dataW.top(); i++) {
                 rows.insert(make_pair(i,i));
             }
             slContext->setRows(rows);
@@ -165,8 +164,8 @@ bool Reader::readCurrentHeader(int current_frame){
 
 void Reader::readCurrentData(int current_frame){
     current_frame = clampToRange(current_frame);
-    
     QString filename = files[current_frame];
+    
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
     if(found == _buffer.end()){
@@ -176,10 +175,11 @@ void Reader::readCurrentData(int current_frame){
     if((*found)->hasToDecode()){
         if((*found)->supportsScanLines()){
             Buffer::ScanLineDescriptor* slDesc = static_cast<Buffer::ScanLineDescriptor*>(*found);
-            slDesc->_readHandle->readScanLineData(filename, slDesc->_slContext);
+            slDesc->_readHandle->readScanLineData(slDesc->_slContext);
+            slDesc->_hasRead = true;
         }else{
             Buffer::FullFrameDescriptor* ffDesc = static_cast<Buffer::FullFrameDescriptor*>(*found);
-            ffDesc->_readHandle->readData(filename);
+            ffDesc->_readHandle->readData();
             ffDesc->_hasRead = true;
         }
     }

@@ -49,12 +49,12 @@ public:
 //    virtual void open(const QString filename,bool openBothViews = false)=0;
     
     /*This function  calls readHeader and readAllData*/
-    void readData(const QString filename,bool openBothViews = false);
+    void readData(bool openBothViews = false);
     
     /*This function calls readScanLine for the requested scanLines. It does not call readHeader.
      If onlyExtaRows is true, this function reads only the content of the _rowsToCompute member
      of slContext. Otherwise, it will compute the rows contained in the _rows of slContext.*/
-    void readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext);
+    void readScanLineData(Reader::Buffer::ScanLineContext* slContext);
     
     /*Should open the file and call setReaderInfo with the infos from the file.*/
     virtual void readHeader(const QString filename,bool openBothViews)=0;

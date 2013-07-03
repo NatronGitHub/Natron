@@ -82,9 +82,9 @@ void Read::setReaderInfo(Format dispW,
     _readInfo->setCurrentFrameName(file.toStdString());
 }
 
-void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext){
+void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
     if(slContext->getRowsToRead().size() == 0){
-        std::map<int,int>& rows = slContext->getRows();
+        const std::map<int,int>& rows = slContext->getRows();
         if(_readInfo->getYdirection() < 0){
             //top to bottom
             map<int,int>::reverse_iterator it  = rows.rbegin();
@@ -106,6 +106,6 @@ void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineConte
         slContext->merge();
     }
 }
-void Read::readData(const QString filename,bool openBothViews){
+void Read::readData(bool openBothViews){
     readAllData(openBothViews);
 }
