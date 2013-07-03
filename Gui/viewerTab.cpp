@@ -25,7 +25,7 @@
 #include "Gui/ScaleSlider.h"
 #include "Gui/comboBox.h"
 #include "Core/viewerNode.h"
-#include "Gui/Button.h"
+#include "Gui/button.h"
 #include "Gui/mainGui.h"
 #include "Gui/tabwidget.h"
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)

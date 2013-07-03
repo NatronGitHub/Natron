@@ -11,7 +11,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/row.h"
 #include "Gui/timeline.h"
-#include "Core/viewerCache.h"
+#include "Core/viewercache.h"
 #include "Reader/Reader.h"
 #include "Core/mappedfile.h"
 #include <QtConcurrent/QtConcurrentRun>

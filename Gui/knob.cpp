@@ -21,7 +21,7 @@
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
 #include <QtCore/QString>
-#include "Gui/Button.h"
+#include "Gui/button.h"
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;

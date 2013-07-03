@@ -69,38 +69,39 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 openexr2{
-    INCLUDEPATH += /usr/local/include/OpenEXR
-    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
+    INCLUDEPATH += /home/developpeur/Downloads/OpenEXR_2.0.0_linux64/include/OpenEXR
+    LIBS += -L/home/developpeur/Downloads/OpenEXR_2.0.0_linux64/lib -lIlmImf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
-    INCLUDEPATH += /usr/local/include
-    LIBS += -L/usr/local/lib -lftgl
+    INCLUDEPATH += /usr/include
+    LIBS += -L/usr/lib -lftgl
 }
 ffmpeg{
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+    INCLUDEPATH += /usr/include
+    LIBS += -L/usr/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
 }
 
 freetype{
-    INCLUDEPATH += /opt/local/include/freetype2
-    LIBS += -L/opt/local/lib -lfreetype
+    INCLUDEPATH += /usr/include/freetype2
+    LIBS += -L/usr/lib -lfreetype
 }
 
 freetype2{
-    INCLUDEPATH += /opt/local/include
+    INCLUDEPATH += /usr/include
 }
 
 boost{
-    INCLUDEPATH += /opt/local/include
+    INCLUDEPATH += /usr/include
 }
 
 qtincludes{
-    INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+    INCLUDEPATH += /home/developpeur/Qt5.0.2/5.0.2/gcc_64/include
 }
 eigen{
-	INCLUDEPATH += /usr/local/include
+    INCLUDEPATH += /usr/include
 }
+
 
 ###(Optional) Build :
 
