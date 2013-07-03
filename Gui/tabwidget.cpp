@@ -10,7 +10,7 @@
 #include <QtGui/QImage>
 #include <QtGui/QPixmap>
 #include <QtGui/QIcon>
-#include "Gui/Button.h"
+#include "Gui/button.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
 #include "Gui/DAG.h"

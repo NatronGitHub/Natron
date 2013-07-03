@@ -28,6 +28,7 @@ CONFIG(debug, debug|release) {
 
 include(config.pri)
 
+
 INCLUDEPATH += $$PWD/
 
 
@@ -158,7 +159,8 @@ HEADERS += \
     Writer/Write.h \
     Gui/lineEdit.h \
     Core/abstractCache.h \
-    Core/nodecache.h
+    Core/nodecache.h \
+    Gui/button.h
 
 INSTALLS += target
 

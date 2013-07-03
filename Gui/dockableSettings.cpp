@@ -12,7 +12,7 @@
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
 #include <QtWidgets/QtWidgets>
-#include "Gui/Button.h"
+#include "Gui/button.h"
 #include "Gui/DAG.h"
 
 SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false){

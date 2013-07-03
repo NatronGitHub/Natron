@@ -7,7 +7,7 @@
 //  contact: immarespond at gmail dot com
 #include <QtCore/QMutex>
 #include <QtCore/qcoreapplication.h>
-#include "Gui/Button.h"
+#include "Gui/button.h"
 #include <QtGui/QVector2D>
 #include <QtWidgets/QAction>
 #include <QtCore/QThread>
