@@ -59,6 +59,10 @@ On windows,OpenGL API is not up to date to the features we need. You'll need to 
 
 (glew download)[http://glew.sourceforge.net/]
 
+### Eigen
+
+Download Eigen from (eigen website)[http://eigen.tuxfamily.org/index.php?title=Main_Page]
+
 
 We're done here for libraries.
 
@@ -104,6 +108,9 @@ qtincludes{
 glew{
     INCLUDEPATH +=  $$quote(C:\\glew\include)
     LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
+}
+eigen{
+	INCLUDEPATH +=  $$quote(C:\\)
 }
 ###(Optional) Build on Visual Studio:
 

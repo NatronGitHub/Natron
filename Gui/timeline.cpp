@@ -433,7 +433,7 @@ void TimeLine::mouseReleaseEvent(QMouseEvent* e){
 
 void TimeLine::addCachedFrame(int f){
     _cached.push_back(f);
-   repaint();
+ //  repaint();
 }
 void TimeLine::removeCachedFrame(){
     _cached.erase(_cached.begin());

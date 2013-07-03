@@ -49,6 +49,12 @@ Boost headers are required, but not the libraries. You can download boost from
 or through macports, but it will also install the boost libraries:
 	sudo port install boost
 
+
+### Eigen
+
+You can download Eigen from macports :
+	sudo port install eigen
+
 We're done here for libraries.
 
 ###Add the config.pri file
@@ -92,6 +98,9 @@ boost{
 
 qtincludes{
     INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+}
+eigen{
+    INCLUDEPATH += /usr/local/include
 }
 
 ###(Optional) Build on Xcode:

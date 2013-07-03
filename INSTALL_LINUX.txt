@@ -47,6 +47,12 @@ Boost headers are required, but not the libraries. You can download boost from
 Alternatively you can install boost from apt-get:
 	sudo apt-get install libboost1.50-all-dev
 
+### Eigen
+
+You can download Eigen from macports :
+	sudo apt-get install eigen
+
+
 We're done here for libraries.
 
 
@@ -91,6 +97,9 @@ boost{
 
 qtincludes{
     INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+}
+eigen{
+	INCLUDEPATH += /usr/local/include
 }
 
 ###(Optional) Build :

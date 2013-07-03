@@ -37,7 +37,7 @@ public:
 	static FrameEntry* recoverFromString(QString str);
     
 	/*Returns a key computed from the parameters.*/
-	static U64 computeHashKey(std::string filename,
+	static U64 computeHashKey(int frameNB,
                               U64 treeVersion,
                               float zoomFactor,
                               float exposure,
@@ -77,7 +77,6 @@ public:
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 	FrameEntry* addFrame(U64 key,
-                         std::string filename,
                          U64 treeVersion,
                          float zoomFactor,
                          float exposure,

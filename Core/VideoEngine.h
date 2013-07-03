@@ -109,6 +109,35 @@ public:
         bool _isViewer; // true if the outputNode is a viewer, it avoids many dynamic_casts
     };
     
+    class EngineStatus{
+    public:
+        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2};
+        
+        EngineStatus(FrameEntry* cachedEntry,U64 key,int w,int h,int cachingMode,const std::map<int,int> rows,EngineStatus::RetCode state):
+        _cachedEntry(cachedEntry),
+        _key(key),
+        _w(w),
+        _h(h),
+        _cachingMode(cachingMode),
+        _rows(rows),
+        _state(state)
+        {}
+        
+        EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
+        _key(other._key),_w(other._w),_h(other._h),_cachingMode(other._cachingMode),
+        _rows(other._rows),_state(other._state){}
+        
+ 
+        ~EngineStatus(){}
+        
+        FrameEntry* _cachedEntry;
+        U64 _key;
+        int _w,_h;
+        int _cachingMode;
+        std::map<int,int> _rows;
+        RetCode _state;
+    };
+    
 private:
     
     friend class ViewerGL;
@@ -185,6 +214,7 @@ private:
     QFutureWatcher<void>* _workerThreadsWatcher;
     QFuture<void>* _workerThreadsResults;
    
+    QFutureWatcher<VideoEngine::EngineStatus*>* _computeFrameWatcher;
     
     /*The sequence of rows to process*/
     std::vector<Row*> _sequenceToWork;
@@ -217,6 +247,10 @@ public slots:
     
     /*called internally by computeTreeForFrame*/
     void finishComputeFrameRequest();
+    
+    /*Never call this, it is called by computeTreeForFrame when it finishes.
+     It calls the private version of dispatchEngine()*/
+    void dispatchComputeFrameRequestThread();
     
     signals:
     void fpsChanged(double d);
@@ -260,24 +294,28 @@ public:
     void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /*used internally by the zoom or the videoEngine, do not call this*/
-    void computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
+    VideoEngine::EngineStatus* computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
     
-    /*the function cycling through the DAG for one scan-line*/
-    static void metaEnginePerRow(Row* row,OutputNode* output);
-    
-    typedef Reader::Buffer::DecodedFrameDescriptor ReadFrame;
-    typedef std::vector< ReadFrame > FramesVector;
-    
-    
-    VideoEngine::FramesVector startReading(std::vector<Reader*>& readers,bool useMainThread,bool useOtherThread );
-    
+       
     void resetReadingBuffers();
-    
     
     U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
     
 private:
+    /*Called by the thread returning from computeTreeForFrame(). According to the return 
+     status of the engine it calls the appropriate function.*/
+    void dispatchEngine(EngineStatus*);
+
+    void readHeaders(const std::vector<Reader*>& readers);
     
+    void readFrames(const std::vector<Reader*>& readers);
+    
+    /*the function cycling through the DAG for one scan-line*/
+    static void metaEnginePerRow(Row* row,OutputNode* output);
+    
+    static void metaReadHeader(Reader* reader,int current_frame);
+    
+    static void metaReadData(Reader* reader,int current_frame);
     
 	/*calls updateGL() and cause the viewer to refresh*/
     void updateDisplay();

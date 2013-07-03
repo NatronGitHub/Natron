@@ -54,10 +54,7 @@ public:
     /*This function calls readScanLine for the requested scanLines. It does not call readHeader.
      If onlyExtaRows is true, this function reads only the content of the _rowsToCompute member
      of slContext. Otherwise, it will compute the rows contained in the _rows of slContext.*/
-    void readScanLineData(const QString filename,
-                          Reader::Buffer::ScanLineContext* slContext,
-                          bool onlyExtraRows,
-                          bool openBothViews = false);
+    void readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext);
     
     /*Should open the file and call setReaderInfo with the infos from the file.*/
     virtual void readHeader(const QString filename,bool openBothViews)=0;
@@ -73,12 +70,12 @@ public:
     
     /*Should read the already opened file and extract all the data for either 1 view or
      2 views. By default does nothing, you should either overload this function or readScanLine.*/
-    virtual void readAllData(bool openBothViews){}
+    virtual void readAllData(bool){}
     
     /*Must be implemented if supportsScanLine() returns true. It should
      read one scan line from the file.By default does nothing, you should
      either overload this function or readScanLine*/
-    virtual void readScanLine(int y){}
+    virtual void readScanLine(int){}
     
     /*Must be overloaded: this function is used to create a little preview that
      can be seen on the GUI node*/

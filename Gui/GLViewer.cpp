@@ -35,6 +35,8 @@ using namespace Imf;
 using namespace Imath;
 using namespace std;
 
+const double pi= 3.14159265358979323846264338327950288419717;
+
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if( error == GL_FRAMEBUFFER_UNDEFINED)
@@ -70,7 +72,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
     setCurrentViewerInfos(_blankViewerInfos,onInit);
 }
 void ViewerGL::initConstructor(){
-       
+    
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->setChannels(Mask_RGBA);
@@ -108,7 +110,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* sha
 :QGLWidget(format,parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
 
 {
-
+    
     initConstructor();
     
 }
@@ -147,11 +149,6 @@ ViewerGL::~ViewerGL(){
 	delete _infoViewer;
 }
 
-void ViewerGL::updateGL(){
-	//makeCurrent();
-	QGLWidget::updateGL();
-}
-
 QSize ViewerGL::sizeHint() const{
     return QSize(500,500);
 }
@@ -187,7 +184,7 @@ void ViewerGL::paintGL()
         float top = h/2.f + dispW.h()/2.f ;
         
         glOrtho(left, right, bottom, top, -1, 1);
-
+        
         glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity();
         
@@ -199,10 +196,9 @@ void ViewerGL::paintGL()
         
         glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
-        
-        // debug (so the openGL debugger can make a breakpoint here)
-              //  GLfloat d;
-               // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        // debug (so the OpenGL debugger can make a breakpoint here)
+        //GLfloat d;
+        // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
@@ -316,11 +312,11 @@ void ViewerGL::initializeGL(){
         }
         initShaderGLSL();
     }
-
+    
     
     initBlackTex();
     
-  
+    
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -340,11 +336,12 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-std::map<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow,float zoomFactor){
-    std::map<int,int> ret;
-    saveGLState();
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
+void ViewerGL::computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow,float zoomFactor){
+    int viewport[4];
+	M44f modelView1;
+    M44f modelView2;
+    M44f projection;
+
     float w = (float)width();
     float h = (float)height();
     float left = -w/2.f + displayWindow.w()/2.f;
@@ -352,45 +349,44 @@ std::map<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow,float zoom
     float bottom = -h/2.f + displayWindow.h()/2.f;
     float top = h/2.f + displayWindow.h()/2.f ;
     
-    glOrtho(left, right, bottom, top, -1, 1);
+    _glLoadIdentity(modelView1);
+    _glOrthoFromIdentity(projection, left, right, bottom, top, -1, 1);
     
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
+    _glTranslate(modelView2, modelView1, transX, -transY, 0);
+    _glTranslate(modelView1, modelView2, _zoomCtx.zoomX, _zoomCtx.zoomY, 0);
+    _glScale(modelView2, modelView1, zoomFactor, zoomFactor, 1);
+    _glTranslate(modelView1, modelView2, -_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
+  
+    viewport[0] = 0;
+    viewport[1] = 0;
+    viewport[2] = w;
+    viewport[3] = h;
     
-    glTranslatef(transX, -transY, 0);
-    glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
-    glScalef(zoomFactor, zoomFactor, 1);
-    glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
+    //float mat[16];
+    M44f inv;
     
-    GLint viewport[4];
-	GLfloat modelview[16];
-    GLfloat projection[16];
-    glGetFloatv( GL_MODELVIEW_MATRIX, modelview );
-    glGetFloatv( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    float mat[16];
-    float inv[16];
-    _glMultMats44(mat, projection, modelview);
-    if (_glInvertMatrix(mat, inv)==0) {
-        cout << "failed inverting projection x modelview matrix" << endl;
-    }
-    float p[4];
-    p[0] = (0-(float)viewport[0])/(float)viewport[2]*2.0-1.0;
-    p[2] = 1.f;
-    p[3] = 1.f;
+    inv = (projection * modelView1).inverse();
+   
+   // _glMultMats44(mat, projection, modelView1);
+   // if (!_glInvertMatrix(mat, inv)) {
+     //   cout << "failed inverting (projection x modelview) matrix" << endl;
+   // }
+    Eigen::Vector4f p;
+    p.x() = (0-(float)viewport[0])/(float)viewport[2]*2.0-1.0;
+    p.z() = 1.f;
+    p.w() = 1.f;
     
     /*First off,we test the 1st and last row to check wether the
      image is contained in the viewer*/
     // testing top of the image
     int y = h-1;
-    p[1] = (y-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+    p.y() = (y-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
     float res = -1;
     if(!_glMultMat44Vect_onlyYComponent(&res, inv, p)){
         cout << "failed unprojection (row-span computation)" << endl;
     }
     if (res < 0) { // all the image is above the viewer
-        restoreGLState();
-        return ret; // do not add any row
+        return ; // do not add any row
     }
     // testing bottom now
     y = 0;
@@ -400,15 +396,13 @@ std::map<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow,float zoom
         cout << "failed unprojection (row-span computation)" << endl;
     }
     if(res >= displayWindow.top()){// all the image is below the viewer
-        restoreGLState();
-        return ret;
+        return;
     }else{
         if(res >= displayWindow.y()){
             if(res < displayWindow.top()){
                 ret[res] = 0;
             }else{
-                restoreGLState();
-                return ret;
+                return;
             }
         }
     }
@@ -423,13 +417,11 @@ std::map<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow,float zoom
             if(res < displayWindow.top()){
                 ret[res] = y;
             }else{
-                restoreGLState();
-                return ret;
+                return ;
             }
         }
     }
-    restoreGLState();
-    return ret;
+    return ;
 }
 
 
@@ -592,7 +584,7 @@ void ViewerGL::drawBlackTex(){
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     const Format& dispW = displayWindow();
-
+    
     float left = -w/2.f + dispW.w()/2.f;
     float right = w/2.f + dispW.w()/2.f;
     float bottom = -h/2.f + dispW.h()/2.f;
@@ -641,11 +633,11 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
     }
     else{
         convertRowToFitTextureBGRA(r,g,b,w,zoomedY,a);
-   
+        
     }
 }
 
-size_t ViewerGL::determineFrameDataContainer(U64 key,std::string filename,int w,int h,ViewerGL::CACHING_MODE mode){
+size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHING_MODE mode){
     if(_mustFreeFrameData){
         free(frameData);
         _mustFreeFrameData = false;
@@ -660,7 +652,7 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,std::string filename,int w,
         type = TextureEntry::FLOAT;
     }
     
-
+    
     if(mode == TEXTURE_CACHE){ // texture caching
         TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
         frameData = (char*)malloc(dataSize);
@@ -670,7 +662,7 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,std::string filename,int w,
     }else{ // viewer caching
         // init mmaped file
         U64 treeVersion = ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion();
-        FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key, filename, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
+        FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
         
         if(entry){
             frameData = entry->getMappedFile()->data();
@@ -696,12 +688,13 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
-void ViewerGL::copyPBOtoTexture(int w,int h){
+void ViewerGL::copyPBOtoTexture(){
     if(_noDataTransfer){
         _noDataTransfer = false; // reinitialize the flag
         return;
     }
-    
+    int w = _currentTexture->w();
+    int h = _currentTexture->h();
     glEnable (GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
     GLint currentBoundPBO;
@@ -1199,157 +1192,286 @@ void ViewerGL::updateExposure(double d){
 }
 
 
-#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
-#define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
-#define MAT(m,r,c) (m)[(c)*4+(r)]
-int ViewerGL::_glInvertMatrix(float *m, float *out){
-    float wtmp[4][8];
-    float m0, m1, m2, m3, s;
-    float *r0, *r1, *r2, *r3;
-    r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
-    r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
-    r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
-    r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
-    r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
-    r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
-    r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
-    r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
-    r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
-    r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
-    r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
-    r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
-    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
-    /* choose pivot - or die */
-    if (fabsf(r3[0]) > fabsf(r2[0]))
-        SWAP_ROWS_FLOAT(r3, r2);
-    if (fabsf(r2[0]) > fabsf(r1[0]))
-        SWAP_ROWS_FLOAT(r2, r1);
-    if (fabsf(r1[0]) > fabsf(r0[0]))
-        SWAP_ROWS_FLOAT(r1, r0);
-    if (0.0 == r0[0])
-        return 0;
-    /* eliminate first variable     */
-    m1 = r1[0] / r0[0];
-    m2 = r2[0] / r0[0];
-    m3 = r3[0] / r0[0];
-    s = r0[1];
-    r1[1] -= m1 * s;
-    r2[1] -= m2 * s;
-    r3[1] -= m3 * s;
-    s = r0[2];
-    r1[2] -= m1 * s;
-    r2[2] -= m2 * s;
-    r3[2] -= m3 * s;
-    s = r0[3];
-    r1[3] -= m1 * s;
-    r2[3] -= m2 * s;
-    r3[3] -= m3 * s;
-    s = r0[4];
-    if (s != 0.0) {
-        r1[4] -= m1 * s;
-        r2[4] -= m2 * s;
-        r3[4] -= m3 * s;
-    }
-    s = r0[5];
-    if (s != 0.0) {
-        r1[5] -= m1 * s;
-        r2[5] -= m2 * s;
-        r3[5] -= m3 * s;
-    }
-    s = r0[6];
-    if (s != 0.0) {
-        r1[6] -= m1 * s;
-        r2[6] -= m2 * s;
-        r3[6] -= m3 * s;
-    }
-    s = r0[7];
-    if (s != 0.0) {
-        r1[7] -= m1 * s;
-        r2[7] -= m2 * s;
-        r3[7] -= m3 * s;
-    }
-    /* choose pivot - or die */
-    if (fabsf(r3[1]) > fabsf(r2[1]))
-        SWAP_ROWS_FLOAT(r3, r2);
-    if (fabsf(r2[1]) > fabsf(r1[1]))
-        SWAP_ROWS_FLOAT(r2, r1);
-    if (0.0 == r1[1])
-        return 0;
-    /* eliminate second variable */
-    m2 = r2[1] / r1[1];
-    m3 = r3[1] / r1[1];
-    r2[2] -= m2 * r1[2];
-    r3[2] -= m3 * r1[2];
-    r2[3] -= m2 * r1[3];
-    r3[3] -= m3 * r1[3];
-    s = r1[4];
-    if (0.0 != s) {
-        r2[4] -= m2 * s;
-        r3[4] -= m3 * s;
-    }
-    s = r1[5];
-    if (0.0 != s) {
-        r2[5] -= m2 * s;
-        r3[5] -= m3 * s;
-    }
-    s = r1[6];
-    if (0.0 != s) {
-        r2[6] -= m2 * s;
-        r3[6] -= m3 * s;
-    }
-    s = r1[7];
-    if (0.0 != s) {
-        r2[7] -= m2 * s;
-        r3[7] -= m3 * s;
-    }
-    /* choose pivot - or die */
-    if (fabsf(r3[2]) > fabsf(r2[2]))
-        SWAP_ROWS_FLOAT(r3, r2);
-    if (0.0 == r2[2])
-        return 0;
-    /* eliminate third variable */
-    m3 = r3[2] / r2[2];
-    r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
-    r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
-    /* last check */
-    if (0.0 == r3[3])
-        return 0;
-    s = 1.0 / r3[3];             /* now back substitute row 3 */
-    r3[4] *= s;
-    r3[5] *= s;
-    r3[6] *= s;
-    r3[7] *= s;
-    m2 = r2[3];                  /* now back substitute row 2 */
-    s = 1.0 / r2[2];
-    r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
-    r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
-    m1 = r1[3];
-    r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
-    r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
-    m0 = r0[3];
-    r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
-    r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
-    m1 = r1[2];                  /* now back substitute row 1 */
-    s = 1.0 / r1[1];
-    r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
-    r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
-    m0 = r0[2];
-    r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
-    r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
-    m0 = r0[1];                  /* now back substitute row 0 */
-    s = 1.0 / r0[0];
-    r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
-    r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
-    MAT(out, 0, 0) = r0[4];
-    MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
-    MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
-    MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
-    MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
-    MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
-    MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
-    MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
-    MAT(out, 3, 3) = r3[7];
-    return 1;
+//#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
+//#define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
+//#define MAT(m,r,c) (m)[(c)*4+(r)]
+//int ViewerGL::_glInvertMatrix(float *m, float *out){
+//    float wtmp[4][8];
+//    float m0, m1, m2, m3, s;
+//    float *r0, *r1, *r2, *r3;
+//    r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
+//    r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
+//    r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
+//    r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
+//    r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
+//    r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
+//    r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
+//    r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
+//    r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
+//    r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
+//    r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
+//    r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
+//    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
+//    /* choose pivot - or die */
+//    if (fabsf(r3[0]) > fabsf(r2[0]))
+//        SWAP_ROWS_FLOAT(r3, r2);
+//    if (fabsf(r2[0]) > fabsf(r1[0]))
+//        SWAP_ROWS_FLOAT(r2, r1);
+//    if (fabsf(r1[0]) > fabsf(r0[0]))
+//        SWAP_ROWS_FLOAT(r1, r0);
+//    if (0.0 == r0[0])
+//        return 0;
+//    /* eliminate first variable     */
+//    m1 = r1[0] / r0[0];
+//    m2 = r2[0] / r0[0];
+//    m3 = r3[0] / r0[0];
+//    s = r0[1];
+//    r1[1] -= m1 * s;
+//    r2[1] -= m2 * s;
+//    r3[1] -= m3 * s;
+//    s = r0[2];
+//    r1[2] -= m1 * s;
+//    r2[2] -= m2 * s;
+//    r3[2] -= m3 * s;
+//    s = r0[3];
+//    r1[3] -= m1 * s;
+//    r2[3] -= m2 * s;
+//    r3[3] -= m3 * s;
+//    s = r0[4];
+//    if (s != 0.0) {
+//        r1[4] -= m1 * s;
+//        r2[4] -= m2 * s;
+//        r3[4] -= m3 * s;
+//    }
+//    s = r0[5];
+//    if (s != 0.0) {
+//        r1[5] -= m1 * s;
+//        r2[5] -= m2 * s;
+//        r3[5] -= m3 * s;
+//    }
+//    s = r0[6];
+//    if (s != 0.0) {
+//        r1[6] -= m1 * s;
+//        r2[6] -= m2 * s;
+//        r3[6] -= m3 * s;
+//    }
+//    s = r0[7];
+//    if (s != 0.0) {
+//        r1[7] -= m1 * s;
+//        r2[7] -= m2 * s;
+//        r3[7] -= m3 * s;
+//    }
+//    /* choose pivot - or die */
+//    if (fabsf(r3[1]) > fabsf(r2[1]))
+//        SWAP_ROWS_FLOAT(r3, r2);
+//    if (fabsf(r2[1]) > fabsf(r1[1]))
+//        SWAP_ROWS_FLOAT(r2, r1);
+//    if (0.0 == r1[1])
+//        return 0;
+//    /* eliminate second variable */
+//    m2 = r2[1] / r1[1];
+//    m3 = r3[1] / r1[1];
+//    r2[2] -= m2 * r1[2];
+//    r3[2] -= m3 * r1[2];
+//    r2[3] -= m2 * r1[3];
+//    r3[3] -= m3 * r1[3];
+//    s = r1[4];
+//    if (0.0 != s) {
+//        r2[4] -= m2 * s;
+//        r3[4] -= m3 * s;
+//    }
+//    s = r1[5];
+//    if (0.0 != s) {
+//        r2[5] -= m2 * s;
+//        r3[5] -= m3 * s;
+//    }
+//    s = r1[6];
+//    if (0.0 != s) {
+//        r2[6] -= m2 * s;
+//        r3[6] -= m3 * s;
+//    }
+//    s = r1[7];
+//    if (0.0 != s) {
+//        r2[7] -= m2 * s;
+//        r3[7] -= m3 * s;
+//    }
+//    /* choose pivot - or die */
+//    if (fabsf(r3[2]) > fabsf(r2[2]))
+//        SWAP_ROWS_FLOAT(r3, r2);
+//    if (0.0 == r2[2])
+//        return 0;
+//    /* eliminate third variable */
+//    m3 = r3[2] / r2[2];
+//    r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
+//    r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
+//    /* last check */
+//    if (0.0 == r3[3])
+//        return 0;
+//    s = 1.0 / r3[3];             /* now back substitute row 3 */
+//    r3[4] *= s;
+//    r3[5] *= s;
+//    r3[6] *= s;
+//    r3[7] *= s;
+//    m2 = r2[3];                  /* now back substitute row 2 */
+//    s = 1.0 / r2[2];
+//    r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
+//    r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
+//    m1 = r1[3];
+//    r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
+//    r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
+//    m0 = r0[3];
+//    r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
+//    r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
+//    m1 = r1[2];                  /* now back substitute row 1 */
+//    s = 1.0 / r1[1];
+//    r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
+//    r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
+//    m0 = r0[2];
+//    r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
+//    r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
+//    m0 = r0[1];                  /* now back substitute row 0 */
+//    s = 1.0 / r0[0];
+//    r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
+//    r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
+//    MAT(out, 0, 0) = r0[4];
+//    MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
+//    MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
+//    MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
+//    MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
+//    MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
+//    MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
+//    MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
+//    MAT(out, 3, 3) = r3[7];
+//    return 1;
+//}
+
+bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
+    double inv[16], det;
+    int i;
+    
+    inv[0] = m[5]  * m[10] * m[15] -
+    m[5]  * m[11] * m[14] -
+    m[9]  * m[6]  * m[15] +
+    m[9]  * m[7]  * m[14] +
+    m[13] * m[6]  * m[11] -
+    m[13] * m[7]  * m[10];
+    
+    inv[4] = -m[4]  * m[10] * m[15] +
+    m[4]  * m[11] * m[14] +
+    m[8]  * m[6]  * m[15] -
+    m[8]  * m[7]  * m[14] -
+    m[12] * m[6]  * m[11] +
+    m[12] * m[7]  * m[10];
+    
+    inv[8] = m[4]  * m[9] * m[15] -
+    m[4]  * m[11] * m[13] -
+    m[8]  * m[5] * m[15] +
+    m[8]  * m[7] * m[13] +
+    m[12] * m[5] * m[11] -
+    m[12] * m[7] * m[9];
+    
+    inv[12] = -m[4]  * m[9] * m[14] +
+    m[4]  * m[10] * m[13] +
+    m[8]  * m[5] * m[14] -
+    m[8]  * m[6] * m[13] -
+    m[12] * m[5] * m[10] +
+    m[12] * m[6] * m[9];
+    
+    inv[1] = -m[1]  * m[10] * m[15] +
+    m[1]  * m[11] * m[14] +
+    m[9]  * m[2] * m[15] -
+    m[9]  * m[3] * m[14] -
+    m[13] * m[2] * m[11] +
+    m[13] * m[3] * m[10];
+    
+    inv[5] = m[0]  * m[10] * m[15] -
+    m[0]  * m[11] * m[14] -
+    m[8]  * m[2] * m[15] +
+    m[8]  * m[3] * m[14] +
+    m[12] * m[2] * m[11] -
+    m[12] * m[3] * m[10];
+    
+    inv[9] = -m[0]  * m[9] * m[15] +
+    m[0]  * m[11] * m[13] +
+    m[8]  * m[1] * m[15] -
+    m[8]  * m[3] * m[13] -
+    m[12] * m[1] * m[11] +
+    m[12] * m[3] * m[9];
+    
+    inv[13] = m[0]  * m[9] * m[14] -
+    m[0]  * m[10] * m[13] -
+    m[8]  * m[1] * m[14] +
+    m[8]  * m[2] * m[13] +
+    m[12] * m[1] * m[10] -
+    m[12] * m[2] * m[9];
+    
+    inv[2] = m[1]  * m[6] * m[15] -
+    m[1]  * m[7] * m[14] -
+    m[5]  * m[2] * m[15] +
+    m[5]  * m[3] * m[14] +
+    m[13] * m[2] * m[7] -
+    m[13] * m[3] * m[6];
+    
+    inv[6] = -m[0]  * m[6] * m[15] +
+    m[0]  * m[7] * m[14] +
+    m[4]  * m[2] * m[15] -
+    m[4]  * m[3] * m[14] -
+    m[12] * m[2] * m[7] +
+    m[12] * m[3] * m[6];
+    
+    inv[10] = m[0]  * m[5] * m[15] -
+    m[0]  * m[7] * m[13] -
+    m[4]  * m[1] * m[15] +
+    m[4]  * m[3] * m[13] +
+    m[12] * m[1] * m[7] -
+    m[12] * m[3] * m[5];
+    
+    inv[14] = -m[0]  * m[5] * m[14] +
+    m[0]  * m[6] * m[13] +
+    m[4]  * m[1] * m[14] -
+    m[4]  * m[2] * m[13] -
+    m[12] * m[1] * m[6] +
+    m[12] * m[2] * m[5];
+    
+    inv[3] = -m[1] * m[6] * m[11] +
+    m[1] * m[7] * m[10] +
+    m[5] * m[2] * m[11] -
+    m[5] * m[3] * m[10] -
+    m[9] * m[2] * m[7] +
+    m[9] * m[3] * m[6];
+    
+    inv[7] = m[0] * m[6] * m[11] -
+    m[0] * m[7] * m[10] -
+    m[4] * m[2] * m[11] +
+    m[4] * m[3] * m[10] +
+    m[8] * m[2] * m[7] -
+    m[8] * m[3] * m[6];
+    
+    inv[11] = -m[0] * m[5] * m[11] +
+    m[0] * m[7] * m[9] +
+    m[4] * m[1] * m[11] -
+    m[4] * m[3] * m[9] -
+    m[8] * m[1] * m[7] +
+    m[8] * m[3] * m[5];
+    
+    inv[15] = m[0] * m[5] * m[10] -
+    m[0] * m[6] * m[9] -
+    m[4] * m[1] * m[10] +
+    m[4] * m[2] * m[9] +
+    m[8] * m[1] * m[6] -
+    m[8] * m[2] * m[5];
+    
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+    
+    if (det == 0)
+        return false;
+    
+    det = 1.0 / det;
+    
+    for (i = 0; i < 16; i++)
+        invOut[i] = inv[i] * det;
+    
+    return true;
 }
 void ViewerGL::_glMultMats44(float *result, float *matrix1, float *matrix2){
     result[0]=matrix1[0]*matrix2[0]+
@@ -1423,13 +1545,162 @@ void ViewerGL::_glMultMat44Vect(float *resultvector, const float *matrix, const 
     resultvector[2]=matrix[2]*pvector[0]+matrix[6]*pvector[1]+matrix[10]*pvector[2]+matrix[14]*pvector[3];
     resultvector[3]=matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
 }
-int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector){
-    float y = matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
-    float w = matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
-    if(!w) return 0;
-    w = 1.f / w;
-    *yComponent =  y * w;
+int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matrix, const Eigen::Vector4f& pvector){
+    Eigen::Vector4f ret = matrix * pvector;
+    if(!ret.w()) return 0;
+    ret.w() = 1.f / ret.w();
+    *yComponent =  ret.y() * ret.w();
     return 1;
+}
+
+/*Replicate of the glOrtho func, but for a custom matrix*/
+void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far){
+    float r_l = right - left;
+    float t_b = top - bottom;
+    float f_n = far - near;
+    float tx = - (right + left) / (right - left);
+    float ty = - (top + bottom) / (top - bottom);
+    float tz = - (far + near) / (far - near);
+    matrix(0,0) = 2.0f / r_l;
+    matrix(0,1) = 0.0f;
+    matrix(0,2) = 0.0f;
+    matrix(0,3) = tx;
+    
+    matrix(1,0) = 0.0f;
+    matrix(1,1) = 2.0f / t_b;
+    matrix(1,2) = 0.0f;
+    matrix(1,3) = ty;
+    
+    matrix(2,0) = 0.0f;
+    matrix(2,1) = 0.0f;
+    matrix(2,2) = 2.0f / f_n;
+    matrix(2,3) = tz;
+    
+    matrix(3,0) = 0.0f;
+    matrix(3,1) = 0.0f;
+    matrix(3,2) = 0.0f;
+    matrix(3,3) = 1.0f;
+}
+
+/*Replicate of the glScale function but for a custom matrix*/
+void ViewerGL::_glScale(M44f& result,const M44f& matrix,float x,float y,float z){
+    M44f scale;
+    scale(0,0) = x;
+    scale(0,1) = 0;
+    scale(0,2) = 0;
+    scale(0,3) = 0;
+    
+    scale(1,0) = 0;
+    scale(1,1) = y;
+    scale(1,2) = 0;
+    scale(1,3) = 0;
+    
+    scale(2,0) = 0;
+    scale(2,1) = 0;
+    scale(2,2) = z;
+    scale(2,3) = 0;
+    
+    scale(3,0) = 0;
+    scale(3,1) = 0;
+    scale(3,2) = 0;
+    scale(3,3) = 1;
+    
+    result = matrix * scale;
+ //   _glMultMats44(result, matrix, scale);
+}
+
+/*Replicate of the glTranslate function but for a custom matrix*/
+void ViewerGL::_glTranslate(M44f& result,const M44f& matrix,float x,float y,float z){
+    M44f translate;
+    translate(0,0) = 1;
+    translate(0,1) = 0;
+    translate(0,2) = 0;
+    translate(0,3) = x;
+    
+    translate(1,0) = 0;
+    translate(1,1) = 1;
+    translate(1,2) = 0;
+    translate(1,3) = y;
+    
+    translate(2,0) = 0;
+    translate(2,1) = 0;
+    translate(2,2) = 1;
+    translate(2,3) = z;
+    
+    translate(3,0) = 0;
+    translate(3,1) = 0;
+    translate(3,2) = 0;
+    translate(3,3) = 1;
+    
+    result = matrix * translate;
+    //_glMultMats44(result, matrix, translate);
+}
+
+/*Replicate of the glRotate function but for a custom matrix*/
+void ViewerGL::_glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z){
+    
+    a = a * pi / 180.0; // convert to radians
+	float s = sin(a);
+	float c = cos(a);
+	float t = 1.0 - c;
+    
+	float tx = t * x;
+	float ty = t * y;
+	float tz = t * z;
+	
+	float sz = s * z;
+	float sy = s * y;
+	float sx = s * x;
+    
+	M44f rotate;
+	rotate(0,0)  = tx * x + c;
+	rotate(0,1)   = tx * y + sz;
+	rotate(0,2)   = tx * z - sy;
+	rotate(0,3)   = 0;
+    
+	rotate(1,0)   = tx * y - sz;
+	rotate(1,1)   = ty * y + c;
+	rotate(1,2)   = ty * z + sx;
+	rotate(1,3)   = 0;
+    
+	rotate(2,0)   = tx * z + sy;
+	rotate(2,1)   = ty * z - sx;
+	rotate(2,2)  = tz * z + c;
+	rotate(2,3)  = 0;
+    
+	rotate(3,0)  = 0;
+	rotate(3,1)  = 0;
+	rotate(3,2)  = 0;
+	rotate(3,3)  = 1;
+    
+    result = matrix * rotate;
+//    _glMultMats44(result, matrix, rotate);
+   
+}
+
+/*Replicate of the glLoadIdentity function but for a custom matrix*/
+void ViewerGL::_glLoadIdentity(M44f& matrix){
+    
+    matrix.setIdentity();
+//    matrix[0] = 1.0f;
+//    matrix[1] = 0.0f;
+//    matrix[2] = 0.0f;
+//    matrix[3] = 0.0f;
+//    
+//    matrix[4] = 0.0f;
+//    matrix[5] = 1.0f;
+//    matrix[6] = 0.0f;
+//    matrix[7] = 0.0f;
+//    
+//    matrix[8] = 0.0f;
+//    matrix[9] = 0.0f;
+//    matrix[10] = 1.0f;
+//    matrix[11] = 0.0f;
+//    
+//    matrix[12] = 0.0f;
+//    matrix[13] = 0.0f;
+//    matrix[14] = 0.0f;
+//    matrix[15] = 1.0f;
 }
 
 void ViewerGL::disconnectViewer(){
@@ -1471,10 +1742,10 @@ void ViewerGL::leaveEvent(QEvent *event)
     releaseKeyboard();
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
-   // if(isVisible()){
-        QGLWidget::resizeEvent(event);
-   // }
-   
+    // if(isVisible()){
+    QGLWidget::resizeEvent(event);
+    // }
+    
 }
 float ViewerGL::byteMode(){
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;

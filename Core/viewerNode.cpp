@@ -36,10 +36,10 @@ Viewer::~Viewer(){
         delete _viewerInfos;
 }
 
-void Viewer::_validate(bool forReal){
+void Viewer::_validate(bool){
     
-    (void)forReal;
-    makeCurrentViewer();
+   // (void)forReal;
+   // makeCurrentViewer();
     
 }
 
@@ -55,7 +55,7 @@ void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
         internal->zoomedY(out->zoomedY());
         
         /*drawRow will fill a portion of the RAM buffer holding the frame.
-         This will write to at the appropriate offset in the buffer thanks
+         This will write at the appropriate offset in the buffer thanks
          to the zoomedY(). Note that this can be called concurrently since
          2 rows do not overlap in memory.*/
         _uiContext->viewer->drawRow(row[Channel_red],

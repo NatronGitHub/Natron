@@ -157,7 +157,6 @@ ViewerCache* ViewerCache::getViewerCache(){
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 FrameEntry* ViewerCache::addFrame(U64 key,
-                                  std::string filename,
                                   U64 treeVersion,
                                   float zoomFactor,
                                   float exposure,
@@ -169,7 +168,6 @@ FrameEntry* ViewerCache::addFrame(U64 key,
                                   const Format& dispW){
     
     ReaderInfo* info = new ReaderInfo;
-    info->setCurrentFrameName(filename);
     info->setDisplayWindow(dispW);
     info->set(bbox);
     info->setChannels(Mask_RGBA);
@@ -178,7 +176,6 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     
     string name(getCachePath().toStdString());
     {
-        //QReadLocker guard(&_lock);
         ostringstream oss1;
         oss1 << hex << (key >> 60);
         oss1 << hex << ((key << 4) >> 60);
@@ -250,7 +247,7 @@ FrameEntry* ViewerCache::get(U64 key){
 }
 
 
-U64 FrameEntry::computeHashKey(std::string filename,
+U64 FrameEntry::computeHashKey(int frameNB,
                                U64 treeVersion,
                                float zoomFactor,
                                float exposure,
@@ -261,7 +258,7 @@ U64 FrameEntry::computeHashKey(std::string filename,
                                int firstRow,
                                int lastRow){
     Hash _hash;
-    _hash.appendQStringToHash(QString(filename.c_str()));
+    _hash.appendNodeHashToHash(frameNB);
     _hash.appendNodeHashToHash(treeVersion);
     _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
     _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&exposure)));

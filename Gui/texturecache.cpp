@@ -14,12 +14,12 @@ TextureEntry::TextureEntry():CacheEntry(),_w(0),_h(0){
 }
 void TextureEntry::allocate(int w, int h ,DataType type){
     if(_w == w && _h == h && _type == type) return;
-    
+    _w = w;
+    _h = h;
     _type = type;
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, _texID);
-    
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
@@ -49,7 +49,6 @@ void TextureEntry::allocate(int w, int h ,DataType type){
 
 }
 void TextureEntry::deallocate(){
-    _size = 0;
     glDeleteTextures(1, &_texID);
 }
 TextureEntry::~TextureEntry(){

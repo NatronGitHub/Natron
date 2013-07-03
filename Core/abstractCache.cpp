@@ -24,7 +24,9 @@ bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
 #ifdef PW_DEBUG
     if(QFile::exists(path)){
         cout << "WARNING: A file with the same name already exist : " << path
-        << " (If displayed on startup ignore it, this is a debug message)."<< endl;
+        << " (If displayed on startup ignore it, this is a debug message "
+        << " , if not,it probably means your hashing function does not scatter"
+        << " the entries efficiently enough)."<< endl;
     }
 #endif
     try{
@@ -115,8 +117,8 @@ void AbstractCache::clear(){
                     QFile::remove(mmapEntry->path().c_str());
                 }
             }
-            delete entry;
             _size -= entry->size();
+            delete entry;
             erase(it);
         }
     }

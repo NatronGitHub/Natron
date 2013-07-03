@@ -82,9 +82,8 @@ void Read::setReaderInfo(Format dispW,
     _readInfo->setCurrentFrameName(file.toStdString());
 }
 
-void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext,
-                            bool onlyExtraRows,bool openBothViews){
-    if(!onlyExtraRows){
+void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineContext* slContext){
+    if(slContext->getRowsToRead().size() == 0){
         std::map<int,int>& rows = slContext->getRows();
         if(_readInfo->getYdirection() < 0){
             //top to bottom
@@ -100,13 +99,13 @@ void Read::readScanLineData(const QString filename,Reader::Buffer::ScanLineConte
             }
         }
     }else{
-        std::vector<int>& rows = slContext->getRowsToRead();
+        const std::vector<int>& rows = slContext->getRowsToRead();
         for(U32 i = 0; i <rows.size();i++){
             readScanLine(rows[i]);
         }
+        slContext->merge();
     }
 }
 void Read::readData(const QString filename,bool openBothViews){
-    readHeader(filename,openBothViews);
     readAllData(openBothViews);
 }

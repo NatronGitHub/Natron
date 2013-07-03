@@ -3,7 +3,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app
 QT+= core opengl gui widgets concurrent
-CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg
+CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen
 
 win32{
     CONFIG += glew

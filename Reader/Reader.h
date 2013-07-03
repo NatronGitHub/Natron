@@ -89,7 +89,7 @@ public:
             ScanLineReverseIterator rbegin(){return _rows.rbegin();}
             ScanLineReverseIterator rend(){return _rows.rend();}
             
-            std::vector<int>& getRowsToRead(){return _rowsToRead;}
+            const std::vector<int>& getRowsToRead(){return _rowsToRead;}
             
         private:
             std::map<int,int> _rows; //base rows
@@ -97,44 +97,76 @@ public:
         };
         
         /*This class represents a frame residing in the buffer.*/
-        class DecodedFrameDescriptor{
+        class Descriptor{
         public:
-            DecodedFrameDescriptor(QFuture<void>* asynchTask,Read* readHandle,ReaderInfo* readInfo,
-                                   std::string filename,ScanLineContext *slContext = 0):
-            _asynchTask(asynchTask),_readHandle(readHandle),_readInfo(readInfo),
-            _filename(filename),_slContext(slContext)
-            {}
-            DecodedFrameDescriptor():_asynchTask(0),_readHandle(0),_readInfo(0)
-            ,_filename(""),_slContext(0){}
-            DecodedFrameDescriptor(const DecodedFrameDescriptor& other):
-            _asynchTask(other._asynchTask),_readHandle(other._readHandle),_readInfo(other._readInfo),
-            _filename(other._filename),
-            _slContext(other._slContext)
-            {}
+            Descriptor(Read* readHandle,ReaderInfo* readInfo, std::string filename):
+            _readHandle(readHandle),_readInfo(readInfo),
+            _filename(filename){}
             
-            bool isEmpty(){return !_asynchTask && !_readHandle &&
-                 !_slContext && _filename.empty();}
+            Descriptor():_readHandle(0),_readInfo(0)
+            ,_filename(""){}
             
-            /*This member is not 0 if the decoding for the frame was done in an asynchronous manner
-             It is used to query whether it has finish or not.*/
-            QFuture<void>* _asynchTask;
+            Descriptor(const Descriptor& other):
+           _readHandle(other._readHandle),_readInfo(other._readInfo),
+            _filename(other._filename){}
+            
+            /*Returns true if this descriptor has to decode some data*/
+            virtual bool hasToDecode()=0;
+            
+            /*Returns true if this descriptor supports scan-lines*/
+            virtual bool supportsScanLines()=0;
             
             /*In case the decoded frame was not issued from the diskcache this is a pointer to the
              Read handle that operated/is operating the decoding.*/
             Read* _readHandle;
             
-            /*info read from the Read*. It is directly accessible here as cached frame
-             do not have a read handle.*/
+            /*info read from the Read* */
             ReaderInfo* _readInfo;
             
             /*The name of the frame in the buffer.*/
             std::string _filename;
             
+        };
+        
+        class ScanLineDescriptor : public Reader::Buffer::Descriptor{
+        public:
+            ScanLineDescriptor(Read* readHandle,ReaderInfo* readInfo,
+                       std::string filename,ScanLineContext *slContext):
+            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_slContext(slContext){}
+            
+            ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0){}
+            
+            ScanLineDescriptor(const ScanLineDescriptor& other):Reader::Buffer::Descriptor(other),_slContext(other._slContext)
+            {}
+            
+            virtual bool hasToDecode(){ return _slContext->getRowsToRead().size() > 0;}
+            
+            virtual bool supportsScanLines() {return true;}
+            
             ScanLineContext* _slContext;
         };
         
-        typedef std::vector<DecodedFrameDescriptor>::iterator DecodedFrameIterator;
-        typedef std::vector<DecodedFrameDescriptor>::reverse_iterator DecodedFrameReverseIterator;        
+        class FullFrameDescriptor : public Reader::Buffer::Descriptor{
+        public:
+            FullFrameDescriptor(Read* readHandle,ReaderInfo* readInfo,
+                               std::string filename):
+            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_hasRead(false){}
+            
+            FullFrameDescriptor(): Reader::Buffer::Descriptor(),_hasRead(false){}
+            
+            FullFrameDescriptor(const FullFrameDescriptor& other):Reader::Buffer::Descriptor(other),
+            _hasRead(other._hasRead)
+            {}
+            
+            virtual bool hasToDecode(){ return _hasRead;}
+            
+            virtual bool supportsScanLines() {return false;}
+            
+            bool _hasRead;
+        };
+        
+        typedef std::vector<Reader::Buffer::Descriptor*>::iterator DecodedFrameIterator;
+        typedef std::vector<Reader::Buffer::Descriptor*>::reverse_iterator DecodedFrameReverseIterator;
         
         /*Enum used to know what kind of frame is enqueued in the buffer, it is used by
          isEnqueued(...) and this function is used by open(...) and openCachedFrame(...)*/
@@ -143,13 +175,8 @@ public:
         
         Buffer():_bufferSize(2){}
         ~Buffer(){clear();}
-        Reader::Buffer::DecodedFrameDescriptor insert(std::string filename,
-                                                      QFuture<void> *future,
-                                                      Read* readHandle,
-                                                      ReaderInfo* readInfo,
-                                                      ScanLineContext *slContext = 0);
+        void insert(Reader::Buffer::Descriptor* desc);
         void remove(std::string filename);
-        QFuture<void>* getFuture(std::string filename);
         bool decodeFinished(std::string filename);
         DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode);
         void clear();
@@ -161,7 +188,7 @@ public:
         DecodedFrameIterator find(std::string filename);
         void debugBuffer();
     private:
-        std::vector<  DecodedFrameDescriptor  > _buffer; // decoding buffer
+        std::vector<  Reader::Buffer::Descriptor*  > _buffer; // decoding buffer
         int _bufferSize; // maximum size of the buffer
     };
     
@@ -173,23 +200,9 @@ public:
 	bool hasFrames(){return fileNameList.size()>0;}
 
     
-    /*Chooses the appropriate Read* to open the file named by filename.
-     *If mode is stereo, it will try to open frames as stereo if the Read* supports stereo.
-     *If startNewThread is on, it will actually open the file in a separate thread.
-     *If the frame is already opened in the reader's internal buffer, this function returns instantly.
-     *Otherwise it inserts a new DecodedFrameResult to the internal buffer.
-     *Note that this function is not called if the frame is already in the diskcache. See openCachedFrame(...)
-     **/
-    Reader::Buffer::DecodedFrameDescriptor open(QString filename,DecodeMode mode,bool startNewThread);
+    bool readCurrentHeader(int current_frame);
     
-    
-    
-    /*This function will decode one or more frames depending on its parameters.
-     *It will not be called for a cached frame.
-     * TODO : should call only this function in VideoEngine::startReading(...) instead of having
-     * a separate call for openCachedFrame(...) and decodeFrames(...)*/
-    std::vector<Reader::Buffer::DecodedFrameDescriptor>
-    decodeFrames(DecodeMode mode,bool useCurrentThread,bool useOtherThread,bool forward);
+    void readCurrentData(int current_frame);
     
     int firstFrame();
 	int lastFrame();

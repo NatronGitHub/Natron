@@ -15,7 +15,8 @@
 #include "Core/channels.h"
 #include "Gui/textRenderer.h"
 #include "Gui/texturecache.h"
-
+#include <Eigen/LU>
+#include <Eigen/Dense>
 #ifndef PW_DEBUG
 #define checkGLErrors() ((void)0)
 #else
@@ -299,8 +300,10 @@
             /*computes what are the rows that should be displayed on viewer
              for the given displayWindow with the  zoom factor and  current zoom center.
              They will be stored from bottom to top. The values are returned
-             as a map of displayWindow coordinates mapped to viewport cooridnates*/
-            std::map<int,int> computeRowSpan(const Box2D& displayWindow,float zoomFactor);
+             as a map of displayWindow coordinates mapped to viewport cooridnates.
+             This function does not use any OpenGL function, so it can be safely called in 
+             a thread that does not own the context.*/
+            void computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow,float zoomFactor);
             
             /*translation/zoom related functions*/
             void setTranslation(float x,float y){transX = x; transY=y;}
@@ -372,7 +375,7 @@
              * That's where the viewer cached frame is initialised.
              * Returns the size in bytes of the memory allocated for the frame
              */
-            size_t determineFrameDataContainer(U64 key,std::string filename,int w,int h,ViewerGL::CACHING_MODE mode);
+            size_t determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHING_MODE mode);
             
             
             /*Allocate the pbo represented by the pboID with dataSize bytes.
@@ -384,7 +387,7 @@
             void fillPBO(const char* src,void* dst,size_t byteCount);
             
             /*Unmap the current mapped PBO and copies it to the display texture*/
-            void copyPBOtoTexture(int w,int h);
+            void copyPBOtoTexture();
             
             void doEmitFrameChanged(int f){
                 emit frameChanged(f);
@@ -417,7 +420,6 @@
             void disconnectViewer();
             
             public slots:
-            virtual void updateGL();
             void updateColorSpace(QString str);
             void zoomSlot(int v);
             void zoomSlot(double v){zoomSlot((int)v);} // convenience for FeedBackSpinBox
@@ -468,18 +470,38 @@
             void drawOverlay();
             
             /*computes the inverse matrix of m and stores it in out*/
-            int _glInvertMatrix(float *m, float *out);
+          //  static int _glInvertMatrix(float *m, float *out);
+            
+            typedef Eigen::Matrix4f M44f;
+            
+            static bool _glInvertMatrix(float* m ,float* invOut);
             
             /*multiply matrix1 by matrix2 and stores the result in result*/
-            void _glMultMats44(float *result, float *matrix1, float *matrix2);
+            static void _glMultMats44(float *result, float *matrix1, float *matrix2);
             
             /*multiply the matrix by the vector and stores it in resultvector*/
-            void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
+            static void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
             
             /*Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)*/
-            int _glMultMat44Vect_onlyYComponent(float *yComponent, const float *matrix, const float *pvector);
+            static int _glMultMat44Vect_onlyYComponent(float *yComponent, const M44f& matrix, const Eigen::Vector4f&);
             
+            /*Replicate of the glOrtho func, but for an identity matrix.
+             WARNING: All the content of matrix will be modified when returning from this function.
+             */
+            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far);
             
+            /*Replicate of the glScale function but for a custom matrix*/
+            static void _glScale(M44f& result,const M44f& matrix,float x,float y,float z);
+            
+            /*Replicate of the glTranslate function but for a custom matrix*/
+            static void _glTranslate(M44f& result,const M44f& matrix,float x,float y,float z);
+            
+            /*Replicate of the glRotate function but for a custom matrix.
+             The angle a is in degrees.*/
+            static void _glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z);
+            
+            /*Replicate of the glLoadIdentity function but for a custom matrix*/
+            static void _glLoadIdentity(M44f& matrix);
             
         };
 #endif // GLVIEWER_H
