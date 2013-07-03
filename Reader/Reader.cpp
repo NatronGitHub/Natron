@@ -79,9 +79,6 @@ bool Reader::readCurrentHeader(int current_frame){
     current_frame = clampToRange(current_frame);
        
     QString filename = files[current_frame];
-    /*the future used to check asynchronous results if the read happens in a new thread*/
-    QFuture<void> *future = 0;
-    
     /*the read handle used to decode the frame*/
     Read* _read = 0;
     
@@ -151,6 +148,7 @@ bool Reader::readCurrentHeader(int current_frame){
             delete _read;
         }
         *_info = static_cast<Node::Info&>(*((*found)->_readHandle->getReaderInfo()));
+        readHandle = (*found)->_readHandle;
     }else{
         _read->initializeColorSpace();
         _read->readHeader(filename, false);
@@ -160,6 +158,7 @@ bool Reader::readCurrentHeader(int current_frame){
             _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,_read->getReaderInfo(),filenameStr));
         }
         *_info = static_cast<Node::Info&>(*(_read->getReaderInfo()));
+        readHandle = _read;
     }
     return true;
 }
@@ -197,12 +196,11 @@ void Reader::showFilePreview(){
     
     readCurrentHeader(firstFrame());
     readCurrentData(firstFrame());
-    if(!makeCurrentDecodedFrame(false)){
-        cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
-        return;
-    }
-    _info->firstFrame(firstFrame());
-    _info->lastFrame(lastFrame());
+   // if(!makeCurrentDecodedFrame(false)){
+    //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
+    //    return;
+   // }
+    
     readHandle->make_preview();
     _buffer.clear();
 }
@@ -241,7 +239,7 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     return true;
 }
 
-void Reader::_validate(bool forReal){
+void Reader::_validate(bool){
    // if(forReal && !makeCurrentDecodedFrame(true)){
     //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
     //    return;
@@ -400,6 +398,8 @@ void Reader::getVideoSequenceFromFilesList(){
             }
         }
     }
+    _info->firstFrame(firstFrame());
+    _info->lastFrame(lastFrame());
     
 }
 int Reader::firstFrame(){

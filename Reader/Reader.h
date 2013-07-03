@@ -110,6 +110,8 @@ public:
            _readHandle(other._readHandle),_readInfo(other._readInfo),
             _filename(other._filename){}
             
+            virtual ~Descriptor(){}
+            
             /*Returns true if this descriptor has to decode some data*/
             virtual bool hasToDecode()=0;
             
