@@ -77,7 +77,6 @@ void Reader::initKnobs(Knob_Callback *cb){
 
 bool Reader::readCurrentHeader(int current_frame){
     current_frame = clampToRange(current_frame);
-       
     QString filename = files[current_frame];
     /*the read handle used to decode the frame*/
     Read* _read = 0;
@@ -100,6 +99,7 @@ bool Reader::readCurrentHeader(int current_frame){
     _read = builder(this);
     
     if(!_read){
+        cout << "ERROR : failed to create the decoder " << _read->decoderName() << endl;
         return false;
     }
     /*In case the read handle supports scanlines, we read the header to determine
@@ -109,6 +109,7 @@ bool Reader::readCurrentHeader(int current_frame){
     /*the slContext is useful to check the equality of 2 scan-line based frames.*/
     Reader::Buffer::ScanLineContext *slContext = 0;
     if(_read->supportsScanLine()){
+        _read->readHeader(filename, false);
         slContext = new Reader::Buffer::ScanLineContext;
         if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
             float zoomFactor;
@@ -117,19 +118,14 @@ bool Reader::readCurrentHeader(int current_frame){
                 currentViewer->getUiContext()->viewer->fitToFormat(dispW);
             }
             zoomFactor = currentViewer->getUiContext()->viewer->getZoomFactor();
-            
-            std::map<int,int> rows;
-            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW, zoomFactor);
-            slContext->setRows(rows);
+            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW,zoomFactor);
         }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
-            std::map<int,int> rows;
             for (int i = dataW.y() ; i < dataW.top(); i++) {
                 rows.insert(make_pair(i,i));
-            }
-            slContext->setRows(rows);
-            
+            }            
         }
+        slContext->setRows(rows);
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
@@ -150,10 +146,10 @@ bool Reader::readCurrentHeader(int current_frame){
         readHandle = (*found)->_readHandle;
     }else{
         _read->initializeColorSpace();
-        _read->readHeader(filename, false);
         if(_read->supportsScanLine()){
             _buffer.insert(new Reader::Buffer::ScanLineDescriptor(_read,_read->getReaderInfo(),filenameStr,slContext));
         }else{
+            _read->readHeader(filename, false);
             _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,_read->getReaderInfo(),filenameStr));
         }
         *_info = static_cast<Node::Info&>(*(_read->getReaderInfo()));

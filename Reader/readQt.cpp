@@ -90,7 +90,7 @@ void ReadQt::readHeader(const QString filename,bool openBothViews){
     Box2D bbox(0,0,width,height);
     setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
 }
-void ReadQt::readAllData(bool openBothViews){
+void ReadQt::readAllData(bool){
 // does nothing
 }
 

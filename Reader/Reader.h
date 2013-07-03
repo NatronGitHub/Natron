@@ -141,7 +141,7 @@ public:
             ScanLineDescriptor(const ScanLineDescriptor& other):Reader::Buffer::Descriptor(other),_slContext(other._slContext)
             ,_hasRead(other._hasRead){}
             
-            virtual bool hasToDecode(){ return !_hasRead || _slContext->getRowsToRead().size()==0;}
+            virtual bool hasToDecode(){ return !_hasRead || _slContext->getRowsToRead().size()>0;}
             
             virtual bool supportsScanLines() {return true;}
             

@@ -218,10 +218,9 @@ VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool 
             readers.push_back(inp);
         }
     }
-    _executingCachedFrame = false;
     
     /*1 slot in the vector corresponds to 1 frame read by a reader.*/
-    readHeaders(readers);
+    QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
     
     if(!_dag.validate(true)){
         stopEngine();
@@ -285,7 +284,6 @@ VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool 
         
         /*Found in viewer cache, we execute the cached engine and leave*/
         if(iscached){
-            _executingCachedFrame = true;
             state = EngineStatus::CACHED_ENGINE;
             goto stop;
         }
@@ -304,7 +302,7 @@ VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool 
          If this is a recursive call, we explicitly fallback
          to the viewer cache storage as the texture cache is not
          meant for playback.*/
-        readFrames(readers);
+        QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadData,_1,currentFrame));
         state = EngineStatus::NORMAL_ENGINE;
         if(recursiveCall && mode == ViewerGL::TEXTURE_CACHE)
             mode = ViewerGL::VIEWER_CACHE;
@@ -442,25 +440,7 @@ void VideoEngine::metaReadData(Reader* reader,int current_frame){
     reader->readCurrentData(current_frame);
 }
 
-void VideoEngine::readHeaders(const std::vector<Reader*>& readers){
-    int current_frame;
-    Writer* writer = _dag.outputAsWriter();
-    if(!writer)
-        current_frame = currentViewer->currentFrame();
-    else
-        current_frame = writer->currentFrame();
-    QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadHeader,_1,current_frame));
-}
 
-void VideoEngine::readFrames(const std::vector<Reader*>& readers){
-    int current_frame;
-    Writer* writer = _dag.outputAsWriter();
-    if(!writer)
-        current_frame = currentViewer->currentFrame();
-    else
-        current_frame = writer->currentFrame();
-     QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadData,_1,current_frame));
-}
 
 void VideoEngine::drawOverlay(){
     if(_dag.getOutput())
@@ -504,8 +484,7 @@ void VideoEngine::startEngine(int nbFrames){
 
 VideoEngine::VideoEngine(Model* engine,QMutex* lock):
 _working(false),_aborted(false),_paused(true),
-_forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false),
-_executingCachedFrame(false){
+_forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false){
     
     _engineLoopWatcher = new QFutureWatcher<void>;
     _enginePostProcessResults = new QFuture<void>;

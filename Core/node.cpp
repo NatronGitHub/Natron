@@ -85,6 +85,9 @@ bool Node::merge_info(bool forReal){
             chans += parent->getInfo()->channels();
             ChannelMask neededChans = channelsNeeded(i);
             if ((neededChans & chans) != neededChans) {
+                cout << parent->getName().toStdString() << " does not contain the channels needed by "
+                << getName().toStdString()  << endl;
+                neededChans.printOut();
                 return false;
             }
             if(parent->getInfo()->rgbMode()){

@@ -205,7 +205,6 @@ private:
         
     bool _sameFrame;//on if we want the next videoEngine call to be on the same frame(zoom)
     
-    bool _executingCachedFrame;
     
     QFutureWatcher<void>* _engineLoopWatcher;
     QFuture<void>* _enginePostProcessResults;

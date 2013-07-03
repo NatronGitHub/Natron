@@ -461,7 +461,7 @@ void ReadExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
     Row* from = 0;
     map<int,Row*>::iterator it = _img.find(exrY);
     if(it == _img.end()){
-        cout << "couldn't read: " << exrY << endl;
+        //cout << "couldn't read: " << exrY << endl;
         return;
     }
     from = it->second;
