@@ -74,7 +74,7 @@ public:
             
             /*set the base scan-lines that represents the context*/
             void setRows(std::map<int,int> rows){_rows=rows;}
-            const std::map<int,int>& getRows(){return _rows;}
+            std::map<int,int>& getRows(){return _rows;}
             
             bool hasScanLines(){return _rows.size() > 0;}
             

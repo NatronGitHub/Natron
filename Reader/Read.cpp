@@ -87,13 +87,13 @@ void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
         const std::map<int,int>& rows = slContext->getRows();
         if(_readInfo->getYdirection() < 0){
             //top to bottom
-            map<int,int>::reverse_iterator it  = rows.rbegin();
+            map<int,int>::const_reverse_iterator it  = rows.rbegin();
             for(; it!=rows.rend() ; it++){
                 readScanLine(it->first);
             }
         }else{
             //bottom to top
-            map<int,int>::iterator it = rows.begin();
+            map<int,int>::const_iterator it = rows.begin();
             for(; it!=rows.end() ; it++){
                 readScanLine(it->first);
             }
