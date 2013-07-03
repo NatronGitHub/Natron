@@ -384,9 +384,7 @@ void VideoEngine::engineLoop(){
     if(_dag.isOutputAViewer()){
         updateDisplay(); // updating viewer & pixel aspect ratio if needed
     }
-    
 }
-
 
 void VideoEngine::computeTreeForFrame(const std::map<int,int>& rows,size_t dataSize,OutputNode *output){
     ChannelSet outChannels;
