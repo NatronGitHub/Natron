@@ -353,7 +353,7 @@ void NodeGraph::enterEvent(QEvent *event)
         
         _nodeCreationShortcutEnabled=true;
         setFocus();
-        grabMouse();
+        //grabMouse();
         releaseMouse();
         grabKeyboard();
     }

@@ -1731,7 +1731,7 @@ void ViewerGL::clearViewer(){
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
     setFocus();
-    grabMouse();
+   // grabMouse();
     grabKeyboard();
 }
 void ViewerGL::leaveEvent(QEvent *event)

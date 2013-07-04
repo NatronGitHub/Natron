@@ -415,7 +415,7 @@ void TimeLine::mouseMoveEvent(QMouseEvent* e){
 }
 void TimeLine::enterEvent(QEvent* e){
     _alphaCursor = true;
-    grabMouse();
+   // grabMouse();
     QWidget::enterEvent(e);
 };
 void TimeLine::leaveEvent(QEvent* e){
