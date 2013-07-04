@@ -33,7 +33,7 @@ public:
     void returnToNormalPriority(){_doNotEvict = false;}
     
     /*Returns true if the cache can delete this entry*/
-    bool isRemovable() const {return _doNotEvict;}
+    bool isRemovable() const {return !_doNotEvict;}
     
     /*Returns the size of the entry in bytes.*/
     U64 size() const {return _size;}
