@@ -354,7 +354,7 @@ void NodeGraph::enterEvent(QEvent *event)
         _nodeCreationShortcutEnabled=true;
         setFocus();
         //grabMouse();
-        releaseMouse();
+        //releaseMouse();
         grabKeyboard();
     }
 }
@@ -364,7 +364,7 @@ void NodeGraph::leaveEvent(QEvent *event)
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
         setFocus();
-        releaseMouse();
+        //releaseMouse();
         releaseKeyboard();
     }
 }

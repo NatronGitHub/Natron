@@ -421,9 +421,10 @@ void TimeLine::enterEvent(QEvent* e){
 void TimeLine::leaveEvent(QEvent* e){
     _alphaCursor = false;
     repaint();
-    releaseMouse();
+   // releaseMouse();
     QWidget::leaveEvent(e);
 }
+
 
 void TimeLine::mouseReleaseEvent(QMouseEvent* e){
     _state = IDLE;

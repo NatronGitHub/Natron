@@ -273,7 +273,7 @@ void InfoViewerWidget::changeResolution(){
 
     }
 }
-void InfoViewerWidget::changeDisplayWindow(){
+void InfoViewerWidget::changeDataWindow(){
     char tmp[10];
     QString bbox("<font color=\"#DBE0E0\">bbox: ");
     sprintf(tmp, "%i",viewer->dataWindow().x());

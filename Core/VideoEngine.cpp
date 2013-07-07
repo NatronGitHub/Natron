@@ -91,22 +91,12 @@ void VideoEngine::stopEngine(){
     _working = false;
     _aborted = false;
     _paused = false;
-//    resetReadingBuffers();
     _enginePostProcessResults->waitForFinished();
     _workerThreadsResults->waitForFinished();
     _timer->playState=PAUSE;
     
 }
-void VideoEngine::resetReadingBuffers(){
-    if(_dag.isOutputAViewer()){
-        GLint boundBuffer;
-        glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &boundBuffer);
-        if(boundBuffer != 0){
-            glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
-        }
-    }
-}
+
 
 VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
     _working = true;

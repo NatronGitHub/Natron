@@ -10,7 +10,6 @@
 #include <QtCore/QMutex>
 
 // Singleton pattern ( thread-safe) , to have 1 global ptr
-// Not used anymore, but left here in case we'd like to use it
 
 template<class T> class Singleton {
     

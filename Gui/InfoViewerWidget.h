@@ -30,7 +30,7 @@ public slots:
     void updateColor();
     void updateCoordMouse();
     void changeResolution();
-    void changeDisplayWindow();
+    void changeDataWindow();
     void changeUserRect();
     void hideColorAndMouseInfo();
     void showColorAndMouseInfo();

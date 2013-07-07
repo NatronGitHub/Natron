@@ -1024,7 +1024,7 @@ void ViewerGL::zoomSlot(QString str){
     zoomSlot(str.toInt());
 }
 
-QPoint ViewerGL::mousePosFromOpenGL(int x, int y){
+QPoint ViewerGL::openGLCoordToViewportCoord(int x, int y){
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
@@ -1122,7 +1122,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
     QObject::connect(this,SIGNAL(infoMousePosChanged()), _infoViewer, SLOT(updateCoordMouse()));
     QObject::connect(this,SIGNAL(infoColorUnderMouseChanged()),_infoViewer,SLOT(updateColor()));
     QObject::connect(this,SIGNAL(infoResolutionChanged()),_infoViewer,SLOT(changeResolution()));
-    QObject::connect(this,SIGNAL(infoDisplayWindowChanged()),_infoViewer,SLOT(changeDisplayWindow()));
+    QObject::connect(this,SIGNAL(infoDataWindowChanged()),_infoViewer,SLOT(changeDataWindow()));
     
     
 }
@@ -1136,7 +1136,7 @@ void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
 
 void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     emit infoResolutionChanged();
-    emit infoDisplayWindowChanged();
+    emit infoDataWindowChanged();
     _resolutionOverlay.clear();
     _resolutionOverlay.append(QString::number(displayWindow().w()));
     _resolutionOverlay.append("x");
@@ -1738,7 +1738,7 @@ void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
     setFocus();
-    releaseMouse();
+   // releaseMouse();
     releaseKeyboard();
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
@@ -1747,6 +1747,13 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
     // }
     
 }
-float ViewerGL::byteMode(){
+
+void ViewerGL::setCurrentTexture(TextureEntry* texture){
+    if(_currentTexture)
+        _currentTexture->returnToNormalPriority();
+    _currentTexture = texture;
+    texture->preventFromDeletion();
+}
+float ViewerGL::byteMode() const {
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
 }
