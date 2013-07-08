@@ -8,8 +8,8 @@
 #include "Core/node.h"
 #include <QtConcurrent/QtConcurrentMap>
 #include <boost/bind.hpp>
-Interest::Interest(Node* node, int x, int y, int r, int t, ChannelMask channels):_isFinished(false),
-_x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_results(0){
+Interest::Interest(Node* node, int x, int y, int r, int t, ChannelMask channels):
+_x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
     for (int i = y; i <= t; i++) {
         InputRow* row = new InputRow;
         _interest.insert(std::make_pair(y,row));

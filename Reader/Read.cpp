@@ -40,7 +40,7 @@ void Read::from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta)
         _lut->from_byteQt(to, from, z, _premult, W , delta);
     }
 }
-void Read::from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta ){
+void Read::from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int, int delta ){
     if( z <= 3 && !_lut->linear()){
         if(alpha && _premult){
             _lut->from_short(to, from, alpha, W,delta);

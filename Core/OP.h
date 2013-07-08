@@ -10,8 +10,7 @@ class Op : public Node
 {
 public:
 
-    Op(Op& ref):Node(ref){}
-    Op(Node* node);
+    Op();
     
     virtual bool cacheData()=0;
     

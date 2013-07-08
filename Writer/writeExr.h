@@ -100,7 +100,7 @@ public:
     virtual void writeAllData();
     
     /*Doesn't throw any exception since OpenEXR can write all channels*/
-    virtual void supportsChannelsForWriting(ChannelSet& channels){}
+    virtual void supportsChannelsForWriting(ChannelSet&){}
     
     void debug();
     

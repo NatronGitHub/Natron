@@ -55,7 +55,7 @@ void ReadExr::lookupChannels(std::set<Channel>& channel, const char* name)
     //ui_context->rgbMode(rgbMode);
 }
 
-bool ReadExr::getChannels(const ChannelName& channelName, int view, std::set<Channel>& channel)
+bool ReadExr::getChannels(const ChannelName& channelName, int, std::set<Channel>& channel)
 {
     std::string viewpart = (channelName.view.length() > 0) ? channelName.view : heroview;
     std::string otherpart = channelName.name();
@@ -75,21 +75,6 @@ bool ReadExr::getChannels(const ChannelName& channelName, int view, std::set<Cha
     return true;
 }
 
-static bool endswith(const std::string& target, const std::string& suffix)
-{
-	if (target.length() < suffix.length())
-		return false;
-    
-	return target.substr(target.length() - suffix.length()) == suffix;
-}
-
-static bool startswith(const std::string& target, const std::string& prefix)
-{
-	if (target.length() < prefix.length())
-		return false;
-    
-	return target.substr(0, prefix.length()) == prefix;
-}
 std::vector<std::string> split(const std::string& str, char splitChar)
 {
 	std::vector<std::string> ret;
@@ -226,7 +211,7 @@ std::string ChannelName::name() const
 		return layer + "." + chan;
 	return chan;
 }
-void ReadExr::readHeader(const QString filename,bool openBothViews){
+void ReadExr::readHeader(const QString filename,bool){
     
     channel_map.clear();
     views.clear();

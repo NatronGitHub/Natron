@@ -14,8 +14,12 @@ using namespace std;
 
 
 ScaleSlider::ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter_Enums::Scale_Type type,int nbDisplayedValues,QWidget* parent):
-QWidget(parent),_minimum(bottom),_maximum(top),
-_type(type),_nbValues(nbValues),_dragging(false)
+QWidget(parent),
+_minimum(bottom),
+_maximum(top),
+_nbValues(nbValues),
+_type(type),
+_dragging(false)
 {
 
     this->setContentsMargins(0, 0, 0, 0);    

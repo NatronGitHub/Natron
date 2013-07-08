@@ -10,7 +10,7 @@
 #include "Gui/comboBox.h"
 #include "Superviser/powiterFn.h"
 using namespace std;
-ComboBox::ComboBox(QWidget* parent):QFrame(parent),pressed(false),_maximumTextSize(0){
+ComboBox::ComboBox(QWidget* parent):QFrame(parent),_maximumTextSize(0),pressed(false){
     
     _mainLayout = new QHBoxLayout(this);
     _mainLayout->setSpacing(0);

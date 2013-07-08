@@ -31,10 +31,11 @@
 #include <cstdlib>
 
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
-_evtState(DEFAULT),
-_fullscreen(false),
 _lastSelectedPos(0,0),
-_nodeSelected(0){
+_evtState(DEFAULT),
+_nodeSelected(0),
+_fullscreen(false)
+{
     
     setObjectName("DAG_GUI");
     setMouseTracking(true);
@@ -236,7 +237,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     oldp=event->pos();
     
 }
-void NodeGraph::mouseDoubleClickEvent(QMouseEvent *event){
+void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
     U32 i=0;
     while(i<_nodes.size()){
         NodeGui* n=_nodes[i];
@@ -376,7 +377,7 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 
 
 
-void NodeGraph::scaleView(qreal scaleFactor,QPointF center){
+void NodeGraph::scaleView(qreal scaleFactor,QPointF){
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if (factor < 0.07 || factor > 100)
         return;

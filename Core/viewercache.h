@@ -25,7 +25,7 @@ public:
 	U64 _treeVers;
 	ReaderInfo* _frameInfo; //bbox,format,channels,frame name,ydirection
 	float _byteMode;
-	int _actualH,_actualW; // zoomed H&W
+	int _actualW,_actualH; // zoomed H&W
 	FrameEntry();
 	FrameEntry(float zoom,float exp,float lut,U64 treeVers,
                float byteMode,ReaderInfo* info,int actualW,int actualH);

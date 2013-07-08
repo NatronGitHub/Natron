@@ -34,19 +34,19 @@ ViewerCache::ViewerCache() : AbstractDiskCache(0){}
 ViewerCache::~ViewerCache(){}
 
 
-FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualH(0),_actualW(0){
+FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualW(0),_actualH(0){
     _frameInfo = new ReaderInfo;
 }
 
 FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
                        float byteMode,ReaderInfo* info,int actualW,int actualH):
-_zoom(zoom), _exposure(exp),_lut(lut),_treeVers(treeVers),
+ _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_actualW(actualW),_actualH(actualH){
     _frameInfo = new ReaderInfo;
     *_frameInfo = *info;
 }
 
-FrameEntry::FrameEntry(const FrameEntry& other):_zoom(other._zoom),_exposure(other._exposure),_lut(other._lut),
+FrameEntry::FrameEntry(const FrameEntry& other):_exposure(other._exposure),_lut(other._lut),_zoom(other._zoom),
 _treeVers(other._treeVers),_byteMode(other._byteMode),_actualW(other._actualW),_actualH(other._actualH)
 {
     _frameInfo = new ReaderInfo;

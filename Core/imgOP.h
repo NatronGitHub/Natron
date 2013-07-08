@@ -10,8 +10,7 @@ class ImgOp : public Op
 {
 public:
 
-    ImgOp(Node* node);
-    ImgOp(ImgOp& ref):Op(ref){}
+    ImgOp();
 
     virtual bool cacheData()=0;
 

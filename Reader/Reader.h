@@ -195,8 +195,7 @@ public:
         int _bufferSize; // maximum size of the buffer
     };
     
-    Reader(Node* node);
-    Reader(Reader& ref);
+    Reader();
 
     void showFilePreview();
     void getVideoSequenceFromFilesList();

@@ -45,14 +45,16 @@
 using namespace std;
 
 
-Reader::Reader(Node* node):InputNode(node),video_sequence(0),
-has_preview(false),readHandle(0),preview(0){
+Reader::Reader():InputNode(),
+preview(0),
+has_preview(false),
+video_sequence(0),
+readHandle(0)
+{
 
    
 
 }
-
-Reader::Reader(Reader& ref):InputNode(ref){}
 
 Reader::~Reader(){
     _buffer.clear();

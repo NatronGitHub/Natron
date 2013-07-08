@@ -74,9 +74,8 @@ public:
     
     
     
-    /*CONSTRUCTORS AND DESTRUCTORS*/
-    Node(const Node& ref);
-    Node(Node* ptr);
+    /*CONSTRUCTOR AND DESTRUCTORS*/
+    Node();
     virtual ~Node();
     /*============================*/
     
@@ -232,7 +231,7 @@ private:
 	
     
 };
-typedef Node* (*NodeBuilder)(void*);
+typedef Node* (*NodeBuilder)();
 
 
 

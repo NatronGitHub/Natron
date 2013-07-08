@@ -42,7 +42,7 @@ bool ReadQt::supports_stereo(){
     return false;
 }
 
-void ReadQt::readHeader(const QString filename,bool openBothViews){
+void ReadQt::readHeader(const QString filename,bool){
     this->filename = filename;
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/

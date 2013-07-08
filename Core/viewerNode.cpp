@@ -18,8 +18,12 @@
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Superviser/controler.h"
-Viewer::Viewer(Node* node,ViewerCache* cache,TextureCache* textureCache):OutputNode(node),_viewerInfos(0),_uiContext(0),_viewerCache(cache),
-_pboIndex(0),_textureCache(textureCache)
+Viewer::Viewer(ViewerCache* cache,TextureCache* textureCache):OutputNode(),
+_viewerInfos(0),
+_uiContext(0),
+_viewerCache(cache),
+_textureCache(textureCache),
+_pboIndex(0)
 {
     _cacheWatcher = new QFutureWatcher<void>;
    QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));

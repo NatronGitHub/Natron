@@ -25,11 +25,10 @@ class Knob_Callback;
  function createExtraKnobs() to return a valid object.*/
 class WriteKnobs {
     
-    Separator_Knob *separator;
 protected:
     Writer* _op;
 public:
-    WriteKnobs(Writer* op):_op(op),separator(0){}
+    WriteKnobs(Writer* op):_op(op){}
     virtual ~WriteKnobs(){}
     
     /*Must initialise all filetype-specific knobs you want

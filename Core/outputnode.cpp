@@ -5,7 +5,7 @@
 //  contact: immarespond at gmail dot com
 #include "Core/outputnode.h"
 #include "Core/model.h"
-OutputNode::OutputNode(Node *node):Node(node){
+OutputNode::OutputNode():Node(){
     
 }
 

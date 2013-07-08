@@ -20,18 +20,17 @@
 
 using namespace std;
 
-Writer::Writer(Node* node):OutputNode(node),_writeHandle(0),_currentFrame(0),_writeOptions(0),
-_buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),_premult(false){
-    
-    /*debug*/
-    _requestedChannels = Mask_RGB;
-    
+Writer::Writer():
+OutputNode(),
+_requestedChannels(Mask_RGB), // temporary
+_currentFrame(0),
+_premult(false),
+_buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
+_writeHandle(0),
+_writeOptions(0)
+{
+     
     _lock = new QMutex;
-}
-
-Writer::Writer(Writer& ref):OutputNode(ref),_writeHandle(0),_currentFrame(0),_writeOptions(ref._writeOptions),
-_buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),_premult(ref._premult){
-    
 }
 
 Writer::~Writer(){

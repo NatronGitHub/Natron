@@ -30,10 +30,8 @@ class Viewer: public OutputNode
     
 public:
     
-    
-    Viewer(Viewer& ref):OutputNode(ref){}
-    
-    Viewer(Node* node,ViewerCache* cache,TextureCache* textureCache);
+        
+    Viewer(ViewerCache* cache,TextureCache* textureCache);
     
     virtual ~Viewer();
     

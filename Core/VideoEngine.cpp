@@ -471,8 +471,15 @@ void VideoEngine::startEngine(int nbFrames){
 }
 
 VideoEngine::VideoEngine(Model* engine,QMutex* lock):
-_working(false),_aborted(false),_paused(true),
-_forward(true),_frameRequestsCount(0),_frameRequestIndex(0),_loopMode(true),_sameFrame(false){
+_working(false),
+_aborted(false),
+_paused(true),
+_frameRequestsCount(0),
+_frameRequestIndex(0),
+_forward(true),
+_loopMode(true),
+_sameFrame(false)
+{
     
     _engineLoopWatcher = new QFutureWatcher<void>;
     _enginePostProcessResults = new QFuture<void>;
@@ -685,7 +692,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     }
 }
 
-void VideoEngine::_changeDAGAndStartEngine(int, int frameCount, bool initViewer,bool,OutputNode* output){
+void VideoEngine::_changeDAGAndStartEngine(int, int, bool initViewer,bool,OutputNode* output){
     _dag.resetAndSort(output,true);
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;

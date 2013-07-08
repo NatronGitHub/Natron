@@ -11,8 +11,7 @@ class FlowOperator : public Op
 {
 public:
 
-    FlowOperator(FlowOperator& ref):Op(ref){}
-    FlowOperator(Node* node);
+    FlowOperator();
     
     virtual bool cacheData(){return false;}
 

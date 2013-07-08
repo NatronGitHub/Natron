@@ -99,16 +99,24 @@ void ViewerGL::initConstructor(){
 }
 
 ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
-
+:QGLWidget(context,parent,shareWidget),
+_textRenderer(this),
+_shaderLoaded(false),
+_lut(1),
+_drawing(false),
+transX(0),transY(0)
 {
     
     initConstructor();
     
 }
 ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
-
+:QGLWidget(format,parent,shareWidget),
+_textRenderer(this),
+_shaderLoaded(false),
+_lut(1),
+_drawing(false),
+transX(0),transY(0)
 {
     
     initConstructor();
@@ -116,7 +124,12 @@ ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* sha
 }
 
 ViewerGL::ViewerGL(QWidget* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),_textRenderer(this),transX(0),transY(0),_lut(1),_shaderLoaded(false),_drawing(false)
+:QGLWidget(parent,shareWidget),
+_textRenderer(this),
+_shaderLoaded(false),
+_lut(1),
+_drawing(false),
+transX(0),transY(0)
 {
     initConstructor();
     

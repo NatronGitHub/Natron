@@ -73,7 +73,7 @@ void WriteExr::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* out){
+void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* ){
     InputRow row;
     op->input(0)->get(y, offset, range, channels, row);
     const float* a = row[Channel_alpha];

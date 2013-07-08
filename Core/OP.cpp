@@ -5,4 +5,4 @@
 //  contact: immarespond at gmail dot com
 #include "Core/OP.h"
 
-Op::Op(Node* node):Node(node){}
+Op::Op():Node(){}

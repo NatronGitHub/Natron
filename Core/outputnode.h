@@ -12,8 +12,7 @@ class OutputNode : public Node
 {
 public:
 
-    OutputNode(OutputNode& ref):Node(ref){}
-    OutputNode(Node* node);
+    OutputNode();
    
     virtual ~OutputNode(){}
     

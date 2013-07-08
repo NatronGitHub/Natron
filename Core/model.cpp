@@ -209,7 +209,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 				}else{
 					NodeBuilder builder=(NodeBuilder)GetProcAddress(lib,"BuildNode");
 					if(builder){
-						Node* test = builder(NULL);
+						Node* test = builder();
 						PluginID* plugin=new PluginID((HINSTANCE)builder,test->getName().toStdString());
 						delete test;
 						_pluginsLoaded.push_back(plugin);
@@ -232,7 +232,7 @@ void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find cl
 				else{
 					NodeBuilder builder=(NodeBuilder)dlsym(lib,"BuildNode");
 					if(builder){
-						Node* test = builder(NULL);
+						Node* test = builder();
 						PluginID* plugin=new PluginID((void*)builder,test->getName().toStdString());
 						_pluginsLoaded.push_back(plugin);
 						delete test;
@@ -345,7 +345,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
 UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 	if(name=="Reader"){
 		UI_NODE_TYPE type;
-		node=new Reader(node);
+		node=new Reader();
         node->setMutex(m);
         node->initializeInputs();
         node->initializeSockets();
@@ -353,7 +353,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 		return type;
 	}else if(name =="Viewer"){
 		UI_NODE_TYPE type;
-		node=new Viewer(node,_viewerCache,ctrlPTR->getGui()->getTextureCache());
+		node=new Viewer(_viewerCache,ctrlPTR->getGui()->getTextureCache());
         node->setMutex(m);
         node->initializeInputs();
         node->initializeSockets();
@@ -368,7 +368,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 		return type;
 	}else if(name == "Writer"){
         UI_NODE_TYPE type;
-		node=new Writer(node);
+		node=new Writer();
         node->setMutex(m);
         node->initializeInputs();
         node->initializeSockets();
@@ -386,7 +386,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
                 
 				NodeBuilder builder=(NodeBuilder)pair->first;
 				if(builder!=NULL){
-					node=builder(node);
+					node=builder();
                     node->setMutex(m);
                     node->initializeInputs();
                     node->initializeSockets();

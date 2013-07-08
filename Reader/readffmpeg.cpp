@@ -885,7 +885,7 @@ ReadFFMPEG::~ReadFFMPEG(){
     _dataBufferManager.release(ba.constData());
     
 }
-void ReadFFMPEG::readHeader(const QString filename,bool openBothViews){
+void ReadFFMPEG::readHeader(const QString filename,bool){
     this->_file = filename;
     const QByteArray ba = filename.toLatin1();
     _reader =_readerManager.get(ba.data());
@@ -912,7 +912,7 @@ void ReadFFMPEG::readHeader(const QString filename,bool openBothViews){
         setReaderInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
     }
 }
-void ReadFFMPEG::readAllData(bool openBothViews){
+void ReadFFMPEG::readAllData(bool){
     _data->resize(_memNeeded);
     if(!fillBuffer())
         cout << "FFMPEG READER: open failed to fill the buffer" << endl;

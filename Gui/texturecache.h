@@ -61,7 +61,7 @@ public:
        
     TextureCache():AbstractCache(){}
     
-    ~TextureCache(){}
+    virtual ~TextureCache(){}
     
     virtual  std::string cacheName() {return "TextureCache";}
     

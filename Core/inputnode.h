@@ -10,8 +10,7 @@ class InputNode : public Node
 {
 public:
 
-    InputNode(Node* node );
-    InputNode(InputNode& ref);
+    InputNode();
     virtual ~InputNode();
     virtual int maximumInputs(){return 0;}
     virtual int minimumInputs(){return 0;}

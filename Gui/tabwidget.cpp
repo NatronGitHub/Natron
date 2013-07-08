@@ -18,8 +18,18 @@
 #include "Gui/viewerTab.h"
 #include "Core/viewerNode.h"
 
-TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):QFrame(parent),_currentWidget(0),_decorations(decorations),
-_header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_closeButton(0),_isFloating(false),_drawDropRect(false){
+TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):
+QFrame(parent),
+_header(0),
+_headerLayout(0),
+_tabBar(0),
+_leftCornerButton(0),
+_floatButton(0),
+_closeButton(0),
+_currentWidget(0),
+_decorations(decorations),
+_isFloating(false),
+_drawDropRect(false){
     
     if(decorations!=NONE){
         setAcceptDrops(true);
@@ -45,7 +55,7 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
     QImage imgL(IMAGES_PATH"layout.png");
     QPixmap pixL=QPixmap::fromImage(imgL);
     pixL.scaled(15,15);
-
+    
     
     if(decorations != NONE){
         
@@ -85,7 +95,7 @@ _header(0),_headerLayout(0),_leftCornerButton(0),_tabBar(0),_floatButton(0),_clo
 }
 
 TabWidget::~TabWidget(){
-     
+    
 }
 
 void TabWidget::destroyTabs(){
@@ -106,7 +116,7 @@ void TabWidget::destroyTab(QWidget* tab){
     }else{
         tab->setVisible(false);
     }
-
+    
 }
 
 void TabWidget::createMenu(){
@@ -339,7 +349,7 @@ void TabWidget::dragEnterEvent(QDragEnterEvent* event){
     repaint();
 }
 
-void TabWidget::dragLeaveEvent(QDragLeaveEvent* event){
+void TabWidget::dragLeaveEvent(QDragLeaveEvent*){
     _drawDropRect = false;
     setFrameShape(QFrame::NoFrame);
     repaint();
@@ -371,10 +381,10 @@ void TabWidget::dropEvent(QDropEvent* event){
 
 TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar(parent) , _tabWidget(tabWidget) /* ,_currentIndex(-1)*/{
     
-//    _mainLayout = new QHBoxLayout(this);
-//    _mainLayout->setContentsMargins(0, 0, 0, 0);
-//    _mainLayout->setSpacing(0);
-//    setLayout(_mainLayout);
+    //    _mainLayout = new QHBoxLayout(this);
+    //    _mainLayout->setContentsMargins(0, 0, 0, 0);
+    //    _mainLayout->setSpacing(0);
+    //    setLayout(_mainLayout);
 }
 
 void TabBar::mousePressEvent(QMouseEvent* event){
@@ -475,11 +485,11 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
 //}
 
 //void Tab::setCurrent(bool cur){isCurrent = cur;}
-//    
+//
 //bool Tab::current() const {return isCurrent;}
 //
 //void Tab::paintEvent(QPaintEvent* e){
-//    
+//
 //    QFrame::paintEvent(e);
 //}
 //

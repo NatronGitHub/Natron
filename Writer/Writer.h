@@ -57,10 +57,8 @@ public:
     };
     
     
-    Writer(Node* node);
-    
-    Writer(Writer& ref);
-    
+    Writer();
+        
     virtual ~Writer();
     
     virtual std::string className();
@@ -119,7 +117,7 @@ public slots:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int inputNb){return Mask_None;}
+    virtual ChannelSet channelsNeeded(int){return Mask_None;}
     
 private:
     

@@ -148,17 +148,11 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-
-Node::Node(const Node& ref):_parents(ref._parents),_children(ref._children),_inputLabelsMap(ref._inputLabelsMap),
-_mutex(ref._mutex),_name(ref._name),_hashValue(ref._hashValue),_info(ref._info),
-_freeSocketCount(ref._freeSocketCount),_requestedBox(ref._requestedBox),_marked(ref._marked){}
-
-Node::Node(Node* ptr){
+Node::Node(){
     _marked = false;
     _info = new Info;
-    _hashValue=new Hash();
+    _hashValue=new Hash;
 	
-    
 }
 Hash* Node::getHash() const{return _hashValue;}
 

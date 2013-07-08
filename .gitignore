@@ -2,6 +2,8 @@
 *.DS_Store
 *_moc.cpp
 build*
+*html*
+*latex*
 DerivedData/*
 *.xcodeproj
 *.sln
