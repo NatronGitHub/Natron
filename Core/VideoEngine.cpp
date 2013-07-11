@@ -184,7 +184,7 @@ VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool 
                     }
                 }
             }else{
-                currentFrame = currentFrame = currentViewer->currentFrame()-1;
+                currentFrame  = currentViewer->currentFrame()-1;
                 if(currentFrame < firstFrame){
                     if(_loopMode)
                         currentFrame = lastFrame;
