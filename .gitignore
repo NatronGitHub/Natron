@@ -1,6 +1,7 @@
 *.com
 *.DS_Store
 *_moc.cpp
+*moc
 build*
 *html*
 *latex*
