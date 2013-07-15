@@ -10,8 +10,8 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
-#include <QtCore/qpoint.h>
-#include <QtGui/qvector4d.h>
+#include <QtCore/QPoint>
+#include <QtGui/QVector4D>
 #include "Core/displayFormat.h"
 class ViewerGL;
 class InfoViewerWidget: public QWidget{

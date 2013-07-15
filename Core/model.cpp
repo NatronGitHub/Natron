@@ -803,11 +803,11 @@ void Model::resetInternalDAG(){
 
 
 void Model::loadOFXPlugins(bool useCache){
+    
+    _ofxPluginCache.registerAPICache(_imageEffectPluginCache);
+    _ofxPluginCache.setCacheVersion("1.0");
+    
 #ifndef __POWITER_WIN32__
-	//	typedef boost::archive::binary_oarchive OArchive;
-	//	typedef boost::archive::binary_iarchive IArchive;
-	//	typedef boost::archive::text_oarchive OArchive;
-	//	typedef boost::archive::text_iarchive IArchive;
 	typedef boost::archive::xml_oarchive OArchive;
 	typedef boost::archive::xml_iarchive IArchive;
 	
@@ -854,3 +854,5 @@ void Model::loadOFXPlugins(bool useCache){
 	}
 #endif
 }
+
+

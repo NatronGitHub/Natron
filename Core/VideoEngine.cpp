@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 #include <QtCore/QMutex>
-#include <QtCore/qcoreapplication.h>
+#include <QtCore/QCoreApplication>
 #include "Gui/button.h"
 #include <QtGui/QVector2D>
 #include <QtWidgets/QAction>
@@ -209,7 +209,6 @@ VideoEngine::EngineStatus* VideoEngine::computeFrameRequest(bool sameFrame,bool 
         }
     }
     
-    /*1 slot in the vector corresponds to 1 frame read by a reader.*/
     QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
     
     if(!_dag.validate(true)){
@@ -393,17 +392,6 @@ void VideoEngine::computeTreeForFrame(const std::map<int,int>& rows,size_t dataS
     // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
     int counter = 0;
     for(map<int,int>::const_iterator it = rows.begin(); it!=rows.end() ; it++){
-        if(_aborted){
-            _waitingTasks.clear();
-            stopEngine();
-            return;
-        }else if(_paused){
-            _workerThreadsWatcher->cancel();
-            stopEngine();
-            runTasks();
-            stopEngine();
-            return;
-        }
         Row* row = new Row(offset,it->first,right,outChannels);
         row->zoomedY(counter);
         _sequenceToWork.push_back(row);

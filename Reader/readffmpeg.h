@@ -4,6 +4,12 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 
+
+/**
+ ALL THE CODE IN THAT FILE IS DEPRECATED AND NEED TO BE REVIEWED THOROUGHLY, DO NOT PAY HEED TO THE CODE WHILE THIS WARNING
+ IS STILL PRESENT
+**/
+
 #ifndef __PowiterOsX__readffmpeg__
 #define __PowiterOsX__readffmpeg__
 

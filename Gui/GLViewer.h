@@ -15,7 +15,6 @@
 #include "Core/channels.h"
 #include "Gui/textRenderer.h"
 #include "Gui/texturecache.h"
-#include <Eigen/LU>
 #include <Eigen/Dense>
 #ifndef PW_DEBUG
 #define checkGLErrors() ((void)0)

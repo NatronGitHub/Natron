@@ -7,16 +7,14 @@
 #define SMARTINPUTDIALOG_H
 
 #include <QtWidgets/QDialog>
-#include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QLineEdit>
-#include "Superviser/controler.h"
-#include "QtCore/QStringList"
-#include <QtCore/QEvent>
-#include <QtGui/QKeyEvent>
+
 class NodeGraph;
 class Controler;
+class QComboBox;
+class QLabel;
+class QVBoxLayout;
+class QEvent;
+class QKeyEvent;
 class SmartInputDialog:public QDialog
 {
 Q_OBJECT

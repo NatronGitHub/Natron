@@ -2,8 +2,6 @@ Here is a list of the know bugs:
 
 - Crash when opening a file dialog on linux too early
 
-- Black frame when pausing/resuming an un-cached sequence
-
 - On OSX dragging the viewer pane will freeze the GUI
 
 - Selecting a sequence of files that is not contiguous will result in a crash. This is not a bug, rather this is an unsupported feature.

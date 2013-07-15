@@ -4,6 +4,11 @@
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
 
+/**
+ ALL THE CODE IN THAT FILE IS DEPRECATED AND NEED TO BE REVIEWED THOROUGHLY, DO NOT PAY HEED TO THE CODE WHILE THIS WARNING
+ IS STILL PRESENT
+ **/
+
 #include "Reader/readffmpeg.h"
 #include "Reader/Reader.h"
 #include "Gui/GLViewer.h"

@@ -30,7 +30,8 @@
 #include "Gui/operatornode_ui.h"
 #include <cstdlib>
 
-NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
+NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
+QGraphicsView(scene,parent),
 _lastSelectedPos(0,0),
 _evtState(DEFAULT),
 _nodeSelected(0),

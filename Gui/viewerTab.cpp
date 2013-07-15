@@ -13,6 +13,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QAbstractItemView>
+#include <QtGui/QKeyEvent>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
 #include "Gui/InfoViewerWidget.h"
@@ -45,7 +46,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _firstSettingsRow->setLayout(_firstRowLayout);
     _firstRowLayout->setContentsMargins(0, 0, 0, 0);
     _firstRowLayout->setSpacing(0);
-   // _firstSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_firstSettingsRow);
     
     _viewerLayers = new ComboBox(_firstSettingsRow);

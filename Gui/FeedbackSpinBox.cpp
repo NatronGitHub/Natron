@@ -5,7 +5,7 @@
 //  contact: immarespond at gmail dot com
 
 #include "Gui/FeedbackSpinBox.h"
-
+#include <QtGui/QWheelEvent>
 FeedBackSpinBox::FeedBackSpinBox(QWidget* parent,bool mode):LineEdit(parent),_mode(mode),_decimals(1),_increment(1.0),_mini(0),_maxi(99)
 {
 

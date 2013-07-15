@@ -8,8 +8,7 @@
 #define __PowiterOsX__FeedbackSpinBox__
 
 #include <iostream>
-#include <QtWidgets/qlineedit.h>
-#include <QtGui/qevent.h>
+#include <QtCore/QEvent>
 #include "Gui/lineEdit.h"
 class FeedBackSpinBox : public LineEdit
 {

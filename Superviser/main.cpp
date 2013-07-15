@@ -11,9 +11,8 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtWidgets/QLabel>
-#include <QtGui/qpixmap.h>
+#include <QtGui/QPixmap>
 #include "Superviser/powiterFn.h"
-
 #include "Superviser/controler.h"
 #include "Core/model.h"
 
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
     QLabel* splashScreen = new QLabel;
     splashScreen->setWindowFlags(Qt::WindowStaysOnTopHint | Qt::SplashScreen);
     splashScreen->setPixmap(pixmap);
-     splashScreen->show();
+    splashScreen->show();
     QCoreApplication::processEvents();
 	/*instanciating the core*/
     Model* coreEngine=new Model();
