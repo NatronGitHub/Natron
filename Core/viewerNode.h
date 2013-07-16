@@ -65,7 +65,7 @@ public:
     void cachedFrameEngine(FrameEntry* frame);
 protected:
     
-	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Mask_None;}
+	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter_Enums::Mask_None;}
 	
 private:
     

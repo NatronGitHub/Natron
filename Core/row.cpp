@@ -13,7 +13,7 @@
 #include <QtCore/QFile>
 
 using namespace std;
-
+using namespace Powiter_Enums;
 
 Row::Row():_cacheWillDelete(false){
     buffers = 0;

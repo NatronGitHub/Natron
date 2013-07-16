@@ -8,7 +8,7 @@
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/GLViewer.h"
 #include "Core/Box.h"
-
+using namespace std;
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),
 mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     

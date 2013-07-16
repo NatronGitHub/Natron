@@ -17,7 +17,7 @@
 #include "Core/lutclasses.h"
 #include "Core/row.h"
 using namespace std;
-
+using namespace Powiter_Enums;
 void ReadExr::lookupChannels(std::set<Channel>& channel, const char* name)
 {
     if (strcmp(name, "y") == 0 || strcmp(name, "Y") == 0) {

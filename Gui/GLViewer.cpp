@@ -75,7 +75,7 @@ void ViewerGL::initConstructor(){
     
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
-    _blankViewerInfos->setChannels(Mask_RGBA);
+    _blankViewerInfos->setChannels(Powiter_Enums::Mask_RGBA);
     _blankViewerInfos->rgbMode(true);
     Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
     _blankViewerInfos->set(0, 0, 2048, 1556);
@@ -1567,13 +1567,13 @@ int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matr
 }
 
 /*Replicate of the glOrtho func, but for a custom matrix*/
-void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far){
+void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far_){
     float r_l = right - left;
     float t_b = top - bottom;
-    float f_n = far - near;
+    float f_n = far_ - near;
     float tx = - (right + left) / (right - left);
     float ty = - (top + bottom) / (top - bottom);
-    float tz = - (far + near) / (far - near);
+    float tz = - (far_ + near) / (far_ - near);
     matrix(0,0) = 2.0f / r_l;
     matrix(0,1) = 0.0f;
     matrix(0,2) = 0.0f;

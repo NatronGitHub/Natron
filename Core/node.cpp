@@ -22,7 +22,7 @@
 #include "Writer/Writer.h"
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
-
+using namespace std;
 
 void Node::copy_info(Node* parent){
     clear_info();

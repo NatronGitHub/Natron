@@ -15,7 +15,7 @@
 #include "Core/channels.h"
 #include "Gui/textRenderer.h"
 #include "Gui/texturecache.h"
-#include <Eigen/LU>
+
 #include <Eigen/Dense>
 #ifndef PW_DEBUG
 #define checkGLErrors() ((void)0)
@@ -756,7 +756,7 @@
              *@brief Replicate of the glOrtho func, but for an identity matrix.
              WARNING: All the content of matrix will be modified when returning from this function.
              **/
-            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far);
+            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far_);
             
             /**
              *@brief Replicate of the glScale function but for a custom matrix

@@ -10,7 +10,7 @@
 /* Reader is the node associated to all image format readers. The reader creates the appropriate Read*
  to decode a certain image format.
 */
-using namespace Powiter_Enums;
+
 
 class FrameEntry;
 
@@ -254,7 +254,7 @@ public:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Mask_None;}
+    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter_Enums::Mask_None;}
 private:
 	QImage *preview;
 	bool has_preview;

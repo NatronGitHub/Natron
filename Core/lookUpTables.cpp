@@ -11,7 +11,7 @@
 #endif
 
 using namespace std;
-
+using namespace Powiter_Enums;
 std::map<Lut::DataType,Lut*> Lut::_luts;
 
 

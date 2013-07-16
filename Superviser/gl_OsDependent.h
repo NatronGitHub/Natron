@@ -6,10 +6,6 @@
 
 #ifndef INCLUDED_OS_DEPENDENT_H
 #define INCLUDED_OS_DEPENDENT_H
-#include <iostream>
-using std::cout;
-using std::endl;
-
 
 #ifdef _WIN32
 

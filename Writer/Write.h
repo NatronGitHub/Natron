@@ -126,9 +126,9 @@ public:
      comment in WriteKnobs.*/
     virtual WriteKnobs* initSpecificKnobs(){return NULL;}
     
-    void to_byte(Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
-    void to_short(Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
-    void to_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_byte(Powiter_Enums::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_short(Powiter_Enums::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
+    void to_float(Powiter_Enums::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
 };
 
 

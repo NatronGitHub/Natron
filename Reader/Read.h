@@ -114,10 +114,10 @@ public:
     
 protected:
     
-    void from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
-    void from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta = 1);
-    void from_short(Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
-    void from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    void from_byte(Powiter_Enums::Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
+    void from_byteQt(Powiter_Enums::Channel z, float* to, const QRgb* from, int W, int delta = 1);
+    void from_short(Powiter_Enums::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
+    void from_float(Powiter_Enums::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
    
         
 	bool is_stereo;

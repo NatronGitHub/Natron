@@ -30,18 +30,8 @@
 #include "Core/displayFormat.h"
 #include "Writer/Writer.h"
 #include "Core/viewerNode.h"
-/*#ifdef __cplusplus
- extern "C" {
- #endif
- #ifdef _WIN32
- READER_EXPORT Reader* BuildReader(Node *node){return new Reader(node);}
- #elif defined(unix) || defined(__unix__) || defined(__unix)
- Reader* BuildReader(Node *node){return new Reader(node);}
- #endif
- #ifdef __cplusplus
- }
- #endif*/
 
+using namespace Powiter_Enums;
 using namespace std;
 
 

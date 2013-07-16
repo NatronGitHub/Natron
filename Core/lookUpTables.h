@@ -40,7 +40,7 @@
 #include "Superviser/powiterFn.h"
 #include "Superviser/MemoryInfo.h"
 #include <QtGui/QRgb>
-using namespace Powiter_Enums;
+
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
 
@@ -108,7 +108,7 @@ public:
     
     void from_byte(float* to, const uchar* from, int W, int delta = 1) ;
     void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) ;
-    void from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta = 1) ;
+    void from_byteQt(float* to, const QRgb* from,Powiter_Enums::Channel z,bool premult,int W,int delta = 1) ;
     
     void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1) ;
     void from_short(float* to, const U16* from, const U16* alpha, int W, int bits = 16, int delta = 1) ;
@@ -181,7 +181,7 @@ public:
 	static float from_byte(float f) { return f * (1.0f / 255.0f); }
 
     static void from_byte(float* to, const uchar* from, int W, int delta = 1);
-    static void from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta = 1);
+    static void from_byteQt(float* to, const QRgb* from,Powiter_Enums::Channel z, int W, int delta = 1);
     static void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1);
     static void from_float(float* to, const float* from, int W, int delta = 1);
     

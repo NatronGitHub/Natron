@@ -9,7 +9,7 @@
 #include <QtCore/QObject>
 #include "Superviser/powiterFn.h"
 #include "Core/singleton.h"
-using namespace Powiter_Enums;
+
 
 /*macro to get the unique pointer to the controler*/
 #define ctrlPTR Controler::instance()

@@ -15,7 +15,7 @@
 #endif
 #include "Reader/Read.h"
 
-using namespace Powiter_Enums;
+
 class Row;
 class ReaderInfo;
 class ChannelName
@@ -40,8 +40,8 @@ public:
 	ReadExr(Reader* op);
 	virtual ~ReadExr();
     
-	void lookupChannels(std::set<Channel>& channel, const char* name);
-	bool getChannels(const ChannelName& channelName, int view, std::set<Channel>& channel);
+	void lookupChannels(std::set<Powiter_Enums::Channel>& channel, const char* name);
+	bool getChannels(const ChannelName& channelName, int view, std::set<Powiter_Enums::Channel>& channel);
 	
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesDecoded(){
@@ -64,7 +64,7 @@ public:
 
 private:
 	Imf::InputFile* inputfile;
-	std::map<Channel, const char*> channel_map;
+	std::map<Powiter_Enums::Channel, const char*> channel_map;
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;

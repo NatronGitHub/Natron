@@ -117,7 +117,7 @@ public slots:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int){return Mask_None;}
+    virtual ChannelSet channelsNeeded(int){return Powiter_Enums::Mask_None;}
     
 private:
     

@@ -13,7 +13,7 @@
 #define __POWITER_UNIX__
 #elif  defined(_WIN32)
 #define __POWITER_WIN32__
-#define NOMINMAX // < Qt5 bug workaround with qdatetime.h
+#define NOMINMAX ///< Qt5 bug workaround with qdatetime.h
 #include <windows.h>
 #define OPENEXR_DLL
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
@@ -64,37 +64,5 @@ namespace PowiterWindows{
 #endif
 
 }
-#ifdef __POWITER_WIN32__
-#undef strlcpy
-#undef strcpy
-#undef strlen
-/*Windows fix to have safe c string handling functions*/
 
-inline size_t strlen(const char* src){
-	const char *eos = src;
-	while( *eos++ ) ;
-	return( eos - src - 1 );
-}
-
-inline size_t strlcpy(char *dest, const char *src, size_t size)
-{
-	size_t res = strlen(src);
-	if (size > 0) {
-		size_t length = (res >= size) ? size - 1 : res;
-		memcpy(dest, src, length);
-		dest[length]='\0';
-	}
-	return res;
-}
-
-inline char* strcpy(char* dest,const char* src){
-	size_t res = strlen(src);
-	if (res > 0) {
-		memcpy(dest, src, res);
-		dest[res]='\0';
-	}
-	return dest;
-}
-
-#endif
 #endif

@@ -14,7 +14,7 @@
 #include <QtCore/QChar>
 #include "Superviser/powiterFn.h"
 
-using namespace Powiter_Enums;
+
 
 class Node;
 class Knob;

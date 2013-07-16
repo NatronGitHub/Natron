@@ -41,7 +41,7 @@ void DataBuffer::clear(){
 
 size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 	QMutexLocker guard(_lock);
-	const unsigned char* IN = reinterpret_cast<const unsigned char*>(src) ;
+	const unsigned char* inbuffer = reinterpret_cast<const unsigned char*>(src) ;
 	if(!valid())
 		return -1;
 	size_t extra = 0;
@@ -49,12 +49,12 @@ size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 		extra = nb_bytes - _size;
 		int index=0;
 		for(U32 i=0; i < _size;i+=step){
-			_buffer[index++] = IN[i];
+			_buffer[index++] = inbuffer[i];
 		}
 	}else{
 		int index=0;
 		for(U32 i=0; i < nb_bytes;i+=step){
-			_buffer[index++] = IN[i];
+			_buffer[index++] = inbuffer[i];
 		}
 	}
 	return extra;

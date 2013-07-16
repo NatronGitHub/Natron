@@ -14,6 +14,7 @@
 #include <QtWidgets/QtWidgets>
 #include <cassert>
 const qreal pi=3.14159265358979323846264338327950288419717;
+using namespace std;
 NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) :QObject(parentObj), QGraphicsItem(parent),settings(0)
 {
     

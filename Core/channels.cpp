@@ -3,9 +3,13 @@
 //  Created by Alexandre Gauthier-Foichat on 06/12
 //  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
 //  contact: immarespond at gmail dot com
+//  
+
+
 #include "Core/channels.h"
 #include <iostream>
 using namespace std;
+using namespace Powiter_Enums;
 Channel getChannelByName(const char *name){
     if(strcmp(name,"Channel_unused")==0){
         return Channel_unused;

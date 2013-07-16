@@ -68,7 +68,7 @@ namespace EXR {
         }
     }
     
-    inline Channel fromExrChannel(std::string from)
+    inline Powiter_Enums::Channel fromExrChannel(std::string from)
     {
         if (from == "R")     return Powiter_Enums::Channel_red;
         if (from == "G")     return Powiter_Enums::Channel_green;
@@ -77,7 +77,7 @@ namespace EXR {
         if (from == "Z")     return Powiter_Enums::Channel_DeepFront;
         if (from == "ZBack") return Powiter_Enums::Channel_DeepBack;
         try{
-            Channel ret = getChannelByName(from.c_str());
+            Powiter_Enums::Channel ret = getChannelByName(from.c_str());
             return ret;
         }catch(const char* str){
             throw str; // forward exception
@@ -85,7 +85,7 @@ namespace EXR {
         }
     }
     
-    inline std::string toExrChannel(Channel from){
+    inline std::string toExrChannel(Powiter_Enums::Channel from){
         if(from == Powiter_Enums::Channel_red) return "R";
         if(from == Powiter_Enums::Channel_green) return "G";
         if(from == Powiter_Enums::Channel_blue) return "B";

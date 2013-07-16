@@ -14,7 +14,7 @@
 #include <QtWidgets/QtWidgets>
 #include "Gui/button.h"
 #include "Gui/DAG.h"
-
+using namespace std;
 SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false){
     
     _mainLayout=new QVBoxLayout(this);

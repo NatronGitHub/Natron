@@ -31,7 +31,6 @@
  object, call getKnobCallBack()
  */
 
-using namespace Powiter_Enums;
 
 
 

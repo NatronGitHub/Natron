@@ -13,6 +13,9 @@
 #include <boost/noncopyable.hpp>
 #define MAX_BUFFERS_PER_ROW 100
 
+
+using namespace Powiter_Enums;
+
 /*This class represent one line in the image.
  *One line is a set of buffers (channels) defined
  *in the range [x,r]*/
@@ -48,7 +51,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : float* start = row->writable(c)+row->offset()*/
-    float* writable(Channel c);
+    float* writable(Powiter_Enums::Channel c);
 
 	/*Copy into the current row, the channels defined in the source
 	 *in the range [o,r}*/
@@ -57,7 +60,7 @@ public:
 	
 
 	/*set to 0s the entirety of the chnnel c*/
-    void erase(Channel c);
+    void erase(Powiter_Enums::Channel c);
     void erase(ChannelSet set){
         foreachChannels(z, set){
             erase(z);
@@ -68,7 +71,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : const float* start = (*row)[z]+row->offset()*/
-    const float* operator[](Channel z) const;
+    const float* operator[](Powiter_Enums::Channel z) const;
     
     int y() const {return _y;}
 
@@ -84,7 +87,7 @@ public:
 
 	/*activates the channel C for this row and allocates memory for it.
      All (r-x) range for this channel will be set to 0.*/
-    void turnOn(Channel c);
+    void turnOn(Powiter_Enums::Channel c);
 
     int offset() const {return x;}
 
@@ -134,7 +137,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : const float* start = (*row)[z]+row->offset()*/
-    const float* operator[](Channel z) const{return (*_row)[z];}
+    const float* operator[](Powiter_Enums::Channel z) const{return (*_row)[z];}
     
     int y() const {return _row->y();}
     
@@ -146,7 +149,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : float* start = row->writable(c)+row->offset()*/
-    float* writable(Channel c){return _row->writable(c);}
+    float* writable(Powiter_Enums::Channel c){return _row->writable(c);}
     
 	/*Copy into the current row, the channels defined in the source
 	 *in the range [o,r}*/

@@ -13,7 +13,7 @@
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Core/row.h"
-
+using namespace std;
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
 {
 	
