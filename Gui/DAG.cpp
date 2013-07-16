@@ -1,8 +1,19 @@
 //  Powiter
-//
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #include <QtWidgets/QGraphicsProxyWidget>
 #include "Gui/tabwidget.h"
 #include "Gui/DAG.h"
@@ -29,9 +40,10 @@
 #include "Gui/inputnode_ui.h"
 #include "Gui/operatornode_ui.h"
 #include <cstdlib>
-using namespace std;
-using namespace Powiter_Enums;
-NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):QGraphicsView(scene,parent),
+
+
+NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
+QGraphicsView(scene,parent),
 _lastSelectedPos(0,0),
 _evtState(DEFAULT),
 _nodeSelected(0),

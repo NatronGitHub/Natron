@@ -1,8 +1,20 @@
 //  Powiter
 //
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #ifndef __PowiterOsX__InfoViewerWidget__
 #define __PowiterOsX__InfoViewerWidget__
 
@@ -10,8 +22,8 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
-#include <QtCore/qpoint.h>
-#include <QtGui/qvector4d.h>
+#include <QtCore/QPoint>
+#include <QtGui/QVector4D>
 #include "Core/displayFormat.h"
 class ViewerGL;
 class InfoViewerWidget: public QWidget{

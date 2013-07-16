@@ -1,22 +1,32 @@
 //  Powiter
 //
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #ifndef SMARTINPUTDIALOG_H
 #define SMARTINPUTDIALOG_H
 
 #include <QtWidgets/QDialog>
-#include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QLineEdit>
-#include "Superviser/controler.h"
-#include "QtCore/QStringList"
-#include <QtCore/QEvent>
-#include <QtGui/QKeyEvent>
+
 class NodeGraph;
 class Controler;
+class QComboBox;
+class QLabel;
+class QVBoxLayout;
+class QEvent;
+class QKeyEvent;
 class SmartInputDialog:public QDialog
 {
 Q_OBJECT

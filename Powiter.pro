@@ -1,9 +1,14 @@
+#This Source Code Form is subject to the terms of the Mozilla Public
+#License, v. 2.0. If a copy of the MPL was not distributed with this
+#file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 
 TARGET = Powiter
 TEMPLATE = app
 CONFIG += app
-QT+= core opengl gui widgets concurrent
-CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen
+CONFIG -= qt
+CONFIG += moc rcc
+CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen tuttle python opengl qt
 
 win32{
     CONFIG += glew
@@ -22,6 +27,9 @@ Debug:RCC_DIR = debug/.rcc
 Debug:UI_DIR = debug/.ui
 
 
+unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
+unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7
+unix:macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 include(config.pri)
 
 
@@ -85,7 +93,8 @@ SOURCES += \
     Gui/comboBox.cpp \
     Core/abstractCache.cpp \
     Core/interest.cpp \
-    Core/nodecache.cpp
+    Core/nodecache.cpp \
+
 
 HEADERS += \
     Gui/arrowGUI.h \
@@ -156,7 +165,8 @@ HEADERS += \
     Gui/lineEdit.h \
     Core/abstractCache.h \
     Core/nodecache.h \
-    Gui/button.h
+    Gui/button.h \
+
 
 INSTALLS += target
 

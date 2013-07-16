@@ -1,8 +1,20 @@
 //  Powiter
-//
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
+
 /***************************************************************************
  ***************************************************************************
  copyright            : (C) 2006 by Benoit Jacob
@@ -36,7 +48,8 @@ TextRenderer::TextRenderer(ViewerGL *glwidget)
     m_font = new FTTextureFont(buf,font.size());
     if(m_font->Error())
         cout << "error loading font " << endl;
-    m_font->FaceSize(14);
+    else
+        m_font->FaceSize(14);
 
 }
 
@@ -48,7 +61,7 @@ TextRenderer::~TextRenderer()
 
 void TextRenderer::print( int x, int y, const QString &string,QColor color )
 {
-	if( ! m_glwidget ) return;
+	if( !m_glwidget ) return;
 	if( string.isEmpty() ) return;
 	glPushMatrix();
     checkGLErrors();

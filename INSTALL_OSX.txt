@@ -1,4 +1,4 @@
-Developer installation on mac osx
+Developer installation on mac osx (updated on 15th of july ,2013)
 =================================
 
 This file is supposed to guide you step by step to have working (compiling) version of Powiter on mac osx ( >= 10.6 ). 
@@ -57,6 +57,11 @@ You can download Eigen from macports :
 
 We're done here for libraries.
 
+
+###TuttleOFX
+. . . To come
+
+
 ###Add the config.pri file
 
 You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
@@ -71,7 +76,7 @@ LIBS is the path to the libs
 
 openexr2{
     INCLUDEPATH += /usr/local/include/OpenEXR
-   LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
+    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
@@ -94,13 +99,33 @@ freetype2{
 
 boost{
     INCLUDEPATH += /opt/local/include
+    LIBS += -L/opt/local/lib -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_serialization-mt -lboost_python-mt -lboost_log-mt
+    LIBS += -L/opt/local/lib -lboost_program_options-mt
 }
 
-qtincludes{
-    INCLUDEPATH += /Users/Lex/Qt5.0.2/5.0.2/clang_64/include
+qt{
+    INCLUDEPATH += /Users/Lex/Qt5.1.0/5.1.0/clang_64/include
+    QMAKE_LFLAGS += -F/Users/Lex/Qt5.1.0/5.1.0/clang_64/lib
+    LIBS += -framework QtCore -framework QtGui -framework QtConcurrent -framework QtOpenGL -framework QtWidgets
 }
+
+opengl{
+    QMAKE_LFLAGS += -F/System/Library/Frameworks
+    LIBS += -framework OpenGL
+}
+
 eigen{
     INCLUDEPATH += /usr/local/include
+}
+
+tuttle{
+    INCLUDEPATH += /Users/Lex/Development/TuttleOFX/libraries/tuttle/src
+    INCLUDEPATH += /Users/Lex/Development/TuttleOFX/libraries/openfxHack/include
+    LIBS += -L/Users/Lex/Development/TuttleOFX -ltuttleHost -ltuttleCommon
+}
+python{
+    QMAKE_LFLAGS += -F/opt/local/Library/Frameworks
+    LIBS += -framework Python
 }
 
 ###(Optional) Build on Xcode:

@@ -1,8 +1,19 @@
 //  Powiter
-//
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSlider>
 #include <QtWidgets/QComboBox>
@@ -13,6 +24,7 @@
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QAbstractItemView>
+#include <QtGui/QKeyEvent>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
 #include "Gui/InfoViewerWidget.h"
@@ -45,7 +57,6 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _firstSettingsRow->setLayout(_firstRowLayout);
     _firstRowLayout->setContentsMargins(0, 0, 0, 0);
     _firstRowLayout->setSpacing(0);
-   // _firstSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_firstSettingsRow);
     
     _viewerLayers = new ComboBox(_firstSettingsRow);

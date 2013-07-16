@@ -1,8 +1,19 @@
 //  Powiter
-//
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #include <QtCore/QMutex>
 #include <QtCore/QDir>
 #include <cassert>
@@ -37,9 +48,27 @@
 #include "Writer/writeExr.h"
 #include "Gui/mainGui.h"
 #include <cassert>
+
+#include <tuttle/common/system/system.hpp>
+#include <tuttle/host/ofx/OfxhImageEffectPlugin.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/convenience.hpp>
+
 using namespace std;
-using namespace Powiter_Enums;
-Model::Model(): _videoEngine(0),_mutex(0)
+
+Model::Model(): _videoEngine(0),_mutex(0),_imageEffectPluginCache(_ofxHost)
+
 {
     /*general mutex shared by all nodes*/
     _mutex = new QMutex;
@@ -58,15 +87,8 @@ Model::Model(): _videoEngine(0),_mutex(0)
     _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
     _viewerCache->restore();
     
-    /*loading node plugins*/
-    loadPluginsAndInitNameList();
-    loadBuiltinPlugins();
-    
-    /*loading read plugins*/
-    loadReadPlugins();
-    
-    /*loading write plugins*/
-    loadWritePlugins();
+   /*loading all plugins*/
+    loadAllPlugins();
     
     _knobFactory = KnobFactory::instance();
     
@@ -172,6 +194,20 @@ Model::~Model(){
     delete _mutex;
 }
 
+void Model::loadAllPlugins(){
+    /*loading node plugins*/
+    loadPluginsAndInitNameList();
+    loadBuiltinPlugins();
+    
+    /*loading read plugins*/
+    loadReadPlugins();
+    
+    /*loading write plugins*/
+    loadWritePlugins();
+    
+    /*loading ofx plugins*/
+    loadOFXPlugins();
+}
 
 
 void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
@@ -777,3 +813,59 @@ void Model::resetInternalDAG(){
         _videoEngine->resetDAG();
     }
 }
+
+
+void Model::loadOFXPlugins(bool useCache){
+    
+    _ofxPluginCache.registerAPICache(_imageEffectPluginCache);
+    _ofxPluginCache.setCacheVersion("1.0");
+    
+#ifndef __POWITER_WIN32__
+	typedef boost::archive::xml_oarchive OArchive;
+	typedef boost::archive::xml_iarchive IArchive;
+	
+	std::string cacheFile;
+	if( useCache )
+	{
+		cacheFile = (_tuttlePreferences.getTuttleHomePath() / "tuttlePluginCacheSerialize.xml").string();
+		        
+		try
+		{
+			std::ifstream ifsb( cacheFile.c_str(), std::ios::in );
+			if( ifsb.is_open() )
+			{
+				IArchive iArchive( ifsb );
+				iArchive >> BOOST_SERIALIZATION_NVP( _ofxPluginCache );
+				ifsb.close();
+			}
+		}
+		catch( std::exception& e )
+		{
+			cout <<  "Exception when reading cache file (" << e.what()  << ")." << endl;
+		}
+	}
+#endif
+	_ofxPluginCache.scanPluginFiles();
+#ifndef __POWITER_WIN32__
+	if( useCache && _ofxPluginCache.isDirty() )
+	{
+		// generate unique name for writing
+		boost::uuids::random_generator gen;
+		boost::uuids::uuid u = gen();
+		const std::string tmpCacheFile( cacheFile + ".writing." + boost::uuids::to_string(u) + ".xml" );
+		
+		// serialize into a temporary file
+		std::ofstream ofsb( tmpCacheFile.c_str(), std::ios::out );
+		if( ofsb.is_open() )
+		{
+			OArchive oArchive( ofsb );
+			oArchive << BOOST_SERIALIZATION_NVP( _ofxPluginCache );
+			ofsb.close();
+			// replace the cache file
+			boost::filesystem::rename( tmpCacheFile, cacheFile );
+		}
+	}
+#endif
+}
+
+

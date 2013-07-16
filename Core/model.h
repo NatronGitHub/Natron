@@ -1,8 +1,20 @@
 //  Powiter
 //
-//  Created by Alexandre Gauthier-Foichat on 06/12
-//  Copyright (c) 2013 Alexandre Gauthier-Foichat. All rights reserved.
-//  contact: immarespond at gmail dot com
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/*
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
+
+ 
+
+ 
+
+
+
 #ifndef MODEL_H
 #define MODEL_H
 #include <iostream>
@@ -16,6 +28,13 @@
 #include <vector>
 #include <ImfStandardAttributes.h>
 #include <boost/noncopyable.hpp>
+
+
+#include <tuttle/host/HostDescriptor.hpp>
+#include <tuttle/host/ofx/OfxhPluginCache.hpp>
+#include <tuttle/host/ofx/OfxhImageEffectPluginCache.hpp>
+#include <tuttle/host/Preferences.hpp>
+
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
@@ -84,23 +103,9 @@ public:
     Model();
     ~Model();
     
-    /*loads plugins(nodes)*/
-    void loadPluginsAndInitNameList();
+    /*Loads all kind of plugins*/
+    void loadAllPlugins();
     
-    /*name says it all*/
-    void loadBuiltinPlugins();
-    
-    /*loads extra reader plug-ins */
-    void loadReadPlugins();
-    
-    /*loads reads that are incorporated to Powiter*/
-    void loadBuiltinReads();
-    
-    /*loads extra writer plug-ins*/
-    void loadWritePlugins();
-    
-    /*loads writes that are built-ins*/
-    void loadBuiltinWrites();
 
     /*utility functions used to parse*/
     std::string removePrefixSpaces(std::string str);
@@ -161,6 +166,25 @@ public slots:
     
 private:
     
+    /*loads plugins(nodes)*/
+    void loadPluginsAndInitNameList();
+    
+    /*name says it all*/
+    void loadBuiltinPlugins();
+    
+    /*loads extra reader plug-ins */
+    void loadReadPlugins();
+    
+    /*loads reads that are incorporated to Powiter*/
+    void loadBuiltinReads();
+    
+    /*loads extra writer plug-ins*/
+    void loadWritePlugins();
+    
+    /*loads writes that are built-ins*/
+    void loadBuiltinWrites();
+    
+    void loadOFXPlugins(bool useCache = true);
     
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
@@ -186,7 +210,11 @@ private:
     NodeCache* _nodeCache;
     
     ViewerCache* _viewerCache;
-
+        
+    tuttle::host::Host _ofxHost;
+	tuttle::host::ofx::imageEffect::OfxhImageEffectPluginCache _imageEffectPluginCache;
+	tuttle::host::ofx::OfxhPluginCache _ofxPluginCache;
+    tuttle::host::Preferences _tuttlePreferences;
 };
 
 #endif // MODEL_H
