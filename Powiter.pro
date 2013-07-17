@@ -26,7 +26,6 @@ Debug:MOC_DIR = debug/.moc
 Debug:RCC_DIR = debug/.rcc
 Debug:UI_DIR = debug/.ui
 
-
 unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7
 unix:macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7

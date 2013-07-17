@@ -31,6 +31,7 @@
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
+#include "Core/settings.h"
 #include <QtCore/QString>
 #include "Gui/button.h"
 
@@ -365,9 +366,11 @@ void File_Knob::open_file(){
 //                                                      ,_lastOpened
 //                                                      ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
     QStringList strlist;
-    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+    std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    
+    SequenceFileDialog dialog(this,filters,_lastOpened.toStdString());
     if(dialog.exec()){
-        strlist = dialog.selectedFiles();
+        //  strlist = dialog.selectedFiles();
     }
 
     if(!strlist.isEmpty()){
@@ -397,7 +400,7 @@ File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flag
     
     Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
-    _lastOpened =QString(ROOT);
+    _lastOpened = QString(ROOT);
     _name=new FileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
 	
