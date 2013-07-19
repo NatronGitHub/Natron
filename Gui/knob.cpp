@@ -361,16 +361,12 @@ void File_Knob::open_file(){
     str->clear();
 
 
-
-//    QStringList strlist=QFileDialog::getOpenFileNames(this,QString("Open File")
-//                                                      ,_lastOpened
-//                                                      ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
     QStringList strlist;
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
     
     SequenceFileDialog dialog(this,filters,_lastOpened.toStdString());
     if(dialog.exec()){
-        //  strlist = dialog.selectedFiles();
+         strlist = dialog.selectedFiles();
     }
 
     if(!strlist.isEmpty()){
@@ -395,12 +391,10 @@ void File_Knob::updateLastOpened(QString str){
     _lastOpened = str.left(index);
 }
 
-File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask flags):Knob(cb),str(0)
+File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask ):Knob(cb),str(0),_lastOpened("")
 {
     
-    Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
-    _lastOpened = QString(ROOT);
     _name=new FileQLineEdit(this);
     _name->setPlaceholderText(QString("File path..."));
 	

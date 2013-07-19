@@ -24,7 +24,13 @@
 #include <QtWidgets/QDialog>
 #include <QtCore/QSortFilterProxyModel>
 #include <QtWidgets/QFileSystemModel>
+#include <QtWidgets/QDialogButtonBox>
+#include <QtCore/QByteArray>
+#include <QtGui/QStandardItemModel>
 #include <QtCore/QStringList>
+#include <QtCore/QDir>
+#include <QtCore/QUrl>
+#include <QtWidgets/QListView>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -36,8 +42,74 @@ class QWidget;
 class QLabel;
 class QHBoxLayout;
 class QVBoxLayout;
-class QListView;
+class QSplitter;
 class SequenceFileDialog;
+
+
+class  UrlModel : public QStandardItemModel
+{
+    Q_OBJECT   
+public:
+    enum Roles {
+        UrlRole = Qt::UserRole + 1,
+        EnabledRole = Qt::UserRole + 2
+    };
+    
+    UrlModel(QObject *parent = 0);
+    bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
+    
+    void setUrls(const std::vector<QUrl> &urls);
+    void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
+    std::vector<QUrl> urls() const;
+    void setFileSystemModel(QFileSystemModel *model);
+    QFileSystemModel* getFileSystemModel() const {return fileSystemModel;}
+    void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
+
+public slots:
+    void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
+    void layoutChanged();
+    
+private:
+    void changed(const QString &path);
+    void addIndexToWatch(const QString &path, const QModelIndex &index);
+    QFileSystemModel *fileSystemModel;
+    std::vector<std::pair<QModelIndex, QString> > watching;
+    std::vector<QUrl> invalidUrls;
+};
+class FavoriteView : public QListView
+{
+    Q_OBJECT
+    
+signals:
+    void urlRequested(const QUrl &url);
+    
+public:
+    FavoriteView(QWidget *parent = 0);
+    void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
+    ~FavoriteView();
+    
+    QSize sizeHint() const;
+    
+    void setUrls(const std::vector<QUrl> &list) { urlModel->setUrls(list); }
+    void addUrls(const std::vector<QUrl> &list, int row) { urlModel->addUrls(list, row); }
+    std::vector<QUrl> urls() const { return urlModel->urls(); }
+    
+    void selectUrl(const QUrl &url);
+
+    void rename(const QModelIndex& index,const QString& name);
+public slots:
+    void clicked(const QModelIndex &index);
+    void showMenu(const QPoint &position);
+    void removeEntry();
+    void rename();
+    void editUrl();
+protected:
+    virtual void keyPressEvent(QKeyEvent *event);
+    
+private:
+    UrlModel *urlModel;
+};
+
 class SequenceItemDelegate : public QStyledItemDelegate {
     
     Q_OBJECT
@@ -45,7 +117,7 @@ class SequenceItemDelegate : public QStyledItemDelegate {
     std::vector<std::pair<QString,QString> > _nameMapping;
     SequenceFileDialog* _fd;
 public:
-    SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_automaticResize(false),_fd(fd){}
+    SequenceItemDelegate(SequenceFileDialog* fd);
     void setNameMapping(std::vector<std::pair<QString,QString> > nameMapping){_nameMapping = nameMapping;_automaticResize = true;}
     
 signals:
@@ -59,14 +131,15 @@ class SequenceDialogView: public QTreeView{
     
     Q_OBJECT
 public:
-    SequenceDialogView(QWidget* p);
+    SequenceDialogView(QWidget* parent);
     
     void updateNameMapping(std::vector<std::pair<QString,QString> > nameMapping);
     
-    
+
     public slots:
     
     void adjustSizeToNewContent(QSize);
+    
 };
 
 
@@ -127,6 +200,7 @@ class SequenceFileDialog: public QDialog
     Button* _openButton;
     Button* _cancelButton;
     Button* _addFavoriteButton;
+    Button* _removeFavoriteButton;
     
     LineEdit* _selectionLineEdit;
     QLabel* _sequenceLabel;
@@ -137,20 +211,29 @@ class SequenceFileDialog: public QDialog
     QHBoxLayout* _buttonsLayout;
     QHBoxLayout* _centerLayout;
     QVBoxLayout* _favoriteLayout;
+    QHBoxLayout* _favoriteButtonsLayout;
     QHBoxLayout* _selectionLayout;
     QHBoxLayout* _filterLayout;
     
     QWidget* _buttonsWidget;
-    QWidget* _centerWidget;
     QWidget* _favoriteWidget;
+    QWidget* _favoriteButtonsWidget;
     QWidget* _selectionWidget;
     QWidget* _filterWidget;
     
-    QListView* _favoriteView;
+    FavoriteView* _favoriteView;
+
+    QSplitter* _centerSplitter;
     
+    QStringList _history;
+    int _currentHistoryLocation;
     
     
 public:
+    typedef SequenceDialogProxyModel::SequenceIterator SequenceIterator;
+    typedef SequenceDialogProxyModel::ConstSequenceIterator ConstSequenceIterator;
+    
+    
     SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string directory = std::string());
     virtual ~SequenceFileDialog();
     
@@ -168,11 +251,31 @@ public:
     
     static bool checkIfContiguous(const std::vector<int>& v);
     
+    QStringList selectedFiles();
     
-    public slots:
+    QDir directory() const;
+
+    void addFavorite(const QString& name,const QString& path);
+
+    QByteArray saveState() const;
+
+    bool restoreState(const QByteArray& state);
+
+public slots:
     void enterDirectory(const QModelIndex& index);
     void setDirectory(const QString &directory);
     void updateView(const QString& directory);
+    
+    void previousFolder();
+    void nextFolder();
+    void parentFolder();
+    void createDir();
+    void addFavorite();
+    void openSelectedFiles();
+    void cancelSlot();
+    void doubleClickOpen(const QModelIndex& index);
+    void seekUrl(const QUrl& url);
+
     
 private:
     
@@ -180,9 +283,9 @@ private:
     QModelIndex mapFromSource(const QModelIndex& index);
     
     void itemsToSequence(const QModelIndex &parent);
+    
+    QModelIndex select(const QModelIndex& index);
 };
-
-
 
 
 #endif /* defined(__PowiterOsX__filedialog__) */

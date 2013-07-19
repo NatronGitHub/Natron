@@ -8,10 +8,6 @@
 *
 */
 
- 
-
- 
-
 
 
 #include <QtCore/QMutex>

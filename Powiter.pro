@@ -172,6 +172,8 @@ INSTALLS += target
 RESOURCES += \
     Resources.qrc
 
+
+INSTALLS += data
 OTHER_FILES += \
     config.pri
 
