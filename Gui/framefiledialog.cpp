@@ -89,10 +89,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     _favoriteWidget->setLayout(_favoriteLayout);
     _favoriteView = new FavoriteView(this);
     QObject::connect(_favoriteView,SIGNAL(urlRequested(QUrl)),this,SLOT(seekUrl(QUrl)));
-    std::vector<QUrl> initialBookmarks;
-    initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
-    initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
-    _favoriteView->setModelAndUrls(_model, initialBookmarks);
+
     _favoriteLayout->setContentsMargins(0, 0, 0, 0);
     _favoriteLayout->addWidget(_favoriteView);
     
@@ -146,6 +143,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     _filterLayout->addWidget(_sequenceLabel);
     
     _sequenceCheckbox = new QCheckBox(_filterWidget);
+    _sequenceCheckbox->setChecked(true);
     _filterLayout->addWidget(_sequenceCheckbox);
     
     _filterLabel = new QLabel("Filter",_filterWidget);
@@ -165,11 +163,16 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
    // QSettings settings(QSettings::UserScope, QLatin1String("QtProject"));
    // settings.beginGroup(QLatin1String("Qt"));
    // restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
+    std::vector<QUrl> initialBookmarks;
+    initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
+    initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
+    _favoriteView->setModelAndUrls(_model, initialBookmarks);
 
     if(!directory.empty())
         setDirectory(directory.c_str());
     
-
+    QItemSelectionModel *selectionModel = _view->selectionModel();
+    QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
@@ -182,6 +185,34 @@ SequenceFileDialog::~SequenceFileDialog(){
     delete _proxy;
 
 }
+
+void SequenceFileDialog::selectionChanged(){
+    QStringList allFiles;
+    QModelIndexList indexes = _view->selectionModel()->selectedRows();
+    for (int i = 0; i < indexes.count(); ++i) {
+        if (_model->isDir(mapToSource(indexes.at(i))))
+            continue;
+        allFiles.append(indexes.at(i).data(QFileSystemModel::FilePathRole).toString());
+    }
+    if (allFiles.count() > 1)
+        for (int i = 0; i < allFiles.count(); ++i) {
+            allFiles.replace(i, QString(QLatin1Char('"') + allFiles.at(i) + QLatin1Char('"')));
+    }
+
+    QString finalFiles = allFiles.join(QLatin1Char(' '));
+    for(unsigned int i = 0 ; i < _nameMapping.size(); i++){
+        cout << "mapping: " << _nameMapping[i].first.toStdString() << endl;
+        if(_nameMapping[i].first == finalFiles){
+            finalFiles = _nameMapping[i].second;
+            cout << "found : " << _nameMapping[i].second.toStdString() << endl;
+            break;
+        }
+    }
+    if (!finalFiles.isEmpty())
+        _selectionLineEdit->setText(finalFiles);
+
+}
+
 void SequenceFileDialog::enterDirectory(const QModelIndex& index){
     
     QModelIndex sourceIndex = index.model() == _proxy ? mapToSource(index) : index;
@@ -283,6 +314,7 @@ void SequenceFileDialog::setDirectory(const QString &directory){
         return;
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory);
+    _selectionLineEdit->setText(newDirectory);
     QDir dir(_model->rootDirectory());
     _upButton->setEnabled(dir.exists());
     if(_currentHistoryLocation <  0 || _history.value(_currentHistoryLocation) != QDir::toNativeSeparators(newDirectory)){

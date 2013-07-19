@@ -58,10 +58,6 @@ You can download Eigen from macports :
 We're done here for libraries.
 
 
-###TuttleOFX
-. . . To come
-
-
 ###Add the config.pri file
 
 You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
@@ -118,15 +114,6 @@ eigen{
     INCLUDEPATH += /usr/local/include
 }
 
-tuttle{
-    INCLUDEPATH += /Users/Lex/Development/TuttleOFX/libraries/tuttle/src
-    INCLUDEPATH += /Users/Lex/Development/TuttleOFX/libraries/openfxHack/include
-    LIBS += -L/Users/Lex/Development/TuttleOFX -ltuttleHost -ltuttleCommon
-}
-python{
-    QMAKE_LFLAGS += -F/opt/local/Library/Frameworks
-    LIBS += -framework Python
-}
 
 ###(Optional) Build on Xcode:
 

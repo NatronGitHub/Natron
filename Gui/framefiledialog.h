@@ -275,7 +275,7 @@ public slots:
     void cancelSlot();
     void doubleClickOpen(const QModelIndex& index);
     void seekUrl(const QUrl& url);
-
+    void selectionChanged();
     
 private:
     

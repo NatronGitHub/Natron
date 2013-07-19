@@ -8,7 +8,7 @@ TEMPLATE = app
 CONFIG += app
 CONFIG -= qt
 CONFIG += moc rcc
-CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen tuttle python opengl qt
+CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen opengl qt
 
 win32{
     CONFIG += glew
