@@ -1,5 +1,5 @@
 
-QTreeView,QListView{
+QTreeView,QListView,QHeaderView{
     background-color: rgb(71,71,71);
     color: rgb(200,200,200);
     selection-background-color:rgb(243,149,0);
@@ -31,7 +31,7 @@ QListView:!focus {
 QHeaderView:section{
    background-color: rgb(50,50,50);
    color: rgb(200,200,200);
-   background-selection-color : rgb(243,149,0);
+   selection-background-color : rgb(243,149,0);
    selection-color: rgb(243, 149, 0);
 }
 

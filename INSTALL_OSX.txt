@@ -57,6 +57,11 @@ You can download Eigen from macports :
 
 We're done here for libraries.
 
+### OpenFX
+
+go under Powiter_Core and type
+	git submodule update -i
+
 
 ###Add the config.pri file
 

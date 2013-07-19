@@ -9,9 +9,9 @@
 *
 */
 
- 
 
- 
+
+
 
 
 
@@ -29,6 +29,8 @@
 #include <QtGui/QStandardItemModel>
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
 #include <QtWidgets/QListView>
 #include <vector>
@@ -48,7 +50,7 @@ class SequenceFileDialog;
 
 class  UrlModel : public QStandardItemModel
 {
-    Q_OBJECT   
+    Q_OBJECT
 public:
     enum Roles {
         UrlRole = Qt::UserRole + 1,
@@ -113,12 +115,14 @@ private:
 class SequenceItemDelegate : public QStyledItemDelegate {
     
     Q_OBJECT
+    int _maxW;
     mutable bool _automaticResize;
-    std::vector<std::pair<QString,QString> > _nameMapping;
+    std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
     SequenceFileDialog* _fd;
 public:
     SequenceItemDelegate(SequenceFileDialog* fd);
-    void setNameMapping(std::vector<std::pair<QString,QString> > nameMapping){_nameMapping = nameMapping;_automaticResize = true;}
+
+    void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
     
 signals:
     void contentSizeChanged(QSize) const;
@@ -133,10 +137,10 @@ class SequenceDialogView: public QTreeView{
 public:
     SequenceDialogView(QWidget* parent);
     
-    void updateNameMapping(std::vector<std::pair<QString,QString> > nameMapping);
+    void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
     
 
-    public slots:
+public slots:
     
     void adjustSizeToNewContent(QSize);
     
@@ -149,6 +153,8 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
      */
     mutable std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
     SequenceFileDialog* _fd;
+    mutable QMutex _lock;
+
 public:
     typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > >::iterator SequenceIterator;
     typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > >::const_iterator ConstSequenceIterator;
@@ -180,7 +186,7 @@ class SequenceFileDialog: public QDialog
     Q_OBJECT
     
     std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
-    std::vector<std::pair<QString,QString> > _nameMapping; // the item whose names must be changed
+    std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
     
@@ -227,6 +233,7 @@ class SequenceFileDialog: public QDialog
     
     QStringList _history;
     int _currentHistoryLocation;
+
     
     
 public:
@@ -235,10 +242,13 @@ public:
     
     
     SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string directory = std::string());
+
     virtual ~SequenceFileDialog();
     
     void setRootIndex(const QModelIndex& index);
+
     void setFrameSequence(std::multimap<std::string, std::pair<std::string,std::vector<int> > > frameSequences);
+
     const std::vector<int> frameRangesForSequence(std::string sequenceName, std::string extension) const;
     
     bool isASupportedFileExtension(std::string ext) const;
@@ -261,8 +271,20 @@ public:
 
     bool restoreState(const QByteArray& state);
 
+    bool sequenceModeEnabled() const;
+
+    bool isDirectory(const QString& name) const;
+
+    QFileSystemModel* getFileSystemModel() const {return _model;}
+
+    QModelIndex mapToSource(const QModelIndex& index);
+
+    QModelIndex mapFromSource(const QModelIndex& index);
+
 public slots:
+
     void enterDirectory(const QModelIndex& index);
+
     void setDirectory(const QString &directory);
     void updateView(const QString& directory);
     
@@ -276,13 +298,13 @@ public slots:
     void doubleClickOpen(const QModelIndex& index);
     void seekUrl(const QUrl& url);
     void selectionChanged();
+    void enableSequenceMode(bool);
     
 private:
     
-    QModelIndex mapToSource(const QModelIndex& index);
-    QModelIndex mapFromSource(const QModelIndex& index);
+
     
-    void itemsToSequence(const QModelIndex &parent);
+    void itemsToSequence(const QModelIndex &modelParent, const QModelIndex &parent);
     
     QModelIndex select(const QModelIndex& index);
 };
