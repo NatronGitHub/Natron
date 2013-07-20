@@ -20,10 +20,13 @@
 #include <QtWidgets/QFileIconProvider>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QSplitter>
+#include <QtGui/QIcon>
+#include <QtCore/QRegExp>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QColor>
 #include <QtWidgets/QMenu>
 #include <QtCore/QEvent>
+#include <QtCore/QMimeData>
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
@@ -65,19 +68,19 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     
     _previousButton = new Button(style()->standardIcon(QStyle::SP_ArrowBack),"",_buttonsWidget);
     _buttonsLayout->addWidget(_previousButton);
-    QObject::connect(_previousButton, SIGNAL(pressed()), this, SLOT(previousFolder()));
+    QObject::connect(_previousButton, SIGNAL(clicked()), this, SLOT(previousFolder()));
     
     _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward),"",_buttonsWidget);
     _buttonsLayout->addWidget(_nextButton);
-    QObject::connect(_nextButton, SIGNAL(pressed()), this, SLOT(nextFolder()));
+    QObject::connect(_nextButton, SIGNAL(clicked()), this, SLOT(nextFolder()));
     
     _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp),"",_buttonsWidget);
     _buttonsLayout->addWidget(_upButton);
-    QObject::connect(_upButton, SIGNAL(pressed()), this, SLOT(parentFolder()));
+    QObject::connect(_upButton, SIGNAL(clicked()), this, SLOT(parentFolder()));
     
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder),"",_buttonsWidget);
     _buttonsLayout->addWidget(_createDirButton);
-    QObject::connect(_createDirButton, SIGNAL(pressed()), this, SLOT(createDir()));
+    QObject::connect(_createDirButton, SIGNAL(clicked()), this, SLOT(createDir()));
     
     _previewButton = new Button("preview",_buttonsWidget);
     _previewButton->setVisible(false);//!@todo Implement preview mode for the file dialog
@@ -88,6 +91,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     
     /*creating center*/
     _centerSplitter = new QSplitter(this);
+    _centerSplitter->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
     _favoriteWidget = new QWidget(this);
     _favoriteLayout = new QVBoxLayout(_favoriteWidget);
     _favoriteWidget->setLayout(_favoriteLayout);
@@ -106,12 +111,12 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     _addFavoriteButton = new Button("+",this);
     _addFavoriteButton->setMaximumSize(20,20);
     _favoriteButtonsLayout->addWidget(_addFavoriteButton);
-    QObject::connect(_addFavoriteButton, SIGNAL(pressed()), this, SLOT(addFavorite()));
+    QObject::connect(_addFavoriteButton, SIGNAL(clicked()), this, SLOT(addFavorite()));
 
     _removeFavoriteButton = new Button("-",this);
     _removeFavoriteButton->setMaximumSize(20,20);
     _favoriteButtonsLayout->addWidget(_removeFavoriteButton);
-    QObject::connect(_removeFavoriteButton, SIGNAL(pressed()), _favoriteView, SLOT(removeEntry()));
+    QObject::connect(_removeFavoriteButton, SIGNAL(clicked()), _favoriteView, SLOT(removeEntry()));
 
     _favoriteButtonsLayout->addStretch();
     
@@ -139,31 +144,47 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     _mainLayout->addWidget(_selectionWidget);
     
     /*creating filter zone*/
-    _filterWidget = new QWidget(this);
-    _filterLayout = new QHBoxLayout(_filterWidget);
-    _filterLayout->setContentsMargins(0, 0, 0, 0);
-    _filterWidget->setLayout(_filterLayout);
+    _filterLineWidget = new QWidget(this);
+    _filterLineLayout = new QHBoxLayout(_filterLineWidget);
+    _filterLineLayout->setContentsMargins(0, 0, 0, 0);
+    _filterLineWidget->setLayout(_filterLineLayout);
     
-    _sequenceLabel = new QLabel("Sequences",_filterWidget);
-    _filterLayout->addWidget(_sequenceLabel);
+    _sequenceLabel = new QLabel("Sequences",_filterLineWidget);
+    _filterLineLayout->addWidget(_sequenceLabel);
     
-    _sequenceCheckbox = new QCheckBox(_filterWidget);
+    _sequenceCheckbox = new QCheckBox(_filterLineWidget);
     _sequenceCheckbox->setChecked(true);
-    _filterLayout->addWidget(_sequenceCheckbox);
+    _filterLineLayout->addWidget(_sequenceCheckbox);
     QObject::connect(_sequenceCheckbox,SIGNAL(toggled(bool)),this,SLOT(enableSequenceMode(bool)));
 
     
-    _filterLabel = new QLabel("Filter",_filterWidget);
-    _filterLayout->addWidget(_filterLabel);
+    _filterLabel = new QLabel("Filter",_filterLineWidget);
+    _filterLineLayout->addWidget(_filterLabel);
     
+    _filterWidget = new QWidget(_filterLineWidget);
+    _filterLayout = new QHBoxLayout(_filterWidget);
+    _filterWidget->setLayout(_filterLayout);
+    _filterLayout->setContentsMargins(0,0,0,0);
+    _filterLayout->setSpacing(0);
+
     _filterLineEdit = new LineEdit(_filterWidget);
     _filterLayout->addWidget(_filterLineEdit);
+
+    QImage dropDownImg(IMAGES_PATH"combobox.png");
+    QPixmap pixDropDown = QPixmap::fromImage(dropDownImg);
+    QSize buttonSize(15,_filterLineEdit->sizeHint().height());
+    pixDropDown = pixDropDown.scaled(buttonSize);
+    _filterDropDown = new Button(QIcon(pixDropDown),"",_filterWidget);
+    _filterDropDown->setFixedSize(buttonSize);
+    _filterLayout->addWidget(_filterDropDown);
+    QObject::connect(_filterDropDown,SIGNAL(clicked()),this,SLOT(showFilterMenu()));
+    _filterLineLayout->addWidget(_filterWidget);
     
-    _cancelButton = new Button("Cancel",_filterWidget);
-    _filterLayout->addWidget(_cancelButton);
-    QObject::connect(_cancelButton, SIGNAL(pressed()), this, SLOT(cancelSlot()));
+    _cancelButton = new Button("Cancel",_filterLineWidget);
+    _filterLineLayout->addWidget(_cancelButton);
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(cancelSlot()));
     
-    _mainLayout->addWidget(_filterWidget);
+    _mainLayout->addWidget(_filterLineWidget);
     
     resize(900, 400);
     
@@ -180,6 +201,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
+    QObject::connect(_filterLineEdit,SIGNAL(textEdited(QString)),this,SLOT(applyFilter(QString)));
+
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
@@ -198,7 +221,9 @@ void SequenceFileDialog::enableSequenceMode(bool b){
         _nameMapping.clear();
         _view->updateNameMapping(_nameMapping);
     }
-    setDirectory(directory().path());
+    QString currentDir = _requestedDir;
+    setDirectory(_model->myComputer().toString());
+    setDirectory(currentDir);
     _view->viewport()->update();
 }
 
@@ -247,6 +272,9 @@ void SequenceFileDialog::setDirectory(const QString &directory){
         return;
     _requestedDir = newDirectory;
     _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
+        newDirectory.append("/");
+    }
     _selectionLineEdit->setText(newDirectory);
 
 }
@@ -277,21 +305,39 @@ void SequenceFileDialog::updateView(const QString &directory){
 bool SequenceFileDialog::sequenceModeEnabled() const{
     return _sequenceCheckbox->isChecked();
 }
+
+void SequenceDialogProxyModel::setFilter(QString filter){
+
+    _filter = filter;
+}
+bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
+    if(_filter.isEmpty()) return true;
+    QRegExp rx(_filter,Qt::CaseSensitive,QRegExp::Wildcard);
+    if(!rx.isValid())
+        return true;
+    return rx.exactMatch(path);
+}
+
 bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const{
-    if(!_fd->sequenceModeEnabled()){
-        return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
-    }
+
 
     QModelIndex item = sourceModel()->index(source_row,0,source_parent);
     QString path = item.data(QFileSystemModel::FilePathRole).toString();
+
     if(qobject_cast<QFileSystemModel*>(sourceModel())->isDir(item)){
         return true;
     }
+
+    if(!isAcceptedByUser(item.data().toString())) return false;
+
     int frameNumber;
     QString pathCpy = path;
     QString extension;
     if(!parseFilename(pathCpy,&frameNumber,extension))
         return false;
+    if(!_fd->sequenceModeEnabled()){
+        return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
+    }
     QMutexLocker g(&_lock);
     pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
@@ -510,12 +556,13 @@ SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
     setTextElideMode(Qt::ElideMiddle);
     setEditTriggers(QAbstractItemView::EditKeyPressed);
     setContextMenuPolicy(Qt::CustomContextMenu);
-
+    setDragDropMode(QAbstractItemView::InternalMove);
     setAttribute(Qt::WA_MacShowFocusRect,0);
 }
 void SequenceDialogView::updateNameMapping(std::vector<std::pair<QString, std::pair<qint64, QString> > > nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
 }
+
 void SequenceDialogView::adjustSizeToNewContent(QSize size){
     setColumnWidth(0,size.width());
 }
@@ -550,7 +597,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                 QString nameToPaint = SequenceFileDialog::removePath(_nameMapping[i].second.second);
                 painter->drawText(option.rect,Qt::TextSingleLine,nameToPaint,&r);
                 found = true;
-                if(_automaticResize){
+                if(_automaticResize && _fd->sequenceModeEnabled()){
                     emit contentSizeChanged(QSize(_maxW,0));
                     _automaticResize = false;
                 }
@@ -587,7 +634,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
             painter->drawText(option.rect,Qt::TextSingleLine,str,&r);
             f.setBold(false);
             painter->setFont(f);
-            if(_automaticResize){
+            if(_automaticResize && _fd->sequenceModeEnabled()){
                 emit contentSizeChanged(QSize(_maxW,0));
                 _automaticResize = false;
             }
@@ -612,6 +659,9 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
             }
         }
         if(!found){
+            if(index.column() == 3){
+                _fd->getSequenceView()->setColumnWidth(3,_fd->getSequenceView()->width()/4);
+            }
             QStyledItemDelegate::paint(painter,option,index);
         }
     }else{
@@ -621,7 +671,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
 }
 bool SequenceFileDialog::isDirectory(const QString& name) const{
     QModelIndex index = _model->index(name);
-    return _model->isDir(index);
+    return index.isValid() && _model->isDir(index);
 }
 QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const {
     if(index.column() != 0){
@@ -687,14 +737,12 @@ void SequenceFileDialog::nextFolder(){
 void SequenceFileDialog::parentFolder(){
     QDir dir(_model->rootDirectory());
     QString newDir;
-    cout << "current dir: " << dir.path().toStdString() << endl;
     if(dir.isRoot()){
         newDir = _model->myComputer().toString();
     }else{
         dir.cdUp();
         newDir = dir.absolutePath();
     }
-    cout << "new dir(parent): " << newDir.toStdString() << endl;
     setDirectory(newDir);
 }
 
@@ -746,11 +794,25 @@ void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
 }
 
 void SequenceFileDialog::openSelectedFiles(){
-    QDialog::accept();
+    QString str = _selectionLineEdit->text();
+    if(isDirectory(str)){
+        setDirectory(str);
+    }else{
+        QDialog::accept();
+    }
 }
 void SequenceFileDialog::cancelSlot(){
     QDialog::reject();
 }
+void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
+    if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter){
+        openSelectedFiles();
+        return;
+    }
+    QDialog::keyPressEvent(e);
+}
+
+
 
 QStringList SequenceFileDialog::selectedFiles(){
     QStringList out;
@@ -819,6 +881,54 @@ void SequenceFileDialog::seekUrl(const QUrl& url){
     setDirectory(url.toLocalFile());
 }
 
+void SequenceFileDialog::showFilterMenu(){
+    QPoint position(_filterLineEdit->mapToGlobal(_filterLineEdit->pos()));
+    position.ry() += _filterLineEdit->height();
+    QList<QAction *> actions;
+    QAction *startSlash = new QAction("*/", this);
+    QObject::connect(startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()));
+    actions.append(startSlash);
+
+    QAction *empty = new QAction("*", this);
+    QObject::connect(empty, SIGNAL(triggered()), this, SLOT(emptyFilterSlot()));
+    actions.append(empty);
+
+    QAction *dotStar = new QAction(".*", this);
+    QObject::connect(dotStar, SIGNAL(triggered()), this, SLOT(dotStarFilterSlot()));
+    actions.append(dotStar);
+
+
+    if (actions.count() > 0){
+        QMenu menu(_filterLineEdit);
+        menu.addActions(actions);
+        menu.setFixedSize(_filterLineEdit->width(),menu.sizeHint().height());
+        menu.exec(position);
+    }
+}
+void SequenceFileDialog::dotStarFilterSlot(){
+    QString filter(".*");
+    _filterLineEdit->setText(filter) ;
+    applyFilter(filter);
+}
+
+void SequenceFileDialog::starSlashFilterSlot(){
+    QString filter("*/");
+    _filterLineEdit->setText(filter) ;
+    applyFilter(filter);
+}
+
+void SequenceFileDialog::emptyFilterSlot(){
+    QString filter("*");
+    _filterLineEdit->setText(filter) ;
+    applyFilter(filter);
+}
+
+void SequenceFileDialog::applyFilter(QString filter){
+    _proxy->setFilter(filter);
+    QString currentDir = _requestedDir;
+    setDirectory(_model->myComputer().toString());
+    setDirectory(currentDir);
+}
 
 UrlModel::UrlModel(QObject *parent) : QStandardItemModel(parent), fileSystemModel(0)
 {
@@ -1007,7 +1117,6 @@ FavoriteView::FavoriteView(QWidget *parent) : QListView(parent)
 
 void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls)
 {
-    // ### TODO make icon size dynamic
     setIconSize(QSize(24,24));
     setUniformItemSizes(true);
     urlModel = new UrlModel(this);
@@ -1016,13 +1125,12 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
             this, SLOT(clicked(QModelIndex)));
-
+    setDragDropMode(QAbstractItemView::DragDrop);
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showMenu(QPoint)));
     urlModel->setUrls(newUrls);
     setCurrentIndex(this->model()->index(0,0));
-    setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Preferred);
 }
 
 FavoriteView::~FavoriteView()
@@ -1209,3 +1317,45 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
     return true;
 }
 
+
+QStringList UrlModel::mimeTypes() const{
+    return QStringList(QLatin1String("text/uri-list"));
+}
+QMimeData *UrlModel::mimeData(const QModelIndexList &indexes) const{
+    QList<QUrl> list;
+    for (int i = 0; i < indexes.count(); ++i) {
+        if (indexes.at(i).column() == 0)
+            list.append(indexes.at(i).data(UrlRole).toUrl());
+    }
+    QMimeData *data = new QMimeData();
+    data->setUrls(list);
+    return data;
+}
+bool UrlModel::canDrop(QDragEnterEvent *event){
+    if (!event->mimeData()->formats().contains(mimeTypes().first()))
+        return false;
+
+    const QList<QUrl> list = event->mimeData()->urls();
+    for (int i = 0; i < list.count(); ++i) {
+        QModelIndex idx = fileSystemModel->index(list.at(0).toLocalFile());
+        if (!fileSystemModel->isDir(idx))
+            return false;
+    }
+    return true;
+}
+
+bool UrlModel::dropMimeData(const QMimeData *data, Qt::DropAction , int row, int , const QModelIndex &){
+    if (!data->formats().contains(mimeTypes().first()))
+        return false;
+    std::vector<QUrl> urls;
+    for(int i =0 ; i < data->urls().count() ; i++){
+        urls.push_back(data->urls().at(i));
+    }
+    addUrls(urls, row);
+    return true;
+}
+
+void FavoriteView::dragEnterEvent(QDragEnterEvent *event){
+    if (urlModel->canDrop(event))
+        QListView::dragEnterEvent(event);
+}
