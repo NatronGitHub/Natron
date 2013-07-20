@@ -22,11 +22,11 @@
 # include <windows.h>
 #else // unix
 //# include <errno.h>
-# include <fcntl.h>
-# include <sys/mman.h>      // mmap, munmap.
-# include <sys/stat.h>
-# include <sys/types.h>     // struct stat.
-# include <unistd.h>        // sysconf.
+#include <fcntl.h>
+#include <sys/mman.h>      // mmap, munmap.
+#include <sys/stat.h>
+#include <sys/types.h>     // struct stat.
+#include <unistd.h>        // sysconf.
 #include <cstring>
 #include <cstdio>
 #endif

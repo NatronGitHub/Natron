@@ -28,7 +28,6 @@
 #include "Core/model.h"
 
 
-
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -44,9 +43,9 @@ int main(int argc, char *argv[])
     QPixmap pixmap(filename);
     pixmap=pixmap.scaled(640, 400);
     QLabel* splashScreen = new QLabel;
-    splashScreen->setWindowFlags(Qt::WindowStaysOnTopHint | Qt::SplashScreen);
+    splashScreen->setWindowFlags(Qt::SplashScreen);
     splashScreen->setPixmap(pixmap);
-    splashScreen->show();
+ //   splashScreen->show();
     QCoreApplication::processEvents();
 	/*instanciating the core*/
     Model* coreEngine=new Model();
@@ -54,8 +53,7 @@ int main(int argc, char *argv[])
     Controler* ctrl= Controler::instance();
 	/*we create the GUI in the initControler function*/
     ctrl->initControler(coreEngine,splashScreen);
-    
-    
+
     
     
     return app.exec();

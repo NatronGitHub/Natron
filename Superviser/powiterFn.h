@@ -33,7 +33,7 @@
 #endif
 
 
-#define ROOT "./"
+#define ROOT "/"
 #define CACHE_ROOT_PATH "./"
 #define IMAGES_PATH ":/Resources/Images/"
 #define PLUGINS_PATH ROOT"Plugins"

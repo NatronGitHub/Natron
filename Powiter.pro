@@ -8,7 +8,7 @@ TEMPLATE = app
 CONFIG += app
 CONFIG -= qt
 CONFIG += moc rcc
-CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen tuttle python opengl qt
+CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen opengl qt
 
 win32{
     CONFIG += glew
@@ -25,7 +25,6 @@ Debug:OBJECTS_DIR = debug/.obj
 Debug:MOC_DIR = debug/.moc
 Debug:RCC_DIR = debug/.rcc
 Debug:UI_DIR = debug/.ui
-
 
 unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7
@@ -173,6 +172,8 @@ INSTALLS += target
 RESOURCES += \
     Resources.qrc
 
+
+INSTALLS += data
 OTHER_FILES += \
     config.pri
 

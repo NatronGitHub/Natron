@@ -23,7 +23,7 @@
 #include "Core/singleton.h"
 #include "Core/metadata.h"
 #include <map>
-
+#include <vector>
 class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
  that means the powiter settings are unique and there cannot be 2 instances living at the same time.*/
@@ -70,6 +70,8 @@ public:
         
         /*use to initialise default mapping*/
         void fillMap(std::map<std::string,PluginID*>& defaultMap);
+        
+        std::vector<std::string> supportedFileTypes() const;
     private:
         
         std::map<std::string,PluginID*> _fileTypesMap;

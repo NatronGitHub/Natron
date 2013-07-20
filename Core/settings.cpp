@@ -84,3 +84,11 @@ void Settings::WritersSettings::fillMap(std::map<std::string,PluginID*>& default
         _fileTypesMap.insert(*it);
     }
 }
+
+std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
+    vector<string> out;
+    for(std::map<std::string,PluginID*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();it++){
+        out.push_back(it->first);
+    }
+    return out;
+}

@@ -28,13 +28,6 @@
 #include <vector>
 #include <ImfStandardAttributes.h>
 #include <boost/noncopyable.hpp>
-
-
-#include <tuttle/host/HostDescriptor.hpp>
-#include <tuttle/host/ofx/OfxhPluginCache.hpp>
-#include <tuttle/host/ofx/OfxhImageEffectPluginCache.hpp>
-#include <tuttle/host/Preferences.hpp>
-
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
@@ -211,10 +204,7 @@ private:
     
     ViewerCache* _viewerCache;
         
-    tuttle::host::Host _ofxHost;
-	tuttle::host::ofx::imageEffect::OfxhImageEffectPluginCache _imageEffectPluginCache;
-	tuttle::host::ofx::OfxhPluginCache _ofxPluginCache;
-    tuttle::host::Preferences _tuttlePreferences;
+   
 };
 
 #endif // MODEL_H

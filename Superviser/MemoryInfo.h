@@ -87,25 +87,25 @@ inline size_t getSystemTotalRAM(){
 #endif
     
 }
-// prints RAM value as KiB, MiB or GiB
-inline std::string printAsRAM(size_t v){
+// prints RAM value as KB, MB or GB
+inline std::string printAsRAM(size_t v,int precision = 6){
     QString toStr = QString::number(v);
     QString outStr;
     if(toStr.size()<=9 && toStr.size()>=7){ 
-        v/= 1000000;
-        toStr = QString::number(v);
+        double res = (double)v/1000000.0;
+        toStr = QString::number(res,'f',precision);
         outStr.append(toStr);
-        outStr.append(" Mb");
+        outStr.append(" MB");
     }else if(toStr.size()>=10){
-        v/= 1000000000;
-        toStr = QString::number(v);
+        double res = v/1000000000.0;
+        toStr = QString::number(res,'f',precision);
         outStr.append(toStr);
-        outStr.append(" Gb");
+        outStr.append(" GB");
     }else{
-        v/= 1000;
-        toStr = QString::number(v);
+        double res = v/ 1000.0;
+        toStr = QString::number(res,'f',precision);
         outStr.append(toStr);
-        outStr.append(" Kb");
+        outStr.append(" KB");
     }
     
     return outStr.toStdString();
