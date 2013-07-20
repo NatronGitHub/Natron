@@ -857,9 +857,6 @@ QStringList SequenceFileDialog::selectedFiles(){
             }
             
         }
-        
-    }else{ // check if there's something interesting in the line edit
-        
     }
     return out;
 }
