@@ -192,7 +192,11 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     // settings.beginGroup(QLatin1String("Qt"));
     // restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
     std::vector<QUrl> initialBookmarks;
+#ifndef __POWITER_WIN32__
     initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
+#else
+    initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("C:")));
+#endif
     initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
     _favoriteView->setModelAndUrls(_model, initialBookmarks);
 
