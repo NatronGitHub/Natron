@@ -27,7 +27,7 @@
 #include <QtCore/QTextStream>
 #include <sstream>
 using namespace std;
-
+using namespace Powiter_Enums;
 
 MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
@@ -35,7 +35,7 @@ MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
 bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
 #ifdef PW_DEBUG
     if(QFile::exists(path)){
-        cout << "WARNING: A file with the same name already exist : " << path
+        cout << "WARNING: A file with the same name already exists : " << path
         << " (If displayed on startup ignore it, this is a debug message "
         << " , if not,it probably means your hashing function does not scatter"
         << " the entries efficiently enough)."<< endl;

@@ -94,7 +94,7 @@ private:
     static std::vector<double> expScale(int N,float inf,float sup){
         std::vector<double> out;
         for(int i =0;i < N;i++){
-            out.push_back(powf(i,1.f/2.2)*(sup-inf)/(powf(N-1,1.f/2.2)) + inf);
+            out.push_back(powf(i,1.f/2.2f)*(sup-inf)/(powf(N-1,1.f/2.2f)) + inf);
         }
         return out;
     }

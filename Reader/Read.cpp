@@ -26,6 +26,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/row.h"
 using namespace std;
+using namespace Powiter_Enums;
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
 {
 	

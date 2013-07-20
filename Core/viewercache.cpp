@@ -38,7 +38,7 @@
 #include "Core/displayFormat.h"
 #include "Core/viewerNode.h"
 using namespace std;
-
+using namespace Powiter_Enums;
 #define gl_viewer currentViewer->viewer
 
 ViewerCache::ViewerCache() : AbstractDiskCache(0){}

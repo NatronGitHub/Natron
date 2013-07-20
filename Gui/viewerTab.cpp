@@ -40,6 +40,8 @@
 #include "Gui/button.h"
 #include "Gui/mainGui.h"
 #include "Gui/tabwidget.h"
+
+using namespace Powiter_Enums;
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
 {
     

@@ -26,18 +26,18 @@ public:
     
     sRGB():Lut(){}
     static  float toSRGB(float v){
-        if (v<=0.0031308){
-			return (12.92*v);
+        if (v<=0.0031308f){
+			return (12.92f*v);
 		}else{
-			return (((1.055)*powf(v,1.f/2.4))-0.055);
+			return (((1.055f)*powf(v,1.f/2.4f))-0.055f);
 		}
     }
 	float to_byte(float v){
         //to SRGB
-        if (v<=0.0031308){
-			return (12.92*v)*255.f;
+        if (v<=0.0031308f){
+			return (12.92f*v)*255.f;
 		}else{
-			return (((1.055)*powf(v,1.f/2.4))-0.055)*255.f;
+			return (((1.055f)*powf(v,1.f/2.4f))-0.055f)*255.f;
 		}
 	}
 
@@ -45,10 +45,10 @@ public:
 	float from_byte(float v){
         // to linear
         v/=255.f;
-		if(v<=0.04045){
-			return (v/12.92);
+		if(v<=0.04045f){
+			return (v/12.92f);
 		}else{
-			return (powf((v+0.055)/(1.055),2.4));
+			return (powf((v+0.055f)/(1.055f),2.4f));
 		}
 	}
 };
@@ -57,15 +57,15 @@ public:
     
     Rec709() : Lut(){}
     static float toREC709(float v){
-        return v < 0.018 ? v*4.500 : (1.099*powf(v,0.45) - 0.099);
+        return v < 0.018f ? v*4.500f : (1.099f*powf(v,0.45f) - 0.099f);
     }
     float to_byte(float v){
         //to Rec709 :
-        return v < 0.018 ? v*4.500*255.f : (1.099*powf(v,0.45) - 0.099)*255.f;   
+        return v < 0.018f ? v*4.500f*255.f : (1.099f*powf(v,0.45f) - 0.099f)*255.f;   
     }
     float from_byte(float v){
         //to linear
-        return v <= 0.081 ? (v/4.5)*255.f : powf((v+0.099)/1.099,1.f/0.45)*255.f;
+        return v <= 0.081f ? (v/4.5f)*255.f : powf((v+0.099f)/1.099f,1.f/0.45f)*255.f;
     }
 };
 

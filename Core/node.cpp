@@ -35,7 +35,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
 using namespace std;
-
+using namespace Powiter_Enums;
 void Node::copy_info(Node* parent){
     clear_info();
     const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());

@@ -769,7 +769,7 @@
              *@brief Replicate of the glOrtho func, but for an identity matrix.
              WARNING: All the content of matrix will be modified when returning from this function.
              **/
-            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far_);
+            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_);
             
             /**
              *@brief Replicate of the glScale function but for a custom matrix

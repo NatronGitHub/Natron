@@ -25,6 +25,7 @@
 #include "Core/lutclasses.h"
 #include "Core/row.h"
 using namespace std;
+using namespace Powiter_Enums;
 ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
 
 void ReadQt::initializeColorSpace(){

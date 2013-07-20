@@ -41,7 +41,8 @@
 #include "Gui/operatornode_ui.h"
 #include <cstdlib>
 
-
+using namespace std;
+using namespace Powiter_Enums;
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
 QGraphicsView(scene,parent),
 _lastSelectedPos(0,0),

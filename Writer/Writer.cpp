@@ -31,7 +31,7 @@
 #include "Core/settings.h"
 
 using namespace std;
-
+using namespace Powiter_Enums;
 Writer::Writer():
 OutputNode(),
 _requestedChannels(Mask_RGB), // temporary

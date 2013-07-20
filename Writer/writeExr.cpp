@@ -25,7 +25,7 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 using namespace std;
-
+using namespace Powiter_Enums;
 WriteExr::WriteExr(Writer* writer):Write(writer),outfile(0),_lock(0){
     
 }

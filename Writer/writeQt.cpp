@@ -24,6 +24,7 @@
 #include "Core/row.h"
 
 using namespace std;
+using namespace Powiter_Enums;
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
 std::vector<std::string> WriteQt::fileTypesEncoded(){
     std::vector<std::string> out;

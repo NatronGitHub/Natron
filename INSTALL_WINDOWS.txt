@@ -72,7 +72,8 @@ You have to define the locations of the required libraries. This is done by crea
 
 - create the config.pri file next to the Powiter.pro file.
 
-You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system.
+You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system. Note that for Qt you just need to specify where the include files are.
+For Eigen some issues might arise if it is already included in the system search path. Generally I left the eigen{} field blank in the config.pro to work around it.
 
 INCLUDEPATH is the path to the include files
 
@@ -80,7 +81,7 @@ LIBS is the path to the libs
 
 openexr2{
     INCLUDEPATH += $$quote(C:\\Program Files\OpenExr_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Release) -lIlmimf -lIex -lImath -lHalf -lIlmThread
+    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
@@ -101,8 +102,9 @@ boost{
     INCLUDEPATH +=  $$quote(C:\\)
 }
 
-qtincludes{
-    INCLUDEPATH +=  $$quote(C:\Qt\Qt5.0.2_opengl\5.0.2\msvc2010_opengl\include)
+qt{
+    INCLUDEPATH +=  $$quote(C:\Qt\Qt5.1.0\5.1.0\msvc2010_opengl\include)
+
 }
 
 glew{
@@ -110,8 +112,14 @@ glew{
     LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
 }
 eigen{
-	INCLUDEPATH +=  $$quote(C:\\)
+
 }
+
+###Copy the dll's over
+
+Copy all the required dll's to the executable directory.
+If Powiter launches that means you got it all right;)
+
 ###(Optional) Build on Visual Studio:
 
 You can generate a visual studio (2010) project by typing the following command where Powiter.pro is located:

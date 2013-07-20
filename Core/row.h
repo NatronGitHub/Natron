@@ -26,7 +26,7 @@
 #define MAX_BUFFERS_PER_ROW 100
 
 
-using namespace Powiter_Enums;
+
 
 /*This class represent one line in the image.
  *One line is a set of buffers (channels) defined
@@ -168,10 +168,10 @@ public:
     void copy(const Row *source,ChannelSet channels,int o,int r){_row->copy(source,channels,o,r);}
     
 	/*activate the channel C for this row and allocates memory for it*/
-    void turnOn(Channel c){_row->turnOn(c);}
+    void turnOn(Powiter_Enums::Channel c){_row->turnOn(c);}
     
 	/*set to 0s the entirety of the chnnel c*/
-    void erase(Channel c){_row->erase(c);}
+    void erase(Powiter_Enums::Channel c){_row->erase(c);}
     void erase(ChannelSet set){_row->erase(set);}
         
     /*DO NOT CALL THESE EVER*/

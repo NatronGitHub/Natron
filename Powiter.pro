@@ -12,6 +12,8 @@ CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen opengl qt
 
 win32{
     CONFIG += glew
+    CONFIG += qt
+    QT += gui core opengl concurrent widgets
 }
 
 Release:DESTDIR = release

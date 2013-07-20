@@ -34,47 +34,48 @@
 #ifndef PowiterOsX_LRUcache_h
 #define PowiterOsX_LRUcache_h
 
+#include "Superviser/powiterFn.h"
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QReadLocker>
 #include <QtCore/QWriteLocker>
-#include <boost/bimap.hpp>
-#include <boost/bimap/list_of.hpp>
-#include <boost/bimap/set_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
-#include "Superviser/powiterFn.h"
 #include <map>
 #include <list>
 #include <iostream>
+#include <boost/bimap/list_of.hpp>
+#include <boost/bimap/set_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bimap.hpp>
 
 
-/*4 types of LRU caches are defined here:
- 
- - STL with hashing : std::unordered_map
- - STL with comparison: std::map
- - BOOST with hashing: boost::bimap with boost::unordered_set_of
- - BOOST with comparison : boost::bimap with boost::set_of
- 
- Using the appropriate #define , the software can be tuned to use a specific 
- underlying container version for all caches.
- 
- USE_VARIADIC_TEMPLATES : define this if c++11 features like var args are
- supported. It will make use of variadic templates to greatly 
- reduce the line of codes necessary, and it will also make it possible
- to use STL with hashing (std::unordered_map), as it is defined in c++11
- 
- CACHE_USE_BOOST : define this to tell the compiler to use boost internally
- for caches. Otherwise it will fallback on a STL version
- 
- CACHE_USE_HASH : define this to tell the compiler to use hashing
- (std::unordered_map or boost::unordered_set_of) instead of a
- tree-based version (std::map or boost::set_of).
- 
- WARNING:  definining CACHE_USE_HASH and not defining
- CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
- defined otherwise it will not compile. (no std::unordered_map
- support on c++98)
- 
- */
+
+/**@brief 4 types of LRU caches are defined here:
+ *
+ *- STL with hashing : std::unordered_map
+ *- STL with comparison: std::map
+ *- BOOST with hashing: boost::bimap with boost::unordered_set_of
+ *- BOOST with comparison : boost::bimap with boost::set_of
+ *
+ *Using the appropriate #define , the software can be tuned to use a specific 
+ *underlying container version for all caches.
+ *
+ *USE_VARIADIC_TEMPLATES : define this if c++11 features like var args are
+ *supported. It will make use of variadic templates to greatly 
+ *reduce the line of codes necessary, and it will also make it possible
+ *to use STL with hashing (std::unordered_map), as it is defined in c++11
+ *
+ *CACHE_USE_BOOST : define this to tell the compiler to use boost internally
+ *for caches. Otherwise it will fallback on a STL version
+ *
+ *CACHE_USE_HASH : define this to tell the compiler to use hashing
+ *(std::unordered_map or boost::unordered_set_of) instead of a
+ *tree-based version (std::map or boost::set_of).
+ *
+ *WARNING:  definining CACHE_USE_HASH and not defining
+ *CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
+ *defined otherwise it will not compile. (no std::unordered_map
+ *support on c++98)
+ *
+ **/
 
 #ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
 

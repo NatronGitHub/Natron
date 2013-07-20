@@ -30,6 +30,7 @@
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Superviser/controler.h"
+using namespace Powiter_Enums;
 Viewer::Viewer(ViewerCache* cache,TextureCache* textureCache):OutputNode(),
 _viewerInfos(0),
 _uiContext(0),

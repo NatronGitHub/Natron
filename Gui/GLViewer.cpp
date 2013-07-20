@@ -989,9 +989,9 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         QPointF p;
         float increment=0.f;
         if(_zoomCtx.zoomFactor<1.f)
-            increment=0.1;
+            increment=0.1f;
         else
-            increment=0.1*_zoomCtx.zoomFactor;
+            increment=0.1f*_zoomCtx.zoomFactor;
         if(event->delta() >0){
             
             _zoomCtx.zoomFactor+=increment;
@@ -1033,7 +1033,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 void ViewerGL::zoomSlot(int v){
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         float value = v/100.f;
-        if(value <0.1) value = 0.1;
+        if(value < 0.1f) value = 0.1f;
         _zoomCtx.zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
@@ -1578,13 +1578,13 @@ int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matr
 }
 
 /*Replicate of the glOrtho func, but for a custom matrix*/
-void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near,float far_){
+void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_){
     float r_l = right - left;
     float t_b = top - bottom;
-    float f_n = far_ - near;
+    float f_n = far_ - near_;
     float tx = - (right + left) / (right - left);
     float ty = - (top + bottom) / (top - bottom);
-    float tz = - (far_ + near) / (far_ - near);
+    float tz = - (far_ + near_) / (far_ - near_);
     matrix(0,0) = 2.0f / r_l;
     matrix(0,1) = 0.0f;
     matrix(0,2) = 0.0f;
