@@ -37,8 +37,8 @@
 #include <string>
 #include <iostream>
 
-class Button;
 class LineEdit;
+class Button;
 class QCheckBox;
 class QWidget;
 class QLabel;
@@ -46,6 +46,7 @@ class QHBoxLayout;
 class QVBoxLayout;
 class QSplitter;
 class SequenceFileDialog;
+
 
 
 class  UrlModel : public QStandardItemModel
@@ -60,6 +61,11 @@ public:
     UrlModel(QObject *parent = 0);
     bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
     
+    QStringList mimeTypes() const;
+    QMimeData *mimeData(const QModelIndexList &indexes) const;
+    bool canDrop(QDragEnterEvent *event);
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+
     void setUrls(const std::vector<QUrl> &urls);
     void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
     std::vector<QUrl> urls() const;
@@ -107,7 +113,7 @@ public slots:
     void editUrl();
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
-    
+    virtual void dragEnterEvent(QDragEnterEvent *event);
 private:
     UrlModel *urlModel;
 };
@@ -123,7 +129,6 @@ public:
     SequenceItemDelegate(SequenceFileDialog* fd);
 
     void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
-    
 signals:
     void contentSizeChanged(QSize) const;
 protected:
@@ -139,7 +144,6 @@ public:
     
     void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
     
-
 public slots:
     
     void adjustSizeToNewContent(QSize);
@@ -154,6 +158,7 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
     mutable std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
     SequenceFileDialog* _fd;
     mutable QMutex _lock;
+    QString _filter;
 
 public:
     typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > >::iterator SequenceIterator;
@@ -165,6 +170,8 @@ public:
     
     std::multimap<std::string, std::pair<std::string,std::vector<int> > > getFrameSequenceCopy() const{return _frameSequences;}
     
+    void setFilter(QString filter);
+
 protected:
     virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
 private:
@@ -178,6 +185,10 @@ private:
      **/
     bool parseFilename(QString &path, int* frameNumber, QString &extension) const;
     
+    /*
+    *Check if the path is accepted by the filter installed by the user
+    */
+    bool isAcceptedByUser(const QString& path) const;
 };
 
 
@@ -213,18 +224,22 @@ class SequenceFileDialog: public QDialog
     QCheckBox* _sequenceCheckbox;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
+    Button* _filterDropDown;
+
     
     QHBoxLayout* _buttonsLayout;
     QHBoxLayout* _centerLayout;
     QVBoxLayout* _favoriteLayout;
     QHBoxLayout* _favoriteButtonsLayout;
     QHBoxLayout* _selectionLayout;
+    QHBoxLayout* _filterLineLayout;
     QHBoxLayout* _filterLayout;
     
     QWidget* _buttonsWidget;
     QWidget* _favoriteWidget;
     QWidget* _favoriteButtonsWidget;
     QWidget* _selectionWidget;
+    QWidget* _filterLineWidget;
     QWidget* _filterWidget;
     
     FavoriteView* _favoriteView;
@@ -277,6 +292,8 @@ public:
 
     QFileSystemModel* getFileSystemModel() const {return _model;}
 
+    SequenceDialogView* getSequenceView() const {return _view;}
+
     QModelIndex mapToSource(const QModelIndex& index);
 
     QModelIndex mapFromSource(const QModelIndex& index);
@@ -299,7 +316,15 @@ public slots:
     void seekUrl(const QUrl& url);
     void selectionChanged();
     void enableSequenceMode(bool);
+    void showFilterMenu();
+    void dotStarFilterSlot();
+    void starSlashFilterSlot();
+    void emptyFilterSlot();
+    void applyFilter(QString filter);
+
     
+protected:
+    virtual void keyPressEvent(QKeyEvent *e);
 private:
     
 
