@@ -59,8 +59,16 @@ We're done here for libraries.
 
 ### OpenFX
 
-go under Powiter_Core and type
+Go under Powiter_Core and type
 	git submodule update -i
+
+Navigate to libs/OpenFX/HostSupport in a terminal
+ and type
+	xcodebuild install
+OR open the .xcodeproj with Xcode and press command+B (Product->build).
+
+This will install libofxHost.a under /private/HostSupport.dist/usr/local/lib
+	
 
 
 ###Add the config.pri file
@@ -118,7 +126,10 @@ opengl{
 eigen{
     INCLUDEPATH += /usr/local/include
 }
-
+openfx{
+    INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
+    LIBS += -L/private/tmp/HostSupport.dst/usr/local/lib -lofxHost
+}
 
 ###(Optional) Build on Xcode:
 
