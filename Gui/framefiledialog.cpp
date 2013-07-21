@@ -192,7 +192,11 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
     // settings.beginGroup(QLatin1String("Qt"));
     // restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
     std::vector<QUrl> initialBookmarks;
+#ifndef __POWITER_WIN32__
     initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
+#else
+	initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("C:")));
+#endif
     initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
     _favoriteView->setModelAndUrls(_model, initialBookmarks);
 
@@ -822,6 +826,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         QString prefix = dir.absolutePath()+QDir::separator();
         QModelIndex sequenceIndex = indexes.at(0);
         QString path = sequenceIndex.data().toString();
+		cout << path.toStdString() << endl;
         path = prefix+path;
         QString originalPath = path;
         QString ext = SequenceFileDialog::removeFileExtension(path);
@@ -849,6 +854,7 @@ QStringList SequenceFileDialog::selectedFiles(){
             for(int j = 0 ; j < dirEntries.size(); j++){
                 QString s = dirEntries.at(j);
                 s = prefix+s;
+
                 if(QFile::exists(s) && s.contains(path) && s.contains(ext)){
                     out.append(s);
                     i++;
