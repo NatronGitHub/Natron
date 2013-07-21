@@ -195,7 +195,9 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string>
 #ifndef __POWITER_WIN32__
     initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
 #else
-	initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("C:")));
+
+    initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("C:")));
+
 #endif
     initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
     _favoriteView->setModelAndUrls(_model, initialBookmarks);
@@ -863,9 +865,6 @@ QStringList SequenceFileDialog::selectedFiles(){
             }
             
         }
-        
-    }else{ // check if there's something interesting in the line edit
-        
     }
     return out;
 }
