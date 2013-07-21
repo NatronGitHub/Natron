@@ -15,7 +15,7 @@
 
 
 #ifdef _WIN32
-#include <vld.h> //< visual studio memory leaks finder header
+//#include <vld.h> //< visual studio memory leaks finder header
 #endif
 #include <iostream>
 #include <QtWidgets/QApplication>
@@ -33,8 +33,8 @@ using namespace std;
 int main(int argc, char *argv[])
 {	
 #ifdef _WIN32
-	VLDEnable();
-	VLDReportLeaks();
+	//VLDEnable();
+	//VLDReportLeaks();
 #endif
     QApplication app(argc, argv);
     /*Display a splashscreen while we wait for the engine to load*/

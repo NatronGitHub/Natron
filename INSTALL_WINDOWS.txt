@@ -63,6 +63,31 @@ On windows,OpenGL API is not up to date to the features we need. You'll need to 
 
 Download Eigen from (eigen website)[http://eigen.tuxfamily.org/index.php?title=Main_Page]
 
+### OpenFX
+
+In the Powiter_Core directory, open a terminal and type
+	git submodule update -i
+This will properly fetch from github a fork of OpenFX into Powiter_Core/libs/OpenFX.
+Got into OpenFX/HostSupport, and open the .sln file with visual studio. Note that this is a vs2005 solution file and if you have a greater version of visual, it will ask for conversion. Do it.
+Once the project is loaded,change the active build configuration to Release if necessary.
+Right click on the HostSupport project, click properties.
+In the panel, go under Configuration Properties --> C/C++ --> Code Generation. Make sure that the current configuration (displayed in the combobox on the top of the panel) is set to Release-Static. Now the panel displayed for the Code Generation must match these settings, otherwise it will not link with Powiter:
+
+Enable Minimal Rebuild : No
+Enable C++ Exceptions : Yes
+Smaller Type check : No
+Basic RunTime checks: Default
+Runtime Library : Multi-threaded DLL (/MD)
+Struct member alignement : Default
+Buffer Security check: Yes
+Enable enhanced instruction set: Not set
+Floating point model: Precise
+
+Now you can click Apply and OK. Right click on the "Solution 'HostSupport'" in the Solution explorer and click Build Solution.
+It should build everything needed under a directory named as such : HostSupport-Release-Static-Win32
+
+If you'd like to generate a debug version of the library you can reproduce the steps for the Release version, but instead, in the Code Generation properties, you must set the Runtime Library to 
+Multi-threaded Debug DLL (/MDd).
 
 We're done here for libraries.
 
@@ -113,6 +138,11 @@ glew{
 }
 eigen{
 
+}
+openfx{
+    INCLUDEPATH +=  $$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\include)
+    Debug:LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\lib\debug) -lHostSupport
+    Release:LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\lib\release) -lHostSupport
 }
 
 ###Copy the dll's over
