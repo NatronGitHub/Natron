@@ -6,15 +6,25 @@
 TARGET = Powiter
 TEMPLATE = app
 CONFIG += app
-CONFIG -= qt
 CONFIG += moc rcc
-CONFIG += openexr2 ftgl freetype freetype2 boost ffmpeg eigen opengl qt openfx
+
+CONFIG += openexr ftgl freetype2 boost ffmpeg eigen2 opengl qt
+QT += gui core opengl concurrent
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 win32{
     CONFIG += glew
-    CONFIG += qt
-    QT += gui core opengl concurrent widgets
 }
+
+unix {
+     # on Unix systems, only the "boost" option needs to be defined in config.pri
+     CONFIG += link_pkgconfig
+     openexr:   PKGCONFIG += OpenEXR
+     ftgl:      PKGCONFIG += ftgl
+     ffmpeg:    PKGCONFIG += libavcodec libavformat libavutil libswscale libavdevice libavfilter
+     freetype2: PKGCONFIG += freetype2
+     eigen2:    PKGCONFIG += eigen2
+} #unix
 
 Release:DESTDIR = release
 Release:OBJECTS_DIR = release/.obj
@@ -34,8 +44,12 @@ unix:macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 include(config.pri)
 
 
+<<<<<<< HEAD
 INCLUDEPATH += $$PWD/
 INCLUDEPATH += $$PWD/libs/OpenFX/include
+=======
+#INCLUDEPATH += $$PWD/
+>>>>>>> master
 
 
 SOURCES += \

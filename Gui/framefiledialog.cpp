@@ -10,27 +10,29 @@
 
 
 #include "framefiledialog.h"
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QVBoxLayout>
+
+#include <algorithm>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QtGui/QPainter>
-#include <QtWidgets/QListView>
-#include <QtWidgets/QHeaderView>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QFileIconProvider>
-#include <QtWidgets/QInputDialog>
-#include <QtWidgets/QSplitter>
+#include <QListView>
+#include <QHeaderView>
+#include <QCheckBox>
+#include <QLabel>
+#include <QFileIconProvider>
+#include <QInputDialog>
+#include <QSplitter>
 #include <QtGui/QIcon>
 #include <QtCore/QRegExp>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QColor>
-#include <QtWidgets/QMenu>
+#include <QMenu>
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
+
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
-#include <algorithm>
 #include "Superviser/MemoryInfo.h"
 
 using namespace std;
@@ -246,7 +248,7 @@ void SequenceFileDialog::selectionChanged(){
             allFiles.replace(i, QString(QLatin1Char('"') + allFiles.at(i) + QLatin1Char('"')));
         }
 
-    QString finalFiles = allFiles.join(QLatin1Char(' '));
+    QString finalFiles = allFiles.join(QString(QLatin1Char(' ')));
     for(unsigned int i = 0 ; i < _nameMapping.size(); i++){
         if(finalFiles == _nameMapping[i].first){
             finalFiles =  _nameMapping[i].second.second;

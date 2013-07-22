@@ -18,7 +18,7 @@
 
 #ifndef PowiterOsX_lineEdit_h
 #define PowiterOsX_lineEdit_h
-#include <QtWidgets/QLineEdit>
+#include <QLineEdit>
 
 class QPaintEvent;
 class LineEdit : public QLineEdit {

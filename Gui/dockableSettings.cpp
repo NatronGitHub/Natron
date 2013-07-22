@@ -16,15 +16,19 @@
 
 
 #include "Gui/dockableSettings.h"
+
+#include <QLayout>
+#include <QTabWidget>
+
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
 #include "Gui/knob.h"
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"
-#include <QtWidgets/QtWidgets>
 #include "Gui/button.h"
 #include "Gui/DAG.h"
+
 using namespace std;
 SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_nodeGUI(NodeUi),_minimized(false){
     

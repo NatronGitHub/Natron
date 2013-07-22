@@ -19,9 +19,9 @@
 #define GUI_H
 #include <QtCore/QVariant>
 #include "Superviser/powiterFn.h"
-#include <QtWidgets/QMainWindow>
+#include <QMainWindow>
 #include <boost/noncopyable.hpp>
-#include <QtWidgets/QDialog>
+#include <QDialog>
 #include <map>
 class QString;
 class QAction;

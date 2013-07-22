@@ -15,14 +15,23 @@
 
 
 #include "Gui/mainGui.h"
+
+#include <cassert>
+#include <QApplication>
+#include <QAction>
+#include <QMenu>
+#include <QLayout>
+#include <QDesktopWidget>
+#include <QSplitter>
+#include <QMenuBar>
+#include <QToolBox>
+
 #include "Gui/texturecache.h"
 #include "Superviser/controler.h"
 #include "Gui/GLViewer.h"
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
-#include <QtWidgets/QtWidgets>
 #include "Core/settings.h"
-#include <cassert>
 #include "Gui/tabwidget.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/timeline.h"

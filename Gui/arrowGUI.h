@@ -17,7 +17,7 @@
 
 #ifndef ARROW_H
 #define ARROW_H
-#include <QtWidgets/QGraphicsLineItem>
+#include <QGraphicsLineItem>
 #include <QtCore/QPoint>
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;

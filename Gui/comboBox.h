@@ -20,7 +20,7 @@
 #ifndef PowiterOsX_comboBox_h
 #define PowiterOsX_comboBox_h
 
-#include <QtWidgets/QFrame>
+#include <QFrame>
 #include <QtCore/QStringList>
 #include <vector>
 #include <QtGui/QKeySequence>

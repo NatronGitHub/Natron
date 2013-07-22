@@ -16,16 +16,20 @@
 
 
 #include "tabwidget.h"
-#include <QtWidgets/QtWidgets>
-#include "Superviser/powiterFn.h"
+
+#include <QLayout>
+#include <QMenu>
+#include <QApplication>
 #include <QtGui/QImage>
 #include <QtGui/QPixmap>
 #include <QtGui/QIcon>
+#include <QScrollArea>
+
+#include "Superviser/powiterFn.h"
 #include "Gui/button.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
 #include "Gui/DAG.h"
-#include <QtWidgets/QScrollArea>
 #include "Gui/viewerTab.h"
 #include "Core/viewerNode.h"
 
@@ -419,8 +423,12 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     QString text = _tabWidget->getTabName(_tabWidget->currentWidget());
     mimeData->setData("Tab", text.toLatin1());
     drag->setMimeData(mimeData);
+#if QT_VERSION < 0x050000
+    QPixmap pix = QPixmap::grabWidget(_tabWidget);
+#else
     QPixmap pix = _tabWidget->grab();
     drag->setPixmap(pix);
+#endif
     drag->exec();
 }
 //

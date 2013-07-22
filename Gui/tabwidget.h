@@ -21,10 +21,10 @@
 
 #include <iostream>
 #include <vector>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QFrame>
+#include <QWidget>
+#include <QFrame>
 #include <QtCore/QPoint>
-#include <QtWidgets/QTabBar>
+#include <QTabBar>
 class QStyle;
 class QHBoxLayout;
 class QPushButton;

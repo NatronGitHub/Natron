@@ -19,12 +19,12 @@
 #ifndef __PowiterOsX__filedialog__
 #define __PowiterOsX__filedialog__
 
-#include <QtWidgets/QStyledItemDelegate>
-#include <QtWidgets/QTreeView>
-#include <QtWidgets/QDialog>
-#include <QtCore/QSortFilterProxyModel>
-#include <QtWidgets/QFileSystemModel>
-#include <QtWidgets/QDialogButtonBox>
+#include <QStyledItemDelegate>
+#include <QTreeView>
+#include <QDialog>
+#include <QSortFilterProxyModel>
+#include <QFileSystemModel>
+#include <QDialogButtonBox>
 #include <QtCore/QByteArray>
 #include <QtGui/QStandardItemModel>
 #include <QtCore/QStringList>
@@ -32,7 +32,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
-#include <QtWidgets/QListView>
+#include <QListView>
 #include <vector>
 #include <string>
 #include <iostream>

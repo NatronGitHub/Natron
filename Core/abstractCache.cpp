@@ -20,14 +20,42 @@
 
 
 #include "abstractCache.h"
-#include "Superviser/powiterFn.h"
-#include "Core/mappedfile.h"
+
+#include <sstream>
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
-#include <sstream>
+
+#include "Superviser/powiterFn.h"
+#include "Core/mappedfile.h"
+
 using namespace std;
 using namespace Powiter_Enums;
+
+#if QT_VERSION < 0x050000
+static bool removeRecursively(const QString & dirName)
+{
+    bool result = false;
+    QDir dir(dirName);
+
+    if (dir.exists(dirName)) {
+        Q_FOREACH(QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst)) {
+            if (info.isDir()) {
+                result = removeRecursively(info.absoluteFilePath());
+            }
+            else {
+                result = QFile::remove(info.absoluteFilePath());
+            }
+
+            if (!result) {
+                return result;
+            }
+        }
+        result = dir.rmdir(dirName);
+    }
+    return result;
+}
+#endif
 
 MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
@@ -460,10 +488,14 @@ void AbstractDiskCache::cleanUpDiskAndReset(){
     cacheFolderName.append("/");
     QString cachePath(cacheFolderName);
     cachePath.append(cacheName().c_str());
+#   if QT_VERSION < 0x050000
+    removeRecursively(cachePath);
+#   else
     QDir dir(cachePath);
     if(dir.exists()){
         dir.removeRecursively();
     }
+#endif
     initializeSubDirectories();
     
 }

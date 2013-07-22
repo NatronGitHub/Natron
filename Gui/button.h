@@ -20,7 +20,7 @@
 #ifndef PowiterOsX_button_h
 #define PowiterOsX_button_h
 
-#include <QtWidgets/QPushButton>
+#include <QPushButton>
 
 class Button : public QPushButton {
     

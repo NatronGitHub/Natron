@@ -21,10 +21,10 @@
 
 #include <iostream>
 #include <QtCore/QObject>
-#include <QtWidgets/QWidget>
+#include <QWidget>
 #include <cmath>
 #include <QtGui/QImage>
-#include <QtWidgets/QLabel>
+#include <QLabel>
 #include "Superviser/powiterFn.h"
 
 #define BORDER_HEIGHT 10

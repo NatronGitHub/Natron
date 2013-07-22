@@ -15,7 +15,7 @@
 
 
 
-#include <QtWidgets/QLabel>
+#include <QLabel>
 #include "Gui/GLViewer.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
