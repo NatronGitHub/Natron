@@ -15,9 +15,13 @@
 
 
 
-#include <cassert>
-#include "Superviser/powiterFn.h"
 #include "Reader/Reader.h"
+
+#include <cassert>
+#include <sstream>
+#include <QtGui/QImage>
+
+#include "Superviser/powiterFn.h"
 #include "Reader/readffmpeg.h"
 #include "Reader/readExr.h"
 #include "Reader/readQt.h"
@@ -36,8 +40,6 @@
 #include "Gui/mainGui.h"
 #include "Core/viewercache.h"
 #include "Gui/knob.h"
-#include <QtGui/QImage>
-#include <sstream>
 #include "Core/Box.h"
 #include "Core/displayFormat.h"
 #include "Writer/Writer.h"

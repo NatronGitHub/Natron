@@ -20,14 +20,15 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <QtCore/qobject.h>
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
-#include <QtConcurrent/QtConcurrent>
+#include <QFutureWatcher>
 #include <boost/bind.hpp>
-#include <map>
-#include "Core/hash.h"
 #include <boost/noncopyable.hpp>
+
+#include "Core/hash.h"
 #include "Reader/Reader.h"
 
 class FrameEntry;

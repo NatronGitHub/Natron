@@ -16,6 +16,9 @@
 
 
 #include "Core/viewerNode.h"
+
+#include <QtConcurrentRun>
+
 #include "Gui/GLViewer.h"
 #include "Gui/mainGui.h"
 #include "Superviser/controler.h"
@@ -26,10 +29,10 @@
 #include "Core/viewercache.h"
 #include "Reader/Reader.h"
 #include "Core/mappedfile.h"
-#include <QtConcurrent/QtConcurrentRun>
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Superviser/controler.h"
+
 using namespace Powiter_Enums;
 Viewer::Viewer(ViewerCache* cache,TextureCache* textureCache):OutputNode(),
 _viewerInfos(0),

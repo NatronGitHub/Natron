@@ -14,7 +14,7 @@
 
 
 
-#include <QtWidgets/QGraphicsProxyWidget>
+#include <QGraphicsProxyWidget>
 #include "Gui/tabwidget.h"
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
@@ -33,8 +33,8 @@
 #include "Gui/GLViewer.h"
 #include "Gui/viewerTab.h"
 #include "Core/VideoEngine.h"
-#include <QtWidgets/QScrollBar>
-#include <QtWidgets/QGraphicsLineItem>
+#include <QScrollBar>
+#include <QGraphicsLineItem>
 #include "Gui/timeline.h"
 #include "Gui/outputnode_ui.h"
 #include "Gui/inputnode_ui.h"

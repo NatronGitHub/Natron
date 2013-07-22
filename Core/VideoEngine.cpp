@@ -6,15 +6,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 //  contact: immarespond at gmail dot com
-#include <QtCore/QMutex>
-#include <QtCore/QCoreApplication>
-#include "Gui/button.h"
-#include <QtGui/QVector2D>
-#include <QtWidgets/QAction>
-#include <QtCore/QThread>
+
+#include "Core/VideoEngine.h"
+
 #include <iterator>
 #include <cassert>
-#include "Core/VideoEngine.h"
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
+#include <QtGui/QVector2D>
+#include <QAction>
+#include <QtCore/QThread>
+#include <QtConcurrentRun>
+#include <QtConcurrentMap>
+#include <ImfThreading.h>
+
+#include "Gui/button.h"
 #include "Core/inputnode.h"
 #include "Core/outputnode.h"
 #include "Core/viewerNode.h"
@@ -38,7 +44,6 @@
 #include "Superviser/controler.h"
 #include "Superviser/MemoryInfo.h"
 
-#include <ImfThreading.h>
 
 /* Here's a drawing that represents how the video Engine works:
  

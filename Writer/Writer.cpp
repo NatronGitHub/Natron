@@ -18,8 +18,11 @@
 
 
 #include "Writer/Writer.h"
+
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
+#include <QtConcurrentRun>
+
 #include "Gui/knob_callback.h"
 #include "Core/row.h"
 #include "Writer/Write.h"
@@ -27,7 +30,6 @@
 #include "Core/settings.h"
 #include "Superviser/controler.h"
 #include "Core/model.h"
-#include <QtConcurrent/QtConcurrent>
 #include "Core/settings.h"
 
 using namespace std;

@@ -20,7 +20,7 @@
 #define __PowiterOsX__timeline__
 
 #include <iostream>
-#include <QtWidgets/QWidget>
+#include <QWidget>
 #include "Superviser/powiterFn.h"
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10

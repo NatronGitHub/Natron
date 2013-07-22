@@ -14,16 +14,16 @@
 
 
 
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QSlider>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QSpacerItem>
-#include <QtWidgets/QGridLayout>
-#include <QtWidgets/QGroupBox>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QAbstractItemView>
+#include <QApplication>
+#include <QSlider>
+#include <QComboBox>
+#include <QHBoxLayout>
+#include <QSpacerItem>
+#include <QGridLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QAbstractItemView>
 #include <QtGui/QKeyEvent>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"

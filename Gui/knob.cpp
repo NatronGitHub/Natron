@@ -15,25 +15,30 @@
 
 
 
-#include <climits>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QCheckBox>
 #include "Gui/knob.h"
+
+#include <climits>
+#include <QtCore/QString>
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QLabel>
+#include <QFileDialog>
+#include <QKeyEvent>
+
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
 #include "Core/outputnode.h"
 #include "Gui/node_ui.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"
-#include <QtWidgets/QtWidgets>
 #include "Core/model.h"
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
 #include "Core/settings.h"
-#include <QtCore/QString>
 #include "Gui/button.h"
+
 using namespace Powiter_Enums;
 using namespace std;
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){

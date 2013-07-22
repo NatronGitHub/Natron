@@ -18,10 +18,10 @@
 #include <vld.h> //< visual studio memory leaks finder header
 #endif
 #include <iostream>
-#include <QtWidgets/QApplication>
+#include <QApplication>
 #include <QtCore/QObject>
 #include <QtCore/QString>
-#include <QtWidgets/QLabel>
+#include <QLabel>
 #include <QtGui/QPixmap>
 #include "Superviser/powiterFn.h"
 #include "Superviser/controler.h"

@@ -21,7 +21,7 @@
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
-#include <QtWidgets/QDockWidget>
+#include <QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
 #include <cassert>
 #include <map>
