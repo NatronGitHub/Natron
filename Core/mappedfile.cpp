@@ -75,7 +75,7 @@ file_handle_(-1)
 #endif
     }
     
-    MemoryFile::MemoryFile(const char *pathname, Powiter_Enums::MMAPfile_mode open_mode):
+    MemoryFile::MemoryFile(const char *pathname, Powiter::MMAPfile_mode open_mode):
     _path(pathname),
     data_(0),
     size_(0),
@@ -86,18 +86,18 @@ file_handle_(-1)
         int posix_open_mode = O_RDWR;
         switch (open_mode)
         {
-            case Powiter_Enums::if_exists_fail_if_not_exists_create:
+            case Powiter::if_exists_fail_if_not_exists_create:
                 posix_open_mode |= O_EXCL | O_CREAT;
                 break;
-            case Powiter_Enums::if_exists_keep_if_dont_exists_fail:
+            case Powiter::if_exists_keep_if_dont_exists_fail:
                 break;
-            case Powiter_Enums::if_exists_keep_if_dont_exists_create:
+            case Powiter::if_exists_keep_if_dont_exists_create:
                 posix_open_mode |= O_CREAT;
                 break;
-            case Powiter_Enums::if_exists_truncate_if_not_exists_fail:
+            case Powiter::if_exists_truncate_if_not_exists_fail:
                 posix_open_mode |= O_TRUNC;
                 break;
-            case Powiter_Enums::if_exists_truncate_if_not_exists_create:
+            case Powiter::if_exists_truncate_if_not_exists_create:
                 posix_open_mode |= O_TRUNC | O_CREAT;
                 break;
             default: return;

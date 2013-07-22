@@ -41,7 +41,7 @@
 #include "Gui/mainGui.h"
 #include "Gui/tabwidget.h"
 
-using namespace Powiter_Enums;
+using namespace Powiter;
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
 {
     
@@ -110,7 +110,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _secondRowLayout->addWidget(_gainBox);
     
     
-    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter_Enums::LOG_SCALE,5,_secondSettingsRow);
+    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,5,_secondSettingsRow);
     _secondRowLayout->addWidget(_gainSlider);
     
     

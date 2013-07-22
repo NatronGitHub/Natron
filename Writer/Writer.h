@@ -85,7 +85,7 @@ public:
     virtual void _validate(bool forReal);
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
-	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
         
 	virtual void createKnobDynamically();
     
@@ -119,7 +119,7 @@ public:
     
     void incrementCurrentFrame(){_currentFrame++;}
     
-    const ChannelMask& requestedChannels() const {return _requestedChannels;}
+    const ChannelSet& requestedChannels() const {return _requestedChannels;}
     
 public slots:
     void notifyWriterForCompletion();
@@ -129,11 +129,11 @@ public slots:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int){return Powiter_Enums::Mask_None;}
+    virtual ChannelSet channelsNeeded(int){return Powiter::Mask_None;}
     
 private:
     
-    ChannelMask _requestedChannels;
+    ChannelSet _requestedChannels;
     int _currentFrame; // the current frame being rendered
     std::pair<int,int> _frameRange; // the range to render
     QMutex* _lock;

@@ -30,16 +30,28 @@
 
 class Row;
 class ReaderInfo;
-class ChannelName
+class ExrChannelExctractor
 {
 public:
-	ChannelName(const char* name, const std::vector<std::string>& views) { setname(name, views); }
-	~ChannelName() {}
-	void setname(const char* name, const std::vector<std::string>& views);
-	std::string chan;
-	std::string layer;
-	std::string view;
-	std::string name() const;
+    ExrChannelExctractor(const char* name, const std::vector<std::string>& views) :
+        _mappedChannel(Powiter::Channel_black),
+        _valid(false)
+    {     _valid = extractExrChannelName(name, views);  }
+
+    ~ExrChannelExctractor() {}
+
+    Powiter::Channel _mappedChannel;
+    bool _valid;
+    std::string _chan;
+    std::string _layer;
+    std::string _view;
+    std::string exrName() const;
+    bool isValid() const {return _valid;}
+
+private:
+
+    bool extractExrChannelName(const char* channelname,
+                               const std::vector<std::string>& views);
 };
 
 
@@ -50,10 +62,9 @@ public:
     static Read* BuildRead(Reader* reader){return new ReadExr(reader);}
 
 	ReadExr(Reader* op);
+
 	virtual ~ReadExr();
     
-	void lookupChannels(std::set<Powiter_Enums::Channel>& channel, const char* name);
-	bool getChannels(const ChannelName& channelName, int view, std::set<Powiter_Enums::Channel>& channel);
 	
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesDecoded(){
@@ -64,7 +75,7 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName(){return "OpenEXR";}
-    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     virtual bool supportsScanLine(){return true;}
     virtual int scanLinesCount(){return (int)_img.size();}
     virtual void readHeader(const QString filename,bool openBothViews);
@@ -76,12 +87,11 @@ public:
 
 private:
 	Imf::InputFile* inputfile;
-	std::map<Powiter_Enums::Channel, const char*> channel_map;
+	std::map<Powiter::Channel, const char*> channel_map;
 	std::vector<std::string> views;
 	std::string heroview;
 	int dataOffset;
     std::map< int, Row* > _img;
-	bool rgbMode;
 #ifdef __POWITER_WIN32__
     std::ifstream *inputStr;
     Imf::StdIFStream* inputStdStream;

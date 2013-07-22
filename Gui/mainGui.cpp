@@ -40,7 +40,7 @@
 #include "Gui/viewerTab.h"
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),
 actionNew_project(0),
 actionOpen_project(0),

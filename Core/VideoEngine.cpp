@@ -71,7 +71,7 @@
  */
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 #define gl_viewer currentViewer->getUiContext()->viewer
 
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){

@@ -31,7 +31,7 @@
 #define BORDER_OFFSET 4
 #define TICK_HEIGHT 7
 
-using Powiter_Enums::Scale_Type;
+using Powiter::Scale_Type;
 
 class ScaleSlider : public QWidget
 {
@@ -39,21 +39,21 @@ class ScaleSlider : public QWidget
     
     double _minimum,_maximum;
     double _nbValues;
-    Powiter_Enums::Scale_Type _type;
+    Powiter::Scale_Type _type;
     
 public:
     
-    ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter_Enums::Scale_Type type=Powiter_Enums::LINEAR_SCALE,
+    ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter::Scale_Type type=Powiter::LINEAR_SCALE,
                 int nbDisplayedValues=5,QWidget* parent=0);
     virtual ~ScaleSlider();
     /*These functions require a call to XXscale(nb,inf,sup) ,hence the updateScale */
     void setMinimum(double m){_minimum=m; updateScale();}
     void setMaximum(double m){_maximum=m; updateScale();}
     void setPrecision(double i){_nbValues=i; updateScale();}
-    void changeScale(Powiter_Enums::Scale_Type type){_type = type; updateScale();}
+    void changeScale(Powiter::Scale_Type type){_type = type; updateScale();}
     /*---------------------------------------------*/
     
-    Powiter_Enums::Scale_Type type() const {return _type;}
+    Powiter::Scale_Type type() const {return _type;}
     double minimum() const {return _minimum;}
     double maximum() const {return _maximum;}
     double precision() const {return _nbValues;}

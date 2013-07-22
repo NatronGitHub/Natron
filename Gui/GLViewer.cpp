@@ -86,7 +86,7 @@ void ViewerGL::initConstructor(){
     
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
-    _blankViewerInfos->setChannels(Powiter_Enums::Mask_RGBA);
+    _blankViewerInfos->setChannels(Powiter::Mask_RGBA);
     _blankViewerInfos->rgbMode(true);
     Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
     _blankViewerInfos->set(0, 0, 2048, 1556);

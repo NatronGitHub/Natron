@@ -30,7 +30,7 @@
 #include "Core/mappedfile.h"
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 
 #if QT_VERSION < 0x050000
 static bool removeRecursively(const QString & dirName)
@@ -70,7 +70,7 @@ bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
     }
 #endif
     try{
-        _mappedFile = new MemoryFile(path,Powiter_Enums::if_exists_keep_if_dont_exists_create);
+        _mappedFile = new MemoryFile(path,Powiter::if_exists_keep_if_dont_exists_create);
     }catch(const char* str){
         cout << str << endl;
         deallocate();
@@ -96,7 +96,7 @@ void MemoryMappedEntry::deallocate(){
 bool MemoryMappedEntry::reOpen(){
     if(_path.empty()) return false;
     try{
-        _mappedFile = new MemoryFile(_path.c_str(),Powiter_Enums::if_exists_keep_if_dont_exists_fail);
+        _mappedFile = new MemoryFile(_path.c_str(),Powiter::if_exists_keep_if_dont_exists_fail);
     }catch(const char* str){
         deallocate();
         if(QFile::exists(_path.c_str())){

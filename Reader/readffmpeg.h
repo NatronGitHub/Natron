@@ -316,7 +316,7 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName(){return "FFmpeg";}
-    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     virtual bool supports_stereo(){return false;}
     virtual void readHeader(const QString filename,bool openBothViews);
     virtual void readAllData(bool openBothViews);

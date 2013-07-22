@@ -43,7 +43,7 @@ class TimeLine : public QWidget{
     int _increment; // 5 or 10 (for displayed values)
     bool _alphaCursor;
     QPointF _Mouse;
-    Powiter_Enums::TIMELINE_STATE _state;
+    Powiter::TIMELINE_STATE _state;
     
     std::vector<int> _cached;
     

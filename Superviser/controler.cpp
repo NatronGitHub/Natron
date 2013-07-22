@@ -24,7 +24,7 @@
 #include "Gui/node_ui.h"
 #include "Core/VideoEngine.h"
 #include "Gui/tabwidget.h"
-using namespace Powiter_Enums;
+using namespace Powiter;
 Controler::Controler():_model(0),_gui(0){}
 
 void Controler::initControler(Model *model,QLabel* loadingScreen){

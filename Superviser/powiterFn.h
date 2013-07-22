@@ -49,6 +49,11 @@ typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
 
+#include <QtCore/QForeachContainer>
+#undef foreach
+#define foreach Q_FOREACH
+
+
 /*see LRUcache.h for an explanation of these cache related defines*/
 //#define USE_VARIADIC_TEMPLATES
 #define CACHE_USE_HASH

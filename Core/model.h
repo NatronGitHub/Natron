@@ -115,7 +115,7 @@ public:
 	
   
 	/*Create a new node internally*/
-    Powiter_Enums::UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
+    Powiter::UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
     
     void removeNode(Node* n);
 
@@ -225,7 +225,7 @@ private:
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
 	 *to know whether it is an outputNode,InputNode or an operator.*/
-    Powiter_Enums::UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
+    Powiter::UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
 
 
     VideoEngine* _videoEngine; // Video Engine

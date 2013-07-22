@@ -20,17 +20,18 @@
 #define __PowiterOsX__interest__
 
 #include <iostream>
-#include "Core/channels.h"
 #include <map>
 #include <vector>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QFuture>
 #include "Core/row.h"
+#include "Core/channels.h"
+
 class Node;
 /*This class is useful for spatial operators that need several rows, up to the whole image, of an input
  nodes. This object is kind of a generalisation of the node->get() function.
  Note that this object launches new threads to actually get the rows.*/
-class Interest : public QObject{
+class InputFetcher : public QObject{
     
     Q_OBJECT
     
@@ -42,17 +43,17 @@ class Interest : public QObject{
     std::vector<InputRow*> _sequence;
     QFutureWatcher<void>* _results;
 public:
-    /*Construct an interest object that will fetch all the row in the range (y,t)
+    /*Construct an image fetcher object that will fetch all the row in the range (y,t)
      for the given channels for the node specified in parameters. No fetching
      actually occurs in the constructor, you have to call claimInterest()
      to start computations. This lazy computation fashion allows you to 
      connect to the signal hasFinishedAt(int) to maybe update your piece
      of code for a specific row, or to signal the GUI of some modifications.
      
-     !!WARNING: When the Interest object is deleted, all the InputRows will be
-     deleted too, it's important to maintain the Interest living thoughout the
+     !!WARNING: When the image fetcher object is deleted, all the InputRows will be
+     deleted too, it's important to maintain the image fetcher living thoughout the
      entire duration you need to use the InputRows contained in that object.*/
-    Interest(Node* node, int x, int y, int r, int t, ChannelMask channels);
+    InputFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels);
     
     
     /*Launches new thread to fetch all the rows necessary from the node to fill the range (y,t).
@@ -66,7 +67,7 @@ public:
      You can also connect to the signal hasFinishedAt(int) that will tell you
      when a specific row has been fetch from the input. This may be used
      to start following computation a bit ahead, but this is not really
-     useful since the purpose of the interest object is to retrieve a block
+     useful since the purpose of the image fetcher object is to retrieve a block
      of rows that are inter-dependent; if they were independent you could use
      Node::get in the first place.
      */
@@ -80,15 +81,15 @@ public:
      can produce undefined results and garbage data!*/
     const InputRow& at(int y) const;
     
-    /*Deletes all the InputRows in the Interest, and tell the cache they are
+    /*Deletes all the InputRows in the image fetcher, and tell the cache they are
      no longer protected (i.e : they return to normal priority and can be evicted).*/
-    ~Interest();
+    ~InputFetcher();
     public slots:
     void notifyFinishedAt(int);
     void setFinished();
     
 signals:
-    /*Thrown when a row has been computed by the interest. The parameter is the y
+    /*Thrown when a row has been computed by the image fetcher. The parameter is the y
      coordinate of the row.*/
     void hasFinishedAt(int);
     void hasFinishedCompletly();

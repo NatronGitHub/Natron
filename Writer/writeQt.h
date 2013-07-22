@@ -49,7 +49,7 @@ public:
     virtual void initializeColorSpace();
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,

@@ -28,7 +28,7 @@
 #include "Gui/node_ui.h"
 #include "Core/row.h"
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 
 
 
@@ -946,7 +946,7 @@ bool ReadFFMPEG::fillBuffer(){
     return true;
 }
 
-void ReadFFMPEG::engine(int y,int offset,int range,ChannelMask channels,Row* out){
+void ReadFFMPEG::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     int w = op->getInfo()->getDisplayWindow().w();
     int h = op->getInfo()->getDisplayWindow().h();
 	

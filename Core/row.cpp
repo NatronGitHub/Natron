@@ -25,7 +25,7 @@
 #include <QtCore/QFile>
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 
 Row::Row():_cacheWillDelete(false){
     buffers = 0;

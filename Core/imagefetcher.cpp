@@ -16,14 +16,14 @@
 
 
 
-#include "interest.h"
+#include "Core/imagefetcher.h"
 
 #include <QtConcurrentMap>
 #include <boost/bind.hpp>
 
 #include "Core/node.h"
 
-Interest::Interest(Node* node, int x, int y, int r, int t, ChannelMask channels):
+InputFetcher::InputFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):
 _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
     for (int i = y; i <= t; i++) {
         InputRow* row = new InputRow;
@@ -32,19 +32,19 @@ _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_resu
     }
 }
 
-void Interest::claimInterest(){
+void InputFetcher::claimInterest(){
     _results = new QFutureWatcher<void>;
     QObject::connect(_results, SIGNAL(resultReadyAt(int)), this, SLOT(notifyFinishedAt(int)));
     QObject::connect(_results, SIGNAL(finished()), this, SLOT(setFinished()));
-    QFuture<void> future = QtConcurrent::map(_sequence.begin(),_sequence.end(),boost::bind(&Interest::getInputRow,this,_node,_1));
+    QFuture<void> future = QtConcurrent::map(_sequence.begin(),_sequence.end(),boost::bind(&InputFetcher::getInputRow,this,_node,_1));
     _results->setFuture(future);
 }
 
-void Interest::getInputRow(Node* node,InputRow* row){
+void InputFetcher::getInputRow(Node* node,InputRow* row){
     node->get(_y,_x,_r,_channels,*row,true);
 }
 
-const InputRow& Interest::at(int y) const {
+const InputRow& InputFetcher::at(int y) const {
     std::map<int,InputRow*>::const_iterator it = _interest.find(y);
     if(it != _interest.end()){
         return *(it->second);
@@ -53,15 +53,15 @@ const InputRow& Interest::at(int y) const {
     }
 }
 
-Interest::~Interest(){
+InputFetcher::~InputFetcher(){
     for (U32 i = 0; i < _sequence.size(); i++) {
         _sequence[i]->getInternalRow()->returnToNormalPriority();
         delete _sequence[i];
     }
     delete _results;
 }
-void Interest::setFinished(){_isFinished = true; emit hasFinishedCompletly();}
+void InputFetcher::setFinished(){_isFinished = true; emit hasFinishedCompletly();}
 
-void Interest::notifyFinishedAt(int y){
+void InputFetcher::notifyFinishedAt(int y){
     emit hasFinishedAt(y);
 }

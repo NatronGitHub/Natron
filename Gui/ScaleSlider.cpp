@@ -24,7 +24,7 @@ using namespace std;
 
 
 
-ScaleSlider::ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter_Enums::Scale_Type type,int nbDisplayedValues,QWidget* parent):
+ScaleSlider::ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter::Scale_Type type,int nbDisplayedValues,QWidget* parent):
 QWidget(parent),
 _minimum(bottom),
 _maximum(top),
@@ -45,11 +45,11 @@ ScaleSlider::~ScaleSlider(){
 }
 
 void ScaleSlider::updateScale(){
-    if (_type == Powiter_Enums::LINEAR_SCALE) {
+    if (_type == Powiter::LINEAR_SCALE) {
         _values = linearScale(_nbValues, _minimum, _maximum);
-    }else if(_type == Powiter_Enums::LOG_SCALE){
+    }else if(_type == Powiter::LOG_SCALE){
         _values = logScale(_nbValues, _minimum, _maximum);
-    }else if(_type == Powiter_Enums::EXP_SCALE){
+    }else if(_type == Powiter::EXP_SCALE){
         _values = expScale(_nbValues, _minimum, _maximum);
     }
     double incr = (double)(_values.size())/(double)(_displayedValues.size()-1);

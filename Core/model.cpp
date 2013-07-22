@@ -67,7 +67,7 @@
 
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 Model::Model(): _videoEngine(0),_mutex(0)
 {
     /*general mutex shared by all nodes*/

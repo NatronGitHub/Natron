@@ -25,7 +25,7 @@
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 WriteExr::WriteExr(Writer* writer):Write(writer),outfile(0),_lock(0){
     
 }
@@ -85,7 +85,7 @@ void WriteExr::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void WriteExr::engine(int y,int offset,int range,ChannelMask channels,Row* ){
+void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
     InputRow row;
     op->input(0)->get(y, offset, range, channels, row);
     const float* a = row[Channel_alpha];

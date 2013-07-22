@@ -46,7 +46,7 @@ public:
     virtual std::string decoderName()=0;
     
     /*This must be implemented to do the to linear colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out)=0;
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out)=0;
     
     /*can be overloaded to add knobs dynamically to the reader depending on the file type*/
 	virtual void createKnobDynamically();
@@ -117,7 +117,7 @@ public:
 	void setReaderInfo(Format dispW,
                        Box2D dataW,
                        QString file,
-                       ChannelMask channels,
+                       ChannelSet channels,
                        int Ydirection ,
                        bool rgb );
     
@@ -126,10 +126,10 @@ public:
     
 protected:
     
-    void from_byte(Powiter_Enums::Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
-    void from_byteQt(Powiter_Enums::Channel z, float* to, const QRgb* from, int W, int delta = 1);
-    void from_short(Powiter_Enums::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
-    void from_float(Powiter_Enums::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    void from_byte(Powiter::Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
+    void from_byteQt(Powiter::Channel z, float* to, const QRgb* from, int W, int delta = 1);
+    void from_short(Powiter::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
+    void from_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
    
         
 	bool is_stereo;

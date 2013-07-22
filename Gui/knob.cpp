@@ -39,7 +39,7 @@
 #include "Core/settings.h"
 #include "Gui/button.h"
 
-using namespace Powiter_Enums;
+using namespace Powiter;
 using namespace std;
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;

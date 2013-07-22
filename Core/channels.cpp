@@ -16,7 +16,7 @@
 #include "Core/channels.h"
 #include <iostream>
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 Channel getChannelByName(const char *name){
     if(strcmp(name,"Channel_unused")==0){
         return Channel_unused;
@@ -30,26 +30,6 @@ Channel getChannelByName(const char *name){
         return Channel_alpha;
     }else if(strcmp(name,"Channel_Z")==0){
         return Channel_Z;
-    }else if(strcmp(name,"Channel_U")==0){
-        return Channel_U;
-    }else if(strcmp(name,"Channel_V")==0){
-        return Channel_V;
-    }else if(strcmp(name,"Channel_Backward_U")==0){
-        return Channel_Backward_U;
-    }else if(strcmp(name,"Channel_Backward_V")==0){
-        return Channel_Backward_V;
-    }else if(strcmp(name,"Channel_Stereo_Disp_Left_X")==0){
-        return Channel_Stereo_Disp_Left_X;
-    }else if(strcmp(name,"Channel_Stereo_Disp_Left_Y")==0){
-        return Channel_Stereo_Disp_Left_Y;
-    }else if(strcmp(name,"Channel_Stereo_Disp_Right_X")==0){
-        return Channel_Stereo_Disp_Right_X;
-    }else if(strcmp(name,"Channel_Stereo_Disp_Right_Y")==0){
-        return Channel_Stereo_Disp_Right_Y;
-    }else if(strcmp(name,"Channel_DeepFront")==0){
-        return Channel_DeepFront;
-    }else if(strcmp(name,"Channel_DeepBack")==0){
-        return Channel_DeepBack;
     }else{
         throw std::string("(getChannelByName):Bad channel name");
     }
@@ -71,42 +51,12 @@ std::string getChannelName(Channel c){
     }else if(c==Channel_Z){
         return "Channel_Z";
         
-    }else if(c==Channel_U){
-        return "Channel_U";
-        
-    }else if(c==Channel_V){
-        return "Channel_V";
-        
-    }else if(c==Channel_Backward_U){
-        return "Channel_Backward_U";
-        
-    }else if(c==Channel_Backward_V){
-        return "Channel_Backward_V";
-        
-    }else if(c==Channel_Stereo_Disp_Left_X){
-        return "Channel_Stereo_Disp_Left_X";
-        
-    }else if(c==Channel_Stereo_Disp_Left_Y){
-        return "Channel_Stereo_Disp_Left_Y";
-        
-    }else if(c==Channel_Stereo_Disp_Right_X){
-        return "Channel_Stereo_Disp_Right_X";
-        
-    }else if(c==Channel_Stereo_Disp_Right_Y){
-        return "Channel_Stereo_Disp_Right_Y";
-        
-    }else if(c==Channel_DeepFront){
-        return "Channel_DeepFront";
-        
-    }else if(c==Channel_DeepBack){
-        return "Channel_DeepBack";
-        
     }
     return "";
 }
 
 ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.size()){}
-ChannelSet::ChannelSet(ChannelSetInit v) {
+ChannelSet::ChannelSet(ChannelMask v) {
     if(v == Mask_All){
         mask = Mask_All;
         _size = MAX_CHANNEL_COUNT;
@@ -135,7 +85,7 @@ const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
     return *this;
 }
 
-const ChannelSet& ChannelSet::operator=(ChannelSetInit source) {
+const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     if(source == Mask_All){
         mask = Mask_All;
         _size = MAX_CHANNEL_COUNT;
@@ -213,7 +163,7 @@ void ChannelSet::operator+=(const ChannelSet& source){
     }
     
 }
-void ChannelSet::operator+=(ChannelSetInit source) {
+void ChannelSet::operator+=(ChannelMask source) {
     if(mask & 1){ // mask all
         return;
     }
@@ -253,7 +203,7 @@ void ChannelSet::operator-=(const ChannelSet& source){
         *this-=z;
     }
 }
-void ChannelSet::operator-=(ChannelSetInit source) {
+void ChannelSet::operator-=(ChannelMask source) {
     if(source & 1){
         clear();
         return;
@@ -285,7 +235,7 @@ void ChannelSet::operator&=(const ChannelSet& source){
         
     }
 }
-void ChannelSet::operator&=(ChannelSetInit source) {
+void ChannelSet::operator&=(ChannelMask source) {
     mask &= source;
     if(source & 1){
         _size = MAX_CHANNEL_COUNT;
@@ -311,7 +261,7 @@ ChannelSet ChannelSet::operator&(const ChannelSet& c) const{
     return ret;
 }
 
-ChannelSet ChannelSet::operator&(ChannelSetInit c) const{
+ChannelSet ChannelSet::operator&(ChannelMask c) const{
     ChannelSet ret;
     ret = *this;
     ret&=c;
@@ -384,7 +334,7 @@ void ChannelSet::printOut(){
     }
 }
 
-bool hasAlpha(ChannelMask mask){
+bool hasAlpha(ChannelSet mask){
     return (mask & (1 << Channel_alpha));
 }
 

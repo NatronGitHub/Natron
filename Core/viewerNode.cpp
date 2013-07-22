@@ -33,7 +33,7 @@
 #include "Core/VideoEngine.h"
 #include "Superviser/controler.h"
 
-using namespace Powiter_Enums;
+using namespace Powiter;
 Viewer::Viewer(ViewerCache* cache,TextureCache* textureCache):OutputNode(),
 _viewerInfos(0),
 _uiContext(0),
@@ -67,7 +67,7 @@ std::string Viewer::description(){
     return "OutputNode";
 }
 
-void Viewer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
+void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     InputRow row;
     input(0)->get(y, offset, range, channels, row);
     Row* internal = row.getInternalRow();

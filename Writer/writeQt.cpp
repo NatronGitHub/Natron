@@ -24,7 +24,7 @@
 #include "Core/row.h"
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
 std::vector<std::string> WriteQt::fileTypesEncoded(){
     std::vector<std::string> out;
@@ -99,7 +99,7 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
     }
 }
 
-void WriteQt::engine(int y,int offset,int range,ChannelMask channels,Row*){
+void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
     InputRow row ;
     op->input(0)->get(y, offset, range, channels, row);
     const Format& frmt = op->getInfo()->getDisplayWindow();

@@ -35,7 +35,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 void Node::copy_info(Node* parent){
     clear_info();
     const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());
@@ -86,7 +86,7 @@ bool Node::merge_info(bool forReal){
 	
     clear_info();
 	int final_direction=0;
-	ChannelMask chans;
+	ChannelSet chans;
     bool displayMode;
 	for (int i =0 ; i < inputCount(); i++) {
         Node* parent = _parents[i];
@@ -95,7 +95,7 @@ bool Node::merge_info(bool forReal){
         if(forReal){
             final_direction+=parent->getInfo()->getYdirection();
             chans += parent->getInfo()->channels();
-            ChannelMask neededChans = channelsNeeded(i);
+            ChannelSet neededChans = channelsNeeded(i);
             if ((neededChans & chans) != neededChans) {
                 cout << parent->getName().toStdString() << " does not contain the channels needed by "
                 << getName().toStdString()  << endl;

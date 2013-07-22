@@ -44,7 +44,7 @@ public:
 
     virtual ~NodeGraph();
  
-    void createNodeGUI(QVBoxLayout *dockContainer,Powiter_Enums::UI_NODE_TYPE type,Node *node,double x,double y);
+    void createNodeGUI(QVBoxLayout *dockContainer,Powiter::UI_NODE_TYPE type,Node *node,double x,double y);
     
     void removeNode(NodeGui* n);
 

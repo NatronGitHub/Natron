@@ -239,7 +239,7 @@ public:
     
     virtual void _validate(bool forReal);
 	
-	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
     virtual bool cacheData(){return true;}
     
@@ -269,7 +269,7 @@ public:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter_Enums::Mask_None;}
+    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter::Mask_None;}
 private:
 	QImage *preview;
 	bool has_preview;

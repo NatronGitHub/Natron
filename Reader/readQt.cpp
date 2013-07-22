@@ -25,7 +25,7 @@
 #include "Core/lutclasses.h"
 #include "Core/row.h"
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
 
 void ReadQt::initializeColorSpace(){
@@ -35,7 +35,7 @@ ReadQt::~ReadQt(){
     if(_img)
         delete _img;
 }
-void ReadQt::engine(int y,int offset,int range,ChannelMask channels,Row* out){
+void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     uchar* buffer;
     int h = op->getInfo()->getDisplayWindow().h();
     int Y = h - y - 1;
@@ -71,7 +71,7 @@ void ReadQt::readHeader(const QString filename,bool){
     
 	bool rgb=true;
 	int ydirection = -1;
-	ChannelMask mask;    
+	ChannelSet mask;    
     if(_autoCreateAlpha){
         
 		mask = Mask_RGBA;

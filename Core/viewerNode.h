@@ -61,7 +61,7 @@ public:
     
     virtual std::string description();
     
-    void engine(int y,int offset,int range,ChannelMask channels,Row* out);
+    void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
     /*Convenience functions. They query the values from the timeline.*/
     int firstFrame() const;
@@ -77,7 +77,7 @@ public:
     void cachedFrameEngine(FrameEntry* frame);
 protected:
     
-	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter_Enums::Mask_None;}
+	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter::Mask_None;}
 	
 private:
     

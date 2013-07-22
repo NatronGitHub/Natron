@@ -45,7 +45,7 @@
 #include "Writer/Writer.h"
 #include "Core/viewerNode.h"
 
-using namespace Powiter_Enums;
+using namespace Powiter;
 using namespace std;
 
 
@@ -251,7 +251,7 @@ void Reader::_validate(bool){
     _info->lastFrame(lastFrame());
 }
 
-void Reader::engine(int y,int offset,int range,ChannelMask c,Row* out){
+void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){
 	readHandle->engine(y,offset,range,c,out);
 	
 }
@@ -465,7 +465,6 @@ void Reader::Buffer::ScanLineContext::merge(){
 //bool _blackOutside;
 //bool _rgbMode;
 //Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
-//ChannelMask _channels;
 std::string ReaderInfo::printOut(){
     const Format &dispW = getDisplayWindow();
     const ChannelSet& chan = channels();

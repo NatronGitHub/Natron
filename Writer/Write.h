@@ -109,7 +109,7 @@ public:
     
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out)=0;
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out)=0;
     
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
@@ -138,9 +138,9 @@ public:
      comment in WriteKnobs.*/
     virtual WriteKnobs* initSpecificKnobs(){return NULL;}
     
-    void to_byte(Powiter_Enums::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
-    void to_short(Powiter_Enums::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
-    void to_float(Powiter_Enums::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_byte(Powiter::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_short(Powiter::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
+    void to_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
 };
 
 

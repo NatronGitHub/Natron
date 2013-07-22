@@ -33,7 +33,7 @@
 #include "Core/settings.h"
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 Writer::Writer():
 OutputNode(),
 _requestedChannels(Mask_RGB), // temporary
@@ -110,7 +110,7 @@ void Writer::_validate(bool forReal){
     }
 }
 
-void Writer::engine(int y,int offset,int range,ChannelMask channels,Row* out){
+void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     _writeHandle->engine(y, offset, range, channels, out);
 }
 

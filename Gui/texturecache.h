@@ -33,7 +33,8 @@
 class TextureEntry : public CacheEntry{
     
 public:
-    enum DataType {BYTE = 0,FLOAT = 1};
+    /*Note that the half datatype is not used currently*/
+    enum DataType {BYTE = 0,FLOAT = 1 , HALF = 2};
 
 protected:
     U32 _texID;

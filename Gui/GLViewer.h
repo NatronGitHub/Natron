@@ -54,7 +54,7 @@
             int _lastFrame; /*!< last frame in the sequence*/
             bool _rgbMode; /*!< true if displaying RGB image, otherwise it assumes YCbCr*/
             Format _displayWindow; /*!< display window of the data, for the data window see x,y,range,offset parameters*/
-            ChannelMask _channels; /*!< all channels defined by the current Node ( that are allocated)*/
+            ChannelSet _channels; /*!< all channels defined by the current Node ( that are allocated)*/
             
         public:
             
@@ -82,9 +82,9 @@
             
             int lastFrame() const {return _lastFrame;}
             
-            void setChannels(ChannelMask mask){_channels=mask;}
+            void setChannels(ChannelSet mask){_channels=mask;}
             
-            const ChannelMask& channels() const {return _channels;}
+            const ChannelSet& channels() const {return _channels;}
             
             void rgbMode(bool m){_rgbMode=m;}
             

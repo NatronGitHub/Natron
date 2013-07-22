@@ -21,7 +21,7 @@
 #include "Writer/Writer.h"
 #include "Core/lookUpTables.h"
 #include "Gui/knob.h"
-using namespace Powiter_Enums;
+using namespace Powiter;
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
  initializeColorSpace. This function is called after the constructor and before any

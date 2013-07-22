@@ -63,7 +63,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : float* start = row->writable(c)+row->offset()*/
-    float* writable(Powiter_Enums::Channel c);
+    float* writable(Powiter::Channel c);
 
 	/*Copy into the current row, the channels defined in the source
 	 *in the range [o,r}*/
@@ -72,7 +72,7 @@ public:
 	
 
 	/*set to 0s the entirety of the chnnel c*/
-    void erase(Powiter_Enums::Channel c);
+    void erase(Powiter::Channel c);
     void erase(ChannelSet set){
         foreachChannels(z, set){
             erase(z);
@@ -83,7 +83,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : const float* start = (*row)[z]+row->offset()*/
-    const float* operator[](Powiter_Enums::Channel z) const;
+    const float* operator[](Powiter::Channel z) const;
     
     int y() const {return _y;}
 
@@ -99,7 +99,7 @@ public:
 
 	/*activates the channel C for this row and allocates memory for it.
      All (r-x) range for this channel will be set to 0.*/
-    void turnOn(Powiter_Enums::Channel c);
+    void turnOn(Powiter::Channel c);
 
     int offset() const {return x;}
 
@@ -112,7 +112,7 @@ public:
      try to double-free the buffers.*/
     void notifyCacheForDeletion(){_cacheWillDelete = true;}
         
-    const ChannelMask& channels() const {return _channels;}
+    const ChannelSet& channels() const {return _channels;}
    
     /*Returns a key computed from the parameters.*/
     static U64 computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y);
@@ -122,7 +122,7 @@ private:
     bool _cacheWillDelete;
     int _y; // the line index in the fullsize image
     int _zoomedY; // the line index in the zoomed version as it appears on the viewer
-    ChannelMask _channels; // channels held by the row
+    ChannelSet _channels; // channels held by the row
     int x; // starting point of the row
     int r; // end of the row
     float** buffers; // channels array
@@ -141,7 +141,7 @@ public:
     
     InputRow():_row(0){}
     
-    const ChannelMask& channels() const { return _row->channels();}
+    const ChannelSet& channels() const { return _row->channels();}
     
     void range(int offset,int right){_row->range(offset,right);}
     
@@ -149,7 +149,7 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : const float* start = (*row)[z]+row->offset()*/
-    const float* operator[](Powiter_Enums::Channel z) const{return (*_row)[z];}
+    const float* operator[](Powiter::Channel z) const{return (*_row)[z];}
     
     int y() const {return _row->y();}
     
@@ -161,17 +161,17 @@ public:
 	 *WARNING : the pointer returned is pointing to 0.
 	 *if x != 0 then the start of the row can be obtained
 	 *as such : float* start = row->writable(c)+row->offset()*/
-    float* writable(Powiter_Enums::Channel c){return _row->writable(c);}
+    float* writable(Powiter::Channel c){return _row->writable(c);}
     
 	/*Copy into the current row, the channels defined in the source
 	 *in the range [o,r}*/
     void copy(const Row *source,ChannelSet channels,int o,int r){_row->copy(source,channels,o,r);}
     
 	/*activate the channel C for this row and allocates memory for it*/
-    void turnOn(Powiter_Enums::Channel c){_row->turnOn(c);}
+    void turnOn(Powiter::Channel c){_row->turnOn(c);}
     
 	/*set to 0s the entirety of the chnnel c*/
-    void erase(Powiter_Enums::Channel c){_row->erase(c);}
+    void erase(Powiter::Channel c){_row->erase(c);}
     void erase(ChannelSet set){_row->erase(set);}
         
     /*DO NOT CALL THESE EVER*/

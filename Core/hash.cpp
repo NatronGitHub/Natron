@@ -18,7 +18,7 @@
 #include "Core/hash.h"
 #include "Core/node.h"
 #include "Gui/knob.h"
-using namespace Powiter_Enums;
+using namespace Powiter;
 void Hash::computeHash(){
 
     boost::crc_optimal<64,0x42F0E1EBA9EA3693,0,0,false,false> result;

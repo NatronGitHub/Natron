@@ -43,7 +43,7 @@ public:
 	 *and to know what we can request from a node.*/
 	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelMask channels):Box2D(),
+		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels):Box2D(),
         _firstFrame(first_frame),
         _lastFrame(last_frame),
         _ydirection(ydirection),
@@ -64,8 +64,8 @@ public:
 		void lastFrame(int nb){_lastFrame=nb;}
 		int firstFrame() const {return _firstFrame;}
 		int lastFrame() const {return _lastFrame;}
-		void setChannels(ChannelMask mask){_channels=mask;}
-		const ChannelMask& channels() const {return _channels;}
+		void setChannels(ChannelSet mask){_channels=mask;}
+		const ChannelSet& channels() const {return _channels;}
 		bool blackOutside() const {return _blackOutside;}
 		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
@@ -81,7 +81,7 @@ public:
 		bool _blackOutside;
         bool _rgbMode;
 		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
-		ChannelMask _channels; // all channels defined by the current Node ( that are allocated)
+		ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 	};
     
     
@@ -185,7 +185,7 @@ public:
     
     /*Calculations related functions*/
     bool validate(bool forReal);
-    virtual void engine(int y,int offset,int range,ChannelMask channels,Row* out){
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
         Q_UNUSED(y);
         Q_UNUSED(offset);
         Q_UNUSED(range);
@@ -222,7 +222,7 @@ public:
 protected:
     
     
-	virtual ChannelMask channelsNeeded(int inputNb)=0;
+	virtual ChannelSet channelsNeeded(int inputNb)=0;
     virtual void preProcess(){}
 	virtual void _validate(bool forReal){(void)forReal;}
     

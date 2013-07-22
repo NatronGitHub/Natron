@@ -23,7 +23,7 @@
 #endif
 
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 std::map<Lut::DataType,Lut*> Lut::_luts;
 
 
@@ -111,23 +111,23 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
-        case Powiter_Enums::Channel_alpha:
+        case Powiter::Channel_alpha:
             lookup = qAlpha;
             break;
-        case Powiter_Enums::Channel_red:
+        case Powiter::Channel_red:
             lookup = qRed;
             break;
-        case Powiter_Enums::Channel_green:
+        case Powiter::Channel_green:
             lookup = qGreen;
             break;
-        case Powiter_Enums::Channel_blue:
+        case Powiter::Channel_blue:
             lookup = qBlue;
             break;
         default:
             lookup = qRed;
             break;
     }
-    if(z == Powiter_Enums::Channel_alpha){
+    if(z == Powiter::Channel_alpha){
         Linear::from_byteQt(to, from, z, W,delta);
     }else{
         if(premult){
@@ -259,23 +259,23 @@ void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
-        case Powiter_Enums::Channel_alpha:
+        case Powiter::Channel_alpha:
             lookup = qAlpha;
             break;
-        case Powiter_Enums::Channel_red:
+        case Powiter::Channel_red:
             lookup = qRed;
             break;
-        case Powiter_Enums::Channel_green:
+        case Powiter::Channel_green:
             lookup = qGreen;
             break;
-        case Powiter_Enums::Channel_blue:
+        case Powiter::Channel_blue:
             lookup = qBlue;
             break;
         default:
             lookup = qRed;
             break;
     }
-    if(z == Powiter_Enums::Channel_alpha){
+    if(z == Powiter::Channel_alpha){
         for(int i = 0 ; i < W ; i+=delta){
             const QRgb c = from[i];
             to[i] = fromFloatFast((float)qAlpha(c)/255.f);

@@ -50,7 +50,7 @@ class ViewerTab: public QWidget
     
     Viewer* _viewerNode;// < pointer to the internal node
     
-    ChannelMask _channelsToDraw;
+    ChannelSet _channelsToDraw;
     
     /*True if the viewer is currently fullscreen*/
 	bool _fullscreen;
@@ -110,7 +110,7 @@ public:
 	TimeLine* frameSeeker;
     
     /*these are the channels the viewer wants to display*/
-	const ChannelMask& displayChannels(){return _channelsToDraw;}
+	const ChannelSet& displayChannels(){return _channelsToDraw;}
     
     /*viewerInfo related functions)*/
     void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);

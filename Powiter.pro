@@ -107,7 +107,7 @@ SOURCES += \
     Gui/tabwidget.cpp \
     Gui/comboBox.cpp \
     Core/abstractCache.cpp \
-    Core/interest.cpp \
+    Core/imagefetcher.cpp \
     Core/nodecache.cpp \
 
 
@@ -171,7 +171,7 @@ HEADERS += \
     Gui/framefiledialog.h \
     Gui/tabwidget.h \
     Core/LRUcache.h \
-    Core/interest.h \
+    Core/imagefetcher.h \
     Reader/exrCommons.h \
     Writer/Writer.h \
     Writer/writeQt.h \

@@ -26,7 +26,7 @@
 #include "Core/VideoEngine.h"
 #include "Core/row.h"
 using namespace std;
-using namespace Powiter_Enums;
+using namespace Powiter;
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
 {
 	
@@ -84,7 +84,7 @@ void Read::createKnobDynamically(){
 void Read::setReaderInfo(Format dispW,
 	Box2D dataW,
 	QString file,
-	ChannelMask channels,
+	ChannelSet channels,
 	int Ydirection ,
 	bool rgb ){
     _readInfo->setDisplayWindow(dispW);

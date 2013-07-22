@@ -21,12 +21,8 @@
 
 #include <string>
 #include <cstring>
-//#include <boost/foreach.hpp>
-#include <QtCore/QForeachContainer>
 #include <vector>
 #include "Superviser/powiterFn.h"
-#undef foreach 
-#define foreach Q_FOREACH
 
 
 
@@ -38,32 +34,32 @@ public:
     
     // class iterator: used to iterate over channels
     class iterator{
-        Powiter_Enums::Channel _cur;
+        Powiter::Channel _cur;
         U32 _mask;
     public:
         iterator(const iterator& other):_cur(other._cur),_mask(other._mask){}
-        iterator(U32 mask,Powiter_Enums::Channel cur){
+        iterator(U32 mask,Powiter::Channel cur){
             _cur = cur;
             _mask = mask;
         }
-        Powiter_Enums::Channel operator *() const{return _cur;}
-        Powiter_Enums::Channel operator->() const{return _cur;}
+        Powiter::Channel operator *() const{return _cur;}
+        Powiter::Channel operator->() const{return _cur;}
         void operator++(){
             int i = (int)_cur;
             while(i < 32){
                 if(_mask & (1 << i)){
-                    _cur = (Powiter_Enums::Channel)i;
+                    _cur = (Powiter::Channel)i;
                     return;
                 }
                 i++;
             }
-            _cur = Powiter_Enums::Channel_black;
+            _cur = Powiter::Channel_black;
         }
         void operator++(int){
             int i = (int)_cur;
             while(i < 32){
                 if(_mask & (1 << i)){
-                    _cur = (Powiter_Enums::Channel)i;
+                    _cur = (Powiter::Channel)i;
                     return;
                 }
                 i++;
@@ -73,23 +69,23 @@ public:
             int i = (int)_cur;
             while(i >= 0){
                 if(_mask & (1 << i)){
-                    _cur = (Powiter_Enums::Channel)i;
+                    _cur = (Powiter::Channel)i;
                     return;
                 }
                 i--;
             }
-            _cur = Powiter_Enums::Channel_black;
+            _cur = Powiter::Channel_black;
         }
         void operator--(int){
             int i = (int)_cur;
             while(i >= 0){
                 if(_mask & (1 << i)){
-                    _cur = (Powiter_Enums::Channel)i;
+                    _cur = (Powiter::Channel)i;
                     return;
                 }
                 i--;
             }
-            _cur = Powiter_Enums::Channel_black;
+            _cur = Powiter::Channel_black;
         }
         bool operator==(const iterator& other){
             return _mask==other._mask && _cur==other._cur;
@@ -103,12 +99,12 @@ public:
     
     ChannelSet() : mask(0),_size(0) {}
     ChannelSet(const ChannelSet &source);
-    ChannelSet(Powiter_Enums::ChannelSetInit v);
-    ChannelSet(Powiter_Enums::Channel v) : _size(1) {mask = v;}
+    ChannelSet(Powiter::ChannelMask v);
+    ChannelSet(Powiter::Channel v) : _size(1) {mask = v;}
     ~ChannelSet() {}
     const ChannelSet& operator=(const ChannelSet& source);
-    const ChannelSet& operator=(Powiter_Enums::ChannelSetInit source) ;
-    const ChannelSet& operator=(Powiter_Enums::Channel z);
+    const ChannelSet& operator=(Powiter::ChannelMask source) ;
+    const ChannelSet& operator=(Powiter::Channel z);
     
     void clear() { mask = 0; _size = 0;}
     operator bool() const { return mask ; }// allow to do stuff like if(channelsA & channelsB)
@@ -117,66 +113,66 @@ public:
     bool operator==(const ChannelSet& source) const;
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
     bool operator<(const ChannelSet& source) const;
-    bool operator==(Powiter_Enums::ChannelSetInit v) const { return mask == U32(v); }
-    bool operator!=(Powiter_Enums::ChannelSetInit v) const { return !(*this == v); }
-    bool operator==(Powiter_Enums::Channel z) const;
-    bool operator!=(Powiter_Enums::Channel z) const { return !(*this == z); }
+    bool operator==(Powiter::ChannelMask v) const { return mask == U32(v); }
+    bool operator!=(Powiter::ChannelMask v) const { return !(*this == v); }
+    bool operator==(Powiter::Channel z) const;
+    bool operator!=(Powiter::Channel z) const { return !(*this == z); }
     
     /*add a channel with +=*/
     void operator+=(const ChannelSet& source);
-    void operator+=(Powiter_Enums::ChannelSetInit source);
-    void operator+=(Powiter_Enums::Channel z);
-    void insert(Powiter_Enums::Channel z) { *this += z; }
+    void operator+=(Powiter::ChannelMask source);
+    void operator+=(Powiter::Channel z);
+    void insert(Powiter::Channel z) { *this += z; }
     
     /*turn off a channel with -=*/
     void operator-=(const ChannelSet& source);
-    void operator-=(Powiter_Enums::ChannelSetInit source);
-    void operator-=(Powiter_Enums::Channel z);
-    void erase(Powiter_Enums::Channel z) { *this -= z; }
+    void operator-=(Powiter::ChannelMask source);
+    void operator-=(Powiter::Channel z);
+    void erase(Powiter::Channel z) { *this -= z; }
     
     void operator&=(const ChannelSet& source);
-    void operator&=(Powiter_Enums::ChannelSetInit source) ;
-    void operator&=(Powiter_Enums::Channel z);
+    void operator&=(Powiter::ChannelMask source) ;
+    void operator&=(Powiter::Channel z);
     
     
     ChannelSet operator&(const ChannelSet& c) const;
-    ChannelSet operator&(Powiter_Enums::ChannelSetInit c) const;
-    ChannelSet operator&(Powiter_Enums::Channel z) const;
+    ChannelSet operator&(Powiter::ChannelMask c) const;
+    ChannelSet operator&(Powiter::Channel z) const;
     bool contains(const ChannelSet& source) const;
-    bool contains(Powiter_Enums::ChannelSetInit source) const { return !(~mask & source); }
-    bool contains(Powiter_Enums::Channel z) const;
+    bool contains(Powiter::ChannelMask source) const { return !(~mask & source); }
+    bool contains(Powiter::Channel z) const;
     unsigned size() const;
-    Powiter_Enums::Channel first() const;
-    Powiter_Enums::Channel next(Powiter_Enums::Channel k) const;
-    Powiter_Enums::Channel last() const;
-    Powiter_Enums::Channel previous(Powiter_Enums::Channel k) const;
+    Powiter::Channel first() const;
+    Powiter::Channel next(Powiter::Channel k) const;
+    Powiter::Channel last() const;
+    Powiter::Channel previous(Powiter::Channel k) const;
     
     U32 value() const {return mask;}
     
     iterator begin(){return iterator(mask,first());}
     
     iterator end(){
-        Powiter_Enums::Channel _last = this->last();
-        return iterator(mask,(Powiter_Enums::Channel)(_last+1));
+        Powiter::Channel _last = this->last();
+        return iterator(mask,(Powiter::Channel)(_last+1));
     }
     void printOut();
     
 #define foreachChannels(CUR, CHANNELS) \
-    for (Powiter_Enums::Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))
+    for (Powiter::Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))
 
 
         };
-typedef ChannelSet ChannelMask;
+
 
 
 /*returns the channel of name "name"*/
-Powiter_Enums::Channel getChannelByName(const char *name);
+Powiter::Channel getChannelByName(const char *name);
 
 /*Return a cstring with the name of the channel c*/
-std::string getChannelName(Powiter_Enums::Channel c);
+std::string getChannelName(Powiter::Channel c);
 
 /*useful function to check whether alpha is on in the mask*/
-bool hasAlpha(ChannelMask mask);
+bool hasAlpha(ChannelSet mask);
 
 
 #endif // CHANNELS_H
