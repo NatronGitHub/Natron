@@ -17,8 +17,11 @@
 
 #ifndef READER_H
 #define READER_H
+#include <QImage>
+#include <QStringList>
+
 #include "Core/inputnode.h"
-#include <QtConcurrent/QtConcurrent>
+
 /* Reader is the node associated to all image format readers. The reader creates the appropriate Read*
  to decode a certain image format.
 */

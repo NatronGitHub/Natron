@@ -18,11 +18,11 @@
 #ifndef NODEGRAPH_H
 #define NODEGRAPH_H
 #include <cmath>
-#include <QtWidgets/QGraphicsView>
+#include <QGraphicsView>
 #include <iostream>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
-#include <QtWidgets/QInputDialog>
+#include <QInputDialog>
 #include <boost/noncopyable.hpp>
 #include "Superviser/powiterFn.h"
 

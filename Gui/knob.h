@@ -20,10 +20,10 @@
 #include <vector>
 #include <map>
 #include <QtCore/QString>
-#include <QtWidgets/QSpinBox>
-#include <QtWidgets/QWidget>
+#include <QSpinBox>
+#include <QWidget>
 #include <QtCore/QStringList>
-#include <QtWidgets/QLineEdit>
+#include <QLineEdit>
 #include "Superviser/powiterFn.h"
 #include "Core/channels.h"
 #include "Core/model.h"

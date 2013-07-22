@@ -18,7 +18,7 @@
 #ifndef SMARTINPUTDIALOG_H
 #define SMARTINPUTDIALOG_H
 
-#include <QtWidgets/QDialog>
+#include <QDialog>
 
 class NodeGraph;
 class Controler;

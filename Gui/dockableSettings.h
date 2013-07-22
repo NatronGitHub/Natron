@@ -19,7 +19,7 @@
 #define SETTINGSPANEL_H
 
 
-#include <QtWidgets/QFrame>
+#include <QFrame>
 
 class LineEdit;
 class Node;

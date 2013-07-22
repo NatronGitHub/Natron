@@ -15,7 +15,7 @@
 
 
 
-#include <QtWidgets/qlayout.h>
+#include <qlayout.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 

@@ -14,10 +14,10 @@
 
 
 
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QVBoxLayout>
+#include <QLabel>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QVBoxLayout>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include "QtCore/QStringList"

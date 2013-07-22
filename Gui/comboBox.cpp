@@ -8,18 +8,16 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
-#include <QtWidgets/QtWidgets>
-#include <algorithm>
 #include "Gui/comboBox.h"
+
+#include <algorithm>
+#include <QLayout>
+#include <QLabel>
+#include <QMenu>
+#include <QStyle>
+
 #include "Superviser/powiterFn.h"
+
 using namespace std;
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_maximumTextSize(0),pressed(false){
     

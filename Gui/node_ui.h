@@ -22,7 +22,7 @@
 //#include <inputarrow.h>
 #include "Superviser/powiterFn.h"
 #include <QtCore/QRectF>
-#include <QtWidgets/QGraphicsItem>
+#include <QGraphicsItem>
 
 static const int NODE_LENGTH=80;
 static const int NODE_HEIGHT=30;
@@ -39,7 +39,7 @@ class NodeGraph;
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
-
+    Q_INTERFACES(QGraphicsItem)
 public:
 
     NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
