@@ -46,6 +46,26 @@
 #include <cassert>
 
 
+#include <fstream>
+
+// ofx
+#include "ofxCore.h"
+#include "ofxImageEffect.h"
+#include "ofxPixels.h"
+
+// ofx host
+#include "ofxhBinary.h"
+#include "ofxhPropertySuite.h"
+#include "ofxhClip.h"
+#include "ofxhParam.h"
+#include "ofxhMemory.h"
+#include "ofxhImageEffect.h"
+#include "ofxhPluginAPICache.h"
+#include "ofxhPluginCache.h"
+#include "ofxhHost.h"
+#include "ofxhImageEffectAPI.h"
+
+
 using namespace std;
 using namespace Powiter_Enums;
 Model::Model(): _videoEngine(0),_mutex(0)
@@ -139,6 +159,34 @@ Model::Model(): _videoEngine(0),_mutex(0)
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
         addFormat(_frmt);
     }
+    
+    
+    _properties.setStringProperty(kOfxPropName, "PowiterHost");
+    _properties.setStringProperty(kOfxPropLabel, "Powiter");
+    _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, true);
+    _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, true);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGBA, 0);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentAlpha, 1);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
+    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
+    _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsStringAnimation, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsChoiceAnimation, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsBooleanAnimation, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsCustomAnimation, 0 );
+    _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
+    _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
+    _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
+    _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     
     
 }
@@ -798,6 +846,73 @@ void Model::resetInternalDAG(){
 void Model::loadOFXPlugins(bool useCache){
     (void)useCache;
 
+
+
 }
 
+OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
+                                                    OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                    OFX::Host::ImageEffect::Descriptor& desc,
+                                                    const std::string& context)
+{
+    return new MyEffectInstance(plugin, desc, context);
+}
+
+/// Override this to create a descriptor, this makes the 'root' descriptor
+OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
+{
+    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
+    return desc;
+}
+
+/// used to construct a context description, rootContext is the main context
+OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+                                                         OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+{
+    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
+    return desc;
+}
+
+/// used to construct populate the cache
+OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bundlePath,
+                                                         OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+{
+    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
+    return desc;
+}
+
+/// message
+OfxStatus Model::vmessage(const char* type,
+                         const char* id,
+                         const char* format,
+                         va_list args)
+{
+    bool isQuestion = false;
+    const char *prefix = "Message : ";
+    if (strcmp(type, kOfxMessageLog) == 0) {
+        prefix = "Log : ";
+    }
+    else if(strcmp(type, kOfxMessageFatal) == 0 ||
+            strcmp(type, kOfxMessageError) == 0) {
+        prefix = "Error : ";
+    }
+    else if(strcmp(type, kOfxMessageQuestion) == 0)  {
+        prefix = "Question : ";
+        isQuestion = true;
+    }
+    
+    // Just dump our message to stdout, should be done with a proper
+    // UI in a full ap, and post a dialogue for yes/no questions.
+    fputs(prefix, stdout);
+    vprintf(format, args);
+    printf("\n");
+    
+    if(isQuestion) {
+        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
+        return kOfxStatReplyYes;
+    }
+    else {
+        return kOfxStatOK;
+    }
+}
 

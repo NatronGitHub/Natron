@@ -35,6 +35,7 @@ include(config.pri)
 
 
 INCLUDEPATH += $$PWD/
+INCLUDEPATH += $$PWD/libs/OpenFX/include
 
 
 SOURCES += \
