@@ -23,6 +23,8 @@
 #include <QtGui/QImage>
 #include <QtGui/QPixmap>
 #include <QtGui/QIcon>
+#include <QtCore/QMimeData>
+#include <QtGui/QDrag>
 #include <QScrollArea>
 
 #include "Superviser/powiterFn.h"
