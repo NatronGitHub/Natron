@@ -429,8 +429,8 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     QPixmap pix = QPixmap::grabWidget(_tabWidget);
 #else
     QPixmap pix = _tabWidget->grab();
-    drag->setPixmap(pix);
 #endif
+    drag->setPixmap(pix);
     drag->exec();
 }
 //

@@ -216,6 +216,10 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         delete out;
         return NULL;
     }
+    if(!out->getMappedFile()->data()){
+        delete out;
+        return NULL;
+    }
     currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
     if(AbstractDiskCache::add(key, out)){
         currentViewer->getUiContext()->frameSeeker->removeCachedFrame();

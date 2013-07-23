@@ -267,6 +267,8 @@ void SequenceFileDialog::enterDirectory(const QModelIndex& index){
     if (path.isEmpty() || _model->isDir(sourceIndex)) {
         
         setDirectory(path);
+
+        
     }
 }
 void SequenceFileDialog::setDirectory(const QString &directory){
@@ -284,6 +286,15 @@ void SequenceFileDialog::setDirectory(const QString &directory){
         newDirectory.append("/");
     }
     _selectionLineEdit->setText(newDirectory);
+    if(_currentHistoryLocation <  0 || _history.value(_currentHistoryLocation) != QDir::toNativeSeparators(newDirectory)){
+        while(_currentHistoryLocation >= 0 && _currentHistoryLocation+1 < _history.count()){
+            _history.removeLast();
+        }
+        _history.append(QDir::toNativeSeparators(newDirectory));
+        ++_currentHistoryLocation;
+    }
+    _nextButton->setEnabled(_history.size() - _currentHistoryLocation > 1);
+    _previousButton->setEnabled(_currentHistoryLocation > 0);
 
 }
 
@@ -292,15 +303,7 @@ void SequenceFileDialog::updateView(const QString &directory){
 
     QDir dir(_model->rootDirectory());
     _upButton->setEnabled(dir.exists());
-    if(_currentHistoryLocation <  0 || _history.value(_currentHistoryLocation) != QDir::toNativeSeparators(directory)){
-        while(_currentHistoryLocation >= 0 && _currentHistoryLocation+1 < _history.count()){
-            _history.removeLast();
-        }
-        _history.append(QDir::toNativeSeparators(directory));
-        ++_currentHistoryLocation;
-    }
-    _nextButton->setEnabled(_history.size() - _currentHistoryLocation > 1);
-    _previousButton->setEnabled(_currentHistoryLocation > 0);
+
 
     QModelIndex root = _model->index(directory);
     QModelIndex proxyIndex = mapFromSource(root); // < calls filterAcceptsRow
@@ -331,12 +334,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
 
     QModelIndex item = sourceModel()->index(source_row,0,source_parent);
     QString path = item.data(QFileSystemModel::FilePathRole).toString();
-
     if(qobject_cast<QFileSystemModel*>(sourceModel())->isDir(item)){
         return true;
     }
 
-    if(!isAcceptedByUser(item.data().toString())) return false;
+    if(!isAcceptedByUser(item.data().toString())){
+        return false;
+    }
 
     int frameNumber;
     QString pathCpy = path;
@@ -547,9 +551,9 @@ bool SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QStr
     if((i == 0 && path.size() > 1)|| !digitCount){
         *frameNumber = -1;
         path = "";
-        return false;
+    }else{
+        *frameNumber = fNumber.toInt();
     }
-    *frameNumber = fNumber.toInt();
     return true;
     
 }
@@ -830,7 +834,6 @@ QStringList SequenceFileDialog::selectedFiles(){
         QString prefix = dir.absolutePath()+QDir::separator();
         QModelIndex sequenceIndex = indexes.at(0);
         QString path = sequenceIndex.data().toString();
-		cout << path.toStdString() << endl;
         path = prefix+path;
         QString originalPath = path;
         QString ext = SequenceFileDialog::removeFileExtension(path);

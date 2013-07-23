@@ -50,7 +50,7 @@ border-radius : 5px;
 }
 TabWidget{background-color: %2;}
 
-QWidget{ /* QWidget#_propertiesContainer*/
+QWidget#_propertiesContainer{
 background-color: %2;
 }
 SettingsPanel{

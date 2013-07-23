@@ -1,6 +1,3 @@
 [submodule "libs/OpenFX"]
 	path = libs/OpenFX
 	url = https://github.com/devernay/openfx.git
-[submodule "openfx"]
-	path = openfx
-	url = https://github.com/devernay/openfx.git

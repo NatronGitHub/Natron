@@ -347,7 +347,7 @@ void Gui::loadStyleSheet(){
         setStyleSheet(content
                       .arg("rgb(243,149,0)")
                       .arg("rgb(50,50,50)")
-                      .arg("rgb(50,50,50)")
+                      .arg("rgb(71,71,71)")
                       .arg("rgb(38,38,38)")
                       .arg("rgb(200,200,200)"));
     }

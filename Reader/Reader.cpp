@@ -123,8 +123,7 @@ bool Reader::readCurrentHeader(int current_frame){
             if(_fitFrameToViewer){
                 currentViewer->getUiContext()->viewer->fitToFormat(dispW);
             }
-            zoomFactor = currentViewer->getUiContext()->viewer->getZoomFactor();
-            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW,zoomFactor);
+            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
         }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             for (int i = dataW.y() ; i < dataW.top(); i++) {

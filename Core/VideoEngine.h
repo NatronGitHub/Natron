@@ -222,7 +222,9 @@ public:
      **/
     class EngineStatus{
     public:
-        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2};
+        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
+        
+        EngineStatus():_cachedEntry(0),_key(0),_w(0),_h(0),_cachingMode(0),_returnCode(NORMAL_ENGINE){}
         
         EngineStatus(FrameEntry* cachedEntry,U64 key,int w,int h,int cachingMode,const std::map<int,int> rows,EngineStatus::RetCode state):
         _cachedEntry(cachedEntry),
@@ -231,12 +233,12 @@ public:
         _h(h),
         _cachingMode(cachingMode),
         _rows(rows),
-        _state(state)
+        _returnCode(state)
         {}
         
         EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
         _key(other._key),_w(other._w),_h(other._h),_cachingMode(other._cachingMode),
-        _rows(other._rows),_state(other._state){}
+        _rows(other._rows),_returnCode(other._returnCode){}
         
  
         ~EngineStatus(){}
@@ -246,7 +248,7 @@ public:
         int _w,_h;
         int _cachingMode;
         std::map<int,int> _rows;
-        RetCode _state;
+        RetCode _returnCode;
     };
     
 private:
@@ -279,22 +281,26 @@ private:
     };
     
     /**
-     *@class VideoEngine::GPUTransferInfo
-     *@brief This class stores pointer to a source buffer and a destination buffers as well as a size of data
-     *to copy. This is used when filling viewer's PBO in a separate thread.
-     **/
-    class GPUTransferInfo{
+     * @brief The ViewerCacheArgs class is a convenience class storing the arguments
+     * passed to the viewer cache for checking if a frame is cached or not.
+     * This saves the burden of re-calling all the arguments separatly into
+     * member variables or even re-compute some of them.
+     */
+    class ViewerCacheArgs{
     public:
-        GPUTransferInfo():src(0),dst(0),byteCount(0){}
-        GPUTransferInfo(const char* s,void* d,size_t size):src(s),dst(d),byteCount(size){}
-        void set(const char* s,void* d,size_t size){
-            src=s;
-            dst=d;
-            byteCount=size;
-        }
-        const char* src;
-        void* dst;
-        size_t byteCount;
+        ViewerCacheArgs():_hashKey(0),
+            _zoomFactor(0),_exposure(0),_lut(0),
+            _byteMode(0),_w(0),_h(0),_dataSize(0){}
+
+        U64 _hashKey;
+        float _zoomFactor;
+        float _exposure;
+        float _lut;
+        float _byteMode;
+        int _w,_h;
+        size_t _dataSize;
+        Format _displayWindow;
+        Box2D _dataWindow;
     };
     
         
@@ -304,9 +310,9 @@ private:
     
 	bool _working; /*!< True if the engine is working.*/
        
-    DAG _dag; /*!<The internal DAG instance.*/
+    DAG _dag; /*!< The internal DAG instance.*/
     
-    Timer* _timer; /*!<Timer regulating the engine execution. It is controlled by the GUI.*/
+    Timer* _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
         
     QMutex* _lock; /*!< General mutex for the engine*/
   
@@ -316,37 +322,34 @@ private:
 
     Hash _treeVersion;/*!< the hash key associated to the current graph*/
     
-    int _frameRequestsCount; /*<! total frame requests in the current videoEngine*/
+    int _frameRequestsCount; /*!< total frame requests in the current videoEngine*/
     
-    int _frameRequestIndex;/*!<counter of the frames computed*/
+    int _frameRequestIndex;/*!< counter of the frames computed*/
     
     bool _forward; /*!< forwards/backwards video engine*/
     
-    bool _loopMode; /*!<on if the player will loop*/
+    bool _loopMode; /*!< on if the player will loop*/
         
-    bool _sameFrame;/*!<on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
+    bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
     
-    
-    QFutureWatcher<void>* _engineLoopWatcher;/*!<watcher of the thread running the function ViewerGL::fillPBO().
-                                              its finished() signal will call VideoEngine::engineLoop()
-                                              */
-    QFuture<void>* _enginePostProcessResults;/*!<The future stored in _engineLoopWatcher*/
-    
-    QFutureWatcher<void>* _workerThreadsWatcher;/*!<watcher of the thread pool running the meta engine for all rows of
+    QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call 
                                                  VideoEngine::finishComputeFrameRequest()*/
-    QFuture<void>* _workerThreadsResults;/*!<The future stored in _workerThreadsWatcher*/
+    QFuture<void>* _workerThreadsResults;/*!< The future stored in _workerThreadsWatcher*/
    
-    QFutureWatcher<VideoEngine::EngineStatus*>* _computeFrameWatcher;/*<watcher of the thread running the function
+    QFutureWatcher<void>* _computeFrameWatcher;/*!< watcher of the thread running the function
                                                                       VideoEngine::computeFrameRequest. It stores the
                                                                       results of the function and calls 
                                                                       VideoEngine::dispatchComputeFrameRequestThread() 
                                                                       when finished.*/
     
     std::vector<Row*> _sequenceToWork;/*!< The sequence of all rows for the current frame to process.*/
+        
+    ViewerCacheArgs _viewerCacheArgs; /*!< The last arguments passed to the viewer cache.*/
     
-    GPUTransferInfo _gpuTransferInfo;/*!<infos used by the engine when filling viewer's PBO*/
-    
+    EngineStatus _lastEngineStatus; /*!< The last engine return status. This can be used to query whether it used the
+                                     viewer cache/texture cache or not and to query other infos.*/
+
 public slots:
 	/**
      *@brief Starts the engine with initialisation of the viewer so the frame fits in the viewport.
@@ -354,6 +357,12 @@ public slots:
      **/
     void startEngine(int nbFrames =-1);
 
+    /**
+     *@brief Starts the engine to repeat the same frame (usually called when panning/zooming)
+     * The engine will not  initialise  the viewer to fit the frame in the viewport.
+     **/
+    void repeatSameFrame();
+    
     /**
      *@brief Does nothing yet as there ain't no progress bar.
      **/
@@ -446,14 +455,16 @@ public slots:
      *It will fill the ViewerGL's current PBO with the frame that's just been computed in a separate thread.
      *When finished, it will call VideoEngine::engineLoop(). Do not call this directly.
      **/
-    void finishComputeFrameRequest();
+    void copyFrameToCache(const char* src);
     
     /**
-     *@brief Called internally by VideoEngine::computeFrameRequest(bool,bool,bool) when the finished() signal
-     *is received from the thread executing that function. It will call the function VideoEngine::dispatchEngine(EngineStatus*)
-     *with the results stored in the member _computeFrameWatcher. You should never call this function.
+     *@brief Called by the thread returning from VideoEngine::computeFrameRequest(bool,bool,bool).
+     *According to the return status of the engine it calls the appropriate function,that is either
+     *VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,OutputNode *) or
+     *Viewer::cachedFrameEngine(FrameEntry*). If the return code stored in the EngineStatus is
+     *EngineStatus::TEXTURE_CACHED_ENGINE the it calls directly VideoEngine::engineLoop().
      **/
-    void dispatchComputeFrameRequestThread();
+    void dispatchEngine();
     
     signals:
     /**
@@ -544,14 +555,7 @@ public:
     U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
     
 private:
-    /**
-     *@brief Called by the thread returning from VideoEngine::computeFrameRequest(bool,bool,bool).
-     *According to the return status of the engine it calls the appropriate function,that is either
-     *VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,OutputNode *) or 
-     *Viewer::cachedFrameEngine(FrameEntry*). If the return code stored in the EngineStatus is
-     *EngineStatus::TEXTURE_CACHED_ENGINE the it calls directly VideoEngine::engineLoop().
-     **/
-    void dispatchEngine(EngineStatus*);
+    
     
     /**
      *@brief This function executes the graph for 1 frame. This function launches several threads
@@ -561,11 +565,9 @@ private:
      *The map stores rows indexes where the key is the index in the full-res frame and the value is the index
      *in the frame as requested on the viewport. Note that if the parameter output is not a viewer, the indexes
      *in the viewport will be exactly the same as the indexes in the full-res frame.
-     *@param dataSize[in] The size in bytes of the current frame. This is useful when the output is a viewer to
-     *indicate the ViewerGL how many bytes it will need to copy into the PBO.
      *@param output[in] This is the output node of the graph.
      **/
-    void computeTreeForFrame(const std::map<int,int>& rows,size_t dataSize,OutputNode *output);
+    void computeTreeForFrame(const std::map<int,int>& rows, OutputNode *output);
 
     /**
      *@brief Called by VideoEngine::videoEngine(int,bool,bool,bool) the first time or by VideoEngine::engineLoop().
@@ -581,7 +583,7 @@ private:
      *as well as a list of the rows indexes the engine should compute if the frame is not cached.
      */
 
-    VideoEngine::EngineStatus* computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
+    void computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.

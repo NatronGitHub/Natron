@@ -121,22 +121,17 @@
                 
             public:
                 
-                ZoomContext():zoomX(0),zoomY(0),restToZoomX(0),restToZoomY(0),zoomFactor(1)
+                ZoomContext():_bottom(0),_left(0),_zoomFactor(1)
                 {}
                 
-                QPointF old_zoomed_pt,old_zoomed_pt_win;
-                float zoomX,zoomY;
-                float restToZoomX,restToZoomY;
-                float zoomFactor;
-                
-                void setZoomXY(float x,float y){zoomX=x;zoomY=y;}
-                
-                std::pair<int,int> getZoomXY() const {return std::make_pair(zoomX,zoomY);}
-                
+                QPoint _oldClick;
+                float _bottom,_left;
+                float _zoomFactor;
+                                                
                 /*the level of zoom used to display the frame*/
-                void setZoomFactor(float f){zoomFactor = f;}
+                void setZoomFactor(float f){_zoomFactor = f;}
                 
-                float getZoomFactor() const {return zoomFactor;}
+                float getZoomFactor() const {return _zoomFactor;}
             };
             
             /**
@@ -147,76 +142,65 @@
             
             TextRenderer _textRenderer; /*!< The class used to render text in the viewport*/
             
-            GLuint texBuffer[2]; /*!< PBO's id's used by the OpenGL context*/
+            GLuint _pboIds[2]; /*!< PBO's id's used by the OpenGL context*/
             
             TextureEntry* _texID;/*!<The texture used to render data that doesn't come from the texture cache*/
             
-            TextureEntry* _currentTexture;/*!<A pointer to the current texture used to display.*/
+            TextureEntry* _currentTexture;/*!< A pointer to the current texture used to display.*/
             
-            GLuint texBlack[1];/*!<Id of the texture used to render a black screen when nothing is connected.*/
+            GLuint texBlack[1];/*!< Id of the texture used to render a black screen when nothing is connected.*/
             
-            QGLShaderProgram* shaderRGB;/*!<The shader program used to render RGB data*/
-            QGLShaderProgram* shaderLC;/*!<The shader program used to render YCbCr data*/
-            QGLShaderProgram* shaderBlack;/*!<The shader program used when the viewer is disconnected.*/
+            QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
+            QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
+            QGLShaderProgram* shaderBlack;/*!< The shader program used when the viewer is disconnected.*/
             
-            bool _shaderLoaded;/*!<Flag to check whether the shaders have already been loaded.*/
+            bool _shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
             
             float _lut; /*!< a value coding the current color-space used to render.
                          0 = NONE , 1 = sRGB , 2 = Rec 709*/
             
-            Lut* _colorSpace;/*!<The lut used to do the viewer colorspace conversion when we can't use shaders*/
+            Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
             
-            bool _usingColorSpace;/*!<True when the viewer is using the Lut. It locks it so
+            bool _usingColorSpace;/*!< True when the viewer is using the Lut. It locks it so
                                    the the software will not try to change the current lut at
                                    the same time.*/
             
-            InfoViewerWidget* _infoViewer;/*!<Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
+            InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
             
-            float exposure ;/*!<current exposure setting, all pixels are multiplied
+            float exposure ;/*!< Current exposure setting, all pixels are multiplied
                              by pow(2,expousre) before they appear on the screen.*/
             
-            ViewerInfos* _currentViewerInfos;/*!<Pointer to the ViewerInfos  used for rendering*/
+            ViewerInfos* _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
             
-            ViewerInfos* _blankViewerInfos;/*!<Pointer to the infos used when the viewer is disconnected.*/
+            ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
-            bool _drawing;/*!<True if the viewer is connected and not displaying black.*/
+            bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
             
-            MOUSE_STATE _ms;/*!<Holds the mouse state*/
+            MOUSE_STATE _ms;/*!< Holds the mouse state*/
             
-            QPointF old_pos;/*!<The last position of the mouse*/
+            std::pair<int,int> _rowSpan;/*!< The first and last row index displayed currently on the viewer.*/
             
-            QPointF new_pos;/*!<The new position of the mouse*/
+            ZoomContext _zoomCtx;/*!< All zoom related variables are packed into this object*/
             
-            float transX,transY;/*!<The translation applied to the viewer on the
-                                 X and Y coordinates.*/
+            QString _resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
             
-            std::pair<int,int> _rowSpan;/*!<The first and last row index displayed currently on the viewer.*/
+            QString _btmLeftBBOXoverlay;/*!< The string holding the bottom left corner coordinates of the dataWindow*/
             
-            ZoomContext _zoomCtx;/*!<All zoom related variables are packed into this object*/
+            QString _topRightBBOXoverlay;/*!< The string holding the top right corner coordinates of the dataWindow**/
             
-            QString _resolutionOverlay;/*!<The string holding the resolution overlay, e.g: "1920x1080"*/
+            bool _overlay;/*!< True if the user enabled overlay dispay*/
             
-            QString _btmLeftBBOXoverlay;/*!<The string holding the bottom left corner coordinates of the dataWindow*/
+            bool _hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
             
-            QString _topRightBBOXoverlay;/*!<The string holding the top right corner coordinates of the dataWindow**/
-            
-            bool _overlay;/*!<True if the user enabled overlay dispay*/
-            
-            bool _hasHW;/*!<True if the user has a GLSL version supporting everything requested.*/
-            
-            char* frameData;/*!<Pointer to the buffer holding the data computed for the last frame.
+            char* frameData;/*!< Pointer to the buffer holding the data computed for the last frame.
                              This buffer is either pointing to a mmaped region or to a full RAM buffer.
                              It is then copied to the PBO for rendering on the viewport.*/
             
-            bool _mustFreeFrameData;/*!<True indicates that the frameData is pointing to a RAM buffer.
-                                     *This is true whenever the texture displayed is just a portion of the full image(i.e
-                                     *when filling the texture cache). It can also be true if there's a problem with
-                                     *with the cache and indicates that the software is falling back on a pure RAM version.*/
             
-            bool _noDataTransfer;/*!<True whenever the current texture already holds data and doesn't need
+            bool _noDataTransfer;/*!< True whenever the current texture already holds data and doesn't need
                                   a copy from a PBO*/
             
-            TextureCache* _textureCache;/*!<Pointer to the texture cache. The viewer does NOT own it!
+            TextureCache* _textureCache;/*!< Pointer to the texture cache. The viewer does NOT own it!
                                          It is shared among viewers*/
             
         public:
@@ -334,12 +318,12 @@
             /**
              *@returns Returns the height of the frame with the scale factor applied to it.
              **/
-            float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx.zoomFactor);}
+            float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
-            float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx.zoomFactor);}
+            float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx._zoomFactor);}
             
             /**
              *@brief Set the zoom factor used to render.
@@ -353,7 +337,7 @@
             
             /**
              *@brief Computes what are the rows that should be displayed on viewer
-             *for the given displayWindow with the  zoom factor and  current zoom center.
+             *for the given displayWindow with the  current zoom factor and  current zoom center.
              *The rows will be stored from bottom to top. The values are returned
              *as a map of displayWindow coordinates mapped to viewport cooridnates.
              *This function does not use any OpenGL function, so it can be safely called in
@@ -364,7 +348,7 @@
              *@param displayWindow[in] The display window used to do the computations.
              *@param zoomFactor[in] The zoom factor applied to the display window.
              **/
-            void computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow,float zoomFactor);
+            void computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow);
             
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
@@ -376,20 +360,33 @@
             QPoint openGLCoordToViewportCoord(int x,int y);
             
             /**
-             *@brief Computes the OpenGL coordinates of the point passed in parameter.
-             *This function actually does the unprojection to retrieve the position;
+             *@brief Computes the image coordinates of the point passed in parameter.
+             *This function actually does the unprojection to retrieve the position.
              *@param x[in] The x coordinate of the point in viewport coordinates.
              *@param y[in] The y coordinates of the point in viewport coordinates.
-             *@returns Returns the OpenGL coordinates mapped equivalent of (x,y) as well as the depth.
+             *@returns Returns the image coordinates mapped equivalent of (x,y) as well as the depth.
              **/
-            QVector3D openGLpos(int x,int y);
+            QVector3D toImgCoordinates_slow(int x,int y);
             
             /**
-             *@brief Same as ViewerGL::openGLpos(int x,int y) but faster since it avoids a call
-             *to glReadPixels(...) to retrieve the z coordinate.
+             *@brief Computes the image coordinates of the point passed in parameter.
+             *This is a fast in-line method much faster than toImgCoordinates_slow().
+             *This function actually does the unprojection to retrieve the position.
+             *@param x[in] The x coordinate of the point in viewport coordinates.
+             *@param y[in] The y coordinates of the point in viewport coordinates.
+             *@returns Returns the image coordinates mapped equivalent of (x,y).
              **/
-            QPoint openGLpos_fast(int x,int y);
-            
+            QPointF toImgCoordinates_fast(int x,int y){
+                float w = (float)width() ;
+                float h = (float)height();
+                const Format& dispW = displayWindow();
+                float bottom = _zoomCtx._bottom;
+                float left = _zoomCtx._left;
+                float top =  bottom +  h / _zoomCtx._zoomFactor;
+                float right = left +  w / _zoomCtx._zoomFactor;
+                return QPointF((((right - left)*x)/w)+left,(((bottom - top)*y)/h)+top);
+            }
+
             /**
              *@brief Returns the rgba components of the pixel located at position (x,y) in viewport coordinates.
              *This function unprojects the x and y coordinates to retrieve the OpenGL coordinates
@@ -482,7 +479,7 @@
             /**
              *@returns Returns the OpenGL PBO located at index. Index must be either 0 or 1.
              **/
-            GLuint getPBOId(int index) const {return texBuffer[index];}
+            GLuint getPBOId(int index) const {return _pboIds[index];}
             
             /**
              *@brief Set the _rowSpan member. This is a pair of the index of the first row and
@@ -588,6 +585,11 @@
              *@brief Signal emitted when the current frame changed.
              **/
             void frameChanged(int);
+            
+            /**
+             *@brief Signal emitted when the viewport is resized or the user pan around the image or zoom-in/out
+             **/
+            void engineNeeded();
             
             
             protected :
@@ -729,15 +731,11 @@
             void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
                                                int w,int yOffset,const float* alpha);
             
-            /**
-             *@brief Set the current translation applied to the viewer
-             **/
-            void setTranslation(float x,float y){transX = x; transY=y;}
-            
+
             /**
              *@brief Resets the mouse position
              **/
-            void resetMousePos(){ new_pos.setX(0);new_pos.setY(0); old_pos.setX(0);old_pos.setY(0);}
+            void resetMousePos(){_zoomCtx._oldClick.setX(0); _zoomCtx._oldClick.setY(0);}
             
             
             /**

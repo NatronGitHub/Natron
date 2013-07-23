@@ -28,22 +28,19 @@ unix {
      expat:     PKGCONFIG += expat
 } #unix
 
-
-
-DESTDIR = release
-OBJECTS_DIR = release/.obj
-MOC_DIR = release/.moc
-RCC_DIR = release/.rcc
-UI_DIR = release/.ui
-
-
 debug{
-DESTDIR = debug
-OBJECTS_DIR = debug/.obj
-MOC_DIR = debug/.moc
-RCC_DIR = debug/.rcc
-UI_DIR = debug/.ui
+warning("Compiling in DEBUG mode.")
 }
+
+release:DESTDIR = "build_$$TARGET/release"
+debug:  DESTDIR = "build_$$TARGET/debug"
+
+OBJECTS_DIR = "$$DESTDIR/.obj"
+
+#Removed these as the Xcode project would mess-up and it is not important anyway.
+MOC_DIR = "$$OBJECTS_DIR"
+RCC_DIR = "$$OBJECTS_DIR"
+UI_DIR = "$$OBJECTS_DIR"
 
 unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7

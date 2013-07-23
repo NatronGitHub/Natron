@@ -105,7 +105,6 @@ void ViewerGL::initConstructor(){
     _overlay=true;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
-    _mustFreeFrameData = false;
     _currentTexture = 0;
 }
 
@@ -114,8 +113,7 @@ ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWid
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
-_drawing(false),
-transX(0),transY(0)
+_drawing(false)
 {
     
     initConstructor();
@@ -126,8 +124,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* sha
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
-_drawing(false),
-transX(0),transY(0)
+_drawing(false)
 {
     
     initConstructor();
@@ -139,8 +136,7 @@ ViewerGL::ViewerGL(QWidget* parent,const QGLWidget* shareWidget)
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
-_drawing(false),
-transX(0),transY(0)
+_drawing(false)
 {
     initConstructor();
     
@@ -164,12 +160,8 @@ ViewerGL::~ViewerGL(){
     }
     delete _texID;
     glDeleteTextures(1,&texBlack[0]);
-    glDeleteBuffers(2, &texBuffer[0]);
-    
-    if(_mustFreeFrameData)
-        free(frameData);
-    
-	delete _blankViewerInfos;
+    glDeleteBuffers(2, &_pboIds[0]);
+  	delete _blankViewerInfos;
 	delete _infoViewer;
 }
 
@@ -185,9 +177,6 @@ void ViewerGL::resizeGL(int width, int height){
     }else{
         glViewport (0, 0, width, height/ap);
     }
-	if(transX!=0 || transY!=0){
-		_ms = DRAGGING;
-	}
     checkGLErrors();
     _ms = UNDEFINED;
     if(_drawing)
@@ -202,21 +191,15 @@ void ViewerGL::paintGL()
         glMatrixMode (GL_PROJECTION);
 		glLoadIdentity();
         const Format& dispW = displayWindow();
-        float left = -w/2.f + dispW.w()/2.f;
-        float right = w/2.f + dispW.w()/2.f;
-        float bottom = -h/2.f + dispW.h()/2.f;
-        float top = h/2.f + dispW.h()/2.f ;
-        
+        float bottom = _zoomCtx._bottom;
+        float left = _zoomCtx._left;
+        float top =  bottom +  h / _zoomCtx._zoomFactor;
+        float right = left +  w / _zoomCtx._zoomFactor;
         glOrtho(left, right, bottom, top, -1, 1);
         
         glMatrixMode (GL_MODELVIEW);
 		glLoadIdentity();
-        
-        glTranslatef(transX, -transY, 0);
-        glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
-        
-        glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
-        glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
+
         
         glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
@@ -251,7 +234,6 @@ void ViewerGL::paintGL()
 }
 
 void ViewerGL::drawOverlay(){
-    checkGLErrors();
     glDisable(GL_TEXTURE_2D);
     _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
     
@@ -324,7 +306,7 @@ void ViewerGL::initializeGL(){
 	glClear(GL_COLOR_BUFFER_BIT);
     _texID = new TextureEntry;
     glGenTextures (1, texBlack);
-    glGenBuffersARB(2, &texBuffer[0]);
+    glGenBuffersARB(2, &_pboIds[0]);
     if(_hasHW){
         shaderBlack=new QGLShaderProgram(context());
         if(!shaderBlack->addShaderFromSourceCode(QGLShader::Vertex,vertRGB))
@@ -360,92 +342,32 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-void ViewerGL::computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow,float zoomFactor){
-    int viewport[4];
-	M44f modelView1;
-    M44f modelView2;
-    M44f projection;
-
-    float w = (float)width();
-    float h = (float)height();
-    float left = -w/2.f + displayWindow.w()/2.f;
-    float right = w/2.f + displayWindow.w()/2.f;
-    float bottom = -h/2.f + displayWindow.h()/2.f;
-    float top = h/2.f + displayWindow.h()/2.f ;
-    
-    _glLoadIdentity(modelView1);
-    _glOrthoFromIdentity(projection, left, right, bottom, top, -1, 1);
-    
-    _glTranslate(modelView2, modelView1, transX, -transY, 0);
-    _glTranslate(modelView1, modelView2, _zoomCtx.zoomX, _zoomCtx.zoomY, 0);
-    _glScale(modelView2, modelView1, zoomFactor, zoomFactor, 1);
-    _glTranslate(modelView1, modelView2, -_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
-  
-    viewport[0] = 0;
-    viewport[1] = 0;
-    viewport[2] = w;
-    viewport[3] = h;
-    
-    //float mat[16];
-    M44f inv;
-    
-    inv = (projection * modelView1).inverse();
-   
-   // _glMultMats44(mat, projection, modelView1);
-   // if (!_glInvertMatrix(mat, inv)) {
-     //   cout << "failed inverting (projection x modelview) matrix" << endl;
-   // }
-    Eigen::Vector4f p;
-    p.x() = (0-(float)viewport[0])/(float)viewport[2]*2.0-1.0;
-    p.z() = 1.f;
-    p.w() = 1.f;
-    
+void ViewerGL::computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow){
     /*First off,we test the 1st and last row to check wether the
      image is contained in the viewer*/
     // testing top of the image
-    int y = h-1;
-    p.y() = (y-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
+    int y = 0;
     float res = -1;
-    if(!_glMultMat44Vect_onlyYComponent(&res, inv, p)){
-        cout << "failed unprojection (row-span computation)" << endl;
-    }
+    res = toImgCoordinates_fast(0,y).y();
     if (res < 0) { // all the image is above the viewer
         return ; // do not add any row
     }
     // testing bottom now
-    y = 0;
-    p[1] = (y-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
-    res = -1;
-    if(!_glMultMat44Vect_onlyYComponent(&res, inv, p)){
-        cout << "failed unprojection (row-span computation)" << endl;
+    y = height()-1;
+    res = toImgCoordinates_fast(0,y).y();
+    /*for all the others row (apart the first and last) we can check.
+    */
+    while(res < 0 && y >= 0){
+        /*while y is an invalid line, iterate*/
+        --y;
+        res = toImgCoordinates_fast(0,y).y();
     }
-    if(res >= displayWindow.top()){// all the image is below the viewer
-        return;
-    }else{
-        if(res >= displayWindow.y()){
-            if(res < displayWindow.top()){
-                ret[res] = 0;
-            }else{
-                return;
-            }
-        }
+    while(res < displayWindow.h() && y >= 0){
+        /*y is a valid line in widget coord && res contains the image y coord.*/
+        ret[res] = y;
+        --y;
+        res = toImgCoordinates_fast(0,y).y();
     }
-    /*for all the others row (apart the first and last) we can check*/
-    for(int y = 1 ; y < h; y++){
-        p[1] = (y-(float)viewport[1])/(float)viewport[3]*2.0-1.0;
-        res = -1;
-        if(!_glMultMat44Vect_onlyYComponent(&res, inv, p)){
-            cout << "failed unprojection (row-span computation)" << endl;
-        }
-        if(res >= displayWindow.y()){
-            if(res < displayWindow.top()){
-                ret[res] = y;
-            }else{
-                return ;
-            }
-        }
-    }
-    return ;
 }
 
 
@@ -555,8 +477,8 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex(){
     fitToFormat(displayWindow());
-    int w = floorf(displayWindow().w()*_zoomCtx.zoomFactor);
-    int h = floorf(displayWindow().h()*_zoomCtx.zoomFactor);
+    int w = floorf(displayWindow().w()*_zoomCtx._zoomFactor);
+    int h = floorf(displayWindow().h()*_zoomCtx._zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glBindTexture (GL_TEXTURE_2D, texBlack[0]);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -575,12 +497,13 @@ void ViewerGL::initBlackTex(){
     
 	frameData = (char*)malloc(sizeof(U32)*w*h);
     
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, texBuffer[0]);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     for( int i =0 ; i < h ; i++){
         convertRowToFitTextureBGRA(NULL, NULL, NULL,  w,i,NULL);
     }
+    assert(gpuBuffer);
 	memcpy(gpuBuffer,frameData,w*h*sizeof(U32));
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	
@@ -608,25 +531,15 @@ void ViewerGL::drawBlackTex(){
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
     const Format& dispW = displayWindow();
-    
-    float left = -w/2.f + dispW.w()/2.f;
-    float right = w/2.f + dispW.w()/2.f;
-    float bottom = -h/2.f + dispW.h()/2.f;
-    float top = h/2.f + dispW.h()/2.f ;
-    
-    
+    float bottom = _zoomCtx._bottom;
+    float left = _zoomCtx._left;
+    float top =  bottom +  h / _zoomCtx._zoomFactor;
+    float right = left +  w / _zoomCtx._zoomFactor;
     glOrtho(left, right, bottom, top, -1, 1);
-    
+
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
-    
-    glTranslatef(transX, -transY, 0);
-    
-    
-    glTranslatef(_zoomCtx.zoomX, _zoomCtx.zoomY, 0);
-    glScalef(_zoomCtx.zoomFactor, _zoomCtx.zoomFactor, 1);
-    glTranslatef(-_zoomCtx.zoomX, -_zoomCtx.zoomY, 0);
-    
+
     glClear (GL_COLOR_BUFFER_BIT);
     glEnable (GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE0);
@@ -650,7 +563,7 @@ void ViewerGL::drawBlackTex(){
 
 void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
     float zoomFactor;
-    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+    _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
     int w = floorf(displayWindow().w() * zoomFactor);
     if(byteMode()==0 && _hasHW){
         convertRowToFitTextureBGRA_fp(r,g,b,w,zoomedY,a);
@@ -662,10 +575,7 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
 }
 
 size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHING_MODE mode){
-    if(_mustFreeFrameData){
-        free(frameData);
-        _mustFreeFrameData = false;
-    }
+    
     size_t dataSize = 0;
     TextureEntry::DataType type;
     if(byteMode() == 1 || !_hasHW){
@@ -676,27 +586,15 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHI
         type = TextureEntry::FLOAT;
     }
     
-    
+    frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
+    assert(frameData);
+
     if(mode == TEXTURE_CACHE){ // texture caching
         TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
-        frameData = (char*)malloc(dataSize);
-        _mustFreeFrameData = true;
         setCurrentTexture(ret);
         
     }else{ // viewer caching
-        // init mmaped file
-        U64 treeVersion = ctrlPTR->getModel()->getVideoEngine()->getCurrentTreeVersion();
-        FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key, treeVersion, _zoomCtx.getZoomFactor(), exposure, _lut, byteMode(), w, h, dataWindow(),displayWindow());
-        
-        if(entry){
-            frameData = entry->getMappedFile()->data();
-        }else{ // something happen, fallback to in-memory only version : no-caching
-#ifdef PW_DEBUG
-            cout << "WARNING: caching does not seem to work properly..falling back to pure RAM version, caching disabled." << endl;
-#endif
-            frameData = (char*)malloc(dataSize);
-            _mustFreeFrameData = true;
-        }
+        checkGLErrors();
         _texID->allocate(w, h, type);
         setCurrentTexture(_texID);
     }
@@ -724,6 +622,7 @@ void ViewerGL::copyPBOtoTexture(){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
+        cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
     
@@ -772,7 +671,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         int start = (int)(rand()%w);
         /* go fowards from starting point to end of line: */
         float zoomFactor;
-        _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+        _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
         for(int i = start ; i < w ; i++){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
@@ -830,7 +729,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
         float zoomFactor;
-        _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+        _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
         for(int i = start ; i < w ; i++){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
@@ -903,7 +802,7 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     output+=yOffset;
     int index = 0;
     float zoomFactor;
-    _zoomCtx.zoomFactor <= 1 ? zoomFactor = _zoomCtx.zoomFactor : zoomFactor = 1.f;
+    _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
     for(int i =0 ; i < w*4 ; i+=4){
         float x = (float)index*1.f/zoomFactor;
         int nearest;
@@ -928,7 +827,7 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 }
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
-    old_pos = event->pos();
+    _zoomCtx._oldClick = event->pos();
     if(event->button() != Qt::MiddleButton ){
         _ms = DRAGGING;
     }
@@ -936,12 +835,11 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
-    old_pos = event->pos();
     QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
-    QPoint pos;
-    pos = openGLpos_fast((float)event->x(), event->y());
+    QPointF pos;
+    pos = toImgCoordinates_fast((float)event->x(), event->y());
     const Format& dispW = displayWindow();
     if(pos.x() >= dispW.x() &&
        pos.x() <= dispW.w() &&
@@ -954,7 +852,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         }
         QVector4D color = getColorUnderMouse(event->x(), event->y());
         _infoViewer->setColor(color);
-        _infoViewer->setMousePos(pos);
+        _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
         if(!ctrlPTR->getModel()->getVideoEngine()->isWorking())
             emit infoColorUnderMouseChanged();
@@ -966,19 +864,16 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-            new_pos = event->pos();
-            float dx = new_pos.x() - old_pos.x();
-            float dy = new_pos.y() - old_pos.y();
-            transX += dx;
-            transY += dy;
-            old_pos = new_pos;
-            if(_drawing){
-                ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
-                
-            }else{
-                updateGL();
-            }
+        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){            
+            QPoint newClick =  event->pos();
+            QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+            QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+            _zoomCtx._bottom += (oldClick_opengl.y() - newClick_opengl.y());
+            _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
+            _zoomCtx._oldClick = newClick;
+            if(_drawing)
+                emit engineNeeded();
+            updateGL();
         }
         
     }
@@ -986,47 +881,29 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-        QPointF p;
-        float increment=0.f;
-        if(_zoomCtx.zoomFactor<1.f)
-            increment=0.1f;
-        else
-            increment=0.1f*_zoomCtx.zoomFactor;
+        float newZoomFactor;
+
         if(event->delta() >0){
-            
-            _zoomCtx.zoomFactor+=increment;
-            
-            if(_zoomCtx.old_zoomed_pt_win != event->pos()){
-                p = openGLpos_fast(event->x(), event->y());
-                p.setY(displayWindow().h() - p.y());
-                float dx=(p.x()-_zoomCtx.old_zoomed_pt.x());
-                float dy=(p.y()-_zoomCtx.old_zoomed_pt.y());
-                _zoomCtx.zoomX+=dx/2.f;
-                _zoomCtx.zoomY-=dy/2.f;
-                _zoomCtx.restToZoomX = dx/2.f;
-                _zoomCtx.restToZoomY = dy/2.f;
-                _zoomCtx.old_zoomed_pt = p;
-                _zoomCtx.old_zoomed_pt_win = event->pos();
-            }else{
-                _zoomCtx.zoomX+=_zoomCtx.restToZoomX;
-                _zoomCtx.zoomY-=_zoomCtx.restToZoomY;
-                _zoomCtx.restToZoomX = 0;
-                _zoomCtx.restToZoomY = 0;
-            }
-            
-        }else if(event->delta() < 0){
-            _zoomCtx.zoomFactor -= increment;
-            if(_zoomCtx.zoomFactor <= 0.1){
-                _zoomCtx.zoomFactor = 0.1;
+          newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
+        }else {
+            newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
+            if(newZoomFactor <= 0.1){
+                newZoomFactor = 0.1;
             }
         }
+        QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
+        float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+        _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
+        _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
+
+        _zoomCtx._zoomFactor = newZoomFactor;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
-            ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
-        }else{
-            updateGL();
+            emit engineNeeded();
         }
-        emit zoomChanged( _zoomCtx.zoomFactor*100);
+        updateGL();
+        
+        emit zoomChanged( _zoomCtx._zoomFactor*100);
     }
     
 }
@@ -1034,7 +911,7 @@ void ViewerGL::zoomSlot(int v){
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         float value = v/100.f;
         if(value < 0.1f) value = 0.1f;
-        _zoomCtx.zoomFactor = value;
+        _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
             ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
@@ -1062,7 +939,7 @@ QPoint ViewerGL::openGLCoordToViewportCoord(int x, int y){
 /*Returns coordinates with 0,0 at top left, Powiter inverts
  y as such : y= displayWindow().h() - y  to get the coordinates
  with 0,0 at bottom left*/
-QVector3D ViewerGL::openGLpos(int x,int y){
+QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     GLint viewport[4];
     GLdouble modelview[16];
     GLdouble projection[16];
@@ -1077,20 +954,7 @@ QVector3D ViewerGL::openGLpos(int x,int y){
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
     return QVector3D(posX,posY,posZ);
 }
-QPoint ViewerGL::openGLpos_fast(int x,int y){
-    GLint viewport[4];
-    GLdouble modelview[16];
-    GLdouble projection[16];
-    GLfloat winX=0, winY=0;
-    GLdouble posX=0, posY=0, posZ=0;
-    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-    glGetDoublev( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    winX = (float)x;
-    winY = viewport[3]- y;
-    gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
-    return QPoint(posX,posY);
-}
+
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     if(ctrlPTR->getModel()->getVideoEngine()->isWorking()) return QVector4D(0,0,0,0);
     GLint viewport[4];
@@ -1125,17 +989,13 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
 
 void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
+    float w = (float)(displayWindow.w());
     float zoomFactor = (float)height()/h;
-    _zoomCtx.old_zoomed_pt_win.setX((float)width()/2.f);
-    _zoomCtx.old_zoomed_pt_win.setY((float)height()/2.f);
-    _zoomCtx.old_zoomed_pt.setX((float)displayWindow.w()/2.f);
-    _zoomCtx.old_zoomed_pt.setY((float)displayWindow.h()/2.f);
-    
-    setZoomFactor(zoomFactor);
-    setTranslation(0, 0);
     setZoomFactor(zoomFactor-0.05);
     resetMousePos();
-    _zoomCtx.setZoomXY((float)displayWindow.w()/2.f,(float)displayWindow.h()/2.f);
+    _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
+    _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
+
 }
 
 
