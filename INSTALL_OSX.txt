@@ -131,10 +131,20 @@ openfx{
     LIBS += -L/private/tmp/HostSupport.dst/usr/local/lib -lofxHost
 }
 
+###(Optional) Build on QtCreator
+
+Open Powiter.pro and under the tab Projects,locate the Build Environment section. You need to add to your path /opt/local/bin so pkg-config launched by  QMake can find the libraries. This is not necessary when using Qmake from the command line because /opt/local/bin is already in the path.
+
 ###(Optional) Build on Xcode:
 
 You can generate an Xcode project by typing the following command where Powiter.pro is located:
 
 qmake -spec macx-xcode Powiter.pro
+
+You'll need to edit the file /etc/launchd.conf and add this line
+
+setenv PATH /opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+And restart your computer so it takes it into account.
 
 

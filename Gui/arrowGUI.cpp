@@ -14,8 +14,8 @@
 
 
 
+#include "arrowGUI.h"
 
-#include "Gui/arrowGUI.h"
 #include <cmath>
 #include <QPainter>
 #include <QGraphicsScene>

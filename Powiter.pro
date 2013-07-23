@@ -7,8 +7,8 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app
 CONFIG += moc rcc
+CONFIG += openexr ftgl freetype2 boost ffmpeg eigen2 opengl qt expat debug
 
-CONFIG += openexr ftgl freetype2 boost ffmpeg eigen2 opengl qt openfx
 QT += gui core opengl concurrent
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,7 +17,7 @@ win32{
 }
 
 unix {
-     # on Unix systems, only the "boost" option needs to be defined in config.pri
+     #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
      openexr:   PKGCONFIG += OpenEXR
@@ -25,19 +25,25 @@ unix {
      ffmpeg:    PKGCONFIG += libavcodec libavformat libavutil libswscale libavdevice libavfilter
      freetype2: PKGCONFIG += freetype2
      eigen2:    PKGCONFIG += eigen2
+     expat:     PKGCONFIG += expat
 } #unix
 
-Release:DESTDIR = release
-Release:OBJECTS_DIR = release/.obj
-Release:MOC_DIR = release/.moc
-Release:RCC_DIR = release/.rcc
-Release:UI_DIR = release/.ui
 
-Debug:DESTDIR = debug
-Debug:OBJECTS_DIR = debug/.obj
-Debug:MOC_DIR = debug/.moc
-Debug:RCC_DIR = debug/.rcc
-Debug:UI_DIR = debug/.ui
+
+DESTDIR = release
+OBJECTS_DIR = release/.obj
+MOC_DIR = release/.moc
+RCC_DIR = release/.rcc
+UI_DIR = release/.ui
+
+
+debug{
+DESTDIR = debug
+OBJECTS_DIR = debug/.obj
+MOC_DIR = debug/.moc
+RCC_DIR = debug/.rcc
+UI_DIR = debug/.ui
+}
 
 unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
 unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7
@@ -49,6 +55,7 @@ include(config.pri)
 INCLUDEPATH += $$PWD/libs/OpenFX/include
 INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
 
+INCLUDEPATH += $$PWD/
 
 
 SOURCES += \
@@ -109,6 +116,18 @@ SOURCES += \
     Core/abstractCache.cpp \
     Core/imagefetcher.cpp \
     Core/nodecache.cpp \
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
+    libs/OpenFX/HostSupport/src/ofxhParam.cpp \
+    libs/OpenFX/HostSupport/src/ofxhMemory.cpp \
+    libs/OpenFX/HostSupport/src/ofxhInteract.cpp \
+    libs/OpenFX/HostSupport/src/ofxhImageEffectAPI.cpp \
+    libs/OpenFX/HostSupport/src/ofxhImageEffect.cpp \
+    libs/OpenFX/HostSupport/src/ofxhHost.cpp \
+    libs/OpenFX/HostSupport/src/ofxhClip.cpp \
+    libs/OpenFX/HostSupport/src/ofxhBinary.cpp
 
 
 HEADERS += \
@@ -181,6 +200,7 @@ HEADERS += \
     Core/abstractCache.h \
     Core/nodecache.h \
     Gui/button.h \
+
 
 
 INSTALLS += target
