@@ -238,10 +238,10 @@ void ReadExr::readHeader(const QString filename,bool){
         for (chan = imfchannels.begin(); chan != imfchannels.end(); chan++) {
             if(!strcmp(chan.name(),"")) continue;
             pixelTypes[chan.channel().type]++;
-            ExrChannelExctractor cName(chan.name(), views);
+            ExrChannelExctractor exrExctractor(chan.name(), views);
             std::set<Channel> channels;
-            if (cName.isValid()) {
-                channels.insert(cName._mappedChannel);
+            if (exrExctractor.isValid()) {
+                channels.insert(exrExctractor._mappedChannel);
                 //cout << "size : "<< channels.size() << endl;
                 if (!channels.empty()) {
                     for (std::set<Channel>::iterator it = channels.begin();
