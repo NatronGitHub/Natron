@@ -344,7 +344,12 @@ void Gui::loadStyleSheet(){
     {
         QTextStream in(&qss);
         QString content(in.readAll());
-        setStyleSheet(content);
+        setStyleSheet(content
+                      .arg("rgb(243,149,0)")
+                      .arg("rgb(50,50,50)")
+                      .arg("rgb(50,50,50)")
+                      .arg("rgb(38,38,38)")
+                      .arg("rgb(200,200,200)"));
     }
 }
 

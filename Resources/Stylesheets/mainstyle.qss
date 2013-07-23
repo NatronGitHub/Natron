@@ -1,52 +1,75 @@
-
+/*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
+/*You have to fill the arguments with  stylesheet-representable colours.*/
 QTreeView,QListView,QHeaderView{
-    background-color: rgb(71,71,71);
-    color: rgb(200,200,200);
-    selection-background-color:rgb(243,149,0);
+background-color: %3;
+color: %5;
+selection-background-color: %1;
 }
 QTreeView:focus {
-    selection-color: rgb(243, 149, 0);
-    border: 2px groove rgb(243, 149, 0);
-    border-radius: 0px;
-    padding: 2px 4px;
+selection-color: %1;
+border: 2px groove %1;
+border-radius: 0px;
+padding: 2px 4px;
 }
 QTreeView:!focus {
-    border: 0px;
-    border-radius: 0px;
-    padding: 0px;
+border: 0px;
+border-radius: 0px;
+padding: 0px;
 }
 QListView:focus {
-    selection-color: rgb(243, 149, 0);
-    border: 2px groove rgb(243, 149, 0);
-    border-radius: 0px;
-    padding: 2px 4px;
+selection-color: %1;
+border: 2px groove %1;
+border-radius: 0px;
+padding: 2px 4px;
 }
 QListView:!focus {
-    border: 0px;
-    border-radius: 0px;
-    padding: 0px;
+border: 0px;
+border-radius: 0px;
+padding: 0px;
 }
 
 
 QHeaderView:section{
-   background-color: rgb(50,50,50);
-   color: rgb(200,200,200);
-   selection-background-color : rgb(243,149,0);
-   selection-color: rgb(243, 149, 0);
+background-color: %2;
+color: %5;
+selection-background-color : %1;
+selection-color: %1;
 }
 
 QDialog{
-    background-color:rgb(50,50,50);
+background-color: %2;
 }
-ComboBox[pressed="false"]{background-color:rgba(71,71,71,255); border:1px solid black;border-radius : 5px;}
-ComboBox[pressed="true"]{background-color:rgba(38,38,38,255); border-radius : 5px;}
-TabWidget{background-color:rgb(50,50,50);}
-QWidget#_propertiesContainer{background-color:rgba(50,50,50,255); }
-SettingsPanel{background-color : rgb(50,50,50); color:(200,200,200);}
-QPushButton{background-color:rgba(71,71,71,255);color:rgba(200,200,200,255);}
-QToolButton{background-color:rgb(71,71,71);}
-QDialogButtonBox{background-color:rgb(71,71,71);}
-QMainWindow{background-color:rgba(50,50,50,255);}
+ComboBox[pressed="false"]{
+background-color: %3;
+border:1px solid black;
+border-radius : 5px;
+}
+ComboBox[pressed="true"]{
+background-color: %4;
+border-radius : 5px;
+}
+TabWidget{background-color: %2;}
+
+QWidget{ /* QWidget#_propertiesContainer*/
+background-color: %2;
+}
+SettingsPanel{
+background-color : %2;
+color: %5;
+}
+QPushButton{
+background-color: %3;
+color: %5;
+}
+QToolButton{
+background-color: %3;
+}
+QDialogButtonBox{
+background-color: %3;
+}
+QMainWindow{
+background-color: %2;
+}
 QCheckBox::indicator:unchecked {
 image: url(:/Resources/Images/checkbox.png);
 }
@@ -59,70 +82,102 @@ image: url(:/Resources/Images/checkbox_checked_hovered.png);
 QCheckBox::indicator:unchecked:hover {
 image: url(:/Resources/Images/checkbox_hovered.png);
 }
-QGraphicsView{background-color:rgba(71,71,71,255);}
-QScrollArea{background-color:rgba(50,50,50,255);}
-QGroupBox{color:rgba(200,200,200,255);background-color:rgba(50,50,50,255);border:0px;}
-QComboBox{color:rgba(200,200,200,255);background-color:rgba(71,71,71,255);
-selection-color:rgba(243,149,0,255);selection-background-color:rgba(71,71,71,255);}
+QGraphicsView{
+background-color: %3;
+}
+QScrollArea{
+background-color: %2;
+}
+QGroupBox{
+color: %5;
+background-color: %2;
+border:0px;
+}
+QComboBox{
+color: %5;
+background-color: %3;
+selection-color: %1;
+selection-background-color: %3;
+}
 QComboBox QAbstractItemView{
 border-radius:0px;
-border:0px;selection-background-color:rgba(71,71,71,255);
-background:rgba(71,71,71,255);color:rgb(200,200,200);
+border:0px;
+selection-background-color: %3;
+background: %3;
+color: %5;
 }
-QDockWidget::title{background:rgb(71,71,71);}QDockWidget{color:rgb(200,200,200);}
-QTabWidget::pane{border:0px;}
-QLabel{color: rgba(200,200,200,255);}
-QLineEdit{border:1px solid; border-radius:1; padding:1px; background-color : rgba(71,71,71,255);}
-QLineEdit{color:rgba(200,200,200,255);}
+QDockWidget::title{
+background: %3;
+}
+QDockWidget{
+color: %5;
+}
+QTabWidget::pane{
+border:0px;
+}
+QLabel{
+color: %5;
+}
+QLineEdit{
+border:1px solid;
+border-radius:1;
+padding:1px;
+background-color : %3;
+}
+QLineEdit{
+color:%5;
+}
 QLineEdit:focus {
-selection-color: rgb(243, 149, 0);
-border: 2px groove rgb(243, 149, 0);
-   border-radius: 4px;
+selection-color: %1;
+border: 2px groove %1;
+border-radius: 4px;
 padding: 2px 4px;
 }
-QSplitter::handle:horizontal{background-color:
-qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(71, 71, 71, 255), stop:0.55 rgba(50, 50, 50, 255), 
-stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));
-border: 0px;}
-QSplitter::handle:vertical{background-color:
-qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(71, 71, 71, 255), stop:0.55 rgba(50, 50, 50, 255), 
-stop:0.98 rgba(0, 0, 0, 255), stop:1 rgba(0, 0, 0, 0));
-border: 0px;}
+QSplitter::handle:horizontal{
+background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
+border: 0px;
+}
+QSplitter::handle:vertical{
+background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:0.55 %2, stop:0.98 black, stop:1 black);
+border: 0px;
+}
 QSplitter::handle::horizontal{
-width: 3px;}
+width: 3px;
+}
 QSplitter::handle::vertical{
-height: 3px;}
+height: 3px;
+}
 QTabBar::tab {
-color:rgba(200,200,200,255);
-background: rgb(39,39,39);
+color: %5;
+background: %4;
 border: 1px solid ;
-    border-bottom-color: rgb(50,50,50);
-    min-width: 8ex;
+border-bottom-color: %2;
+min-width: 8ex;
 padding: 0px;
-    border-top-right-radius: 5px;
-    border-top-left-radius: 5px;
+border-top-right-radius: 5px;
+border-top-left-radius: 5px;
 }
 QTabBar::tab:hover {
-background: rgb(243,149,0);
+background: %1;
 }
 QTabBar::tab:selected {
-background: rgb(50,50,50);
-    border-bottom-style:none;
+background: %2;
+border-bottom-style:none;
 }
 QTabBar::tab:!selected {
-    margin-top: 3px; /* make non-selected tabs look smaller */
+margin-top: 3px; /* make non-selected tabs look smaller */
 }
 /* make use of negative margins for overlapping tabs */
 QTabBar::tab:selected {
-    /* expand/overlap to the left and right by 4px */
-    margin-left: -3px;
-    margin-right: -3px;
+/* expand/overlap to the left and right by 4px */
+margin-left: -3px;
+margin-right: -3px;
 }
 QTabBar::tab:first:selected {
-    margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
+margin-left: 0; /* the first selected tab has nothing to overlap with on the left */
 }
 QTabBar::tab:last:selected {
-    margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
+margin-right: 0; /* the last selected tab has nothing to overlap with on the right */
 }
 QTabBar::tab:only-one {
 margin: 0; /* if there is only one tab, we don't want overlapping margins */
@@ -131,13 +186,13 @@ QTabWidget::tab-bar {
 alignment: left;
 }
 QMenu {
-background-color: rgb(50,50,50); /* sets background of the menu */
+background-color: %2; /* sets background of the menu */
 border: 0px;
 margin: 0px;
-color : rgb(200,200,200);
+color : %5;
 }
 QMenu::item:selected { /* when user selects item using mouse or keyboard */
-background-color: rgb(243,149,0); ;
+background-color: %1;
 }
 QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
 color : rgb(120,120,120);
