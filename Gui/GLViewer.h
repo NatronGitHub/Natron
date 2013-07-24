@@ -148,7 +148,7 @@
             
             TextureEntry* _currentTexture;/*!< A pointer to the current texture used to display.*/
             
-            GLuint texBlack[1];/*!< Id of the texture used to render a black screen when nothing is connected.*/
+            GLuint _blackTexId[1];/*!< Id of the texture used to render a black screen when nothing is connected.*/
             
             QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
             QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
@@ -193,9 +193,9 @@
             bool _hasHW;/*!< True if the user has a GLSL version supporting everything requested.*/
             
             char* frameData;/*!< Pointer to the buffer holding the data computed for the last frame.
-                             This buffer is either pointing to a mmaped region or to a full RAM buffer.
-                             It is then copied to the PBO for rendering on the viewport.*/
+                             This buffer is the currently mapped PBO.*/
             
+            bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
             bool _noDataTransfer;/*!< True whenever the current texture already holds data and doesn't need
                                   a copy from a PBO*/
@@ -353,11 +353,11 @@
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
              *This function actually does the projection to retrieve the position;
-             *@param x[in] The x coordinate of the point in OpenGL coordinates.
-             *@param y[in] The y coordinates of the point in OpenGL coordinates.
+             *@param x[in] The x coordinate of the point in image coordinates.
+             *@param y[in] The y coordinates of the point in image coordinates.
              *@returns Returns the viewport coordinates mapped equivalent of (x,y).
              **/
-            QPoint openGLCoordToViewportCoord(int x,int y);
+            QPoint toWidgetCoordinates(int x,int y);
             
             /**
              *@brief Computes the image coordinates of the point passed in parameter.
@@ -379,7 +379,6 @@
             QPointF toImgCoordinates_fast(int x,int y){
                 float w = (float)width() ;
                 float h = (float)height();
-                const Format& dispW = displayWindow();
                 float bottom = _zoomCtx._bottom;
                 float left = _zoomCtx._left;
                 float top =  bottom +  h / _zoomCtx._zoomFactor;
@@ -480,6 +479,17 @@
              *@returns Returns the OpenGL PBO located at index. Index must be either 0 or 1.
              **/
             GLuint getPBOId(int index) const {return _pboIds[index];}
+            
+            
+            /**
+             *@returns Returns true if a pbo is currently mapped
+             **/
+            bool hasPBOCurrentlyMapped() const {return _pBOmapped;}
+            
+            /**
+             *@brief Unmap the currently mapped PBO if any.
+             **/
+            void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
             
             /**
              *@brief Set the _rowSpan member. This is a pair of the index of the first row and
@@ -682,10 +692,6 @@
              **/
             void initBlackTex();// init the black texture when viewer is disconnected
             
-            /**
-             *@brief Draws the black texture. Called by paintGL()
-             **/
-            void drawBlackTex(); // draw the black texture
             
             /**
              *@brief Called inside paintGL(). It will draw all the overlays. It also calls

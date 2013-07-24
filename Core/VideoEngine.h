@@ -466,6 +466,11 @@ public slots:
      **/
     void dispatchEngine();
     
+    /**
+     *@brief Resets the video engine state and ensures that all worker threads are stopped.
+     **/
+    void stopEngine();
+    
     signals:
     /**
      *@brief Signal emitted when the function waits the time due to display the frame. 
@@ -661,11 +666,6 @@ private:
      *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
      **/
     void runTasks();
- 
-    /**
-     *@brief Resets the video engine state and ensures that all worker threads are stopped.
-     **/
-    void stopEngine();
     
     /**
      *@brief debug function

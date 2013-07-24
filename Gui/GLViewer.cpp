@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -106,6 +106,8 @@ void ViewerGL::initConstructor(){
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
     _currentTexture = 0;
+    _noDataTransfer = false;
+    _pBOmapped = false;
 }
 
 ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
@@ -159,7 +161,7 @@ ViewerGL::~ViewerGL(){
         
     }
     delete _texID;
-    glDeleteTextures(1,&texBlack[0]);
+    glDeleteTextures(1,&_blackTexId[0]);
     glDeleteBuffers(2, &_pboIds[0]);
   	delete _blankViewerInfos;
 	delete _infoViewer;
@@ -180,53 +182,65 @@ void ViewerGL::resizeGL(int width, int height){
     checkGLErrors();
     _ms = UNDEFINED;
     if(_drawing)
-        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
+        emit engineNeeded();
 }
 void ViewerGL::paintGL()
 {
-
+    
+    float w = (float)width();
+    float h = (float)height();
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    const Format& dispW = displayWindow();
+    float bottom = _zoomCtx._bottom;
+    float left = _zoomCtx._left;
+    float top =  bottom +  h / _zoomCtx._zoomFactor;
+    float right = left +  w / _zoomCtx._zoomFactor;
+    glOrtho(left, right, bottom, top, -1, 1);
+    
+    glMatrixMode (GL_MODELVIEW);
+    glLoadIdentity();
+    
+    
+    glEnable (GL_TEXTURE_2D);
     if(_drawing){
-        float w = (float)width();
-		float h = (float)height();
-        glMatrixMode (GL_PROJECTION);
-		glLoadIdentity();
-        const Format& dispW = displayWindow();
-        float bottom = _zoomCtx._bottom;
-        float left = _zoomCtx._left;
-        float top =  bottom +  h / _zoomCtx._zoomFactor;
-        float right = left +  w / _zoomCtx._zoomFactor;
-        glOrtho(left, right, bottom, top, -1, 1);
-        
-        glMatrixMode (GL_MODELVIEW);
-		glLoadIdentity();
-
-        
-        glEnable (GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
-        //GLfloat d;
-        // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        // GLfloat d;
+        //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
             activateShaderLC();
-        glClearColor(0.0,0.0,0.0,1.0);
-        glClear (GL_COLOR_BUFFER_BIT);
-		glBegin (GL_POLYGON);
-        glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first);
-		glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1);
-		glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1);
-		glTexCoord2i (1, 0);glVertex2i (dispW.w(), _rowSpan.first);
-        
-		glEnd ();
-        glBindTexture(GL_TEXTURE_2D, 0);
+    }else{
+        glBindTexture(GL_TEXTURE_2D, _blackTexId[0]);
+        if(_hasHW && !shaderBlack->bind()){
+            cout << qPrintable(shaderBlack->log()) << endl;
+        }
+        if(_hasHW)
+            shaderBlack->setUniformValue("Tex", 0);
+        _rowSpan.first = 0;
+        _rowSpan.second = dispW.h()-1;
+    }
+    glClearColor(0.0,0.0,0.0,1.0);
+    glClear (GL_COLOR_BUFFER_BIT);
+    glBegin (GL_POLYGON);
+    glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first);
+    glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1);
+    glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1);
+    glTexCoord2i (1, 0);glVertex2i (dispW.w(), _rowSpan.first);
+    glEnd ();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    if(_drawing){
         if(_hasHW && rgbMode() && shaderRGB){
             shaderRGB->release();
         }else if (_hasHW &&  !rgbMode() && shaderLC){
             shaderLC->release();
         }
-	}else{
-        drawBlackTex();
+    }else{
+        if(_hasHW)
+            shaderBlack->release();
     }
     if(_overlay){
         drawOverlay();
@@ -305,7 +319,7 @@ void ViewerGL::initializeGL(){
  	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
     _texID = new TextureEntry;
-    glGenTextures (1, texBlack);
+    glGenTextures (1, _blackTexId);
     glGenBuffersARB(2, &_pboIds[0]);
     if(_hasHW){
         shaderBlack=new QGLShaderProgram(context());
@@ -356,7 +370,7 @@ void ViewerGL::computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow)
     y = height()-1;
     res = toImgCoordinates_fast(0,y).y();
     /*for all the others row (apart the first and last) we can check.
-    */
+     */
     while(res < 0 && y >= 0){
         /*while y is an invalid line, iterate*/
         --y;
@@ -480,7 +494,7 @@ void ViewerGL::initBlackTex(){
     int w = floorf(displayWindow().w()*_zoomCtx._zoomFactor);
     int h = floorf(displayWindow().h()*_zoomCtx._zoomFactor);
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture (GL_TEXTURE_2D, texBlack[0]);
+    glBindTexture (GL_TEXTURE_2D, _blackTexId[0]);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -495,16 +509,14 @@ void ViewerGL::initBlackTex(){
                   0);			// pixels
 	
     
-	frameData = (char*)malloc(sizeof(U32)*w*h);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
-    void* gpuBuffer = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    for( int i =0 ; i < h ; i++){
-        convertRowToFitTextureBGRA(NULL, NULL, NULL,  w,i,NULL);
+    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    U32* output = reinterpret_cast<U32*>(frameData);
+    for(int i = 0 ; i < w*h ; i++){
+        output[i] = toBGRA(0, 0, 0, 255);
     }
-    assert(gpuBuffer);
-	memcpy(gpuBuffer,frameData,w*h*sizeof(U32));
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	
     glTexSubImage2D (GL_TEXTURE_2D,
@@ -516,50 +528,10 @@ void ViewerGL::initBlackTex(){
                      0);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-	free(frameData);
-	frameData = 0;
     
 }
 
-void ViewerGL::drawBlackTex(){
-    makeCurrent();
-    
-    
-    float w = (float)width();
-    float h = (float)height();
-    
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity();
-    const Format& dispW = displayWindow();
-    float bottom = _zoomCtx._bottom;
-    float left = _zoomCtx._left;
-    float top =  bottom +  h / _zoomCtx._zoomFactor;
-    float right = left +  w / _zoomCtx._zoomFactor;
-    glOrtho(left, right, bottom, top, -1, 1);
 
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity();
-
-    glClear (GL_COLOR_BUFFER_BIT);
-    glEnable (GL_TEXTURE_2D);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture (GL_TEXTURE_2D, texBlack[0]);
-    
-    if(_hasHW && !shaderBlack->bind()){
-        cout << qPrintable(shaderBlack->log()) << endl;
-    }
-    if(_hasHW)
-        shaderBlack->setUniformValue("Tex", 0);
-    glBegin (GL_POLYGON);
-    glTexCoord2i (0, 0);glVertex2i (dispW.x(), dispW.y());
-    glTexCoord2i (0, 1);glVertex2i (dispW.x(), dispW.h());
-    glTexCoord2i (1, 1);glVertex2i (dispW.w(),dispW.h());
-    glTexCoord2i (1, 0);glVertex2i (dispW.w(),dispW.y());
-    glEnd ();
-    if(_hasHW)
-        shaderBlack->release();
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
 
 void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
     float zoomFactor;
@@ -585,23 +557,25 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHI
         dataSize = sizeof(float)*w*h*4;
         type = TextureEntry::FLOAT;
     }
-    
-    frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
-    assert(frameData);
-
     if(mode == TEXTURE_CACHE){ // texture caching
         TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
         setCurrentTexture(ret);
         
     }else{ // viewer caching
-        checkGLErrors();
         _texID->allocate(w, h, type);
         setCurrentTexture(_texID);
     }
+    
+    /*MUST map the PBO AFTER that we allocate the texture.*/
+    frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
+    assert(frameData);
+    checkGLErrors();
     return dataSize;
 }
 
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
+    _pBOmapped = true;
+    cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
 	return glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -615,6 +589,7 @@ void ViewerGL::copyPBOtoTexture(){
         _noDataTransfer = false; // reinitialize the flag
         return;
     }
+    
     int w = _currentTexture->w();
     int h = _currentTexture->h();
     glEnable (GL_TEXTURE_2D);
@@ -628,27 +603,30 @@ void ViewerGL::copyPBOtoTexture(){
     
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     if(_currentTexture->type() == TextureEntry::BYTE){
-        glTexSubImage2D (GL_TEXTURE_2D,
-                         0,				// level
-                         0, 0,				// xoffset, yoffset
-                         w, h,
-                         GL_BGRA,			// format
-                         GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                         0);
+        glTexSubImage2D(GL_TEXTURE_2D,
+                        0,				// level
+                        0, 0,				// xoffset, yoffset
+                        w, h,
+                        GL_BGRA,			// format
+                        GL_UNSIGNED_INT_8_8_8_8_REV,		// type
+                        0);
         
         
     }else if(_currentTexture->type() == TextureEntry::FLOAT){
-        glTexSubImage2D (GL_TEXTURE_2D,
-                         0,				// level
-                         0, 0 ,				// xoffset, yoffset
-                         w, h,
-                         GL_RGBA,			// format
-                         GL_FLOAT,		// type
-                         0);
+        glTexSubImage2D(GL_TEXTURE_2D,
+                        0,				// level
+                        0, 0 ,				// xoffset, yoffset
+                        w, h,
+                        GL_RGBA,			// format
+                        GL_FLOAT,		// type
+                        0);
         
         
     }
+    cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    frameData = 0;
+    _pBOmapped = false;
     checkGLErrors();
 }
 
@@ -658,16 +636,12 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      This error diffusion will produce stripes in any image that has identical scanlines.
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
-    
+    assert(frameData);
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=w;
     output+=yOffset;
     
-    if(!_drawing){
-        for(int i = 0 ; i < w ; i++){
-            output[i] = toBGRA(0, 0, 0, 255);
-        }
-    }else if(_drawing && _colorSpace->linear()){
+    if(_colorSpace->linear()){
         int start = (int)(rand()%w);
         /* go fowards from starting point to end of line: */
         float zoomFactor;
@@ -719,7 +693,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             b_ = _b*255;
             output[i] = toBGRA(r_,g_,b_,a_);
         }
-    }else{ // _drawing && !linear
+    }else{ // !linear
         /*flaging that we're using the colorspace so it doesn't try to change it in the same time
          if the user requested it*/
         _usingColorSpace = true;
@@ -796,6 +770,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
 // nbbytesoutput is the size in bytes of 1 channel for the row
 void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
                                              int  w,int yOffset,const float* alpha){
+    assert(frameData);
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *=w*sizeof(float);
@@ -864,7 +839,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){            
+        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
             QPoint newClick =  event->pos();
             QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
             QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
@@ -873,18 +848,19 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._oldClick = newClick;
             if(_drawing)
                 emit engineNeeded();
-            updateGL();
+            else
+                updateGL();
         }
         
     }
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    
-    if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
+    if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+        
         float newZoomFactor;
-
+        
         if(event->delta() >0){
-          newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
+            newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
         }else {
             newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
             if(newZoomFactor <= 0.1){
@@ -895,16 +871,19 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
         _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
         _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
-
+        
         _zoomCtx._zoomFactor = newZoomFactor;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
             emit engineNeeded();
         }
-        updateGL();
-        
-        emit zoomChanged( _zoomCtx._zoomFactor*100);
+        else{
+            updateGL();
+        }
     }
+    
+    emit zoomChanged( _zoomCtx._zoomFactor*100);
+    
     
 }
 void ViewerGL::zoomSlot(int v){
@@ -914,7 +893,7 @@ void ViewerGL::zoomSlot(int v){
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
-            ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
+            emit engineNeeded();
         }else{
             updateGL();
         }
@@ -925,16 +904,14 @@ void ViewerGL::zoomSlot(QString str){
     zoomSlot(str.toInt());
 }
 
-QPoint ViewerGL::openGLCoordToViewportCoord(int x, int y){
-    GLint viewport[4];
-    GLdouble modelview[16];
-    GLdouble projection[16];
-    GLdouble winX=0, winY=0, winZ=0;
-    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-    glGetDoublev( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    gluProject(x,y , 0.5, modelview, projection, viewport, &winX, &winY, &winZ);
-    return QPoint(winX,winY);
+QPoint ViewerGL::toWidgetCoordinates(int x, int y){
+    float w = (float)width() ;
+    float h = (float)height();
+    float bottom = _zoomCtx._bottom;
+    float left = _zoomCtx._left;
+    float top =  bottom +  h / _zoomCtx._zoomFactor;
+    float right = left +  w / _zoomCtx._zoomFactor;
+    return QPoint((((float)x - left)/(right - left))*w,(((float)y - top)/(bottom - top))*h);
 }
 /*Returns coordinates with 0,0 at top left, Powiter inverts
  y as such : y= displayWindow().h() - y  to get the coordinates
@@ -957,22 +934,12 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     if(ctrlPTR->getModel()->getVideoEngine()->isWorking()) return QVector4D(0,0,0,0);
-    GLint viewport[4];
-    GLdouble modelview[16];
-    GLdouble projection[16];
-    GLfloat winX=0, winY=0;
-    GLdouble posX=0, posY=0, posZ=0;
-    glGetDoublev( GL_MODELVIEW_MATRIX, modelview );
-    glGetDoublev( GL_PROJECTION_MATRIX, projection );
-    glGetIntegerv( GL_VIEWPORT, viewport );
-    winX = (float)x;
-    winY =viewport[3]- y;
-    gluUnProject( winX, winY, 1, modelview, projection, viewport, &posX, &posY, &posZ);
-    if(posX < displayWindow().x() || posX >= displayWindow().w() || posY < displayWindow().y() || posY >=displayWindow().h())
+    QPointF pos = toImgCoordinates_fast(x, y);
+    if(pos.x() < displayWindow().x() || pos.x() >= displayWindow().w() || pos.y() < displayWindow().y() || pos.y() >=displayWindow().h())
         return QVector4D(0,0,0,0);
     if(byteMode()==1 || !_hasHW){
         U32 pixel;
-        glReadPixels( x, winY, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
+        glReadPixels( x, height()-y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
         U8 r=0,g=0,b=0,a=0;
         b |= pixel;
         g |= (pixel >> 8);
@@ -981,7 +948,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
     }else if(byteMode()==0 && _hasHW){
         GLfloat pixel[4];
-        glReadPixels( x, winY, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
         return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
     }
     return QVector4D(0,0,0,0);
@@ -995,7 +962,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
-
+    
 }
 
 
@@ -1061,7 +1028,7 @@ void ViewerGL::updateColorSpace(QString str){
     }
     
     if(byteMode()==1 || !_hasHW)
-        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
+        emit engineNeeded();
     else
         updateGL();
     
@@ -1069,7 +1036,7 @@ void ViewerGL::updateColorSpace(QString str){
 void ViewerGL::updateExposure(double d){
     exposure = d;
     if((byteMode()==1 || !_hasHW) && _drawing)
-        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,false,true,true);
+        emit engineNeeded();
     else
         updateGL();
     
@@ -1490,7 +1457,7 @@ void ViewerGL::_glScale(M44f& result,const M44f& matrix,float x,float y,float z)
     scale(3,3) = 1;
     
     result = matrix * scale;
- //   _glMultMats44(result, matrix, scale);
+    //   _glMultMats44(result, matrix, scale);
 }
 
 /*Replicate of the glTranslate function but for a custom matrix*/
@@ -1558,33 +1525,33 @@ void ViewerGL::_glRotate(M44f& result,const M44f& matrix,float a,float x,float y
 	rotate(3,3)  = 1;
     
     result = matrix * rotate;
-//    _glMultMats44(result, matrix, rotate);
-   
+    //    _glMultMats44(result, matrix, rotate);
+    
 }
 
 /*Replicate of the glLoadIdentity function but for a custom matrix*/
 void ViewerGL::_glLoadIdentity(M44f& matrix){
     
     matrix.setIdentity();
-//    matrix[0] = 1.0f;
-//    matrix[1] = 0.0f;
-//    matrix[2] = 0.0f;
-//    matrix[3] = 0.0f;
-//    
-//    matrix[4] = 0.0f;
-//    matrix[5] = 1.0f;
-//    matrix[6] = 0.0f;
-//    matrix[7] = 0.0f;
-//    
-//    matrix[8] = 0.0f;
-//    matrix[9] = 0.0f;
-//    matrix[10] = 1.0f;
-//    matrix[11] = 0.0f;
-//    
-//    matrix[12] = 0.0f;
-//    matrix[13] = 0.0f;
-//    matrix[14] = 0.0f;
-//    matrix[15] = 1.0f;
+    //    matrix[0] = 1.0f;
+    //    matrix[1] = 0.0f;
+    //    matrix[2] = 0.0f;
+    //    matrix[3] = 0.0f;
+    //
+    //    matrix[4] = 0.0f;
+    //    matrix[5] = 1.0f;
+    //    matrix[6] = 0.0f;
+    //    matrix[7] = 0.0f;
+    //
+    //    matrix[8] = 0.0f;
+    //    matrix[9] = 0.0f;
+    //    matrix[10] = 1.0f;
+    //    matrix[11] = 0.0f;
+    //
+    //    matrix[12] = 0.0f;
+    //    matrix[13] = 0.0f;
+    //    matrix[14] = 0.0f;
+    //    matrix[15] = 1.0f;
 }
 
 void ViewerGL::disconnectViewer(){
@@ -1615,18 +1582,18 @@ void ViewerGL::clearViewer(){
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
     setFocus();
-   // grabMouse();
+    // grabMouse();
     grabKeyboard();
 }
 void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
     setFocus();
-   // releaseMouse();
+    // releaseMouse();
     releaseKeyboard();
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
-    // if(isVisible()){
+                                                 // if(isVisible()){
     QGLWidget::resizeEvent(event);
     // }
     

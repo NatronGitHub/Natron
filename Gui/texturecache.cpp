@@ -15,6 +15,7 @@
 
 
 #include "Superviser/gl_OsDependent.h"
+#include "Gui/GLViewer.h"
 #include "Gui/texturecache.h"
 
 using namespace std;
@@ -30,6 +31,7 @@ void TextureEntry::allocate(int w, int h ,DataType type){
     _type = type;
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glActiveTexture (GL_TEXTURE0);
+    glEnable(GL_TEXTURE_2D);
     glBindTexture (GL_TEXTURE_2D, _texID);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -38,7 +40,7 @@ void TextureEntry::allocate(int w, int h ,DataType type){
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     if(type == BYTE){
         _size = w*h*sizeof(U32);
-        glTexImage2D (GL_TEXTURE_2D,
+        glTexImage2D(GL_TEXTURE_2D,
                       0,			// level
                       GL_RGBA8, //internalFormat
                       w, h,

@@ -195,11 +195,8 @@ void Viewer::cachedFrameEngine(FrameEntry* frame){
     /*resizing texture if needed, the calls must be made in that order*/
     gl_viewer->getDefaultTextureID()->allocate(w, h, type);
     gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
-    gl_viewer->drawing(true);
     /*allocating pbo*/
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,gl_viewer->getPBOId(_pboIndex));
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-    void* output = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
