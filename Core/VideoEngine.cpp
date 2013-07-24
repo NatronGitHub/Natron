@@ -416,7 +416,7 @@ void VideoEngine::computeTreeForFrame(const std::map<int,int>& rows,OutputNode *
 
 
 void VideoEngine::engineLoop(){
-    cout << "     _engineLoop()" << endl;
+    //cout << "     _engineLoop()" << endl;
     if(_frameRequestIndex == 0 && _frameRequestsCount == 1 && !_sameFrame){
         _frameRequestsCount = 0;
     }else if(_frameRequestsCount!=-1){ // if the frameRequestCount is defined (i.e: not indefinitely running)
