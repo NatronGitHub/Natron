@@ -575,7 +575,7 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHI
 
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
     _pBOmapped = true;
-    cout << "    + mapping PBO" << endl;
+    //cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
 	return glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -623,7 +623,7 @@ void ViewerGL::copyPBOtoTexture(){
         
         
     }
-    cout << "    - unmapping PBO" << endl;
+    // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     frameData = 0;
     _pBOmapped = false;

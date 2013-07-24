@@ -76,7 +76,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     if (_working) {
         return;
     }
-    cout << "+ STARTING ENGINE " << endl;
+    // cout << "+ STARTING ENGINE " << endl;
     _timer->playState=RUNNING;
     _frameRequestsCount = frameCount;
     _frameRequestIndex = 0;
@@ -93,7 +93,7 @@ void VideoEngine::stopEngine(){
         currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
         currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
     }
-    cout << "- STOPPING ENGINE"<<endl;
+    // cout << "- STOPPING ENGINE"<<endl;
     _frameRequestsCount = 0;
     _aborted = false;
     _paused = false;
@@ -105,7 +105,7 @@ void VideoEngine::stopEngine(){
 
 
 void VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
-    cout << "     _computeFrameRequest()" << endl;
+    //cout << "     _computeFrameRequest()" << endl;
     _working = true;
     _sameFrame = sameFrame;
     EngineStatus::RetCode returnCode;
@@ -337,7 +337,7 @@ stop:
 }
 
 void VideoEngine::dispatchEngine(){
-    cout << "     _dispatchEngine()" << endl;
+    //cout << "     _dispatchEngine()" << endl;
     if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE) {
         if (_dag.isOutputAViewer()) {
             Viewer* viewer = _dag.outputAsViewer();
@@ -347,20 +347,20 @@ void VideoEngine::dispatchEngine(){
                                                               _lastEngineStatus._h,
                                                               (ViewerGL::CACHING_MODE)_lastEngineStatus._cachingMode);
         }
-        cout << "     _computeTreForFrame()" << endl;
+        //   cout << "     _computeTreForFrame()" << endl;
         computeTreeForFrame(_lastEngineStatus._rows,_dag.getOutput());
         
     }else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){
-        cout << "    _cachedFrameEngine()" << endl;
+        //cout << "    _cachedFrameEngine()" << endl;
         Viewer* viewer = _dag.outputAsViewer();
         viewer->cachedFrameEngine(_lastEngineStatus._cachedEntry);
     }
     else if(_lastEngineStatus._returnCode == EngineStatus::TEXTURE_CACHED_ENGINE){
-        cout << "    _textureCachedEngine()" << endl;
+        //  cout << "    _textureCachedEngine()" << endl;
         engineLoop();
-    }else{
-        cout <<"___really stopping__" << endl;
-    }
+    }//else{
+     //    cout <<"___really stopping__" << endl;
+     // }
     
 }
 
