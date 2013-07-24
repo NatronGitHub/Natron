@@ -858,7 +858,6 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
         
         float newZoomFactor;
-        
         if(event->delta() >0){
             newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
         }else {
