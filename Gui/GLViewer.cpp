@@ -961,7 +961,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
-    
+
 }
 
 

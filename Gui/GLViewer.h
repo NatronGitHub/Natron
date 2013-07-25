@@ -116,6 +116,68 @@
             /**
              *@class ZoomContext
              *@brief Holds all zoom related variables. This is an internal class used by the ViewerGL.
+             *The variables stored here are the minimal variables needed to enable the zoom and the drag
+             *of the image. 
+             *The top and right edges of the ortographic projection can be computed as such:
+             *
+             * top = bottom + heightWidget/zoomFactor 
+             * right = left + widthWidget/zoomFactor
+             *
+             *
+             *During the computations made in the ViewerGL, we define 2 coordinate systems:
+             *  - The viewport (or widget) coordinate system, with origin top left.
+             *  - The image coordinate system with the origin bottom left.
+             *To transform the coordinates between one system to another is a simple mapping operation,
+             *which yields :
+             *
+             * Ximg = (Xwidget/widthWidget) * ( right - left ) + left
+             * Yimg = (Ywidget/heightWidget) * (bottom - top) + top  [notice the y inversion here]
+             *
+             *Let us define the zoomFactor being the ratio of screen pixels size divided by image pixels size.
+             *
+             *Zooming to a point is simply a matter of changing the orthographic projection. 
+             *When zooming, the position of the center should never change, relativly to the orthographic projection.
+             *Which means that the old position (before zooming) expressed in its own orthographic projection, should equal
+             *the new position (after zooming) expressed in its own orthographic projection.
+             *That is:
+             *
+             * - For the x coordinate:  (Ximg - left_old) * zoomFactor_old == (Ximg - left_new) * zoomFactor_new
+             *Where Ximg is the X coordinate of the zoom center in image coordinates, left_old is the left edge of
+             *the orthographic projection before zooming, and the left_new the left edge after zooming.
+             *
+             *This formula yields:
+             *
+             *  left_new = Ximg - (Ximg - left_old)*(zoomFactor_old/zoomFactor_new).
+             *
+             * -The y coordinate follows exactly the same reasoning and the following equation can be found:
+             *  
+             *  bottom_new = Yimg - (Yimg - bottom_old)*(zoomFactor_old/zoomFactor_new).
+             *
+             * Retrieving top_new and right_new can be done with the formulas exhibited above.
+             *
+             *A last note on the zoom is the initialisation. A desired effect can be to initialise the image
+             *so it appears centered in the viewer and that fit entirely in the viewer. This can be done as such:
+             *
+             *The zoomFactor needed to fit the image in the viewer can be computed with the ratio of the 
+             *height of the widget by the height of the image : 
+             *
+             * zoomFactor = heightWidget / heightImage
+             *
+             *The left and bottom edges can then be initialised : 
+             *
+             * left = widthImage / 2 - ( widthWidget / ( 2 * zoomFactor ) )
+             * bottom = heightImage / 2 - ( heightWidget / ( 2 * zoomFactor ) )
+             *
+             *TRANSLATING THE IMAGE : (panning around)
+             *
+             *Translation is simply a matter of displacing the edges of the orthographic projection
+             *by a delta. The delta is the difference between the last mouse position (in image coordinates)
+             *and the new mouse position (in image coordinates).
+             *
+             *Translating is just doing so:
+             *
+             *  bottom += Yimg_old - Yimg_new
+             *  left += Ximg_old - Ximg_new
              **/
             class ZoomContext{
                 
@@ -124,11 +186,12 @@
                 ZoomContext():_bottom(0),_left(0),_zoomFactor(1)
                 {}
                 
-                QPoint _oldClick;
-                float _bottom,_left;
-                float _zoomFactor;
+                QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
+                float _bottom; /// the bottom edge of orthographic projection
+                float _left; /// the left edge of the orthographic projection
+                float _zoomFactor; /// the zoom factor applied to the current image
                                                 
-                /*the level of zoom used to display the frame*/
+                /*!< the level of zoom used to display the frame*/
                 void setZoomFactor(float f){_zoomFactor = f;}
                 
                 float getZoomFactor() const {return _zoomFactor;}
