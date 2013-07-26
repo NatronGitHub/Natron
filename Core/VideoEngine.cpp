@@ -84,7 +84,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     _paused = false;
     _aborted = false;
     _dag.validate(false); // < validating sequence (mostly getting the same frame range for all nodes).
-    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,sameFrame,fitFrameToViewer,false);
+    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,gl_viewer->getZoomFactor(),sameFrame,fitFrameToViewer,false);
     _computeFrameWatcher->setFuture(future);
 
 }
@@ -104,7 +104,7 @@ void VideoEngine::stopEngine(){
 }
 
 
-void VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
+void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
     //cout << "     _computeFrameRequest()" << endl;
     _working = true;
     _sameFrame = sameFrame;
@@ -236,6 +236,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool 
     const Format &_dispW = _dag.getOutput()->getInfo()->getDisplayWindow();
     if(_dag.isOutputAViewer() && fitFrameToViewer){
         gl_viewer->fitToFormat(_dispW);
+        zoomFactor = gl_viewer->getZoomFactor();
     }
     /*Now that we called validate we can check if the frame is in the cache
      and return the appropriate EngineStatus code.*/
@@ -246,10 +247,9 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool 
     U64 key = 0;
     int w=0,h=0;
     if(_dag.isOutputAViewer()){
+        viewer->setCurrentZoomFactor(zoomFactor);
         
         map<int,int>::iterator it;
-        
-        float zoomFactor = gl_viewer->getZoomFactor();
         gl_viewer->computeRowSpan(rows,_dispW);
         it = rows.begin();
         map<int,int>::iterator last = rows.end();
@@ -274,7 +274,7 @@ void VideoEngine::computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool 
         h = rows.size();
         
         /*Now checking if the frame is already in either the ViewerCache*/
-        _viewerCacheArgs._zoomFactor = gl_viewer->getZoomFactor();
+        _viewerCacheArgs._zoomFactor = zoomFactor;
         _viewerCacheArgs._exposure = gl_viewer->getExposure();
         _viewerCacheArgs._lut = gl_viewer->lutType();
         _viewerCacheArgs._byteMode = gl_viewer->byteMode();
@@ -449,7 +449,7 @@ void VideoEngine::engineLoop(){
     }
 
     // recursive call, before the updateDisplay (swapBuffer) so it can run concurrently
-    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,false,false,true);
+    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,gl_viewer->getZoomFactor(),false,false,true);
     _computeFrameWatcher->setFuture(future);
     if(_dag.isOutputAViewer()){
         updateDisplay(); // updating viewer & pixel aspect ratio if needed
@@ -509,6 +509,9 @@ void VideoEngine::startEngine(int nbFrames){
 }
 void VideoEngine::repeatSameFrame(){
     if (dagHasInputs()) {
+        if(_working){
+            abort();
+        }
         videoEngine(1,false,true,true);
     }
 }
@@ -563,7 +566,7 @@ void VideoEngine::setDesiredFPS(double d){
 
 void VideoEngine::abort(){
     _aborted=true;
-    _workerThreadsResults->waitForFinished();
+    _workerThreadsResults->cancel();
     if(currentViewer){
         currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
         currentViewer->getUiContext()->play_Forward_Button->setChecked(false);

@@ -299,7 +299,7 @@
              *@param b A pointer to the blue component of the row to draw.
              *@param a A pointer to the alpha component of the row to draw.
              */
-            void drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY);
+            void drawRow(const float* r,const float* g,const float* b,const float* a,float zoomFactor,int zoomedY);
             
             /**
              *@brief Toggles on/off the display on the viewer. If d is false then it will
@@ -781,7 +781,7 @@
              *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
             void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-                                            int w,int yOffset,const float* alpha);
+                                            int w,float zoomFactor,int yOffset,const float* alpha);
             
             /**
              *@brief This function fills the member frameData with the buffer in parameters.
@@ -798,7 +798,7 @@
              *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
             void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-                                               int w,int yOffset,const float* alpha);
+                                               int w,float zoomFactor,int yOffset,const float* alpha);
             
 
             /**

@@ -533,15 +533,16 @@ void ViewerGL::initBlackTex(){
 
 
 
-void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
-    float zoomFactor;
-    _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
+void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,float zoomFactor ,int zoomedY){
+    if (zoomFactor > 1.f) {
+        zoomFactor = 1.f;
+    } 
     int w = floorf(displayWindow().w() * zoomFactor);
     if(byteMode()==0 && _hasHW){
-        convertRowToFitTextureBGRA_fp(r,g,b,w,zoomedY,a);
+        convertRowToFitTextureBGRA_fp(r,g,b,w,zoomFactor,zoomedY,a);
     }
     else{
-        convertRowToFitTextureBGRA(r,g,b,w,zoomedY,a);
+        convertRowToFitTextureBGRA(r,g,b,w,zoomFactor,zoomedY,a);
         
     }
 }
@@ -631,7 +632,7 @@ void ViewerGL::copyPBOtoTexture(){
 }
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-                                          int w,int yOffset,const float* alpha){
+                                          int w,float zoomFactor,int yOffset,const float* alpha){
     /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
      This error diffusion will produce stripes in any image that has identical scanlines.
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
@@ -644,8 +645,6 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     if(_colorSpace->linear()){
         int start = (int)(rand()%w);
         /* go fowards from starting point to end of line: */
-        float zoomFactor;
-        _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
         for(int i = start ; i < w ; i++){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
@@ -702,8 +701,6 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
-        float zoomFactor;
-        _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
         for(int i = start ; i < w ; i++){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
@@ -769,15 +766,13 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
 
 // nbbytesoutput is the size in bytes of 1 channel for the row
 void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-                                             int  w,int yOffset,const float* alpha){
+                                             int  w,float zoomFactor,int yOffset,const float* alpha){
     assert(frameData);
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *=w*sizeof(float);
     output+=yOffset;
     int index = 0;
-    float zoomFactor;
-    _zoomCtx._zoomFactor <= 1 ? zoomFactor = _zoomCtx._zoomFactor : zoomFactor = 1.f;
     for(int i =0 ; i < w*4 ; i+=4){
         float x = (float)index*1.f/zoomFactor;
         int nearest;
@@ -839,7 +834,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+        //if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
             QPoint newClick =  event->pos();
             QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
             QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
@@ -848,14 +843,14 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._oldClick = newClick;
             if(_drawing)
                 emit engineNeeded();
-            else
+              else
                 updateGL();
-        }
+        //}
         
     }
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+    //   if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
         
         float newZoomFactor;
         if(event->delta() >0){
@@ -876,10 +871,10 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             ctrlPTR->getModel()->clearPlaybackCache();
             emit engineNeeded();
         }
-        else{
+        else
             updateGL();
-        }
-    }
+
+    //  }
     
     emit zoomChanged( _zoomCtx._zoomFactor*100);
     

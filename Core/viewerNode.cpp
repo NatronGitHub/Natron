@@ -39,7 +39,8 @@ _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
 _textureCache(textureCache),
-_pboIndex(0)
+_pboIndex(0),
+_currentZoomFactor(1.f)
 {
     _cacheWatcher = new QFutureWatcher<void>;
    QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));
@@ -82,6 +83,7 @@ void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
                                     row[Channel_green],
                                     row[Channel_blue],
                                     row[Channel_alpha],
+                                    _currentZoomFactor,
                                     internal->zoomedY());
     }
 }

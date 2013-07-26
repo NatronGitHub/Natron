@@ -588,7 +588,7 @@ private:
      *as well as a list of the rows indexes the engine should compute if the frame is not cached.
      */
 
-    void computeFrameRequest(bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
+    void computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.
