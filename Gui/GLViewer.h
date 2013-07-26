@@ -110,9 +110,7 @@
         class ViewerGL : public QGLWidget
         {
             Q_OBJECT
-            
-            friend class Viewer; /*!< Makes the viewer node class friend as it is inter-connected with the ViewerGL.*/
-            
+                        
             /**
              *@class ZoomContext
              *@brief Holds all zoom related variables. This is an internal class used by the ViewerGL.
@@ -207,9 +205,9 @@
             
             GLuint _pboIds[2]; /*!< PBO's id's used by the OpenGL context*/
             
-            TextureEntry* _texID;/*!<The texture used to render data that doesn't come from the texture cache*/
+            TextureEntry* _viewerCacheTexture;/*!< The texture used to render data that comes from the viewer cache*/
             
-            TextureEntry* _currentTexture;/*!< A pointer to the current texture used to display.*/
+            TextureEntry* _currentDisplayTexture;/*!< A pointer to the current texture used to display.*/
             
             GLuint _blackTexId[1];/*!< Id of the texture used to render a black screen when nothing is connected.*/
             
@@ -260,9 +258,7 @@
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
-            bool _noDataTransfer;/*!< True whenever the current texture already holds data and doesn't need
-                                  a copy from a PBO*/
-            
+
             TextureCache* _textureCache;/*!< Pointer to the texture cache. The viewer does NOT own it!
                                          It is shared among viewers*/
             
@@ -524,8 +520,20 @@
              *used texture. Note that it unmaps the current PBO before actually copying data
              *to the texture.
              **/
-            void copyPBOtoTexture();
+            void copyPBOToExistingTexture();
             
+            /**
+             * @brief Copies the data stored in the  currently mapped pbo into a new texture.
+             *Note that it unmaps the current PBO before actually copying data to the texture.
+             *This will add this new texture to the texture cache and set it as the current
+             *display texture.
+             * @param texture A created texture that hasn't been allocated yet.
+             *\pre texture has had its hash key set via TextureEntry::setHashKey(U64).
+             * @param width The width of the texture to allocate
+             * @param height The height of the texture to allocate
+             */
+            void copyPBOToNewTexture(TextureEntry* texture,int width,int height);
+
             /**
              *@returns *Returns a pointer to the data of the current frame.
              **/
@@ -567,18 +575,19 @@
              *@brief Set the current texture used to display.
              *@param texture[in] A pointer to the texture used to render.
              **/
-            void setCurrentTexture(TextureEntry* texture);
+            void setCurrentDisplayTexture(TextureEntry* texture);
             
             /**
              *@returns Returns a pointer to the current texture used to display.
              **/
-            TextureEntry* getCurrentTexture() const {return _currentTexture;}
+            TextureEntry* getCurrentDisplayTexture() const {return _currentDisplayTexture;}
             
+
             /**
              *@returns Returns a pointer to the texture used to display when the texture
              *does not come frome the texture cache.
              **/
-            TextureEntry* getDefaultTextureID() const {return _texID;}
+            TextureEntry* getViewerCacheTexture() const {return _viewerCacheTexture;}
             
             /**
              *@returns Returns true if the graphic card supports GLSL.

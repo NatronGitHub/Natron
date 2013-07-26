@@ -160,10 +160,7 @@ bool Viewer::isTextureCached(U64 key){
     
     TextureEntry* found = _textureCache->get(key);
     if(found != NULL){
-        _uiContext->viewer->setCurrentTexture(found);
-        /*flaging that it will not be needed to copy data from the current PBO
-         to the texture as it already contains the results.*/
-        _uiContext->viewer->_noDataTransfer = true;
+        _uiContext->viewer->setCurrentDisplayTexture(found);
         return true;
     }
     return false;
@@ -195,8 +192,8 @@ void Viewer::cachedFrameEngine(FrameEntry* frame){
     
     
     /*resizing texture if needed, the calls must be made in that order*/
-    gl_viewer->getDefaultTextureID()->allocate(w, h, type);
-    gl_viewer->setCurrentTexture(gl_viewer->getDefaultTextureID());
+    gl_viewer->getViewerCacheTexture()->allocate(w, h, type);
+    gl_viewer->setCurrentDisplayTexture(gl_viewer->getViewerCacheTexture());
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();

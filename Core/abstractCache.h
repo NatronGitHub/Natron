@@ -245,7 +245,7 @@ public:
     /*So you can compare the result of isCached by the result of this
      function.*/
     CacheIterator end() {return _cache.end();}
-private:
+protected:
     
     /*Erase one element from the cache. It is used
      by the implementation of clear(), and shouldn't be

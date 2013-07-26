@@ -105,8 +105,7 @@ void ViewerGL::initConstructor(){
     _overlay=true;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
-    _currentTexture = 0;
-    _noDataTransfer = false;
+    _currentDisplayTexture = 0;
     _pBOmapped = false;
 }
 
@@ -160,7 +159,7 @@ ViewerGL::~ViewerGL(){
         delete shaderBlack;
         
     }
-    delete _texID;
+    delete _viewerCacheTexture;
     glDeleteTextures(1,&_blackTexId[0]);
     glDeleteBuffers(2, &_pboIds[0]);
   	delete _blankViewerInfos;
@@ -204,7 +203,7 @@ void ViewerGL::paintGL()
     
     glEnable (GL_TEXTURE_2D);
     if(_drawing){
-        glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
+        glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
         //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
@@ -318,7 +317,7 @@ void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
  	glClearColor(0.0,0.0,0.0,1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
-    _texID = new TextureEntry;
+    _viewerCacheTexture = new TextureEntry;
     glGenTextures (1, _blackTexId);
     glGenBuffersARB(2, &_pboIds[0]);
     if(_hasHW){
@@ -558,15 +557,8 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h){
         dataSize = sizeof(float)*w*h*4;
         type = TextureEntry::FLOAT;
     }
-    //  if(mode == TEXTURE_CACHE){ // texture caching
-        TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
-        setCurrentTexture(ret);
-        
-    //}else{ // viewer caching
-    //   _texID->allocate(w, h, type);
-    //   setCurrentTexture(_texID);
-    // }
-    
+    //TextureEntry* ret = _textureCache->generateTexture(key,w,h,type);
+    //setCurrentDisplayTexture(ret);
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
     assert(frameData);
@@ -585,16 +577,30 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
-void ViewerGL::copyPBOtoTexture(){
-    if(_noDataTransfer){
-        _noDataTransfer = false; // reinitialize the flag
-        return;
+void ViewerGL::copyPBOToNewTexture(TextureEntry* texture,int width,int height){
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    TextureEntry::DataType type;
+    if(byteMode() == 1 || !_hasHW){
+        type = TextureEntry::BYTE;
+    }else{
+        type = TextureEntry::FLOAT;
     }
+    texture->allocate(width,height,type);
+    _textureCache->addTexture(texture);
+    setCurrentDisplayTexture(texture);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    frameData = 0;
+    _pBOmapped = false;
+
+}
+
+void ViewerGL::copyPBOToExistingTexture(){
     
-    int w = _currentTexture->w();
-    int h = _currentTexture->h();
+    
+    int w = _currentDisplayTexture->w();
+    int h = _currentDisplayTexture->h();
     glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, _currentTexture->getTexID());
+    glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
@@ -603,7 +609,7 @@ void ViewerGL::copyPBOtoTexture(){
     }
     
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_currentTexture->type() == TextureEntry::BYTE){
+    if(_currentDisplayTexture->type() == TextureEntry::BYTE){
         glTexSubImage2D(GL_TEXTURE_2D,
                         0,				// level
                         0, 0,				// xoffset, yoffset
@@ -613,7 +619,7 @@ void ViewerGL::copyPBOtoTexture(){
                         0);
         
         
-    }else if(_currentTexture->type() == TextureEntry::FLOAT){
+    }else if(_currentDisplayTexture->type() == TextureEntry::FLOAT){
         glTexSubImage2D(GL_TEXTURE_2D,
                         0,				// level
                         0, 0 ,				// xoffset, yoffset
@@ -834,7 +840,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     
     if(_ms == DRAGGING){
-        //if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+        // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
             QPoint newClick =  event->pos();
             QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
             QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
@@ -845,12 +851,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
                 emit engineNeeded();
             else
                 updateGL();
-        //}
+        //  }
         
     }
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    //   if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
         
         float newZoomFactor;
         if(event->delta() >0){
@@ -874,7 +880,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
        else
            updateGL();
 
-    //  }
+    // }
     
     emit zoomChanged( _zoomCtx._zoomFactor*100);
     
@@ -1593,10 +1599,10 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
     
 }
 
-void ViewerGL::setCurrentTexture(TextureEntry* texture){
-    if(_currentTexture)
-        _currentTexture->returnToNormalPriority();
-    _currentTexture = texture;
+void ViewerGL::setCurrentDisplayTexture(TextureEntry* texture){
+    if(_currentDisplayTexture)
+        _currentDisplayTexture->returnToNormalPriority();
+    _currentDisplayTexture = texture;
     texture->preventFromDeletion();
 }
 float ViewerGL::byteMode() const {

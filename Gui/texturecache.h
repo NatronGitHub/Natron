@@ -31,12 +31,12 @@
 
 
 class TextureEntry : public CacheEntry{
-    
 public:
     /*Note that the half datatype is not used currently*/
     enum DataType {BYTE = 0,FLOAT = 1 , HALF = 2};
 
 protected:
+    U64 _hashKey;
     U32 _texID;
     int _w,_h;
     DataType _type;
@@ -55,6 +55,10 @@ public:
     
     /*allocates the texture*/
     void allocate(int w, int h ,DataType type);
+    
+    void setHashKey(U64 key){_hashKey = key;}
+    
+    U64 getHashKey() const {return _hashKey;}
     
     /*deallocates the texture*/
     virtual void deallocate();
@@ -81,8 +85,13 @@ public:
     /*Returns 0 if the texture represented by the key is not present in the cache.*/
     TextureEntry* get(U64 key);
     
-    /*Inserts a new texture,represented by key in the cache.*/
-    TextureEntry* addTexture(U64 key,int w , int h ,TextureEntry::DataType type);
+    /*Creates a new texture without inserting it in the cache*/
+    TextureEntry* generateTexture(U64 key,int w , int h ,TextureEntry::DataType type);
+    
+    /*Inserts an existing texture in the cache*/
+    void addTexture(TextureEntry* texture);
+    
+    void remove(TextureEntry* entry);
     
 };
 
