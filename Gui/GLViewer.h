@@ -268,13 +268,6 @@
             
         public:
             
-            /**
-             *@enum CACHING_MODE
-             *@brief This enum is used internally by the engine when it calls the function
-             determineFrameDataContainer(). It indicates to the ViewerGL what kind of caching
-             policy it should use and the subsequent caching process will use this policy.
-             **/
-            enum CACHING_MODE{TEXTURE_CACHE,VIEWER_CACHE};
             
             /*3 different constructors, that all take a different parameter related to OpenGL or Qt widget parenting.
              When constructing a viewer for the 1st time in the app, you must pass a NULL shareWidget. Otherwise,you
@@ -510,7 +503,7 @@
              *buffer will then be a memory mapped portion of the address-space of the process.
              *@returns Returns the size in bytes of the space occupied in memory by the frame.
              **/
-            size_t determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHING_MODE mode);
+            size_t determineFrameDataContainer(U64 key,int w,int h);
             
             /**
              *@brief Allocates the pbo represented by the pboID with dataSize bytes.

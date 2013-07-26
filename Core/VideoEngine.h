@@ -224,20 +224,19 @@ public:
     public:
         enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
         
-        EngineStatus():_cachedEntry(0),_key(0),_w(0),_h(0),_cachingMode(0),_returnCode(NORMAL_ENGINE){}
+        EngineStatus():_cachedEntry(0),_key(0),_w(0),_h(0),_returnCode(NORMAL_ENGINE){}
         
-        EngineStatus(FrameEntry* cachedEntry,U64 key,int w,int h,int cachingMode,const std::map<int,int> rows,EngineStatus::RetCode state):
+        EngineStatus(FrameEntry* cachedEntry,U64 key,int w,int h,const std::map<int,int> rows,EngineStatus::RetCode state):
         _cachedEntry(cachedEntry),
         _key(key),
         _w(w),
         _h(h),
-        _cachingMode(cachingMode),
         _rows(rows),
         _returnCode(state)
         {}
         
         EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
-        _key(other._key),_w(other._w),_h(other._h),_cachingMode(other._cachingMode),
+        _key(other._key),_w(other._w),_h(other._h),
         _rows(other._rows),_returnCode(other._returnCode){}
         
  
@@ -246,7 +245,6 @@ public:
         FrameEntry* _cachedEntry;
         U64 _key;
         int _w,_h;
-        int _cachingMode;
         std::map<int,int> _rows;
         RetCode _returnCode;
     };
@@ -447,6 +445,7 @@ public slots:
      *@brief This slot is called internally by the video engine. Do not call this directly. This function actually determines
      *whether the engine needs to stop or not, updates the viewport display if the output is a viewer and then calls
      *VideoEngine::computeFrameRequest(bool,bool,bool) if there're remaining frames to compute.
+     *@warning This is MANDATORY that this function gets called by the main thread as it directly commands OpenGL.
      **/
     void engineLoop();
     

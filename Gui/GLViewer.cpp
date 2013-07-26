@@ -547,7 +547,7 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
     }
 }
 
-size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHING_MODE mode){
+size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h){
     
     size_t dataSize = 0;
     TextureEntry::DataType type;
@@ -558,14 +558,14 @@ size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h,ViewerGL::CACHI
         dataSize = sizeof(float)*w*h*4;
         type = TextureEntry::FLOAT;
     }
-    if(mode == TEXTURE_CACHE){ // texture caching
+    //  if(mode == TEXTURE_CACHE){ // texture caching
         TextureEntry* ret = _textureCache->addTexture(key,w,h,type);
         setCurrentTexture(ret);
         
-    }else{ // viewer caching
-        _texID->allocate(w, h, type);
-        setCurrentTexture(_texID);
-    }
+    //}else{ // viewer caching
+    //   _texID->allocate(w, h, type);
+    //   setCurrentTexture(_texID);
+    // }
     
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
@@ -843,7 +843,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._oldClick = newClick;
             if(_drawing)
                 emit engineNeeded();
-              else
+            else
                 updateGL();
         //}
         
@@ -871,8 +871,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             ctrlPTR->getModel()->clearPlaybackCache();
             emit engineNeeded();
         }
-        else
-            updateGL();
+       else
+           updateGL();
 
     //  }
     

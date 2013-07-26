@@ -383,6 +383,7 @@ void File_Knob::open_file(){
         std::string className=getCallBack()->getNode()->className();
         if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
+            ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
             static_cast<Reader*>(node)->showFilePreview();
             validateEvent(true);
         }

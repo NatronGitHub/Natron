@@ -137,7 +137,7 @@ NodeGui::~NodeGui(){
 }
 
 void NodeGui::remove(){
-    dockContainer->removeWidget(settings);
+    //dockContainer->removeWidget(settings);
     delete settings;
     delete this;
 }

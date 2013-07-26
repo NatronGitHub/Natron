@@ -118,7 +118,6 @@ bool Reader::readCurrentHeader(int current_frame){
         _read->readHeader(filename, false);
         slContext = new Reader::Buffer::ScanLineContext;
         if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
-            float zoomFactor;
             const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
             if(_fitFrameToViewer){
                 currentViewer->getUiContext()->viewer->fitToFormat(dispW);
