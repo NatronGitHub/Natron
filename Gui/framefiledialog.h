@@ -32,10 +32,12 @@
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
+#include <QComboBox>
 #include <QListView>
 #include <vector>
 #include <string>
 #include <iostream>
+
 
 class LineEdit;
 class Button;
@@ -45,10 +47,14 @@ class QLabel;
 class QHBoxLayout;
 class QVBoxLayout;
 class QSplitter;
+class QAction;
 class SequenceFileDialog;
 
 
-
+/**
+ * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
+ *the file system and some urls.
+ */
 class  UrlModel : public QStandardItemModel
 {
     Q_OBJECT
@@ -84,6 +90,10 @@ private:
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
 };
+
+/**
+ * @brief The FavoriteView class is the favorite list seen in the file dialog.
+ */
 class FavoriteView : public QListView
 {
     Q_OBJECT
@@ -118,6 +128,10 @@ private:
     UrlModel *urlModel;
 };
 
+/**
+ * @brief The SequenceItemDelegate class is used to alterate the rendering of the cells in the filesystem view
+ *within the file dialog. Mainly it transforms the text to draw for an item and also the size.
+ */
 class SequenceItemDelegate : public QStyledItemDelegate {
     
     Q_OBJECT
@@ -136,6 +150,9 @@ protected:
     virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
 };
 
+/**
+ * @brief The SequenceDialogView class is the view of the filesystem within the dialog.
+ */
 class SequenceDialogView: public QTreeView{
     
     Q_OBJECT
@@ -143,16 +160,18 @@ public:
     SequenceDialogView(QWidget* parent);
     
     void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
-    
-public slots:
-    
-    void adjustSizeToNewContent(QSize);
-    
+
+    inline void expandColumnsToFullWidth(){
+        int size = width() - columnWidth(1) - columnWidth(2) - columnWidth(3);
+        setColumnWidth(0,size);
+    }
 };
 
-
+/**
+ * @brief The SequenceDialogProxyModel class is a proxy that filters image sequences from the QFileSystemModel
+ */
 class SequenceDialogProxyModel: public QSortFilterProxyModel{
-    /*map of <sequence name, pair< extension name, vector of frame numbers> >
+    /*multimap of <sequence name, pair< extension name, vector of frame numbers> >
      *Several sequences can have a same name but a different file extension within a same directory.
      */
     mutable std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
@@ -170,7 +189,7 @@ public:
     
     std::multimap<std::string, std::pair<std::string,std::vector<int> > > getFrameSequenceCopy() const{return _frameSequences;}
     
-    void setFilter(QString filter);
+    inline void setFilter(QString filter){ _filter = filter;}
 
 protected:
     virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
@@ -192,12 +211,32 @@ private:
 };
 
 
+class FileDialogComboBox : public QComboBox
+{
+public:
+    FileDialogComboBox(QWidget *parent = 0) : QComboBox(parent), urlModel(0) {}
+    void setFileDialogPointer(SequenceFileDialog *p);
+    void showPopup();
+    void setHistory(const QStringList &paths);
+    QStringList history() const { return m_history; }
+    void paintEvent(QPaintEvent *);
+
+private:
+    UrlModel *urlModel;
+    SequenceFileDialog *dialog;
+    QStringList m_history;
+};
+
+/**
+ * @brief The SequenceFileDialog class is the main dialog, containing the GUI and with whom the end user can interact.
+ */
 class SequenceFileDialog: public QDialog
 {
     Q_OBJECT
-    
-    std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
-    std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping; // the item whose names must be changed
+    typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > > FrameSequences;
+    typedef std::vector<std::pair<QString,std::pair<qint64,QString> > > NameMapping;
+    FrameSequences _frameSequences;
+    NameMapping _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
     
@@ -208,7 +247,9 @@ class SequenceFileDialog: public QDialog
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
     
-    
+    QLabel* _lookInLabel;
+    FileDialogComboBox* _lookInCombobox;
+
     Button* _previousButton;
     Button* _nextButton;
     Button* _upButton;
@@ -220,8 +261,7 @@ class SequenceFileDialog: public QDialog
     Button* _removeFavoriteButton;
     
     LineEdit* _selectionLineEdit;
-    QLabel* _sequenceLabel;
-    QCheckBox* _sequenceCheckbox;
+    Button* _sequenceButton;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;
@@ -249,14 +289,15 @@ class SequenceFileDialog: public QDialog
     QStringList _history;
     int _currentHistoryLocation;
 
-    
+    QAction* _showHiddenAction;
+    QAction* _newFolderAction;
     
 public:
     typedef SequenceDialogProxyModel::SequenceIterator SequenceIterator;
     typedef SequenceDialogProxyModel::ConstSequenceIterator ConstSequenceIterator;
     
     
-    SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string directory = std::string());
+    SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string currentDirectory = std::string());
 
     virtual ~SequenceFileDialog();
     
@@ -278,7 +319,7 @@ public:
     
     QStringList selectedFiles();
     
-    QDir directory() const;
+    QDir currentDirectory() const;
 
     void addFavorite(const QString& name,const QString& path);
 
@@ -290,24 +331,40 @@ public:
 
     bool isDirectory(const QString& name) const;
 
+    inline QString rootPath() const {
+        return _model->rootPath();
+    }
+
     QFileSystemModel* getFileSystemModel() const {return _model;}
 
     SequenceDialogView* getSequenceView() const {return _view;}
 
-    QModelIndex mapToSource(const QModelIndex& index);
+    inline QModelIndex mapToSource(const QModelIndex& index){
+         return _proxy->mapToSource(index);
+    }
 
-    QModelIndex mapFromSource(const QModelIndex& index);
+    inline QModelIndex mapFromSource(const QModelIndex& index){
+        QModelIndex ret =  _proxy->mapFromSource(index);
+        setFrameSequence(_proxy->getFrameSequenceCopy());
+        return ret;
+    }
+    void setHistory(const QStringList &paths);
+    QStringList history() const;
 
+    QStringList typedFiles() const;
+
+    QString getEnvironmentVariable(const QString &string);
 public slots:
 
     void enterDirectory(const QModelIndex& index);
 
-    void setDirectory(const QString &directory);
-    void updateView(const QString& directory);
+    void setDirectory(const QString &currentDirectory);
+    void updateView(const QString& currentDirectory);
     
     void previousFolder();
     void nextFolder();
     void parentFolder();
+    void goHome();
     void createDir();
     void addFavorite();
     void openSelectedFiles();
@@ -321,13 +378,18 @@ public slots:
     void starSlashFilterSlot();
     void emptyFilterSlot();
     void applyFilter(QString filter);
-
-    
+    void showHidden();
+    void showContextMenu(const QPoint &position);
+    void pathChanged(const QString &newPath);
+    void autoCompleteFileName(const QString&);
+    void goToDirectory(const QString&);
 protected:
     virtual void keyPressEvent(QKeyEvent *e);
+
+    virtual void resizeEvent(QResizeEvent* e);
 private:
     
-
+    void createMenuActions();
     
     void itemsToSequence(const QModelIndex &modelParent, const QModelIndex &parent);
     

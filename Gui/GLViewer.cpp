@@ -847,10 +847,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._bottom += (oldClick_opengl.y() - newClick_opengl.y());
             _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
             _zoomCtx._oldClick = newClick;
-            if(_drawing)
+            if(_drawing){
                 emit engineNeeded();
+            }
         //    else
-                updateGL();
+            updateGL();
         //  }
         
     }
@@ -878,7 +879,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             emit engineNeeded();
         }
     //  else
-           updateGL();
+        updateGL();
 
     // }
     
