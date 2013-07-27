@@ -210,7 +210,7 @@ void WriteExr::writeAllData(){
         delete header;
 
     }catch (const std::exception& exc) {
-        cout << "OpenEXR error" << exc.what() << endl;
+        cout << "OpenEXR error: " << exc.what() << endl;
         return;
     }
     

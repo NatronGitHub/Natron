@@ -546,7 +546,7 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
     }
 }
 
-size_t ViewerGL::determineFrameDataContainer(U64 key,int w,int h){
+size_t ViewerGL::determineFrameDataContainer(int w,int h){
     
     size_t dataSize = 0;
     TextureEntry::DataType type;

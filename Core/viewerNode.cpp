@@ -61,7 +61,6 @@ void Viewer::_validate(bool){
     
    // (void)forReal;
    // makeCurrentViewer();
-    
 }
 
 std::string Viewer::description(){

@@ -488,18 +488,11 @@
             void turnOffOverlay(){_overlay=false;}
             
             /**
-             *@brief Called by the video engine to allocate the frameData buffer depending
-             *on the caching mode.
-             *@param key[in] The cache key associated to the current frame. It is used to represent
-             *the frame in the cache in an (almost) unique way.
+             *@brief Called by the video engine to allocate the frameData.
              *@param w,h[in] The width and height of the scaled frame.
-             *@param mode[in] This indicates what cache to use to store the frame. If mode is
-             *TEXTURE_CACHE then it will allocate frameData in RAM only and copy all data in a texture.
-             *If mode is VIEWER_CACHE then it will allocate frameData with a backing file on disk. The
-             *buffer will then be a memory mapped portion of the address-space of the process.
              *@returns Returns the size in bytes of the space occupied in memory by the frame.
              **/
-            size_t determineFrameDataContainer(U64 key,int w,int h);
+            size_t determineFrameDataContainer(int w,int h);
             
             /**
              *@brief Allocates the pbo represented by the pboID with dataSize bytes.

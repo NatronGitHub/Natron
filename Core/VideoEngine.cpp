@@ -50,8 +50,8 @@
  
  1) Without caching
  
- [OtherThread]
- [main thread]                              |
+ [main thread]                    [OtherThread]
+      |                                  |
  - videoEngine
  |------QtConcurrent::Run()>-computeFrameRequest_<
  |< -------------------------**finished()**      |
@@ -307,21 +307,20 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             goto stop;
         }
         
-        /*If it reaches here, it means the frame neither belong
-         to the ViewerCache nor to the TextureCache, we must
-         allocate resources and render the frame.
-         If this is a recursive call, we explicitly fallback
-         to the viewer cache storage as the texture cache is not
-         meant for playback.*/
-        QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadData,_1,currentFrame));
-        returnCode = EngineStatus::NORMAL_ENGINE;
     }else{
-        returnCode = EngineStatus::NORMAL_ENGINE;
         for (int i = dataW.y(); i < dataW.top(); i++) {
             rows.insert(make_pair(i,i));
         }
     }
-    
+    /*If it reaches here, it means the frame neither belong
+     to the ViewerCache nor to the TextureCache, we must
+     allocate resources and render the frame.
+     If this is a recursive call, we explicitly fallback
+     to the viewer cache storage as the texture cache is not
+     meant for playback.*/
+    QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadData,_1,currentFrame));
+    returnCode = EngineStatus::NORMAL_ENGINE;
+
 stop:
     _lastEngineStatus._cachedEntry = iscached;
     _lastEngineStatus._key = key;
@@ -337,8 +336,7 @@ void VideoEngine::dispatchEngine(){
         if (_dag.isOutputAViewer()) {
             Viewer* viewer = _dag.outputAsViewer();
             viewer->makeCurrentViewer();
-            _viewerCacheArgs._dataSize = gl_viewer->determineFrameDataContainer(_lastEngineStatus._key,
-                                                                                _lastEngineStatus._w,
+            _viewerCacheArgs._dataSize = gl_viewer->determineFrameDataContainer(_lastEngineStatus._w,
                                                                                 _lastEngineStatus._h);
         }
         //   cout << "     _computeTreForFrame()" << endl;

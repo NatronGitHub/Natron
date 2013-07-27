@@ -325,6 +325,12 @@ void AbstractDiskCache::clearInMemoryCache(){
 void AbstractDiskCache::clearDiskCache(){
     clearInMemoryCache();
     clear();
+    QString cacheFolderName(CACHE_ROOT_PATH);
+    cacheFolderName.append(CACHE_FOLDER_NAME);
+    cacheFolderName.append("/");
+    QDir cache(cacheFolderName);
+    cache.rmdir(cacheFolderName);
+    initializeSubDirectories();
 }
 
 void AbstractDiskCache::save(){

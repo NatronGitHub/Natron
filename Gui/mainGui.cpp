@@ -394,6 +394,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode){
         
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
         container->removeTab(tab);
+        delete tab;
     }
     
 }
