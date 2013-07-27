@@ -844,7 +844,8 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             QPoint newClick =  event->pos();
             QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
             QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
-            _zoomCtx._bottom += (oldClick_opengl.y() - newClick_opengl.y());
+            float dy = (oldClick_opengl.y() - newClick_opengl.y());
+            _zoomCtx._bottom += dy;
             _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
             _zoomCtx._oldClick = newClick;
             if(_drawing){

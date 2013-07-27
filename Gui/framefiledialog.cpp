@@ -844,7 +844,8 @@ void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
 void SequenceFileDialog::openSelectedFiles(){
     QString str = _selectionLineEdit->text();
     if(!isDirectory(str)){
-        if(QFile::exists(str)){
+        QStringList files = selectedFiles();
+        if(!files.isEmpty()){
             QDialog::accept();
         }
     }else{
@@ -858,7 +859,8 @@ void SequenceFileDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter){
         QString str = _selectionLineEdit->text();
         if(!isDirectory(str)){
-            if(QFile::exists(str)){
+            QStringList files = selectedFiles();
+            if(!files.isEmpty()){
                 QDialog::accept();
             }
         }else{
