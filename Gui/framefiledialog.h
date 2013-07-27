@@ -38,7 +38,6 @@
 #include <string>
 #include <iostream>
 
-
 class LineEdit;
 class Button;
 class QCheckBox;
@@ -134,7 +133,6 @@ private:
  */
 class SequenceItemDelegate : public QStyledItemDelegate {
     
-    Q_OBJECT
     int _maxW;
     mutable bool _automaticResize;
     std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
@@ -143,8 +141,7 @@ public:
     SequenceItemDelegate(SequenceFileDialog* fd);
 
     void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
-signals:
-    void contentSizeChanged(QSize) const;
+
 protected:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
     virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
@@ -167,27 +164,75 @@ public:
     }
 };
 
+class FileSequence{
+    
+public:
+    
+    class FrameIndexes{
+    public:
+        FrameIndexes():_isEmpty(true),_firstFrame(-1),_lastFrame(-1),_size(0){}
+        
+        ~FrameIndexes(){}
+        
+        bool isEmpty() const {return _isEmpty;}
+        
+        int firstFrame() const {return _firstFrame;}
+        
+        int lastFrame() const {return _lastFrame;}
+        
+        int size() const {return _size;}
+        
+        /*frame index is a frame index as read in the file name.*/
+        bool isInSequence(int frameIndex) const;
+        
+        /*frame index is a frame index as read in the file name.*/
+        bool addToSequence(int frameIndex);
+        
+        
+    private:
+        
+        bool _isEmpty;
+        int _firstFrame,_lastFrame;
+        int _size;
+        std::vector<quint64> _bits; /// each bit of a quint64 represents a frame index. The storage is a vector if there're more than 64
+                                    /// files in the sequence. The first frame and the last frame are not counted in these bits.
+    };
+    
+    
+    FileSequence(std::string filetype):_fileType(filetype),_totalSize(0){}
+    
+    ~FileSequence(){}
+    
+    /*Returns true if the frameIndex didn't exist when adding it*/
+    void addToSequence(int frameIndex,int frameSize);
+    
+    
+    std::string _fileType;
+    FrameIndexes _frameIndexes;
+    qint64 _totalSize;
+};
+
 /**
  * @brief The SequenceDialogProxyModel class is a proxy that filters image sequences from the QFileSystemModel
  */
 class SequenceDialogProxyModel: public QSortFilterProxyModel{
-    /*multimap of <sequence name, pair< extension name, vector of frame numbers> >
+    /*multimap of <sequence name, FileSequence >
      *Several sequences can have a same name but a different file extension within a same directory.
      */
-    mutable std::multimap<std::string, std::pair<std::string,std::vector<int> > > _frameSequences;
+    mutable std::multimap<std::string, FileSequence > _frameSequences;
     SequenceFileDialog* _fd;
     mutable QMutex _lock;
     QString _filter;
 
 public:
-    typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > >::iterator SequenceIterator;
-    typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > >::const_iterator ConstSequenceIterator;
+    typedef std::multimap<std::string, FileSequence >::iterator SequenceIterator;
+    typedef std::multimap<std::string, FileSequence >::const_iterator ConstSequenceIterator;
     
     SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
     void clear(){_frameSequences.clear();}
     
     
-    std::multimap<std::string, std::pair<std::string,std::vector<int> > > getFrameSequenceCopy() const{return _frameSequences;}
+    std::multimap<std::string, FileSequence > getFrameSequenceCopy() const{return _frameSequences;}
     
     inline void setFilter(QString filter){ _filter = filter;}
 
@@ -233,7 +278,7 @@ private:
 class SequenceFileDialog: public QDialog
 {
     Q_OBJECT
-    typedef std::multimap<std::string, std::pair<std::string,std::vector<int> > > FrameSequences;
+    typedef std::multimap<std::string, FileSequence > FrameSequences;
     typedef std::vector<std::pair<QString,std::pair<qint64,QString> > > NameMapping;
     FrameSequences _frameSequences;
     NameMapping _nameMapping; // the item whose names must be changed
@@ -303,9 +348,9 @@ public:
     
     void setRootIndex(const QModelIndex& index);
 
-    void setFrameSequence(std::multimap<std::string, std::pair<std::string,std::vector<int> > > frameSequences);
+    void setFrameSequence(FrameSequences frameSequences);
 
-    const std::vector<int> frameRangesForSequence(std::string sequenceName, std::string extension) const;
+    const FileSequence frameRangesForSequence(std::string sequenceName, std::string extension) const;
     
     bool isASupportedFileExtension(std::string ext) const;
     
@@ -391,7 +436,8 @@ private:
     
     void createMenuActions();
     
-    void itemsToSequence(const QModelIndex &modelParent, const QModelIndex &parent);
+    /*parent in proxy indexes*/
+    void itemsToSequence(const QModelIndex &parent);
     
     QModelIndex select(const QModelIndex& index);
 };
