@@ -377,9 +377,11 @@ bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
         return true;
     return rx.exactMatch(path);
 }
-void FileSequence::addToSequence(int frameIndex,int frameSize){
+void FileSequence::addToSequence(int frameIndex,const QString& path){
     if(_frameIndexes.addToSequence(frameIndex)){
-        _totalSize += frameSize;
+        QFile f(path);
+        _totalSize += f.size();
+        
     }
 }
 
@@ -416,7 +418,6 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
     }
     
-    QFile f(path);
     /*Locking the access to the frame sequences multi-map*/
     QMutexLocker g(&_lock);
     pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
@@ -424,7 +425,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         /*we found a matching sequence name, we need to figure out if it has the same file type*/
         for(SequenceIterator it2 = it.first ;it2!=it.second;it2++){
             if(it2->second._fileType == extension.toStdString()){
-                it2->second.addToSequence(frameNumber,f.size());
+                it2->second.addToSequence(frameNumber,path);
                 if(frameNumber == it2->second._frameIndexes.firstFrame())
                     return true;
                 return false;
@@ -434,13 +435,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
          *with a different file type
          */
         FileSequence _frames(extension.toStdString());
-        _frames.addToSequence(frameNumber,f.size());
+        _frames.addToSequence(frameNumber,path);
         _frameSequences.insert(make_pair(pathCpy.toStdString(),_frames));
         return true;
         
     }else{ /*couldn't find a sequence with the same name, we create one*/
         FileSequence _frames(extension.toStdString());
-        _frames.addToSequence(frameNumber,f.size());
+        _frames.addToSequence(frameNumber,path);
         _frameSequences.insert(make_pair(pathCpy.toStdString(),_frames));
         return true;
     }
@@ -479,7 +480,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         /*we don't display sequences with no frame contiguous like 10-13-15.
          *This is corner case and is not useful anyway, we rather display it as several files
          */
-        if(frameRanges._frameIndexes.firstFrame() != frameRanges._frameIndexes.lastFrame()){
+        if(!frameRanges._frameIndexes.isEmpty()){
             vector< pair<int,int> > chunks;
             int k = frameRanges._frameIndexes.firstFrame();
             
@@ -1657,6 +1658,7 @@ void FileDialogComboBox::paintEvent(QPaintEvent *){
 
 
 bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
+    if(_firstFrame == 999999) return false;
     if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
         return true;
     }
@@ -1670,22 +1672,33 @@ bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
     
 }
 bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
-    
+    if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
+        return false;
+    }
+    if(_firstFrame == 999999){
+        _firstFrame = frameIndex;
+        _lastFrame = _firstFrame;
+        _isEmpty = false;
+        _size++;
+        return true;
+    }
     int offset = frameIndex - _firstFrame -1; // assuming frameIndex is positive,offset is the index in the bits to look for (starting at 0)
     int bitsIndex = offset / 64; //accessing the proper variable containing the bit
     int bitsOffset = (offset+1) % (64+1);
-    if(bitsIndex >= (int)_bits.size()){
-        _bits.push_back((quint64)0);
+    quint64 frames = 0;
+    if(bitsIndex < (int)_bits.size()){
+        frames = _bits[bitsIndex];
     }
-    quint64& frames = _bits.back();
     quint64 base = 1;
     if(!(frames & ( base << bitsOffset))){
         frames |= (base << bitsOffset);
-        _size++;
-        if (_isEmpty) {
-            _isEmpty = false;
-            _firstFrame = frameIndex;
+        if(bitsIndex >= (int)_bits.size()){
+            _bits.push_back(frames);
         }
+        _size++;
+        _isEmpty = false;
+        if(frameIndex < _firstFrame)
+            _firstFrame = frameIndex;
         if(frameIndex > _lastFrame)
             _lastFrame = frameIndex;
         return true;

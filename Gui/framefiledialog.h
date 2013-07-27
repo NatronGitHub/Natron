@@ -168,7 +168,7 @@ public:
     
     class FrameIndexes{
     public:
-        FrameIndexes():_isEmpty(true),_firstFrame(-1),_lastFrame(-1),_size(0){}
+        FrameIndexes():_isEmpty(true),_firstFrame(999999),_lastFrame(-1),_size(0){}
         
         ~FrameIndexes(){}
         
@@ -202,7 +202,7 @@ public:
     ~FileSequence(){}
     
     /*Returns true if the frameIndex didn't exist when adding it*/
-    void addToSequence(int frameIndex,int frameSize);
+    void addToSequence(int frameIndex,const QString& path);
     
     
     std::string _fileType;
