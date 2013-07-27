@@ -25,6 +25,7 @@
 #include <QVBoxLayout>
 #include <QAbstractItemView>
 #include <QtGui/QKeyEvent>
+#include <QtGui/QKeySequence>
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
 #include "Gui/InfoViewerWidget.h"
@@ -284,8 +285,9 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _refreshButton->setIcon(QIcon(pixRefresh));
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     
-    _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it.");
-    
+    _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it."
+                                    "<p></br><b>Keyboard shortcut: C</b></p>");
+    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_C));
     
 	/*=================================================*/
     
@@ -421,8 +423,6 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             _fullscreen=true;
             ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
         }
-    }else if(event->key() == Qt::Key_C){
-        centerViewer();
     }
     
 }
