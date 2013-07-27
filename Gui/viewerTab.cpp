@@ -92,6 +92,9 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     
     _firstRowLayout->addWidget(_zoomCombobox);
     
+    _centerViewerButton = new Button(_firstSettingsRow);
+    _firstRowLayout->addWidget(_centerViewerButton);
+    
     _firstRowLayout->addStretch();
     
     /*2nd row of buttons*/
@@ -236,6 +239,7 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     QImage imgPrevINCR(IMAGES_PATH"previousIncr.png");
     QImage imgNextINCR(IMAGES_PATH"nextIncr.png");
     QImage imgRefresh(IMAGES_PATH"refresh.png");
+    QImage imgCenterViewer(IMAGES_PATH"centerViewer.png");
 
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);
@@ -249,20 +253,22 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     QPixmap pixPrevIncr=QPixmap::fromImage(imgPrevINCR);
     QPixmap pixNextIncr=QPixmap::fromImage(imgNextINCR);
     QPixmap pixRefresh = QPixmap::fromImage(imgRefresh);
+    QPixmap pixCenterViewer = QPixmap::fromImage(imgCenterViewer);
     
     int iW=20,iH=20;
-    pixFirst.scaled(iW,iH);
-    pixPrevKF.scaled(iW,iH);
-    pixRewind.scaled(iW,iH);
-    pixBack1.scaled(iW,iH);
-    pixStop.scaled(iW,iH);
-    pixForward1.scaled(iW,iH);
-    pixPlay.scaled(iW,iH);
-    pixNextKF.scaled(iW,iH);
-    pixLast.scaled(iW,iH);
-    pixPrevIncr.scaled(iW,iH);
-    pixNextIncr.scaled(iW,iH);
-    pixRefresh.scaled(iW, iH);
+    pixFirst = pixFirst.scaled(iW,iH);
+    pixPrevKF = pixPrevKF.scaled(iW,iH);
+    pixRewind = pixRewind.scaled(iW,iH);
+    pixBack1 = pixBack1.scaled(iW,iH);
+    pixStop = pixStop.scaled(iW,iH);
+    pixForward1 = pixForward1.scaled(iW,iH);
+    pixPlay = pixPlay.scaled(iW,iH);
+    pixNextKF = pixNextKF.scaled(iW,iH);
+    pixLast = pixLast.scaled(iW,iH);
+    pixPrevIncr = pixPrevIncr.scaled(iW,iH);
+    pixNextIncr = pixNextIncr.scaled(iW,iH);
+    pixRefresh = pixRefresh.scaled(iW, iH);
+    pixCenterViewer = pixCenterViewer.scaled(50, 50);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -276,19 +282,10 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     previousIncrement_Button->setIcon(QIcon(pixPrevIncr));
     nextIncrement_Button->setIcon(QIcon(pixNextIncr));
     _refreshButton->setIcon(QIcon(pixRefresh));
+    _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     
-    firstFrame_Button->setFixedSize(iW, iH);
-    previousKeyFrame_Button->setFixedSize(iW, iH);
-    play_Backward_Button->setFixedSize(iW, iH);
-    previousFrame_Button->setFixedSize(iW, iH);
-    stop_Button->setFixedSize(iW, iH);
-    nextFrame_Button->setFixedSize(iW, iH);
-    play_Forward_Button->setFixedSize(iW, iH);
-    nextKeyFrame_Button->setFixedSize(iW, iH);
-    lastFrame_Button->setFixedSize(iW, iH);
-    previousIncrement_Button->setFixedSize(iW, iH);
-    nextIncrement_Button->setFixedSize(iW, iH);
-    _refreshButton->setFixedSize(iW, iH);
+    _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it.");
+    
     
 	/*=================================================*/
     
@@ -328,6 +325,8 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(viewer,SIGNAL(engineNeeded()),vengine,SLOT(repeatSameFrame()));
+    
+    QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
 }
 
 void ViewerTab::updateZoomComboBox(int value){
@@ -394,6 +393,15 @@ void ViewerTab::seekRandomFrame(int f){
         ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(f);
 }
 
+void ViewerTab::centerViewer(){
+    if(viewer->drawing()){
+        ctrlPTR->getModel()->startVideoEngine(1);
+    }else{
+        viewer->fitToFormat(viewer->displayWindow());
+        viewer->updateGL();
+    }
+}
+
 ViewerTab::~ViewerTab()
 {
 }
@@ -413,6 +421,8 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             _fullscreen=true;
             ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
         }
+    }else if(event->key() == Qt::Key_C){
+        centerViewer();
     }
     
 }

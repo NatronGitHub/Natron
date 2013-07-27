@@ -74,6 +74,7 @@ public:
 	ComboBox* _viewerLayers;
 	ComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
+    Button* _centerViewerButton;
 
     /*2nd row*/
     FeedBackSpinBox* _gainBox;
@@ -128,6 +129,7 @@ public slots:
     void lastFrame();
     void seekRandomFrame(int);
     void seekRandomFrame(double value){seekRandomFrame((int)value);}
+    void centerViewer();
     
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);

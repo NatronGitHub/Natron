@@ -29,5 +29,6 @@
         <file>Resources/Images/stop.png</file>
         <file>Resources/Stylesheets/mainstyle.qss</file>
         <file>Resources/fonts/DejaVuSans.ttf</file>
+        <file>Resources/Images/centerViewer.png</file>
     </qresource>
 </RCC>

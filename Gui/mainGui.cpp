@@ -39,6 +39,7 @@
 #include "Core/viewerNode.h"
 #include "Gui/viewerTab.h"
 
+
 using namespace std;
 using namespace Powiter;
 Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),
@@ -169,6 +170,7 @@ void Gui::setupUi()
 	resize(screen.width(),screen.height());
 	setDockNestingEnabled(false);
 	
+    
     loadStyleSheet();
 	
 	actionNew_project = new QAction(this);
@@ -340,7 +342,7 @@ void Gui::setupUi()
 void Gui::loadStyleSheet(){
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
     if(qss.open(QIODevice::ReadOnly
-                    | QIODevice::Text))
+                | QIODevice::Text))
     {
         QTextStream in(&qss);
         QString content(in.readAll());
