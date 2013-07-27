@@ -360,7 +360,7 @@ void SequenceFileDialog::updateView(const QString &directory){
     QtConcurrent::run(this,&SequenceFileDialog::itemsToSequence,proxyIndex);
     /*update the view to show the newly loaded directory*/
     setRootIndex(proxyIndex);
-    
+    _view->expandColumnsToFullWidth();
     /*clearing selection*/
     _view->selectionModel()->clear();
 }
@@ -479,7 +479,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         /*we don't display sequences with no frame contiguous like 10-13-15.
          *This is corner case and is not useful anyway, we rather display it as several files
          */
-        if(frameRanges._frameIndexes.size() > 0){
+        if(frameRanges._frameIndexes.firstFrame() != frameRanges._frameIndexes.lastFrame()){
             vector< pair<int,int> > chunks;
             int k = frameRanges._frameIndexes.firstFrame();
             
@@ -596,7 +596,7 @@ void SequenceDialogView::updateNameMapping(std::vector<std::pair<QString, std::p
 }
 
 
-SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_maxW(200),_automaticResize(false),_fd(fd){}
+SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_maxW(200),_fd(fd){}
 
 void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pair<qint64, QString> > > nameMapping){
     _nameMapping.clear();
@@ -609,9 +609,6 @@ void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pa
         int w = metric.width(p.second.second);
         if(w > _maxW) _maxW = w;
     }
-    _automaticResize = true;
-    
-    _fd->getSequenceView()->expandColumnsToFullWidth();
 }
 
 void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{

@@ -134,7 +134,6 @@ private:
 class SequenceItemDelegate : public QStyledItemDelegate {
     
     int _maxW;
-    mutable bool _automaticResize;
     std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
     SequenceFileDialog* _fd;
 public:
@@ -152,7 +151,6 @@ protected:
  */
 class SequenceDialogView: public QTreeView{
     
-    Q_OBJECT
 public:
     SequenceDialogView(QWidget* parent);
     
