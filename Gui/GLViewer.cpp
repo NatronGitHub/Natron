@@ -849,7 +849,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._oldClick = newClick;
             if(_drawing)
                 emit engineNeeded();
-            else
+        //    else
                 updateGL();
         //  }
         
@@ -877,7 +877,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             ctrlPTR->getModel()->clearPlaybackCache();
             emit engineNeeded();
         }
-       else
+    //  else
            updateGL();
 
     // }
