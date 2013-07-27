@@ -77,11 +77,11 @@ public:
     
 	ViewerCache();
     
-	~ViewerCache();
+	virtual ~ViewerCache();
     
-	virtual std::string cacheName(){return "ViewerCache";}
+	virtual std::string cacheName(){std::string str("ViewerCache");return str;}
     
-	virtual std::string cacheVersion(){return "v1.0.0";}
+	virtual std::string cacheVersion(){std::string str("v1.0.0");return str;}
     
 	static ViewerCache* getViewerCache();
     

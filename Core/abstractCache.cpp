@@ -325,12 +325,8 @@ void AbstractDiskCache::clearInMemoryCache(){
 void AbstractDiskCache::clearDiskCache(){
     clearInMemoryCache();
     clear();
-    QString cacheFolderName(CACHE_ROOT_PATH);
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
-    QDir cache(cacheFolderName);
-    cache.rmdir(cacheFolderName);
-    initializeSubDirectories();
+    
+    cleanUpDiskAndReset();
 }
 
 void AbstractDiskCache::save(){
@@ -426,7 +422,7 @@ void AbstractDiskCache::restore(){
                 // debug();
                 
             }else{
-                cout << cacheName() << ":The entries count in the restore file does not equal the number of actual data files. Reseting." << endl;
+                cout << cacheName() << ": The entries count in the restore file does not equal the number of actual data files.Reseting." << endl;
                 cleanUpDiskAndReset();
             }
             
@@ -489,7 +485,8 @@ void AbstractDiskCache::restore(){
 }
 
 void AbstractDiskCache::cleanUpDiskAndReset(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(QDir::currentPath());
+    cacheFolderName.append("/");
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     QString cachePath(cacheFolderName);

@@ -196,12 +196,8 @@ void Reader::showFilePreview(){
     
     readCurrentHeader(firstFrame());
     readCurrentData(firstFrame());
-   // if(!makeCurrentDecodedFrame(false)){
-    //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
-    //    return;
-   // }
-    
-    readHandle->make_preview();
+
+     readHandle->make_preview();
     _buffer.clear();
 }
 
