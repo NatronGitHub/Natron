@@ -224,6 +224,13 @@ void ViewerGL::paintGL()
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
     glBegin (GL_POLYGON);
+    glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.first);
+    glTexCoord2i (0, 2);glVertex2i (dispW.x(), _rowSpan.second+1);
+    glTexCoord2i (1, 2);glVertex2i (dispW.w(), _rowSpan.second+1);
+    glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.first);
+
+    
+    //good one
     glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first);
     glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1);
     glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1);

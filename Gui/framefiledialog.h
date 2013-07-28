@@ -276,8 +276,15 @@ private:
 class SequenceFileDialog: public QDialog
 {
     Q_OBJECT
+    
+public:
+    enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
+
     typedef std::multimap<std::string, FileSequence > FrameSequences;
     typedef std::vector<std::pair<QString,std::pair<qint64,QString> > > NameMapping;
+    
+private:
+    
     FrameSequences _frameSequences;
     NameMapping _nameMapping; // the item whose names must be changed
     
@@ -335,12 +342,17 @@ class SequenceFileDialog: public QDialog
     QAction* _showHiddenAction;
     QAction* _newFolderAction;
     
+    FileDialogMode _dialogMode;
+    
 public:
     typedef SequenceDialogProxyModel::SequenceIterator SequenceIterator;
     typedef SequenceDialogProxyModel::ConstSequenceIterator ConstSequenceIterator;
     
     
-    SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string currentDirectory = std::string());
+    SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
+                       std::vector<std::string> filters, // the user accepted file types
+                       FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
+                       std::string currentDirectory = std::string()); // the directory to show first
 
     virtual ~SequenceFileDialog();
     

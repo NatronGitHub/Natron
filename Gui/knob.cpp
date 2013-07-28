@@ -370,7 +370,7 @@ void File_Knob::open_file(){
     QStringList strlist;
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
     
-    SequenceFileDialog dialog(this,filters,_lastOpened.toStdString());
+    SequenceFileDialog dialog(this,filters,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
          strlist = dialog.selectedFiles();
     }

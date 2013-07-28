@@ -143,7 +143,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         /*aborted by the user*/
         _waitingTasks.clear();
         stopEngine();
-        returnCode = EngineStatus::ABORTED;
+        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }else if(_paused){
         /*paused or frame request count ended,we run tasks appended by the users.*/
@@ -161,12 +161,12 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         stopEngine();
         runTasks();
         stopEngine();
-        returnCode = EngineStatus::ABORTED;
+        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
         /*stoping the engine for writers*/
         stopEngine();
-        returnCode = EngineStatus::ABORTED;
+        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }
     
@@ -201,7 +201,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                         currentFrame = firstFrame;
                     else{
                         _frameRequestsCount = 0;
-                        returnCode = EngineStatus::ABORTED;
+                        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
                         return;
                     }
                 }
@@ -212,7 +212,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                         currentFrame = lastFrame;
                     else{
                         _frameRequestsCount = 0;
-                        returnCode = EngineStatus::ABORTED;
+                        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
                         return;
                     }
                 }

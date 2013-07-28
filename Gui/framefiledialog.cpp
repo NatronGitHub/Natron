@@ -33,6 +33,7 @@
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
 #include <QtConcurrentRun>
+#include <QtGui/QStyleOptionViewItem>
 
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
@@ -42,9 +43,14 @@
 using namespace std;
 
 
-
-SequenceFileDialog::SequenceFileDialog(QWidget* parent, std::vector<std::string> filters,std::string directory ):
-QDialog(parent),_filters(filters),_currentHistoryLocation(-1)
+SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
+                   std::vector<std::string> filters, // the user accepted file types
+                   FileDialogMode mode, // if it is an open or save dialog
+                   std::string currentDirectory): // the directory to show first
+QDialog(parent),
+_filters(filters),
+_currentHistoryLocation(-1),
+_dialogMode(mode)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
@@ -218,8 +224,8 @@ QDialog(parent),_filters(filters),_currentHistoryLocation(-1)
     initialBookmarks.push_back(QUrl::fromLocalFile(QDir::homePath()));
     _favoriteView->setModelAndUrls(_model, initialBookmarks);
     
-    if(!directory.empty())
-        setDirectory(directory.c_str());
+    if(!currentDirectory.empty())
+        setDirectory(currentDirectory.c_str());
     
     QItemSelectionModel *selectionModel = _view->selectionModel();
     QObject::connect(selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this, SLOT(selectionChanged()));
@@ -230,6 +236,12 @@ QDialog(parent),_filters(filters),_currentHistoryLocation(-1)
     QObject::connect(_model, SIGNAL(rootPathChanged(QString)),
                      this, SLOT(pathChanged(QString)));
     createMenuActions();
+    
+    if(_dialogMode == OPEN_DIALOG){
+        setWindowTitle("Open Files");
+    }else{
+        setWindowTitle("Save Files");
+    }
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
@@ -612,7 +624,7 @@ void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pa
     }
 }
 
-void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{
+void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const{
     if(index.column() == 0){
         QString str = index.data().toString();
         bool found = false;
@@ -623,36 +635,29 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                     painter->fillRect(option.rect, option.palette.highlight());
                 }
                 QString nameToPaint = SequenceFileDialog::removePath(_nameMapping[i].second.second);
-                painter->drawText(option.rect,Qt::TextSingleLine,nameToPaint,&r);
+                int totalSize = option.rect.width();
+                int iconSize = option.decorationSize.width();
+                int textSize = totalSize - iconSize;
+                
+                QFileInfo fileInfo(index.data(QFileSystemModel::FilePathRole).toString());
+                QIcon icon = _fd->getFileSystemModel()->iconProvider()->icon(fileInfo);
+                
+                QRect iconRect(option.rect.x(),option.rect.y(),iconSize,option.rect.height());
+                QRect textRect(option.rect.x()+iconSize,option.rect.y(),textSize,option.rect.height());
+                
+                painter->drawPixmap(iconRect,
+                                    icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height()))),
+                                    r);
+                painter->drawText(textRect,Qt::TextSingleLine,nameToPaint,&r);
+                
                 found = true;
                 
                 return;
             }
         }
         if(!found){ // must be a directory or a single image file
-            QRect r;
-            QString copy = str;
-            QString extension = SequenceFileDialog::removeFileExtension(str);
-            //QFont f = option.font;
-            if (option.state & QStyle::State_Selected){
-                painter->fillRect(option.rect, option.palette.highlight());
-            }
-            QString prefix  = _fd->currentDirectory().absolutePath()+QDir::separator();
-            bool isDirectory = _fd->isDirectory(prefix+copy);
-            if(isDirectory){
-                QStyledItemDelegate::paint(painter,option,index);
-                return;
-                
-            }else{
-                if(!_fd->isASupportedFileExtension(extension.toStdString())){
-                    str = copy;
-                }else{
-                    str.append(".");
-                    str.append(extension);
-                }
-            }
-            
-            painter->drawText(option.rect,Qt::TextSingleLine,str,&r);
+            QStyledItemDelegate::paint(painter,option,index);
+            return;
             
         }
     }else if(index.column() == 1){
