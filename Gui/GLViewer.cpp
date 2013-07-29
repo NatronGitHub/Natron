@@ -81,11 +81,10 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
     11,8,
     8,12,9,13,10,14,11,15
 };
-//static GLubyte triangleStrip2[8] = {8,4,9,5,10,6,11,7};
-//static GLubyte triangleStrip3[8] = {12,8,13,9,14,10,15,11};
+
 /*
  ASCII art of the vertices used to render.
- The actual texture seen on the viewport is the rect (6,7,10,11).
+ The actual texture seen on the viewport is the rect (5,9,10,6).
  We draw  3*6 strips
  
  0 ___1___2___3
@@ -138,7 +137,6 @@ void ViewerGL::drawRenderingVAO(){
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
