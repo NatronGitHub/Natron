@@ -30,6 +30,8 @@
 
 #include "Core/hash.h"
 #include "Reader/Reader.h"
+#include "Gui/texturecache.h"
+
 
 class FrameEntry;
 class InputNode;
@@ -224,19 +226,17 @@ public:
     public:
         enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
         
-        EngineStatus():_cachedEntry(0),_key(0),_w(0),_h(0),_returnCode(NORMAL_ENGINE){}
+        EngineStatus():_cachedEntry(0),_key(0),_returnCode(NORMAL_ENGINE){}
         
-        EngineStatus(FrameEntry* cachedEntry,U64 key,int w,int h,const std::map<int,int> rows,EngineStatus::RetCode state):
+        EngineStatus(FrameEntry* cachedEntry,U64 key,const std::vector<int> rows,EngineStatus::RetCode state):
         _cachedEntry(cachedEntry),
         _key(key),
-        _w(w),
-        _h(h),
         _rows(rows),
         _returnCode(state)
         {}
         
         EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
-        _key(other._key),_w(other._w),_h(other._h),
+        _key(other._key),
         _rows(other._rows),_returnCode(other._returnCode){}
         
  
@@ -244,8 +244,7 @@ public:
         
         FrameEntry* _cachedEntry;
         U64 _key;
-        int _w,_h;
-        std::map<int,int> _rows;
+        std::vector<int> _rows;
         RetCode _returnCode;
     };
     
@@ -288,14 +287,15 @@ private:
     public:
         ViewerCacheArgs():_hashKey(0),
             _zoomFactor(0),_exposure(0),_lut(0),
-            _byteMode(0),_w(0),_h(0),_dataSize(0){}
+            _byteMode(0),_dataSize(0){}
 
         U64 _hashKey;
         float _zoomFactor;
         float _exposure;
         float _lut;
         float _byteMode;
-        int _w,_h;
+        int _texW,_texH;
+        TextureRect _textureRect;
         size_t _dataSize;
         Format _displayWindow;
         Box2D _dataWindow;
@@ -571,7 +571,7 @@ private:
      *in the viewport will be exactly the same as the indexes in the full-res frame.
      *@param output[in] This is the output node of the graph.
      **/
-    void computeTreeForFrame(const std::map<int,int>& rows, OutputNode *output);
+    void computeTreeForFrame(const std::vector<int>& rows, OutputNode *output);
 
     /**
      *@brief Called by VideoEngine::videoEngine(int,bool,bool,bool) the first time or by VideoEngine::engineLoop().

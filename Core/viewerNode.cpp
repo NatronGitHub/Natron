@@ -39,8 +39,7 @@ _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
 _textureCache(textureCache),
-_pboIndex(0),
-_currentZoomFactor(1.f)
+_pboIndex(0)
 {
     _cacheWatcher = new QFutureWatcher<void>;
    QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));
@@ -82,7 +81,6 @@ void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
                                     row[Channel_green],
                                     row[Channel_blue],
                                     row[Channel_alpha],
-                                    _currentZoomFactor,
                                     internal->zoomedY());
     }
 }
@@ -166,9 +164,9 @@ bool Viewer::isTextureCached(U64 key){
 }
 
 void Viewer::cachedFrameEngine(FrameEntry* frame){
-    int w = frame->_actualW ;
-    int h = frame->_actualH ;
     size_t dataSize = 0;
+    int w = frame->_textureRect.w;
+    int h = frame->_textureRect.h;
     TextureEntry::DataType type;
     if(frame->_byteMode==1.0){
         dataSize  = w * h * sizeof(U32) ;
@@ -191,8 +189,9 @@ void Viewer::cachedFrameEngine(FrameEntry* frame){
     
     
     /*resizing texture if needed, the calls must be made in that order*/
-    gl_viewer->getViewerCacheTexture()->allocate(w, h, type);
-    gl_viewer->setCurrentDisplayTexture(gl_viewer->getViewerCacheTexture());
+    TextureEntry* cacheTex = gl_viewer->getViewerCacheTexture();
+    cacheTex->allocate(frame->_textureRect, type);
+    gl_viewer->setCurrentDisplayTexture(cacheTex);
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();

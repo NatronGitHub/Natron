@@ -41,7 +41,7 @@
         } \
 		}
 #endif
-        
+                
         
         /**
          *@class ViewerInfos
@@ -205,11 +205,19 @@
             
             GLuint _pboIds[2]; /*!< PBO's id's used by the OpenGL context*/
             
+            //   GLuint _vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
+            
+            GLuint _vboVerticesId; /*!< VBO holding the vertices for the texture mapping*/
+            
+            GLuint _vboTexturesId; /*!< VBO holding texture coordinates*/
+
+            GLuint _iboTriangleStripId[3]; /*!< IBOs holding vertices indexes for triangle strip sets*/
+            
             TextureEntry* _viewerCacheTexture;/*!< The texture used to render data that comes from the viewer cache*/
             
             TextureEntry* _currentDisplayTexture;/*!< A pointer to the current texture used to display.*/
             
-            GLuint _blackTexId[1];/*!< Id of the texture used to render a black screen when nothing is connected.*/
+            TextureEntry* _blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
             
             QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
             QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
@@ -238,8 +246,9 @@
             bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
             
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
-            
-            std::pair<int,int> _rowSpan;/*!< The first and last row index displayed currently on the viewer.*/
+                        
+            std::vector<int> _textureColumns; /*!< The last columns computed by computeColumnSpan. This member is
+                                               used in the convertRowToFitTextureBGRA function.*/
             
             ZoomContext _zoomCtx;/*!< All zoom related variables are packed into this object*/
             
@@ -288,7 +297,7 @@
              *@param b A pointer to the blue component of the row to draw.
              *@param a A pointer to the alpha component of the row to draw.
              */
-            void drawRow(const float* r,const float* g,const float* b,const float* a,float zoomFactor,int zoomedY);
+            void drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY);
             
             /**
              *@brief Toggles on/off the display on the viewer. If d is false then it will
@@ -391,7 +400,7 @@
              *@brief Computes what are the rows that should be displayed on viewer
              *for the given displayWindow with the  current zoom factor and  current zoom center.
              *The rows will be stored from bottom to top. The values are returned
-             *as a map of displayWindow coordinates mapped to viewport cooridnates.
+             *as a vector of image coordinates.
              *This function does not use any OpenGL function, so it can be safely called in
              *a thread that does not own the context.
              *@param ret[in,out] the map of rows that this function will fill. This is a map
@@ -399,8 +408,14 @@
              *is an index in the zoomed version of the image.
              *@param displayWindow[in] The display window used to do the computations.
              *@param zoomFactor[in] The zoom factor applied to the display window.
+             *@return Returns a pair with the first row index and the last row indexes.
              **/
-            void computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow);
+            std::pair<int,int> computeRowSpan(std::vector<int>& rows,const Box2D& displayWindow);
+            
+            /**
+             *@brief same as computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow) but for columns.
+             **/
+            std::pair<int,int> computeColumnSpan(std::vector<int>& columns,const Box2D& displayWindow);
             
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
@@ -492,7 +507,7 @@
              *@param w,h[in] The width and height of the scaled frame.
              *@returns Returns the size in bytes of the space occupied in memory by the frame.
              **/
-            size_t determineFrameDataContainer(int w,int h);
+            size_t allocateFrameStorage(int w,int h);
             
             /**
              *@brief Allocates the pbo represented by the pboID with dataSize bytes.
@@ -522,10 +537,9 @@
              *display texture.
              * @param texture A created texture that hasn't been allocated yet.
              *\pre texture has had its hash key set via TextureEntry::setHashKey(U64).
-             * @param width The width of the texture to allocate
-             * @param height The height of the texture to allocate
+             * @param texRect The texture rectangle to allocate. See TextureRect class.
              */
-            void copyPBOToNewTexture(TextureEntry* texture,int width,int height);
+            void copyPBOToNewTexture(TextureEntry* texture,const TextureRect& texRect);
 
             /**
              *@returns *Returns a pointer to the data of the current frame.
@@ -548,11 +562,6 @@
              **/
             void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
             
-            /**
-             *@brief Set the _rowSpan member. This is a pair of the index of the first row and
-             *last row rendered on the viewport. This is used by the paint function.
-             **/
-            void setRowSpan(std::pair<int,int> p){_rowSpan = p;}
             
             /**
              *@brief Set the pointer to the texture cache.
@@ -722,6 +731,12 @@
             void activateShaderLC();
             
             /**
+             *@brief Fill the rendering VAO with vertices and texture coordinates
+             *that depends upon the currently displayed texture.
+             **/
+            void drawRenderingVAO();
+            
+            /**
              *@brief Makes the viewer display black only.
              **/
             void clearViewer();
@@ -772,11 +787,11 @@
              *@param g[in] Points to the green component of the scan-line.
              *@param b[in] Points to the blue component of the scan-line.
              *@param alpha[in] Points to the alpha component of the scan-line.
-             *@param w[in] The width of the scaled frame.
+             *@param columnSpan[in] The columns in the row to keep.
              *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
             void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-                                            int w,float zoomFactor,int yOffset,const float* alpha);
+                                            const std::vector<int>& columnSpan,int yOffset,const float* alpha);
             
             /**
              *@brief This function fills the member frameData with the buffer in parameters.
@@ -789,11 +804,11 @@
              *@param g[in] Points to the green component of the scan-line.
              *@param b[in] Points to the blue component of the scan-line.
              *@param alpha[in] Points to the alpha component of the scan-line.
-             *@param w[in] The width of the scaled frame.
+             *@param columnSpan[in] The columns in the row to keep.
              *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
             void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-                                               int w,float zoomFactor,int yOffset,const float* alpha);
+                                               const std::vector<int>& columnSpan,int yOffset,const float* alpha);
             
 
             /**

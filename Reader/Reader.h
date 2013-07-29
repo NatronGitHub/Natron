@@ -99,24 +99,24 @@ public:
 
         public:
 
-            typedef std::map<int,int>::iterator ScanLineIterator;
-            typedef std::map<int,int>::reverse_iterator ScanLineReverseIterator;
+            typedef std::vector<int>::iterator ScanLineIterator;
+            typedef std::vector<int>::reverse_iterator ScanLineReverseIterator;
             
             ScanLineContext(){}
 
             /** @brief Construct a new ScanLineContext with the rows passed in parameters.
             **/
-            ScanLineContext(std::map<int,int> rows):_rows(rows){}
+            ScanLineContext(std::vector<int> rows):_rows(rows){}
             
             /** @brief Set the base scan-lines that represents the context*
              **/
-            void setRows(std::map<int,int> rows){_rows=rows;}
+            void setRows(std::vector<int> rows){_rows=rows;}
 
             /**
              * @brief getRows
              * @return A non-const reference to the internal rows represented by the ScanLineContext
              */
-            std::map<int,int>& getRows(){return _rows;}
+            std::vector<int>& getRows(){return _rows;}
             
             /**
              * @brief hasScanLines
@@ -127,7 +127,7 @@ public:
             /**
              * @brief  Adds to _rowsToRead the rows in others that are missing to _rows
             **/
-            void computeIntersectionAndSetRowsToRead(std::map<int,int>& others);
+            void computeIntersectionAndSetRowsToRead(std::vector<int>& others);
             
             /**
              *@brief merges _rowsToRead and _rows and clears out _rowsToRead
@@ -165,7 +165,7 @@ public:
             const std::vector<int>& getRowsToRead(){return _rowsToRead;}
             
         private:
-            std::map<int,int> _rows; ///base rows
+            std::vector<int> _rows; ///base rows
             std::vector<int> _rowsToRead; /// rows that were added on top of the others and that need to be read
         };
         

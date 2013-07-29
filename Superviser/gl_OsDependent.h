@@ -47,6 +47,7 @@
 	#define GL_HALF_FLOAT_ARB GL_HALF_APPLE
     #endif
 
+
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 	#include <GL/glu.h>
 #endif

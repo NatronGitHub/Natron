@@ -30,5 +30,11 @@
         <file>Resources/Stylesheets/mainstyle.qss</file>
         <file>Resources/fonts/DejaVuSans.ttf</file>
         <file>Resources/Images/centerViewer.png</file>
+        <file>Resources/Images/scrollbarButton_down.png</file>
+        <file>Resources/Images/scrollbarButton_left.png</file>
+        <file>Resources/Images/scrollbarButton_right.png</file>
+        <file>Resources/Images/scrollbarButton_up.png</file>
+        <file>Resources/Images/scrollbarHandle_horizontal.png</file>
+        <file>Resources/Images/scrollbarHandle_vertical.png</file>
     </qresource>
 </RCC>

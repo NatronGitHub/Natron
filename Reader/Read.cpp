@@ -97,18 +97,18 @@ void Read::setReaderInfo(Format dispW,
 
 void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
     if(slContext->getRowsToRead().size() == 0){
-        const std::map<int,int>& rows = slContext->getRows();
+        const std::vector<int>& rows = slContext->getRows();
         if(_readInfo->getYdirection() < 0){
             //top to bottom
-            map<int,int>::const_reverse_iterator it  = rows.rbegin();
+            vector<int>::const_reverse_iterator it  = rows.rbegin();
             for(; it!=rows.rend() ; it++){
-                readScanLine(it->first);
+                readScanLine(*it);
             }
         }else{
             //bottom to top
-            map<int,int>::const_iterator it = rows.begin();
+            vector<int>::const_iterator it = rows.begin();
             for(; it!=rows.end() ; it++){
-                readScanLine(it->first);
+                readScanLine(*it);
             }
         }
     }else{

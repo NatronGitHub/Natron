@@ -111,7 +111,7 @@ bool Reader::readCurrentHeader(int current_frame){
     /*In case the read handle supports scanlines, we read the header to determine
      how many scan-lines we would need, depending also on the viewer context.*/
     std::string filenameStr = filename.toStdString();
-    std::map<int,int> rows;
+    std::vector<int> rows;
     /*the slContext is useful to check the equality of 2 scan-line based frames.*/
     Reader::Buffer::ScanLineContext *slContext = 0;
     if(_read->supportsScanLine()){
@@ -126,7 +126,7 @@ bool Reader::readCurrentHeader(int current_frame){
         }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             for (int i = dataW.y() ; i < dataW.top(); i++) {
-                rows.insert(make_pair(i,i));
+                rows.push_back(i);
             }            
         }
         slContext->setRows(rows);
@@ -431,13 +431,13 @@ void Reader::setPreview(QImage* img){
 
 
 /*Adds to _rowsToRead the rows in others that are missing to _rows*/
-void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::map<int,int>& others){
+void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::vector<int>& others){
     ScanLineIterator it = others.begin();
-    std::map<int,int> rowsCopy = _rows;
+    std::vector<int> rowsCopy = _rows;
     for(;it!=others.end();it++){
-        ScanLineIterator found = rowsCopy.find(it->first);
+        ScanLineIterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
         if(found == rowsCopy.end()){ // if not found, we add the row to rows
-            _rowsToRead.push_back(it->first);
+            _rowsToRead.push_back(*it);
         }else{
             rowsCopy.erase(found); // otherwise , we erase the row from the copy to speed up the computation of the intersection
         }
@@ -447,7 +447,7 @@ void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::m
 /*merges _rowsToRead and _rows*/
 void Reader::Buffer::ScanLineContext::merge(){
     for(U32 i = 0;i < _rowsToRead.size(); i++){
-        _rows.insert(make_pair(_rowsToRead[i],0));
+        _rows.push_back(_rowsToRead[i]);
     }
     _rowsToRead.clear();
 }

@@ -273,7 +273,7 @@ void Gui::setupUi()
     _propertiesContainer->setObjectName("_propertiesContainer");
 	_layoutPropertiesBin=new QVBoxLayout(_propertiesContainer);
 	_layoutPropertiesBin->setSpacing(0);
-    _layoutPropertiesBin->setContentsMargins(0, 0, 15, 0);
+    _layoutPropertiesBin->setContentsMargins(0, 0, 0, 0);
 	_propertiesContainer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	_propertiesContainer->setLayout(_layoutPropertiesBin);
     

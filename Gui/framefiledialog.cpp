@@ -54,7 +54,7 @@ _dialogMode(mode)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setSpacing(0);
+   // _mainLayout->setSpacing(0);
     setLayout(_mainLayout);
     /*Creating view and setting directory*/
     _view =  new SequenceDialogView(this);
@@ -71,7 +71,7 @@ _dialogMode(mode)
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    
+    _buttonsLayout->setContentsMargins(3,0,3,0);
     
     _lookInLabel = new QLabel("Look in :",_buttonsWidget);
     _buttonsLayout->addWidget(_lookInLabel);
@@ -134,7 +134,7 @@ _dialogMode(mode)
     
     _favoriteButtonsWidget = new QWidget(_favoriteView);
     _favoriteButtonsLayout = new QHBoxLayout(_favoriteButtonsWidget);
-    _favoriteButtonsLayout->setSpacing(0);
+   // _favoriteButtonsLayout->setSpacing(0);
     _favoriteButtonsLayout->setContentsMargins(0,0,0,0);
     _favoriteButtonsWidget->setLayout(_favoriteButtonsLayout);
     
@@ -238,9 +238,9 @@ _dialogMode(mode)
     createMenuActions();
     
     if(_dialogMode == OPEN_DIALOG){
-        setWindowTitle("Open Files");
+        setWindowTitle("Open Sequence");
     }else{
-        setWindowTitle("Save Files");
+        setWindowTitle("Save Sequence");
     }
     
 }
@@ -333,6 +333,7 @@ void SequenceFileDialog::enterDirectory(const QModelIndex& index){
     }
 }
 void SequenceFileDialog::setDirectory(const QString &directory){
+    if(directory.isEmpty()) return;
     QString newDirectory = directory;
     _view->selectionModel()->clear();
     
@@ -602,7 +603,7 @@ SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
     setEditTriggers(QAbstractItemView::EditKeyPressed);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragDropMode(QAbstractItemView::InternalMove);
-    setAttribute(Qt::WA_MacShowFocusRect,0);
+    //setAttribute(Qt::WA_MacShowFocusRect,0);
 }
 void SequenceDialogView::updateNameMapping(std::vector<std::pair<QString, std::pair<qint64, QString> > > nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
@@ -704,6 +705,7 @@ QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const 
 }
 bool SequenceFileDialog::isASupportedFileExtension(std::string ext) const{
     for(unsigned int i = 0 ; i < _filters.size() ; i++){
+        transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
         if(ext == _filters[i])
             return true;
     }
@@ -1329,7 +1331,7 @@ void UrlModel::changed(const QString &path)
 
 FavoriteView::FavoriteView(QWidget *parent) : QListView(parent)
 {
-    setAttribute(Qt::WA_MacShowFocusRect,0);
+   // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
 
 void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls)
@@ -1471,8 +1473,11 @@ void FavoriteView::showMenu(const QPoint &position)
         actions.append(editAction);
         
     }
-    if (actions.count() > 0)
-        QMenu::exec(actions, mapToGlobal(position));
+    if (actions.count() > 0){
+        QMenu menu(this);
+        menu.addActions(actions);
+        menu.exec(mapToGlobal(position));
+    }
 }
 void FavoriteView::keyPressEvent(QKeyEvent *event){
     if(event->key() == Qt::Key_Backspace){

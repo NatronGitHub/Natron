@@ -40,7 +40,6 @@
 #include "Gui/timeline.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/GLViewer.h"
-#include "Gui/texturecache.h"
 
 #include "Superviser/controler.h"
 #include "Superviser/MemoryInfo.h"
@@ -246,31 +245,17 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     }
     /*Now that we called validate we can check if the frame is in the cache
      and return the appropriate EngineStatus code.*/
-    map<int,int> rows;
+    vector<int> rows;
+    vector<int> columns;
     const Box2D& dataW = _dag.getOutput()->getInfo()->getDataWindow();
     FrameEntry* iscached= 0;
     U64 key = 0;
-    int w=0,h=0;
     if(_dag.isOutputAViewer()){
-        viewer->setCurrentZoomFactor(zoomFactor);
         
-        map<int,int>::iterator it;
-        gl_viewer->computeRowSpan(rows,_dispW);
-        it = rows.begin();
-        map<int,int>::iterator last = rows.end();
-        int firstRow,lastRow;
-        if(rows.size() > 0){
-            last--;
-            firstRow = it->first;
-            lastRow = last->first;
-        }else{
-            firstRow = _dispW.y();
-            lastRow = _dispW.h()-1;
-        }
-        gl_viewer->setRowSpan(make_pair(firstRow, lastRow));
-        w = zoomFactor <= 1.f ? _dispW.w() * zoomFactor : _dispW.w();
-        h = rows.size();
+        std::pair<int,int> rowSpan = gl_viewer->computeRowSpan(rows,_dispW);
+        std::pair<int,int> columnSpan = gl_viewer->computeColumnSpan(columns, _dispW);
         
+        TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
         /*Now checking if the frame is already in either the ViewerCache*/
         _viewerCacheArgs._zoomFactor = zoomFactor;
         _viewerCacheArgs._exposure = gl_viewer->getExposure();
@@ -278,8 +263,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         _viewerCacheArgs._byteMode = gl_viewer->byteMode();
         _viewerCacheArgs._dataWindow = dataW;
         _viewerCacheArgs._displayWindow = _dispW;
-        _viewerCacheArgs._w = w;
-        _viewerCacheArgs._h = h;
+        _viewerCacheArgs._textureRect = textureRect;
         key = FrameEntry::computeHashKey(currentFrame,
                                          _treeVersion.getHashValue(),
                                          _viewerCacheArgs._zoomFactor,
@@ -288,8 +272,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                                          _viewerCacheArgs._byteMode,
                                          dataW,
                                          _dispW,
-                                         firstRow,
-                                         lastRow);
+                                         textureRect);
         _viewerCacheArgs._hashKey = key;
         iscached = viewer->get(key);
         
@@ -309,7 +292,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         
     }else{
         for (int i = dataW.y(); i < dataW.top(); i++) {
-            rows.insert(make_pair(i,i));
+            rows.push_back(i);
         }
     }
     /*If it reaches here, it means the frame neither belong
@@ -324,8 +307,6 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
 stop:
     _lastEngineStatus._cachedEntry = iscached;
     _lastEngineStatus._key = key;
-    _lastEngineStatus._w = w;
-    _lastEngineStatus._h = h;
     _lastEngineStatus._returnCode = returnCode;
     _lastEngineStatus._rows = rows;
 }
@@ -336,8 +317,8 @@ void VideoEngine::dispatchEngine(){
         if (_dag.isOutputAViewer()) {
             Viewer* viewer = _dag.outputAsViewer();
             viewer->makeCurrentViewer();
-            _viewerCacheArgs._dataSize = gl_viewer->determineFrameDataContainer(_lastEngineStatus._w,
-                                                                                _lastEngineStatus._h);
+            _viewerCacheArgs._dataSize = gl_viewer->allocateFrameStorage(_viewerCacheArgs._textureRect.w,
+                                                                                _viewerCacheArgs._textureRect.h);
         }
         //   cout << "     _computeTreForFrame()" << endl;
         computeTreeForFrame(_lastEngineStatus._rows,_dag.getOutput());
@@ -364,8 +345,7 @@ void VideoEngine::copyFrameToCache(const char* src){
                                                                 _viewerCacheArgs._exposure,
                                                                 _viewerCacheArgs._lut,
                                                                 _viewerCacheArgs._byteMode,
-                                                                _viewerCacheArgs._w,
-                                                                _viewerCacheArgs._h,
+                                                                _viewerCacheArgs._textureRect,
                                                                 _viewerCacheArgs._dataWindow,
                                                                 _viewerCacheArgs._displayWindow);
     
@@ -377,7 +357,7 @@ void VideoEngine::copyFrameToCache(const char* src){
 #endif
     }
 }
-void VideoEngine::computeTreeForFrame(const std::map<int,int>& rows,OutputNode *output){
+void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,OutputNode *output){
     ChannelSet outChannels;
     if(_dag.isOutputAViewer()){
         outChannels = currentViewer->getUiContext()->displayChannels();
@@ -395,8 +375,8 @@ void VideoEngine::computeTreeForFrame(const std::map<int,int>& rows,OutputNode *
     int offset= dataW.x();
     // _dataW.x() < _dispW.x() ? offset = _dataW.x() : offset = _dispW.x();
     int counter = 0;
-    for(map<int,int>::const_iterator it = rows.begin(); it!=rows.end() ; it++){
-        Row* row = new Row(offset,it->first,right,outChannels);
+    for(vector<int>::const_iterator it = rows.begin(); it!=rows.end() ; it++){
+        Row* row = new Row(offset,*it,right,outChannels);
         row->zoomedY(counter);
         _sequenceToWork.push_back(row);
         counter++;
@@ -430,7 +410,7 @@ void VideoEngine::engineLoop(){
             // now that the texture is full we can cache it
             TextureEntry* texture = new TextureEntry;
             texture->setHashKey(_viewerCacheArgs._hashKey);
-            gl_viewer->copyPBOToNewTexture(texture, _viewerCacheArgs._w, _viewerCacheArgs._h);
+            gl_viewer->copyPBOToNewTexture(texture, _viewerCacheArgs._textureRect);
             
         }
         else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){

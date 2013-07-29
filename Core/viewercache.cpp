@@ -4,14 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -46,20 +46,20 @@ ViewerCache::ViewerCache() : AbstractDiskCache(0){}
 ViewerCache::~ViewerCache(){}
 
 
-FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0),_actualW(0),_actualH(0){
+FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
     _frameInfo = new ReaderInfo;
 }
 
 FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
-                       float byteMode,ReaderInfo* info,int actualW,int actualH):
- _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
-_byteMode(byteMode),_actualW(actualW),_actualH(actualH){
+                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):
+_exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
+_byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
     *_frameInfo = *info;
 }
 
 FrameEntry::FrameEntry(const FrameEntry& other):_exposure(other._exposure),_lut(other._lut),_zoom(other._zoom),
-_treeVers(other._treeVers),_byteMode(other._byteMode),_actualW(other._actualW),_actualH(other._actualH)
+_treeVers(other._treeVers),_byteMode(other._byteMode),_textureRect(other._textureRect)
 {
     _frameInfo = new ReaderInfo;
     *_frameInfo = *other._frameInfo;
@@ -77,8 +77,13 @@ std::string FrameEntry::printOut(){
     << _treeVers << " "
     << _byteMode << " "
     << _frameInfo->printOut()
-    << _actualW << " "
-    << _actualH << " " << endl;
+    << _textureRect.x << " "
+    << _textureRect.y << " "
+    << _textureRect.r << " "
+    << _textureRect.t << " "
+    << _textureRect.w << " "
+    << _textureRect.h << " "
+    << endl;
     return oss.str();
 }
 
@@ -86,7 +91,7 @@ std::string FrameEntry::printOut(){
 FrameEntry* FrameEntry::recoverFromString(QString str){
     FrameEntry* entry = new FrameEntry;
     
-    QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,actualWStr,actualHStr;
+    QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,xStr,yStr,rightStr,topStr,wStr,hStr;
     int i =0 ;
     while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));i++;}
     i++;
@@ -100,9 +105,17 @@ FrameEntry* FrameEntry::recoverFromString(QString str){
     i++;
     while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));i++;}
     i++;
-    while(str.at(i)!= QChar(' ')){actualWStr.append(str.at(i));i++;}
+    while(str.at(i)!= QChar(' ')){xStr.append(str.at(i));i++;}
     i++;
-    while(i < str.size()){actualHStr.append(str.at(i));i++;}
+    while(str.at(i)!= QChar(' ')){yStr.append(str.at(i));i++;}
+    i++;
+    while(str.at(i)!= QChar(' ')){rightStr.append(str.at(i));i++;}
+    i++;
+    while(str.at(i)!= QChar(' ')){topStr.append(str.at(i));i++;}
+    i++;
+    while(str.at(i)!= QChar(' ')){wStr.append(str.at(i));i++;}
+    i++;
+    while(i < str.size()){hStr.append(str.at(i));i++;}
     
     entry->_zoom = zoomStr.toFloat();
     entry->_exposure = expStr.toFloat();
@@ -110,8 +123,8 @@ FrameEntry* FrameEntry::recoverFromString(QString str){
     entry->_byteMode = byteStr.toFloat();
     entry->_treeVers = treeStr.toULongLong();
     entry->_frameInfo = ReaderInfo::fromString(frameInfoStr);
-    entry->_actualW = actualWStr.toInt();
-    entry->_actualH = actualHStr.toInt();
+    TextureRect textureRect(xStr.toInt(),yStr.toInt(),rightStr.toInt(),topStr.toInt(),wStr.toInt(),hStr.toInt());
+    entry->_textureRect = textureRect;
     
     return entry;
 }
@@ -136,9 +149,9 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
     }else{
         U64 dataSize ;
         if(entry->_byteMode == 1){
-            dataSize = entry->_actualH * entry->_actualW * 4;
+            dataSize = entry->_textureRect.w * entry->_textureRect.h * 4;
         }else{
-            dataSize = entry->_actualH * entry->_actualW * 4 * sizeof(float);
+            dataSize = entry->_textureRect.w * entry->_textureRect.h * 4 * sizeof(float);
         }
         string pathStd = path.toStdString();
         if(!entry->allocate(dataSize,pathStd.c_str())){
@@ -174,8 +187,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
                                   float exposure,
                                   float lut ,
                                   float byteMode,
-                                  int w,
-                                  int h,
+                                  const TextureRect& textureRect,
                                   const Box2D& bbox,
                                   const Format& dispW){
     
@@ -184,7 +196,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     info->set(bbox);
     info->setChannels(Mask_RGBA);
     FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
-                                      treeVersion,byteMode,info,w,h);
+                                      treeVersion,byteMode,info,textureRect);
     
     string name(getCachePath().toStdString());
     {
@@ -207,9 +219,9 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     }
     U64 dataSize = 0;
     if(byteMode==1.f){
-        dataSize = w*h*4;
+        dataSize = textureRect.w*textureRect.h*4;
     }else{
-        dataSize = w*h*4*sizeof(float);
+        dataSize = textureRect.w*textureRect.h*4*sizeof(float);
     }
     
     if(!out->allocate(dataSize,name.c_str())){
@@ -235,7 +247,7 @@ void ViewerCache::clearInMemoryPortion(){
 }
 
 FrameEntry* ViewerCache::get(U64 key){
-   
+    
     CacheIterator it = isInMemory(key);
     
     if (it == endMemoryCache()) {// not in memory
@@ -271,8 +283,7 @@ U64 FrameEntry::computeHashKey(int frameNB,
                                float byteMode,
                                const Box2D& bbox,
                                const Format& dispW,
-                               int firstRow,
-                               int lastRow){
+                               const TextureRect& frameRect){
     Hash _hash;
     _hash.appendNodeHashToHash(frameNB);
     _hash.appendNodeHashToHash(treeVersion);
@@ -288,8 +299,12 @@ U64 FrameEntry::computeHashKey(int frameNB,
     _hash.appendNodeHashToHash(dispW.y());
     _hash.appendNodeHashToHash(dispW.top());
     _hash.appendNodeHashToHash(dispW.right());
-    _hash.appendNodeHashToHash(firstRow);
-    _hash.appendNodeHashToHash(lastRow);
+    _hash.appendNodeHashToHash(frameRect.x);
+    _hash.appendNodeHashToHash(frameRect.y);
+    _hash.appendNodeHashToHash(frameRect.t);
+    _hash.appendNodeHashToHash(frameRect.r);
+    _hash.appendNodeHashToHash(frameRect.w);
+    _hash.appendNodeHashToHash(frameRect.h);
     _hash.computeHash();
     return _hash.getHashValue();
 }

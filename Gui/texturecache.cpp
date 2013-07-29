@@ -20,14 +20,14 @@
 
 using namespace std;
 
-TextureEntry::TextureEntry():CacheEntry(),_hashKey(0),_w(0),_h(0){
+TextureEntry::TextureEntry():CacheEntry(),_hashKey(0){
     glGenTextures(1, &_texID);
 
 }
-void TextureEntry::allocate(int w, int h ,DataType type){
-    if(_w == w && _h == h && _type == type) return;
-    _w = w;
-    _h = h;
+void TextureEntry::allocate(const TextureRect& texRect ,DataType type){
+    if(_textureRect.w == texRect.w && _textureRect.h == texRect.h && _type == type)
+        return;
+    _textureRect = texRect;
     _type = type;
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
     glActiveTexture (GL_TEXTURE0);
@@ -36,24 +36,24 @@ void TextureEntry::allocate(int w, int h ,DataType type){
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,GL_CLAMP);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     if(type == BYTE){
-        _size = w*h*sizeof(U32);
+        _size = w()*h()*sizeof(U32);
         glTexImage2D(GL_TEXTURE_2D,
                       0,			// level
                       GL_RGBA8, //internalFormat
-                      w, h,
+                      w(), h(),
                       0,			// border
                       GL_BGRA,		// format
                       GL_UNSIGNED_INT_8_8_8_8_REV,	// type
                       0);			// pixels
     }else if(type == FLOAT){
-        _size = w*h*4*sizeof(float);
+        _size = w()*h()*4*sizeof(float);
         glTexImage2D (GL_TEXTURE_2D,
                       0,			// level
                       GL_RGBA32F_ARB, //internalFormat
-                      w, h,
+                      w(), h(),
                       0,			// border
                       GL_RGBA,		// format
                       GL_FLOAT,	// type
@@ -80,14 +80,7 @@ TextureEntry* TextureCache::get(U64 key){
     return NULL;
 }
 
-TextureEntry* TextureCache::generateTexture(U64 key,int w , int h ,TextureEntry::DataType type){
-    TextureEntry* entry = new TextureEntry;
-    entry->setHashKey(key);
-    entry->allocate(w,h,type);
-    return entry;
 
-
-}
 
 /*Inserts a new texture,represented by key in the cache. This function must be called
  only if  isCached(...) returned false with this key*/

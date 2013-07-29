@@ -37,7 +37,6 @@ class Viewer: public OutputNode
     ViewerCache* _viewerCache;
     TextureCache* _textureCache;
     int _pboIndex;
-    float _currentZoomFactor;
     QFutureWatcher<void> *_cacheWatcher;
     
 public:
@@ -77,7 +76,6 @@ public:
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
     
-    void setCurrentZoomFactor(float f){_currentZoomFactor = f;}
 protected:
     
 	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter::Mask_None;}

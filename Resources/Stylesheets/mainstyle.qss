@@ -1,40 +1,98 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
-QTreeView,QListView,QHeaderView{
-background-color: %3;
-color: %5;
-selection-background-color: %1;
-}
-QTreeView:focus {
-selection-color: %1;
-border: 2px groove %1;
-border-radius: 0px;
-padding: 2px 4px;
-}
-QTreeView:!focus {
-border: 0px;
-border-radius: 0px;
-padding: 0px;
-}
-QListView:focus {
-selection-color: %1;
-border: 2px groove %1;
-border-radius: 0px;
-padding: 2px 4px;
-}
-QListView:!focus {
-border: 0px;
-border-radius: 0px;
-padding: 0px;
-}
+
+ QScrollBar:vertical {
+ border: 1px solid %1 ;
+ background: %3;
+ width: 15px;
+ margin : 23px 0px 23px 0px;
+ }
+ QScrollBar::handle:vertical {
+ image: url(:/Resources/Images/scrollbarHandle_vertical.png);
+ min-height: 20px;
+ }
+ QScrollBar::up-arrow:vertical {
+ image : url(:/Resources/Images/scrollbarButton_up.png);
+ width: 11px;
+ height: 20px;
+ }
+ QScrollBar::down-arrow:vertical {
+ image : url(:/Resources/Images/scrollbarButton_down.png);
+ width: 11px;
+ height: 20px;
+ }
+ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+ background: %4;
+ }
+ QScrollBar::add-line:vertical {
+       border: 1px solid %1;
+       background: %3;
+       height: 20px;
+       subcontrol-position: bottom;
+       subcontrol-origin: margin;
+   }
+
+   QScrollBar::sub-line:vertical {
+       border: 1px solid %1;
+       background: %3;
+       height: 20px;
+       subcontrol-position: top;
+       subcontrol-origin: margin;
+   }
 
 
-QHeaderView:section{
-background-color: %2;
-color: %5;
-selection-background-color : %1;
-selection-color: %1;
-}
+ QScrollBar:horizontal {
+ border: 1px solid %1 ;
+ background: %3;
+ height: 15px;
+ margin : 0px 23px 0px 23px;
+ }
+ QScrollBar::handle:horizontal {
+ image: url(:/Resources/Images/scrollbarHandle_horizontal.png);
+ min-width: 20px;
+ }
+ QScrollBar::left-arrow:horizontal {
+ image : url(:/Resources/Images/scrollbarButton_right.png);
+ width: 20px;
+ height: 11px;
+ }
+ QScrollBar::right-arrow:horizontal {
+ image : url(:/Resources/Images/scrollbarButton_left.png);
+ width: 20px;
+ height: 11px;
+ }
+ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+ background: %4;
+ }
+ QScrollBar::add-line:horizontal {
+       border: 1px solid %1;
+       background: %3;
+       width: 20px;
+       subcontrol-position: left;
+       subcontrol-origin: margin;
+   }
+
+   QScrollBar::sub-line:horizontal {
+       border: 1px solid %1;
+       background: %3;
+       width: 20px;
+       subcontrol-position: right;
+       subcontrol-origin: margin;
+   }
+
+
+
+ QTreeView,QListView,QHeaderView{
+ background-color: %3;
+ color: %5;
+ selection-background-color: %1;
+ }
+ QHeaderView:section{
+ background-color: %2;
+ color: %5;
+ selection-background-color : %1;
+ selection-color: %1;
+ }
 
 QDialog{
 background-color: %2;
