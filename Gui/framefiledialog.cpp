@@ -1549,6 +1549,22 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
 QStringList UrlModel::mimeTypes() const{
     return QStringList(QLatin1String("text/uri-list"));
 }
+
+Qt::ItemFlags UrlModel::flags(const QModelIndex &index) const
+{
+    Qt::ItemFlags flags = QStandardItemModel::flags(index);
+    if (index.isValid()) {
+        flags &= ~Qt::ItemIsEditable;
+        // ### some future version could support "moving" urls onto a folder
+        flags &= ~Qt::ItemIsDropEnabled;
+    }
+    
+    if (index.data(Qt::DecorationRole).isNull())
+        flags &= ~Qt::ItemIsEnabled;
+    
+    return flags;
+}
+
 QMimeData *UrlModel::mimeData(const QModelIndexList &indexes) const{
     QList<QUrl> list;
     for (int i = 0; i < indexes.count(); ++i) {

@@ -110,10 +110,21 @@ void ReadQt::readAllData(bool){
 
 
 void ReadQt::make_preview(){
-    QImage* img = new QImage(_img->width(),_img->height(),_img->format());
-    for(int i =0 ; i < _img->height() ; i++){
-        for(int j = 0 ; j < _img->width() ; j++){
-            img->setPixel(j, i, _img->pixel(j, i));
+    int w = 64;
+    int h = 64;
+    float zoomFactor = (float)h/(float)_img->height();
+    QImage* img = new QImage(w,h,_img->format());
+    for(int i =0 ; i < h ; i++){
+        float y = (float)i*1.f/zoomFactor;
+        int nearest;
+        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
+        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearest);
+        QRgb *dst_pixels = (QRgb *) img->scanLine(i);
+        for(int j = 0 ; j < w ; j++){
+            float x = (float)j*1.f/zoomFactor;
+            int nearestX;
+            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            dst_pixels[j] = src_pixels[nearestX];
         }
     }
     op->setPreview(img);

@@ -427,13 +427,12 @@ void ReadExr::make_preview(){
     Imf::Header header = inputfile->header();
     Imath::Box2i &dataWindow = header.dataWindow();
     Imath::Box2i &dispWindow = header.displayWindow();
-    int dw = dataWindow.max.x - dataWindow.min.x + 1;
     int dh = dataWindow.max.y - dataWindow.min.y + 1;
-    int w = floor((float)dw*0.1);
-    int h = floor((float)dh*0.1);
-    
+    int h = 64;
+    int w = 64;
+    float zoomFactor = (float)h/(float)dh;
     for(int i =0 ; i < h ; i++){
-        float y = (float)i*1.f/0.1;
+        float y = (float)i*1.f/zoomFactor;
         int nearest;
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
         readScanLine(nearest);
@@ -445,6 +444,7 @@ void ReadExr::make_preview(){
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
         int exrY = dispWindow.max.y - nearest;
         Row* from = _img[exrY];
+        QRgb *dst_pixels = (QRgb *) img->scanLine(h-1-i);
         const float* red = (*from)[Channel_red];
         const float* green = (*from)[Channel_green];
         const float* blue = (*from)[Channel_blue] ;
@@ -454,7 +454,7 @@ void ReadExr::make_preview(){
         if(blue) blue+=from->offset();
         if(alpha) alpha+=from->offset();
         for(int j=0;j<w;j++){
-            float x = (float)j*1.f/0.1;
+            float x = (float)j*1.f/zoomFactor;
             int nearestX;
             (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
             float r = red ? Lut::clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
@@ -462,7 +462,7 @@ void ReadExr::make_preview(){
             float b = blue ? Lut::clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
             float a = alpha ? alpha[nearestX] : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
-            img->setPixel(j, h-1-i,c.rgba());
+            dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
         }
     }
     op->setPreview(img);

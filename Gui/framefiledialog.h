@@ -71,13 +71,15 @@ public:
     bool canDrop(QDragEnterEvent *event);
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+    
     void setUrls(const std::vector<QUrl> &urls);
     void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
     std::vector<QUrl> urls() const;
     void setFileSystemModel(QFileSystemModel *model);
     QFileSystemModel* getFileSystemModel() const {return fileSystemModel;}
     void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
-
+    
 public slots:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
@@ -114,6 +116,9 @@ public:
     void selectUrl(const QUrl &url);
 
     void rename(const QModelIndex& index,const QString& name);
+    
+    
+    
 public slots:
     void clicked(const QModelIndex &index);
     void showMenu(const QPoint &position);
