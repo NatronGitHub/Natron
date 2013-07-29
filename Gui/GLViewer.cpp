@@ -515,8 +515,10 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
-    ret.first = rows.front();
-    ret.second = rows.back();
+    if(rows.size() > 0){
+        ret.first = rows.front();
+        ret.second = rows.back();
+    }
     return ret;
 }
 std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const Box2D& displayWindow){
@@ -549,8 +551,10 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
-    ret.first = columns.front();
-    ret.second = columns.back();
+    if(columns.size() > 0){
+        ret.first = columns.front();
+        ret.second = columns.back();
+    }
     _textureColumns = columns;
     return ret;
 }
@@ -1095,7 +1099,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
     float w = (float)(displayWindow.w());
     float zoomFactor = (float)height()/h;
-    setZoomFactor(zoomFactor-0.05);
+    zoomFactor > 0.06 ? setZoomFactor(zoomFactor-0.05) : setZoomFactor(zoomFactor);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));

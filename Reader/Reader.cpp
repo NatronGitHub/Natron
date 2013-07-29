@@ -197,7 +197,7 @@ void Reader::showFilePreview(){
     readCurrentHeader(firstFrame());
     readCurrentData(firstFrame());
 
-     readHandle->make_preview();
+    //   readHandle->make_preview();
     _buffer.clear();
 }
 

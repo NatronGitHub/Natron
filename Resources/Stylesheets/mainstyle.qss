@@ -22,7 +22,7 @@
  height: 20px;
  }
  QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
- background: %4;
+ background: %2;
  }
  QScrollBar::add-line:vertical {
        border: 1px solid %1;
@@ -62,7 +62,7 @@
  height: 11px;
  }
  QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
- background: %4;
+ background: %2;
  }
  QScrollBar::add-line:horizontal {
        border: 1px solid %1;

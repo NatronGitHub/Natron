@@ -34,6 +34,7 @@
 #include <QtCore/QMimeData>
 #include <QtConcurrentRun>
 #include <QtGui/QStyleOptionViewItem>
+#include <QtCore/QSettings>
 
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
@@ -210,10 +211,7 @@ _dialogMode(mode)
     
     resize(900, 400);
     
-    // QSettings settings(QSettings::UserScope, QLatin1String("QtProject"));
-    // settings.beginGroup(QLatin1String("Qt"));
-    // restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
-    std::vector<QUrl> initialBookmarks;
+        std::vector<QUrl> initialBookmarks;
 #ifndef __POWITER_WIN32__
     initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
 #else
@@ -243,11 +241,16 @@ _dialogMode(mode)
         setWindowTitle("Save Sequence");
     }
     
+     QSettings settings(QSettings::UserScope, QLatin1String("Powiter"));
+     settings.beginGroup(QLatin1String("Powiter"));
+     restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
+
+    
 }
 SequenceFileDialog::~SequenceFileDialog(){
-    //  QSettings settings(QSettings::UserScope, QLatin1String("QtProject"));
-    //  settings.beginGroup(QLatin1String("Qt"));
-    //  settings.setValue(QLatin1String("filedialog"), saveState());
+    QSettings settings(QSettings::UserScope, QLatin1String("Powiter"));
+    settings.beginGroup(QLatin1String("Powiter"));
+    settings.setValue(QLatin1String("filedialog"), saveState());
     
     delete _model;
     delete _itemDelegate;
@@ -427,7 +430,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         return false;
     
     /*If file sequence fetching is disabled, just call the base class version*/
-    if(!_fd->sequenceModeEnabled()){
+    if(!_fd->sequenceModeEnabled() || frameNumber == -1){
         return QSortFilterProxyModel::filterAcceptsRow(source_row,source_parent);
     }
     
@@ -1460,12 +1463,6 @@ void FavoriteView::showMenu(const QPoint &position)
         connect(removeAction, SIGNAL(triggered()), this, SLOT(removeEntry()));
         actions.append(removeAction);
         
-        //        QAction *renameAction = new QAction("Rename", this);
-        //        if (indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty())
-        //            renameAction->setEnabled(false);
-        //        connect(renameAction, SIGNAL(triggered()), this, SLOT(rename()));
-        //        actions.append(renameAction);
-        
         QAction *editAction = new QAction("Edit path", this);
         if (indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty())
             editAction->setEnabled(false);
@@ -1495,7 +1492,7 @@ QByteArray SequenceFileDialog::saveState() const{
     }
     stream << _centerSplitter->saveState();
     stream << urls;
-    stream << _history;
+    stream << history();
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
     return data;
@@ -1531,11 +1528,20 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
     _favoriteView->setUrls(stdBookMarks);
     while (history.count() > 5)
         history.pop_front();
-    _history = history;
+    setHistory(history);
     setDirectory(currentDirectory);
     QHeaderView *headerView = _view->header();
     if (!headerView->restoreState(headerData))
         return false;
+    
+    QList<QAction*> actions = headerView->actions();
+    QAbstractItemModel *abstractModel = _model;
+    if (_proxy)
+        abstractModel = _proxy;
+    int total = qMin(abstractModel->columnCount(QModelIndex()), actions.count() + 1);
+    for (int i = 1; i < total; ++i)
+        actions.at(i - 1)->setChecked(!headerView->isSectionHidden(i));
+    
     return true;
 }
 
