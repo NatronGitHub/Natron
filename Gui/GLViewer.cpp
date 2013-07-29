@@ -74,27 +74,32 @@ static GLint renderingTextureCoordinates[32] = {
     1 , 0   //15
 };
 
-
-static GLubyte triangleStrip1[8] = {4,0,5,1,6,2,7,3};
-static GLubyte triangleStrip2[8] = {8,4,9,5,10,6,11,7};
-static GLubyte triangleStrip3[8] = {12,8,13,9,14,10,15,11};
+/*see http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/ */
+static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
+    7,4,
+    4,8,5,9,6,10,7,11,
+    11,8,
+    8,12,9,13,10,14,11,15
+};
+//static GLubyte triangleStrip2[8] = {8,4,9,5,10,6,11,7};
+//static GLubyte triangleStrip3[8] = {12,8,13,9,14,10,15,11};
 /*
  ASCII art of the vertices used to render.
  The actual texture seen on the viewport is the rect (6,7,10,11).
  We draw  3*6 strips
  
  0 ___1___2___3
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  4---5---6----7
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  8---9--10--11
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
@@ -131,11 +136,8 @@ void ViewerGL::drawRenderingVAO(){
 
     glBindBuffer(GL_ARRAY_BUFFER,0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[0]);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[1]);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[2]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
     glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
     
@@ -259,7 +261,7 @@ ViewerGL::~ViewerGL(){
     glDeleteBuffers(2, &_pboIds[0]);
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
-    glDeleteBuffers(3, &_iboTriangleStripId[0]);
+    glDeleteBuffers(1, &_iboTriangleStripId);
   	delete _blankViewerInfos;
 	delete _infoViewer;
 }
@@ -428,7 +430,7 @@ void ViewerGL::initializeGL(){
     // glGenVertexArrays(1, &_vaoId);
     glGenBuffers(1, &_vboVerticesId);
     glGenBuffers(1, &_vboTexturesId);
-    glGenBuffers(3 , &_iboTriangleStripId[0]);
+    glGenBuffers(1 , &_iboTriangleStripId);
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLint), renderingTextureCoordinates, GL_STATIC_DRAW);
@@ -439,14 +441,10 @@ void ViewerGL::initializeGL(){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[0]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip1, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip2, GL_STATIC_DRAW);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[2]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip3, GL_STATIC_DRAW);
+   
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 

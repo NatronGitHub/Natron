@@ -211,7 +211,7 @@
             
             GLuint _vboTexturesId; /*!< VBO holding texture coordinates*/
 
-            GLuint _iboTriangleStripId[3]; /*!< IBOs holding vertices indexes for triangle strip sets*/
+            GLuint _iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
             
             TextureEntry* _viewerCacheTexture;/*!< The texture used to render data that comes from the viewer cache*/
             
