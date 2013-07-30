@@ -87,7 +87,7 @@ bool Node::merge_info(bool forReal){
     clear_info();
 	int final_direction=0;
 	ChannelSet chans;
-    bool displayMode;
+    bool displayMode = _info->rgbMode();
 	for (int i =0 ; i < inputCount(); i++) {
         Node* parent = _parents[i];
         merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
@@ -368,6 +368,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
         entry.second->preventFromDeletion();
+        assert(out->offset() == x && out->right() == r);
         row.setInternalRow(out);
         return;
     }else{
@@ -383,6 +384,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
             out = new Row(x,y,r,channels);
             out->allocateRow();
         }
+        assert(out->offset() == x && out->right() == r);
         engine(y, x, r, channels, out);
         row.setInternalRow(out);
         return;

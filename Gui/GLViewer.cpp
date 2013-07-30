@@ -320,14 +320,6 @@ void ViewerGL::paintGL()
         
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
-//    glBegin (GL_QUADS);
-//    //good one
-//    glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first); // bottom left
-//    glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1); // top left
-//    glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1); // top right
-//    glTexCoord2i (1, 0);glVertex2i (dispW.w(), _rowSpan.first); // bottom right
-//
-//    glEnd ();
     checkGLErrors();
     drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -420,7 +412,7 @@ void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
  	//glClearColor(0.0,0.0,0.0,1.0);
 	//glClear(GL_COLOR_BUFFER_BIT);
-    checkFrameBufferCompleteness("init");
+    checkFrameBufferCompleteness("initializeGL:");
     _viewerCacheTexture = new TextureEntry;
     _blackTex = new TextureEntry;
     glGenBuffersARB(2, &_pboIds[0]);
@@ -791,6 +783,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     assert(frameData);
+    
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=columnSpan.size();
     output+=yOffset;
@@ -1000,8 +993,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
         }else {
             newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
-            if(newZoomFactor <= 0.1){
-                newZoomFactor = 0.1;
+            if(newZoomFactor <= 0.01){
+                newZoomFactor = 0.01;
             }
         }
         QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());

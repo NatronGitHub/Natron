@@ -347,7 +347,8 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if (!directory.isEmpty() && newDirectory.isEmpty())
         return;
     _requestedDir = newDirectory;
-    _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    QModelIndex root = _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    _createDirButton->setEnabled(_model->flags(root) & Qt::ItemIsDropEnabled);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
         newDirectory.append("/");
     }
@@ -1077,7 +1078,7 @@ QStringList SequenceFileDialog::selectedFiles(){
                     out.append(s);
                     i++;
                 }
-                if(out.size() > (int)sequence->_frameIndexes.size()) break; //number of files exceeding the sequence size...something is wrong
+                if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
             }
             
         }
@@ -1154,6 +1155,7 @@ void SequenceFileDialog::applyFilter(QString filter){
 
 UrlModel::UrlModel(QObject *parent) : QStandardItemModel(parent), fileSystemModel(0)
 {
+    
 }
 
 
@@ -1164,7 +1166,7 @@ bool UrlModel::setData(const QModelIndex &index, const QVariant &value, int role
         QModelIndex dirIndex = fileSystemModel->index(url.toLocalFile());
         
         QStandardItemModel::setData(index, QDir::toNativeSeparators(fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString()), Qt::ToolTipRole);
-        QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
+        //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
         QStandardItemModel::setData(index, fileSystemModel->data(dirIndex, Qt::DecorationRole),Qt::DecorationRole);
         QStandardItemModel::setData(index, url, UrlRole);
         return true;
@@ -1180,7 +1182,7 @@ void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelInd
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;
-        newName = dirIndex.data().toString();
+        newName = QDir::toNativeSeparators(dirIndex.data(QFileSystemModel::FilePathRole).toString());//dirIndex.data().toString();
         QIcon newIcon = qvariant_cast<QIcon>(dirIndex.data(Qt::DecorationRole));
         if (!dirIndex.isValid()) {
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
@@ -1353,6 +1355,7 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
             this, SLOT(showMenu(QPoint)));
     urlModel->setUrls(newUrls);
     setCurrentIndex(this->model()->index(0,0));
+   
 }
 
 FavoriteView::~FavoriteView()
@@ -1603,7 +1606,6 @@ void FavoriteView::dragEnterEvent(QDragEnterEvent *event){
     if (urlModel->canDrop(event))
         QListView::dragEnterEvent(event);
 }
-
 
 void FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p){
     dialog = p;

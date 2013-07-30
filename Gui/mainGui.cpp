@@ -169,7 +169,6 @@ void Gui::setupUi()
 	QRect screen=desktop->screenGeometry(-1);
 	resize(screen.width(),screen.height());
 	setDockNestingEnabled(false);
-	
     
     loadStyleSheet();
 	
@@ -572,8 +571,10 @@ void Gui::closePane(TabWidget* what){
         }
     }
     /*moving the other to the mainContainer*/
-    other->setVisible(true);
-    other->setParent(mainContainer);
+    if(other){
+        other->setVisible(true);
+        other->setParent(mainContainer);
+    }
     mainContainer->insertWidget(subSplitterIndex, other);
     
     /*deleting the subSplitter*/

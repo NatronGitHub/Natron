@@ -584,7 +584,12 @@
              **/
             TextureEntry* getCurrentDisplayTexture() const {return _currentDisplayTexture;}
             
-
+            /**
+             *@returns A vector with the columns indexes of the full-size image that are
+             *really contained in the texture.
+             **/
+            const std::vector<int>& getTextureColumns() const {return _textureColumns;}
+            
             /**
              *@returns Returns a pointer to the texture used to display when the texture
              *does not come frome the texture cache.

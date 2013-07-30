@@ -43,7 +43,7 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
     }
-    const QRgb* from = reinterpret_cast<const QRgb*>(buffer);
+    const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
     foreachChannels(z, channels){
         float* to = out->writable(z) + offset;
         if(to!=NULL){

@@ -64,14 +64,16 @@ public:
     };
     
     UrlModel(QObject *parent = 0);
-    bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
     
     QStringList mimeTypes() const;
-    QMimeData *mimeData(const QModelIndexList &indexes) const;
+    virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
     bool canDrop(QDragEnterEvent *event);
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+    virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
-    Qt::ItemFlags flags(const QModelIndex &index) const;
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const;
+    
+    bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
+
     
     void setUrls(const std::vector<QUrl> &urls);
     void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
@@ -79,7 +81,7 @@ public:
     void setFileSystemModel(QFileSystemModel *model);
     QFileSystemModel* getFileSystemModel() const {return fileSystemModel;}
     void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
-    
+
 public slots:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
@@ -128,6 +130,12 @@ public slots:
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
     virtual void dragEnterEvent(QDragEnterEvent *event);
+    
+    virtual void focusInEvent(QFocusEvent *event)
+    {
+        QAbstractScrollArea::focusInEvent(event);
+        viewport()->update();
+    }
 private:
     UrlModel *urlModel;
 };

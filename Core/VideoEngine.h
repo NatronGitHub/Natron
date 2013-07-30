@@ -226,17 +226,19 @@ public:
     public:
         enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
         
-        EngineStatus():_cachedEntry(0),_key(0),_returnCode(NORMAL_ENGINE){}
+        EngineStatus():_cachedEntry(0),_key(0),_x(0),_r(0),_returnCode(NORMAL_ENGINE){}
         
-        EngineStatus(FrameEntry* cachedEntry,U64 key,const std::vector<int> rows,EngineStatus::RetCode state):
+        EngineStatus(FrameEntry* cachedEntry,U64 key,int x,int r,const std::vector<int> rows,EngineStatus::RetCode state):
         _cachedEntry(cachedEntry),
         _key(key),
+        _x(x),
+        _r(r),
         _rows(rows),
         _returnCode(state)
         {}
         
         EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
-        _key(other._key),
+        _key(other._key),_x(other._x),_r(other._r),
         _rows(other._rows),_returnCode(other._returnCode){}
         
  
@@ -244,6 +246,7 @@ public:
         
         FrameEntry* _cachedEntry;
         U64 _key;
+        int _x,_r;
         std::vector<int> _rows;
         RetCode _returnCode;
     };
@@ -255,7 +258,7 @@ private:
     /**
      *@brief A typedef used to represent a generic signature of a function that represent a user action like Play, Pause, Seek...etc
      */
-    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,OutputNode*);
+    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,OutputNode*);
     
     /**
      *@class VideoEngine::Task
@@ -269,10 +272,11 @@ private:
         int _frameCount;
         bool _initViewer;
         bool _forward;
+        bool _sameFrame;
         OutputNode* _output;
         VengineFunction _func;
-        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func):
-        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),
+        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func):
+        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),_sameFrame(sameFrame),
         _output(output),_func(func){}
         
     };
@@ -571,7 +575,7 @@ private:
      *in the viewport will be exactly the same as the indexes in the full-res frame.
      *@param output[in] This is the output node of the graph.
      **/
-    void computeTreeForFrame(const std::vector<int>& rows, OutputNode *output);
+    void computeTreeForFrame(const std::vector<int>& rows,int x,int r, OutputNode *output);
 
     /**
      *@brief Called by VideoEngine::videoEngine(int,bool,bool,bool) the first time or by VideoEngine::engineLoop().
@@ -647,19 +651,19 @@ private:
      *All the parameters are given to the function VideoEngine::videoEngine(int,bool,bool,bool). See the
      *documentation for that function.
      **/
-    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
+    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
     
     /**
      *@brief Called by VideoEngine::changeDAGAndStartEngine(OutputNode*); This function is slightly different
      *than _startEngine(...) because it resets the graph and calls VideoEngine::changeTreeVersion() 
      *before actually starting the engine.
      **/
-    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
+    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
     
     /**
      *@brief Appends a new VideoEngine::Task to the the queue.
      **/
-    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func);
+    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func);
     
     /**
      *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
@@ -671,6 +675,15 @@ private:
      **/
     void debugRowSequence();
     
+#ifdef PW_DEBUG
+    /*
+     *@brief Range-check to be sure buffers are allocated correctly
+     *@param columns the indexes of the columns to compute.
+     *@param x The left edge of the rectangle to compute.
+     *@param r The right edge of the rectangle to compute.
+     */
+    bool rangeCheck(const std::vector<int>& columns,int x,int r);
+#endif
 };
 
 #endif /* defined(__PowiterOsX__VideoEngine__) */
