@@ -695,6 +695,32 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     }
     
 }
+
+void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{
+    if(index.column() == 0){
+        QString str = index.data().toString();
+        QFileInfo fileInfo(str);
+        str = _model->index(str).data().toString();
+        QIcon icon = _model->iconProvider()->icon(fileInfo);
+        int totalSize = option.rect.width();
+        int iconSize = option.decorationSize.width();
+        int textSize = totalSize - iconSize;
+
+        QRect iconRect(option.rect.x(),option.rect.y(),iconSize,option.rect.height());
+        QRect textRect(option.rect.x()+iconSize,option.rect.y(),textSize,option.rect.height());
+        QRect r;
+        if (option.state & QStyle::State_Selected){
+            painter->fillRect(option.rect, option.palette.highlight());
+        }
+        painter->drawPixmap(iconRect,
+                            icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height()))),
+                            r);
+        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
+        
+    }else{
+        QStyledItemDelegate::paint(painter,option,index);
+    }
+}
 bool SequenceFileDialog::isDirectory(const QString& name) const{
     QModelIndex index = _model->index(name);
     return index.isValid() && _model->isDir(index);
@@ -1345,6 +1371,7 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
     setUniformItemSizes(true);
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(model);
+    setItemDelegate(new FavoriteItemDelegate(model));
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),

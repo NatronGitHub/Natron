@@ -94,6 +94,15 @@ private:
     std::vector<QUrl> invalidUrls;
 };
 
+class FavoriteItemDelegate : public QStyledItemDelegate {
+    QFileSystemModel *_model;
+public:
+    FavoriteItemDelegate(QFileSystemModel *model):QStyledItemDelegate(),_model(model){}
+
+protected:
+    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+};
+
 /**
  * @brief The FavoriteView class is the favorite list seen in the file dialog.
  */
