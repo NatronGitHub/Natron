@@ -13,9 +13,11 @@ If you're planning on writing a CMAKE based project file, and that you succeed i
 
 In order to have Powiter compiling, first you need to install the required libraries.
 
-###Qt 5
+###Qt 4.8.5
 
-You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads).Once downloaded, remember the path where you install it as we will need it into Xcode.
+You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). Alternatively you can get it from macports:
+
+	sudo port install qt4-mac
 
 ###FFMPEG
 
@@ -50,9 +52,9 @@ or through macports, but it will also install the boost libraries:
 	sudo port install boost
 
 
-### Eigen
+### Eigen 2
 
-You can download Eigen from macports :
+You can download Eigen 2 from macports :
 	sudo port install eigen
 
 We're done here for libraries.
@@ -62,18 +64,16 @@ We're done here for libraries.
 Go under Powiter_Core and type
 	git submodule update -i
 
-Navigate to libs/OpenFX/HostSupport in a terminal
- and type
-	xcodebuild install
-OR open the .xcodeproj with Xcode and press command+B (Product->build).
+###Expat
 
-This will install libofxHost.a under /private/HostSupport.dist/usr/local/lib
-	
+With macports:
+
+	sudo port install expat	
 
 
 ###Add the config.pri file
 
-You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
+You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries. The only library to put in the config.pri file on unix systems is boost. For all other libraries are found with PKGConfig.
 
 - create the config.pri file next to the Powiter.pro file.
 
@@ -83,57 +83,22 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-openexr2{
-    INCLUDEPATH += /usr/local/include/OpenEXR
-    LIBS += -L/usr/local/lib -lIlmimf -lIex -lImath -lHalf -lIlmThread
-}
-
-ftgl{
-    INCLUDEPATH += /usr/local/include
-    LIBS += -L/usr/local/lib -lftgl
-}
-ffmpeg{
-    INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
-}
-
-freetype{
-    INCLUDEPATH += /opt/local/include/freetype2
-    LIBS += -L/opt/local/lib -lfreetype
-}
-
-freetype2{
-    INCLUDEPATH += /opt/local/include
-}
 
 boost{
     INCLUDEPATH += /opt/local/include
-    LIBS += -L/opt/local/lib -lboost_system-mt -lboost_thread-mt -lboost_filesystem-mt -lboost_serialization-mt -lboost_python-mt -lboost_log-mt
-    LIBS += -L/opt/local/lib -lboost_program_options-mt
 }
 
-qt{
-    INCLUDEPATH += /Users/Lex/Qt5.1.0/5.1.0/clang_64/include
-    QMAKE_LFLAGS += -F/Users/Lex/Qt5.1.0/5.1.0/clang_64/lib
-    LIBS += -framework QtCore -framework QtGui -framework QtConcurrent -framework QtOpenGL -framework QtWidgets
-}
+###Build with Makefile
+You can generate a makefile by typing
+ cd <YOUR_PATH_TO_POWITER>/Powiter && qmake Powiter.pro
 
-opengl{
-    QMAKE_LFLAGS += -F/System/Library/Frameworks
-    LIBS += -framework OpenGL
-}
-
-eigen{
-    INCLUDEPATH += /usr/local/include
-}
-openfx{
-    INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
-    LIBS += -L/private/tmp/HostSupport.dst/usr/local/lib -lofxHost
-}
+then type
+	make
+This will create all binaries in the build_Powiter folder.
 
 ###(Optional) Build on QtCreator
 
-Open Powiter.pro and under the tab Projects,locate the Build Environment section. You need to add to your path /opt/local/bin so pkg-config launched by  QMake can find the libraries. This is not necessary when using Qmake from the command line because /opt/local/bin is already in the path.
+Open Powiter.pro and under the tab Projects,locate the Build Environment section. You need to add to your path /opt/local/bin so pkg-config launched by  QMake can find the libraries. This is not necessary when using QMake from the command line because /opt/local/bin is already in the path.
 
 ###(Optional) Build on Xcode:
 

@@ -10,9 +10,9 @@ If you're planning on writing a CMAKE based project file, and that you succeed i
 
 In order to have Powiter compiling, first you need to install the required libraries.
 
-###Qt 5
+###Qt 4.8.5
 
-You'll need to install Qt (5.0.2 as of writing) libraries from [Qt download](http://qt-project.org/downloads). 
+You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). Alternatively you can get it from apt-get.
 
 ###FFMPEG
 
@@ -49,16 +49,28 @@ Alternatively you can install boost from apt-get:
 
 ### Eigen
 
-You can download Eigen from macports :
+You can download Eigen from apt-get :
 	sudo apt-get install eigen
+
+
+### OpenFX
+
+Go under Powiter and type
+	git submodule update -i
+
+###Expat
+
+	sudo apt-get install expat
 
 
 We're done here for libraries.
 
 
+
 ###Add the config.pri file
 
-You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
+You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries. The only library to put in the config.pri file on unix systems is boost. For all other libraries are found with PKGConfig.
+
 
 - create the config.pri file next to the Powiter.pro file.
 
@@ -68,37 +80,8 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-openexr2{
-    INCLUDEPATH += /home/developpeur/Downloads/OpenEXR_2.0.0_linux64/include/OpenEXR
-    LIBS += -L/home/developpeur/Downloads/OpenEXR_2.0.0_linux64/lib -lIlmImf -lIex -lImath -lHalf -lIlmThread
-}
-
-ftgl{
-    INCLUDEPATH += /usr/include
-    LIBS += -L/usr/lib -lftgl
-}
-ffmpeg{
-    INCLUDEPATH += /usr/include
-    LIBS += -L/usr/lib  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
-}
-
-freetype{
-    INCLUDEPATH += /usr/include/freetype2
-    LIBS += -L/usr/lib -lfreetype
-}
-
-freetype2{
-    INCLUDEPATH += /usr/include
-}
 
 boost{
-    INCLUDEPATH += /usr/include
-}
-
-qtincludes{
-    INCLUDEPATH += /home/developpeur/Qt5.0.2/5.0.2/gcc_64/include
-}
-eigen{
     INCLUDEPATH += /usr/include
 }
 
