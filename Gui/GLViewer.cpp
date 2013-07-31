@@ -1019,7 +1019,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 void ViewerGL::zoomSlot(int v){
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         float value = v/100.f;
-        if(value < 0.1f) value = 0.1f;
+        if(value < 0.01f) value = 0.01f;
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
