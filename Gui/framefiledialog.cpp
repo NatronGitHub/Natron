@@ -84,8 +84,8 @@ _dialogMode(mode)
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
     
-    _lookInCombobox->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
-    
+    _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+
     _buttonsLayout->addStretch();
     
     
@@ -290,6 +290,8 @@ void SequenceFileDialog::createMenuActions(){
 }
 
 void SequenceFileDialog::enableSequenceMode(bool b){
+    _frameSequences.clear();
+    _proxy->clear();
     _sequenceButton->setChecked(b);
     if(!b){
         _nameMapping.clear();
@@ -657,7 +659,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                 
                 found = true;
                 
-                return;
+                break;
             }
         }
         if(!found){ // must be a directory or a single image file
@@ -681,7 +683,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                 QString nameToPaint(memString.c_str());
                 painter->drawText(option.rect,Qt::TextSingleLine,nameToPaint,&r);
                 found = true;
-                return;
+                break;
             }
         }
         if(!found){
@@ -1079,7 +1081,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         while(i >= 0 && path.at(i).isDigit()){i--;}
         i++;
         path = path.left(i);
-        FileSequence *sequence;
+        // FileSequence *sequence = 0;
         pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
         
         /*if this is not a registered sequence. i.e: this is a single image file*/
@@ -1087,12 +1089,12 @@ QStringList SequenceFileDialog::selectedFiles(){
             //  cout << originalPath.toStdString() << endl;
             out.append(originalPath);
         }else{
-            for(SequenceIterator it = range.first ; it!=range.second; it++){
-                if(it->second._fileType == ext.toStdString()){
-                    sequence = &(it->second);
-                    break;
-                }
-            }
+//            for(SequenceIterator it = range.first ; it!=range.second; it++){
+//                if(it->second._fileType == ext.toStdString()){
+//                    sequence = &(it->second);
+//                    break;
+//                }
+//            }
             /*now that we now how many frames there are,their extension and the common name, we retrieve them*/
             i = 0;
             QStringList dirEntries = dir.entryList();
@@ -1104,7 +1106,7 @@ QStringList SequenceFileDialog::selectedFiles(){
                     out.append(s);
                     i++;
                 }
-                if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
+                //if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
             }
             
         }

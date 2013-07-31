@@ -254,6 +254,7 @@ public:
     
     std::multimap<std::string, FileSequence > getFrameSequenceCopy() const{return _frameSequences;}
     
+    
     inline void setFilter(QString filter){ _filter = filter;}
 
 protected:

@@ -124,13 +124,11 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     if (!_dag.isOutputAViewer()) {
         assert(writer);
         if(!recursiveCall){
-            firstFrame = writer->firstFrame();
             lastFrame = writer->lastFrame();
             currentFrame = writer->firstFrame();
             writer->setCurrentFrameToStart();
             
         }else{
-            firstFrame = writer->firstFrame();
             lastFrame = writer->lastFrame();
             writer->incrementCurrentFrame();
             currentFrame = writer->currentFrame();
@@ -709,7 +707,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < currentViewer->firstFrame() || frameNB > currentViewer->lastFrame())
             return;
-        QMetaObject::invokeMethod(currentViewer->getUiContext()->frameSeeker, "seek", Qt::QueuedConnection, Q_ARG(int,frameNB));
+        QMetaObject::invokeMethod(currentViewer->getUiContext()->frameSeeker, "seek", Qt::DirectConnection, Q_ARG(int,frameNB));
         videoEngine(frameCount,initViewer,forward,sameFrame);
         
     }

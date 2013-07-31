@@ -55,7 +55,7 @@ using namespace std;
 const double pi= 3.14159265358979323846264338327950288419717;
 
 
-static GLint renderingTextureCoordinates[32] = {
+static GLfloat renderingTextureCoordinates[32] = {
     0 , 1 , //0
     0 , 1 , //1
     1 , 1 ,//2
@@ -107,19 +107,19 @@ void ViewerGL::drawRenderingVAO(){
     GLfloat vertices[32] = {
         0.f , img.h() , // 0
         r.x , img.h() , //1
-        r.r , img.h() ,//2
+        r.r+1 , img.h() ,//2
         img.w() , img.h() , //3
-        0.f , r.t , // 4
-        r.x , r.t , //5
-        r.r , r.t , //6
-        img.w() , r.t , //7
+        0.f , r.t+1 , // 4
+        r.x , r.t+1 , //5
+        r.r+1 , r.t+1 , //6
+        img.w() , r.t+1 , //7
         0.f , r.y , //8
         r.x , r.y , //9
-        r.r , r.y , //10
+        r.r+1 , r.y , //10
         img.w() , r.y ,//11
         0.f , 0.f , // 12
         r.x , 0.f , //13
-        r.r , 0.f , //14
+        r.r+1 , 0.f , //14
         img.w() , 0.f  //15
     };
 
@@ -131,7 +131,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_INT, 0 , 0);
+    glTexCoordPointer(2, GL_FLOAT, 0 , 0);
 
     glBindBuffer(GL_ARRAY_BUFFER,0);
 
@@ -423,7 +423,7 @@ void ViewerGL::initializeGL(){
     glGenBuffers(1 , &_iboTriangleStripId);
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
-    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLint), renderingTextureCoordinates, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), renderingTextureCoordinates, GL_STATIC_DRAW);
     
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
