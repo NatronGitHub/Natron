@@ -326,7 +326,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     alreadyComputedHash.push_back(_name.toStdString());
     foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
-        _hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
+        _hashValue->appendValueToHash(parent->getHash()->getHashValue());
     }
     _hashValue->computeHash();
 }

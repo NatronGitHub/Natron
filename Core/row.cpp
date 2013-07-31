@@ -130,10 +130,10 @@ bool compareRows(const Row &a,const Row &b){
 U64 Row::computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y){
     Hash _hash;
     _hash.appendQStringToHash(QString(filename.c_str()));
-    _hash.appendNodeHashToHash(nodeKey);
-    _hash.appendNodeHashToHash(x);
-    _hash.appendNodeHashToHash(r);
-    _hash.appendNodeHashToHash(y);
+    _hash.appendValueToHash(nodeKey);
+    _hash.appendValueToHash(x);
+    _hash.appendValueToHash(r);
+    _hash.appendValueToHash(y);
     _hash.computeHash();
     return _hash.getHashValue();
 }

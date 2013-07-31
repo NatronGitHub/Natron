@@ -38,7 +38,7 @@ void Hash::reset(){
 }
 
 
-void Hash::appendNodeHashToHash(U64 hashValue){
+void Hash::appendValueToHash(U64 hashValue){
         node_values.push_back(hashValue);
 }
 

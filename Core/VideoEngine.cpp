@@ -757,7 +757,7 @@ void VideoEngine::changeTreeVersion(){
     }
     computeTreeHash(nodeHashs, _dag.getOutput());
     for(U32 i =0 ;i < nodeHashs.size();i++){
-        _treeVersion.appendNodeHashToHash(nodeHashs[i].second);
+        _treeVersion.appendValueToHash(nodeHashs[i].second);
     }
     _treeVersion.computeHash();
     
