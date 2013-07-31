@@ -454,7 +454,6 @@ void ViewerGL::initializeGL(){
 
     
     initBlackTex();
-    
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -480,7 +479,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     // testing top of the image
     std::pair<int,int> ret;
     int y = 0;
-    float res = -1;
+    int res = -1;
+    int prev = -1;
     res = toImgCoordinates_fast(0,y).y();
     if (res < 0) { // all the image is above the viewer
         ret.first = displayWindow.y();
@@ -499,7 +499,10 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     }
     while(res < displayWindow.h() && y >= 0){
         /*y is a valid line in widget coord && res contains the image y coord.*/
-        rows.push_back(res);
+        if(y != prev){
+            rows.push_back(res);
+            prev = y;
+        }
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
@@ -515,7 +518,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     // testing right of the image
     std::pair<int,int> ret;
     int x = width()-1;
-    float res = -1;
+    int res = -1;
+    int prev = -1;
     res = toImgCoordinates_fast(x,0).x();
     if (res < 0) { // all the image is on the left of the viewer
         ret.first = displayWindow.x();
@@ -535,7 +539,10 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     }
     while(res < displayWindow.w() && x < width()){
         /*y is a valid column in widget coord && res contains the image x coord.*/
-        columns.push_back(res);
+        if(x != prev){
+            columns.push_back(res);
+            prev = x;
+        }
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }

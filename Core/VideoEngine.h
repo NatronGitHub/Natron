@@ -324,9 +324,10 @@ private:
 
     Hash _treeVersion;/*!< the hash key associated to the current graph*/
     
-    int _frameRequestsCount; /*!< total frame requests in the current videoEngine*/
+    int _frameRequestsCount; /*!< The index of the last frame +1 if the engine
+                    is forward (-1 otherwise). This value is -1 if we're looping.*/
     
-    int _frameRequestIndex;/*!< counter of the frames computed*/
+    int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
     
     bool _forward; /*!< forwards/backwards video engine*/
     

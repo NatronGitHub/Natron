@@ -26,7 +26,12 @@
 #include <vector>
 class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
- that means the powiter settings are unique and there cannot be 2 instances living at the same time.*/
+ that means the powiter settings are unique and there cannot be 2 instances living at the same time.
+ 
+ 
+ 
+ @todo Move this class to QSettings instead*/
+
 class Settings : public Singleton<Settings>
 {
 public:

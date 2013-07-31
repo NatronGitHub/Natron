@@ -139,7 +139,6 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     if(_aborted){
         /*aborted by the user*/
         stopEngine();
-        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }else if((_dag.isOutputAViewer()
              &&  recursiveCall
@@ -156,7 +155,6 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
         /*stoping the engine for writers*/
         stopEngine();
-        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }
     
@@ -190,8 +188,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                     if(_loopMode)
                         currentFrame = firstFrame;
                     else{
-                        _frameRequestsCount = 0;
-                        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
+                        stopEngine();
                         return;
                     }
                 }
@@ -201,8 +198,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                     if(_loopMode)
                         currentFrame = lastFrame;
                     else{
-                        _frameRequestsCount = 0;
-                        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
+                        stopEngine();
                         return;
                     }
                 }
@@ -226,7 +222,6 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     
     if(!_dag.validate(true)){
         stopEngine();
-        _lastEngineStatus._returnCode = EngineStatus::ABORTED;
         return;
     }
     const Format &_dispW = _dag.getOutput()->getInfo()->getDisplayWindow();
@@ -256,7 +251,6 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         _viewerCacheArgs._displayWindow = _dispW;
         _viewerCacheArgs._textureRect = textureRect;
         if(textureRect.w == 0 || textureRect.h == 0){
-            _lastEngineStatus._returnCode = EngineStatus::ABORTED;
             stopEngine();
             return;
         }
@@ -271,27 +265,25 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                                          textureRect);
         _lastEngineStatus._x = columnSpan.first;
         _lastEngineStatus._r = columnSpan.second;
-        
-//        _lastEngineStatus._x = dataW.x();
-//        _lastEngineStatus._r = dataW.right();
+
 
         _viewerCacheArgs._hashKey = key;
         iscached = viewer->get(key);
         
         /*Found in viewer cache, we execute the cached engine and leave*/
-        if(iscached){
-            returnCode = EngineStatus::CACHED_ENGINE;
-            goto stop;
-        }
-        
-        
-        
-        /*checking whether it is texture cached (only when not in playback)*/
-        if(!recursiveCall && viewer->isTextureCached(key)){
-            returnCode = EngineStatus::TEXTURE_CACHED_ENGINE;
-            goto stop;
-        }
-        
+//        if(iscached){
+//            returnCode = EngineStatus::CACHED_ENGINE;
+//            goto stop;
+//        }
+//        
+//        
+//        
+//        /*checking whether it is texture cached (only when not in playback)*/
+//        if(!recursiveCall && viewer->isTextureCached(key)){
+//            returnCode = EngineStatus::TEXTURE_CACHED_ENGINE;
+//            goto stop;
+//        }
+//        
     }else{
         for (int i = dataW.y(); i < dataW.top(); i++) {
             rows.push_back(i);
@@ -378,7 +370,6 @@ void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,O
     }
     *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,_1,output));
     _workerThreadsWatcher->setFuture(*_workerThreadsResults);
-    
 }
 
 
