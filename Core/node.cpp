@@ -368,6 +368,7 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
         entry.second->preventFromDeletion();
+        /*checking that the entry matches what we asked for*/
         assert(out->offset() == x && out->right() == r);
         row.setInternalRow(out);
         return;

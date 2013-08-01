@@ -278,6 +278,18 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         
         /*Found in viewer cache, we execute the cached engine and leave*/
         if(iscached){
+            
+            /*Checking that the entry retrieve matches absolutely what we 
+             asked for.*/
+            assert(iscached->_textureRect == textureRect);
+            assert(iscached->_treeVers == _treeVersion.getHashValue());
+            assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
+            assert(iscached->_lut == _viewerCacheArgs._lut);
+            assert(iscached->_exposure == _viewerCacheArgs._lut);
+            assert(iscached->_byteMode == _viewerCacheArgs._byteMode);
+            assert(iscached->_frameInfo->getDisplayWindow() == _dispW);
+            assert(iscached->_frameInfo->getDataWindow() == dataW);
+            
             _viewerCacheArgs._textureRect = iscached->_textureRect;
             returnCode = EngineStatus::CACHED_ENGINE;
             goto stop;
@@ -386,7 +398,7 @@ void VideoEngine::engineLoop(){
 
         //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
         if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE){
-            // copyFrameToCache(gl_viewer->getFrameData());
+               copyFrameToCache(gl_viewer->getFrameData());
         }
         gl_viewer->copyPBOToRenderTexture(_viewerCacheArgs._textureRect); // returns instantly
 

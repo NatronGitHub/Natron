@@ -254,7 +254,7 @@ FrameEntry* ViewerCache::get(U64 key){
     CacheIterator it = isInMemory(key);
     
     if (it == endMemoryCache()) {// not in memory
-        it = isCached(key);
+        it = getCacheEntry(key);
         if(it == end()){ //neither on disk
             return NULL;
         }else{ // found on disk

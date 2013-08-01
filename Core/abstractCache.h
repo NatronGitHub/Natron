@@ -236,7 +236,7 @@ public:
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.
      */
-    CacheIterator isCached(const U64& key) ;
+    CacheIterator getCacheEntry(const U64& key) ;
     
     /*So you can compare the result of isCached by the result of this
      function.*/

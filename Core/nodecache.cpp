@@ -39,7 +39,7 @@ NodeCache* NodeCache::getNodeCache(){
 
 std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int r,int y ,ChannelSet& ){
     U64 hashKey = Row::computeHashKey(nodeKey, filename, x, r, y );
-    CacheIterator it = isCached(hashKey);
+    CacheIterator it = getCacheEntry(hashKey);
     if (it == end()) {// not in memory
         return make_pair(hashKey,(Row*)NULL);
     }else{ // found in memory

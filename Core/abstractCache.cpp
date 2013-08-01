@@ -169,7 +169,7 @@ void AbstractCache::erase(CacheIterator it){
 
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
-AbstractCache::CacheIterator AbstractCache::isCached(const U64& key)  {
+AbstractCache::CacheIterator AbstractCache::getCacheEntry(const U64& key)  {
     return _cache(key);
 }
 

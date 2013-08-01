@@ -41,18 +41,19 @@ public:
     w(w),
     h(h){}
     
-    bool operator==(const TextureRect& other){
-        return x == other.x &&
-        y == other.y &&
-        r == other.r &&
-        t == other.t &&
-        w == other.w &&
-        h == other.h;
-    }
-    
     int x,y,r,t;
     int w,h;
 };
+inline bool operator==(const TextureRect& first ,const TextureRect& second){
+   return first.x == second.x &&
+    first.y == second.y &&
+    first.r == second.r &&
+    first.t == second.t &&
+    first.w == second.w &&
+    first.h == second.h;
+}
+
+inline bool operator!=(const TextureRect& first ,const TextureRect& second){ return !(first == second); }
 
 
 class Texture{
@@ -61,7 +62,6 @@ public:
     enum DataType {BYTE = 0,FLOAT = 1 , SHORT = 2};
 
 private:
-    bool _allocatedOnce;
     U32 _texID;
     TextureRect _textureRect;
     DataType _type;
