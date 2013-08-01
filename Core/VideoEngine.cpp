@@ -447,7 +447,7 @@ void VideoEngine::_drawOverlay(Node *output){
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
-    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
+    output->engine(row->y(), row->offset(), row->right()+1, row->channels(), row);
     delete row;
 }
 
