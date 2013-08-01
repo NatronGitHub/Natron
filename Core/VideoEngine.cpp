@@ -285,7 +285,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             assert(iscached->_treeVers == _treeVersion.getHashValue());
             assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
             assert(iscached->_lut == _viewerCacheArgs._lut);
-            assert(iscached->_exposure == _viewerCacheArgs._lut);
+            assert(iscached->_exposure == _viewerCacheArgs._exposure);
             assert(iscached->_byteMode == _viewerCacheArgs._byteMode);
             assert(iscached->_frameInfo->getDisplayWindow() == _dispW);
             assert(iscached->_frameInfo->getDataWindow() == dataW);
