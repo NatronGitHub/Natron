@@ -45,7 +45,6 @@ public:
         double maxCacheMemoryPercent ; // percentage of the total  RAM
         double maxPlayBackMemoryPercent; //percentage of maxCacheMemoryPercent
         U64 maxDiskCache ; // total size of disk space used
-        U64 maxTextureCache; //total size of the texture cache
         
         CachingSettings();
     };

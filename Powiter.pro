@@ -102,7 +102,6 @@ SOURCES += \
     Reader/readQt.cpp \
     Superviser/controler.cpp \
     Core/viewercache.cpp \
-    Gui/texturecache.cpp \
     Gui/framefiledialog.cpp \
     Writer/Writer.cpp \
     Writer/writeQt.cpp \
@@ -124,7 +123,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhImageEffect.cpp \
     libs/OpenFX/HostSupport/src/ofxhHost.cpp \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
-    libs/OpenFX/HostSupport/src/ofxhBinary.cpp
+    libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
+    Gui/texture.cpp
 
 
 HEADERS += \
@@ -183,7 +183,6 @@ HEADERS += \
     Superviser/MemoryInfo.h \
     Superviser/powiterFn.h \
     Core/viewercache.h \
-    Gui/texturecache.h \
     Gui/framefiledialog.h \
     Gui/tabwidget.h \
     Core/LRUcache.h \
@@ -197,6 +196,7 @@ HEADERS += \
     Core/abstractCache.h \
     Core/nodecache.h \
     Gui/button.h \
+    Gui/texture.h
 
 
 

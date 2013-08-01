@@ -24,7 +24,6 @@ Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;
     maxDiskCache = 9000000000;
-    maxTextureCache = 256000000;
 }
 
 Settings::ViewerSettings::ViewerSettings(){

@@ -22,7 +22,7 @@
 #include "Superviser/powiterFn.h"
 #include "Core/outputnode.h"
 #include <QtCore/QFuture>
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 #include <QtCore/QFutureWatcher>
 class ViewerCache;
 class ViewerInfos;
@@ -35,14 +35,13 @@ class Viewer: public OutputNode
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
     ViewerCache* _viewerCache;
-    TextureCache* _textureCache;
     int _pboIndex;
     QFutureWatcher<void> *_cacheWatcher;
     
 public:
     
         
-    Viewer(ViewerCache* cache,TextureCache* textureCache);
+    Viewer(ViewerCache* cache);
     
     virtual ~Viewer();
     
@@ -70,9 +69,7 @@ public:
     int currentFrame() const;
     
     FrameEntry* get(U64 key);
-    
-    bool isTextureCached(U64 key);
-    
+        
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
     

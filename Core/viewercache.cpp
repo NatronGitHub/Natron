@@ -161,7 +161,7 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
             dataSize = entry->_textureRect.w * entry->_textureRect.h * 4 * sizeof(float);
         }
         string pathStd = path.toStdString();
-        if(!entry->allocate(dataSize,pathStd.c_str())){
+        if(!entry->fillOrAllocateTexture(dataSize,pathStd.c_str())){
             QFile::remove(path);
             delete entry;
             return make_pair(0, (MemoryMappedEntry*)NULL);
@@ -227,7 +227,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         dataSize = textureRect.w*textureRect.h*4*sizeof(float);
     }
     
-    if(!out->allocate(dataSize,name.c_str())){
+    if(!out->fillOrAllocateTexture(dataSize,name.c_str())){
         delete out;
         return NULL;
     }

@@ -286,8 +286,8 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     
     _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it."
-                                    "<p></br><b>Keyboard shortcut: C</b></p>");
-    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_C));
+                                    "<p></br><b>Keyboard shortcut: F</b></p>");
+    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_F));
     
 	/*=================================================*/
     
@@ -408,9 +408,6 @@ ViewerTab::~ViewerTab()
 {
 }
 
-void ViewerTab::setTextureCache(TextureCache* cache){
-    viewer->setTextureCache(cache);
-}
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     

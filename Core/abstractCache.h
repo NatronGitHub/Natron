@@ -56,7 +56,7 @@ protected:
     
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
-    virtual bool allocate(U64 byteCount, const char* path= 0)=0;
+    virtual bool fillOrAllocateTexture(U64 byteCount, const char* path= 0)=0;
     
     /*Must implement the deallocation of the entry*/
     virtual void deallocate()=0;
@@ -85,7 +85,7 @@ public:
     std::string path() const {return _path;}
     
     /*Allocates the mapped file*/
-    virtual bool allocate(U64 byteCount, const char* path =0);
+    virtual bool fillOrAllocateTexture(U64 byteCount, const char* path =0);
     
     /*Removes the mapped file from RAM, saving it on disk in the file
      indicated by _path*/
@@ -106,7 +106,7 @@ public:
     InMemoryEntry();
     
     /*allocates the buffer*/
-    virtual bool allocate(U64 byteCount,const char* path = 0);
+    virtual bool fillOrAllocateTexture(U64 byteCount,const char* path = 0);
     
     /*deallocate the buffer*/
     virtual void deallocate();

@@ -26,7 +26,7 @@
 #include "Core/displayFormat.h"
 #include "Core/channels.h"
 #include "Gui/textRenderer.h"
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 
 
 #include <Eigen/Dense>
@@ -212,12 +212,10 @@
             GLuint _vboTexturesId; /*!< VBO holding texture coordinates*/
 
             GLuint _iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
+                        
+            Texture* _defaultDisplayTexture;/*!< A pointer to the current texture used to display.*/
             
-            TextureEntry* _viewerCacheTexture;/*!< The texture used to render data that comes from the viewer cache*/
-            
-            TextureEntry* _currentDisplayTexture;/*!< A pointer to the current texture used to display.*/
-            
-            TextureEntry* _blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
+            Texture* _blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
             
             QGLShaderProgram* shaderRGB;/*!< The shader program used to render RGB data*/
             QGLShaderProgram* shaderLC;/*!< The shader program used to render YCbCr data*/
@@ -267,9 +265,6 @@
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
-
-            TextureCache* _textureCache;/*!< Pointer to the texture cache. The viewer does NOT own it!
-                                         It is shared among viewers*/
             
         public:
             
@@ -528,18 +523,8 @@
              *used texture. Note that it unmaps the current PBO before actually copying data
              *to the texture.
              **/
-            void copyPBOToExistingTexture();
+            void copyPBOToRenderTexture(const TextureRect& region);
             
-            /**
-             * @brief Copies the data stored in the  currently mapped pbo into a new texture.
-             *Note that it unmaps the current PBO before actually copying data to the texture.
-             *This will add this new texture to the texture cache and set it as the current
-             *display texture.
-             * @param texture A created texture that hasn't been allocated yet.
-             *\pre texture has had its hash key set via TextureEntry::setHashKey(U64).
-             * @param texRect The texture rectangle to allocate. See TextureRect class.
-             */
-            void copyPBOToNewTexture(TextureEntry* texture,const TextureRect& texRect);
 
             /**
              *@returns *Returns a pointer to the data of the current frame.
@@ -562,27 +547,7 @@
              **/
             void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
             
-            
-            /**
-             *@brief Set the pointer to the texture cache.
-             **/
-            void setTextureCache(TextureCache* cache){ _textureCache = cache;}
-            
-            /**
-             *@returns Returns a pointer to the texture cache.
-             **/
-            TextureCache* getTextureCache() const {return _textureCache;}
-            
-            /**
-             *@brief Set the current texture used to display.
-             *@param texture[in] A pointer to the texture used to render.
-             **/
-            void setCurrentDisplayTexture(TextureEntry* texture);
-            
-            /**
-             *@returns Returns a pointer to the current texture used to display.
-             **/
-            TextureEntry* getCurrentDisplayTexture() const {return _currentDisplayTexture;}
+
             
             /**
              *@returns A vector with the columns indexes of the full-size image that are
@@ -590,11 +555,7 @@
              **/
             const std::vector<int>& getTextureColumns() const {return _textureColumns;}
             
-            /**
-             *@returns Returns a pointer to the texture used to display when the texture
-             *does not come frome the texture cache.
-             **/
-            TextureEntry* getViewerCacheTexture() const {return _viewerCacheTexture;}
+            
             
             /**
              *@returns Returns true if the graphic card supports GLSL.

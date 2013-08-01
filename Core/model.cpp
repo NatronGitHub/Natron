@@ -418,7 +418,7 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
 		return type;
 	}else if(name =="Viewer"){
 		UI_NODE_TYPE type;
-		node=new Viewer(_viewerCache,ctrlPTR->getGui()->getTextureCache());
+		node=new Viewer(_viewerCache);
         node->setMutex(m);
         node->initializeInputs();
         node->initializeSockets();

@@ -242,6 +242,12 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         std::pair<int,int> columnSpan = gl_viewer->computeColumnSpan(columns, _dispW);
         
         TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
+        
+        
+//        cout << "[RECT CREATION] : " << "x = "<< textureRect.x  << " y = " << textureRect.y
+//        << " r = " << textureRect.r << " t = " << textureRect.t << " w = " << textureRect.w
+//        << " h = " << textureRect.h << endl;
+        
         /*Now checking if the frame is already in either the ViewerCache*/
         _viewerCacheArgs._zoomFactor = zoomFactor;
         _viewerCacheArgs._exposure = gl_viewer->getExposure();
@@ -271,19 +277,12 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         iscached = viewer->get(key);
         
         /*Found in viewer cache, we execute the cached engine and leave*/
-//        if(iscached){
-//            returnCode = EngineStatus::CACHED_ENGINE;
-//            goto stop;
-//        }
-//        
-//        
-//        
-//        /*checking whether it is texture cached (only when not in playback)*/
-//        if(!recursiveCall && viewer->isTextureCached(key)){
-//            returnCode = EngineStatus::TEXTURE_CACHED_ENGINE;
-//            goto stop;
-//        }
-//        
+        if(iscached){
+            _viewerCacheArgs._textureRect = iscached->_textureRect;
+            returnCode = EngineStatus::CACHED_ENGINE;
+            goto stop;
+        }
+        
     }else{
         for (int i = dataW.y(); i < dataW.top(); i++) {
             rows.push_back(i);
@@ -324,12 +323,7 @@ void VideoEngine::dispatchEngine(){
         Viewer* viewer = _dag.outputAsViewer();
         viewer->cachedFrameEngine(_lastEngineStatus._cachedEntry);
     }
-    else if(_lastEngineStatus._returnCode == EngineStatus::TEXTURE_CACHED_ENGINE){
-        //  cout << "    _textureCachedEngine()" << endl;
-        engineLoop();
-    }//else{
-     //    cout <<"__really stopping__" << endl;
-     // }
+    
     
 }
 
@@ -392,20 +386,10 @@ void VideoEngine::engineLoop(){
 
         //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
         if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE){
-            copyFrameToCache(gl_viewer->getFrameData());
-            // now that the texture is full we can cache it
-            TextureEntry* texture = new TextureEntry;
-            texture->setHashKey(_viewerCacheArgs._hashKey);
-            gl_viewer->copyPBOToNewTexture(texture, _viewerCacheArgs._textureRect);
-            
+            // copyFrameToCache(gl_viewer->getFrameData());
         }
-        else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){
-            //copying the content of the PBO to the rendering texture.
-            gl_viewer->copyPBOToExistingTexture(); // returns instantly
-        }
-        
-        
-        
+        gl_viewer->copyPBOToRenderTexture(_viewerCacheArgs._textureRect); // returns instantly
+
         _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
         if((_frameRequestIndex%24)==0){
             emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI

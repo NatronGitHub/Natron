@@ -30,7 +30,7 @@
 
 #include "Core/hash.h"
 #include "Reader/Reader.h"
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 
 
 class FrameEntry;
@@ -224,7 +224,7 @@ public:
      **/
     class EngineStatus{
     public:
-        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
+        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , ABORTED = 2};
         
         EngineStatus():_cachedEntry(0),_key(0),_x(0),_r(0),_returnCode(NORMAL_ENGINE){}
         

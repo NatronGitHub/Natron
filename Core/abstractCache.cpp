@@ -60,7 +60,7 @@ static bool removeRecursively(const QString & dirName)
 MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
 }
-bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
+bool MemoryMappedEntry::fillOrAllocateTexture(U64 byteCount,const char* path){
 #ifdef PW_DEBUG
     if(QFile::exists(path)){
         cout << "WARNING: A file with the same name already exists : " << path
@@ -116,7 +116,7 @@ MemoryMappedEntry::~MemoryMappedEntry(){
 InMemoryEntry::InMemoryEntry():_data(0){
     
 }
-bool InMemoryEntry::allocate(U64 byteCount,const char* path){
+bool InMemoryEntry::fillOrAllocateTexture(U64 byteCount,const char* path){
     Q_UNUSED(path);
     _data = (char*)malloc(byteCount);
     if(!_data) return false;

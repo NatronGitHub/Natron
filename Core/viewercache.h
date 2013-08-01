@@ -20,7 +20,7 @@
 #define DISKCACHE_H
 
 #include "Core/abstractCache.h"
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 #include "Core/singleton.h"
 class Format;
 class ChannelSet;

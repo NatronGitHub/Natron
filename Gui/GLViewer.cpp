@@ -102,7 +102,7 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing? _currentDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _drawing? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f , img.h() , // 0
@@ -123,6 +123,10 @@ void ViewerGL::drawRenderingVAO(){
         img.w() , 0.f  //15
     };
 
+//    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
+//    << " r = " << r.r << " t = " << r.t << " w = " << r.w
+//    << " h = " << r.h << endl;
+    
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -196,11 +200,10 @@ void ViewerGL::initConstructor(){
 	shaderLC=NULL;
 	shaderRGB=NULL;
     shaderBlack=NULL;
-    _textureCache = NULL;
-    _overlay=true;
+     _overlay=true;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
-    _currentDisplayTexture = 0;
+    _defaultDisplayTexture = 0;
     _pBOmapped = false;
 }
 
@@ -254,8 +257,8 @@ ViewerGL::~ViewerGL(){
         delete shaderBlack;
         
     }
-    delete _viewerCacheTexture;
     delete _blackTex;
+    delete _defaultDisplayTexture;
     glDeleteBuffers(2, &_pboIds[0]);
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
@@ -300,10 +303,10 @@ void ViewerGL::paintGL()
     
     glEnable (GL_TEXTURE_2D);
     if(_drawing){
-        glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
+        glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
-        // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
@@ -413,8 +416,8 @@ void ViewerGL::initializeGL(){
  	//glClearColor(0.0,0.0,0.0,1.0);
 	//glClear(GL_COLOR_BUFFER_BIT);
     checkFrameBufferCompleteness("initializeGL:");
-    _viewerCacheTexture = new TextureEntry;
-    _blackTex = new TextureEntry;
+    _blackTex = new Texture;
+    _defaultDisplayTexture = new Texture;
     glGenBuffersARB(2, &_pboIds[0]);
     
     // glGenVertexArrays(1, &_vaoId);
@@ -499,9 +502,9 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     }
     while(res < displayWindow.h() && y >= 0){
         /*y is a valid line in widget coord && res contains the image y coord.*/
-        if(y != prev){
+        if(res != prev){
             rows.push_back(res);
-            prev = y;
+            prev = res;
         }
         --y;
         res = toImgCoordinates_fast(0,y).y();
@@ -539,9 +542,9 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     }
     while(res < displayWindow.w() && x < width()){
         /*y is a valid column in widget coord && res contains the image x coord.*/
-        if(x != prev){
+        if(res != prev){
             columns.push_back(res);
-            prev = x;
+            prev = res;
         }
         ++x;
         res = toImgCoordinates_fast(x,0).x();
@@ -660,7 +663,7 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex(){
     fitToFormat(displayWindow());
-    _blackTex->allocate(TextureRect(0, 0, 2047, 1555,2048,1556),TextureEntry::BYTE);
+    _blackTex->fillOrAllocateTexture(TextureRect(0, 0, 2047, 1555,2048,1556),Texture::BYTE);
     
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
@@ -723,59 +726,25 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
-void ViewerGL::copyPBOToNewTexture(TextureEntry* texture,const TextureRect& texRect){
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    TextureEntry::DataType type;
-    if(byteMode() == 1 || !_hasHW){
-        type = TextureEntry::BYTE;
-    }else{
-        type = TextureEntry::FLOAT;
-    }
-    texture->allocate(texRect,type);
-    _textureCache->addTexture(texture);
-    setCurrentDisplayTexture(texture);
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    frameData = 0;
-    _pBOmapped = false;
 
-}
-
-void ViewerGL::copyPBOToExistingTexture(){
-    
-    
-    int w = _currentDisplayTexture->w();
-    int h = _currentDisplayTexture->h();
-    glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
+void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
-    
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_currentDisplayTexture->type() == TextureEntry::BYTE){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0,				// xoffset, yoffset
-                        w, h,
-                        GL_BGRA,			// format
-                        GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                        0);
-        
-        
-    }else if(_currentDisplayTexture->type() == TextureEntry::FLOAT){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0 ,				// xoffset, yoffset
-                        w, h,
-                        GL_RGBA,			// format
-                        GL_FLOAT,		// type
-                        0);
-        
-        
+    checkGLErrors();
+    if(byteMode() == 1.f || !_hasHW){
+//        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
+//        << " r = " << region.r << " t = " << region.t << " w = " << region.w
+//        << " h = " << region.h << endl;
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+    }else{
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
+
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     frameData = 0;
@@ -1736,12 +1705,7 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
     
 }
 
-void ViewerGL::setCurrentDisplayTexture(TextureEntry* texture){
-    if(_currentDisplayTexture)
-        _currentDisplayTexture->returnToNormalPriority();
-    _currentDisplayTexture = texture;
-    texture->preventFromDeletion();
-}
+
 float ViewerGL::byteMode() const {
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
 }

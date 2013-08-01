@@ -40,7 +40,6 @@ class QProgressBar;
 class QStatusBar;
 class QTreeView;
 class Controler;
-class TextureCache;
 class NodeGraph;
 class ViewerTab;
 class Node;
@@ -123,19 +122,15 @@ public:
     
     void loadStyleSheet();
     
-    TextureCache* getTextureCache() const{return _textureCache;}
 
 private:
 
-    TextureCache* _textureCache;
-    void clearTextureCache();
     void addNodeGraph();
 
 
 public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
-    void clearTexCache(){clearTextureCache();}
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -152,7 +147,6 @@ public:
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
-    QAction *actionClearTextureCache;
     
     
     QWidget *_centralWidget;
