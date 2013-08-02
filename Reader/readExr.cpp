@@ -441,7 +441,7 @@ void ReadExr::make_preview(){
     }
     QImage* img=new QImage(w,h,QImage::Format_ARGB32);
     for(int i=0;i< h;i++){
-        float y = (float)i*1.f/0.1;
+        float y = (float)i*1.f/zoomFactor;
         int nearest;
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
         int exrY = dispWindow.max.y+1 - nearest;

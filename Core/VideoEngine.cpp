@@ -358,8 +358,14 @@ void VideoEngine::copyFrameToCache(const char* src){
         cout << "WARNING: caching does not seem to work properly..failing to add the entry." << endl;
 #endif
     }
+    entry->removeReference(); // removing reference as we're done with the entry.
 }
 void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,OutputNode *output){
+    /*If playback is on (i.e: not panning/zooming or changing the graph) we clear the cache
+     for every frame.*/
+    if(!_sameFrame){
+        NodeCache::getNodeCache()->clear();
+    }
     ChannelSet outChannels;
     if(_dag.isOutputAViewer()){
         outChannels = currentViewer->getUiContext()->displayChannels();
@@ -397,8 +403,12 @@ void VideoEngine::engineLoop(){
         gl_viewer->drawing(true);
 
         //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
-        if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE){
+        //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
+        //panning/zooming.
+        if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE && !_sameFrame){
                copyFrameToCache(gl_viewer->getFrameData());
+        }else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){ // cached engine
+            _lastEngineStatus._cachedEntry->removeReference(); // the cached engine has finished using this frame
         }
         gl_viewer->copyPBOToRenderTexture(_viewerCacheArgs._textureRect); // returns instantly
 
@@ -414,7 +424,7 @@ void VideoEngine::engineLoop(){
     }
     
     // recursive call, before the updateDisplay (swapBuffer) so it can run concurrently
-    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,zoomFactor,false,false,true);
+    QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,zoomFactor,_sameFrame,false,true);
     _computeFrameWatcher->setFuture(future);
     if(_dag.isOutputAViewer()){
         updateDisplay(); // updating viewer & pixel aspect ratio if needed
@@ -672,7 +682,7 @@ void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
     if(!_working)
         _changeDAGAndStartEngine(currentViewer->currentFrame(), -1, false,true,false,output);
     else
-        appendTask(currentViewer->currentFrame(), -1, false,true,false, output, &VideoEngine::_changeDAGAndStartEngine);
+        appendTask(currentViewer->currentFrame(), 1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
 }
 
 void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,OutputNode* output, VengineFunction func){
@@ -700,7 +710,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     }
 }
 
-void VideoEngine::_changeDAGAndStartEngine(int, int, bool initViewer,bool,bool sameFrame,OutputNode* output){
+void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,OutputNode* output){
     _dag.resetAndSort(output,true);
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
@@ -716,7 +726,7 @@ void VideoEngine::_changeDAGAndStartEngine(int, int, bool initViewer,bool,bool s
     }
     changeTreeVersion();
     if(hasInputDifferentThanReader || hasFrames)
-        videoEngine(-1,initViewer,_forward,sameFrame);
+        videoEngine(frameCount,initViewer,_forward,sameFrame);
 }
 
 

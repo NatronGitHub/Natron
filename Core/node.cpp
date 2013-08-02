@@ -349,7 +349,7 @@ std::string Node::description(){
     return "";
 }
 
-void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCached){
+void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     NodeCache* cache = NodeCache::getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
@@ -367,7 +367,6 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
     pair<U64,Row*> entry = cache->get(key , filename, x, r, y, channels);
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
-        entry.second->preventFromDeletion();
         /*checking that the entry matches what we asked for*/
         assert(out->offset() == x && out->right() == r);
         row.setInternalRow(out);
@@ -375,19 +374,14 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
     }else{
         if(cacheData()){
             out = cache->addRow(entry.first,x, r, y, channels, filename);
-            if(keepCached){
-                out->preventFromDeletion();
-            }
-            out->notifyCacheForDeletion();
-            row.setInternalRow(out);
             if(!out) return;
         }else{
             out = new Row(x,y,r,channels);
             out->allocateRow();
         }
         assert(out->offset() == x && out->right() == r);
-        engine(y, x, r, channels, out);
         row.setInternalRow(out);
+        engine(y, x, r, channels, out);
         return;
     }
 }

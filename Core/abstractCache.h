@@ -21,6 +21,9 @@
 #define __PowiterOsX__abstractCache__
 
 #include "Core/LRUcache.h"
+#include "Superviser/powiterFn.h"
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 #include <vector>
 
 class MemoryFile;
@@ -28,27 +31,26 @@ class MemoryFile;
  like to track like offset in files, list of elements etc...
  Entries are not copyable, you must create a new object if you want to copy infos.*/
 class CacheEntry {
-    
-    bool _doNotEvict; // < When true it prevents the cache from deleting this entry
-    
+    int _refCount;
 public:
     
-    CacheEntry():_doNotEvict(false),_size(0){}
+    CacheEntry():_refCount(0),_size(0){}
     
     virtual ~CacheEntry(){}
     
-    /*Flag the entry so the cache doesn't remove it*/
-    void preventFromDeletion(){_doNotEvict = true;}
+    int refCount() const {return _refCount;}
     
-    /*Remove the priority flag thus allowing the cache
-     to remove this entry.*/
-    void returnToNormalPriority(){_doNotEvict = false;}
+    void addReference() {++_refCount; assert(_refCount >= 0);}
+    
+    void removeReference() {--_refCount; assert(_refCount >= 0);}
     
     /*Returns true if the cache can delete this entry*/
-    bool isRemovable() const {return !_doNotEvict;}
+    bool isRemovable() const {return !_refCount;}
     
     /*Returns the size of the entry in bytes.*/
     U64 size() const {return _size;}
+    
+    virtual bool isMemoryMappedEntry () const =0;
     
 protected:
     U64 _size; //the size in bytes of the entry
@@ -56,7 +58,7 @@ protected:
     
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
-    virtual bool fillOrAllocateTexture(U64 byteCount, const char* path= 0)=0;
+    virtual bool allocate(U64 byteCount, const char* path= 0)=0;
     
     /*Must implement the deallocation of the entry*/
     virtual void deallocate()=0;
@@ -84,8 +86,10 @@ public:
     /*Returns the path of the file backing the entry*/
     std::string path() const {return _path;}
     
+    virtual bool isMemoryMappedEntry () const {return true;};
+    
     /*Allocates the mapped file*/
-    virtual bool fillOrAllocateTexture(U64 byteCount, const char* path =0);
+    virtual bool allocate(U64 byteCount, const char* path =0);
     
     /*Removes the mapped file from RAM, saving it on disk in the file
      indicated by _path*/
@@ -106,7 +110,9 @@ public:
     InMemoryEntry();
     
     /*allocates the buffer*/
-    virtual bool fillOrAllocateTexture(U64 byteCount,const char* path = 0);
+    virtual bool allocate(U64 byteCount,const char* path = 0);
+    
+    virtual bool isMemoryMappedEntry () const {return false;};
     
     /*deallocate the buffer*/
     virtual void deallocate();
@@ -196,6 +202,7 @@ protected:
     //protected so derived class can modify it
     U64 _size; // current size of the cache in bytes
     
+    QMutex _lock;
     CacheContainer _cache; // the actual cache 
 
 public:
@@ -236,15 +243,9 @@ public:
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.
      */
-    CacheIterator getCacheEntry(const U64& key) ;
+    CacheEntry* getCacheEntry(const U64& key) ;
     
-    /*So you can compare the result of isCached by the result of this
-     function.*/
-    CacheIterator begin(){return _cache.begin();}
-    
-    /*So you can compare the result of isCached by the result of this
-     function.*/
-    CacheIterator end() {return _cache.end();}
+
 protected:
     
     /*Erase one element from the cache. It is used
@@ -343,17 +344,13 @@ public:
     void debug();
     
 protected:
-    /*protected since it should be opaque for the end user.*/
-    CacheIterator beginMemoryCache(){return _inMemoryPortion.begin();}
-    
-    /*protected since it should be opaque for the end user.*/
-    CacheIterator endMemoryCache(){ return _inMemoryPortion.end();}
+
     
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points to to end.
      Protected so the derived class must explicitly encapsulate
      this function: the CacheIterator should be opaque to the end user.*/
-    CacheIterator isInMemory(const U64& key);
+    CacheEntry* isInMemory(const U64& key);
     
     
 private:

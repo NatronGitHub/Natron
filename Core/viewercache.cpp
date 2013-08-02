@@ -46,13 +46,13 @@ ViewerCache::ViewerCache() : AbstractDiskCache(0){}
 ViewerCache::~ViewerCache(){}
 
 
-FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
+FrameEntry::FrameEntry():MemoryMappedEntry(), _exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
     _frameInfo = new ReaderInfo;
 }
 
 FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
                        float byteMode,const Box2D& bbox,const Format& dispW,
-                       const ChannelSet& channels,const TextureRect& textureRect):
+                       const ChannelSet& channels,const TextureRect& textureRect):MemoryMappedEntry(),
 _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
@@ -63,7 +63,7 @@ _byteMode(byteMode),_textureRect(textureRect){
 }
 
 FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
-                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):
+                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):MemoryMappedEntry(),
 _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect)
 {
@@ -161,7 +161,7 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
             dataSize = entry->_textureRect.w * entry->_textureRect.h * 4 * sizeof(float);
         }
         string pathStd = path.toStdString();
-        if(!entry->fillOrAllocateTexture(dataSize,pathStd.c_str())){
+        if(!entry->allocate(dataSize,pathStd.c_str())){
             QFile::remove(path);
             delete entry;
             return make_pair(0, (MemoryMappedEntry*)NULL);
@@ -227,7 +227,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         dataSize = textureRect.w*textureRect.h*4*sizeof(float);
     }
     
-    if(!out->fillOrAllocateTexture(dataSize,name.c_str())){
+    if(!out->allocate(dataSize,name.c_str())){
         delete out;
         return NULL;
     }
@@ -236,6 +236,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         return NULL;
     }
     currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
+    out->addReference(); //increase refcount BEFORE adding it to the cache and exposing it to the other threads
     if(AbstractDiskCache::add(key, out)){
         currentViewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
@@ -250,15 +251,12 @@ void ViewerCache::clearInMemoryPortion(){
 }
 
 FrameEntry* ViewerCache::get(U64 key){
-    
-    CacheIterator it = isInMemory(key);
-    
-    if (it == endMemoryCache()) {// not in memory
-        it = getCacheEntry(key);
-        if(it == end()){ //neither on disk
+    CacheEntry* entry = isInMemory(key);
+    if (!entry) {// not in memory
+        entry = getCacheEntry(key);
+        if(!entry){ //neither on disk
             return NULL;
         }else{ // found on disk
-            CacheEntry* entry = AbstractCache::getValueFromIterator(it);
             FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
             assert(frameEntry);
             if(!frameEntry->reOpen()){
@@ -268,7 +266,6 @@ FrameEntry* ViewerCache::get(U64 key){
             return frameEntry;
         }
     }else{ // found in memory
-        CacheEntry* entry = AbstractCache::getValueFromIterator(it);
         FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
         currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());

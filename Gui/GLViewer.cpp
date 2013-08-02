@@ -663,26 +663,18 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex(){
     fitToFormat(displayWindow());
-    _blackTex->fillOrAllocateTexture(TextureRect(0, 0, 2047, 1555,2048,1556),Texture::BYTE);
     
-    
+    TextureRect texSize(0, 0, 2047, 1555,2048,1556);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, _blackTex->w()*_blackTex->h()*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     U32* output = reinterpret_cast<U32*>(frameData);
-    for(int i = 0 ; i < _blackTex->w()*_blackTex->h() ; i++){
+    for(int i = 0 ; i < texSize.w*texSize.h ; i++){
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-	
-    glTexSubImage2D (GL_TEXTURE_2D,
-                     0,				// level
-                     0,0 ,				// xoffset, yoffset
-                     _blackTex->w(), _blackTex->h(),
-                     GL_BGRA,			// format
-                     GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                     0);
-    
+    _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
+
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
 }
