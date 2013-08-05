@@ -61,7 +61,7 @@ void WriteQt::initializeColorSpace(){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteQt::setupFile(std::string filename){
+void WriteQt::setupFile(const std::string& filename){
     _filename = filename;
     const Format& frmt = op->getInfo()->getDisplayWindow();
     size_t dataSize = 4* frmt.w() * frmt.h();

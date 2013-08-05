@@ -787,7 +787,7 @@ void Model::resetInternalDAG(){
  
  extractNthPartOfGrouping would return Toto for the part 0.
  If no such part exists (for e.g 100000), it will return the last part.*/
-static std::string extractNthPartOfGrouping(std::string group,int part = 0){
+static std::string extractNthPartOfGrouping(const std::string& group,int part = 0){
     QString str(group.c_str());
     int pos = 0;
     int i = 0;

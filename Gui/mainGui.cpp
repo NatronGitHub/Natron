@@ -588,7 +588,7 @@ void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w){
     show();
 }
 
-void Gui::registerTab(std::string name,QWidget* tab){
+void Gui::registerTab(const std::string& name, QWidget* tab){
     _registeredTabs.insert(make_pair(name,tab));
 }
 

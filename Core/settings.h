@@ -67,10 +67,10 @@ public:
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* decoderForFiletype(std::string type);
+        PluginID* decoderForFiletype(const std::string& type);
         
         /*changes the decoder for files identified by the filetype*/
-        void changeMapping(std::string filetype,PluginID* decoder);
+        void changeMapping(const std::string& filetype,PluginID* decoder);
         
         /*use to initialise default mapping*/
         void fillMap(std::map<std::string,PluginID*>& defaultMap);
@@ -87,10 +87,10 @@ public:
         
         /*Returns a pluginID if it could find an encoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* encoderForFiletype(std::string type);
+        PluginID* encoderForFiletype(const std::string& type);
         
         /*changes the encoder for files identified by the filetype*/
-        void changeMapping(std::string filetype,PluginID* encoder);
+        void changeMapping(const std::string& filetype, PluginID* encoder);
         
         /*use to initialise default mapping*/
         void fillMap(std::map<std::string,PluginID*>& defaultMap);

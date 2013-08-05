@@ -37,7 +37,7 @@ NodeCache* NodeCache::getNodeCache(){
 }
 
 
-std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int r,int y ,ChannelSet& ){
+std::pair<U64,Row*> NodeCache::get(U64 nodeKey, const std::string& filename, int x, int r, int y, const ChannelSet& ){
     U64 hashKey = Row::computeHashKey(nodeKey, filename, x, r, y );
     CacheEntry* entry = getCacheEntry(hashKey);
     if(entry){
@@ -48,7 +48,7 @@ std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int
     return make_pair(hashKey,(Row*)NULL);
 }
 
-Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::string){
+Row* NodeCache::addRow(U64 key,int x, int r, int y, const ChannelSet &channels,const std::string&){
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);

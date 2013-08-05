@@ -41,7 +41,7 @@
 #ifdef __POWITER_WIN32__
 class PluginID{
 public:
-    PluginID(HINSTANCE first,std::string second){
+    PluginID(HINSTANCE first, const std::string& second){
         this->first=first;
         this->second=second;
     }
@@ -56,7 +56,7 @@ public:
 #elif defined(__POWITER_UNIX__)
 class PluginID{
 public:
-    PluginID(void* first,std::string second){
+    PluginID(void* first, const std::string& second){
         this->first=first;
         this->second=second;
     }
@@ -70,7 +70,7 @@ public:
 #endif
 class CounterID{
 public:
-    CounterID(int first,std::string second){
+    CounterID(int first, const std::string& second){
         this->first=first;
         this->second=second;
         

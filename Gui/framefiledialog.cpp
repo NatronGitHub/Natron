@@ -11,6 +11,7 @@
 
 #include "framefiledialog.h"
 
+#include <locale>
 #include <algorithm>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -43,11 +44,23 @@
 
 using namespace std;
 
+static inline bool nocase_equal_char (char c1, char c2)
+{
+    return toupper(c1) == toupper(c2);
+}
+
+static inline bool nocase_equal_string (const std::string &s1, const std::string &s2)
+{
+    return s1.size() == s2.size() &&        // ensure same sizes
+        std::equal (s1.begin(),s1.end(),      // first source string
+                    s2.begin(),               // second source string
+                    nocase_equal_char);
+}
 
 SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                   std::vector<std::string> filters, // the user accepted file types
+                   const std::vector<std::string>& filters, // the user accepted file types
                    FileDialogMode mode, // if it is an open or save dialog
-                   std::string currentDirectory): // the directory to show first
+                   const std::string& currentDirectory): // the directory to show first
 QDialog(parent),
 _filters(filters),
 _currentHistoryLocation(-1),
@@ -560,7 +573,7 @@ void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
     }
     
 }
-const FileSequence SequenceFileDialog::frameRangesForSequence(std::string sequenceName,std::string extension) const{
+const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
     pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
     for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;it++){
         if(it->second._fileType == extension){
@@ -733,10 +746,9 @@ QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const 
     QFontMetrics metric(option.font);
     return QSize(metric.width(str),metric.height());
 }
-bool SequenceFileDialog::isASupportedFileExtension(std::string ext) const{
+bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const{
     for(unsigned int i = 0 ; i < _filters.size() ; i++){
-        transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if(ext == _filters[i])
+        if(nocase_equal_string(ext, _filters[i]))
             return true;
     }
     return false;

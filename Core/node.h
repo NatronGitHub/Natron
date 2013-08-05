@@ -158,7 +158,7 @@ public:
     /*node name related functions*/
     std::string getName() const { return _name ; }
 
-    void setName(std::string name) { _name = name; }
+    void setName(const std::string& name) { _name = name; }
 
     /*============================*/
 

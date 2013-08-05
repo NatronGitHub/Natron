@@ -88,7 +88,7 @@
 //private:
 //
 //
-//    void cleanup(std::string msg);
+//    void cleanup(const std::string& msg);
 //	void clear(bool);
 //};
 
