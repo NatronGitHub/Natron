@@ -64,13 +64,10 @@ SOURCES += \
     Gui/FeedbackSpinBox.cpp \
     Gui/GLViewer.cpp \
     Gui/InfoViewerWidget.cpp \
-    Gui/inputnode_ui.cpp \
     Gui/knob.cpp \
     Gui/knob_callback.cpp \
     Gui/mainGui.cpp \
     Gui/node_ui.cpp \
-    Gui/operatornode_ui.cpp \
-    Gui/outputnode_ui.cpp \
     Gui/ScaleSlider.cpp \
     Gui/textRenderer.cpp \
     Gui/timeline.cpp \
@@ -79,17 +76,12 @@ SOURCES += \
     Core/channels.cpp \
     Core/DataBuffer.cpp \
     Core/displayFormat.cpp \
-    Core/flowOP.cpp \
     Core/hash.cpp \
-    Core/imgOP.cpp \
-    Core/inputnode.cpp \
     Core/lookUpTables.cpp \
     Core/mappedfile.cpp \
     Core/metadata.cpp \
     Core/model.cpp \
     Core/node.cpp \
-    Core/OP.cpp \
-    Core/outputnode.cpp \
     Core/row.cpp \
     Core/settings.cpp \
     Core/Timer.cpp \
@@ -136,13 +128,10 @@ HEADERS += \
     Gui/FeedbackSpinBox.h \
     Gui/GLViewer.h \
     Gui/InfoViewerWidget.h \
-    Gui/inputnode_ui.h \
     Gui/knob.h \
     Gui/knob_callback.h \
     Gui/mainGui.h \
     Gui/node_ui.h \
-    Gui/operatornode_ui.h \
-    Gui/outputnode_ui.h \
     Gui/ScaleSlider.h \
     Gui/shaders.h \
     Gui/textRenderer.h \
@@ -152,18 +141,13 @@ HEADERS += \
     Core/channels.h \
     Core/DataBuffer.h \
     Core/displayFormat.h \
-    Core/flowOP.h \
     Core/hash.h \
-    Core/imgOP.h \
-    Core/inputnode.h \
     Core/lookUpTables.h \
     Core/lutclasses.h \
     Core/mappedfile.h \
     Core/metadata.h \
     Core/model.h \
     Core/node.h \
-    Core/OP.h \
-    Core/outputnode.h \
     Core/referenceCountedObj.h \
     Core/row.h \
     Core/settings.h \

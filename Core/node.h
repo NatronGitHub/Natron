@@ -136,8 +136,8 @@ public:
     /*============================*/
     
     /*Node type related functions*/
-    virtual bool isInputNode() {return false;}
-    virtual bool isOutputNode() {return false;}
+    virtual bool isInputNode()  {return false;}
+    virtual bool isOutputNode()  {return false;}
     /*============================*/
     
     /*Node Input related functions*/

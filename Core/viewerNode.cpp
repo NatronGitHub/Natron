@@ -34,7 +34,7 @@
 #include "Superviser/controler.h"
 
 using namespace Powiter;
-Viewer::Viewer(ViewerCache* cache):OutputNode(),
+Viewer::Viewer(ViewerCache* cache):Node(),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),

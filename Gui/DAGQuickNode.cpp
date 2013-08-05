@@ -53,13 +53,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
         if(ctrlPTR->getNodeNameList().contains(res)){
-            try{
-                
-                ctrlPTR->createNode(res,INT_MAX,INT_MAX);
-            }catch(...){
-                std::cout << "(SmartInputDialog:KeyPressEvent) Couldn't create node " << qPrintable(res) << std::endl;
-            }
-            
+            ctrlPTR->createNode(res,INT_MAX,INT_MAX);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             textEdit->releaseKeyboard();

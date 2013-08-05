@@ -32,7 +32,6 @@
 #include "Superviser/controler.h"
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
-#include "Core/outputnode.h"
 #include "Core/settings.h"
 #include "Reader/Read.h"
 #include "Gui/timeline.h"
@@ -49,7 +48,7 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader():InputNode(),
+Reader::Reader():Node(),
 preview(0),
 has_preview(false),
 video_sequence(0),

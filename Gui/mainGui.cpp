@@ -98,8 +98,8 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-void Gui::createNodeGUI(UI_NODE_TYPE type, Node* node,double x,double y){
-    _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,type,node,x,y);
+void Gui::createNodeGUI( Node* node,double x,double y){
+    _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node,x,y);
 }
 
 

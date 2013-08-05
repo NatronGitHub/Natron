@@ -23,7 +23,7 @@
 #include <map>
 #include <iostream>
 #include "Superviser/powiterFn.h"
-#include "Core/outputnode.h"
+#include "Core/node.h"
 #include <QtCore/QStringList>
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
@@ -33,7 +33,7 @@ class QMutex;
 class Row;
 class WriteKnobs;
 class Knob_Callback;
-class Writer: public QObject, public OutputNode{
+class Writer: public QObject, public Node{
     
     Q_OBJECT
     
@@ -120,6 +120,14 @@ public:
     void incrementCurrentFrame(){_currentFrame++;}
     
     const ChannelSet& requestedChannels() const {return _requestedChannels;}
+    
+    virtual bool isOutputNode(){return true;}
+    
+    virtual int maximumInputs(){return 1;}
+    
+    virtual int minimumInputs(){return 1;}
+    
+    virtual bool cacheData(){return false;}
     
 public slots:
     void notifyWriterForCompletion();

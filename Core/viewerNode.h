@@ -20,7 +20,7 @@
 
 #include <cmath>
 #include "Superviser/powiterFn.h"
-#include "Core/outputnode.h"
+#include "Core/node.h"
 #include <QtCore/QFuture>
 #include "Gui/texture.h"
 #include <QtCore/QFutureWatcher>
@@ -29,7 +29,7 @@ class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-class Viewer: public OutputNode
+class Viewer: public Node
 {
     
     ViewerInfos* _viewerInfos;
@@ -44,6 +44,14 @@ public:
     Viewer(ViewerCache* cache);
     
     virtual ~Viewer();
+    
+    virtual bool isOutputNode(){return true;}
+    
+    virtual int maximumInputs(){return 1;}
+    
+    virtual int minimumInputs(){return 1;}
+    
+    virtual bool cacheData(){return false;}
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);

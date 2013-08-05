@@ -20,7 +20,7 @@
 #include <QImage>
 #include <QStringList>
 
-#include "Core/inputnode.h"
+#include "Core/node.h"
 
 
 class FrameEntry;
@@ -68,7 +68,7 @@ class ViewerCache;
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public InputNode
+class Reader : public Node
 {
     
 public:
@@ -497,6 +497,12 @@ public:
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
+    virtual int maximumInputs(){return 0;}
+    
+    virtual int minimumInputs(){return 0;}
+    
+    bool isInputNode() {return true;}
+
 protected:
 
 	virtual void initKnobs(Knob_Callback *cb);

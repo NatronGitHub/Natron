@@ -20,9 +20,6 @@
 #include "Superviser/controler.h"
 #include "Gui/arrowGUI.h"
 #include "Core/hash.h"
-#include "Core/outputnode.h"
-#include "Core/inputnode.h"
-#include "Core/OP.h"
 #include "Gui/DAGQuickNode.h"
 #include "Gui/mainGui.h"
 #include "Gui/dockableSettings.h"
@@ -32,13 +29,11 @@
 #include "Gui/knob.h"
 #include "Gui/GLViewer.h"
 #include "Gui/viewerTab.h"
+#include "Gui/node_ui.h"
 #include "Core/VideoEngine.h"
 #include <QScrollBar>
 #include <QGraphicsLineItem>
 #include "Gui/timeline.h"
-#include "Gui/outputnode_ui.h"
-#include "Gui/inputnode_ui.h"
-#include "Gui/operatornode_ui.h"
 #include <cstdlib>
 
 using namespace std;
@@ -71,31 +66,20 @@ NodeGraph::~NodeGraph(){
     _nodes.clear();
 }
 
-void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node *node,double x,double y){
-    QGraphicsScene* sc=scene();
-    NodeGui* node_ui;
-    
-
-    
+void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node,double x,double y){
+    QGraphicsScene* sc=scene();        
     int yOffset = rand() % 50 + 50;
     if(x == INT_MAX)
         x = _lastSelectedPos.x();
-    if(type==OUTPUT){
+    if(node->isOutputNode()){
         if(y == INT_MAX)
             y = _lastSelectedPos.y() + yOffset;
-        node_ui=new OutputNode_ui(this,dockContainer,node,x,y,_root,sc);
-    }else if(type==INPUT_NODE){
-        if(y == INT_MAX)
-            y = _lastSelectedPos.y() - yOffset;
-        node_ui=new InputNode_ui(this,dockContainer,node,x,y,_root,sc);
     }else {
         if(y == INT_MAX)
             y = _lastSelectedPos.y() - yOffset;
-        node_ui=new OperatorNode_ui(this,dockContainer,node,x,y,_root,sc);
     }
-    
+    NodeGui* node_ui=new NodeGui(this,dockContainer,node,x,y,_root,sc);
     _nodes.push_back(node_ui);
-    
     if(_nodeSelected)
         autoConnect(_nodeSelected, node_ui);
     
@@ -431,9 +415,9 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
-            ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+            ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
-            const vector<InputNode*>& inputs = dag.getInputs();
+            const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); i++) {
                 if (inputs[0]->className() == "Reader") {
@@ -479,9 +463,9 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
     if(viewer){
         //if(foundSrc){
         if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
+            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(viewer->getNode());
         }else{
-            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             if(ret.second){
                 ctrlPTR->getModel()->startVideoEngine(1);
             }

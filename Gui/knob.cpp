@@ -28,7 +28,6 @@
 
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
-#include "Core/outputnode.h"
 #include "Gui/node_ui.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"
@@ -283,7 +282,7 @@ void Knob::validateEvent(bool initViewer){
     if(viewer){
         //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->clearPlaybackCache();
-        ctrlPTR->getModel()->setVideoEngineRequirements(static_cast<OutputNode*>(viewer->getNode()),true);
+        ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);
     }
 }

@@ -16,8 +16,6 @@
 #include <cstdio>
 #include <fstream>
 #include "Core/model.h"
-#include "Core/outputnode.h"
-#include "Core/inputnode.h"
 #include "Superviser/controler.h"
 #include "Core/hash.h"
 #include "Core/node.h"
@@ -26,7 +24,6 @@
 #include "Writer/Writer.h"
 #include "Core/viewerNode.h"
 #include "Gui/mainGui.h"
-#include "Core/inputnode.h"
 #include "Gui/GLViewer.h"
 #include "Gui/tabwidget.h"
 #include "Core/VideoEngine.h"
@@ -310,11 +307,11 @@ void Model::loadAllPlugins(){
 //}
 
 
-std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output,bool isViewer){
+std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
     _videoEngine->resetAndMakeNewDag(output,isViewer);
     _videoEngine->changeTreeVersion();
     
-    const std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();
+    const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< inputs.size(); i++) {
@@ -330,7 +327,7 @@ std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output,bool is
     return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
 }
 
-UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
+void Model::initCounterAndGetDescription(Node*& node){
     bool found=false;
     foreach(CounterID* counter,_nodeCounters){
         string tmp(counter->second);
@@ -364,34 +361,18 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
      adding its cache to the watched caches.*/
     _currentNodes.push_back(node);
     
-    string outputNodeSymbol="OutputNode";
-    string inputNodeSymbol="InputNode";
-    string flowOpSymbol="FlowOperator";
-    string imgOperatorSymbol="ImgOperator";
-    string desc =node->description();
-    if(desc==outputNodeSymbol){
-        return OUTPUT;
-    }
-    else if(desc==inputNodeSymbol){
-		return INPUT_NODE;
-    }else if(desc==imgOperatorSymbol || desc==flowOpSymbol){
-        return OPERATOR;
-    }
-    return UNDEFINED;
 }
 
-UI_NODE_TYPE Model::createNode(Node *&node,const std::string name){
+bool Model::createNode(Node *&node,const std::string name){
 	if(name=="Reader"){
-		UI_NODE_TYPE type;
 		node=new Reader();
         node->initializeInputs();
-		type=initCounterAndGetDescription(node);
-		return type;
+		initCounterAndGetDescription(node);
+        return true;
 	}else if(name =="Viewer"){
-		UI_NODE_TYPE type;
 		node=new Viewer(_viewerCache);
         node->initializeInputs();
-		type=initCounterAndGetDescription(node);
+		initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
         if(!where){
             where = ctrlPTR->getGui()->_viewersPane;
@@ -399,17 +380,14 @@ UI_NODE_TYPE Model::createNode(Node *&node,const std::string name){
             ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<Viewer*>(node)->initializeViewerTab(where);
-		return type;
+        return true;
 	}else if(name == "Writer"){
-        UI_NODE_TYPE type;
 		node=new Writer();
         node->initializeInputs();
-		type=initCounterAndGetDescription(node);
-		return type;
+		initCounterAndGetDescription(node);
+        return true;
     }else{
-        
-        UI_NODE_TYPE type=UNDEFINED;
-        
+                
 //		foreach(PluginID* pair,_pluginsLoaded){
 //			string str(pair->second);
 //            
@@ -418,17 +396,15 @@ UI_NODE_TYPE Model::createNode(Node *&node,const std::string name){
 //				if(builder!=NULL){
 //					node=builder();
 //                    node->initializeInputs();
-//					type=initCounterAndGetDescription(node);
+//					  initCounterAndGetDescription(node);
 //                    
 //				}
 //				return type;
 //			}
 //            
 //		}
+        return false;
 	}
-    return UNDEFINED;
-    
-    
     
 }
 // in the future, display the plugins loaded on the loading wallpaper

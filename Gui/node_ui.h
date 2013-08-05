@@ -52,10 +52,7 @@ public:
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
     
-    /*Must be implemented by class deriving NodeGUI to inform 
-     *the dag if they will have an output*/
-    virtual bool hasOutput()=0;
-    
+  
     /*Returns tru if the NodeGUI contains the point*/
     virtual bool contains(const QPointF &point) const;
     

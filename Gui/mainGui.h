@@ -83,7 +83,7 @@ public:
     
     void createGui();
     
-    void createNodeGUI(Powiter::UI_NODE_TYPE type,Node *node,double x,double y);
+    void createNodeGUI(Node *node,double x,double y);
     
     bool eventFilter(QObject *target, QEvent *event);
 

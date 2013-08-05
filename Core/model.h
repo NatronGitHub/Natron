@@ -116,7 +116,7 @@ public:
 	
   
 	/*Create a new node internally*/
-    Powiter::UI_NODE_TYPE createNode(Node *&node,const std::string name);
+    bool createNode(Node *&node,const std::string name);
     
     void removeNode(Node* n);
 
@@ -135,7 +135,7 @@ public:
     void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
 
 	/*Set the output of the graph used by the videoEngine.*/
-    std::pair<int,bool> setVideoEngineRequirements(OutputNode* output,bool isViewer);
+    std::pair<int,bool> setVideoEngineRequirements(Node* output,bool isViewer);
 
 
     VideoEngine* getVideoEngine(){return _videoEngine;}
@@ -230,7 +230,7 @@ private:
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
 	 *to know whether it is an outputNode,InputNode or an operator.*/
-    Powiter::UI_NODE_TYPE initCounterAndGetDescription(Node*& node);
+    void initCounterAndGetDescription(Node*& node);
 
 
     VideoEngine* _videoEngine; // Video Engine

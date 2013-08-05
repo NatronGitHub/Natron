@@ -21,8 +21,6 @@
 #include <ImfThreading.h>
 
 #include "Gui/button.h"
-#include "Core/inputnode.h"
-#include "Core/outputnode.h"
 #include "Core/viewerNode.h"
 #include "Core/settings.h"
 #include "Core/model.h"
@@ -211,9 +209,9 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     }
     
     std::vector<Reader*> readers;
-    const std::vector<InputNode*>& inputs = _dag.getInputs();
+    const std::vector<Node*>& inputs = _dag.getInputs();
     for(U32 j=0;j<inputs.size();j++){
-        InputNode* currentInput=inputs[j];
+        Node* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
             Reader* inp = static_cast<Reader*>(currentInput);
             inp->fitFrameToViewer(fitFrameToViewer);
@@ -363,7 +361,7 @@ void VideoEngine::copyFrameToCache(const char* src){
     }
     entry->removeReference(); // removing reference as we're done with the entry.
 }
-void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,OutputNode *output){
+void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node *output){
     /*If playback is on (i.e: not panning/zooming or changing the graph) we clear the cache
      for every frame.*/
     if(!_sameFrame){
@@ -459,7 +457,7 @@ void VideoEngine::_drawOverlay(Node *output) const{
     
 }
 
-void VideoEngine::metaEnginePerRow(Row* row, OutputNode* output){
+void VideoEngine::metaEnginePerRow(Row* row, Node* output){
     output->engine(row->y(), row->offset(), row->right()+1, row->channels(), row);
     delete row;
 }
@@ -675,7 +673,7 @@ void VideoEngine::recenterViewer(){
 
 
 
-void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
+void VideoEngine::changeDAGAndStartEngine(Node* output){
     pause();
     if(!_working)
         _changeDAGAndStartEngine(currentViewer->currentFrame(), -1, false,true,false,output);
@@ -683,7 +681,7 @@ void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
         appendTask(currentViewer->currentFrame(), 1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
 }
 
-void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,OutputNode* output, VengineFunction func){
+void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,Node* output, VengineFunction func){
     _waitingTasks.push_back(Task(frameNB,frameCount,initViewer,forward,sameFrame,output,func));
 }
 
@@ -698,7 +696,7 @@ void VideoEngine::runTasks(){
     
 }
 
-void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
+void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* ){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < currentViewer->firstFrame() || frameNB > currentViewer->lastFrame())
             return;
@@ -708,7 +706,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     }
 }
 
-void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,OutputNode* output){
+void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,Node* output){
     _dag.resetAndSort(output,true);
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
@@ -764,7 +762,7 @@ void VideoEngine::DAG::fillGraph(Node* n){
         n->setMarked(false);
         _graph.push_back(n);
         if(n->isInputNode()){
-            _inputs.push_back(static_cast<InputNode*>(n));
+            _inputs.push_back(n);
         }
     }
     foreach(Node* p,n->getParents()){
@@ -815,7 +813,7 @@ Writer* VideoEngine::DAG::outputAsWriter() const {
         return NULL;
 }
 
-void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
+void VideoEngine::DAG::resetAndSort(Node* out,bool isViewer){
     _output = out;
     _isViewer = isViewer;
     
@@ -823,7 +821,7 @@ void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
     if(!_output){
         return;
     }
-    fillGraph(dynamic_cast<Node*>(out));
+    fillGraph(out);
     
     topologicalSort();
 }
@@ -883,7 +881,7 @@ void VideoEngine::debugRowSequence(){
     img.save(name.c_str());
 }
 
-void VideoEngine::resetAndMakeNewDag(OutputNode* output,bool isViewer){
+void VideoEngine::resetAndMakeNewDag(Node* output,bool isViewer){
     _dag.resetAndSort(output,isViewer);
 }
 #ifdef PW_DEBUG
