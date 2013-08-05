@@ -174,7 +174,7 @@ public:
         **/
         class Descriptor{
         public:
-            Descriptor(Read* readHandle,ReaderInfo* readInfo, std::string filename):
+            Descriptor(Read* readHandle,ReaderInfo* readInfo, const std::string& filename):
             _readHandle(readHandle),_readInfo(readInfo),
             _filename(filename){}
             
