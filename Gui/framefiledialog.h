@@ -41,6 +41,7 @@
 class LineEdit;
 class Button;
 class QCheckBox;
+class ComboBox;
 class QWidget;
 class QLabel;
 class QHBoxLayout;
@@ -334,7 +335,7 @@ private:
     Button* _removeFavoriteButton;
     
     LineEdit* _selectionLineEdit;
-    QCheckBox* _sequenceButton;
+    ComboBox* _sequenceButton;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;
@@ -451,6 +452,7 @@ public slots:
     void seekUrl(const QUrl& url);
     void selectionChanged();
     void enableSequenceMode(bool);
+    void sequenceComboBoxSlot(const QString&);
     void showFilterMenu();
     void dotStarFilterSlot();
     void starSlashFilterSlot();

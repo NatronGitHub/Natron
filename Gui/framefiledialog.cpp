@@ -39,6 +39,7 @@
 
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
+#include "Gui/comboBox.h"
 #include "Superviser/powiterFn.h"
 #include "Superviser/MemoryInfo.h"
 
@@ -116,13 +117,7 @@ _dialogMode(mode)
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder),"",_buttonsWidget);
     _buttonsLayout->addWidget(_createDirButton);
     QObject::connect(_createDirButton, SIGNAL(clicked()), this, SLOT(createDir()));
-    
-    
-    _sequenceButton = new QCheckBox("Sequences",_buttonsWidget);
-    _sequenceButton->setChecked(true);
-    _buttonsLayout->addWidget(_sequenceButton);
-    QObject::connect(_sequenceButton,SIGNAL(clicked(bool)),this,SLOT(enableSequenceMode(bool)));
-    
+        
     
     _previewButton = new Button("preview",_buttonsWidget);
     _previewButton->setVisible(false);//!@todo Implement preview mode for the file dialog
@@ -175,6 +170,14 @@ _dialogMode(mode)
     _selectionLayout = new QHBoxLayout(_selectionWidget);
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
+    
+    _sequenceButton = new ComboBox(_buttonsWidget);
+    _sequenceButton->addItem("Sequences");
+    _sequenceButton->addItem("File");
+    _sequenceButton->setCurrentIndex(0);
+    QObject::connect(_sequenceButton,SIGNAL(currentIndexChanged(QString)),this,SLOT(sequenceComboBoxSlot(QString)));
+    
+    _selectionLayout->addWidget(_sequenceButton);
     
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
@@ -266,8 +269,19 @@ SequenceFileDialog::~SequenceFileDialog(){
     delete _model;
     delete _itemDelegate;
     delete _proxy;
+  
+    
     
 }
+
+void SequenceFileDialog::sequenceComboBoxSlot(const QString& str){
+    if(str == "File"){
+        enableSequenceMode(false);
+    }else{
+        enableSequenceMode(true);
+    }
+}
+
 void SequenceFileDialog::showContextMenu(const QPoint& position){
     QMenu menu(_view);
     menu.addAction(_showHiddenAction);
@@ -303,7 +317,6 @@ void SequenceFileDialog::createMenuActions(){
 void SequenceFileDialog::enableSequenceMode(bool b){
     _frameSequences.clear();
     _proxy->clear();
-    _sequenceButton->setChecked(b);
     if(!b){
         _nameMapping.clear();
         _view->updateNameMapping(_nameMapping);
@@ -396,7 +409,7 @@ void SequenceFileDialog::updateView(const QString &directory){
 }
 
 bool SequenceFileDialog::sequenceModeEnabled() const{
-    return _sequenceButton->isChecked();
+    return _sequenceButton->activeIndex() == 0;
 }
 
 
