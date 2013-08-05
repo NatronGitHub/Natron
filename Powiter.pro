@@ -116,7 +116,10 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhHost.cpp \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
-    Gui/texture.cpp
+    Gui/texture.cpp \
+    Core/ofxnode.cpp \
+    Core/ofxclipinstance.cpp \
+    Core/ofxparaminstance.cpp
 
 
 HEADERS += \
@@ -180,7 +183,10 @@ HEADERS += \
     Core/abstractCache.h \
     Core/nodecache.h \
     Gui/button.h \
-    Gui/texture.h
+    Gui/texture.h \
+    Core/ofxnode.h \
+    Core/ofxclipinstance.h \
+    Core/ofxparaminstance.h
 
 
 

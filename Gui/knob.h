@@ -101,7 +101,7 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
  should in turn call a specific class-based static function with the appropriate param.
  E.G : static Knob* int_Knob(int* integer,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
  and return a pointer to the knob. */
-typedef Knob* (*KnobBuilder)(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+typedef Knob* (*KnobBuilder)(Knob_Callback* cb,const std::string& description,Knob_Mask flags);
 
 
 class KnobFactory : public Singleton<KnobFactory>{
@@ -123,7 +123,7 @@ public:
     
     /*Calls the unique instance of the KnobFactory and
      calls the appropriate pointer to function to create a knob.*/
-    static Knob* createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags);
+    static Knob* createKnob(std::string name,Knob_Callback* callback,const std::string& description,Knob_Mask flags);
     
 };
 

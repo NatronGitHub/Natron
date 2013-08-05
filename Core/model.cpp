@@ -22,6 +22,7 @@
 #include "Core/channels.h"
 #include "Reader/Reader.h"
 #include "Writer/Writer.h"
+#include "Core/ofxnode.h"
 #include "Core/viewerNode.h"
 #include "Gui/mainGui.h"
 #include "Gui/GLViewer.h"
@@ -858,7 +859,7 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
                                                     OFX::Host::ImageEffect::Descriptor& desc,
                                                     const std::string& context)
 {
-    //  return new MyEffectInstance(plugin, desc, context);
+      return new OfxNode(plugin, desc, context);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
@@ -886,7 +887,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bun
 
 /// message
 OfxStatus Model::vmessage(const char* type,
-                         const char* id,
+                         const char* ,
                          const char* format,
                          va_list args)
 {

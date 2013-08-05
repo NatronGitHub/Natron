@@ -233,7 +233,7 @@ void KnobFactory::loadBultinKnobs(){
 
 /*Calls the unique instance of the KnobFactory and
  calls the appropriate pointer to function to create a knob.*/
-Knob* KnobFactory::createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags){
+Knob* KnobFactory::createKnob(std::string name,Knob_Callback* callback,const std::string& description,Knob_Mask flags){
     const std::map<std::string,PluginID*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
     std::map<std::string,PluginID*>::const_iterator it = loadedPlugins.find(name);
     if(it == loadedPlugins.end()){
