@@ -118,7 +118,7 @@ public:
      found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string& name) const;
     
-    void registerTab(std::string name,QWidget* tab);
+    void registerTab(const std::string& name, QWidget* tab);
     
     void loadStyleSheet();
     

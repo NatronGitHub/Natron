@@ -115,7 +115,7 @@ public:
     const ChannelSet& channels() const {return _channels;}
    
     /*Returns a key computed from the parameters.*/
-    static U64 computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y);
+    static U64 computeHashKey(U64 nodeKey, const std::string& filename, int x , int r, int y);
     
 private:
    

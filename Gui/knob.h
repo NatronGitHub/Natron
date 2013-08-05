@@ -101,7 +101,7 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
  should in turn call a specific class-based static function with the appropriate param.
  E.G : static Knob* int_Knob(int* integer,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
  and return a pointer to the knob. */
-typedef Knob* (*KnobBuilder)(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+typedef Knob* (*KnobBuilder)(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
 
 
 class KnobFactory : public Singleton<KnobFactory>{
@@ -123,7 +123,7 @@ public:
     
     /*Calls the unique instance of the KnobFactory and
      calls the appropriate pointer to function to create a knob.*/
-    static Knob* createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags);
+    static Knob* createKnob(const std::string& name, Knob_Callback* callback, const std::string& description, Knob_Mask flags);
     
 };
 
@@ -137,9 +137,9 @@ class File_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     
-    File_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    File_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     virtual ~File_Knob(){}
     virtual void setValues();
     virtual std::string name(){return "InputFile";}
@@ -178,9 +178,9 @@ class OutputFile_Knob:public Knob
 {
     Q_OBJECT
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     
-    OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    OutputFile_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     virtual ~OutputFile_Knob(){}
     virtual void setValues();
     virtual std::string name(){return "OutputFile";}
@@ -194,7 +194,7 @@ public slots:
 		*(this->str) = str.toStdString();
 	}
 private:
-    std::string *str;
+    std::string *str; // TODO: why keep a pointer here?
     OutputFileQLineEdit* _name;
 };
 
@@ -211,13 +211,13 @@ class IntQSpinBox;
 class Int_Knob:public Knob
 {
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     
     virtual void setValues();
     virtual std::string name(){return "Int";}
     void setPointer(int* value){integer = value;}
     
-    Int_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    Int_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     virtual ~Int_Knob(){}
     void setInteger(int& value){*integer = value;}
 private:
@@ -241,11 +241,11 @@ class Double_Knob: public Knob
     double *_value;
     DoubleQSpinBox* box;
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(double* value){_value = value;}
     virtual void setValues();
     virtual std::string name(){return "Float";}
-    Double_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    Double_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
     virtual ~Double_Knob(){}
     void setDouble(double& value){*_value = value;}
@@ -266,11 +266,11 @@ class String_Knob:public Knob
     std::string* _string;
     
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(std::string* str){_string = str;}
     virtual void setValues();
     virtual std::string name(){return "String";}
-    String_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    String_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     virtual ~String_Knob(){}
     
 };
@@ -280,9 +280,9 @@ class Bool_Knob:public Knob
 	Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(bool* val){_boolean = val;}
-    Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    Bool_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
 	virtual void setValues();
     virtual std::string name(){return "Bool";}
     virtual ~Bool_Knob(){}
@@ -299,8 +299,8 @@ class Button_Knob : public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
-    Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    Button_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     void connectButtonToSlot(QObject* object,const char* slot);
     
     virtual std::string name(){return "Button";}
@@ -317,10 +317,10 @@ class ComboBox_Knob : public Knob
 {
     Q_OBJECT
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
-    ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    ComboBox_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
-    void populate(std::vector<std::string>& entries);
+    void populate(const std::vector<std::string>& entries);
     
     void setPointer(std::string* str);
     
@@ -333,18 +333,18 @@ signals:
     void entryChanged(std::string&);
     
 public slots:
-    void setCurrentItem(QString);
+    void setCurrentItem(const QString&);
 private:
     ComboBox* _comboBox;
-    std::string* _currentItem;
+    std::string* _currentItem; // TODO: why a pointer?
 };
 
 //=========================
 class Separator_Knob : public Knob
 {
 public:
-    static Knob* BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags);
-    Separator_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags=0);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    Separator_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
     virtual void setValues(){}
     

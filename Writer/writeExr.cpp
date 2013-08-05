@@ -106,7 +106,7 @@ void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteExr::setupFile(std::string filename){
+void WriteExr::setupFile(const std::string& filename){
     _lock = new QMutex;
     
     _filename = filename;

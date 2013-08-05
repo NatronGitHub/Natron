@@ -436,7 +436,7 @@ file_handle_(-1)
         //
         //
         //
-        //void MMAPfile::cleanup(std::string msg){
+        //void MMAPfile::cleanup(const std::string& msg){
         //#ifdef __POWITER_WIN32__
         //	DWORD error = GetLastError();
         //	if (_mapped_handle != NULL)

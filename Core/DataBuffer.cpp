@@ -73,7 +73,7 @@ size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 }
 
 
-DataBuffer::Ptr DataBufferManager::get(std::string bufferName){
+DataBuffer::Ptr DataBufferManager::get(const std::string& bufferName){
 	QMutexLocker guard(&lock_);
 	DataBuffer::Ptr retVal;
 
@@ -91,7 +91,7 @@ DataBuffer::Ptr DataBufferManager::get(std::string bufferName){
 }
 
 
-void DataBufferManager::release(std::string bufferName){
+void DataBufferManager::release(const std::string& bufferName){
 	QMutexLocker guard(&lock_);
 	DataBufferMap::iterator it = _bufferMap.find(bufferName);
 

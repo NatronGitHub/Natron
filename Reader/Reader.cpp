@@ -267,14 +267,14 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     }
     _buffer.push_back(desc);
 }
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(std::string filename){
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
     for(int i = _buffer.size()-1; i >= 0 ; i--){
         if(_buffer[i]->_filename==filename) return _buffer.begin()+i;
     }
     return _buffer.end();
 }
 
-void Reader::Buffer::remove(std::string filename){
+void Reader::Buffer::remove(const std::string& filename){
     DecodedFrameIterator it = find(filename);
     if(it!=_buffer.end()){
         if((*it)->_readInfo)
@@ -287,7 +287,7 @@ void Reader::Buffer::remove(std::string filename){
 }
 
 
-bool Reader::Buffer::decodeFinished(std::string filename){
+bool Reader::Buffer::decodeFinished(const std::string& filename){
     Buffer::DecodedFrameIterator it = find(filename);
     return (it!=_buffer.end());
 }
@@ -299,7 +299,7 @@ void Reader::Buffer::debugBuffer(){
     cout << "=================================" << endl;
 }
 
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode){
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::string& filename,SEARCH_TYPE searchMode){
     if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){

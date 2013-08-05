@@ -219,7 +219,7 @@ public:
     };
     
     
-    FileSequence(std::string filetype):_fileType(filetype),_totalSize(0){}
+    FileSequence(const std::string& filetype):_fileType(filetype),_totalSize(0){}
     
     ~FileSequence(){}
     
@@ -373,9 +373,9 @@ public:
     
     
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                       std::vector<std::string> filters, // the user accepted file types
+                       const std::vector<std::string>& filters, // the user accepted file types
                        FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
-                       std::string currentDirectory = std::string()); // the directory to show first
+                       const std::string& currentDirectory = ""); // the directory to show first
 
     virtual ~SequenceFileDialog();
     
@@ -383,9 +383,9 @@ public:
 
     void setFrameSequence(FrameSequences frameSequences);
 
-    const FileSequence frameRangesForSequence(std::string sequenceName, std::string extension) const;
+    const FileSequence frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
-    bool isASupportedFileExtension(std::string ext) const;
+    bool isASupportedFileExtension(const std::string& ext) const;
     
     /*Removes the . and the extension from the filename and also
      *returns the extension as a string.*/

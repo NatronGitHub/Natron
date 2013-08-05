@@ -84,12 +84,12 @@ class DataBufferManager {
 public:
 	/*Return a reference counted pointer to the buffer with
 	 *bufferName if it exists. Otherwise creates a new empty buffer*/
-    DataBuffer::Ptr get(std::string bufferName);
+    DataBuffer::Ptr get(const std::string& bufferName);
 
 	/*Reduces the count of bufferName by 1.
 	 *If it was the only reference left,
 	 *it effectivly delete bufferName.*/
-    void release(std::string bufferName);
+    void release(const std::string& bufferName);
 };
 
 static DataBufferManager _dataBufferManager;

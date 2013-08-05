@@ -233,7 +233,7 @@ void KnobFactory::loadBultinKnobs(){
 
 /*Calls the unique instance of the KnobFactory and
  calls the appropriate pointer to function to create a knob.*/
-Knob* KnobFactory::createKnob(std::string name,Knob_Callback* callback,std::string& description,Knob_Mask flags){
+Knob* KnobFactory::createKnob(const std::string& name, Knob_Callback* callback, const std::string& description, Knob_Mask flags){
     const std::map<std::string,PluginID*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
     std::map<std::string,PluginID*>::const_iterator it = loadedPlugins.find(name);
     if(it == loadedPlugins.end()){
@@ -303,14 +303,14 @@ void IntQSpinBox::keyPressEvent(QKeyEvent *event){
     FeedBackSpinBox::keyPressEvent(event);
 }
 
-Knob* Int_Knob::BuildKnob(Knob_Callback *cb, std::string &description, Knob_Mask flags){
+Knob* Int_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Knob_Mask flags){
     Int_Knob* knob=new Int_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 }
 
-Int_Knob::Int_Knob(Knob_Callback *cb,std::string& description, Knob_Mask flags):Knob(cb),integer(0){
+Int_Knob::Int_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),integer(0){
     QLabel* desc=new QLabel(description.c_str());
     box=new IntQSpinBox(this,this);
     
@@ -356,7 +356,7 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
 	QLineEdit::keyPressEvent(e);
 }
 
-Knob* File_Knob::BuildKnob(Knob_Callback *cb, std::string &description, Knob_Mask flags){
+Knob* File_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Knob_Mask flags){
     File_Knob* knob=new File_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
@@ -397,7 +397,7 @@ void File_Knob::updateLastOpened(QString str){
     _lastOpened = str.left(index);
 }
 
-File_Knob::File_Knob(Knob_Callback *cb, std::string &description, Knob_Mask ):Knob(cb),str(0),_lastOpened("")
+File_Knob::File_Knob(Knob_Callback *cb, const std::string &description, Knob_Mask ):Knob(cb),str(0),_lastOpened("")
 {
     
     QLabel* desc=new QLabel(description.c_str());
@@ -422,7 +422,7 @@ void File_Knob::setValues(){
     // filenames should not be involved in hash key computation as it defeats all the purpose of the cache
 }
 
-Knob* Bool_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* Bool_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
 	Bool_Knob* knob=new Bool_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
@@ -446,7 +446,7 @@ void Bool_Knob::setValues(){
 	}
 }
 
-Bool_Knob::Bool_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
+Bool_Knob::Bool_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
 	Q_UNUSED(flags);
     QLabel* _label = new QLabel(description.c_str(),this);
 	checkbox=new QCheckBox(this);
@@ -462,7 +462,7 @@ void Double_Knob::setValues(){
     values.clear();
     values.push_back(*(reinterpret_cast<U64*>(_value)));
 }
-Double_Knob::Double_Knob(Knob_Callback * cb,std::string& description,Knob_Mask flags):Knob(cb),_value(0){
+Double_Knob::Double_Knob(Knob_Callback * cb, const std::string& description, Knob_Mask flags):Knob(cb),_value(0){
     QLabel* desc=new QLabel(description.c_str());
     box=new DoubleQSpinBox(this,this);
     
@@ -482,7 +482,7 @@ Double_Knob::Double_Knob(Knob_Callback * cb,std::string& description,Knob_Mask f
     }
 }
 
-Knob* Double_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* Double_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
     Double_Knob* knob=new Double_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
@@ -503,13 +503,13 @@ void DoubleQSpinBox::keyPressEvent(QKeyEvent *event){
 }
 /*******/
 
-Knob* Button_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* Button_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
     Button_Knob* knob=new Button_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 }
-Button_Knob::Button_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),button(0){
+Button_Knob::Button_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),button(0){
     Q_UNUSED(flags);
     button = new Button(QString(description.c_str()),this);
     layout->addWidget(button);
@@ -521,14 +521,14 @@ void Button_Knob::connectButtonToSlot(QObject* object,const char* slot){
 /*******/
 
 
-Knob* OutputFile_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* OutputFile_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
     OutputFile_Knob* knob=new OutputFile_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 }
 
-OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),str(0){
+OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),str(0){
     Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
     _name=new OutputFileQLineEdit(this);
@@ -589,14 +589,14 @@ void OutputFileQLineEdit::keyPressEvent(QKeyEvent *e){
 }
 /*===============================*/
 
-Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
     ComboBox_Knob* knob=new ComboBox_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 
 }
-ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb),_currentItem(0){
+ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_currentItem(0){
     Q_UNUSED(flags);
     _comboBox = new ComboBox(this);
     _comboBox->addItem("/");
@@ -606,17 +606,15 @@ ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb,std::string& description,Knob_Mas
     layout->addWidget(_comboBox);
     layout->addStretch();
 }
-void ComboBox_Knob::populate(std::vector<std::string>& entries){
+void ComboBox_Knob::populate(const std::vector<std::string>& entries){
     for (U32 i = 0; i < entries.size(); i++) {
-        QString str(entries[i].c_str());
-        _comboBox->addItem(str);
+        //QString str(entries[i].c_str());
+        _comboBox->addItem(entries[i].c_str());
     }
 }
 
-void ComboBox_Knob::setCurrentItem(QString str){
-    std::string stdStr = str.toStdString();
-    *_currentItem = stdStr;
-    emit entryChanged(stdStr);
+void ComboBox_Knob::setCurrentItem(const QString& str){
+    emit entryChanged(*_currentItem = str.toStdString());
 }
 
 void ComboBox_Knob::setPointer(std::string* str){
@@ -634,13 +632,13 @@ void ComboBox_Knob::setValues(){
 
 /*============================*/
 
-Knob* Separator_Knob::BuildKnob(Knob_Callback* cb,std::string& description,Knob_Mask flags){
+Knob* Separator_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
     Separator_Knob* knob=new Separator_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 }
-Separator_Knob::Separator_Knob(Knob_Callback *cb,std::string& description,Knob_Mask flags):Knob(cb){
+Separator_Knob::Separator_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
     Q_UNUSED(flags);
     QLabel* name = new QLabel(description.c_str(),this);
     layout->addWidget(name);
