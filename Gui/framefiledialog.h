@@ -334,7 +334,7 @@ private:
     Button* _removeFavoriteButton;
     
     LineEdit* _selectionLineEdit;
-    Button* _sequenceButton;
+    QCheckBox* _sequenceButton;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;

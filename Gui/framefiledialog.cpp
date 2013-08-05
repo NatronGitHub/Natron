@@ -72,7 +72,6 @@ _dialogMode(mode)
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    _buttonsLayout->setContentsMargins(3,0,3,0);
     
     _lookInLabel = new QLabel("Look in :",_buttonsWidget);
     _buttonsLayout->addWidget(_lookInLabel);
@@ -106,8 +105,7 @@ _dialogMode(mode)
     QObject::connect(_createDirButton, SIGNAL(clicked()), this, SLOT(createDir()));
     
     
-    _sequenceButton = new Button("Sequences",_buttonsWidget);
-    _sequenceButton->setCheckable(true);
+    _sequenceButton = new QCheckBox("Sequences",_buttonsWidget);
     _sequenceButton->setChecked(true);
     _buttonsLayout->addWidget(_sequenceButton);
     QObject::connect(_sequenceButton,SIGNAL(clicked(bool)),this,SLOT(enableSequenceMode(bool)));
