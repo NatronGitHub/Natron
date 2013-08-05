@@ -86,9 +86,12 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     float zoomFactor;
     if(_dag.isOutputAViewer()){
         zoomFactor = gl_viewer->getZoomFactor();
+        currentViewer->getUiContext()->play_Forward_Button->setChecked(_forward);
+        currentViewer->getUiContext()->play_Backward_Button->setChecked(!_forward);
     }else{
         zoomFactor = 1.f;
     }
+    
     QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,zoomFactor,sameFrame,fitFrameToViewer,false);
     _computeFrameWatcher->setFuture(future);
     
@@ -283,7 +286,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
              asked for.*/
             assert(iscached->_textureRect == textureRect);
             assert(iscached->_treeVers == _treeVersion.getHashValue());
-            assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
+            // assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
             assert(iscached->_lut == _viewerCacheArgs._lut);
             assert(iscached->_exposure == _viewerCacheArgs._exposure);
             assert(iscached->_byteMode == _viewerCacheArgs._byteMode);
@@ -443,12 +446,12 @@ void VideoEngine::metaReadData(Reader* reader,int current_frame){
 
 
 
-void VideoEngine::drawOverlay(){
+void VideoEngine::drawOverlay() const{
     if(_dag.getOutput())
         _drawOverlay(_dag.getOutput());
 }
 
-void VideoEngine::_drawOverlay(Node *output){
+void VideoEngine::_drawOverlay(Node *output) const{
     output->drawOverlay();
     foreach(Node* n,output->getParents()){
         _drawOverlay(n);
@@ -492,10 +495,9 @@ void VideoEngine::repeatSameFrame(){
     }
 }
 
-VideoEngine::VideoEngine(Model* engine,QMutex* lock):
+VideoEngine::VideoEngine(Model* engine):
 _coreEngine(engine),
 _working(false),
-_lock(lock),
 _aborted(false),
 _paused(true),
 _frameRequestsCount(0),
@@ -562,11 +564,6 @@ void VideoEngine::startPause(bool c){
     
     if(c && _dag.getOutput()){
         videoEngine(-1,false,true);
-    }
-    else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
-        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
-        
     }else{
         pause();
     }
@@ -579,101 +576,102 @@ void VideoEngine::startBackward(bool c){
     }
     if(c && _dag.getOutput()){
         videoEngine(-1,false,false);
-    }
-    else if(!_dag.getOutput() || _dag.getInputs().size()==0){
-        currentViewer->getUiContext()->play_Forward_Button->setChecked(false);
-        currentViewer->getUiContext()->play_Backward_Button->setChecked(false);
-        
     }else{
         pause();
     }
 }
 void VideoEngine::previousFrame(){
-    if( currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if( _working){
         pause();
     }
     if(!_working)
         _startEngine(currentViewer->currentFrame()-1, 1, false,false,false);
-    //    else
-    //        appendTask(gl_viewer->getCurrentReaderInfo()->currentFrame()-1, 1, false,&VideoEngine::_previousFrame);
+    else
+        appendTask(currentViewer->currentFrame()-1, 1,  false,_forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
 }
 
 void VideoEngine::nextFrame(){
-    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if(_working){
         pause();
     }
     
     if(!_working)
         _startEngine(currentViewer->currentFrame()+1, 1, false,true,false);
-    //    else
-    //        appendTask(gl_viewer->getCurrentReaderInfo()->currentFrame()+1, 1, false,&VideoEngine::_nextFrame);
+        else
+            appendTask(currentViewer->currentFrame()+1,  1,false,_forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
 }
 
 void VideoEngine::firstFrame(){
-    if( currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       || currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if( _working){
         pause();
     }
     
     if(!_working)
         _startEngine(currentViewer->firstFrame(), 1, false,false,false);
-    //    else
-    //        appendTask(frameSeeker->firstFrame(), 1, false, &VideoEngine::_firstFrame);
+        else
+            appendTask(currentViewer->firstFrame(), 1,  false,_forward,false,_dag.getOutput(),  &VideoEngine::_startEngine);
 }
 
 void VideoEngine::lastFrame(){
-    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if(_working){
         pause();
     }
     if(!_working)
         _startEngine(currentViewer->lastFrame(), 1, false,true,false);
-    //    else
-    //        appendTask(frameSeeker->lastFrame(), 1, false, &VideoEngine::_lastFrame);
+        else
+            appendTask(currentViewer->lastFrame(), 1,  false,_forward,false,_dag.getOutput(),  &VideoEngine::_startEngine);
 }
 
 void VideoEngine::previousIncrement(){
-    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if(_working){
         pause();
     }
     int frame = currentViewer->currentFrame()- currentViewer->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,false,false);
-    //    else{
-    //        appendTask(frame,1, false, &VideoEngine::_previousIncrement);
-    //    }
+        else{
+            appendTask(frame,1, false,_forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
+        }
     
     
 }
 
 void VideoEngine::nextIncrement(){
-    if(currentViewer->getUiContext()->play_Forward_Button->isChecked()
-       ||  currentViewer->getUiContext()->play_Backward_Button->isChecked()){
+    if(_working){
         pause();
     }
     int frame = currentViewer->currentFrame()+currentViewer->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,true,false);
-    //    else
-    //        appendTask(frame,1, false, &VideoEngine::_nextIncrement);
+    else
+        appendTask(frame,1, false,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
 }
 
 void VideoEngine::seekRandomFrame(int f){
     if(!_dag.getOutput() || _dag.getInputs().size()==0) return;
-    //if( ctrlPTR->getGui()->viewer_tab->play_Forward_Button->isChecked()
-    //  ||  ctrlPTR->getGui()->viewer_tab->play_Backward_Button->isChecked()){
-    pause();
-    // }
+    if(_working){
+        pause();
+    }
     
-    if(!_working)
-        _startEngine(f, 1, false,true,false);
+    if(!_working){
+        if(_frameRequestsCount == -1){
+            _startEngine(f, -1, false,_forward,false);
+        }else{
+            _startEngine(f, 1, false,_forward,false);
+        }
+    }
     else
         appendTask(f, -1, false,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
 }
-
+void VideoEngine::recenterViewer(){
+    if(_working){
+        pause();
+    }
+    if(!_working)
+        _startEngine(currentViewer->currentFrame(), -1, true,_forward,false);
+    else
+        appendTask(currentViewer->currentFrame(), -1, true,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
+}
 
 
 
@@ -732,13 +730,13 @@ void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer
 
 void VideoEngine::computeTreeHash(std::vector< std::pair<std::string,U64> > &alreadyComputed, Node *n){
     for(U32 i =0; i < alreadyComputed.size();i++){
-        if(alreadyComputed[i].first == n->getName().toStdString())
+        if(alreadyComputed[i].first == n->getName())
             return;
     }
     std::vector<std::string> v;
     n->computeTreeHash(v);
     U64 hashVal = n->getHash()->getHashValue();
-    alreadyComputed.push_back(make_pair(n->getName().toStdString(),hashVal));
+    alreadyComputed.push_back(make_pair(n->getName(),hashVal));
     foreach(Node* parent,n->getParents()){
         computeTreeHash(alreadyComputed, parent);
     }
@@ -832,7 +830,7 @@ void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
 void VideoEngine::DAG::debug(){
     cout << "Topological ordering of the DAG is..." << endl;
     for(DAG::DAGIterator it = begin(); it != end() ;it++){
-        cout << (*it)->getName().toStdString() << endl;
+        cout << (*it)->getName() << endl;
     }
 }
 

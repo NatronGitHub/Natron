@@ -28,7 +28,12 @@
 #include <vector>
 #include <ImfStandardAttributes.h>
 #include <boost/noncopyable.hpp>
-#include <ofxhImageEffect.h>
+
+#include "ofxhPluginCache.h"
+#include "ofxhPropertySuite.h"
+#include "ofxhImageEffect.h"
+#include "ofxhImageEffectAPI.h"
+
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
@@ -107,23 +112,17 @@ public:
     
     /*Loads all kind of plugins*/
     void loadAllPlugins();
-    
 
-    /*utility functions used to parse*/
-    std::string removePrefixSpaces(std::string str);
-    std::string getNextWord(std::string str);
 	
   
 	/*Create a new node internally*/
-    Powiter::UI_NODE_TYPE createNode(Node *&node,QString &name,QMutex* m);
+    Powiter::UI_NODE_TYPE createNode(Node *&node,const std::string name);
     
     void removeNode(Node* n);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     QStringList& getNodeNameList(){return _nodeNames;}
 
-	/*this is the general mutex used by all the nodes in the graph*/
-	QMutex* mutex(){return _mutex;}
     
 	/*output to the console the name of the loaded plugins*/
     void displayLoadedPlugins();
@@ -203,9 +202,9 @@ public slots:
 private:
     
     /*loads plugins(nodes)*/
-    void loadPluginsAndInitNameList();
+    // void loadPluginsAndInitNameList();
     
-    /*name says it all*/
+    /* Viewer,Reader,Writer...etc*/
     void loadBuiltinPlugins();
     
     /*loads extra reader plug-ins */
@@ -220,7 +219,13 @@ private:
     /*loads writes that are built-ins*/
     void loadBuiltinWrites();
     
-    void loadOFXPlugins(bool useCache = true);
+    /*Reads OFX plugin cache and scan plugins directories
+     to load them all.*/
+    void loadOFXPlugins();
+    
+    /*Writes all plugins loaded and their descriptors to
+     the OFX plugin cache.*/
+    void writeOFXCache();
     
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
@@ -229,16 +234,18 @@ private:
 
 
     VideoEngine* _videoEngine; // Video Engine
-    QMutex* _mutex; // mutex for workerthreads
   
     /*All nodes currently active in the node graph*/
     std::vector<Node*> _currentNodes;
     
     std::vector<Format*> _formats;
     std::vector<CounterID*> _nodeCounters;
-    std::vector<PluginID*> _pluginsLoaded;
+    // std::vector<PluginID*> _pluginsLoaded;
+    
+    
     std::vector< std::pair< std::string,PluginID*> > _readPluginsLoaded;
     std::vector< std::pair< std::string,PluginID*> > _writePluginsLoaded;
+    
     QStringList _nodeNames;
 
     KnobFactory* _knobFactory;
@@ -246,8 +253,21 @@ private:
     NodeCache* _nodeCache;
     
     ViewerCache* _viewerCache;
-        
-   
+    
+    OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
+    
+    
+    /*plugin name -> pair< plugin id , plugin grouping >
+     The name of the plugin is followed by the first part of the grouping in brackets
+     to help identify two distinct plugins with the same name. e.g :
+     1)Invert [OFX]  with plugin id net.sourceforge.openfx.invert and grouping OFX/
+     2)Invert [Toto] with plugin id com.toto.invert and grouping Toto/SuperPlugins/OFX/
+     */
+    typedef std::map<std::string,std::pair<std::string,std::string> > OFXPluginsMap;
+    typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
+    
+    OFXPluginsMap _ofxPlugins;
+
 };
 
 #endif // MODEL_H

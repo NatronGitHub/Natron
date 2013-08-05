@@ -363,7 +363,7 @@ void Gui::exitFullScreen(){
 ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
     _viewerTabs.push_back(tab);
-    where->appendTab(node->getName(),tab);
+    where->appendTab(node->getName().c_str(),tab);
     return tab;
 }
 

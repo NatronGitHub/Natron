@@ -169,7 +169,7 @@ void Reader::readCurrentData(int current_frame){
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
     if(found == _buffer.end()){
-        cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName().toStdString() << ")" << endl;
+        cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName() << ")" << endl;
         return;
     }
     if((*found)->hasToDecode()){

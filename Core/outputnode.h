@@ -29,7 +29,6 @@ public:
     virtual ~OutputNode(){}
     
     virtual bool isOutputNode(){return true;}
-    virtual int maximumSocketCount(){return 0;}
    
     virtual int maximumInputs(){return 1;}
     virtual int minimumInputs(){return 1;}

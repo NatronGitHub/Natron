@@ -45,7 +45,9 @@ int main(int argc, char *argv[])
     QLabel* splashScreen = new QLabel;
     splashScreen->setWindowFlags(Qt::SplashScreen);
     splashScreen->setPixmap(pixmap);
+#ifndef PW_DEBUG
     splashScreen->show();
+#endif
     QCoreApplication::processEvents();
 	/*instanciating the core*/
     Model* coreEngine=new Model();

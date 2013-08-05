@@ -8,9 +8,9 @@
 *
 */
 
- 
 
- 
+
+
 
 
 
@@ -44,11 +44,11 @@
 using namespace std;
 using namespace Powiter;
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
-QGraphicsView(scene,parent),
-_lastSelectedPos(0,0),
-_evtState(DEFAULT),
-_nodeSelected(0),
-_fullscreen(false)
+    QGraphicsView(scene,parent),
+    _lastSelectedPos(0,0),
+    _evtState(DEFAULT),
+    _nodeSelected(0),
+    _fullscreen(false)
 {
     
     setObjectName("DAG_GUI");
@@ -75,7 +75,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node
     QGraphicsScene* sc=scene();
     NodeGui* node_ui;
     
-   
+
     
     int yOffset = rand() % 50 + 50;
     if(x == INT_MAX)
@@ -160,9 +160,7 @@ void NodeGraph::deselect(){
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         if(_arrowSelected->hasSource()){
-            
-            _arrowSelected->getSource()->getNode()->releaseSocket();
-            
+
             _arrowSelected->getSource()->getNode()->removeChild(_arrowSelected->getDest()->getNode());
             _arrowSelected->getSource()->substractChild(_arrowSelected->getDest());
             
@@ -185,18 +183,16 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     break;
                 }
                 
-                if(n->getNode()->getFreeSocketCount()>0){
-                    _arrowSelected->getDest()->getNode()->addParent(n->getNode());
-                    _arrowSelected->getDest()->addParent(n);
-                    n->getNode()->addChild(_arrowSelected->getDest()->getNode());
-                    n->addChild(_arrowSelected->getDest());
-                    n->getNode()->lockSocket();
-                    _arrowSelected->setSource(n);
-                    foundSrc=true;
-                    
-                    break;
-                }
+                _arrowSelected->getDest()->getNode()->addParent(n->getNode());
+                _arrowSelected->getDest()->addParent(n);
+                n->getNode()->addChild(_arrowSelected->getDest()->getNode());
+                n->addChild(_arrowSelected->getDest());
+                _arrowSelected->setSource(n);
+                foundSrc=true;
+
+                break;
             }
+
             i++;
         }
         if(!foundSrc){
@@ -263,8 +259,8 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
                 n->setSettingsPanelEnabled(true);
                 n->getSettingPanel()->setVisible(true);
                 // needed for the layout to work correctly
-               // QWidget* pr=n->getDockContainer()->parentWidget();
-               // pr->setMinimumSize(n->getDockContainer()->sizeHint());
+                // QWidget* pr=n->getDockContainer()->parentWidget();
+                // pr->setMinimumSize(n->getDockContainer()->sizeHint());
                 
             }
             n->putSettingsPanelFirst();
@@ -407,33 +403,29 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     /*dst is outputnode,src isn't*/
     if(selected->getNode()->isOutputNode()){
         first = selected->firstAvailableEdge();
-        if(first){
-            if(created->getNode()->getFreeSocketCount() > 0){
+        if(first && !created->getNode()->isOutputNode()){
                 first->getDest()->getNode()->addParent(created->getNode());
                 first->getDest()->addParent(created);
                 created->getNode()->addChild(first->getDest()->getNode());
                 created->addChild(first->getDest());
-                created->getNode()->lockSocket();
                 first->setSource(created);
                 first->initLine();
                 cont = true;
-            }
+
         }
     }else{
         /*dst is not outputnode*/
-        if (selected->getNode()->getFreeSocketCount() > 0) {
             first = created->firstAvailableEdge();
             if(first){
                 first->getDest()->getNode()->addParent(selected->getNode());
                 first->getDest()->addParent(selected);
                 selected->getNode()->addChild(first->getDest()->getNode());
                 selected->addChild(first->getDest());
-                selected->getNode()->lockSocket();
                 first->setSource(selected);
                 first->initLine();
                 cont = true;
             }
-        }
+
     }
     
     if(cont){

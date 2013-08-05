@@ -316,8 +316,6 @@ private:
     
     Timer* _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
         
-    QMutex* _lock; /*!< General mutex for the engine*/
-  
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
     bool _paused; /*!< true when the user pressed pause*/
@@ -447,6 +445,11 @@ public slots:
     void changeTreeVersion();
     
     /**
+     *@brief Pauses the engine and restarts it right away, re-centering the image on the viewer.
+     **/
+    void recenterViewer();
+    
+    /**
      *@brief This slot is called internally by the video engine. Do not call this directly. This function actually determines
      *whether the engine needs to stop or not, updates the viewport display if the output is a viewer and then calls
      *VideoEngine::computeFrameRequest(bool,bool,bool) if there're remaining frames to compute.
@@ -510,7 +513,7 @@ public:
     /**
      *@returns Return a const reference to the DAG used by the video engine.
      **/
-    const DAG& getCurrentDAG(){return _dag;}
+    const DAG& getCurrentDAG() const {return _dag;}
     
     
 	/**
@@ -522,7 +525,7 @@ public:
 	/**
      *@returns Returns true if the engine is currently working.
      **/
-	bool isWorking(){return _working;}
+	bool isWorking() const {return _working;}
     
     /**
      *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
@@ -531,7 +534,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(Model* engine,QMutex* lock);
+    VideoEngine(Model* engine);
     
     
     virtual ~VideoEngine();
@@ -539,7 +542,7 @@ public:
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
-    void drawOverlay();
+    void drawOverlay() const;
 	
     
     /**
@@ -637,7 +640,7 @@ private:
      *@brief Called by VideoEngine::drawOverlay().
      *@param output[in] The output node of the graph
      **/
-    void _drawOverlay(Node *output);
+    void _drawOverlay(Node *output) const;
     
     /**
      *@brief Called by VideoEngine::changeTreeVersion().This is a recursive function.

@@ -63,12 +63,10 @@ QStringList& Controler::getNodeNameList(){
 
 void Controler::createNode(QString name,double x,double y){
    
-	QMutex *mutex=_model->mutex();
-   // Node* node=new Node(mutex);
     Node* node=NULL;
     UI_NODE_TYPE type;
 
-    type=_model->createNode(node,name,mutex);
+    type=_model->createNode(node,name.toStdString());
 
     if(type!=UNDEFINED){
         _gui->createNodeGUI(type,node,x,y);

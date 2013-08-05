@@ -36,7 +36,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(_mainLayout);
-    setObjectName((_nodeGUI->getNode()->getName()));
+    setObjectName(_nodeGUI->getNode()->getName().c_str());
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     
@@ -68,7 +68,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
    
     
     _nodeName = new LineEdit(_headerWidget);
-    _nodeName->setText(_nodeGUI->getNode()->getName());
+    _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
     QObject::connect(_nodeName,SIGNAL(textChanged(QString)),_nodeGUI,SLOT(setName(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();

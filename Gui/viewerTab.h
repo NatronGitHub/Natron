@@ -132,6 +132,9 @@ public slots:
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
     
+signals:
+    void recenteringNeeded();
+    
 protected:
     
     virtual void keyPressEvent(QKeyEvent* e);

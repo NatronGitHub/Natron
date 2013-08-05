@@ -26,7 +26,6 @@ public:
     virtual ~InputNode();
     virtual int maximumInputs(){return 0;}
     virtual int minimumInputs(){return 0;}
-    virtual int maximumSocketCount(){return 10000;}
     virtual bool cacheData()=0;
     bool isInputNode();
 private:
