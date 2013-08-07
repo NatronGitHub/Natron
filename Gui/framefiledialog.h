@@ -32,6 +32,8 @@
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
+#include <QtCore/QString>
+#include <QtCore/QLatin1Char>
 #include <QComboBox>
 #include <QListView>
 #include <vector>
@@ -408,6 +410,21 @@ public:
         setFrameSequence(_proxy->getFrameSequenceCopy());
         return ret;
     }
+
+    static inline QString toInternal(const QString &path){
+#if defined(Q_OS_WIN)
+        QString n(path);
+        n.replace(QLatin1Char('\\'),QLatin1Char('/'));
+#if defined(Q_OS_WINCE)
+        if((n.size() > 1) && n.startsWith(QLatin1String("//"))))
+            n = n.mid(1);
+#endif
+        return n;
+#else
+        return path;
+#endif
+    }
+
     void setHistory(const QStringList &paths);
     QStringList history() const;
 

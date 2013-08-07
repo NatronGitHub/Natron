@@ -14,6 +14,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 win32{
     CONFIG += glew
+#ofx needs this on windows
+    DEFINES += WINDOWS
+
 }
 
 unix {
@@ -27,6 +30,8 @@ unix {
      eigen2:    PKGCONFIG += eigen2
      expat:     PKGCONFIG += expat
 } #unix
+
+
 
 debug{
 warning("Compiling in DEBUG mode.")

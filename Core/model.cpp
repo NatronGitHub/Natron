@@ -856,6 +856,7 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
                                                     const std::string& context)
 {
     //  return new MyEffectInstance(plugin, desc, context);
+    return NULL;
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor

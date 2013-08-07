@@ -26,14 +26,23 @@
 #include <QtCore/QRegExp>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QColor>
+#if QT_VERSION < 0x050000
 #include <QtGui/QAction>
-#include <QMenu>
 #include <QtGui/QApplication>
 #include <QtGui/QStylePainter>
+#include <QtGui/QStyleOptionViewItem>
+#else
+#include <QtWidgets/QAction>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QStylePainter>
+#include <QtWidgets/QStyleOptionViewItem>
+#endif
+#include <QMenu>
+
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
 #include <QtConcurrentRun>
-#include <QtGui/QStyleOptionViewItem>
+
 #include <QtCore/QSettings>
 
 #include "Gui/button.h"
@@ -925,7 +934,6 @@ QStringList SequenceFileDialog::typedFiles() const{
             files << qt_tildeExpansion(editText);
 #else
         files << editText;
-        Q_UNUSED(q)
 #endif
     } else {
         // " is used to separate files like so: "file1" "file2" "file3" ...

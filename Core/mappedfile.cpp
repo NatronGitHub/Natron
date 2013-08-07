@@ -140,19 +140,19 @@ file_handle_(-1)
             int windows_open_mode;
             switch (open_mode)
             {
-                case Powiter_Enums::if_exists_fail_if_not_exists_create:
+                case Powiter::if_exists_fail_if_not_exists_create:
                     windows_open_mode = CREATE_NEW;
                     break;
-                case Powiter_Enums::if_exists_keep_if_dont_exists_fail:
+                case Powiter::if_exists_keep_if_dont_exists_fail:
                     windows_open_mode = OPEN_EXISTING;
                     break;
-                case Powiter_Enums::if_exists_keep_if_dont_exists_create:
+                case Powiter::if_exists_keep_if_dont_exists_create:
                     windows_open_mode = OPEN_ALWAYS;
                     break;
-                case Powiter_Enums::if_exists_truncate_if_not_exists_fail:
+                case Powiter::if_exists_truncate_if_not_exists_fail:
                     windows_open_mode = TRUNCATE_EXISTING;
                     break;
-                case Powiter_Enums::if_exists_truncate_if_not_exists_create:
+                case Powiter::if_exists_truncate_if_not_exists_create:
                     windows_open_mode = CREATE_ALWAYS;
                     break;
                 default:
