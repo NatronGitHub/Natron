@@ -30,13 +30,13 @@ class Format:public Box2D{
 	
 	
 public:
-	Format(int x,int y,int r,int t,std::string name,double pa=1.0);
+	Format(int x, int y, int r, int t, const std::string& name, double pa=1.0);
     Format(const Format& other):Box2D(other.x(),other.y(),other.right(),other.top()),_pixel_aspect(other.pixel_aspect()),_name(other.name()){}
   
     Format();
     virtual ~Format(){}
     std::string name() const ;
-    void name(std::string n) const{this->_name = n;}
+    void name(const std::string& n) const{this->_name = n;}
     double pixel_aspect() const;
     void pixel_aspect( float p) ;
 	

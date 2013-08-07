@@ -18,12 +18,9 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
 #include <iostream>
 #include <cstdio>
 #include <map>
-#include <QtCore/QString>
 #include "Core/channels.h"
 #include "Superviser/powiterFn.h"
 #include "Core/displayFormat.h"
@@ -92,14 +89,14 @@ public:
     /*============================*/
     
     /*Hash related functions*/
-    Hash* getHash() const;
+    const Hash* getHash() const{return _hashValue;}
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
     
     /*Knobs related functions*/
-    const std::vector<Knob*>& getKnobs() const;
-    void addToKnobVector(Knob* knob);
+    const std::vector<Knob*>& getKnobs() const { return _knobsVector; }
+    void addToKnobVector(Knob* knob){ _knobsVector.push_back(knob); }
     
     /*Do not call this function. It is used
      internally by the Knob_Callback.*/
@@ -112,56 +109,46 @@ public:
     /*============================*/
     
     /*Parents & children nodes related functions*/
-    const std::vector<Node*>& getParents() const;
-    const std::vector<Node*>& getChildren() const;
-    void addChild(Node* child);
-    void addParent(Node* parent);
+   const std::vector<Node*>& getParents() const {return _parents;}
+    const std::vector<Node*>& getChildren() const {return _children;}
+    void addChild(Node* child){ _children.push_back(child); }
+    void addParent(Node* parent){ _parents.push_back(parent); }
     void removeChild(Node* child);
     void removeParent(Node* parent);
-    void removeFromParents();
-    void removeFromChildren();
+    void removeThisFromParents();
+    void removeThisFromChildren();
     /*============================*/
     
-    /*DAG related*/
+    /*DAG related (topological sorting)*/
     void setMarked(bool mark){_marked = mark;}
     bool isMarked(){return _marked;}
     /*============================*/
     
 	/*Node infos*/
 	Info* getInfo(){return _info;}
-	void merge_frameRange(int otherFirstFrame,int otherLastFrame);
-	bool merge_info(bool forReal);
-	void copy_info(Node* parent);
-	void clear_info();
-	
+    void clear_info();
+
+
 	Box2D& getRequestedBox(){return _requestedBox;}
     int width(){return _info->getDisplayWindow().w();}
     int height(){return _info->getDisplayWindow().h();}
-	/*================================*/
-    
-    
-    /*OutputNB related functions*/
-    int getFreeSocketCount() const;
-    void releaseSocket();
-    void lockSocket();
-    void initializeSockets(){ _freeSocketCount = maximumSocketCount();}
-    virtual int maximumSocketCount();
+       
     /*============================*/
     
     /*Node type related functions*/
-    virtual bool isInputNode();
-    virtual bool isOutputNode();
+    virtual bool isInputNode()  {return false;}
+    virtual bool isOutputNode()  {return false;}
     /*============================*/
     
     /*Node Input related functions*/
     void initializeInputs();
-    virtual int maximumInputs();
-    virtual int minimumInputs();
+    virtual int maximumInputs() {return 1;}
+    virtual int minimumInputs() {return 1;}
     int inputCount() const ;
     Node* input(int index);
-    const std::map<int, std::string>& getInputLabels() const;
+    const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     virtual std::string setInputLabel(int inputNb);
-    std::string getLabel(int inputNb) ;
+    std::string getLabel(int inputNb) {  return _inputLabelsMap[inputNb]; }
     void applyLabelsToInputs();
     void initInputLabelsMap();
     /*============================*/
@@ -169,18 +156,15 @@ public:
     
     
     /*node name related functions*/
-    QString getName();
-    void setName(QString name);
+    std::string getName() const { return _name ; }
+
+    void setName(const std::string& name) { _name = name; }
+
     /*============================*/
-    
-    /*Node mutex related functions*/
-    QMutex* getMutex() const;
-    void setMutex(QMutex* m){this->_mutex=m;}
-    /*============================*/
-    
+
     /*Node utility functions*/
-    virtual std::string className();
-    virtual std::string description();
+    virtual std::string className() =0;
+    virtual std::string description() =0;
     /*============================*/
     
     /*Calculations related functions*/
@@ -208,10 +192,9 @@ public:
     
     /*Returns in row, a row containing the results expected of this node
      for the line y , channels and range (r-x). Data may come from the cache,
-     otherwise engine() gets called. You should never call get() with keepCached on.
-     This parameter is only used by the Interest class internally.
+     otherwise engine() gets called.
      */
-    void get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCached = false);
+    void get(int y,int x,int r,ChannelSet channels,InputRow& row);
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
@@ -227,20 +210,20 @@ protected:
 	virtual void _validate(bool forReal){(void)forReal;}
     
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-	int _freeSocketCount;
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
     bool _marked;
 	std::map<int, std::string> _inputLabelsMap;
-	QMutex* _mutex;
-	QString _name;
+    std::string _name;
 	Hash* _hashValue;
 	std::vector<Knob*> _knobsVector;
 	Knob_Callback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children
 	NodeGui* _nodeGUI;
 private:
-	
+    void merge_frameRange(int otherFirstFrame,int otherLastFrame);
+    bool merge_info(bool forReal);
+    void copy_info(Node* parent);
     
 };
 typedef Node* (*NodeBuilder)();

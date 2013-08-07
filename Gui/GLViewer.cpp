@@ -55,7 +55,7 @@ using namespace std;
 const double pi= 3.14159265358979323846264338327950288419717;
 
 
-static GLint renderingTextureCoordinates[32] = {
+static GLfloat renderingTextureCoordinates[32] = {
     0 , 1 , //0
     0 , 1 , //1
     1 , 1 ,//2
@@ -74,51 +74,59 @@ static GLint renderingTextureCoordinates[32] = {
     1 , 0   //15
 };
 
+/*see http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/ */
+static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
+    7,4,
+    4,8,5,9,6,10,7,11,
+    11,8,
+    8,12,9,13,10,14,11,15
+};
 
-static GLubyte triangleStrip1[8] = {4,0,5,1,6,2,7,3};
-static GLubyte triangleStrip2[8] = {8,4,9,5,10,6,11,7};
-static GLubyte triangleStrip3[8] = {12,8,13,9,14,10,15,11};
 /*
  ASCII art of the vertices used to render.
- The actual texture seen on the viewport is the rect (6,7,10,11).
+ The actual texture seen on the viewport is the rect (5,9,10,6).
  We draw  3*6 strips
  
  0 ___1___2___3
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  4---5---6----7
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  8---9--10--11
- |\  |\  |\  |
- | \ | \ | \ |
- |  \|  \|  \|
+ |  /|  /|  /|
+ | / | / | / |
+ |/  |/  |/  |
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing? _currentDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _drawing? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f , img.h() , // 0
         r.x , img.h() , //1
-        r.r , img.h() ,//2
+        r.r+1 , img.h() ,//2
         img.w() , img.h() , //3
-        0.f , r.t , // 4
-        r.x , r.t , //5
-        r.r , r.t , //6
-        img.w() , r.t , //7
+        0.f , r.t+1 , // 4
+        r.x , r.t+1 , //5
+        r.r+1 , r.t+1 , //6
+        img.w() , r.t+1 , //7
         0.f , r.y , //8
         r.x , r.y , //9
-        r.r , r.y , //10
+        r.r+1 , r.y , //10
         img.w() , r.y ,//11
         0.f , 0.f , // 12
         r.x , 0.f , //13
-        r.r , 0.f , //14
+        r.r+1 , 0.f , //14
         img.w() , 0.f  //15
     };
 
+//    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
+//    << " r = " << r.r << " t = " << r.t << " w = " << r.w
+//    << " h = " << r.h << endl;
+    
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -127,16 +135,12 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_INT, 0 , 0);
+    glTexCoordPointer(2, GL_FLOAT, 0 , 0);
 
     glBindBuffer(GL_ARRAY_BUFFER,0);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[0]);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[1]);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[2]);
-    glDrawElements(GL_TRIANGLE_STRIP, 8, GL_UNSIGNED_BYTE, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -196,11 +200,10 @@ void ViewerGL::initConstructor(){
 	shaderLC=NULL;
 	shaderRGB=NULL;
     shaderBlack=NULL;
-    _textureCache = NULL;
-    _overlay=true;
+     _overlay=true;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
-    _currentDisplayTexture = 0;
+    _defaultDisplayTexture = 0;
     _pBOmapped = false;
 }
 
@@ -254,12 +257,12 @@ ViewerGL::~ViewerGL(){
         delete shaderBlack;
         
     }
-    delete _viewerCacheTexture;
     delete _blackTex;
+    delete _defaultDisplayTexture;
     glDeleteBuffers(2, &_pboIds[0]);
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
-    glDeleteBuffers(3, &_iboTriangleStripId[0]);
+    glDeleteBuffers(1, &_iboTriangleStripId);
   	delete _blankViewerInfos;
 	delete _infoViewer;
 }
@@ -300,10 +303,10 @@ void ViewerGL::paintGL()
     
     glEnable (GL_TEXTURE_2D);
     if(_drawing){
-        glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
+        glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
-        // glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+        //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode())
             activateShaderRGB();
         else if(!rgbMode())
@@ -320,14 +323,6 @@ void ViewerGL::paintGL()
         
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
-//    glBegin (GL_QUADS);
-//    //good one
-//    glTexCoord2i (0, 0);glVertex2i (dispW.x(), _rowSpan.first); // bottom left
-//    glTexCoord2i (0, 1);glVertex2i (dispW.x(), _rowSpan.second+1); // top left
-//    glTexCoord2i (1, 1);glVertex2i (dispW.w(), _rowSpan.second+1); // top right
-//    glTexCoord2i (1, 0);glVertex2i (dispW.w(), _rowSpan.first); // bottom right
-//
-//    glEnd ();
     checkGLErrors();
     drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -420,18 +415,18 @@ void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
  	//glClearColor(0.0,0.0,0.0,1.0);
 	//glClear(GL_COLOR_BUFFER_BIT);
-    checkFrameBufferCompleteness("init");
-    _viewerCacheTexture = new TextureEntry;
-    _blackTex = new TextureEntry;
+    checkFrameBufferCompleteness("initializeGL:");
+    _blackTex = new Texture;
+    _defaultDisplayTexture = new Texture;
     glGenBuffersARB(2, &_pboIds[0]);
     
     // glGenVertexArrays(1, &_vaoId);
     glGenBuffers(1, &_vboVerticesId);
     glGenBuffers(1, &_vboTexturesId);
-    glGenBuffers(3 , &_iboTriangleStripId[0]);
+    glGenBuffers(1 , &_iboTriangleStripId);
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
-    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLint), renderingTextureCoordinates, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), renderingTextureCoordinates, GL_STATIC_DRAW);
     
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
@@ -439,14 +434,10 @@ void ViewerGL::initializeGL(){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[0]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip1, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
     
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip2, GL_STATIC_DRAW);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId[2]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8*sizeof(GLubyte), triangleStrip3, GL_STATIC_DRAW);
+   
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
@@ -466,7 +457,6 @@ void ViewerGL::initializeGL(){
 
     
     initBlackTex();
-    
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -492,7 +482,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     // testing top of the image
     std::pair<int,int> ret;
     int y = 0;
-    float res = -1;
+    int res = -1;
+    int prev = -1;
     res = toImgCoordinates_fast(0,y).y();
     if (res < 0) { // all the image is above the viewer
         ret.first = displayWindow.y();
@@ -511,7 +502,10 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     }
     while(res < displayWindow.h() && y >= 0){
         /*y is a valid line in widget coord && res contains the image y coord.*/
-        rows.push_back(res);
+        if(res != prev){
+            rows.push_back(res);
+            prev = res;
+        }
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
@@ -527,7 +521,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     // testing right of the image
     std::pair<int,int> ret;
     int x = width()-1;
-    float res = -1;
+    int res = -1;
+    int prev = -1;
     res = toImgCoordinates_fast(x,0).x();
     if (res < 0) { // all the image is on the left of the viewer
         ret.first = displayWindow.x();
@@ -547,7 +542,10 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     }
     while(res < displayWindow.w() && x < width()){
         /*y is a valid column in widget coord && res contains the image x coord.*/
-        columns.push_back(res);
+        if(res != prev){
+            columns.push_back(res);
+            prev = res;
+        }
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
@@ -665,26 +663,18 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex(){
     fitToFormat(displayWindow());
-    _blackTex->allocate(TextureRect(0, 0, 2047, 1555,2048,1556),TextureEntry::BYTE);
     
-    
+    TextureRect texSize(0, 0, 2047, 1555,2048,1556);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, _blackTex->w()*_blackTex->h()*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     U32* output = reinterpret_cast<U32*>(frameData);
-    for(int i = 0 ; i < _blackTex->w()*_blackTex->h() ; i++){
+    for(int i = 0 ; i < texSize.w*texSize.h ; i++){
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-	
-    glTexSubImage2D (GL_TEXTURE_2D,
-                     0,				// level
-                     0,0 ,				// xoffset, yoffset
-                     _blackTex->w(), _blackTex->h(),
-                     GL_BGRA,			// format
-                     GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                     0);
-    
+    _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
+
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
 }
@@ -728,59 +718,25 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
-void ViewerGL::copyPBOToNewTexture(TextureEntry* texture,const TextureRect& texRect){
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    TextureEntry::DataType type;
-    if(byteMode() == 1 || !_hasHW){
-        type = TextureEntry::BYTE;
-    }else{
-        type = TextureEntry::FLOAT;
-    }
-    texture->allocate(texRect,type);
-    _textureCache->addTexture(texture);
-    setCurrentDisplayTexture(texture);
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    frameData = 0;
-    _pBOmapped = false;
 
-}
-
-void ViewerGL::copyPBOToExistingTexture(){
-    
-    
-    int w = _currentDisplayTexture->w();
-    int h = _currentDisplayTexture->h();
-    glEnable (GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, _currentDisplayTexture->getTexID());
+void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
-    
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    if(_currentDisplayTexture->type() == TextureEntry::BYTE){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0,				// xoffset, yoffset
-                        w, h,
-                        GL_BGRA,			// format
-                        GL_UNSIGNED_INT_8_8_8_8_REV,		// type
-                        0);
-        
-        
-    }else if(_currentDisplayTexture->type() == TextureEntry::FLOAT){
-        glTexSubImage2D(GL_TEXTURE_2D,
-                        0,				// level
-                        0, 0 ,				// xoffset, yoffset
-                        w, h,
-                        GL_RGBA,			// format
-                        GL_FLOAT,		// type
-                        0);
-        
-        
+    checkGLErrors();
+    if(byteMode() == 1.f || !_hasHW){
+//        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
+//        << " r = " << region.r << " t = " << region.t << " w = " << region.w
+//        << " h = " << region.h << endl;
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+    }else{
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
+
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     frameData = 0;
@@ -795,6 +751,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     assert(frameData);
+    
     U32* output = reinterpret_cast<U32*>(frameData);
     yOffset*=columnSpan.size();
     output+=yOffset;
@@ -1004,8 +961,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
             newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
         }else {
             newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
-            if(newZoomFactor <= 0.1){
-                newZoomFactor = 0.1;
+            if(newZoomFactor <= 0.01){
+                newZoomFactor = 0.01;
             }
         }
         QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
@@ -1030,7 +987,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 void ViewerGL::zoomSlot(int v){
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
         float value = v/100.f;
-        if(value < 0.1f) value = 0.1f;
+        if(value < 0.01f) value = 0.01f;
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
@@ -1740,12 +1697,7 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
     
 }
 
-void ViewerGL::setCurrentDisplayTexture(TextureEntry* texture){
-    if(_currentDisplayTexture)
-        _currentDisplayTexture->returnToNormalPriority();
-    _currentDisplayTexture = texture;
-    texture->preventFromDeletion();
-}
+
 float ViewerGL::byteMode() const {
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
 }

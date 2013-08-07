@@ -37,21 +37,18 @@ NodeCache* NodeCache::getNodeCache(){
 }
 
 
-std::pair<U64,Row*> NodeCache::get(U64 nodeKey, std::string filename, int x, int r,int y ,ChannelSet& ){
+std::pair<U64,Row*> NodeCache::get(U64 nodeKey, const std::string& filename, int x, int r, int y, const ChannelSet& ){
     U64 hashKey = Row::computeHashKey(nodeKey, filename, x, r, y );
-    CacheIterator it = isCached(hashKey);
-    if (it == end()) {// not in memory
-        return make_pair(hashKey,(Row*)NULL);
-    }else{ // found in memory
-        CacheEntry* entry = AbstractCache::getValueFromIterator(it);
+    CacheEntry* entry = getCacheEntry(hashKey);
+    if(entry){
         Row* rowEntry = dynamic_cast<Row*>(entry);
         assert(rowEntry);
-        return make_pair(it->first,rowEntry);
+        return make_pair(hashKey,rowEntry);
     }
     return make_pair(hashKey,(Row*)NULL);
 }
 
-Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::string){
+Row* NodeCache::addRow(U64 key,int x, int r, int y, const ChannelSet &channels,const std::string&){
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);
@@ -65,6 +62,8 @@ Row* NodeCache::addRow(U64 key,int x, int r, int y, ChannelSet &channels,std::st
         delete out;
         return NULL;
     }else{
+        out->notifyCacheForDeletion();
+        out->addReference(); // increase reference counting BEFORE adding it to the cache and exposing it to other threads
         AbstractMemoryCache::add(key, out);
     }
     return out;

@@ -87,7 +87,7 @@ bool Node::merge_info(bool forReal){
     clear_info();
 	int final_direction=0;
 	ChannelSet chans;
-    bool displayMode;
+    bool displayMode = _info->rgbMode();
 	for (int i =0 ; i < inputCount(); i++) {
         Node* parent = _parents[i];
         merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
@@ -97,8 +97,8 @@ bool Node::merge_info(bool forReal){
             chans += parent->getInfo()->channels();
             ChannelSet neededChans = channelsNeeded(i);
             if ((neededChans & chans) != neededChans) {
-                cout << parent->getName().toStdString() << " does not contain the channels needed by "
-                << getName().toStdString()  << endl;
+                cout << parent->getName() << " does not contain the channels needed by "
+                << getName()  << endl;
                 neededChans.printOut();
                 return false;
             }
@@ -166,10 +166,7 @@ Node::Node(){
     _hashValue=new Hash;
 	
 }
-Hash* Node::getHash() const{return _hashValue;}
 
-const std::vector<Knob*>& Node::getKnobs() const{return _knobsVector;}
-void Node::addToKnobVector(Knob* knob){_knobsVector.push_back(knob);}
 void Node::removeKnob(Knob* knob){
     for(U32 i = 0 ; i < _knobsVector.size() ; i++){
         if (knob == _knobsVector[i]) {
@@ -179,26 +176,12 @@ void Node::removeKnob(Knob* knob){
     }
 }
 
-const std::vector<Node*>& Node::getParents() const {return _parents;}
-const std::vector<Node*>& Node::getChildren() const {return _children;}
 
-
-int Node::getFreeSocketCount() const{return _freeSocketCount;}
-
-void Node::addChild(Node* child){
-    
-    _children.push_back(child);
-}
-void Node::addParent(Node* parent){
-    
-    _parents.push_back(parent);
-}
 void Node::removeChild(Node* child){
     
     U32 i=0;
     while(i<_children.size()){
         if(_children[i]==child){
-            _freeSocketCount++;
             _children.erase(_children.begin()+i);
             break;
         }
@@ -217,41 +200,24 @@ void Node::removeParent(Node* parent){
     }
 }
 
-void Node::removeFromParents(){
+void Node::removeThisFromParents(){
     for(U32 i = 0 ; i < _parents.size() ; i++){
         _parents[i]->removeChild(this);
     }
 }
 
-void Node::removeFromChildren(){
+void Node::removeThisFromChildren(){
     for(U32 i = 0 ; i < _children.size() ; i++){
         _children[i]->removeParent(this);
     }
 
 }
 
-void Node::releaseSocket(){
-    if(!isOutputNode()){
-        _freeSocketCount++;
-    }
-}
-void Node::lockSocket(){
-    if(!isOutputNode() && getFreeSocketCount() > 0){
-        _freeSocketCount--;
-    }
-}
-int Node::maximumSocketCount(){return 1;}
-bool Node::isInputNode(){return false;}
-bool Node::isOutputNode(){return false;}
-
 void Node::initializeInputs(){
     initInputLabelsMap();
     applyLabelsToInputs();
-    
 }
-int Node::maximumInputs(){return 1;}
 
-int Node::minimumInputs(){return 1;}
 
 Node* Node::input(int index){
     if((U32)index < _parents.size()){
@@ -260,16 +226,6 @@ Node* Node::input(int index){
         return NULL;
     }
 }
-
-const std::map<int, std::string>& Node::getInputLabels() const {return _inputLabelsMap;}
-
-std::string Node::getLabel(int inputNb)  {
-    return _inputLabelsMap[inputNb];}
-QString Node::getName() {return _name;}
-QMutex* Node::getMutex() const {return _mutex;}
-
-
-void Node::setName(QString name){this->_name=name;}
 
 
 /*To change label names : override setInputLabel to reflect what you want to have for input "inputNb" */
@@ -299,9 +255,6 @@ void Node::initInputLabelsMap(){
 }
 
 
-
-std::string Node::className(){return "Node_Abstract_Class";}
-
 bool Node::validate(bool forReal){
     if(!isInputNode()){
         if(!merge_info(forReal)) return false;
@@ -315,7 +268,7 @@ bool Node::validate(bool forReal){
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     for(U32 i =0 ; i < alreadyComputedHash.size();i++){
-        if(alreadyComputedHash[i] == _name.toStdString())
+        if(alreadyComputedHash[i] == _name)
             return;
     }
     _hashValue->reset();
@@ -323,10 +276,10 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
         _hashValue->appendKnobToHash(_knobsVector[i]);
     }
     _hashValue->appendQStringToHash(QString(className().c_str()));
-    alreadyComputedHash.push_back(_name.toStdString());
+    alreadyComputedHash.push_back(_name);
     foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
-        _hashValue->appendNodeHashToHash(parent->getHash()->getHashValue());
+        _hashValue->appendValueToHash(parent->getHash()->getHashValue());
     }
     _hashValue->computeHash();
 }
@@ -349,7 +302,7 @@ std::string Node::description(){
     return "";
 }
 
-void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCached){
+void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     NodeCache* cache = NodeCache::getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
@@ -367,24 +320,21 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row,bool keepCach
     pair<U64,Row*> entry = cache->get(key , filename, x, r, y, channels);
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
-        entry.second->preventFromDeletion();
+        /*checking that the entry matches what we asked for*/
+        assert(out->offset() == x && out->right() == r);
         row.setInternalRow(out);
         return;
     }else{
         if(cacheData()){
             out = cache->addRow(entry.first,x, r, y, channels, filename);
-            if(keepCached){
-                out->preventFromDeletion();
-            }
-            out->notifyCacheForDeletion();
-            row.setInternalRow(out);
             if(!out) return;
         }else{
             out = new Row(x,y,r,channels);
             out->allocateRow();
         }
-        engine(y, x, r, channels, out);
+        assert(out->offset() == x && out->right() == r);
         row.setInternalRow(out);
+        engine(y, x, r, channels, out);
         return;
     }
 }

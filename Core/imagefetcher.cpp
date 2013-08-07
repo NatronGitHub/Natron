@@ -41,7 +41,7 @@ void InputFetcher::claimInterest(){
 }
 
 void InputFetcher::getInputRow(Node* node,InputRow* row){
-    node->get(_y,_x,_r,_channels,*row,true);
+    node->get(_y,_x,_r,_channels,*row);
 }
 
 const InputRow& InputFetcher::at(int y) const {
@@ -55,8 +55,7 @@ const InputRow& InputFetcher::at(int y) const {
 
 InputFetcher::~InputFetcher(){
     for (U32 i = 0; i < _sequence.size(); i++) {
-        _sequence[i]->getInternalRow()->returnToNormalPriority();
-        delete _sequence[i];
+        delete _sequence[i]; // deleting will decrease ref counting and allow the cache to free these elements again
     }
     delete _results;
 }

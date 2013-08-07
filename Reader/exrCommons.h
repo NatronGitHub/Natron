@@ -52,7 +52,7 @@ namespace EXR {
         "B44"
     };
     
-    inline Imf::Compression stringToCompression(std::string& str){
+    inline Imf::Compression stringToCompression(const std::string& str){
         if(str == compressionNames[0]){
             return Imf::NO_COMPRESSION;
         }else if(str == compressionNames[1]){
@@ -72,7 +72,7 @@ namespace EXR {
         "16 bit half", "32 bit float"
     };
     
-    inline int depthNameToInt(std::string& name){
+    inline int depthNameToInt(const std::string& name){
         if(name == depthNames[0]){
             return 16;
         }else{
@@ -80,7 +80,7 @@ namespace EXR {
         }
     }
     
-    inline Powiter::Channel fromExrChannel(std::string from)
+    inline Powiter::Channel fromExrChannel(const std::string& from)
     {
         if (from == "R" || from == "r" || from == "Red" || from == "RED" || from == "red" || from == "y" || from == "Y")
             return Powiter::Channel_red;

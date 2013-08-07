@@ -26,7 +26,12 @@
 #include <vector>
 class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
- that means the powiter settings are unique and there cannot be 2 instances living at the same time.*/
+ that means the powiter settings are unique and there cannot be 2 instances living at the same time.
+ 
+ 
+ 
+ @todo Move this class to QSettings instead*/
+
 class Settings : public Singleton<Settings>
 {
 public:
@@ -40,7 +45,6 @@ public:
         double maxCacheMemoryPercent ; // percentage of the total  RAM
         double maxPlayBackMemoryPercent; //percentage of maxCacheMemoryPercent
         U64 maxDiskCache ; // total size of disk space used
-        U64 maxTextureCache; //total size of the texture cache
         
         CachingSettings();
     };
@@ -63,10 +67,10 @@ public:
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* decoderForFiletype(std::string type);
+        PluginID* decoderForFiletype(const std::string& type);
         
         /*changes the decoder for files identified by the filetype*/
-        void changeMapping(std::string filetype,PluginID* decoder);
+        void changeMapping(const std::string& filetype,PluginID* decoder);
         
         /*use to initialise default mapping*/
         void fillMap(std::map<std::string,PluginID*>& defaultMap);
@@ -83,10 +87,10 @@ public:
         
         /*Returns a pluginID if it could find an encoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* encoderForFiletype(std::string type);
+        PluginID* encoderForFiletype(const std::string& type);
         
         /*changes the encoder for files identified by the filetype*/
-        void changeMapping(std::string filetype,PluginID* encoder);
+        void changeMapping(const std::string& filetype, PluginID* encoder);
         
         /*use to initialise default mapping*/
         void fillMap(std::map<std::string,PluginID*>& defaultMap);

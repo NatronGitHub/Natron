@@ -46,7 +46,7 @@ using namespace Powiter;
 ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
 {
     
-    setObjectName(node->getName());
+    setObjectName(node->getName().c_str());
     _mainLayout=new QVBoxLayout(this);
     setLayout(_mainLayout);
     _mainLayout->setSpacing(0);
@@ -286,8 +286,8 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     
     _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it."
-                                    "<p></br><b>Keyboard shortcut: C</b></p>");
-    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_C));
+                                    "<p></br><b>Keyboard shortcut: F</b></p>");
+    _centerViewerButton->setShortcut(QKeySequence(Qt::Key_F));
     
 	/*=================================================*/
     
@@ -315,9 +315,9 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
-    QObject::connect(play_Forward_Button,SIGNAL(toggled(bool)),this,SLOT(startPause(bool)));
+    QObject::connect(play_Forward_Button,SIGNAL(clicked(bool)),this,SLOT(startPause(bool)));
     QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abort()));
-    QObject::connect(play_Backward_Button,SIGNAL(toggled(bool)),this,SLOT(startBackward(bool)));
+    QObject::connect(play_Backward_Button,SIGNAL(clicked(bool)),this,SLOT(startBackward(bool)));
     QObject::connect(previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()));
     QObject::connect(nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()));
     QObject::connect(previousIncrement_Button,SIGNAL(clicked()),this,SLOT(previousIncrement()));
@@ -327,8 +327,9 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(viewer,SIGNAL(engineNeeded()),vengine,SLOT(repeatSameFrame()));
-    
+        
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
+    QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
 }
 
 void ViewerTab::updateZoomComboBox(int value){
@@ -397,7 +398,7 @@ void ViewerTab::seekRandomFrame(int f){
 
 void ViewerTab::centerViewer(){
     if(viewer->drawing()){
-        ctrlPTR->getModel()->startVideoEngine(1);
+        emit recenteringNeeded();
     }else{
         viewer->fitToFormat(viewer->displayWindow());
         viewer->updateGL();
@@ -408,9 +409,6 @@ ViewerTab::~ViewerTab()
 {
 }
 
-void ViewerTab::setTextureCache(TextureCache* cache){
-    viewer->setTextureCache(cache);
-}
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     

@@ -50,7 +50,7 @@ public:
     
     void reset();
     
-    void appendNodeHashToHash(U64 hashValue);
+    void appendValueToHash(U64 hashValue);
     
     void appendQStringToHash(QString str);
     

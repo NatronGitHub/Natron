@@ -20,9 +20,7 @@
 #define __PowiterOsX__texturecache__
 
 #include <iostream>
-#include "Core/abstractCache.h"
 #include "Core/Box.h"
-#include "Superviser/powiterFn.h"
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  *into a texture. x,y,r,t are respectivly the image coordinates of the left,bottom,right,top
@@ -46,27 +44,31 @@ public:
     int x,y,r,t;
     int w,h;
 };
+inline bool operator==(const TextureRect& first ,const TextureRect& second){
+   return first.x == second.x &&
+    first.y == second.y &&
+    first.r == second.r &&
+    first.t == second.t &&
+    first.w == second.w &&
+    first.h == second.h;
+}
 
-/** @class The texture cache is, as the name says, an object that stores texture previously drawn
- so they can be re-used in the future if we need exactly them. The texture cache is
- useful for panning & zooming.
- Note that a TextureEntry actually doesn't hold any memory, just the adress of the 
- OpenGL texture, so the parameters passed to allocate can be ignored.
- **/
-class TextureEntry : public CacheEntry{
+inline bool operator!=(const TextureRect& first ,const TextureRect& second){ return !(first == second); }
+
+
+class Texture{
 public:
-    /*Note that the half datatype is not used currently*/
-    enum DataType {BYTE = 0,FLOAT = 1 , HALF = 2};
+    /*Note that the short datatype is not used currently*/
+    enum DataType {BYTE = 0,FLOAT = 1 , SHORT = 2};
 
-protected:
-    U64 _hashKey;
+private:
     U32 _texID;
     TextureRect _textureRect;
     DataType _type;
 public:
     
     
-    TextureEntry();
+    Texture();
     
     U32 getTexID() const {return _texID;}
     
@@ -77,44 +79,20 @@ public:
     DataType type() const {return _type;}
     
     /*allocates the texture*/
-    void allocate(const TextureRect& texRect,DataType type);
-    
-    void setHashKey(U64 key){_hashKey = key;}
-        
+    void fillOrAllocateTexture(const TextureRect& texRect,DataType type);
+            
     const TextureRect& getTextureRect() const {return _textureRect;}
+   
     
-    U64 getHashKey() const {return _hashKey;}
-    
-    /*deallocates the texture*/
-    virtual void deallocate();
-    
-    virtual ~TextureEntry();
+    virtual ~Texture();
     
 private:
     
     /*private hack : we don't use this function here*/
-    virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
+    virtual bool fillOrAllocateTexture(U64 ,const char* path = 0){(void)path;return true;}
     
 };
 
-class TextureCache : public AbstractCache{
-    
-public:
-       
-    TextureCache():AbstractCache(){}
-    
-    virtual ~TextureCache(){}
-    
-    virtual  std::string cacheName() {return "TextureCache";}
-    
-    /*Returns 0 if the texture represented by the key is not present in the cache.*/
-    TextureEntry* get(U64 key);
-    
-    /*Inserts an existing texture in the cache*/
-    void addTexture(TextureEntry* texture);
-    
-    void remove(TextureEntry* entry);
-    
-};
+
 
 #endif /* defined(__PowiterOsX__texturecache__) */

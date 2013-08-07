@@ -43,7 +43,7 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
     }
-    const QRgb* from = reinterpret_cast<const QRgb*>(buffer);
+    const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
     foreachChannels(z, channels){
         float* to = out->writable(z) + offset;
         if(to!=NULL){
@@ -110,8 +110,10 @@ void ReadQt::readAllData(bool){
 
 
 void ReadQt::make_preview(){
-    int w = 64;
-    int h = 64;
+    
+    int h,w;
+    _img->width() < 64 ? w = _img->width() : w = 64;
+    _img->height() < 64 ? h = _img->height() : h = 64;
     float zoomFactor = (float)h/(float)_img->height();
     QImage* img = new QImage(w,h,_img->format());
     for(int i =0 ; i < h ; i++){

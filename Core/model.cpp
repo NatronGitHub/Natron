@@ -14,18 +14,17 @@
 #include <QtCore/QDir>
 #include <cassert>
 #include <cstdio>
+#include <fstream>
 #include "Core/model.h"
-#include "Core/outputnode.h"
-#include "Core/inputnode.h"
 #include "Superviser/controler.h"
 #include "Core/hash.h"
 #include "Core/node.h"
 #include "Core/channels.h"
 #include "Reader/Reader.h"
 #include "Writer/Writer.h"
+#include "Core/ofxnode.h"
 #include "Core/viewerNode.h"
 #include "Gui/mainGui.h"
-#include "Core/inputnode.h"
 #include "Gui/GLViewer.h"
 #include "Gui/tabwidget.h"
 #include "Core/VideoEngine.h"
@@ -55,24 +54,21 @@
 
 // ofx host
 #include "ofxhBinary.h"
-#include "ofxhPropertySuite.h"
 #include "ofxhClip.h"
 #include "ofxhParam.h"
 #include "ofxhMemory.h"
-#include "ofxhImageEffect.h"
 #include "ofxhPluginAPICache.h"
-#include "ofxhPluginCache.h"
-#include "ofxhHost.h"
 #include "ofxhImageEffectAPI.h"
+#include "ofxhHost.h"
+
+
 
 
 using namespace std;
 using namespace Powiter;
-Model::Model(): _videoEngine(0),_mutex(0)
+Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPluginCache(*this)
 {
-    /*general mutex shared by all nodes*/
-    _mutex = new QMutex;
-    
+        
     /*node cache initialisation & restoration*/
     _nodeCache = NodeCache::getNodeCache();
     U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
@@ -96,7 +92,7 @@ Model::Model(): _videoEngine(0),_mutex(0)
     /*allocating lookup tables*/
     Lut::allocateLuts();
     
-    _videoEngine = new VideoEngine(this,_mutex);
+    _videoEngine = new VideoEngine(this);
     connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
     
     /*initializing list of all Formats available*/
@@ -197,7 +193,10 @@ Model::~Model(){
     _viewerCache->save();
     Lut::deallocateLuts();
     _videoEngine->abort();
-    foreach(PluginID* p,_pluginsLoaded) delete p;
+    
+    writeOFXCache();
+    
+    // foreach(PluginID* p,_pluginsLoaded) delete p;
     foreach(CounterID* c,_nodeCounters) delete c;
     foreach(Format* f,_formats) delete f;
     for(ReadPluginsIterator it = _readPluginsLoaded.begin();it!=_readPluginsLoaded.end();it++){
@@ -211,20 +210,17 @@ Model::~Model(){
             it->second = 0;
         }
     }
-    _readPluginsLoaded.clear();
-    _pluginsLoaded.clear();
     _nodeCounters.clear();
     delete _videoEngine;
     _videoEngine = 0;
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
-    delete _mutex;
 }
 
 void Model::loadAllPlugins(){
     /*loading node plugins*/
-    loadPluginsAndInitNameList();
+    //  loadPluginsAndInitNameList();
     loadBuiltinPlugins();
     
     /*loading read plugins*/
@@ -238,110 +234,85 @@ void Model::loadAllPlugins(){
 }
 
 
-void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
-    QDir d(QString(PLUGINS_PATH));
-    if (d.isReadable())
-    {
-        QStringList filters;
-#ifdef __POWITER_WIN32__
-        filters << "*.dll";
-#elif defined(__POWITER_OSX__)
-        filters << "*.dylib";
-#elif defined(__POWITER_LINUX__)
-        filters << "*.so";
-#endif
-		d.setNameFilters(filters);
-		QStringList fileList = d.entryList();
-		for(int i = 0 ; i < fileList.size() ;i ++)
-		{
-			QString filename = fileList.at(i);
-			if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
-				QString className;
-				int index = filename.size() -1;
-				while(filename.at(index) != QChar('.')) index--;
-				className = filename.left(index);
-				_nodeNames.append(QString(className));
-                
-#ifdef __POWITER_WIN32__
-				HINSTANCE lib;
-				string dll;
-				dll.append(PLUGINS_PATH);
-				dll.append(className.toStdString());
-				dll.append(".dll");
-				lib=LoadLibrary((LPCWSTR)dll.c_str());
-				if(lib==NULL){
-					cout << " couldn't open library " << qPrintable(className) << endl;
-				}else{
-					NodeBuilder builder=(NodeBuilder)GetProcAddress(lib,"BuildNode");
-					if(builder){
-						Node* test = builder();
-						PluginID* plugin=new PluginID((HINSTANCE)builder,test->getName().toStdString());
-						delete test;
-						_pluginsLoaded.push_back(plugin);
-					}
-				}
-                
-#elif defined(__POWITER_UNIX__)
-				string dll;
-                dll.append(PLUGINS_PATH);
-				dll.append(className.toStdString());
-#ifdef __POWITER_OSX__
-				dll.append(".dylib");
-#elif defined(__POWITER_LINUX__)
-				dll.append(".so");
-#endif
-				void* lib=dlopen(dll.c_str(),RTLD_LAZY);
-				if(!lib){
-					cout << " couldn't open library " << qPrintable(className) << endl;
-				}
-				else{
-					NodeBuilder builder=(NodeBuilder)dlsym(lib,"BuildNode");
-					if(builder){
-						Node* test = builder();
-						PluginID* plugin=new PluginID((void*)builder,test->getName().toStdString());
-						_pluginsLoaded.push_back(plugin);
-						delete test;
-					}
-				}
-#endif
-			}else{
-                continue;
-            }
-        }
-    }
-}
-
-std::string Model::getNextWord(string str){
-    string res;
-    U32 i=0;
-    while(i!=str.size() && str[i]==' '){
-        i++;
-    }
-    while(i!=str.size() && str[i]!=' ' && str[i]!=':'){
-        res.push_back(str[i]);
-        i++;
-    }
-    return res;
-}
-
-std::string Model::removePrefixSpaces(std::string str){
-    string res;
-    U32 i=0;
-    while(i!=str.size() && str[i]==' '){
-        i++;
-    }
-    res=str.substr(i,str.size());
-    return res;
-    
-}
+//void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
+//    QDir d(QString(PLUGINS_PATH));
+//    if (d.isReadable())
+//    {
+//        QStringList filters;
+//#ifdef __POWITER_WIN32__
+//        filters << "*.dll";
+//#elif defined(__POWITER_OSX__)
+//        filters << "*.dylib";
+//#elif defined(__POWITER_LINUX__)
+//        filters << "*.so";
+//#endif
+//		d.setNameFilters(filters);
+//		QStringList fileList = d.entryList();
+//		for(int i = 0 ; i < fileList.size() ;i ++)
+//		{
+//			QString filename = fileList.at(i);
+//			if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+//				QString className;
+//				int index = filename.size() -1;
+//				while(filename.at(index) != QChar('.')) index--;
+//				className = filename.left(index);
+//				_nodeNames.append(QString(className));
+//                
+//#ifdef __POWITER_WIN32__
+//				HINSTANCE lib;
+//				string dll;
+//				dll.append(PLUGINS_PATH);
+//				dll.append(className.toStdString());
+//				dll.append(".dll");
+//				lib=LoadLibrary((LPCWSTR)dll.c_str());
+//				if(lib==NULL){
+//					cout << " couldn't open library " << qPrintable(className) << endl;
+//				}else{
+//					NodeBuilder builder=(NodeBuilder)GetProcAddress(lib,"BuildNode");
+//					if(builder){
+//						Node* test = builder();
+//                        PluginID* plugin=new PluginID((HINSTANCE)builder,test->getName();
+//						delete test;
+//						_pluginsLoaded.push_back(plugin);
+//					}
+//				}
+//                
+//#elif defined(__POWITER_UNIX__)
+//				string dll;
+//                dll.append(PLUGINS_PATH);
+//				dll.append(className.toStdString());
+//#ifdef __POWITER_OSX__
+//				dll.append(".dylib");
+//#elif defined(__POWITER_LINUX__)
+//				dll.append(".so");
+//#endif
+//				void* lib=dlopen(dll.c_str(),RTLD_LAZY);
+//				if(!lib){
+//					cout << " couldn't open library " << qPrintable(className) << endl;
+//				}
+//				else{
+//					NodeBuilder builder=(NodeBuilder)dlsym(lib,"BuildNode");
+//					if(builder){
+//						Node* test = builder();
+//                        PluginID* plugin=new PluginID((void*)builder,test->getName());
+//						_pluginsLoaded.push_back(plugin);
+//						delete test;
+//					}
+//				}
+//#endif
+//			}else{
+//                continue;
+//            }
+//        }
+//    }
+//}
 
 
-
-std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output,bool isViewer){
+std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
     _videoEngine->resetAndMakeNewDag(output,isViewer);
     _videoEngine->changeTreeVersion();
     
-    const std::vector<InputNode*>& inputs = _videoEngine->getCurrentDAG().getInputs();
+    const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< inputs.size(); i++) {
@@ -357,7 +328,7 @@ std::pair<int,bool> Model::setVideoEngineRequirements(OutputNode *output,bool is
     return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
 }
 
-UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
+void Model::initCounterAndGetDescription(Node*& node){
     bool found=false;
     foreach(CounterID* counter,_nodeCounters){
         string tmp(counter->second);
@@ -365,7 +336,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         if(tmp==nodeName){
             (counter->first)++;
             found=true;
-            QString str;
+            string str;
             str.append(nodeName.c_str());
             str.append("_");
             char c[50];
@@ -378,7 +349,7 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
         CounterID* count=new CounterID(1,node->className());
         
         _nodeCounters.push_back(count);
-        QString str;
+        string str;
         str.append(node->className().c_str());
         str.append("_");
         char c[50];
@@ -391,38 +362,18 @@ UI_NODE_TYPE Model::initCounterAndGetDescription(Node*& node){
      adding its cache to the watched caches.*/
     _currentNodes.push_back(node);
     
-    string outputNodeSymbol="OutputNode";
-    string inputNodeSymbol="InputNode";
-    string flowOpSymbol="FlowOperator";
-    string imgOperatorSymbol="ImgOperator";
-    string desc =node->description();
-    if(desc==outputNodeSymbol){
-        return OUTPUT;
-    }
-    else if(desc==inputNodeSymbol){
-		return INPUT_NODE;
-    }else if(desc==imgOperatorSymbol || desc==flowOpSymbol){
-        return OPERATOR;
-    }
-    return UNDEFINED;
 }
 
-UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
+bool Model::createNode(Node *&node,const std::string name){
 	if(name=="Reader"){
-		UI_NODE_TYPE type;
 		node=new Reader();
-        node->setMutex(m);
         node->initializeInputs();
-        node->initializeSockets();
-		type=initCounterAndGetDescription(node);
-		return type;
+		initCounterAndGetDescription(node);
+        return true;
 	}else if(name =="Viewer"){
-		UI_NODE_TYPE type;
-		node=new Viewer(_viewerCache,ctrlPTR->getGui()->getTextureCache());
-        node->setMutex(m);
+		node=new Viewer(_viewerCache);
         node->initializeInputs();
-        node->initializeSockets();
-		type=initCounterAndGetDescription(node);
+		initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
         if(!where){
             where = ctrlPTR->getGui()->_viewersPane;
@@ -430,50 +381,38 @@ UI_NODE_TYPE Model::createNode(Node *&node,QString& name,QMutex* m){
             ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<Viewer*>(node)->initializeViewerTab(where);
-		return type;
+        return true;
 	}else if(name == "Writer"){
-        UI_NODE_TYPE type;
 		node=new Writer();
-        node->setMutex(m);
         node->initializeInputs();
-        node->initializeSockets();
-		type=initCounterAndGetDescription(node);
-		return type;
+		initCounterAndGetDescription(node);
+        return true;
     }else{
-        
-        UI_NODE_TYPE type=UNDEFINED;
-        
-		foreach(PluginID* pair,_pluginsLoaded){
-			string str(pair->second);
-            
-			if(str==name.toStdString()){
-				
                 
-				NodeBuilder builder=(NodeBuilder)pair->first;
-				if(builder!=NULL){
-					node=builder();
-                    node->setMutex(m);
-                    node->initializeInputs();
-                    node->initializeSockets();
-					type=initCounterAndGetDescription(node);
-                    
-				}
-				return type;
-			}
-            
-		}
+//		foreach(PluginID* pair,_pluginsLoaded){
+//			string str(pair->second);
+//            
+//			if(str==name){
+//				NodeBuilder builder=(NodeBuilder)pair->first;
+//				if(builder!=NULL){
+//					node=builder();
+//                    node->initializeInputs();
+//					  initCounterAndGetDescription(node);
+//                    
+//				}
+//				return type;
+//			}
+//            
+//		}
+        return false;
 	}
-    return UNDEFINED;
-    
-    
     
 }
 // in the future, display the plugins loaded on the loading wallpaper
 void Model::displayLoadedPlugins(){
     int i=0;
-    foreach(PluginID* plugin,_pluginsLoaded){
-        i++;
-        cout << "Plugin:  " << plugin->second << endl;
+    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; it++){
+        cout << it->first << endl;
     }
     cout  << i << " plugin(s) loaded." << endl;
 }
@@ -842,12 +781,77 @@ void Model::resetInternalDAG(){
     }
 }
 
+/*group is a string as such:
+ Toto/Superplugins/blabla.
+ This functions extracts the Nth part of such a grouping, e.g in this case
+ 
+ extractNthPartOfGrouping would return Toto for the part 0.
+ If no such part exists (for e.g 100000), it will return the last part.*/
+static std::string extractNthPartOfGrouping(const std::string& group,int part = 0){
+    QString str(group.c_str());
+    int pos = 0;
+    int i = 0;
+    int lastPartPos = 0;
+    while(pos < str.size() && i < part) {
+        if(str.at(pos) == QChar('/') || str.at(pos) == QChar('\\')){
+            i++;
+            lastPartPos = pos;
+        }
+        pos++;
+    }
+    if(pos >= str.size())
+        pos = lastPartPos+1;
+    
+    if(pos != 0){
+        str = str.remove(0, pos);
+    }
+    pos = 0;
+    std::string ret;
+    while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+        ret.append(1,str.at(pos).toLatin1());
+        pos++;
+    }
+    return ret;
+}
 
-void Model::loadOFXPlugins(bool useCache){
-    (void)useCache;
-
-
-
+void Model::loadOFXPlugins(){
+    /// set the version label in the global cache
+    OFX::Host::PluginCache::getPluginCache()->setCacheVersion("PowiterOFXCachev1");
+    
+    /// make an image effect plugin cache
+    
+    /// register the image effect cache with the global plugin cache
+    _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
+    
+    /// now read an old cache cache
+    std::ifstream ifs("PowiterOFXCache.xml");
+    OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
+    OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
+    ifs.close();
+    
+    //  _imageEffectPluginCache.dumpToStdOut();
+    
+    /*Filling node name list and plugin grouping*/
+    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
+    for (unsigned int i = 0 ; i < plugins.size(); i++) {
+        OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
+        std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
+        std::string id = p->getIdentifier();
+        std::string grouping = p->getDescriptor().getPluginGrouping();
+        name.append("  [");
+        name.append(extractNthPartOfGrouping(grouping,0));
+        name.append("]");
+        _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
+        _nodeNames.append(name.c_str());
+    }
+}
+void Model::writeOFXCache(){
+    /// and write a new cache, long version with everything in there
+    std::ofstream of("PowiterOFXCache.xml");
+    OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
+    of.close();
+    //Clean up, to be polite.
+    OFX::Host::PluginCache::clearPluginCache();
 }
 
 OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
@@ -855,8 +859,8 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
                                                     OFX::Host::ImageEffect::Descriptor& desc,
                                                     const std::string& context)
 {
-    //  return new MyEffectInstance(plugin, desc, context);
-    return NULL;
+
+      return new OfxNode(plugin, desc, context);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
@@ -884,7 +888,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bun
 
 /// message
 OfxStatus Model::vmessage(const char* type,
-                         const char* id,
+                         const char* ,
                          const char* format,
                          va_list args)
 {

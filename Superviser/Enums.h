@@ -25,9 +25,7 @@ namespace Powiter{
     
         
     enum Scale_Type{LINEAR_SCALE,LOG_SCALE,EXP_SCALE};
-    
-    enum UI_NODE_TYPE{OUTPUT,INPUT_NODE,OPERATOR,UNDEFINED};
-    
+        
     enum TIMELINE_STATE{IDLE,DRAGGING_CURSOR,DRAGGING_BOUNDARY};
     
     enum Channel{

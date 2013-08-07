@@ -25,6 +25,7 @@
 #include "Core/VideoEngine.h"
 #include "Gui/tabwidget.h"
 using namespace Powiter;
+using namespace std;
 Controler::Controler():_model(0),_gui(0){}
 
 void Controler::initControler(Model *model,QLabel* loadingScreen){
@@ -42,12 +43,8 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
 #endif
 
     delete loadingScreen;
-
-    try{
-        createNode("Viewer",0,0);
-    }catch(...){
-        std::cout << "Couldn't create node viewer" << std::endl;
-    }
+    createNode("Viewer",0,0);
+    
     
 }
 
@@ -63,24 +60,12 @@ QStringList& Controler::getNodeNameList(){
 
 void Controler::createNode(QString name,double x,double y){
    
-	QMutex *mutex=_model->mutex();
-   // Node* node=new Node(mutex);
-    Node* node=NULL;
-    UI_NODE_TYPE type;
-
-    type=_model->createNode(node,name,mutex);
-
-    if(type!=UNDEFINED){
-        _gui->createNodeGUI(type,node,x,y);
-		
+    Node* node = 0;
+    if(_model->createNode(node,name.toStdString())){
+        _gui->createNodeGUI(node,x,y);
     }else{
-        throw "Node creation failed!";
-        std::cout << "(Controler::addNewNode) Node creation failed " << std::endl;
+        cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
     }
-    
-
-
-
 }
 
 Viewer* Controler::getCurrentViewer(){

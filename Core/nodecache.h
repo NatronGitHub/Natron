@@ -59,11 +59,11 @@ public:
     /*Returns a valid pair<key,row> if the cache was able to find a row represented
      by the nodeKey, the filename and the range (x,r). 
      Returns <key,NULL> if nothing was found, key being the key that was computed to find the entry.*/
-    std::pair<U64,Row*> get(U64 nodeKey,std::string filename,int x,int r,int y ,ChannelSet& channels);
+    std::pair<U64,Row*> get(U64 nodeKey, const std::string& filename, int x, int r, int y, const ChannelSet& channels);
     
     /*add a new Row(x,y,r,channels) to the cache with the U64 as key and
      returns a pointer to it.*/
-    Row* addRow(U64 key,int x,int r,int y,ChannelSet& channels,std::string filename);
+    Row* addRow(U64 key, int x, int r, int y, const ChannelSet& channels, const std::string& filename);
 
     
 };

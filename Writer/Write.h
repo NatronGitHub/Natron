@@ -52,7 +52,7 @@ public:
     * at the end of the function,
     * so they are properly added to the settings panel.
     **/
-    virtual void initKnobs(Knob_Callback* callback,std::string& fileType);
+    virtual void initKnobs(Knob_Callback* callback, std::string& fileType);
     
     
     /** @brief Must be overloaded to tell the callback to
@@ -142,7 +142,7 @@ public:
      * meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      * otherwise it would stall the GUI.
     **/
-    virtual void setupFile(std::string filename)=0;
+    virtual void setupFile(const std::string& filename)=0;
     
     /** @brief This function must fill the pre-allocated structure with the data calculated by engine.
      * This function must close the file as writeAllData is the LAST function called before the

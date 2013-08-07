@@ -11,6 +11,7 @@
 
 #include "framefiledialog.h"
 
+#include <locale>
 #include <algorithm>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -47,16 +48,29 @@
 
 #include "Gui/button.h"
 #include "Gui/lineEdit.h"
+#include "Gui/comboBox.h"
 #include "Superviser/powiterFn.h"
 #include "Superviser/MemoryInfo.h"
 
 using namespace std;
 
+static inline bool nocase_equal_char (char c1, char c2)
+{
+    return toupper(c1) == toupper(c2);
+}
+
+static inline bool nocase_equal_string (const std::string &s1, const std::string &s2)
+{
+    return s1.size() == s2.size() &&        // ensure same sizes
+        std::equal (s1.begin(),s1.end(),      // first source string
+                    s2.begin(),               // second source string
+                    nocase_equal_char);
+}
 
 SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                   std::vector<std::string> filters, // the user accepted file types
+                   const std::vector<std::string>& filters, // the user accepted file types
                    FileDialogMode mode, // if it is an open or save dialog
-                   std::string currentDirectory): // the directory to show first
+                   const std::string& currentDirectory): // the directory to show first
 QDialog(parent),
 _filters(filters),
 _currentHistoryLocation(-1),
@@ -81,7 +95,6 @@ _dialogMode(mode)
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    _buttonsLayout->setContentsMargins(3,0,3,0);
     
     _lookInLabel = new QLabel("Look in :",_buttonsWidget);
     _buttonsLayout->addWidget(_lookInLabel);
@@ -93,8 +106,8 @@ _dialogMode(mode)
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
     
-    _lookInCombobox->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
-    
+    _lookInCombobox->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Fixed);
+
     _buttonsLayout->addStretch();
     
     
@@ -113,14 +126,7 @@ _dialogMode(mode)
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder),"",_buttonsWidget);
     _buttonsLayout->addWidget(_createDirButton);
     QObject::connect(_createDirButton, SIGNAL(clicked()), this, SLOT(createDir()));
-    
-    
-    _sequenceButton = new Button("Sequences",_buttonsWidget);
-    _sequenceButton->setCheckable(true);
-    _sequenceButton->setChecked(true);
-    _buttonsLayout->addWidget(_sequenceButton);
-    QObject::connect(_sequenceButton,SIGNAL(clicked(bool)),this,SLOT(enableSequenceMode(bool)));
-    
+        
     
     _previewButton = new Button("preview",_buttonsWidget);
     _previewButton->setVisible(false);//!@todo Implement preview mode for the file dialog
@@ -173,6 +179,14 @@ _dialogMode(mode)
     _selectionLayout = new QHBoxLayout(_selectionWidget);
     _selectionLayout->setContentsMargins(0, 0, 0, 0);
     _selectionWidget->setLayout(_selectionLayout);
+    
+    _sequenceButton = new ComboBox(_buttonsWidget);
+    _sequenceButton->addItem("Sequences");
+    _sequenceButton->addItem("File");
+    _sequenceButton->setCurrentIndex(0);
+    QObject::connect(_sequenceButton,SIGNAL(currentIndexChanged(QString)),this,SLOT(sequenceComboBoxSlot(QString)));
+    
+    _selectionLayout->addWidget(_sequenceButton);
     
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
@@ -264,8 +278,19 @@ SequenceFileDialog::~SequenceFileDialog(){
     delete _model;
     delete _itemDelegate;
     delete _proxy;
+  
+    
     
 }
+
+void SequenceFileDialog::sequenceComboBoxSlot(const QString& str){
+    if(str == "File"){
+        enableSequenceMode(false);
+    }else{
+        enableSequenceMode(true);
+    }
+}
+
 void SequenceFileDialog::showContextMenu(const QPoint& position){
     QMenu menu(_view);
     menu.addAction(_showHiddenAction);
@@ -299,7 +324,8 @@ void SequenceFileDialog::createMenuActions(){
 }
 
 void SequenceFileDialog::enableSequenceMode(bool b){
-    _sequenceButton->setChecked(b);
+    _frameSequences.clear();
+    _proxy->clear();
     if(!b){
         _nameMapping.clear();
         _view->updateNameMapping(_nameMapping);
@@ -356,7 +382,8 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     if (!directory.isEmpty() && newDirectory.isEmpty())
         return;
     _requestedDir = newDirectory;
-    _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    QModelIndex root = _model->setRootPath(newDirectory); // < calls filterAcceptsRow
+    _createDirButton->setEnabled(_model->flags(root) & Qt::ItemIsDropEnabled);
     if(newDirectory.at(newDirectory.size()-1) != QChar('/')){
         newDirectory.append("/");
     }
@@ -391,7 +418,7 @@ void SequenceFileDialog::updateView(const QString &directory){
 }
 
 bool SequenceFileDialog::sequenceModeEnabled() const{
-    return _sequenceButton->isChecked();
+    return _sequenceButton->activeIndex() == 0;
 }
 
 
@@ -568,7 +595,7 @@ void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
     }
     
 }
-const FileSequence SequenceFileDialog::frameRangesForSequence(std::string sequenceName,std::string extension) const{
+const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
     pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
     for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;it++){
         if(it->second._fileType == extension){
@@ -665,7 +692,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                 
                 found = true;
                 
-                return;
+                break;
             }
         }
         if(!found){ // must be a directory or a single image file
@@ -689,7 +716,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                 QString nameToPaint(memString.c_str());
                 painter->drawText(option.rect,Qt::TextSingleLine,nameToPaint,&r);
                 found = true;
-                return;
+                break;
             }
         }
         if(!found){
@@ -703,6 +730,32 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     }
     
 }
+
+void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{
+    if(index.column() == 0){
+        QString str = index.data().toString();
+        QFileInfo fileInfo(str);
+        str = _model->index(str).data().toString();
+        QIcon icon = _model->iconProvider()->icon(fileInfo);
+        int totalSize = option.rect.width();
+        int iconSize = option.decorationSize.width();
+        int textSize = totalSize - iconSize;
+
+        QRect iconRect(option.rect.x(),option.rect.y(),iconSize,option.rect.height());
+        QRect textRect(option.rect.x()+iconSize,option.rect.y(),textSize,option.rect.height());
+        QRect r;
+        if (option.state & QStyle::State_Selected){
+            painter->fillRect(option.rect, option.palette.highlight());
+        }
+        painter->drawPixmap(iconRect,
+                            icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height()))),
+                            r);
+        painter->drawText(textRect,Qt::TextSingleLine,str,&r);
+        
+    }else{
+        QStyledItemDelegate::paint(painter,option,index);
+    }
+}
 bool SequenceFileDialog::isDirectory(const QString& name) const{
     QModelIndex index = _model->index(name);
     return index.isValid() && _model->isDir(index);
@@ -715,10 +768,9 @@ QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const 
     QFontMetrics metric(option.font);
     return QSize(metric.width(str),metric.height());
 }
-bool SequenceFileDialog::isASupportedFileExtension(std::string ext) const{
+bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const{
     for(unsigned int i = 0 ; i < _filters.size() ; i++){
-        transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        if(ext == _filters[i])
+        if(nocase_equal_string(ext, _filters[i]))
             return true;
     }
     return false;
@@ -1060,7 +1112,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         while(i >= 0 && path.at(i).isDigit()){i--;}
         i++;
         path = path.left(i);
-        FileSequence *sequence;
+        // FileSequence *sequence = 0;
         pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
         
         /*if this is not a registered sequence. i.e: this is a single image file*/
@@ -1068,12 +1120,12 @@ QStringList SequenceFileDialog::selectedFiles(){
             //  cout << originalPath.toStdString() << endl;
             out.append(originalPath);
         }else{
-            for(SequenceIterator it = range.first ; it!=range.second; it++){
-                if(it->second._fileType == ext.toStdString()){
-                    sequence = &(it->second);
-                    break;
-                }
-            }
+//            for(SequenceIterator it = range.first ; it!=range.second; it++){
+//                if(it->second._fileType == ext.toStdString()){
+//                    sequence = &(it->second);
+//                    break;
+//                }
+//            }
             /*now that we now how many frames there are,their extension and the common name, we retrieve them*/
             i = 0;
             QStringList dirEntries = dir.entryList();
@@ -1085,7 +1137,7 @@ QStringList SequenceFileDialog::selectedFiles(){
                     out.append(s);
                     i++;
                 }
-                if(out.size() > (int)sequence->_frameIndexes.size()) break; //number of files exceeding the sequence size...something is wrong
+                //if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
             }
             
         }
@@ -1162,6 +1214,7 @@ void SequenceFileDialog::applyFilter(QString filter){
 
 UrlModel::UrlModel(QObject *parent) : QStandardItemModel(parent), fileSystemModel(0)
 {
+    
 }
 
 
@@ -1172,7 +1225,7 @@ bool UrlModel::setData(const QModelIndex &index, const QVariant &value, int role
         QModelIndex dirIndex = fileSystemModel->index(url.toLocalFile());
         
         QStandardItemModel::setData(index, QDir::toNativeSeparators(fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString()), Qt::ToolTipRole);
-        QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
+        //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
         QStandardItemModel::setData(index, fileSystemModel->data(dirIndex, Qt::DecorationRole),Qt::DecorationRole);
         QStandardItemModel::setData(index, url, UrlRole);
         return true;
@@ -1188,7 +1241,7 @@ void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelInd
         setData(index, fileSystemModel->myComputer(Qt::DecorationRole), Qt::DecorationRole);
     } else {
         QString newName;
-        newName = dirIndex.data().toString();
+        newName = QDir::toNativeSeparators(dirIndex.data(QFileSystemModel::FilePathRole).toString());//dirIndex.data().toString();
         QIcon newIcon = qvariant_cast<QIcon>(dirIndex.data(Qt::DecorationRole));
         if (!dirIndex.isValid()) {
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
@@ -1351,6 +1404,7 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
     setUniformItemSizes(true);
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(model);
+    setItemDelegate(new FavoriteItemDelegate(model));
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
@@ -1361,6 +1415,7 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
             this, SLOT(showMenu(QPoint)));
     urlModel->setUrls(newUrls);
     setCurrentIndex(this->model()->index(0,0));
+   
 }
 
 FavoriteView::~FavoriteView()
@@ -1611,7 +1666,6 @@ void FavoriteView::dragEnterEvent(QDragEnterEvent *event){
     if (urlModel->canDrop(event))
         QListView::dragEnterEvent(event);
 }
-
 
 void FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p){
     dialog = p;

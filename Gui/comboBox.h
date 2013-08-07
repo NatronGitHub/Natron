@@ -41,6 +41,8 @@ class ComboBox : public QFrame
     QLabel* _currentText;
     QLabel* _dropDownIcon;
     
+    int _currentIndex;
+    
     int _maximumTextSize;
     
     bool pressed;
@@ -86,9 +88,17 @@ public:
     
     void setCurrentText(const QString& text);
     
+    /*this function returns the displayed text with some padding
+     ,i.e two spaces before and after the text, as such:
+     "  test  " .*/
+    QString text() const;
+    
+    int activeIndex() const;
+    
     public slots:
     
     void setCurrentIndex(int index);
+    
     
 signals:
     void currentIndexChanged(int index);

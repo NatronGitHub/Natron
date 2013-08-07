@@ -20,7 +20,7 @@
 #include <QImage>
 #include <QStringList>
 
-#include "Core/inputnode.h"
+#include "Core/node.h"
 
 
 class FrameEntry;
@@ -36,7 +36,7 @@ public:
     virtual ~ReaderInfo(){}
     
 
-    void setCurrentFrameName(std::string str){_currentFrameName = str;}
+    void setCurrentFrameName(const std::string& str){_currentFrameName = str;}
 
     std::string getCurrentFrameName(){return _currentFrameName;}
     
@@ -68,7 +68,7 @@ class ViewerCache;
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public InputNode
+class Reader : public Node
 {
     
 public:
@@ -174,7 +174,7 @@ public:
         **/
         class Descriptor{
         public:
-            Descriptor(Read* readHandle,ReaderInfo* readInfo, std::string filename):
+            Descriptor(Read* readHandle,ReaderInfo* readInfo, const std::string& filename):
             _readHandle(readHandle),_readInfo(readInfo),
             _filename(filename){}
             
@@ -283,14 +283,14 @@ public:
          * @brief Removes a frame in the buffer
          * @param filename The name of the frame
          */
-        void remove(std::string filename);
+        void remove(const std::string& filename);
 
         /**
          * @brief decodeFinished can be used to query whether the Reader has finished to decode a frame.
          * @param filename The name of the frame.
          * @return True if the decoding is finished for that frame.
          */
-        bool decodeFinished(std::string filename);
+        bool decodeFinished(const std::string& filename);
 
         /**
          * @brief isEnqueued is used to check whether a frame exists already into the buffer.
@@ -298,7 +298,7 @@ public:
          * @param searchMode What kind of frame are we looking for.
          * @return An iterator pointing to a valid descriptor if it found it,otherwise it points to the end of the buffer.
          */
-        DecodedFrameIterator isEnqueued(std::string filename,SEARCH_TYPE searchMode);
+        DecodedFrameIterator isEnqueued(const std::string& filename, SEARCH_TYPE searchMode);
 
         /**
          * @brief Clears out the buffer.
@@ -340,7 +340,7 @@ public:
          * @param filename The name of the frame.
          * @return Returns an iterator pointing to a valid frame in the buffer if it could find it. Otherwise points to end()
          */
-        DecodedFrameIterator find(std::string filename);
+        DecodedFrameIterator find(const std::string& filename);
 
         /**
          * @brief debugBuffer
@@ -497,6 +497,12 @@ public:
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
+    virtual int maximumInputs(){return 0;}
+    
+    virtual int minimumInputs(){return 0;}
+    
+    bool isInputNode() {return true;}
+
 protected:
 
 	virtual void initKnobs(Knob_Callback *cb);

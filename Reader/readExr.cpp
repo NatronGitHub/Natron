@@ -428,8 +428,10 @@ void ReadExr::make_preview(){
     Imath::Box2i &dataWindow = header.dataWindow();
     Imath::Box2i &dispWindow = header.displayWindow();
     int dh = dataWindow.max.y - dataWindow.min.y + 1;
-    int h = 64;
-    int w = 64;
+    int dw = dataWindow.max.x - dataWindow.min.x + 1;
+    int h,w;
+    dh < 64 ? h = dh : h = 64;
+    dw < 64 ? w = dw : w = 64;
     float zoomFactor = (float)h/(float)dh;
     for(int i =0 ; i < h ; i++){
         float y = (float)i*1.f/zoomFactor;
@@ -439,10 +441,11 @@ void ReadExr::make_preview(){
     }
     QImage* img=new QImage(w,h,QImage::Format_ARGB32);
     for(int i=0;i< h;i++){
-        float y = (float)i*1.f/0.1;
+        float y = (float)i*1.f/zoomFactor;
         int nearest;
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        int exrY = dispWindow.max.y - nearest;
+        int exrY = dispWindow.max.y+1 - nearest;
+        if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
         Row* from = _img[exrY];
         QRgb *dst_pixels = (QRgb *) img->scanLine(h-1-i);
         const float* red = (*from)[Channel_red];

@@ -40,7 +40,6 @@ class Controler;
 class FeedBackSpinBox;
 class ScaleSlider;
 class TimeLine;
-class TextureCache;
 class Viewer;
 class ViewerInfos;
 class ViewerTab: public QWidget 
@@ -60,7 +59,6 @@ public:
     
 	virtual ~ViewerTab();
     
-    void setTextureCache(TextureCache* cache);
     
     Viewer* getInternalNode(){return _viewerNode;}
     
@@ -133,6 +131,9 @@ public slots:
     
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
+    
+signals:
+    void recenteringNeeded();
     
 protected:
     

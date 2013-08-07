@@ -40,7 +40,6 @@ class QProgressBar;
 class QStatusBar;
 class QTreeView;
 class Controler;
-class TextureCache;
 class NodeGraph;
 class ViewerTab;
 class Node;
@@ -84,7 +83,7 @@ public:
     
     void createGui();
     
-    void createNodeGUI(Powiter::UI_NODE_TYPE type,Node *node,double x,double y);
+    void createNodeGUI(Node *node,double x,double y);
     
     bool eventFilter(QObject *target, QEvent *event);
 
@@ -119,23 +118,19 @@ public:
      found. Otherwise returns NULL.*/
     QWidget* findExistingTab(const std::string& name) const;
     
-    void registerTab(std::string name,QWidget* tab);
+    void registerTab(const std::string& name, QWidget* tab);
     
     void loadStyleSheet();
     
-    TextureCache* getTextureCache() const{return _textureCache;}
 
 private:
 
-    TextureCache* _textureCache;
-    void clearTextureCache();
     void addNodeGraph();
 
 
 public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
-    void clearTexCache(){clearTextureCache();}
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -152,7 +147,6 @@ public:
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
-    QAction *actionClearTextureCache;
     
     
     QWidget *_centralWidget;

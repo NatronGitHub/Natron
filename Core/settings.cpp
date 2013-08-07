@@ -24,7 +24,6 @@ Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;
     maxDiskCache = 9000000000;
-    maxTextureCache = 256000000;
 }
 
 Settings::ViewerSettings::ViewerSettings(){
@@ -42,7 +41,7 @@ Settings::ReadersSettings::ReadersSettings(){
 }
 
 /*changes the decoder for files identified by the filetype*/
-void Settings::ReadersSettings::changeMapping(std::string filetype,PluginID* decoder){
+void Settings::ReadersSettings::changeMapping(const std::string& filetype, PluginID* decoder){
     _fileTypesMap.insert(make_pair(filetype, decoder));
 }
 
@@ -53,7 +52,7 @@ void Settings::ReadersSettings::fillMap(std::map<std::string,PluginID*>& default
     }
 }
 
-PluginID* Settings::ReadersSettings::decoderForFiletype(std::string type){
+PluginID* Settings::ReadersSettings::decoderForFiletype(const std::string& type){
     std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
     if (found!=_fileTypesMap.end()) {
         return found->second;
@@ -65,7 +64,7 @@ Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
 
 /*Returns a pluginID if it could find an encoder for the filetype,
  otherwise returns NULL.*/
-PluginID* Settings::WritersSettings::encoderForFiletype(std::string type){
+PluginID* Settings::WritersSettings::encoderForFiletype(const std::string& type){
     std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
     if (found!=_fileTypesMap.end()) {
         return found->second;
@@ -74,7 +73,7 @@ PluginID* Settings::WritersSettings::encoderForFiletype(std::string type){
 }
 
 /*changes the encoder for files identified by the filetype*/
-void Settings::WritersSettings::changeMapping(std::string filetype,PluginID* encoder){
+void Settings::WritersSettings::changeMapping(const std::string& filetype,PluginID* encoder){
     _fileTypesMap.insert(make_pair(filetype, encoder));
 }
 

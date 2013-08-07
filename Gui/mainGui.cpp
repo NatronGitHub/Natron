@@ -26,7 +26,7 @@
 #include <QMenuBar>
 #include <QToolBox>
 
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 #include "Superviser/controler.h"
 #include "Gui/GLViewer.h"
 #include "Core/model.h"
@@ -42,7 +42,7 @@
 
 using namespace std;
 using namespace Powiter;
-Gui::Gui(QWidget* parent):QMainWindow(parent),_textureCache(0),
+Gui::Gui(QWidget* parent):QMainWindow(parent),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
@@ -55,7 +55,6 @@ actionSplitViewersTab(0),
 actionClearDiskCache(0),
 actionClearPlayBackCache(0),
 actionClearNodeCache(0),
-actionClearTextureCache(0),
 _centralWidget(0),
 _mainLayout(0),
 _toolsPane(0),
@@ -83,7 +82,6 @@ cacheMenu(0)
 }
 Gui::~Gui(){
     
-    delete _textureCache;
     
 }
 void Gui::exit(){
@@ -100,8 +98,8 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-void Gui::createNodeGUI(UI_NODE_TYPE type, Node* node,double x,double y){
-    _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,type,node,x,y);
+void Gui::createNodeGUI( Node* node,double x,double y){
+    _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node,x,y);
 }
 
 
@@ -148,7 +146,6 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
 	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
 	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear per-node cache"));
-    actionClearTextureCache ->setText(QApplication::translate("Powiter","Clear texture cache"));
     
     
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
@@ -169,7 +166,6 @@ void Gui::setupUi()
 	QRect screen=desktop->screenGeometry(-1);
 	resize(screen.width(),screen.height());
 	setDockNestingEnabled(false);
-	
     
     loadStyleSheet();
 	
@@ -203,11 +199,7 @@ void Gui::setupUi()
 	actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
 	actionClearNodeCache->setCheckable(false);
 	actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
-    actionClearTextureCache = new QAction(this);
-	actionClearTextureCache->setObjectName(QString::fromUtf8("actionClearTextureCache"));
-	actionClearTextureCache->setCheckable(false);
-	actionClearTextureCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_T));
-    
+	
     
 	/*CENTRAL AREA*/
 	//======================
@@ -239,8 +231,7 @@ void Gui::setupUi()
     sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
     
     /*VIEWERS related*/
-    _textureCache = new TextureCache;
-    _textureCache->setMaximumCacheSize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxTextureCache);
+ 
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), screen.height()/5);
@@ -326,14 +317,13 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
-    cacheMenu->addAction(actionClearTextureCache);
 	retranslateUi(this);
     
-    QObject::connect(actionClearTextureCache, SIGNAL(triggered()),this,SLOT(clearTexCache()));
     Model* model = ctrlPTR->getModel();
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearNodeCache()));
+    QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     
 	QMetaObject::connectSlotsByName(this);
     
@@ -369,15 +359,11 @@ void Gui::exitFullScreen(){
     }
 }
 
-void Gui::clearTextureCache(){
-    _textureCache->clear();
-}
 
 ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
-    tab->setTextureCache(_textureCache);
     _viewerTabs.push_back(tab);
-    where->appendTab(node->getName(),tab);
+    where->appendTab(node->getName().c_str(),tab);
     return tab;
 }
 
@@ -572,8 +558,10 @@ void Gui::closePane(TabWidget* what){
         }
     }
     /*moving the other to the mainContainer*/
-    other->setVisible(true);
-    other->setParent(mainContainer);
+    if(other){
+        other->setVisible(true);
+        other->setParent(mainContainer);
+    }
     mainContainer->insertWidget(subSplitterIndex, other);
     
     /*deleting the subSplitter*/
@@ -600,7 +588,7 @@ void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w){
     show();
 }
 
-void Gui::registerTab(std::string name,QWidget* tab){
+void Gui::registerTab(const std::string& name, QWidget* tab){
     _registeredTabs.insert(make_pair(name,tab));
 }
 

@@ -34,10 +34,6 @@
 #ifndef PowiterOsX_LRUcache_h
 #define PowiterOsX_LRUcache_h
 
-#include "Superviser/powiterFn.h"
-#include <QtCore/QReadWriteLock>
-#include <QtCore/QReadLocker>
-#include <QtCore/QWriteLocker>
 #include <map>
 #include <list>
 #include <iostream>
@@ -46,6 +42,10 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap.hpp>
 
+
+//#define USE_VARIADIC_TEMPLATES
+#define CACHE_USE_HASH
+#define CACHE_USE_BOOST
 
 
 /**@brief 4 types of LRU caches are defined here:
@@ -109,10 +109,9 @@ public:
     StlLRUCache(){}
     
     // Obtain value of the cached function for k
-    typename key_to_value_type::iterator operator()(const key_type& k)  {
+    value_type operator()(const key_type& k)  {
         typename key_to_value_type::iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Attempt to find existing record
             it =_key_to_value.find(k);
         }
@@ -120,12 +119,11 @@ public:
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
-            {
-                QWriteLocker g(&_rwLock);
-                _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
-            }
+            _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
+            return it->second;
+
         }
-        return it;
+        return NULL;
     }
     typename key_to_value_type::iterator end(){return _key_to_value.end();}
     typename key_to_value_type::iterator begin(){return _key_to_value.begin();}
@@ -137,7 +135,6 @@ public:
         if (mustEvict)
             ret =  evict();
         
-        QWriteLocker g(&_rwLock);
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
@@ -165,7 +162,6 @@ public:
         assert(!_key_tracker.empty());
         const typename key_to_value_type::iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Identify least recently used key
             it  =_key_to_value.find(_key_tracker.front());
             assert(it!=_key_to_value.end());
@@ -174,16 +170,13 @@ public:
         std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
         {
             // Erase both elements to completely purge record
-            QWriteLocker g(&_rwLock);
             _key_to_value.erase(it);
             _key_tracker.pop_front();
         }
         return ret;
     }
-    U32 size(){return _container.size();}
+    unsigned int size(){return _container.size();}
 
-    //public member so your cache implem can use it
-    QReadWriteLock _rwLock;
 
     
 private:
@@ -211,20 +204,19 @@ public:
     BoostLRUCacheContainer(){}
     
     // Obtain value of the cached function for k
-    typename container_type::left_iterator operator()(const key_type& k)  {
+    value_type operator()(const key_type& k)  {
         typename container_type::left_iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Attempt to find existing record
             it=_container.left.find(k);
         }
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
-            QWriteLocker g(&_rwLock);
             _container.right.relocate(_container.right.end(),_container.project_right(it));
+            return it->second;
         }
-        return it;
+        return NULL;
     }
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -244,7 +236,6 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        QWriteLocker g(&_rwLock);
         _container.insert(typename container_type::value_type(k,v));
         
         if(mustEvict){
@@ -264,7 +255,6 @@ public:
     }
     
     std::pair<key_type,value_type> evict(){
-        QWriteLocker g(&_rwLock);
         typename container_type::right_iterator it = _container.right.begin();
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
@@ -272,10 +262,9 @@ public:
         
     }
 
-    U32 size(){return _container.size();}
+    unsigned int size(){return _container.size();}
     
-    //public member so your cache implem can use it
-    QReadWriteLock _rwLock;
+
 private:
         container_type _container;
 };
@@ -299,10 +288,9 @@ public:
     StlLRUTreeCache(){}
     
     // Obtain value of the cached function for k
-    typename key_to_value_type::iterator operator()(const key_type& k)  {
+     value_type operator()(const key_type& k)  {
         typename key_to_value_type::iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Attempt to find existing record
             it =_key_to_value.find(k);
         }
@@ -310,13 +298,12 @@ public:
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
-            {
-                QWriteLocker g(&_rwLock);
-                _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
-            }
+            _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
+            return it->second.first;
         }
-        return it;
-    }    typename key_to_value_type::iterator end(){return _key_to_value.end();}
+         return NULL;
+    }
+    typename key_to_value_type::iterator end(){return _key_to_value.end();}
     typename key_to_value_type::iterator begin(){return _key_to_value.begin();}
     // Record a fresh key-value pair in the cache
     // Return value is the value evicted from cache space was necessary.
@@ -326,7 +313,6 @@ public:
         if (mustEvict)
             ret =  evict();
         
-        QWriteLocker g(&_rwLock);
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
@@ -353,7 +339,6 @@ public:
         assert(!_key_tracker.empty());
         typename key_to_value_type::iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Identify least recently used key
             it  =_key_to_value.find(_key_tracker.front());
             assert(it!=_key_to_value.end());
@@ -362,16 +347,13 @@ public:
         std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
         {
             // Erase both elements to completely purge record
-            QWriteLocker g(&_rwLock);
             _key_to_value.erase(it);
             _key_tracker.pop_front();
         }
         return ret;
     }
-    U32 size(){return _key_to_value.size();}
-    
-    //public member so your cache implem can use it
-    QReadWriteLock _rwLock;
+    unsigned int size(){return _key_to_value.size();}
+  
     
 private:
        // Key access history
@@ -394,20 +376,19 @@ public:
     BoostLRUHashCache(){}
     
     // Obtain value of the cached function for k
-    typename container_type::left_iterator operator()(const key_type& k)  {
+    value_type operator()(const key_type& k)  {
         typename container_type::left_iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Attempt to find existing record
             it=_container.left.find(k);
         }
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
-            QWriteLocker g(&_rwLock);
             _container.right.relocate(_container.right.end(),_container.project_right(it));
+            return it->second;
         }
-        return it;
+        return NULL;
     }
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -427,7 +408,6 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        QWriteLocker g(&_rwLock);
         _container.insert(typename container_type::value_type(k,v));
         
         if(mustEvict){
@@ -446,20 +426,15 @@ public:
     }
     
     std::pair<key_type,value_type> evict(){
-        QWriteLocker g(&_rwLock);
         typename container_type::right_iterator it = _container.right.begin();
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
-        //_container.left.erase
         return ret;
         
     }
     
-    U32 size(){return _container.size();}
-    
-    
-    //public member so your cache implem can use it
-    QReadWriteLock _rwLock;
+    unsigned int size(){return _container.size();}
+
 private:
         container_type _container;
 };
@@ -474,20 +449,20 @@ public:
     BoostLRUTreeCache(){}
     
     // Obtain value of the cached function for k
-    typename container_type::left_iterator operator()(const key_type& k)  {
+    value_type operator()(const key_type& k)  {
         typename container_type::left_iterator it;
         {
-            QReadLocker g(&_rwLock);
             // Attempt to find existing record
             it=_container.left.find(k);
         }
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
-            QWriteLocker g(&_rwLock);
             _container.right.relocate(_container.right.end(),_container.project_right(it));
+            return it->second;
+
         }
-        return it;
+        return NULL;
     }
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -507,7 +482,6 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        QWriteLocker g(&_rwLock);
         _container.insert(typename container_type::value_type(k,v));
         
         if(mustEvict){
@@ -527,7 +501,6 @@ public:
     }
     
     std::pair<key_type,value_type> evict(){
-        QWriteLocker g(&_rwLock);
         typename container_type::right_iterator it = _container.right.begin();
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
@@ -535,10 +508,8 @@ public:
         
     }
     
-    U32 size(){return _container.size();}
-    
-    //public member so your cache implem can use it
-    QReadWriteLock _rwLock;
+    unsigned int size(){return _container.size();}
+  
 private:
     
     container_type _container;

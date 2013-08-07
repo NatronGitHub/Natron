@@ -104,7 +104,7 @@ public:
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual void setupFile(std::string filename);
+    virtual void setupFile(const std::string& filename);
     
     /*This function must fill the pre-allocated structure with the data calculated by engine.
      This function must close the file as writeAllData is the LAST function called before the

@@ -57,16 +57,18 @@ Row::Row(int x,int y, int range, ChannelSet channels)
     
 }
 bool Row::allocateRow(const char*){
+    size_t dataSize = (r-x)*sizeof(float);
     foreachChannels(z, _channels){
         if(z != Channel_alpha)
             buffers[z] = (float*)calloc((r-x),sizeof(float));
         else{
-            buffers[z] = (float*)malloc((r-x)*sizeof(float));
+            buffers[z] = (float*)malloc(dataSize);
             for(int i =0 ;i <  (r-x) ;i++){
                 buffers[z][i] = 1.f;
             }
         }
     }
+    _size += dataSize*_channels.size();
     return true;
 }
 
@@ -127,12 +129,13 @@ bool compareRows(const Row &a,const Row &b){
     }
 }
 
-U64 Row::computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y){
+U64 Row::computeHashKey(U64 nodeKey, const std::string& filename, int x , int r, int y){
     Hash _hash;
     _hash.appendQStringToHash(QString(filename.c_str()));
-    _hash.appendNodeHashToHash(nodeKey);
-    _hash.appendNodeHashToHash(r-x);
-    _hash.appendNodeHashToHash(y);
+    _hash.appendValueToHash(nodeKey);
+    _hash.appendValueToHash(x);
+    _hash.appendValueToHash(r);
+    _hash.appendValueToHash(y);
     _hash.computeHash();
     return _hash.getHashValue();
 }
@@ -140,5 +143,7 @@ U64 Row::computeHashKey(U64 nodeKey,std::string filename, int x , int r, int y){
 void Row::release(){
     if(!_cacheWillDelete)
         delete this;
+    else
+        removeReference();
 }
 

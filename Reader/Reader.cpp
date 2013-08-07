@@ -32,7 +32,6 @@
 #include "Superviser/controler.h"
 #include "Core/VideoEngine.h"
 #include "Core/model.h"
-#include "Core/outputnode.h"
 #include "Core/settings.h"
 #include "Reader/Read.h"
 #include "Gui/timeline.h"
@@ -49,7 +48,7 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader():InputNode(),
+Reader::Reader():Node(),
 preview(0),
 has_preview(false),
 video_sequence(0),
@@ -169,7 +168,7 @@ void Reader::readCurrentData(int current_frame){
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
     if(found == _buffer.end()){
-        cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName().toStdString() << ")" << endl;
+        cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName() << ")" << endl;
         return;
     }
     if((*found)->hasToDecode()){
@@ -268,14 +267,14 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     }
     _buffer.push_back(desc);
 }
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(std::string filename){
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
     for(int i = _buffer.size()-1; i >= 0 ; i--){
         if(_buffer[i]->_filename==filename) return _buffer.begin()+i;
     }
     return _buffer.end();
 }
 
-void Reader::Buffer::remove(std::string filename){
+void Reader::Buffer::remove(const std::string& filename){
     DecodedFrameIterator it = find(filename);
     if(it!=_buffer.end()){
         if((*it)->_readInfo)
@@ -288,7 +287,7 @@ void Reader::Buffer::remove(std::string filename){
 }
 
 
-bool Reader::Buffer::decodeFinished(std::string filename){
+bool Reader::Buffer::decodeFinished(const std::string& filename){
     Buffer::DecodedFrameIterator it = find(filename);
     return (it!=_buffer.end());
 }
@@ -300,7 +299,7 @@ void Reader::Buffer::debugBuffer(){
     cout << "=================================" << endl;
 }
 
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(std::string filename,SEARCH_TYPE searchMode){
+Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::string& filename,SEARCH_TYPE searchMode){
     if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){

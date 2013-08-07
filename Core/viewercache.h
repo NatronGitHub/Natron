@@ -20,9 +20,10 @@
 #define DISKCACHE_H
 
 #include "Core/abstractCache.h"
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 #include "Core/singleton.h"
 class Format;
+class ChannelSet;
 class Box2D;
 class ReaderInfo;
 
@@ -41,6 +42,10 @@ public:
 	TextureRect _textureRect; // zoomed H&W
 	FrameEntry();
 	FrameEntry(float zoom,float exp,float lut,U64 treeVers,
+                         float byteMode,const Box2D& bbox,const Format& dispW,
+                         const ChannelSet& channels,const TextureRect& textureRect);
+    
+    FrameEntry(float zoom,float exp,float lut,U64 treeVers,
                float byteMode,ReaderInfo* info,const TextureRect& textureRect);
 	FrameEntry(const FrameEntry& other);
     

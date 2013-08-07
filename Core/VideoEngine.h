@@ -30,7 +30,7 @@
 
 #include "Core/hash.h"
 #include "Reader/Reader.h"
-#include "Gui/texturecache.h"
+#include "Gui/texture.h"
 
 
 class FrameEntry;
@@ -77,7 +77,7 @@ public:
     public:
         typedef std::vector<Node*>::const_iterator DAGIterator;
         typedef std::vector<Node*>::const_reverse_iterator DAGReverseIterator;
-        typedef std::vector<InputNode*>::const_iterator InputsIterator;
+        typedef std::vector<Node*>::const_iterator InputsIterator;
         
         /**
          *@brief Construct an empty DAG that can be filled with nodes.
@@ -97,7 +97,7 @@ public:
          *@TODO Throw some exception to detect cycles in the graph
          */
 
-        void resetAndSort(OutputNode* out, bool isViewer);
+        void resetAndSort(Node* out, bool isViewer);
         
         /**
          *@brief Clears out the structure. As a result the graph will do nothing.
@@ -132,7 +132,7 @@ public:
          *@brief Returns a pointer to the output node of the graph.
          *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
          */
-        OutputNode* getOutput() const {return _output;}
+        Node* getOutput() const {return _output;}
         
         
         /**
@@ -156,7 +156,7 @@ public:
          *@brief Accesses the input nodes of the graph.
          *@returns A reference to a vector filled with all input nodes of the graph.
          */
-        const std::vector<InputNode*>& getInputs()const{return _inputs;}
+        const std::vector<Node*>& getInputs()const{return _inputs;}
         
         /**
          *@brief The first frame supported by the graph.
@@ -206,10 +206,10 @@ public:
         /*clears out the structure*/
         void clearGraph();
         
-        OutputNode* _output; /*!<the output of the DAG*/
+        Node* _output; /*!<the output of the DAG*/
         std::vector<Node*> _graph;/*!<the un-sorted DAG*/
         std::vector<Node*> _sorted; /*!<the sorted DAG*/
-        std::vector<InputNode*> _inputs; /*!<all the inputs of the dag*/
+        std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     };
     
@@ -224,19 +224,21 @@ public:
      **/
     class EngineStatus{
     public:
-        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , TEXTURE_CACHED_ENGINE = 2 , ABORTED = 3};
+        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , ABORTED = 2};
         
-        EngineStatus():_cachedEntry(0),_key(0),_returnCode(NORMAL_ENGINE){}
+        EngineStatus():_cachedEntry(0),_key(0),_x(0),_r(0),_returnCode(NORMAL_ENGINE){}
         
-        EngineStatus(FrameEntry* cachedEntry,U64 key,const std::vector<int> rows,EngineStatus::RetCode state):
+        EngineStatus(FrameEntry* cachedEntry,U64 key,int x,int r,const std::vector<int> rows,EngineStatus::RetCode state):
         _cachedEntry(cachedEntry),
         _key(key),
+        _x(x),
+        _r(r),
         _rows(rows),
         _returnCode(state)
         {}
         
         EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
-        _key(other._key),
+        _key(other._key),_x(other._x),_r(other._r),
         _rows(other._rows),_returnCode(other._returnCode){}
         
  
@@ -244,6 +246,7 @@ public:
         
         FrameEntry* _cachedEntry;
         U64 _key;
+        int _x,_r;
         std::vector<int> _rows;
         RetCode _returnCode;
     };
@@ -255,7 +258,7 @@ private:
     /**
      *@brief A typedef used to represent a generic signature of a function that represent a user action like Play, Pause, Seek...etc
      */
-    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,OutputNode*);
+    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,Node*);
     
     /**
      *@class VideoEngine::Task
@@ -269,10 +272,11 @@ private:
         int _frameCount;
         bool _initViewer;
         bool _forward;
-        OutputNode* _output;
+        bool _sameFrame;
+        Node* _output;
         VengineFunction _func;
-        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func):
-        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),
+        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output,VengineFunction func):
+        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),_sameFrame(sameFrame),
         _output(output),_func(func){}
         
     };
@@ -312,17 +316,16 @@ private:
     
     Timer* _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
         
-    QMutex* _lock; /*!< General mutex for the engine*/
-  
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
     bool _paused; /*!< true when the user pressed pause*/
 
     Hash _treeVersion;/*!< the hash key associated to the current graph*/
     
-    int _frameRequestsCount; /*!< total frame requests in the current videoEngine*/
+    int _frameRequestsCount; /*!< The index of the last frame +1 if the engine
+                    is forward (-1 otherwise). This value is -1 if we're looping.*/
     
-    int _frameRequestIndex;/*!< counter of the frames computed*/
+    int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
     
     bool _forward; /*!< forwards/backwards video engine*/
     
@@ -442,6 +445,11 @@ public slots:
     void changeTreeVersion();
     
     /**
+     *@brief Pauses the engine and restarts it right away, re-centering the image on the viewer.
+     **/
+    void recenterViewer();
+    
+    /**
      *@brief This slot is called internally by the video engine. Do not call this directly. This function actually determines
      *whether the engine needs to stop or not, updates the viewport display if the output is a viewer and then calls
      *VideoEngine::computeFrameRequest(bool,bool,bool) if there're remaining frames to compute.
@@ -450,7 +458,7 @@ public slots:
     void engineLoop();
     
     /**
-     *@brief Called internally by VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,OutputNode *).
+     *@brief Called internally by VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,Node *).
      *It will fill the ViewerGL's current PBO with the frame that's just been computed in a separate thread.
      *When finished, it will call VideoEngine::engineLoop(). Do not call this directly.
      **/
@@ -459,7 +467,7 @@ public slots:
     /**
      *@brief Called by the thread returning from VideoEngine::computeFrameRequest(bool,bool,bool).
      *According to the return status of the engine it calls the appropriate function,that is either
-     *VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,OutputNode *) or
+     *VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,Node *) or
      *Viewer::cachedFrameEngine(FrameEntry*). If the return code stored in the EngineStatus is
      *EngineStatus::TEXTURE_CACHED_ENGINE the it calls directly VideoEngine::engineLoop().
      **/
@@ -490,7 +498,7 @@ public:
     /**
      *@brief Do not call this. This is called internally by the DAG GUI when the user changes the graph.
      **/
-    void changeDAGAndStartEngine(OutputNode* output);
+    void changeDAGAndStartEngine(Node* output);
     
     /**
      *@brief Convenience function. It resets the graph, emptying all nodes stored in the DAG.
@@ -500,12 +508,12 @@ public:
     /**
      *@brief Convenience function. It calls DAG::resetAndSort(OutputNode*,bool).
      **/
-    void resetAndMakeNewDag(OutputNode* output,bool isViewer);
+    void resetAndMakeNewDag(Node* output,bool isViewer);
     
     /**
      *@returns Return a const reference to the DAG used by the video engine.
      **/
-    const DAG& getCurrentDAG(){return _dag;}
+    const DAG& getCurrentDAG() const {return _dag;}
     
     
 	/**
@@ -517,7 +525,7 @@ public:
 	/**
      *@returns Returns true if the engine is currently working.
      **/
-	bool isWorking(){return _working;}
+	bool isWorking() const {return _working;}
     
     /**
      *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
@@ -526,7 +534,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(Model* engine,QMutex* lock);
+    VideoEngine(Model* engine);
     
     
     virtual ~VideoEngine();
@@ -534,7 +542,7 @@ public:
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
-    void drawOverlay();
+    void drawOverlay() const;
 	
     
     /**
@@ -571,7 +579,7 @@ private:
      *in the viewport will be exactly the same as the indexes in the full-res frame.
      *@param output[in] This is the output node of the graph.
      **/
-    void computeTreeForFrame(const std::vector<int>& rows, OutputNode *output);
+    void computeTreeForFrame(const std::vector<int>& rows,int x,int r, Node *output);
 
     /**
      *@brief Called by VideoEngine::videoEngine(int,bool,bool,bool) the first time or by VideoEngine::engineLoop().
@@ -606,7 +614,7 @@ private:
      *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
      *@param output[in] The output node of the graph.
      */
-    static void metaEnginePerRow(Row* row,OutputNode* output);
+    static void metaEnginePerRow(Row* row,Node* output);
     
     /**
      *@brief The callback reading the header of the current frame for a reader.
@@ -632,7 +640,7 @@ private:
      *@brief Called by VideoEngine::drawOverlay().
      *@param output[in] The output node of the graph
      **/
-    void _drawOverlay(Node *output);
+    void _drawOverlay(Node *output) const;
     
     /**
      *@brief Called by VideoEngine::changeTreeVersion().This is a recursive function.
@@ -647,19 +655,19 @@ private:
      *All the parameters are given to the function VideoEngine::videoEngine(int,bool,bool,bool). See the
      *documentation for that function.
      **/
-    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
+    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output = NULL);
     
     /**
      *@brief Called by VideoEngine::changeDAGAndStartEngine(OutputNode*); This function is slightly different
      *than _startEngine(...) because it resets the graph and calls VideoEngine::changeTreeVersion() 
      *before actually starting the engine.
      **/
-    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output = NULL);
+    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output = NULL);
     
     /**
      *@brief Appends a new VideoEngine::Task to the the queue.
      **/
-    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,OutputNode* output,VengineFunction func);
+    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output,VengineFunction func);
     
     /**
      *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
@@ -671,6 +679,15 @@ private:
      **/
     void debugRowSequence();
     
+#ifdef PW_DEBUG
+    /*
+     *@brief Range-check to be sure buffers are allocated correctly
+     *@param columns the indexes of the columns to compute.
+     *@param x The left edge of the rectangle to compute.
+     *@param r The right edge of the rectangle to compute.
+     */
+    bool rangeCheck(const std::vector<int>& columns,int x,int r);
+#endif
 };
 
 #endif /* defined(__PowiterOsX__VideoEngine__) */

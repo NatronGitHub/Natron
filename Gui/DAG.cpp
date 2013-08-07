@@ -8,9 +8,9 @@
 *
 */
 
- 
 
- 
+
+
 
 
 
@@ -20,9 +20,6 @@
 #include "Superviser/controler.h"
 #include "Gui/arrowGUI.h"
 #include "Core/hash.h"
-#include "Core/outputnode.h"
-#include "Core/inputnode.h"
-#include "Core/OP.h"
 #include "Gui/DAGQuickNode.h"
 #include "Gui/mainGui.h"
 #include "Gui/dockableSettings.h"
@@ -32,23 +29,21 @@
 #include "Gui/knob.h"
 #include "Gui/GLViewer.h"
 #include "Gui/viewerTab.h"
+#include "Gui/node_ui.h"
 #include "Core/VideoEngine.h"
 #include <QScrollBar>
 #include <QGraphicsLineItem>
 #include "Gui/timeline.h"
-#include "Gui/outputnode_ui.h"
-#include "Gui/inputnode_ui.h"
-#include "Gui/operatornode_ui.h"
 #include <cstdlib>
 
 using namespace std;
 using namespace Powiter;
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
-QGraphicsView(scene,parent),
-_lastSelectedPos(0,0),
-_evtState(DEFAULT),
-_nodeSelected(0),
-_fullscreen(false)
+    QGraphicsView(scene,parent),
+    _lastSelectedPos(0,0),
+    _evtState(DEFAULT),
+    _nodeSelected(0),
+    _fullscreen(false)
 {
     
     setObjectName("DAG_GUI");
@@ -71,31 +66,20 @@ NodeGraph::~NodeGraph(){
     _nodes.clear();
 }
 
-void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer,UI_NODE_TYPE type, Node *node,double x,double y){
-    QGraphicsScene* sc=scene();
-    NodeGui* node_ui;
-    
-   
-    
+void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node,double x,double y){
+    QGraphicsScene* sc=scene();        
     int yOffset = rand() % 50 + 50;
     if(x == INT_MAX)
         x = _lastSelectedPos.x();
-    if(type==OUTPUT){
+    if(node->isOutputNode()){
         if(y == INT_MAX)
             y = _lastSelectedPos.y() + yOffset;
-        node_ui=new OutputNode_ui(this,dockContainer,node,x,y,_root,sc);
-    }else if(type==INPUT_NODE){
-        if(y == INT_MAX)
-            y = _lastSelectedPos.y() - yOffset;
-        node_ui=new InputNode_ui(this,dockContainer,node,x,y,_root,sc);
     }else {
         if(y == INT_MAX)
             y = _lastSelectedPos.y() - yOffset;
-        node_ui=new OperatorNode_ui(this,dockContainer,node,x,y,_root,sc);
     }
-    
+    NodeGui* node_ui=new NodeGui(this,dockContainer,node,x,y,_root,sc);
     _nodes.push_back(node_ui);
-    
     if(_nodeSelected)
         autoConnect(_nodeSelected, node_ui);
     
@@ -160,9 +144,7 @@ void NodeGraph::deselect(){
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         if(_arrowSelected->hasSource()){
-            
-            _arrowSelected->getSource()->getNode()->releaseSocket();
-            
+
             _arrowSelected->getSource()->getNode()->removeChild(_arrowSelected->getDest()->getNode());
             _arrowSelected->getSource()->substractChild(_arrowSelected->getDest());
             
@@ -185,18 +167,16 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                     break;
                 }
                 
-                if(n->getNode()->getFreeSocketCount()>0){
-                    _arrowSelected->getDest()->getNode()->addParent(n->getNode());
-                    _arrowSelected->getDest()->addParent(n);
-                    n->getNode()->addChild(_arrowSelected->getDest()->getNode());
-                    n->addChild(_arrowSelected->getDest());
-                    n->getNode()->lockSocket();
-                    _arrowSelected->setSource(n);
-                    foundSrc=true;
-                    
-                    break;
-                }
+                _arrowSelected->getDest()->getNode()->addParent(n->getNode());
+                _arrowSelected->getDest()->addParent(n);
+                n->getNode()->addChild(_arrowSelected->getDest()->getNode());
+                n->addChild(_arrowSelected->getDest());
+                _arrowSelected->setSource(n);
+                foundSrc=true;
+
+                break;
             }
+
             i++;
         }
         if(!foundSrc){
@@ -263,8 +243,8 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
                 n->setSettingsPanelEnabled(true);
                 n->getSettingPanel()->setVisible(true);
                 // needed for the layout to work correctly
-               // QWidget* pr=n->getDockContainer()->parentWidget();
-               // pr->setMinimumSize(n->getDockContainer()->sizeHint());
+                // QWidget* pr=n->getDockContainer()->parentWidget();
+                // pr->setMinimumSize(n->getDockContainer()->sizeHint());
                 
             }
             n->putSettingsPanelFirst();
@@ -407,41 +387,37 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     /*dst is outputnode,src isn't*/
     if(selected->getNode()->isOutputNode()){
         first = selected->firstAvailableEdge();
-        if(first){
-            if(created->getNode()->getFreeSocketCount() > 0){
+        if(first && !created->getNode()->isOutputNode()){
                 first->getDest()->getNode()->addParent(created->getNode());
                 first->getDest()->addParent(created);
                 created->getNode()->addChild(first->getDest()->getNode());
                 created->addChild(first->getDest());
-                created->getNode()->lockSocket();
                 first->setSource(created);
                 first->initLine();
                 cont = true;
-            }
+
         }
     }else{
         /*dst is not outputnode*/
-        if (selected->getNode()->getFreeSocketCount() > 0) {
             first = created->firstAvailableEdge();
             if(first){
                 first->getDest()->getNode()->addParent(selected->getNode());
                 first->getDest()->addParent(selected);
                 selected->getNode()->addChild(first->getDest()->getNode());
                 selected->addChild(first->getDest());
-                selected->getNode()->lockSocket();
                 first->setSource(selected);
                 first->initLine();
                 cont = true;
             }
-        }
+
     }
     
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
-            ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+            ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
-            const vector<InputNode*>& inputs = dag.getInputs();
+            const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); i++) {
                 if (inputs[0]->className() == "Reader") {
@@ -487,9 +463,9 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
     if(viewer){
         //if(foundSrc){
         if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(dynamic_cast<OutputNode*>(viewer));
+            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(viewer->getNode());
         }else{
-            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             if(ret.second){
                 ctrlPTR->getModel()->startVideoEngine(1);
             }

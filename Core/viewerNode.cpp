@@ -34,11 +34,10 @@
 #include "Superviser/controler.h"
 
 using namespace Powiter;
-Viewer::Viewer(ViewerCache* cache,TextureCache* textureCache):OutputNode(),
+Viewer::Viewer(ViewerCache* cache):Node(),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
-_textureCache(textureCache),
 _pboIndex(0)
 {
     _cacheWatcher = new QFutureWatcher<void>;
@@ -153,27 +152,19 @@ FrameEntry* Viewer::get(U64 key){
     
   return  _viewerCache->get(key);
 }
-bool Viewer::isTextureCached(U64 key){
-    
-    TextureEntry* found = _textureCache->get(key);
-    if(found != NULL){
-        _uiContext->viewer->setCurrentDisplayTexture(found);
-        return true;
-    }
-    return false;
-}
+
 
 void Viewer::cachedFrameEngine(FrameEntry* frame){
     size_t dataSize = 0;
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
-    TextureEntry::DataType type;
+    Texture::DataType type;
     if(frame->_byteMode==1.0){
         dataSize  = w * h * sizeof(U32) ;
-        type = TextureEntry::BYTE;
+        type = Texture::BYTE;
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
-        type = TextureEntry::FLOAT;
+        type = Texture::FLOAT;
     }
     ViewerGL* gl_viewer = _uiContext->viewer;
     if(_viewerInfos){
@@ -188,10 +179,6 @@ void Viewer::cachedFrameEngine(FrameEntry* frame){
     _uiContext->setCurrentViewerInfos(_viewerInfos,false);
     
     
-    /*resizing texture if needed, the calls must be made in that order*/
-    TextureEntry* cacheTex = gl_viewer->getViewerCacheTexture();
-    cacheTex->allocate(frame->_textureRect, type);
-    gl_viewer->setCurrentDisplayTexture(cacheTex);
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();

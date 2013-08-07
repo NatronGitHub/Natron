@@ -13,9 +13,9 @@ If you're planning on writing a CMAKE based project file, and that you succeed i
 
 In order to have Powiter compiling, first you need to install the required libraries.
 
-###Qt 5
+###Qt 4.8.5
 
-You'll need to install Qt (5.0.2 as of writing)(opengl version) libraries from [Qt download](http://qt-project.org/downloads). Once downloaded, remember the path where you install it as we will need it later on.
+You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). 
 
 ###FFMPEG
 
@@ -104,7 +104,7 @@ INCLUDEPATH is the path to the include files
 
 LIBS is the path to the libs
 
-openexr2{
+openexr{
     INCLUDEPATH += $$quote(C:\\Program Files\OpenExr_win32\include)
     LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
@@ -127,33 +127,22 @@ boost{
     INCLUDEPATH +=  $$quote(C:\\)
 }
 
-qt{
-    INCLUDEPATH +=  $$quote(C:\Qt\Qt5.1.0\5.1.0\msvc2010_opengl\include)
-
-}
-
 glew{
     INCLUDEPATH +=  $$quote(C:\\glew\include)
     LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
 }
-eigen{
 
-}
-openfx{
-    INCLUDEPATH +=  $$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\include)
-    Debug:LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\lib\debug) -lHostSupport
-    Release:LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\lib\release) -lHostSupport
-}
+
 
 ###Copy the dll's over
 
 Copy all the required dll's to the executable directory.
 If Powiter launches that means you got it all right;)
 
+###Build on QtCreator
+Untested yet.
+
 ###(Optional) Build on Visual Studio:
 
-You can generate a visual studio (2010) project by typing the following command where Powiter.pro is located:
-
-qmake -spec win32-msvc2010 -tp vc Powiter.pro
-
+You need to install the Qt add-in for visual studio. Open the Qt menu within visual studio and select open a .pro file. This will generate a proper .sln working with qt command line tools.
 

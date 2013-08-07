@@ -35,7 +35,7 @@
 using namespace std;
 using namespace Powiter;
 Writer::Writer():
-OutputNode(),
+Node(),
 _requestedChannels(Mask_RGB), // temporary
 _currentFrame(0),
 _premult(false),

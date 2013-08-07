@@ -43,6 +43,7 @@
 class LineEdit;
 class Button;
 class QCheckBox;
+class ComboBox;
 class QWidget;
 class QLabel;
 class QHBoxLayout;
@@ -66,14 +67,16 @@ public:
     };
     
     UrlModel(QObject *parent = 0);
-    bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
     
     QStringList mimeTypes() const;
-    QMimeData *mimeData(const QModelIndexList &indexes) const;
+    virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
     bool canDrop(QDragEnterEvent *event);
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+    virtual bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
 
-    Qt::ItemFlags flags(const QModelIndex &index) const;
+    virtual Qt::ItemFlags flags(const QModelIndex &index) const;
+    
+    bool setData(const QModelIndex &index, const QVariant &value, int role=Qt::EditRole);
+
     
     void setUrls(const std::vector<QUrl> &urls);
     void addUrls(const std::vector<QUrl> &urls, int row = -1, bool move = true);
@@ -81,7 +84,7 @@ public:
     void setFileSystemModel(QFileSystemModel *model);
     QFileSystemModel* getFileSystemModel() const {return fileSystemModel;}
     void setUrl(const QModelIndex &index, const QUrl &url, const QModelIndex &dirIndex);
-    
+
 public slots:
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
     void layoutChanged();
@@ -92,6 +95,15 @@ private:
     QFileSystemModel *fileSystemModel;
     std::vector<std::pair<QModelIndex, QString> > watching;
     std::vector<QUrl> invalidUrls;
+};
+
+class FavoriteItemDelegate : public QStyledItemDelegate {
+    QFileSystemModel *_model;
+public:
+    FavoriteItemDelegate(QFileSystemModel *model):QStyledItemDelegate(),_model(model){}
+
+protected:
+    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
 };
 
 /**
@@ -130,6 +142,12 @@ public slots:
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
     virtual void dragEnterEvent(QDragEnterEvent *event);
+    
+    virtual void focusInEvent(QFocusEvent *event)
+    {
+        QAbstractScrollArea::focusInEvent(event);
+        viewport()->update();
+    }
 private:
     UrlModel *urlModel;
 };
@@ -204,7 +222,7 @@ public:
     };
     
     
-    FileSequence(std::string filetype):_fileType(filetype),_totalSize(0){}
+    FileSequence(const std::string& filetype):_fileType(filetype),_totalSize(0){}
     
     ~FileSequence(){}
     
@@ -238,6 +256,7 @@ public:
     
     
     std::multimap<std::string, FileSequence > getFrameSequenceCopy() const{return _frameSequences;}
+    
     
     inline void setFilter(QString filter){ _filter = filter;}
 
@@ -318,7 +337,7 @@ private:
     Button* _removeFavoriteButton;
     
     LineEdit* _selectionLineEdit;
-    Button* _sequenceButton;
+    ComboBox* _sequenceButton;
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;
@@ -357,9 +376,9 @@ public:
     
     
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                       std::vector<std::string> filters, // the user accepted file types
+                       const std::vector<std::string>& filters, // the user accepted file types
                        FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
-                       std::string currentDirectory = std::string()); // the directory to show first
+                       const std::string& currentDirectory = ""); // the directory to show first
 
     virtual ~SequenceFileDialog();
     
@@ -367,9 +386,9 @@ public:
 
     void setFrameSequence(FrameSequences frameSequences);
 
-    const FileSequence frameRangesForSequence(std::string sequenceName, std::string extension) const;
+    const FileSequence frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
-    bool isASupportedFileExtension(std::string ext) const;
+    bool isASupportedFileExtension(const std::string& ext) const;
     
     /*Removes the . and the extension from the filename and also
      *returns the extension as a string.*/
@@ -450,6 +469,7 @@ public slots:
     void seekUrl(const QUrl& url);
     void selectionChanged();
     void enableSequenceMode(bool);
+    void sequenceComboBoxSlot(const QString&);
     void showFilterMenu();
     void dotStarFilterSlot();
     void starSlashFilterSlot();

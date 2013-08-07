@@ -46,16 +46,28 @@ ViewerCache::ViewerCache() : AbstractDiskCache(0){}
 ViewerCache::~ViewerCache(){}
 
 
-FrameEntry::FrameEntry():_exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
+FrameEntry::FrameEntry():MemoryMappedEntry(), _exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
     _frameInfo = new ReaderInfo;
 }
 
 FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
-                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):
+                       float byteMode,const Box2D& bbox,const Format& dispW,
+                       const ChannelSet& channels,const TextureRect& textureRect):MemoryMappedEntry(),
 _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
-    *_frameInfo = *info;
+    _frameInfo->set(bbox);
+    _frameInfo->setDisplayWindow(dispW);
+    _frameInfo->setChannels(channels);
+    
+}
+
+FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
+                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):MemoryMappedEntry(),
+_exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
+_byteMode(byteMode),_textureRect(textureRect)
+{
+    _frameInfo = info;
 }
 
 FrameEntry::FrameEntry(const FrameEntry& other):_exposure(other._exposure),_lut(other._lut),_zoom(other._zoom),
@@ -89,7 +101,6 @@ std::string FrameEntry::printOut(){
 
 /*Recover an entry from string*/
 FrameEntry* FrameEntry::recoverFromString(QString str){
-    FrameEntry* entry = new FrameEntry;
     
     QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,xStr,yStr,rightStr,topStr,wStr,hStr;
     int i =0 ;
@@ -116,15 +127,11 @@ FrameEntry* FrameEntry::recoverFromString(QString str){
     while(str.at(i)!= QChar(' ')){wStr.append(str.at(i));i++;}
     i++;
     while(i < str.size()){hStr.append(str.at(i));i++;}
+      
     
-    entry->_zoom = zoomStr.toFloat();
-    entry->_exposure = expStr.toFloat();
-    entry->_lut = lutStr.toFloat();
-    entry->_byteMode = byteStr.toFloat();
-    entry->_treeVers = treeStr.toULongLong();
-    entry->_frameInfo = ReaderInfo::fromString(frameInfoStr);
     TextureRect textureRect(xStr.toInt(),yStr.toInt(),rightStr.toInt(),topStr.toInt(),wStr.toInt(),hStr.toInt());
-    entry->_textureRect = textureRect;
+    FrameEntry* entry = new FrameEntry(zoomStr.toFloat(),expStr.toFloat(),lutStr.toFloat(),treeStr.toULongLong(),byteStr.toFloat(),
+                                       ReaderInfo::fromString(frameInfoStr),textureRect);
     
     return entry;
 }
@@ -191,13 +198,9 @@ FrameEntry* ViewerCache::addFrame(U64 key,
                                   const Box2D& bbox,
                                   const Format& dispW){
     
-    ReaderInfo* info = new ReaderInfo;
-    info->setDisplayWindow(dispW);
-    info->set(bbox);
-    info->setChannels(Mask_RGBA);
-    FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
-                                      treeVersion,byteMode,info,textureRect);
     
+    FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
+                                      treeVersion,byteMode,bbox,dispW,Mask_RGBA,textureRect);
     string name(getCachePath().toStdString());
     {
         ostringstream oss1;
@@ -233,6 +236,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         return NULL;
     }
     currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
+    out->addReference(); //increase refcount BEFORE adding it to the cache and exposing it to the other threads
     if(AbstractDiskCache::add(key, out)){
         currentViewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
@@ -247,15 +251,12 @@ void ViewerCache::clearInMemoryPortion(){
 }
 
 FrameEntry* ViewerCache::get(U64 key){
-    
-    CacheIterator it = isInMemory(key);
-    
-    if (it == endMemoryCache()) {// not in memory
-        it = isCached(key);
-        if(it == end()){ //neither on disk
+    CacheEntry* entry = isInMemory(key);
+    if (!entry) {// not in memory
+        entry = getCacheEntry(key);
+        if(!entry){ //neither on disk
             return NULL;
         }else{ // found on disk
-            CacheEntry* entry = AbstractCache::getValueFromIterator(it);
             FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
             assert(frameEntry);
             if(!frameEntry->reOpen()){
@@ -265,7 +266,6 @@ FrameEntry* ViewerCache::get(U64 key){
             return frameEntry;
         }
     }else{ // found in memory
-        CacheEntry* entry = AbstractCache::getValueFromIterator(it);
         FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
         currentViewer->getUiContext()->frameSeeker->addCachedFrame(currentViewer->currentFrame());
@@ -285,26 +285,26 @@ U64 FrameEntry::computeHashKey(int frameNB,
                                const Format& dispW,
                                const TextureRect& frameRect){
     Hash _hash;
-    _hash.appendNodeHashToHash(frameNB);
-    _hash.appendNodeHashToHash(treeVersion);
-    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
-    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&exposure)));
-    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&lut)));
-    _hash.appendNodeHashToHash((U64)*(reinterpret_cast<U32*>(&byteMode)));
-    _hash.appendNodeHashToHash(bbox.x());
-    _hash.appendNodeHashToHash(bbox.y());
-    _hash.appendNodeHashToHash(bbox.top());
-    _hash.appendNodeHashToHash(bbox.right());
-    _hash.appendNodeHashToHash(dispW.x());
-    _hash.appendNodeHashToHash(dispW.y());
-    _hash.appendNodeHashToHash(dispW.top());
-    _hash.appendNodeHashToHash(dispW.right());
-    _hash.appendNodeHashToHash(frameRect.x);
-    _hash.appendNodeHashToHash(frameRect.y);
-    _hash.appendNodeHashToHash(frameRect.t);
-    _hash.appendNodeHashToHash(frameRect.r);
-    _hash.appendNodeHashToHash(frameRect.w);
-    _hash.appendNodeHashToHash(frameRect.h);
+    _hash.appendValueToHash(frameNB);
+    _hash.appendValueToHash(treeVersion);
+    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
+    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&exposure)));
+    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&lut)));
+    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&byteMode)));
+    _hash.appendValueToHash(bbox.x());
+    _hash.appendValueToHash(bbox.y());
+    _hash.appendValueToHash(bbox.top());
+    _hash.appendValueToHash(bbox.right());
+    _hash.appendValueToHash(dispW.x());
+    _hash.appendValueToHash(dispW.y());
+    _hash.appendValueToHash(dispW.top());
+    _hash.appendValueToHash(dispW.right());
+    _hash.appendValueToHash(frameRect.x);
+    _hash.appendValueToHash(frameRect.y);
+    _hash.appendValueToHash(frameRect.t);
+    _hash.appendValueToHash(frameRect.r);
+    _hash.appendValueToHash(frameRect.w);
+    _hash.appendValueToHash(frameRect.h);
     _hash.computeHash();
     return _hash.getHashValue();
 }

@@ -140,6 +140,7 @@ image: url(:/Resources/Images/checkbox_checked_hovered.png);
 QCheckBox::indicator:unchecked:hover {
 image: url(:/Resources/Images/checkbox_hovered.png);
 }
+QCheckBox{color : %5}
 QGraphicsView{
 background-color: %3;
 }

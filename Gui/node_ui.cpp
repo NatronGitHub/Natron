@@ -64,7 +64,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     updateChannelsTooltip();
     
 	
-    name=scene->addSimpleText((node->getName()));
+    name=scene->addSimpleText(node->getName().c_str());
 	
 	if(node->className() == string("Reader")){
 		name->setX(itemPos.x()+35);
@@ -113,8 +113,8 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 }
 
 NodeGui::~NodeGui(){
-    node->removeFromChildren();
-    node->removeFromParents();
+    node->removeThisFromChildren();
+    node->removeThisFromParents();
     foreach(NodeGui* p,parents){
         p->substractChild(this);
     }
@@ -292,7 +292,7 @@ void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
 
 void NodeGui::setName(QString s){
     name->setText(s);
-    node->setName(s);
+    node->setName(s.toStdString());
     sc->update();
 }
 
