@@ -12,10 +12,11 @@
 
 #include "ofxnode.h"
 #include "Core/ofxparaminstance.h"
-
+#include "Core/row.h"
 #include "Core/ofxclipinstance.h"
 
-
+using namespace std;
+using namespace Powiter;
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context):
@@ -24,12 +25,109 @@ OFX::Host::ImageEffect::Instance(plugin,other,context,false)
 {
 }
 
-OFX::Host::ImageEffect::ClipInstance* OfxNode::newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
-                                                      OFX::Host::ImageEffect::ClipDescriptor* descriptor,
-                                                      int index){
-    return new OfxClipInstance(this,descriptor);
+
+
+OFX::Host::ImageEffect::ClipInstance* OfxNode::newClipInstance(OFX::Host::ImageEffect::Instance* ,
+                                                               OFX::Host::ImageEffect::ClipDescriptor* descriptor,
+                                                               int index){
+    
+    return new OfxClipInstance(index,this,descriptor);
+}
+ChannelSet OfxNode::ofxComponentsToPowiterChannels(const std::string& comp){
+    ChannelSet out;
+    if(comp == kOfxImageComponentAlpha){
+        out += Channel_alpha;
+    }else if(comp == kOfxImageComponentRGB){
+        out += Mask_RGB;
+    }else if(comp == kOfxImageComponentRGBA){
+        out += Mask_RGBA;
+    }else if(comp == kOfxImageComponentYUVA){
+        out += Mask_RGBA;
+    }
+    return out;
 }
 
+ChannelSet OfxNode::supportedComponents(){
+    OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
+    const vector<string>& suppComponents = clip->getSupportedComponents();
+    ChannelSet supportedComp;
+    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); it++) {
+        supportedComp += OfxNode::ofxComponentsToPowiterChannels(*it);
+    }
+    return supportedComp;
+}
+
+bool OfxNode::isOutputNode(){
+    return false;
+}
+
+bool OfxNode::isInputNode(){
+    if(getContext() == kOfxImageEffectContextGenerator)
+        return true;
+    return false;
+}
+
+std::string OfxNode::setInputLabel(int inputNb){
+    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
+    if(inputNb < (int)clips.size()){
+        return clips[inputNb]->getShortLabel();
+    }else{
+        return Node::setInputLabel(inputNb);
+    }
+}
+
+int OfxNode::maximumInputs(){
+    if(isInputNode()){
+        return 0;
+    }else{
+        int totalClips = getDescriptor().getClips().size();
+        return totalClips-1;
+    }
+    
+}
+
+int OfxNode::minimumInputs(){
+    typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
+    const ClipsMap clips = getDescriptor().getClips();
+    int minimalCount = 0;
+    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); it++) {
+        if(!it->second->isOptional()){
+            minimalCount++;
+        }
+    }
+    return minimalCount;
+}
+
+void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
+    OfxRectI renderW;
+    const Format& dispW = _info->getDisplayWindow();
+    renderW.x1 = dispW.x();
+    renderW.x2 = dispW.right();
+    renderW.y1 = dispW.y();
+    renderW.y2 = dispW.top();
+    OfxPointD renderScale;
+    getRenderScaleRecursive(renderScale.x, renderScale.y);
+    {
+        QMutexLocker g(&_lock);
+        if(_firstTime){
+            _firstTime = false;
+            renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+            
+        }
+    }
+    //the input clips and output clip are filled at this point, we need to copy the output image
+    //into the rows, each thread handle a specific row again (the mutex locker is dead).
+
+    OfxImage* img = dynamic_cast<OfxImage*>(getClip("Output")->getImage(0.0,NULL));
+    const OfxRGBAColourF* srcPixels = img->pixel(0, y);
+    foreachChannels(chan, channels){
+        float* writeable = out->writable(chan);
+        if(writeable){
+            OfxImage::ofxPackedBufferToRowPlane(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+        }
+    }
+    
+}
 
 // make a parameter instance
 OFX::Host::Param::Instance* OfxNode::newParam(const std::string& name, OFX::Host::Param::Descriptor& descriptor)
@@ -60,6 +158,15 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& name, OFX::Host
         return 0;
 }
 
+void OfxNode::onInstanceChangedAction(const QString& str){
+    double frame  = getFrameRecursive();
+    OfxPointD renderScale;
+    getRenderScaleRecursive(renderScale.x, renderScale.y);
+    
+    beginInstanceChangedAction(kOfxChangeUserEdited);
+    paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
+    endInstanceChangedAction(kOfxChangeUserEdited);
+}
 
 OfxStatus OfxNode::editBegin(const std::string& name)
 {
@@ -103,6 +210,6 @@ void  OfxNode::timeLineGotoTime(double t)
 /// get the first and last times available on the effect's timeline
 void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
-    t1 = 0;
-    t2 = 25;
+    t1 = 1;
+    t2 = 1;
 }

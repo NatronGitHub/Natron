@@ -51,6 +51,8 @@ std::string getChannelName(Channel c){
     }else if(c==Channel_Z){
         return "Channel_Z";
         
+    }else if(c==Channel_black){
+        return "Channel_black";
     }
     return "";
 }
@@ -167,13 +169,13 @@ void ChannelSet::operator+=(ChannelMask source) {
     if(mask & 1){ // mask all
         return;
     }
-    if(source & 1){// mask all
+    if((source & Mask_All) == Mask_All){// mask all
         _size = MAX_CHANNEL_COUNT;
         mask = 1;
         return;
     }
     _size = 0;
-    mask |= (source << 1);
+    mask |= (source << 1);//shift from 1 bit on the left because the first bit is reserved for the Mask_all
     for(unsigned int i = 1; i < 32 ; i++){
         if(mask & (1 << i)) _size++;
     }
@@ -181,7 +183,7 @@ void ChannelSet::operator+=(ChannelMask source) {
 
 
 void ChannelSet::operator+=(Channel z){
-    if(mask & 1){ // mask all
+    if((mask & 1) || z == Channel_black){ // mask all or channel black
         return;
     }
     if(!contains(z)){
@@ -298,7 +300,7 @@ Channel ChannelSet::first() const{
     return Channel_black;
 }
 Channel ChannelSet::next(Channel k) const{
-    int i = (int)k; i++;
+    int i = (int)k+1;
     while(i < 32){
         if(mask & (1 << i)){
             return (Channel)i;
@@ -329,7 +331,7 @@ Channel ChannelSet::previous(Channel k) const{
 
 void ChannelSet::printOut(){
     std::cout << "ChannelSet is ..." << std::endl;
-    for (Channel CUR = this->first(); CUR; CUR = this->next(CUR)){
+    for (Channel CUR = first(); CUR; CUR = next(CUR)){
         std::cout << getChannelName(CUR) << endl;
     }
 }

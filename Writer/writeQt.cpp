@@ -100,8 +100,8 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
 }
 
 void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
-    InputRow row ;
-    op->input(0)->get(y, offset, range, channels, row);
+    InputRow row(y,offset,range,channels) ;
+    op->input(0)->get(row);
     const Format& frmt = op->getInfo()->getDisplayWindow();
     
     /*invert y to be in top-to-bottom increasing order*/

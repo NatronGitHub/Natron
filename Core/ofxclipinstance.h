@@ -11,18 +11,30 @@
 #ifndef OFXCLIPINSTANCE_H
 #define OFXCLIPINSTANCE_H
 
+#include "Core/channels.h"
+
 //ofx
 #include "ofxhImageEffect.h"
+#include "ofxpixels.h"
 
+class OfxImage;
 class OfxNode;
+class Node;
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
     OfxNode* _node;
-    
+    int _clipIndex;
+    OfxImage* _outputImage;
 public:
-    OfxClipInstance(OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc);
+    OfxClipInstance(int index,OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc);
     
     virtual ~OfxClipInstance(){}
+    
+    /*Returns the node associated to this clip.
+     For an input clip this is the input node
+     corresponding to the clipIndex.
+     For an output clip this is the _node member.*/
+    Node* getAssociatedNode() const;
     
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
@@ -101,7 +113,35 @@ public:
     
     /// override this to return the rod on the clip
     virtual OfxRectD getRegionOfDefinition(OfxTime time) const;
-
+    
+    
 };
+
+
+class OfxImage : public OFX::Host::ImageEffect::Image
+{
+    protected :
+    OfxRGBAColourF   *_data; // where we are keeping our image data
+    
+    public :
+    
+    
+    explicit OfxImage(const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t);
+    OfxRGBAColourF* pixel(int x, int y) const;
+    
+    static void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
+                                          const float* plane,
+                                          int w,
+                                          OfxRGBAColourF* dst
+                                          );
+
+    static void ofxPackedBufferToRowPlane(Powiter::Channel channel,
+                                          const OfxRGBAColourF* src,
+                                          int w,
+                                          float* plane);
+    
+    ~OfxImage();
+};
+
 
 #endif // OFXCLIPINSTANCE_H

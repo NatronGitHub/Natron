@@ -28,7 +28,7 @@
 
 
 class ChannelSet{
-    U32 mask; // 1 bit per channel and bit 0 is for "all" channels
+    U32 mask; // 1 bit per channel and LSB is for "all" channels
     unsigned int _size;
 public:
     

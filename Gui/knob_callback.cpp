@@ -25,9 +25,9 @@ Knob_Callback::Knob_Callback(SettingsPanel *panel, Node *node){
 }
 
 Knob_Callback::~Knob_Callback(){
-    for (U32 i = 0 ; i< knobs.size(); i++) {
-        delete knobs[i];
-    }
+//    for (U32 i = 0 ; i< knobs.size(); i++) {
+//        delete knobs[i];
+//    }
     knobs.clear();
 }
 void Knob_Callback::initNodeKnobsVector(){

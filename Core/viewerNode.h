@@ -63,9 +63,9 @@ public:
     
     ViewerTab* getUiContext(){return _uiContext;}
     
-    virtual std::string className(){return "Viewer";}
+    virtual const std::string className(){return "Viewer";}
     
-    virtual std::string description();
+    virtual const std::string description();
     
     void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
@@ -83,7 +83,7 @@ public:
     
 protected:
     
-	virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter::Mask_None;}
+    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
 	
 private:
     

@@ -73,9 +73,9 @@ public:
         
     virtual ~Writer();
     
-    virtual std::string className();
+    virtual const std::string className();
     
-    virtual std::string description();
+    virtual const std::string description();
     
     /*If forReal is true, it creates a new Write and set _writeHandle
      to this newly created Write. It also calls Write::setupFile with 
@@ -137,7 +137,7 @@ public slots:
 protected:
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int){return Powiter::Mask_None;}
+    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
     
 private:
     

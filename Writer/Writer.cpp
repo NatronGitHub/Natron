@@ -55,11 +55,11 @@ Writer::~Writer(){
     delete _lock;
 }
 
-std::string Writer::className(){
+const std::string Writer::className(){
     return "Writer";
 }
 
-std::string Writer::description(){
+const std::string Writer::description(){
     return "OutputNode";
 }
 

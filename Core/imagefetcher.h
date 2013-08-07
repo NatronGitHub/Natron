@@ -31,7 +31,7 @@ class Node;
 /*This class is useful for spatial operators that need several rows, up to the whole image, of an input
  nodes. This object is kind of a generalisation of the node->get() function.
  Note that this object launches new threads to actually get the rows.*/
-class InputFetcher : public QObject{
+class ImageFetcher : public QObject{
     
     Q_OBJECT
     
@@ -53,16 +53,17 @@ public:
      !!WARNING: When the image fetcher object is deleted, all the InputRows will be
      deleted too, it's important to maintain the image fetcher living thoughout the
      entire duration you need to use the InputRows contained in that object.*/
-    InputFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels);
+    ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels);
     
     
     /*Launches new thread to fetch all the rows necessary from the node to fill the range (y,t).
      It is useful to note that the Interest object ,throughout its lifetime,will lock the rows
      into the cache and prevent them from being deleted(this statement is valid only if the node
      caches data , otherwise they will never be cached).
+     When blocking is true this function returns when all threads have finished.
      
-     !!WARNING : Results will not be available right away when returning from
-     the constructor. You can connect to the signal hasFinishedCompletly to be sure
+     !!WARNING :When blocking is false, results will not be available right away when returning from
+     the function. You can connect to the signal hasFinishedCompletly to be sure
      that the rows are avaiable. You can also call isFinished().
      You can also connect to the signal hasFinishedAt(int) that will tell you
      when a specific row has been fetch from the input. This may be used
@@ -71,7 +72,7 @@ public:
      of rows that are inter-dependent; if they were independent you could use
      Node::get in the first place.
      */
-    void claimInterest();
+    void claimInterest(bool blocking = false);
     
     bool isFinished() const {return _isFinished;}
     
@@ -83,7 +84,7 @@ public:
     
     /*Deletes all the InputRows in the image fetcher, and tell the cache they are
      no longer protected (i.e : they return to normal priority and can be evicted).*/
-    ~InputFetcher();
+    ~ImageFetcher();
     public slots:
     void notifyFinishedAt(int);
     void setFinished();

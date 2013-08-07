@@ -35,7 +35,7 @@ Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraph
     this->dest=dest;
     has_source=false;
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getLabel(inputNb).c_str()));
+    label=scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
@@ -48,7 +48,7 @@ Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphi
     this->source=src;
     this->dest=dest;
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getLabel(inputNb).c_str()));
+    label=scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
     initLine();
 

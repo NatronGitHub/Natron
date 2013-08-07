@@ -137,11 +137,13 @@ bool compareRows(const Row &a,const Row &b);
  in the engine function when accessing the results from nodes upstream.*/
 class InputRow : public boost::noncopyable {
     Row* _row;
+    int _y,_x,_r;
+    ChannelSet _channels;
 public:
     
-    InputRow():_row(0){}
+    InputRow(int y,int x, int r,ChannelSet channels):_row(0),_y(y),_x(x),_r(r),_channels(channels){}
     
-    const ChannelSet& channels() const { return _row->channels();}
+    const ChannelSet& channels() const { return _channels;}
     
     void range(int offset,int right){_row->range(offset,right);}
     
@@ -151,11 +153,11 @@ public:
 	 *as such : const float* start = (*row)[z]+row->offset()*/
     const float* operator[](Powiter::Channel z) const{return (*_row)[z];}
     
-    int y() const {return _row->y();}
+    int y() const {return _y;}
     
-    int right() const {return _row->right();}
+    int right() const {return _r;}
     
-    int offset() const {return _row->offset();}
+    int offset() const {return _x;}
     
     /*Returns a writable pointer to the channel c.
 	 *WARNING : the pointer returned is pointing to 0.
@@ -175,7 +177,7 @@ public:
     void erase(ChannelSet set){_row->erase(set);}
         
     /*DO NOT CALL THESE EVER*/
-    void setInternalRow(Row* ptr){_row = ptr;}
+    void setInternalRow(Row* ptr){_row = ptr; assert(ptr->offset() == _x && ptr->right() == _r && ptr->y() == _y);}
     Row* getInternalRow() const {return _row;}
         
     ~InputRow(){
