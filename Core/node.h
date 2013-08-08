@@ -148,7 +148,7 @@ public:
     Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     virtual std::string setInputLabel(int inputNb);
-    std::string getLabel(int inputNb) {  return _inputLabelsMap[inputNb]; }
+    std::string getInputLabel(int inputNb) {  return _inputLabelsMap[inputNb]; }
     void applyLabelsToInputs();
     void initInputLabelsMap();
     /*============================*/
@@ -156,19 +156,19 @@ public:
     
     
     /*node name related functions*/
-    std::string getName() const { return _name ; }
+    const std::string getName() const { return _name ; }
 
     void setName(const std::string& name) { _name = name; }
 
     /*============================*/
 
     /*Node utility functions*/
-    virtual std::string className() =0;
-    virtual std::string description() =0;
+    virtual const std::string className() =0;
+    virtual const std::string description() =0;
     /*============================*/
     
     /*Calculations related functions*/
-    bool validate(bool forReal);
+    void validate(bool forReal);
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
         Q_UNUSED(y);
         Q_UNUSED(offset);
@@ -194,18 +194,18 @@ public:
      for the line y , channels and range (r-x). Data may come from the cache,
      otherwise engine() gets called.
      */
-    void get(int y,int x,int r,ChannelSet channels,InputRow& row);
+    void get(InputRow& row);
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
     virtual bool cacheData()=0;
     
 
-    
+    virtual bool isOpenFXNode() const {return false;}
+        
 protected:
     
-    
-	virtual ChannelSet channelsNeeded(int inputNb)=0;
+    virtual ChannelSet supportedComponents() =0;
     virtual void preProcess(){}
 	virtual void _validate(bool forReal){(void)forReal;}
     
@@ -222,7 +222,7 @@ protected:
 	NodeGui* _nodeGUI;
 private:
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
-    bool merge_info(bool forReal);
+    void merge_info(bool forReal);
     void copy_info(Node* parent);
     
 };

@@ -35,7 +35,7 @@ namespace Powiter{
         Channel_blue=3,
         Channel_alpha=4,
         Channel_Z=5,
-        Channel_unused=16
+        Channel_unused=6
     };
     
     

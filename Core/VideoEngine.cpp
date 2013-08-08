@@ -22,6 +22,7 @@
 
 #include "Gui/button.h"
 #include "Core/viewerNode.h"
+#include "Core/ofxnode.h"
 #include "Core/settings.h"
 #include "Core/model.h"
 #include "Core/hash.h"
@@ -90,6 +91,16 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
         zoomFactor = 1.f;
     }
     
+    /*beginRenderAction for all openFX nodes*/
+    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++) {
+        OfxNode* n = dynamic_cast<OfxNode*>(*it);
+        if(n){
+            OfxPointD renderScale;
+            renderScale.x = renderScale.y = 1.0;
+            n->beginRenderAction(0, 25, 1, true,renderScale);
+        }
+    }
+    
     QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,zoomFactor,sameFrame,fitFrameToViewer,false);
     _computeFrameWatcher->setFuture(future);
     
@@ -106,6 +117,16 @@ void VideoEngine::stopEngine(){
     _lastEngineStatus._returnCode = EngineStatus::ABORTED;
     _working = false;
     _timer->playState=PAUSE;
+    
+    /*endRenderAction for all openFX nodes*/
+    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++) {
+        OfxNode* n = dynamic_cast<OfxNode*>(*it);
+        if(n){
+            OfxPointD renderScale;
+            renderScale.x = renderScale.y = 1.0;
+            n->endRenderAction(0, 25, 1, true, renderScale);
+        }
+    }
     
 }
 
@@ -221,10 +242,8 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     
     QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
     
-    if(!_dag.validate(true)){
-        stopEngine();
-        return;
-    }
+    _dag.validate(true);
+
     const Format &_dispW = _dag.getOutput()->getInfo()->getDisplayWindow();
     if(_dag.isOutputAViewer() && fitFrameToViewer){
         gl_viewer->fitToFormat(_dispW);
@@ -271,7 +290,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                                          _dispW,
                                          textureRect);
         _lastEngineStatus._x = columnSpan.first;
-        _lastEngineStatus._r = columnSpan.second;
+        _lastEngineStatus._r = columnSpan.second+1;
 
 
         _viewerCacheArgs._hashKey = key;
@@ -301,7 +320,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             rows.push_back(i);
         }
         _lastEngineStatus._x = dataW.x();
-        _lastEngineStatus._r = dataW.right();
+        _lastEngineStatus._r = dataW.right()+1;
     }
     /*If it reaches here, it means the frame neither belong
      to the ViewerCache nor to the TextureCache, we must
@@ -458,7 +477,7 @@ void VideoEngine::_drawOverlay(Node *output) const{
 }
 
 void VideoEngine::metaEnginePerRow(Row* row, Node* output){
-    output->engine(row->y(), row->offset(), row->right()+1, row->channels(), row);
+    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     delete row;
 }
 
@@ -665,10 +684,14 @@ void VideoEngine::recenterViewer(){
     if(_working){
         pause();
     }
-    if(!_working)
-        _startEngine(currentViewer->currentFrame(), -1, true,_forward,false);
-    else
+    if(!_working){
+        if(_frameRequestsCount == -1)
+            _startEngine(currentViewer->currentFrame(), -1, true,_forward,false);
+        else
+            _startEngine(currentViewer->currentFrame(), 1, true,_forward,false);
+    }else{
         appendTask(currentViewer->currentFrame(), -1, true,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
+    }
 }
 
 
@@ -833,14 +856,11 @@ void VideoEngine::DAG::debug(){
 }
 
 /*sets infos accordingly across all the DAG*/
-bool VideoEngine::DAG::validate(bool forReal){
+void VideoEngine::DAG::validate(bool forReal){
     /*Validating the DAG in topological order*/
     for (DAGIterator it = begin(); it!=end(); it++) {
-        if (!(*it)->validate(forReal)) {
-            return false;
-        }
+        (*it)->validate(forReal);
     }
-    return true;
 }
 
 

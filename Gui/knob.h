@@ -246,7 +246,7 @@ public:
     static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(double* value){_value = value;}
     virtual void setValues();
-    virtual std::string name(){return "Float";}
+    virtual std::string name(){return "Double";}
     Double_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
     virtual ~Double_Knob(){}

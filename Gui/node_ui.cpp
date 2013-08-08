@@ -128,7 +128,8 @@ NodeGui::~NodeGui(){
     foreach(NodeGui*c,tmpChildrenCopy){
         _dag->checkIfViewerConnectedAndRefresh(c);
     }
-    delete node;
+    if(!node->isOpenFXNode())
+        delete node;
 //    if(settings){
 //        delete settings;
 //        settings = 0;

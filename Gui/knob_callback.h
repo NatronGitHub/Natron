@@ -25,7 +25,6 @@ class Node;
 
 class Knob_Callback
 {
-    SettingsPanel* getSettingsPanel(){return panel;}
 public:
     Knob_Callback(SettingsPanel* panel,Node* node);
     ~Knob_Callback();
@@ -40,6 +39,11 @@ public:
 	void createKnobDynamically();
     
     void removeAndDeleteKnob(Knob* knob);
+    
+    SettingsPanel* getSettingsPanel() const {return panel;}
+
+    
+    void setSettingsPanel(SettingsPanel* p) {panel = p;}
 
 private:
     Node* node;

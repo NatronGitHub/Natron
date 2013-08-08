@@ -86,8 +86,8 @@ void WriteExr::initializeColorSpace(){
 
 /*This must be implemented to do the output colorspace conversion*/
 void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
-    InputRow row;
-    op->input(0)->get(y, offset, range, channels, row);
+    InputRow row(y, offset, range);
+    op->input(0)->get(row);
     const float* a = row[Channel_alpha];
     if (a) {
         a+=row.offset();

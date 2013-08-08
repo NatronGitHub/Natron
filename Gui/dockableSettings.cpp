@@ -99,11 +99,12 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     initialize_knobs();
     
 }
-SettingsPanel::~SettingsPanel(){delete _cb;}
+SettingsPanel::~SettingsPanel(){}
 
 void SettingsPanel::initialize_knobs(){
     
-    _cb=new Knob_Callback(this,_nodeGUI->getNode());
+    _cb=_nodeGUI->getNode()->getKnobCallBack();
+    _cb->setSettingsPanel(this);
     _nodeGUI->getNode()->initKnobs(_cb);
     const std::vector<Knob*>& knobs=_nodeGUI->getNode()->getKnobs();
     foreach(Knob* k,knobs){

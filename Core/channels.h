@@ -28,7 +28,7 @@
 
 
 class ChannelSet{
-    U32 mask; // 1 bit per channel and bit 0 is for "all" channels
+    U32 mask; // 1 bit per channel and LSB is for "all" channels
     unsigned int _size;
 public:
     
@@ -155,7 +155,7 @@ public:
         Powiter::Channel _last = this->last();
         return iterator(mask,(Powiter::Channel)(_last+1));
     }
-    void printOut();
+    void printOut() const;
     
 #define foreachChannels(CUR, CHANNELS) \
     for (Powiter::Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))

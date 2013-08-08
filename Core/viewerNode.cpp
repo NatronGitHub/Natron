@@ -61,13 +61,13 @@ void Viewer::_validate(bool){
    // makeCurrentViewer();
 }
 
-std::string Viewer::description(){
+const std::string Viewer::description(){
     return "OutputNode";
 }
 
 void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    InputRow row;
-    input(0)->get(y, offset, range, channels, row);
+    InputRow row(y,offset,range);
+    input(0)->get(row);
     Row* internal = row.getInternalRow();
     if(internal){
         internal->zoomedY(out->zoomedY());

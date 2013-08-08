@@ -63,9 +63,9 @@ Reader::~Reader(){
     _buffer.clear();
 	delete preview;
 }
-std::string Reader::className(){return "Reader";}
+const std::string Reader::className(){return "Reader";}
 
-std::string Reader::description(){
+const std::string Reader::description(){
     return "InputNode";
 }
 void Reader::initKnobs(Knob_Callback *cb){

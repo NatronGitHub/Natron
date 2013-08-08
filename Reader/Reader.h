@@ -440,13 +440,13 @@ public:
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual std::string className();
+    virtual const std::string className();
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual std::string description();
+    virtual const std::string description();
 
     /**
      * @brief Not documented yet as it will be revisited soon.
@@ -507,8 +507,7 @@ protected:
 
 	virtual void initKnobs(Knob_Callback *cb);
     
-    virtual ChannelSet channelsNeeded(int inputNb){(void)inputNb;return Powiter::Mask_None;}
-
+    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
 private:
 	QImage *preview;
 	bool has_preview;

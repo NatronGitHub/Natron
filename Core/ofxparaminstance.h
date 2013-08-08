@@ -11,11 +11,21 @@
 #ifndef OFXPARAMINSTANCE_H
 #define OFXPARAMINSTANCE_H
 
+#include <QtCore/QObject>
+
 //ofx
 #include "ofxhImageEffect.h"
 
+
 class OfxNode;
-class OfxPushButtonInstance : public OFX::Host::Param::PushbuttonInstance {
+class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
+    Q_OBJECT
+    
+    signals:
+    void buttonPressed(QString);
+    
+    public slots:
+    void emitInstanceChanged();
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
@@ -29,6 +39,7 @@ class OfxIntegerInstance : public OFX::Host::Param::IntegerInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+    int _value;
 public:
     OfxIntegerInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -41,6 +52,7 @@ class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+    double _value;
 public:
     OfxDoubleInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
@@ -55,6 +67,7 @@ class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+    bool _value;
 public:
     OfxBooleanInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);

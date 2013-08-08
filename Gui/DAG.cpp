@@ -385,7 +385,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(!selected) return;
     bool cont = false;
     /*dst is outputnode,src isn't*/
-    if(selected->getNode()->isOutputNode()){
+    if(!selected->getNode()->isInputNode()){
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
                 first->getDest()->getNode()->addParent(created->getNode());
@@ -420,9 +420,13 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
             const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); i++) {
-                if (inputs[0]->className() == "Reader") {
-                    if(static_cast<Reader*>(inputs[0])->hasFrames())
+                if(inputs[0]->className() == "Reader"){
+                    Reader* reader = dynamic_cast<Reader*>(inputs[0]);
+                    if(reader->hasFrames()) start = true;
+                }else{
+                    if(inputs[0]->isInputNode()){
                         start = true;
+                    }
                 }
             }
             if(start)

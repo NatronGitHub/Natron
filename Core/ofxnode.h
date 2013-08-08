@@ -15,15 +15,23 @@
 #define OFXNODE_H
 
 #include "Core/node.h"
-
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
+#include <QtCore/QObject>
 //ofx
 #include "ofxhImageEffect.h"
 
 //ours
 class OFX::Host::ImageEffect::ClipInstance;
 
-class OfxNode : public Node,public OFX::Host::ImageEffect::Instance
+class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instance
 {
+    Q_OBJECT
+    
+    
+    QMutex _lock;
+    bool _firstTime;
+    
 public:
     OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             OFX::Host::ImageEffect::Descriptor         &other,
@@ -31,19 +39,34 @@ public:
     
     virtual ~OfxNode(){}
     
-    virtual bool isOutputNode(){return true;}
+    virtual bool isInputNode();
     
-    virtual int maximumInputs(){return 1;}
+    virtual bool isOutputNode();
     
-    virtual int minimumInputs(){return 1;}
+    /*Returns the clips count minus the output clip*/
+    virtual int maximumInputs();
+    
+    virtual int minimumInputs();
     
     virtual bool cacheData(){return false;}
     
-    virtual std::string className(){return "Viewer";}
+    virtual const std::string className(){return getShortLabel();}
     
-    virtual std::string description(){return "";}
+    virtual const std::string description(){return "";}
     
-    virtual ChannelSet channelsNeeded(int inputNb){return Powiter:: Mask_RGBA;}
+    virtual std::string setInputLabel(int inputNb);
+    
+    virtual bool isOpenFXNode() const {return true;}
+    
+    static ChannelSet ofxComponentsToPowiterChannels(const std::string& comp);
+    
+    virtual ChannelSet supportedComponents();
+    
+    virtual void _validate(bool){
+        _firstTime = true;
+    }
+    
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
@@ -105,7 +128,7 @@ public:
     
     // The duration of the effect
     // This contains the duration of the plug-in effect, in frames.
-    virtual double getEffectDuration() const {return 25.0;}
+    virtual double getEffectDuration() const {return 1.0;}
     
     // For an instance, this is the frame rate of the project the effect is in.
     virtual double getFrameRate() const {return 25.0;}
@@ -167,6 +190,9 @@ public:
     
     /// get the first and last times available on the effect's timeline
     virtual void timeLineGetBounds(double &t1, double &t2);
+
+public slots:
+    void onInstanceChangedAction(const QString&);
 };
 
 #endif // OFXNODE_H

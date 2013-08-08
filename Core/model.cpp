@@ -170,6 +170,8 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
+    
+    _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
@@ -316,7 +318,7 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< inputs.size(); i++) {
-        Reader* r = static_cast<Reader*>(inputs[i]);
+        Reader* r = dynamic_cast<Reader*>(inputs[i]);
         if (r) {
             if (r->hasFrames()) {
                 hasFrames = true;
@@ -389,21 +391,48 @@ bool Model::createNode(Node *&node,const std::string name){
         return true;
     }else{
                 
-//		foreach(PluginID* pair,_pluginsLoaded){
-//			string str(pair->second);
-//            
-//			if(str==name){
-//				NodeBuilder builder=(NodeBuilder)pair->first;
-//				if(builder!=NULL){
-//					node=builder();
-//                    node->initializeInputs();
-//					  initCounterAndGetDescription(node);
-//                    
-//				}
-//				return type;
-//			}
-//            
-//		}
+        OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
+        if(ofxPlugin != _ofxPlugins.end()){
+            OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin->second.first);
+            if(plugin){
+                const std::set<std::string>& contexts = plugin->getContexts();
+                set<string>::iterator found = contexts.find(kOfxImageEffectContextGenerator);
+                string context;
+                if(found != contexts.end()){
+                    context = *found;
+                }else{
+                    found = contexts.find(kOfxImageEffectContextFilter);
+                    if(found != contexts.end()){
+                        context = *found;
+                    }else{
+                        found = contexts.find(kOfxImageEffectContextTransition);
+                        if(found != contexts.end()){
+                            context = *found;
+                        }else{
+                            found = contexts.find(kOfxImageEffectContextPaint);
+                            if(found != contexts.end()){
+                                context = *found;
+                            }else{
+                                context = kOfxImageEffectContextGeneral;
+                            }
+                        }
+                    }
+                }
+                node = dynamic_cast<Node*>(plugin->createInstance(context, NULL));
+                if(node){
+                    node->initializeInputs();
+                    initCounterAndGetDescription(node);
+                    OFX::Host::ImageEffect::Instance* ofxInstance = dynamic_cast<OFX::Host::ImageEffect::Instance*>(node);
+                    assert(ofxInstance);
+                    ofxInstance->createInstanceAction();
+                    ofxInstance->getClipPreferences();//not sure we should do this here
+                    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> clips = ofxInstance->getDescriptor().getClipsByOrder();
+                    
+                    
+                    return true;
+                }
+            }
+        }
         return false;
 	}
     
@@ -835,7 +864,7 @@ void Model::loadOFXPlugins(){
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < plugins.size(); i++) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
-        std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
+        std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
         name.append("  [");

@@ -34,6 +34,7 @@
 #include "Writer/Writer.h"
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
+#include "Core/ofxnode.h"
 using namespace std;
 using namespace Powiter;
 void Node::copy_info(Node* parent){
@@ -82,7 +83,7 @@ void Node::Info::mergeDisplayWindow(const Format& other){
         _displayWindow.name(other.name());
     }
 }
-bool Node::merge_info(bool forReal){
+void Node::merge_info(bool forReal){
 	
     clear_info();
 	int final_direction=0;
@@ -91,16 +92,14 @@ bool Node::merge_info(bool forReal){
 	for (int i =0 ; i < inputCount(); i++) {
         Node* parent = _parents[i];
         merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
-        
         if(forReal){
             final_direction+=parent->getInfo()->getYdirection();
             chans += parent->getInfo()->channels();
-            ChannelSet neededChans = channelsNeeded(i);
-            if ((neededChans & chans) != neededChans) {
-                cout << parent->getName() << " does not contain the channels needed by "
-                << getName()  << endl;
-                neededChans.printOut();
-                return false;
+            ChannelSet supportedComp = supportedComponents();
+            if ((supportedComp & chans) != chans) {
+                cout <<"WARNING:( " << getName() << ") does not support one or more of the following channels:\n " ;
+                chans.printOut();
+                cout << "Coming from node " << parent->getName() << endl;
             }
             if(parent->getInfo()->rgbMode()){
                 displayMode = true;
@@ -113,11 +112,11 @@ bool Node::merge_info(bool forReal){
         _info->merge(*parent->getInfo());
         _info->mergeDisplayWindow(parent->getInfo()->getDisplayWindow());
     }
-    final_direction/=_parents.size();
+    if(_parents.size() > 0)
+        final_direction = final_direction / _parents.size();
 	_info->setChannels(chans);
     _info->rgbMode(displayMode);
     _info->setYdirection(final_direction);
-    return true;
 }
 void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
 	if (_info->firstFrame() == -1) { // if not initialized
@@ -164,6 +163,7 @@ Node::Node(){
     _marked = false;
     _info = new Info;
     _hashValue=new Hash;
+    _knobsCB = new Knob_Callback(NULL,this);
 	
 }
 
@@ -255,14 +255,13 @@ void Node::initInputLabelsMap(){
 }
 
 
-bool Node::validate(bool forReal){
+void Node::validate(bool forReal){
     if(!isInputNode()){
-        if(!merge_info(forReal)) return false;
+        merge_info(forReal);
     }
     _validate(forReal);
     preProcess();
     _nodeGUI->updateChannelsTooltip();
-    return true;
 }
 
 
@@ -290,7 +289,6 @@ bool Node::hashChanged(){
     return oldHash!=_hashValue->getHashValue();
 }
 void Node::initKnobs(Knob_Callback *cb){
-	this->_knobsCB=cb;
     cb->initNodeKnobsVector();
 }
 void Node::createKnobDynamically(){
@@ -298,11 +296,8 @@ void Node::createKnobDynamically(){
 	_knobsCB->createKnobDynamically();
 }
 
-std::string Node::description(){
-    return "";
-}
 
-void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
+void Node::get(InputRow& row){
     NodeCache* cache = NodeCache::getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
@@ -317,24 +312,24 @@ void Node::get(int y,int x,int r,ChannelSet channels,InputRow& row){
     }
     Row* out = 0;
     U64 key = _hashValue->getHashValue();
-    pair<U64,Row*> entry = cache->get(key , filename, x, r, y, channels);
+    pair<U64,Row*> entry = cache->get(key , filename, row.offset(), row.right(), row.y(),_info->channels());
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
         /*checking that the entry matches what we asked for*/
-        assert(out->offset() == x && out->right() == r);
+        assert(out->offset() == row.offset() && out->right() == row.right());
         row.setInternalRow(out);
         return;
     }else{
         if(cacheData()){
-            out = cache->addRow(entry.first,x, r, y, channels, filename);
+            out = cache->addRow(entry.first,row.offset(), row.right(), row.y(), _info->channels(), filename);
             if(!out) return;
         }else{
-            out = new Row(x,y,r,channels);
+            out = new Row(row.offset(),row.y(),row.right(),_info->channels());
             out->allocateRow();
         }
-        assert(out->offset() == x && out->right() == r);
+        assert(out->offset() == row.offset() && out->right() == row.right());
         row.setInternalRow(out);
-        engine(y, x, r, channels, out);
+        engine(row.y(), row.offset(), row.right(), _info->channels(), out);
         return;
     }
 }
@@ -346,4 +341,5 @@ Node::~Node(){
     _inputLabelsMap.clear();
     delete _hashValue;
     delete _info;
+    delete _knobsCB;
 }
