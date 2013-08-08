@@ -17,6 +17,7 @@
 #include "ofxhImageEffect.h"
 #include "ofxpixels.h"
 
+
 class OfxImage;
 class OfxNode;
 class Node;
@@ -36,6 +37,7 @@ public:
      For an output clip this is the _node member.*/
     Node* getAssociatedNode() const;
     
+
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
@@ -117,31 +119,116 @@ public:
     
 };
 
-
 class OfxImage : public OFX::Host::ImageEffect::Image
 {
-    protected :
-    OfxRGBAColourF   *_data; // where we are keeping our image data
+     
     
     public :
     
+    /** @brief Enumerates the pixel depths supported */
+    enum BitDepthEnum {eBitDepthNone = 0, /**< @brief bit depth that indicates no data is present */
+        eBitDepthUByte,
+        eBitDepthUShort,
+        eBitDepthFloat
+    };
+    /** @brief Enumerates the component types supported */
+    enum PixelComponentEnum {ePixelComponentNone = 0,
+        ePixelComponentRGBA,
+        ePixelComponentRGB,
+        ePixelComponentAlpha
+    };
     
-    explicit OfxImage(const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t);
-    OfxRGBAColourF* pixel(int x, int y) const;
-    
-    static void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
-                                          const float* plane,
-                                          int w,
-                                          OfxRGBAColourF* dst
-                                          );
 
-    static void ofxPackedBufferToRowPlane(Powiter::Channel channel,
-                                          const OfxRGBAColourF* src,
-                                          int w,
-                                          float* plane);
     
-    ~OfxImage();
+    explicit OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t);
+    
+    BitDepthEnum bitDepth() const {return _bitDepth;}
+    
+    /*3 different functions depending on the current bitdepth.
+     Calling a version that is not suited to the current bit depth
+     will raise an assertion.*/
+    OfxRGBAColourB* pixelB(int x, int y) const;
+    OfxRGBAColourS* pixelS(int x, int y) const;
+    OfxRGBAColourF* pixelF(int x, int y) const;
+    
+    //void writeToQImage_debug(const std::string& filename);
+    
+    
+    virtual ~OfxImage()
+    {
+        free(_data);
+    }
+    
+    protected :
+    
+    void   *_data; // where we are keeping our image data
+    BitDepthEnum _bitDepth;
 };
 
+inline void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
+                               const float* plane,
+                               int w,
+                               OfxRGBAColourF* dst
+                               ){
+    if(plane){
+        if(channel == Powiter::Channel_red)
+            for (int i = 0; i < w; i++) {
+                dst[i].r = plane[i];
+            }
+        else if(channel == Powiter::Channel_green)
+            for (int i = 0; i < w; i++) {
+                dst[i].g = plane[i];
+            }
+        else if(channel == Powiter::Channel_blue)
+            for (int i = 0; i < w; i++) {
+                dst[i].b = plane[i];
+            }
+        else if(channel == Powiter::Channel_alpha)
+            for (int i = 0; i < w; i++) {
+                dst[i].a = plane[i];
+            }
+    }else{
+        if(channel == Powiter::Channel_red)
+            for (int i = 0; i < w; i++) {
+                dst[i].r = 0.f;
+            }
+        else if(channel == Powiter::Channel_green)
+            for (int i = 0; i < w; i++) {
+                dst[i].g = 0.f;
+            }
+        else if(channel == Powiter::Channel_blue)
+            for (int i = 0; i < w; i++) {
+                dst[i].b = 0.f;
+            }
+        else if(channel == Powiter::Channel_alpha)
+            for (int i = 0; i < w; i++) {
+                dst[i].a = 1.f;
+            }
+    }
+    
+}
+template<typename RGBA_PIX_DEPTH>
+void ofxPackedBufferToRowPlane(Powiter::Channel channel,
+                               const RGBA_PIX_DEPTH* src,
+                               int w,
+                               float* plane){
+    if(channel == Powiter::Channel_red)
+    for (int i = 0; i < w; i++) {
+        plane[i] =  src[i].r ;
+    }
+    else if(channel == Powiter::Channel_green)
+        for (int i = 0; i < w; i++) {
+            plane[i] =  src[i].g ;
+        }
+    else if(channel == Powiter::Channel_blue)
+        for (int i = 0; i < w; i++) {
+            plane[i] =  src[i].b ;
+        }
+    else if(channel == Powiter::Channel_alpha)
+        for (int i = 0; i < w; i++) {
+            plane[i] =  src[i].a ;
+        }
+    
+}
 
 #endif // OFXCLIPINSTANCE_H

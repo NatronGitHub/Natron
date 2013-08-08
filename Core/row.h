@@ -138,12 +138,11 @@ bool compareRows(const Row &a,const Row &b);
 class InputRow : public boost::noncopyable {
     Row* _row;
     int _y,_x,_r;
-    ChannelSet _channels;
 public:
     
-    InputRow(int y,int x, int r,ChannelSet channels):_row(0),_y(y),_x(x),_r(r),_channels(channels){}
+    InputRow(int y,int x, int r):_row(0),_y(y),_x(x),_r(r){}
     
-    const ChannelSet& channels() const { return _channels;}
+    const ChannelSet& channels() const { return _row->channels();}
     
     void range(int offset,int right){_row->range(offset,right);}
     

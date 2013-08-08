@@ -155,7 +155,7 @@ public:
         Powiter::Channel _last = this->last();
         return iterator(mask,(Powiter::Channel)(_last+1));
     }
-    void printOut();
+    void printOut() const;
     
 #define foreachChannels(CUR, CHANNELS) \
     for (Powiter::Channel CUR = CHANNELS.first(); CUR; CUR = CHANNELS.next(CUR))

@@ -4,14 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -19,14 +19,16 @@
 #include "Core/imagefetcher.h"
 
 #include <QtConcurrentMap>
+#include <QtGui/QImage>
 #include <boost/bind.hpp>
 
 #include "Core/node.h"
-
+using namespace std;
+using namespace Powiter;
 ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):
 _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
     for (int i = y; i <= t; i++) {
-        InputRow* row = new InputRow(i,x,r,channels);
+        InputRow* row = new InputRow(i,x,r);
         _interest.insert(std::make_pair(i,row));
         _sequence.push_back(row);
     }
@@ -70,4 +72,27 @@ void ImageFetcher::setFinished(){_isFinished = true; emit hasFinishedCompletly()
 
 void ImageFetcher::notifyFinishedAt(int y){
     emit hasFinishedAt(y);
+}
+void ImageFetcher::debugImageFetcher(const std::string& filename){
+    int w = _r - _x;
+    int h = _t - _y + 1;
+    QImage img(w,h,QImage::Format_ARGB32);
+    for (int i = _y; i < h+_y; i++) {
+        QRgb* dstPixels = (QRgb*)img.scanLine(i);
+        map<int,InputRow*>::const_iterator it = _interest.find(i);
+        if(it!=_interest.end()){
+            const InputRow& srcPixels = (*it->second);
+            const float* r = srcPixels[Channel_red];
+            const float* g = srcPixels[Channel_green];
+            const float* b = srcPixels[Channel_blue] ;
+            const float* a = srcPixels[Channel_alpha] ;
+            for (int j = _x; j < w+_x ; j++) {
+                dstPixels[j] = qRgba(r ? (int)(r[i]*255.f) : 0,
+                                     g ? (int)(g[i]*255.f) : 0,
+                                     b ? (int)(b[i]*255.f) : 0,
+                                     a ? (int)(a[i]*255.f) : 255);
+            }
+        }
+    }
+    img.save(filename.c_str());
 }

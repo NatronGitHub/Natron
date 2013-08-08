@@ -82,11 +82,17 @@ public:
      can produce undefined results and garbage data!*/
     const InputRow& at(int y) const;
     
+    /*write the rows to an image on disk using QImage.*/
+    void debugImageFetcher(const std::string& filename);
+    
     /*Deletes all the InputRows in the image fetcher, and tell the cache they are
      no longer protected (i.e : they return to normal priority and can be evicted).*/
     ~ImageFetcher();
+    
     public slots:
+    
     void notifyFinishedAt(int);
+    
     void setFinished();
     
 signals:

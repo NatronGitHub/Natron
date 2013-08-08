@@ -119,14 +119,34 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     //into the rows, each thread handle a specific row again (the mutex locker is dead).
 
     OfxImage* img = dynamic_cast<OfxImage*>(getClip("Output")->getImage(0.0,NULL));
-    const OfxRGBAColourF* srcPixels = img->pixel(0, y);
-    foreachChannels(chan, channels){
-        float* writeable = out->writable(chan);
-        if(writeable){
-            OfxImage::ofxPackedBufferToRowPlane(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+    if(img->bitDepth() == OfxImage::eBitDepthUByte)
+    {
+        const OfxRGBAColourB* srcPixels = img->pixelB(0, y);
+        foreachChannels(chan, channels){
+            float* writeable = out->writable(chan);
+            if(writeable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            }
+        }
+    }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
+    {
+        const OfxRGBAColourS* srcPixels = img->pixelS(0, y);
+        foreachChannels(chan, channels){
+            float* writeable = out->writable(chan);
+            if(writeable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            }
+        }
+    }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
+    {
+        const OfxRGBAColourF* srcPixels = img->pixelF(0, y);
+        foreachChannels(chan, channels){
+            float* writeable = out->writable(chan);
+            if(writeable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            }
         }
     }
-    
 }
 
 // make a parameter instance

@@ -312,7 +312,7 @@ void Node::get(InputRow& row){
     }
     Row* out = 0;
     U64 key = _hashValue->getHashValue();
-    pair<U64,Row*> entry = cache->get(key , filename, row.offset(), row.right(), row.y(), row.channels());
+    pair<U64,Row*> entry = cache->get(key , filename, row.offset(), row.right(), row.y(),_info->channels());
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
         /*checking that the entry matches what we asked for*/
@@ -321,15 +321,15 @@ void Node::get(InputRow& row){
         return;
     }else{
         if(cacheData()){
-            out = cache->addRow(entry.first,row.offset(), row.right(), row.y(), row.channels(), filename);
+            out = cache->addRow(entry.first,row.offset(), row.right(), row.y(), _info->channels(), filename);
             if(!out) return;
         }else{
-            out = new Row(row.offset(),row.y(),row.right(),row.channels());
+            out = new Row(row.offset(),row.y(),row.right(),_info->channels());
             out->allocateRow();
         }
         assert(out->offset() == row.offset() && out->right() == row.right());
         row.setInternalRow(out);
-        engine(row.y(), row.offset(), row.right(), row.channels(), out);
+        engine(row.y(), row.offset(), row.right(), _info->channels(), out);
         return;
     }
 }

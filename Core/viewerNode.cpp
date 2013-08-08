@@ -66,7 +66,7 @@ const std::string Viewer::description(){
 }
 
 void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    InputRow row(y,offset,range,channels);
+    InputRow row(y,offset,range);
     input(0)->get(row);
     Row* internal = row.getInternalRow();
     if(internal){

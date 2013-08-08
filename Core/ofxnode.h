@@ -62,7 +62,9 @@ public:
     
     virtual ChannelSet supportedComponents();
     
-    virtual void _validate(bool){_firstTime = true;}
+    virtual void _validate(bool){
+        _firstTime = true;
+    }
     
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     

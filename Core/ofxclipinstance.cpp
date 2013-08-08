@@ -14,7 +14,7 @@
 #include "Core/settings.h"
 #include "Core/imagefetcher.h"
 #include "Superviser/powiterFn.h"
-
+//#include <QtGui/QImage>
 using namespace Powiter;
 using namespace std;
 
@@ -55,10 +55,10 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     if(channels & alpha) alpha = true;
     if(channels & Mask_RGB) rgb = true;
     
-    if(!rgb && !alpha) return noneStr;
-    else if(rgb && !alpha) return rgbStr;
-    else if(!rgb && alpha) return alphaStr;
-    else return rgbaStr;
+//    if(!rgb && !alpha) return noneStr;
+//    else if(rgb && !alpha) return rgbStr;
+//    else if(!rgb && alpha) return alphaStr;
+     return rgbaStr;
 }
 
 
@@ -165,31 +165,6 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
-    //    if(_name == "Output") {
-    //        if(!_outputImage) {
-    //            // make a new ref counted image
-    //            _outputImage = new MyImage(*this, 0);
-    //        }
-    //
-    //        // add another reference to the member image for this fetch
-    //        // as we have a ref count of 1 due to construction, this will
-    //        // cause the output image never to delete by the plugin
-    //        // when it releases the image
-    //        _outputImage->addReference();
-    //
-    //        // return it
-    //        return _outputImage;
-    //    }
-    //    else {
-    //        // Fetch on demand for the input clip.
-    //        // It does get deleted after the plugin is done with it as we
-    //        // have not incremented the auto ref
-    //        //
-    //        // You should do somewhat more sophisticated image management
-    //        // than this.
-    //        MyImage *image = new MyImage(*this, time);
-    //        return image;
-    //    }
     OfxRectD roi;
     if(optionalBounds){
         roi = *optionalBounds;
@@ -202,10 +177,13 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         roi.y1 = y;
         roi.y2 = h;
     }
-    
+    /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
+     _node->isPixelDepthSupported(...)
+     */
+
     if(isOutput()){
         if (!_outputImage) {
-            _outputImage = new OfxImage(roi,*this,0);
+            _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
         }
         _outputImage->addReference();
         return _outputImage;
@@ -226,33 +204,33 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         }else{
             ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
             srcImg.claimInterest(true);
-            OfxImage* ret = new OfxImage(roi,*this,0);
+            OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             
             /*Copying all rows living in the InputFetcher to the ofx image*/
             try{
                 for (int y = roi.y1; y < roi.y2; y++) {
-                    OfxRGBAColourF* dstImg = ret->pixel(0, y);
+                    OfxRGBAColourF* dstImg = ret->pixelF(0, y);
                     const InputRow& row = srcImg.at(y);
                     const float* r = row[Channel_red];
                     const float* g = row[Channel_green];
                     const float* b = row[Channel_blue];
                     const float* a = row[Channel_alpha];
                     if(r)
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_red, r+row.offset(), row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_red, r+row.offset(), row.right()-row.offset(), dstImg);
                     else
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_red, NULL , row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_red, NULL , row.right()-row.offset(), dstImg);
                     if(g)
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_green, g+row.offset(), row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_green, g+row.offset(), row.right()-row.offset(), dstImg);
                     else
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_green, NULL , row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_green, NULL , row.right()-row.offset(), dstImg);
                     if(b)
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_blue, b+row.offset(), row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_blue, b+row.offset(), row.right()-row.offset(), dstImg);
                     else
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row.right()-row.offset(), dstImg);
                     if(a)
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_alpha, a+row.offset(), row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_alpha, a+row.offset(), row.right()-row.offset(), dstImg);
                     else
-                        OfxImage::rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row.right()-row.offset(), dstImg);
+                        rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row.right()-row.offset(), dstImg);
                 }
             }catch(const std::string& str){
                 cout << str << endl;
@@ -263,116 +241,82 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     return NULL;
 }
 
-void OfxImage::rowPlaneToOfxPackedBuffer(Channel channel,
-                                         const float* plane,
-                                         int w,
-                                         OfxRGBAColourF* dst
-                                         ){
-    
-    if(plane){
-        if(channel == Channel_red)
-            for (int i = 0; i < w; i++) {
-                dst[i].r = plane[i];
-            }
-        else if(channel == Channel_green)
-            for (int i = 0; i < w; i++) {
-                dst[i].g = plane[i];
-            }
-        else if(channel == Channel_blue)
-            for (int i = 0; i < w; i++) {
-                dst[i].b = plane[i];
-            }
-        else if(channel == Channel_alpha)
-            for (int i = 0; i < w; i++) {
-                dst[i].a = plane[i];
-            }
-    }else{
-        if(channel == Channel_red)
-            for (int i = 0; i < w; i++) {
-                dst[i].r = 0.f;
-            }
-        else if(channel == Channel_green)
-            for (int i = 0; i < w; i++) {
-                dst[i].g = 0.f;
-            }
-        else if(channel == Channel_blue)
-            for (int i = 0; i < w; i++) {
-                dst[i].b = 0.f;
-            }
-        else if(channel == Channel_alpha)
-            for (int i = 0; i < w; i++) {
-                dst[i].a = 1.f;
-            }
+OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t):
+OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
+    size_t pixSize = 0;
+    if(bitDepth == eBitDepthUByte){
+        pixSize = 4;
+    }else if(bitDepth == eBitDepthUShort){
+        pixSize = 8;
+    }else if(bitDepth == eBitDepthFloat){
+        pixSize = 16;
     }
-}
-
-void OfxImage::ofxPackedBufferToRowPlane(Powiter::Channel channel,
-                               const OfxRGBAColourF* src,
-                               int w,
-                               float* plane){
-    if(channel == Channel_red)
-        for (int i = 0; i < w; i++) {
-            plane[i] =  src[i].r ;
-        }
-    else if(channel == Channel_green)
-        for (int i = 0; i < w; i++) {
-            plane[i] =  src[i].g ;
-        }
-    else if(channel == Channel_blue)
-        for (int i = 0; i < w; i++) {
-            plane[i] =  src[i].b ;
-        }
-    else if(channel == Channel_alpha)
-        for (int i = 0; i < w; i++) {
-            plane[i] =  src[i].a ;
-        }
-}
-
-
-OfxImage::OfxImage(const OfxRectD& bounds,OfxClipInstance &clip, OfxTime)
-: OFX::Host::ImageEffect::Image(clip) /// this ctor will set basic props on the image
-{
-    // make some memory
-    _data = new OfxRGBAColourF[(int)((bounds.x2-bounds.x1) * (bounds.y2-bounds.y1))] ;
-    
+    _data = malloc((int)((bounds.x2-bounds.x1) * (bounds.y2-bounds.y1))*pixSize) ;
     // render scale x and y of 1.0
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 1);
-    
     // data ptr
     setPointerProperty(kOfxImagePropData,_data);
-    
     // bounds and rod
     setIntProperty(kOfxImagePropBounds, bounds.x1, 0);
     setIntProperty(kOfxImagePropBounds, bounds.y1, 1);
     setIntProperty(kOfxImagePropBounds, bounds.x2, 2);
     setIntProperty(kOfxImagePropBounds, bounds.y2, 3);
-    
     setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x1, 0);
     setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y1, 1);
     setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x2, 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y2, 3);
-    
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, (bounds.x2-bounds.x1) * sizeof(OfxRGBAColourF));
-    
+    setIntProperty(kOfxImagePropRowBytes, (bounds.x2-bounds.x1) * pixSize);
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
 
-OfxRGBAColourF* OfxImage::pixel(int x, int y) const
-{
+
+OfxRGBAColourB* OfxImage::pixelB(int x, int y) const{
+    assert(_bitDepth == eBitDepthUByte);
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        int rowBytes = getIntProperty(kOfxImagePropRowBytes);
-        int offset = (y - bounds.y1) * (rowBytes/sizeof(OfxRGBAColourF)) + (x - bounds.x1);
-        return &(_data[offset]);
+        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>(_data);
+        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+    }
+    return 0;
+}
+OfxRGBAColourS* OfxImage::pixelS(int x, int y) const{
+    assert(_bitDepth == eBitDepthUShort);
+    OfxRectI bounds = getBounds();
+    if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
+    {
+        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>(_data);
+        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+    }
+    return 0;
+}
+OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
+    assert(_bitDepth == eBitDepthFloat);
+    OfxRectI bounds = getBounds();
+    if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
+    {
+        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>(_data);
+        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
     }
     return 0;
 }
 
-OfxImage::~OfxImage()
-{
-    delete [] _data;
-}
+//void OfxImage::writeToQImage_debug(const std::string& filename){
+//    OfxRectI bounds = getBounds();
+//    int w = (bounds.x2-bounds.x1);
+//    int h = (bounds.y2-bounds.y1);
+//    QImage* out = new QImage(w,h,QImage::Format_ARGB32_Premultiplied);
+//    for (int i = 0 ; i < h ; i++) {
+//        QRgb* row = (QRgb*)out->scanLine(i);
+//        for (int j = 0; j < w; j++) {
+//            OfxRGBAColourF pix = _data[i*w+j];
+//            row[j] = qRgba(pix.r*255, pix.g*255, pix.b*255, pix.a*255);
+//        }
+//    }
+//    out->save(filename.c_str());
+//    delete out;
+//}
+
 

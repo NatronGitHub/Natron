@@ -329,7 +329,7 @@ Channel ChannelSet::previous(Channel k) const{
     return Channel_black;
 }
 
-void ChannelSet::printOut(){
+void ChannelSet::printOut() const{
     std::cout << "ChannelSet is ..." << std::endl;
     for (Channel CUR = first(); CUR; CUR = next(CUR)){
         std::cout << getChannelName(CUR) << endl;

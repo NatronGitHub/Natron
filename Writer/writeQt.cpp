@@ -100,7 +100,7 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
 }
 
 void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
-    InputRow row(y,offset,range,channels) ;
+    InputRow row(y,offset,range) ;
     op->input(0)->get(row);
     const Format& frmt = op->getInfo()->getDisplayWindow();
     
