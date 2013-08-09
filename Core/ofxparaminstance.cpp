@@ -113,17 +113,21 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, 
     ComboBox_Knob* knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
     
 }
-OfxStatus OfxChoiceInstance::get(int&){
-    
+OfxStatus OfxChoiceInstance::get(int& v){
+    v = _value;
+	 return kOfxStatOK;
 }
-OfxStatus OfxChoiceInstance::get(OfxTime time, int&){
-    
+OfxStatus OfxChoiceInstance::get(OfxTime time, int& v){
+    v = _value;
+	 return kOfxStatOK;
 }
-OfxStatus OfxChoiceInstance::set(int){
-    
+OfxStatus OfxChoiceInstance::set(int v){
+    _value = v;
+	 return kOfxStatOK;
 }
-OfxStatus OfxChoiceInstance::set(OfxTime time, int){
-    
+OfxStatus OfxChoiceInstance::set(OfxTime time, int v){
+    _value = v;
+	 return kOfxStatOK;
 }
 
 
@@ -131,17 +135,33 @@ OfxRGBAInstance::OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::
 :OFX::Host::Param::RGBAInstance(descriptor), _effect(effect), _descriptor(descriptor){
     
 }
-OfxStatus OfxRGBAInstance::get(double&,double&,double&,double&){
-    
+OfxStatus OfxRGBAInstance::get(double& r,double& g,double& b,double& a){
+    r = _r;
+	g = _g;
+	b = _b;
+	a = _a;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::get(OfxTime time, double&,double&,double&,double&){
-    
+OfxStatus OfxRGBAInstance::get(OfxTime time, double&r ,double& g,double& b,double& a){
+    r = _r;
+	g = _g;
+	b = _b;
+	a = _a;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(double,double,double,double){
-    
+OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
+    _r = r;
+	_g = g;
+	_b = b;
+	_a = a;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(OfxTime time, double,double,double,double){
-    
+OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
+	_r = r;
+	_g = g;
+	_b = b;
+	_a = a;
+	 return kOfxStatOK;
 }
 
 
@@ -149,17 +169,29 @@ OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::H
 :OFX::Host::Param::RGBInstance(descriptor), _effect(effect), _descriptor(descriptor){
     
 }
-OfxStatus OfxRGBInstance::get(double&,double&,double&){
-    
+OfxStatus OfxRGBInstance::get(double& r,double& g,double& b){
+	r = _r;
+	g = _g;
+	b = _b;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::get(OfxTime time, double&,double&,double&){
-    
+OfxStatus OfxRGBInstance::get(OfxTime time, double& r,double& g,double& b){
+	r = _r;
+	g = _g;
+	b = _b;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(double,double,double){
-    
+OfxStatus OfxRGBInstance::set(double r,double g,double b){
+	_r = r;
+	_g = g;
+	_b = b;
+	 return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(OfxTime time, double,double,double){
-    
+OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
+	_r = r;
+	_g = g;
+	_b = b;
+	 return kOfxStatOK;
 }
 
 
@@ -167,17 +199,25 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& nam
 :OFX::Host::Param::Double2DInstance(descriptor), _effect(effect), _descriptor(descriptor){
     
 }
-OfxStatus OfxDouble2DInstance::get(double&,double&){
-    
+OfxStatus OfxDouble2DInstance::get(double& x1,double& x2){
+    x1 = _x1;
+	x2 = _x2;
+	 return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::get(OfxTime time,double&,double&){
-    
+OfxStatus OfxDouble2DInstance::get(OfxTime time,double& x1,double& x2){
+	x1 = _x1;
+	x2 = _x2;
+	return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::set(double,double){
-    
+OfxStatus OfxDouble2DInstance::set(double x1,double x2){
+	_x1 = x1;
+	_x2 = x2;
+	return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::set(OfxTime time,double,double){
-    
+OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
+	_x1 = x1;
+	_x2 = x2;
+	return kOfxStatOK;
 }
 
 
@@ -185,15 +225,23 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& 
 :OFX::Host::Param::Integer2DInstance(descriptor), _effect(effect), _descriptor(descriptor){
     
 }
-OfxStatus OfxInteger2DInstance::get(int&,int&){
-    
+OfxStatus OfxInteger2DInstance::get(int& x1,int& x2){
+	x1 = _x1;
+	x2 = _x2;
+	return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::get(OfxTime time,int&,int&){
-    
+OfxStatus OfxInteger2DInstance::get(OfxTime time,int& x1,int& x2){
+	x1 = _x1;
+	x2 = _x2;
+	return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::set(int,int){
-    
+OfxStatus OfxInteger2DInstance::set(int x1,int x2){
+	_x1 = x1;
+	_x2 = x2;
+	return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::set(OfxTime time,int,int){
-    
+OfxStatus OfxInteger2DInstance::set(OfxTime time,int x1,int x2){
+	_x1 = x1;
+	_x2 = x2;
+	return kOfxStatOK;
 }

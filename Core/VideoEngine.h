@@ -25,9 +25,10 @@
 #include <QtCore/qthreadpool.h>
 #include <QtCore/QMutex>
 #include <QFutureWatcher>
+#ifndef Q_MOC_RUN
 #include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
-
+#endif
 #include "Core/hash.h"
 #include "Reader/Reader.h"
 #include "Gui/texture.h"

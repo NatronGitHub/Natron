@@ -8,15 +8,15 @@ TEMPLATE = app
 CONFIG += app
 CONFIG += moc rcc
 CONFIG += openexr ftgl freetype2 boost ffmpeg eigen2 opengl qt expat debug
-
 QT += gui core opengl concurrent
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 win32{
     CONFIG += glew
-#ofx needs this on windows
-    DEFINES += WINDOWS
-
+#ofx needs WINDOWS def
+#microsoft compiler needs _MBCS to compile with the multi-byte character set.
+    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC
+    DEFINES -= _UNICODE UNICODE
 }
 
 unix {
@@ -56,7 +56,6 @@ include(config.pri)
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/libs/OpenFX/include
 INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
-
 INCLUDEPATH += $$PWD/
 
 

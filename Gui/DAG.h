@@ -23,7 +23,9 @@
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include <QInputDialog>
+#ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#endif
 #include "Superviser/powiterFn.h"
 
 class QVBoxLayout;

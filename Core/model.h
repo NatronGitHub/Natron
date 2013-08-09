@@ -27,8 +27,9 @@
 #include <map>
 #include <vector>
 #include <ImfStandardAttributes.h>
+#ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
-
+#endif
 #include "ofxhPluginCache.h"
 #include "ofxhPropertySuite.h"
 #include "ofxhImageEffect.h"

@@ -15,14 +15,16 @@
 
 
 
+#ifndef Q_MOC_RUN
 
 #include "Core/imagefetcher.h"
 
 #include <QtConcurrentMap>
 #include <QtGui/QImage>
 #include <boost/bind.hpp>
-
 #include "Core/node.h"
+#endif
+
 using namespace std;
 using namespace Powiter;
 ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):

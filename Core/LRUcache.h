@@ -37,11 +37,12 @@
 #include <map>
 #include <list>
 #include <iostream>
+#ifndef Q_MOC_RUN
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/set_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/bimap.hpp>
-
+#endif
 
 //#define USE_VARIADIC_TEMPLATES
 #define CACHE_USE_HASH

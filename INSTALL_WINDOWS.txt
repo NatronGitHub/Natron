@@ -68,26 +68,13 @@ Download Eigen from (eigen website)[http://eigen.tuxfamily.org/index.php?title=M
 In the Powiter_Core directory, open a terminal and type
 	git submodule update -i
 This will properly fetch from github a fork of OpenFX into Powiter_Core/libs/OpenFX.
-Got into OpenFX/HostSupport, and open the .sln file with visual studio. Note that this is a vs2005 solution file and if you have a greater version of visual, it will ask for conversion. Do it.
-Once the project is loaded,change the active build configuration to Release if necessary.
-Right click on the HostSupport project, click properties.
-In the panel, go under Configuration Properties --> C/C++ --> Code Generation. Make sure that the current configuration (displayed in the combobox on the top of the panel) is set to Release-Static. Now the panel displayed for the Code Generation must match these settings, otherwise it will not link with Powiter:
 
-Enable Minimal Rebuild : No
-Enable C++ Exceptions : Yes
-Smaller Type check : No
-Basic RunTime checks: Default
-Runtime Library : Multi-threaded DLL (/MD)
-Struct member alignement : Default
-Buffer Security check: Yes
-Enable enhanced instruction set: Not set
-Floating point model: Precise
+###Expat
 
-Now you can click Apply and OK. Right click on the "Solution 'HostSupport'" in the Solution explorer and click Build Solution.
-It should build everything needed under a directory named as such : HostSupport-Release-Static-Win32
-
-If you'd like to generate a debug version of the library you can reproduce the steps for the Release version, but instead, in the Code Generation properties, you must set the Runtime Library to 
-Multi-threaded Debug DLL (/MDd).
+You need to build expat in order to make OpenFX work. The expat sources are located under the HostSupport folder within OpenFX.
+You should find a .vcxproj file under
+\libs\OpenFX\HostSupport\expat-2.0.1\lib
+Open it with visual studio and build a static release version of expat.
 
 We're done here for libraries.
 
@@ -132,6 +119,12 @@ glew{
     LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
 }
 
+expat{
+    INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/expat-2.0.1/lib
+    LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\expat-2.0.1\win32\bin\Release) -llibexpatMT
+   # LIBS += shell32.lib
+}
+
 
 
 ###Copy the dll's over
@@ -144,5 +137,5 @@ Untested yet.
 
 ###(Optional) Build on Visual Studio:
 
-You need to install the Qt add-in for visual studio. Open the Qt menu within visual studio and select open a .pro file. This will generate a proper .sln working with qt command line tools.
+You need to install the Qt add-in for visual studio. Open the Qt menu within visual studio and select "open a .pro file". This will generate a proper .sln working with qt command line tools.
 

@@ -52,7 +52,7 @@ file_handle_(-1)
     file_handle_(INVALID_HANDLE_VALUE),
     file_mapping_handle_(INVALID_HANDLE_VALUE)
     {
-        file_handle_ = ::CreateFile((LPCWSTR)pathname, GENERIC_READ,
+        file_handle_ = ::CreateFile(pathname, GENERIC_READ,
                                     FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
         if (file_handle_ == INVALID_HANDLE_VALUE) return;
         file_mapping_handle_ = ::CreateFileMapping(
@@ -162,7 +162,7 @@ file_handle_(-1)
                     return;
             }
             const size_t min_file_size = 4096;
-            file_handle_ = ::CreateFile((LPCWSTR)pathname, GENERIC_READ | GENERIC_WRITE,
+            file_handle_ = ::CreateFile(pathname, GENERIC_READ | GENERIC_WRITE,
                                         0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
             if (file_handle_ == INVALID_HANDLE_VALUE){
                 string str("MemoryFile EXC : Failed to open file ");

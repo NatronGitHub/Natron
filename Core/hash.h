@@ -20,7 +20,9 @@
 
 
 #include <cstdlib>
+#ifndef Q_MOC_RUN
 #include <boost/crc.hpp>
+#endif
 #include <vector>
 #include <QtCore/qstring.h>
 #include <QtCore/QChar>

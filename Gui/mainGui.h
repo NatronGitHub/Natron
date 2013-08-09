@@ -20,7 +20,9 @@
 #include <QtCore/QVariant>
 #include "Superviser/powiterFn.h"
 #include <QMainWindow>
+#ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#endif
 #include <QDialog>
 #include <map>
 class QString;

@@ -80,6 +80,7 @@ class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+	int _value;
 public:
     OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
@@ -92,6 +93,7 @@ class OfxRGBAInstance : public OFX::Host::Param::RGBAInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+	double _r,_g,_b,_a;
 public:
     OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
@@ -105,6 +107,7 @@ class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+	double _r,_g,_b;
 public:
     OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
@@ -117,6 +120,7 @@ class OfxDouble2DInstance : public OFX::Host::Param::Double2DInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+	double _x1,_x2;
 public:
     OfxDouble2DInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
@@ -129,6 +133,7 @@ class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
+	int _x1,_x2;
 public:
     OfxInteger2DInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);

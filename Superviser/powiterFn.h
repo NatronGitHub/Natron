@@ -42,7 +42,9 @@
 // debug flag
 #define PW_DEBUG
 
+#ifndef Q_MOC_RUN
 #include <boost/cstdint.hpp>
+#endif
 typedef boost::uint32_t U32;
 typedef boost::uint64_t U64;
 typedef boost::uint8_t U8;

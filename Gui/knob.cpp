@@ -95,7 +95,7 @@ void KnobFactory::loadKnobPlugins(){
                 dll.append(PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
-                lib=LoadLibrary((LPCWSTR)dll.c_str());
+                lib=LoadLibrary(dll.c_str());
                 if(lib==NULL){
                     cout << " couldn't open library " << qPrintable(className) << endl;
                 }else{

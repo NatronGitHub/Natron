@@ -22,7 +22,9 @@
 #include <map>
 #include "Core/channels.h"
 #include "Core/abstractCache.h"
+#ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#endif
 #define MAX_BUFFERS_PER_ROW 100
 
 
