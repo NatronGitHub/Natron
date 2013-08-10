@@ -77,6 +77,9 @@ public:
     int firstFrame() const{return _first;}
     int lastFrame() const{return _last;}
     int currentFrame() const{return _current;}
+
+
+    void seek_notSlot(int);
     
 protected:
     virtual void mousePressEvent(QMouseEvent* e);

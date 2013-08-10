@@ -361,6 +361,12 @@ void TimeLine::seek(int v){
         _current = v;
     repaint();
 }
+
+void TimeLine::seek_notSlot(int v){
+    if(v >=_first && v<=_last)
+        _current = v;
+}
+
 void TimeLine::changeFirstAndLast(QString str){
     Q_UNUSED(str);
 }

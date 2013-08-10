@@ -18,6 +18,7 @@
 #ifndef GL_VIEWER_HEADER__
 #define GL_VIEWER_HEADER__
 
+#define NOMINMAX ///< Eigen workaround with min/max. It has nothing to do with the Qt5 bug but is the same #define
 
 #include "Superviser/gl_OsDependent.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <cmath>
@@ -27,7 +28,6 @@
 #include "Core/channels.h"
 #include "Gui/textRenderer.h"
 #include "Gui/texture.h"
-
 
 #include <Eigen/Dense>
 #ifndef PW_DEBUG

@@ -46,9 +46,7 @@ Compile it by yourself from (Freetype download)[http://download.savannah.gnu.org
 
 ###ftgl
 
-Download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]. It should be pretty much straight forward. Powiter does a static link with freetype, make sure to build it as a static library.
-
-
+Download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]. It should be pretty much straight forward. You can build it as a dll.
 ###boost
 
 Boost headers are required, but not the libraries. You can download boost from 
@@ -92,40 +90,41 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 openexr{
-    INCLUDEPATH += $$quote(C:\\Program Files\OpenExr_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\OpenExr_win32\lib\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
+    INCLUDEPATH += $$quote(C:\\OpenExr_win32\\include)
+    LIBS += -L$$quote(C:\\OpenExr_win32\\lib\\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 
 ftgl{
-    INCLUDEPATH +=  $$quote(C:\\Program Files\ftgl_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\ftgl_win32\lib) -lftgl
+    INCLUDEPATH +=  $$quote(C:\\ftgl_win32\\include)
+    LIBS += -L$$quote(C:\\ftgl_win32\\lib) -lftgl
 }
 ffmpeg{
-    INCLUDEPATH +=  $$quote(C:\\Program Files\ffmpeg_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\ffmpeg_win32\lib)  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
+    INCLUDEPATH +=  $$quote(C:\\ffmpeg_win32\\include)
+    LIBS += -L$$quote(C:\\ffmpeg_win32\\lib)  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
 }
 
 freetype2{
-    INCLUDEPATH += $$quote(C:\\Program Files\freetype2_win32\include)
-    LIBS += -L$$quote(C:\\Program Files\freetype2_win32\lib) -lfreetype242MT
+    INCLUDEPATH += $$quote(C:\\freetype2_win32\\include)
+    LIBS += -L$$quote(C:\\freetype2_win32\\lib) -lfreetype242MT
 }
 
 boost{
-    INCLUDEPATH +=  $$quote(C:\\)
+    INCLUDEPATH +=  $$quote(C:\\boost1.54)
 }
 
 glew{
-    INCLUDEPATH +=  $$quote(C:\\glew\include)
-    LIBS += -L$$quote(C:\\glew\lib\Release) -lglew32
+    INCLUDEPATH +=  $$quote(C:\\glew\\include)
+    LIBS += -L$$quote(C:\\glew\\lib\\Release) -lglew32
 }
 
 expat{
     INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/expat-2.0.1/lib
-    LIBS += -L$$quote(C:\\Users\Lex\Desktop\Powiter\Powiter_Core\libs\OpenFX\HostSupport\expat-2.0.1\win32\bin\Release) -llibexpatMT
+    LIBS += -L$$quote(C:\\Users\\Lex\\Desktop\\Powiter\\Powiter_Core\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
    # LIBS += shell32.lib
 }
-
-
+eigen2{
+    INCLUDEPATH +=  $$quote(C:\\Eigen2)
+}
 
 ###Copy the dll's over
 

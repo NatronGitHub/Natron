@@ -33,12 +33,12 @@
 //
 //Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is
 //a trademark of Bitstream, Inc.
-
-#include <QtGui/QPainter>
-#include <QtCore/QFile>
-#include "Gui/GLViewer.h"
 #include "Gui/textRenderer.h"
 #include <iostream>
+#include <QtGui/QPainter>
+#include <QtCore/QFile>
+
+#include "Gui/GLViewer.h"
 using namespace std;
 TextRenderer::TextRenderer(ViewerGL *glwidget)
 {
@@ -47,7 +47,7 @@ TextRenderer::TextRenderer(ViewerGL *glwidget)
     uchar* buf = font.map(0,font.size());
     m_font = new FTTextureFont(buf,font.size());
     if(m_font->Error())
-        cout << "error loading font " << endl;
+        cout << "TextRenderer:Failed to load the OpenGL text renderer font. " << endl;
     else
         m_font->FaceSize(14);
 

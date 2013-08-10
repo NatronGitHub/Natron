@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app
 CONFIG += moc rcc
-CONFIG += openexr ftgl freetype2 boost ffmpeg eigen2 opengl qt expat debug
+CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
 QT += gui core opengl concurrent
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

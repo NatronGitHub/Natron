@@ -196,7 +196,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                 else if(currentFrame > lastFrame){
                     currentFrame = lastFrame;
                 }
-                QMetaObject::invokeMethod(frameSeeker, "seek", Qt::QueuedConnection, Q_ARG(int,currentFrame));
+               frameSeeker->seek_notSlot(currentFrame);
             }
         }else{ // if the call is recursive, i.e: the next frame in the sequence
             /*clear the node cache, as it is very unlikely the user will re-use
@@ -225,7 +225,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
                     }
                 }
             }
-            QMetaObject::invokeMethod(frameSeeker, "seek", Qt::QueuedConnection, Q_ARG(int,currentFrame));
+            frameSeeker->seek_notSlot(currentFrame);
         }
     }
     
@@ -723,7 +723,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < currentViewer->firstFrame() || frameNB > currentViewer->lastFrame())
             return;
-        QMetaObject::invokeMethod(currentViewer->getUiContext()->frameSeeker, "seek", Qt::DirectConnection, Q_ARG(int,frameNB));
+        currentViewer->getUiContext()->frameSeeker->seek_notSlot(frameNB);
         videoEngine(frameCount,initViewer,forward,sameFrame);
         
     }
