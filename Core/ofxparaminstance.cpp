@@ -10,9 +10,14 @@
  */
 
 #include "ofxparaminstance.h"
+
+#include <iostream>
+
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
 #include "Core/ofxnode.h"
+using namespace std;
+
 
 OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* effect,
                                            const std::string& name,
@@ -110,24 +115,49 @@ OfxStatus OfxBooleanInstance::set(OfxTime time, bool b){
 OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor), _effect(effect), _descriptor(descriptor) {
     Knob_Callback* cb = _effect->getKnobCallBack();
-    ComboBox_Knob* knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
-    
+    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
+    OFX::Host::Property::Set& pSet = getProperties();
+    for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; i++) {
+        _entries.push_back(pSet.getStringProperty(kOfxParamPropChoiceOption,i));
+    }
+    _knob->populate(_entries);
+    _knob->setPointer(&_currentEntry);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
-    v = _value;
-	 return kOfxStatOK;
+    for (unsigned int i = 0; i < _entries.size(); i++) {
+        if (_entries[i] == _currentEntry) {
+            v = i;
+            return kOfxStatOK;
+        }
+    }
+    return kOfxStatErrBadIndex;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime time, int& v){
-    v = _value;
-	 return kOfxStatOK;
+    for (unsigned int i = 0; i < _entries.size(); i++) {
+        if (_entries[i] == _currentEntry) {
+            v = i;
+            return kOfxStatOK;
+        }
+    }
+    return kOfxStatErrBadIndex;
 }
 OfxStatus OfxChoiceInstance::set(int v){
-    _value = v;
-	 return kOfxStatOK;
+    if(v < (int)_entries.size()){
+        _currentEntry = _entries[v];
+        _knob->setCurrentItem(_currentEntry.c_str());
+        return kOfxStatOK;
+    }else{
+        return kOfxStatErrBadIndex;
+    }
 }
 OfxStatus OfxChoiceInstance::set(OfxTime time, int v){
-    _value = v;
-	 return kOfxStatOK;
+    if(v < (int)_entries.size()){
+        _currentEntry = _entries[v];
+        _knob->setCurrentItem(_currentEntry.c_str());
+        return kOfxStatOK;
+    }else{
+        return kOfxStatErrBadIndex;
+    }
 }
 
 

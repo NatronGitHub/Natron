@@ -16,7 +16,7 @@
 //ofx
 #include "ofxhImageEffect.h"
 
-
+class ComboBox_Knob;
 class OfxNode;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
@@ -80,7 +80,9 @@ class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
 protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
-	int _value;
+    std::string _currentEntry;
+    std::vector<std::string> _entries;
+    ComboBox_Knob* _knob;
 public:
     OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);

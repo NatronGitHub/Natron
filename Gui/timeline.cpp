@@ -365,6 +365,7 @@ void TimeLine::seek(int v){
 void TimeLine::seek_notSlot(int v){
     if(v >=_first && v<=_last)
         _current = v;
+    QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
 
 void TimeLine::changeFirstAndLast(QString str){
