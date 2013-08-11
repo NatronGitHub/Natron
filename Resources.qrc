@@ -36,5 +36,7 @@
         <file>Resources/Images/scrollbarButton_up.png</file>
         <file>Resources/Images/scrollbarHandle_horizontal.png</file>
         <file>Resources/Images/scrollbarHandle_vertical.png</file>
+        <file>Resources/Images/groupbox_folded.png</file>
+        <file>Resources/Images/groupbox_unfolded.png</file>
     </qresource>
 </RCC>

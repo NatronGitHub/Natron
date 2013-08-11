@@ -49,7 +49,9 @@
 
 
 class QHBoxLayout;
+class QVBoxLayout;
 class QCheckBox;
+class QGroupBox;
 class SettingsPanel;
 class Node;
 class Knob_Callback;
@@ -377,7 +379,8 @@ public:
     virtual void setValues(){}
     virtual ~Button_Knob(){}
     
-    
+    public slots:
+    void onButtonPressed();
 private:
     Button* button;
 };
@@ -426,5 +429,28 @@ public:
 private:
     QFrame* line;
 };
-
+/***************************/
+class Group_Knob : public Knob{
+    
+public:
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    
+    Group_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
+    
+    virtual void setValues(){}
+    
+    void addKnob(Knob* k);
+    
+    void setChecked(bool b);
+    
+    virtual std::string name(){return "Group";}
+    
+    virtual ~Group_Knob(){}
+    
+    
+private:
+    QGroupBox* _box;
+    QVBoxLayout* _boxLayout;
+    
+};
 #endif // KNOB_H

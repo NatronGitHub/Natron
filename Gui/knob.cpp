@@ -25,6 +25,7 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QKeyEvent>
+#include <QGroupBox>
 
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
@@ -248,6 +249,15 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
     delete separatorKnob;
+    
+    Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *GroupKnobPlugin = new PluginID((HINSTANCE)&Group_Knob::BuildKnob,groupKnob->name().c_str());
+#else
+    PluginID *GroupKnobPlugin = new PluginID((void*)&Group_Knob::BuildKnob,groupKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
+    delete groupKnob;
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -302,7 +312,11 @@ void Knob::validateEvent(bool initViewer){
         //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->clearPlaybackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
-        ctrlPTR->getModel()->getVideoEngine()->videoEngine(1,initViewer,true,false);
+        if(initViewer){
+            ctrlPTR->getModel()->startVideoEngine(-1);
+        }else{
+            ctrlPTR->getModel()->getVideoEngine()->startPause(true);
+        }
     }
 }
 
@@ -340,6 +354,7 @@ void Int_Knob::onValueChanged(double v){
     *integer = (int)v;
     setValues();
     emit valueChanged((int)v);
+    validateEvent(false);
 }
 void Int_Knob::setValue(int value){
     *integer = value;
@@ -397,11 +412,13 @@ void Int2D_Knob::onValue1Changed(double v){
     *_value1 = (int)v;
     setValues();
     emit value1Changed((int)v);
+    validateEvent(false);
 }
 void Int2D_Knob::onValue2Changed(double v){
     *_value2 = (int)v;
     setValues();
     emit value2Changed((int)v);
+    validateEvent(false);
 }
 void Int2D_Knob::setValue1(int value){
     *_value1 = value;
@@ -531,6 +548,7 @@ void Bool_Knob::onToggle(bool b){
     *_boolean=b;
     emit triggered(b);
 	setValues();
+    validateEvent(false);
 }
 void Bool_Knob::setChecked(bool b){
     *_boolean = b;
@@ -586,6 +604,7 @@ void Double_Knob::onValueChanged(double d){
     *_value = d;
     emit valueChanged(d);
     setValues();
+    validateEvent(false);
 }
 void Double_Knob::setValue(double value){
     *_value = value;
@@ -654,11 +673,13 @@ void Double2D_Knob::onValue1Changed(double d){
     *_value1 = d;
     emit value1Changed(d);
     setValues();
+    validateEvent(false);
 }
 void Double2D_Knob::onValue2Changed(double d){
     *_value2 = d;
     emit value2Changed(d);
     setValues();
+    validateEvent(false);
 }
 void Double2D_Knob::setValue1(double value){
     *_value1 = value;
@@ -703,11 +724,16 @@ Knob* Button_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, 
 Button_Knob::Button_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),button(0){
     Q_UNUSED(flags);
     button = new Button(QString(description.c_str()),this);
+    QObject::connect(button, SIGNAL(pressed()),this,SLOT(onButtonPressed()));
     layout->addWidget(button);
     layout->addStretch();
 }
 void Button_Knob::connectButtonToSlot(QObject* object,const char* slot){
     QObject::connect(button, SIGNAL(pressed()), object, slot);
+}
+
+void Button_Knob::onButtonPressed(){
+    validateEvent(false);
 }
 /*******/
 
@@ -805,6 +831,7 @@ void ComboBox_Knob::populate(const std::vector<std::string>& entries){
 void ComboBox_Knob::onCurrentIndexChanged(int i){
     setCurrentItem(i);
     emit entryChanged(i);
+    validateEvent(false);
 }
 
 void ComboBox_Knob::setCurrentItem(int index){
@@ -832,8 +859,7 @@ Knob* Separator_Knob::BuildKnob(Knob_Callback* cb, const std::string& descriptio
         cb->addKnob(knob);
     return knob;
 }
-Separator_Knob::Separator_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
-    Q_UNUSED(flags);
+Separator_Knob::Separator_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask):Knob(cb){
     QLabel* name = new QLabel(description.c_str(),this);
     layout->addWidget(name);
     line = new QFrame(this);
@@ -842,4 +868,28 @@ Separator_Knob::Separator_Knob(Knob_Callback *cb, const std::string& description
     line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     layout->addWidget(line);
     
+}
+
+/******************************/
+Knob* Group_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
+    Group_Knob* knob=new Group_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+
+Group_Knob::Group_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask):Knob(cb){
+    _box = new QGroupBox(description.c_str(),this);
+    _boxLayout = new QVBoxLayout(_box);
+    _box->setLayout(_boxLayout);
+    _box->setCheckable(true);
+    layout->addWidget(_box);
+}
+
+
+void Group_Knob::addKnob(Knob* k){
+    _boxLayout->addWidget(k);
+}
+void Group_Knob::setChecked(bool b){
+    _box->setChecked(b);
 }

@@ -158,6 +158,13 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name,
     _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
+    string parent = getProperties().getStringProperty(kOfxParamPropParent);
+    cout << parent << endl;
+    OFX::Host::Param::Instance* parentParam = getParentInstance();
+    if(parentParam && parentParam->getType() == kOfxParamTypeGroup){
+        OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(parentParam);
+        group->addKnob(_knob);
+    }
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
     b = _value;
@@ -497,4 +504,21 @@ void OfxInteger2DInstance::setEnabled(){
 // callback which should set secret state as appropriate
 void OfxInteger2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
+}
+
+
+/***********/
+OfxGroupInstance::OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::GroupInstance(descriptor,effect),_effect(effect),_descriptor(descriptor),_paramName(name){
+    Knob_Callback* cb = _effect->getKnobCallBack();
+    _knob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, Knob::NONE));
+    int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
+    if (opened) {
+        _knob->setChecked(true);
+    }else{
+        _knob->setChecked(false);
+    }
+}
+void OfxGroupInstance::addKnob(Knob *k) {
+    _knob->addKnob(k);
 }

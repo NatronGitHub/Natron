@@ -1,6 +1,11 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
-
+QGroupBox::indicator:unchecked {
+image: url(:/Resources/Images/groupbox_folded.png);
+}
+QGroupBox::indicator:checked {
+image: url(:/Resources/Images/groupbox_unfolded.png);
+}
  QScrollBar:vertical {
  border: 1px solid %1 ;
  background: %3;

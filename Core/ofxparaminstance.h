@@ -22,7 +22,7 @@
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
-
+class Knob;
 class Button_Knob;
 class Int_Knob;
 class Int2D_Knob;
@@ -30,6 +30,7 @@ class Double_Knob;
 class Double2D_Knob;
 class Bool_Knob;
 class ComboBox_Knob;
+class Group_Knob;
 class OfxNode;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
@@ -262,6 +263,20 @@ public:
     public slots:
     void onInstanceChanged();
 
+};
+class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
+    Q_OBJECT
+    OfxNode* _effect;
+    OFX::Host::Param::Descriptor& _descriptor;
+    std::string _paramName;
+    Group_Knob* _knob;
+public:
+    
+    OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
+    
+    void addKnob(Knob* k);
+    
+    virtual ~OfxGroupInstance(){}
 };
 
 

@@ -104,12 +104,15 @@ void OfxNode::_validate(bool){
         rS.x = rS.y = 1.0;
         OfxRectD rod;
         getRegionOfDefinitionAction(1.0, rS, rod);
-        _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""));
+        OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
+        string comp = clip->getUnmappedComponents();
+        //  double pa = clip->getAspectRatio();
+        
+        _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""/*,pa*/));
         _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
         _info->rgbMode(true);
         _info->setYdirection(1);
-        OFX::Host::ImageEffect::ClipInstance* clip = getClip("Source");
-        string comp = clip->getUnmappedComponents();
+       
         _info->setChannels(ofxComponentsToPowiterChannels(comp));
     }
 }
@@ -186,7 +189,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& name, OFX::Host
     else if(descriptor.getType()==kOfxParamTypePushButton)
         return new OfxPushButtonInstance(this,name,descriptor);
     else if(descriptor.getType()==kOfxParamTypeGroup)
-        return new OFX::Host::Param::GroupInstance(descriptor,this);
+        return new OfxGroupInstance(this,name,descriptor);
     else if(descriptor.getType()==kOfxParamTypePage)
         return new OFX::Host::Param::PageInstance(descriptor,this);
     else
