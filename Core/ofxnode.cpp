@@ -97,7 +97,22 @@ int OfxNode::minimumInputs(){
     }
     return minimalCount;
 }
-
+void OfxNode::_validate(bool){
+    _firstTime = true;
+    if (isInputNode()) {
+        OfxPointD rS;
+        rS.x = rS.y = 1.0;
+        OfxRectD rod;
+        getRegionOfDefinitionAction(1.0, rS, rod);
+        _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""));
+        _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
+        _info->rgbMode(true);
+        _info->setYdirection(1);
+        OFX::Host::ImageEffect::ClipInstance* clip = getClip("Source");
+        string comp = clip->getUnmappedComponents();
+        _info->setChannels(ofxComponentsToPowiterChannels(comp));
+    }
+}
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
     const Format& dispW = _info->getDisplayWindow();
