@@ -175,6 +175,16 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(intKnob->name(),INTKnobPlugin));
     delete intKnob;
     
+    Knob* int2DKnob = Int2D_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *INT2DKnobPlugin = new PluginID((HINSTANCE)&Int2D_Knob::BuildKnob,int2DKnob->name().c_str());
+#else
+    PluginID *INT2DKnobPlugin = new PluginID((void*)&Int2D_Knob::BuildKnob,int2DKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(int2DKnob->name(),INT2DKnobPlugin));
+    delete int2DKnob;
+    
+    
     Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,0);
 #ifdef __POWITER_WIN32__
     PluginID *DOUBLEKnobPlugin = new PluginID((HINSTANCE)&Double_Knob::BuildKnob,doubleKnob->name().c_str());
@@ -183,6 +193,15 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
     delete doubleKnob;
+    
+    Knob* double2DKnob = Double2D_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *DOUBLE2DKnobPlugin = new PluginID((HINSTANCE)&Double2D_Knob::BuildKnob,double2DKnob->name().c_str());
+#else
+    PluginID *DOUBLE2DKnobPlugin = new PluginID((void*)&Double2D_Knob::BuildKnob,double2DKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(double2DKnob->name(),DOUBLE2DKnobPlugin));
+    delete double2DKnob;
     
     Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,0);
 #ifdef __POWITER_WIN32__
@@ -290,18 +309,6 @@ void Knob::validateEvent(bool initViewer){
 //================================================================
 
 //================================================================
-IntQSpinBox::IntQSpinBox(Int_Knob *knob,QWidget* parent):FeedBackSpinBox(parent){
-    this->knob=knob;
-}
-void IntQSpinBox::keyPressEvent(QKeyEvent *event){
-    if(event->key()==Qt::Key_Return){
-        int value = this->value();
-        knob->setInteger(value);
-        knob->setValues();
-        // std::cout << "Missing implementation: keypressevent IntQSpinBox, to validate the integer" << std::endl;
-    }
-    FeedBackSpinBox::keyPressEvent(event);
-}
 
 Knob* Int_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Knob_Mask flags){
     Int_Knob* knob=new Int_Knob(cb,description,flags);
@@ -312,8 +319,8 @@ Knob* Int_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Kno
 
 Int_Knob::Int_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),integer(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new IntQSpinBox(this,this);
-    
+    box=new FeedBackSpinBox(this,false);
+    QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
     box->setValue(0);
@@ -329,10 +336,101 @@ Int_Knob::Int_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask 
         
     }
 }
+void Int_Knob::onValueChanged(double v){
+    *integer = (int)v;
+    setValues();
+    emit valueChanged((int)v);
+}
+void Int_Knob::setValue(int value){
+    *integer = value;
+    box->setValue(value);
+    setValues();
+}
 void Int_Knob::setValues(){
     values.clear();
     values.push_back((U64)integer);
 }
+void Int_Knob::setMaximum(int v){
+    box->setMaximum(v);
+}
+void Int_Knob::setMinimum(int v){
+    box->setMinimum(v);
+}
+/******INT2D*****/
+
+
+Knob* Int2D_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Knob_Mask flags){
+    Int2D_Knob* knob=new Int2D_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+
+Int2D_Knob::Int2D_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_value1(0),_value2(0){
+    QLabel* desc=new QLabel(description.c_str());
+    _box1=new FeedBackSpinBox(this,false);
+    _box2=new FeedBackSpinBox(this,false);
+    QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
+    QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
+    _box1->setMaximum(INT_MAX);
+    _box1->setMinimum(INT_MIN);
+    _box1->setValue(0);
+    _box2->setMaximum(INT_MAX);
+    _box2->setMinimum(INT_MIN);
+    _box2->setValue(0);
+    layout->addWidget(desc);
+    layout->addWidget(_box1);
+    layout->addWidget(_box2);
+    layout->addStretch();
+    std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
+    foreach(Knob_Flags flag,f){
+        if(flag==INVISIBLE){
+            setVisible(false);
+        }else if(flag==READ_ONLY){
+            _box1->setReadOnly(true);
+            _box2->setReadOnly(true);
+        }
+        
+    }
+}
+void Int2D_Knob::onValue1Changed(double v){
+    *_value1 = (int)v;
+    setValues();
+    emit value1Changed((int)v);
+}
+void Int2D_Knob::onValue2Changed(double v){
+    *_value2 = (int)v;
+    setValues();
+    emit value2Changed((int)v);
+}
+void Int2D_Knob::setValue1(int value){
+    *_value1 = value;
+    _box1->setValue(value);
+    setValues();
+}
+void Int2D_Knob::setValue2(int value){
+    *_value2 = value;
+    _box2->setValue(value);
+    setValues();
+}
+void Int2D_Knob::setValues(){
+    values.clear();
+    values.push_back((U64)_value1);
+    values.push_back((U64)_value2);
+}
+void Int2D_Knob::setMaximum1(int v){
+    _box1->setMaximum(v);
+}
+void Int2D_Knob::setMinimum1(int v){
+    _box1->setMinimum(v);
+}
+void Int2D_Knob::setMaximum2(int v){
+    _box2->setMaximum(v);
+}
+void Int2D_Knob::setMinimum2(int v){
+    _box2->setMinimum(v);
+}
+
 
 //================================================================
 FileQLineEdit::FileQLineEdit(File_Knob *knob):LineEdit(knob){
@@ -429,14 +527,17 @@ Knob* Bool_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Kn
 	return knob;
     
 }
-void Bool_Knob::change_checkBox(int checkBoxState){
-	if(checkBoxState==0){
-		*_boolean=false;
-	}else if(checkBoxState==2){
-		*_boolean=true;
-	}
-	this->setValues();
+void Bool_Knob::onToggle(bool b){
+    *_boolean=b;
+    emit triggered(b);
+	setValues();
 }
+void Bool_Knob::setChecked(bool b){
+    *_boolean = b;
+    checkbox->setChecked(b);
+    setValues();
+}
+
 void Bool_Knob::setValues(){
     values.clear();
 	if(*_boolean){
@@ -446,12 +547,12 @@ void Bool_Knob::setValues(){
 	}
 }
 
-Bool_Knob::Bool_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags/* =0 */):Knob(cb) ,_boolean(0){
+Bool_Knob::Bool_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb) ,_boolean(0){
 	Q_UNUSED(flags);
     QLabel* _label = new QLabel(description.c_str(),this);
 	checkbox=new QCheckBox(this);
 	checkbox->setChecked(false);
-	QObject::connect(checkbox,SIGNAL(stateChanged(int)),this,SLOT(change_checkBox(int)));
+	QObject::connect(checkbox,SIGNAL(toggled(bool)),this,SLOT(onToggle(bool)));
     layout->addWidget(_label);
 	layout->addWidget(checkbox);
     layout->addStretch();
@@ -464,8 +565,8 @@ void Double_Knob::setValues(){
 }
 Double_Knob::Double_Knob(Knob_Callback * cb, const std::string& description, Knob_Mask flags):Knob(cb),_value(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new DoubleQSpinBox(this,this);
-    
+    box=new FeedBackSpinBox(this,true);
+    QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
     box->setValue(0);
@@ -481,26 +582,116 @@ Double_Knob::Double_Knob(Knob_Callback * cb, const std::string& description, Kno
         
     }
 }
+void Double_Knob::onValueChanged(double d){
+    *_value = d;
+    emit valueChanged(d);
+    setValues();
+}
+void Double_Knob::setValue(double value){
+    *_value = value;
+    box->setValue(value);
+    setValues();
+}
+void Double_Knob::setMaximum(double d){
+    box->setMaximum(d);
+}
+void Double_Knob::setMinimum(double d){
+    box->setMinimum(d);
+}
+
+void Double_Knob::setIncrement(double d){
+    box->setIncrement(d);
+}
 
 Knob* Double_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
-    Double_Knob* knob=new Double_Knob(cb,description,flags);
+    Double2D_Knob* knob=new Double2D_Knob(cb,description,flags);
     if(cb)
         cb->addKnob(knob);
     return knob;
 }
 
-DoubleQSpinBox::DoubleQSpinBox(Double_Knob* knob,QWidget* parent):FeedBackSpinBox(parent,true),knob(knob){
-    
+/*********Double2D******/
+
+Knob* Double2D_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
+    Double_Knob* knob=new Double_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
 }
-void DoubleQSpinBox::keyPressEvent(QKeyEvent *event){
-    if(event->key()==Qt::Key_Return){
-        double value=this->value();
-        knob->setDouble(value);
-        knob->setValues();
-        // std::cout << "Missing implementation: keypressevent IntQSpinBox, to validate the integer" << std::endl;
+void Double2D_Knob::setValues(){
+    values.clear();
+    values.push_back(*(reinterpret_cast<U64*>(_value1)));
+    values.push_back(*(reinterpret_cast<U64*>(_value2)));
+}
+Double2D_Knob::Double2D_Knob(Knob_Callback * cb, const std::string& description, Knob_Mask flags):Knob(cb),_value1(0),_value2(0){
+    QLabel* desc=new QLabel(description.c_str());
+    _box1=new FeedBackSpinBox(this,true);
+    _box2=new FeedBackSpinBox(this,true);
+    QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
+    QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
+    _box1->setMaximum(INT_MAX);
+    _box1->setMinimum(INT_MIN);
+    _box1->setValue(0);
+    _box2->setMaximum(INT_MAX);
+    _box2->setMinimum(INT_MIN);
+    _box2->setValue(0);
+    layout->addWidget(desc);
+    layout->addWidget(_box1);
+    layout->addWidget(_box2);
+    layout->addStretch();
+    std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
+    foreach(Knob_Flags flag,f){
+        if(flag==INVISIBLE){
+            setVisible(false);
+        }else if(flag==READ_ONLY){
+            _box1->setReadOnly(true);
+            _box2->setReadOnly(true);
+        }
+        
     }
-    FeedBackSpinBox::keyPressEvent(event);
 }
+void Double2D_Knob::onValue1Changed(double d){
+    *_value1 = d;
+    emit value1Changed(d);
+    setValues();
+}
+void Double2D_Knob::onValue2Changed(double d){
+    *_value2 = d;
+    emit value2Changed(d);
+    setValues();
+}
+void Double2D_Knob::setValue1(double value){
+    *_value1 = value;
+    _box1->setValue(value);
+    setValues();
+}
+void Double2D_Knob::setValue2(double value){
+    *_value2 = value;
+    _box2->setValue(value);
+    setValues();
+}
+void Double2D_Knob::setMaximum1(double d){
+    _box1->setMaximum(d);
+}
+void Double2D_Knob::setMinimum1(double d){
+    _box1->setMinimum(d);
+}
+
+void Double2D_Knob::setIncrement1(double d){
+    _box1->setIncrement(d);
+}
+
+void Double2D_Knob::setMaximum2(double d){
+    _box2->setMaximum(d);
+}
+void Double2D_Knob::setMinimum2(double d){
+    _box2->setMinimum(d);
+}
+
+void Double2D_Knob::setIncrement2(double d){
+    _box2->setIncrement(d);
+}
+
 /*******/
 
 Knob* Button_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
@@ -599,28 +790,31 @@ Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb, const std::string& description
 ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_currentItem(0){
     Q_UNUSED(flags);
     _comboBox = new ComboBox(this);
-    _comboBox->addItem("/");
     QLabel* desc = new QLabel(description.c_str());
-    QObject::connect(_comboBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(setCurrentItem(QString)));
+    QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
     layout->addWidget(desc);
     layout->addWidget(_comboBox);
     layout->addStretch();
 }
 void ComboBox_Knob::populate(const std::vector<std::string>& entries){
     for (U32 i = 0; i < entries.size(); i++) {
-        //QString str(entries[i].c_str());
         _comboBox->addItem(entries[i].c_str());
     }
+    setCurrentItem(0);
+}
+void ComboBox_Knob::onCurrentIndexChanged(int i){
+    setCurrentItem(i);
+    emit entryChanged(i);
 }
 
-void ComboBox_Knob::setCurrentItem(const QString& str){
-    emit entryChanged(*_currentItem = str.toStdString());
+void ComboBox_Knob::setCurrentItem(int index){
+    QString str = _comboBox->itemText(index);
+    *_currentItem = str.toStdString();
+    _comboBox->setCurrentText(str);  
 }
 
 void ComboBox_Knob::setPointer(std::string* str){
     _currentItem = str;
-    setCurrentItem("/"); /*initialises the pointer*/
-
 }
 
 void ComboBox_Knob::setValues(){

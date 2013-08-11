@@ -120,7 +120,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
     _actions.insert(_actions.begin()+index, action);
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentIndex(0);
+        setCurrentText(itemText(0));
     }
  
 }
@@ -143,7 +143,7 @@ void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key){
     
     /*if this is the first action we add, make it current*/
     if(_actions.size() == 1){
-        setCurrentIndex(0);
+        setCurrentText(itemText(0));
     }
 }
 
@@ -151,7 +151,7 @@ void ComboBox::setCurrentText(const QString& text){
     QString str(text);
     str.prepend("  ");
     str.append("  ");
-    _currentText->setText(text);
+    _currentText->setText(str);
 }
 QString ComboBox::text() const{
     return _currentText->text();

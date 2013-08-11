@@ -208,10 +208,10 @@ private:
     OutputFile_Knob* knob;
 };
 //================================
-class IntQSpinBox;
 
-class Int_Knob:public Knob
+class Int_Knob: public Knob
 {
+    Q_OBJECT
 public:
     static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     
@@ -221,27 +221,66 @@ public:
     
     Int_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     virtual ~Int_Knob(){}
-    void setInteger(int& value){*integer = value;}
+    
+    void setValue(int value);
+    
+    void setMaximum(int);
+    void setMinimum(int);
+
+    
+    public slots:
+    void onValueChanged(double);
+signals:
+    void valueChanged(int);
 private:
     int* integer;
-    IntQSpinBox* box;
+    FeedBackSpinBox* box;
 };
 
-//the following class is necessary for the Int_Knob Class
-class IntQSpinBox:public FeedBackSpinBox{
+class Int2D_Knob: public Knob
+{
+    Q_OBJECT
 public:
-    IntQSpinBox(Int_Knob* knob,QWidget* parent = 0);
-    virtual void keyPressEvent(QKeyEvent *event);
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    
+    virtual void setValues();
+    virtual std::string name(){return "Int2D";}
+    void setPointers(int* value1,int* value2){_value1 = value1;_value2= value2;}
+    
+    Int2D_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
+    virtual ~Int2D_Knob(){}
+    
+    void setValue1(int value);
+    void setValue2(int value);
+
+    void setMaximum1(int);
+    void setMinimum1(int);
+    void setMaximum2(int);
+    void setMinimum2(int);
+    
+    
+    public slots:
+    void onValue1Changed(double);
+    void onValue2Changed(double);
+signals:
+    void value1Changed(int);
+    void value2Changed(int);
 private:
-    Int_Knob* knob;
+    int* _value1;
+    int* _value2;
+    FeedBackSpinBox* _box1;
+    FeedBackSpinBox* _box2;
 };
+
+
 
 //================================
-class DoubleQSpinBox;
 class Double_Knob: public Knob
 {
+    Q_OBJECT
+    
     double *_value;
-    DoubleQSpinBox* box;
+    FeedBackSpinBox* box;
 public:
     static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(double* value){_value = value;}
@@ -250,32 +289,58 @@ public:
     Double_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
     virtual ~Double_Knob(){}
-    void setDouble(double& value){*_value = value;}
+
+    void setMaximum(double);
+    void setMinimum(double);
     
+    void setIncrement(double);
+    
+    void setValue(double value);
+
+    public slots:
+    void onValueChanged(double);
+    
+signals:
+    void valueChanged(double);
 };
 
-//the following class is necessary for the Int_Knob Class
-class DoubleQSpinBox:public FeedBackSpinBox{
-public:
-    DoubleQSpinBox(Double_Knob* knob,QWidget* parent = 0);
-    virtual void keyPressEvent(QKeyEvent *event);
-private:
-    Double_Knob* knob;
-};
-//================================
-class String_Knob:public Knob
-{
-    std::string* _string;
+class Double2D_Knob : public Knob{
+    Q_OBJECT
     
+    double *_value1;
+    double *_value2;
+    FeedBackSpinBox* _box1;
+    FeedBackSpinBox* _box2;
 public:
     static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
-    void setPointer(std::string* str){_string = str;}
+    void setPointers(double* value1,double* value2){_value1 = value1; _value2 = value2;}
     virtual void setValues();
-    virtual std::string name(){return "String";}
-    String_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
-    virtual ~String_Knob(){}
+    virtual std::string name(){return "Double2D";}
+    Double2D_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
     
+    virtual ~Double2D_Knob(){}
+    
+    void setMaximum1(double);
+    void setMinimum1(double);
+    void setMaximum2(double);
+    void setMinimum2(double);
+    
+    void setIncrement1(double);
+    void setIncrement2(double);
+
+    
+    void setValue1(double value);
+    void setValue2(double value);
+    
+    public slots:
+    void onValue1Changed(double);
+    void onValue2Changed(double);
+    
+signals:
+    void value1Changed(double);
+    void value2Changed(double);
 };
+
 //================================
 class Bool_Knob:public Knob
 {
@@ -289,7 +354,10 @@ public:
     virtual std::string name(){return "Bool";}
     virtual ~Bool_Knob(){}
     public slots:
-	void change_checkBox(int checkBoxState);
+	void onToggle(bool b);
+    void setChecked(bool b);
+signals:
+    void triggered(bool);
 private:
 	bool *_boolean;
 	QCheckBox* checkbox;
@@ -332,10 +400,11 @@ public:
     virtual std::string name(){return "ComboBox";}
 
 signals:
-    void entryChanged(std::string&);
+    void entryChanged(int);
     
 public slots:
-    void setCurrentItem(const QString&);
+    void onCurrentIndexChanged(int);
+    void setCurrentItem(int index);
 private:
     ComboBox* _comboBox;
     std::string* _currentItem; // TODO: why a pointer?
