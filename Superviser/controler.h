@@ -42,7 +42,28 @@ class QLabel;
  by the handy macro ctrlPTR*/
 class Controler : public QObject,public Singleton<Controler>
 {
-
+    class PluginToolButton{
+    public:
+        PluginToolButton( std::vector<std::string> groups,
+                          std::string pluginName,
+                          std::string pluginIconPath,
+                          std::string groupIconPath):
+        _groups(groups),
+        _pluginName(pluginName),
+        _pluginIconPath(pluginIconPath),
+        _groupIconPath(groupIconPath)
+        {
+            
+        }
+        std::vector<std::string> _groups;
+        std::string _pluginName;
+        std::string _pluginIconPath;
+        std::string _groupIconPath;
+        
+    };
+    
+    std::vector<PluginToolButton*> _toolButtons;
+    
 public:
     Controler();
     ~Controler();
@@ -79,6 +100,11 @@ public:
      by the VideoEngine. If the output is not a writer,
      it will return NULL.*/
     static Writer* getCurrentWriter();
+    
+    void stackPluginToolButtons(const std::vector<std::string>& groups,
+                             const std::string& pluginName,
+                             const std::string& pluginIconPath,
+                             const std::string& groupIconPath);
     
 private:
 	 

@@ -1,5 +1,14 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
+
+QToolBar {
+color: %2;
+spacing: 3px; /* spacing between items in the tool bar */
+border: 0px solid black;
+ }
+/* QToolBar::handle {
+     image: url(handle.png);
+ }TODO*/
 QGroupBox::indicator:unchecked {
 image: url(:/Resources/Images/groupbox_folded.png);
 }

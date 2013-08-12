@@ -236,78 +236,6 @@ void Model::loadAllPlugins(){
 }
 
 
-//void Model::loadPluginsAndInitNameList(){ // parses Powiter directory to find classes who inherit Node and adds them to the nodeList
-//    QDir d(QString(PLUGINS_PATH));
-//    if (d.isReadable())
-//    {
-//        QStringList filters;
-//#ifdef __POWITER_WIN32__
-//        filters << "*.dll";
-//#elif defined(__POWITER_OSX__)
-//        filters << "*.dylib";
-//#elif defined(__POWITER_LINUX__)
-//        filters << "*.so";
-//#endif
-//		d.setNameFilters(filters);
-//		QStringList fileList = d.entryList();
-//		for(int i = 0 ; i < fileList.size() ;i ++)
-//		{
-//			QString filename = fileList.at(i);
-//			if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
-//				QString className;
-//				int index = filename.size() -1;
-//				while(filename.at(index) != QChar('.')) index--;
-//				className = filename.left(index);
-//				_nodeNames.append(QString(className));
-//                
-//#ifdef __POWITER_WIN32__
-//				HINSTANCE lib;
-//				string dll;
-//				dll.append(PLUGINS_PATH);
-//				dll.append(className.toStdString());
-//				dll.append(".dll");
-//				lib=LoadLibrary((LPCWSTR)dll.c_str());
-//				if(lib==NULL){
-//					cout << " couldn't open library " << qPrintable(className) << endl;
-//				}else{
-//					NodeBuilder builder=(NodeBuilder)GetProcAddress(lib,"BuildNode");
-//					if(builder){
-//						Node* test = builder();
-//                        PluginID* plugin=new PluginID((HINSTANCE)builder,test->getName();
-//						delete test;
-//						_pluginsLoaded.push_back(plugin);
-//					}
-//				}
-//                
-//#elif defined(__POWITER_UNIX__)
-//				string dll;
-//                dll.append(PLUGINS_PATH);
-//				dll.append(className.toStdString());
-//#ifdef __POWITER_OSX__
-//				dll.append(".dylib");
-//#elif defined(__POWITER_LINUX__)
-//				dll.append(".so");
-//#endif
-//				void* lib=dlopen(dll.c_str(),RTLD_LAZY);
-//				if(!lib){
-//					cout << " couldn't open library " << qPrintable(className) << endl;
-//				}
-//				else{
-//					NodeBuilder builder=(NodeBuilder)dlsym(lib,"BuildNode");
-//					if(builder){
-//						Node* test = builder();
-//                        PluginID* plugin=new PluginID((void*)builder,test->getName());
-//						_pluginsLoaded.push_back(plugin);
-//						delete test;
-//					}
-//				}
-//#endif
-//			}else{
-//                continue;
-//            }
-//        }
-//    }
-//}
 
 
 std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
@@ -811,36 +739,23 @@ void Model::resetInternalDAG(){
 }
 
 /*group is a string as such:
- Toto/Superplugins/blabla.
- This functions extracts the Nth part of such a grouping, e.g in this case
- 
- extractNthPartOfGrouping would return Toto for the part 0.
- If no such part exists (for e.g 100000), it will return the last part.*/
-static std::string extractNthPartOfGrouping(const std::string& group,int part = 0){
+ Toto/Superplugins/blabla
+ This functions extracts the all parts of such a grouping, e.g in this case
+ it would return [Toto,Superplugins,blabla].*/
+static std::vector<std::string> extractAllPartsOfGrouping(const std::string& group){
+    std::vector<std::string> out;
     QString str(group.c_str());
     int pos = 0;
-    int i = 0;
-    int lastPartPos = 0;
-    while(pos < str.size() && i < part) {
-        if(str.at(pos) == QChar('/') || str.at(pos) == QChar('\\')){
-            i++;
-            lastPartPos = pos;
+    while(pos < str.size()){
+        std::string newPart;
+        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+            newPart.append(1,str.at(pos).toLatin1());
+            pos++;
         }
         pos++;
+        out.push_back(newPart);
     }
-    if(pos >= str.size())
-        pos = lastPartPos+1;
-    
-    if(pos != 0){
-        str = str.remove(0, pos);
-    }
-    pos = 0;
-    std::string ret;
-    while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
-        ret.append(1,str.at(pos).toLatin1());
-        pos++;
-    }
-    return ret;
+    return out;
 }
 
 void Model::loadOFXPlugins(){
@@ -865,11 +780,23 @@ void Model::loadOFXPlugins(){
     for (unsigned int i = 0 ; i < plugins.size(); i++) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
         std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
+        std::string rawName = name;
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
+        vector<string> groups = extractAllPartsOfGrouping(grouping);
         name.append("  [");
-        name.append(extractNthPartOfGrouping(grouping,0));
+        name.append(groups[0]);
         name.append("]");
+        std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
+        iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+        iconFilename.append(id);
+        iconFilename.append(".png");
+        std::string groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
+        groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+        groupIconFilename.append(groups[0]);
+        groupIconFilename.append(".png");
+
+        ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
     }

@@ -18,6 +18,9 @@
 #ifndef GUI_H
 #define GUI_H
 #include <QtCore/QVariant>
+#include <QToolButton>
+#include <QIcon>
+#include <QAction>
 #include "Superviser/powiterFn.h"
 #include <QMainWindow>
 #ifndef Q_MOC_RUN
@@ -46,8 +49,49 @@ class NodeGraph;
 class ViewerTab;
 class Node;
 class Viewer;
-class QToolBox;
+class QToolBar;
 class QGraphicsScene;
+
+/*Holds just a reference to an action*/
+class ActionRef : public QObject{
+    Q_OBJECT
+public:
+    
+    ActionRef(QAction* action,const std::string& nodeName):_action(action),_nodeName(nodeName){
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(onTriggered()));
+    }
+    virtual ~ActionRef(){QObject::disconnect(_action, SIGNAL(triggered()), this, SLOT(onTriggered()));}
+    
+    QAction* _action;
+    std::string _nodeName;
+    
+    public slots:
+    void onTriggered();
+
+};
+
+class ToolButton : public QToolButton{
+    QMenu* _menu;
+    std::vector<QMenu*> _subMenus;
+    std::vector<ActionRef*> _actions;
+public:
+    
+    ToolButton(const std::string& actionName,
+               const std::vector<std::string>& firstElement,
+               const std::string& pluginName,
+               QIcon pluginIcon = QIcon(),
+               QIcon groupIcon = QIcon(),
+               QWidget* parent = 0);
+    
+    void addTool(const std::string& actionName,
+                 const std::vector<std::string>& grouping,
+                 const std::string& pluginName,
+                 QIcon pluginIcon = QIcon());
+    
+    virtual ~ToolButton();
+
+    
+};
 
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget : public QWidget{
@@ -124,6 +168,12 @@ public:
     
     void loadStyleSheet();
     
+    void addPluginToolButton(const std::string& actionName,
+                             const std::vector<std::string>& groups,
+                             const std::string& pluginName,
+                             const std::string& pluginIconPath,
+                             const std::string& groupIconPath);
+    
 
 private:
 
@@ -154,7 +204,6 @@ public:
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
     
-    TabWidget* _toolsPane;
     
     TabWidget* _viewersPane;
     
@@ -181,7 +230,8 @@ public:
     NodeGraphTab* _nodeGraphTab;
     
     /*TOOLBOX*/
-    QToolBox* _toolBox;
+    QToolBar* _toolBox;
+    std::map<std::string,ToolButton*> _toolGroups;
     
     /*PROPERTIES*/
     //======================

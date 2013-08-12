@@ -33,8 +33,24 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
     _gui=new Gui();
 
     _gui->createGui();
+    for (U32 i = 0; i < _toolButtons.size(); i++) {
+        string name = _toolButtons[i]->_pluginName;
+        name.append("  [");
+        name.append(_toolButtons[i]->_groups[0]);
+        name.append("]");
+        _gui->addPluginToolButton(name,
+                                  _toolButtons[i]->_groups,
+                                  _toolButtons[i]->_pluginName,
+                                  _toolButtons[i]->_pluginIconPath,
+                                  _toolButtons[i]->_groupIconPath);
+        delete _toolButtons[i];
+    }
+    _toolButtons.clear();
+    
     loadingScreen->hide();
 
+    
+    
 #ifdef __POWITER_OSX__
 	_gui->show();
 
@@ -76,4 +92,10 @@ Viewer* Controler::getCurrentViewer(){
 Writer* Controler::getCurrentWriter(){
     Controler* ctrl = Controler::instance();
     return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsWriter();
+}
+void Controler::stackPluginToolButtons(const std::vector<std::string>& groups,
+                                    const std::string& pluginName,
+                                    const std::string& pluginIconPath,
+                                    const std::string& groupIconPath){
+    _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }

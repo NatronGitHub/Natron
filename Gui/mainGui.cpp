@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -18,13 +18,12 @@
 
 #include <cassert>
 #include <QApplication>
-#include <QAction>
 #include <QMenu>
 #include <QLayout>
 #include <QDesktopWidget>
 #include <QSplitter>
 #include <QMenuBar>
-#include <QToolBox>
+#include <QToolBar>
 
 #include "Gui/texture.h"
 #include "Superviser/controler.h"
@@ -57,7 +56,6 @@ actionClearPlayBackCache(0),
 actionClearNodeCache(0),
 _centralWidget(0),
 _mainLayout(0),
-_toolsPane(0),
 _viewersPane(0),
 _nextViewerTabPlace(0),
 _workshopPane(0),
@@ -109,7 +107,7 @@ void Gui::createGui(){
     setupUi();
     
     QObject::connect(QCoreApplication::instance(), SIGNAL(aboutToQuit()), this, SLOT(exit()));
-   
+    
 }
 
 
@@ -213,14 +211,12 @@ void Gui::setupUi()
     _leftRightSplitter->setOrientation(Qt::Horizontal);
     _leftRightSplitter->setContentsMargins(0, 0, 0, 0);
     
-    _toolsPane = new TabWidget(TabWidget::NONE,_leftRightSplitter);
-    _panes.push_back(_toolsPane);
-    _toolBox = new QToolBox(_toolsPane);
-    _toolsPane->appendTab("", _toolBox);
-    _toolsPane->setMaximumWidth(50);
     
-  
-    _leftRightSplitter->addWidget(_toolsPane);
+    _toolBox = new QToolBar(_leftRightSplitter);
+    _toolBox->setOrientation(Qt::Vertical);
+    _toolBox->setMaximumWidth(40);
+    
+    _leftRightSplitter->addWidget(_toolBox);
     
 	_viewerWorkshopSplitter = new QSplitter(_centralWidget);
     _viewerWorkshopSplitter->setContentsMargins(0, 0, 0, 0);
@@ -231,13 +227,13 @@ void Gui::setupUi()
     sizesViewerSplitter  << viewerWorkshopSplitterSize.height()/2;
     
     /*VIEWERS related*/
- 
+    
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), screen.height()/5);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
-  //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
-
+    //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
+    
 	
     
 	/*WORKSHOP PANE*/
@@ -418,7 +414,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
     }else{
         name = from->getTabName(what);
-
+        
     }
     
     
@@ -524,7 +520,7 @@ void Gui::closePane(TabWidget* what){
         delete what;
         return;
     }
-
+    
     
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/
@@ -544,7 +540,7 @@ void Gui::closePane(TabWidget* what){
     /*Removing "what" from the container and delete it*/
     what->setVisible(false);
     what->destroyTabs();
-   // delete what;
+    // delete what;
     
     /*Removing the container from the mainContainer*/
     int subSplitterIndex = 0;
@@ -599,4 +595,96 @@ QWidget* Gui::findExistingTab(const std::string& name) const{
     }else{
         return NULL;
     }
+}
+
+void Gui::addPluginToolButton(const std::string& actionName,
+                              const std::vector<std::string>& groups,
+                              const std::string& pluginName,
+                              const std::string& pluginIconPath,
+                              const std::string& groupIconPath){
+    QIcon pluginIcon,groupIcon;
+    if(!pluginIconPath.empty() && QFile::exists(pluginIconPath.c_str())){
+        pluginIcon.addFile(pluginIconPath.c_str());
+    }
+    if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
+        groupIcon.addFile(groupIconPath.c_str());
+    }
+    
+    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(groups[0]);
+    if(found != _toolGroups.end()){
+        found->second->addTool(actionName,groups,pluginName,pluginIcon);
+    }else{
+        ToolButton* tb = new ToolButton(actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
+        _toolBox->addWidget(tb);
+        _toolGroups.insert(make_pair(groups[0],tb));
+    }
+    
+}
+ToolButton::ToolButton(const std::string& actionName,
+                       const std::vector<std::string>& firstElement,
+                       const std::string& pluginName,
+                       QIcon pluginIcon , QIcon groupIcon ,
+                       QWidget* parent)
+:QToolButton(parent){
+    setPopupMode(QToolButton::InstantPopup);
+    _menu = new QMenu(this);
+    if(!groupIcon.isNull())
+        setIcon(groupIcon);
+    setMenu(_menu);
+    setMaximumSize(35,35);
+    
+    QMenu* _lastMenu = 0;
+    for (U32 i = 0; i < firstElement.size(); i++) {
+        _lastMenu = _menu->addMenu(firstElement[i].c_str());
+        _subMenus.push_back(_lastMenu);
+    }
+    QAction* action = 0;
+    if(pluginIcon.isNull()){
+        action = _lastMenu->addAction(pluginName.c_str());
+    }else{
+        action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
+    }
+    ActionRef* actionRef = new ActionRef(action,actionName);
+    _actions.push_back(actionRef);
+    
+}
+ToolButton::~ToolButton(){
+    for(U32 i = 0; i < _actions.size() ; i++){
+        delete _actions[i];
+    }
+}
+
+void ToolButton::addTool(const std::string& actionName,const std::vector<std::string>& grouping,const std::string& pluginName,QIcon pluginIcon){
+    std::vector<std::string> subMenuToAdd;
+    int index = 0;
+    QMenu* _lastMenu = 0;
+    while(index < (int)grouping.size()){
+        bool found = false;
+        for (U32 i =  0; i < _subMenus.size(); i++) {
+            if (_subMenus[i]->title() == QString(grouping[index].c_str())) {
+                _lastMenu = _subMenus[i];
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+            break;
+        ++index;
+    }
+    for(int i = index; i < (int)grouping.size() ; i++){
+        QMenu* menu = _lastMenu->addMenu(grouping[index].c_str());
+        _subMenus.push_back(menu);
+        _lastMenu = menu;
+    }
+    QAction* action = 0;
+    if(pluginIcon.isNull()){
+        action = _lastMenu->addAction(pluginName.c_str());
+    }else{
+        action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
+    }
+    ActionRef* actionRef = new ActionRef(action,actionName);
+    _actions.push_back(actionRef);
+}
+void ActionRef::onTriggered(){
+    ctrlPTR->createNode(_nodeName.c_str());
 }
