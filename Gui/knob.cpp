@@ -38,6 +38,9 @@
 #include "Gui/framefiledialog.h"
 #include "Core/settings.h"
 #include "Gui/button.h"
+#include "Gui/viewerTab.h"
+#include "Gui/timeline.h"
+#include "Core/viewernode.h"
 
 using namespace Powiter;
 using namespace std;
@@ -312,10 +315,15 @@ void Knob::validateEvent(bool initViewer){
         //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->clearPlaybackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
+        int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
-            ctrlPTR->getModel()->startVideoEngine(-1);
+            if (currentFrameCount > 1) {
+                ctrlPTR->getModel()->startVideoEngine(-1);
+            }else{
+                ctrlPTR->getModel()->startVideoEngine(1);
+            }
         }else{
-            ctrlPTR->getModel()->getVideoEngine()->startPause(true);
+            ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
         }
     }
 }
@@ -534,7 +542,9 @@ File_Knob::File_Knob(Knob_Callback *cb, const std::string &description, Knob_Mas
 }
 void File_Knob::setValues(){
     values.clear();
-    // filenames should not be involved in hash key computation as it defeats all the purpose of the cache
+    // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache
+    // explanation: The algorithm doing the look-up in the cache already takes care of the current frame name.
+    // go at VideoEngine::videoEngine(...) at line starting with  key = FrameEntry::computeHashKey to understand the call.
 }
 
 Knob* Bool_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
@@ -831,13 +841,16 @@ void ComboBox_Knob::populate(const std::vector<std::string>& entries){
 void ComboBox_Knob::onCurrentIndexChanged(int i){
     setCurrentItem(i);
     emit entryChanged(i);
+    setValues();
     validateEvent(false);
+    
 }
 
 void ComboBox_Knob::setCurrentItem(int index){
     QString str = _comboBox->itemText(index);
     *_currentItem = str.toStdString();
-    _comboBox->setCurrentText(str);  
+    _comboBox->setCurrentText(str);
+    setValues();
 }
 
 void ComboBox_Knob::setPointer(std::string* str){
@@ -845,6 +858,7 @@ void ComboBox_Knob::setPointer(std::string* str){
 }
 
 void ComboBox_Knob::setValues(){
+    values.clear();
     QString out(_currentItem->c_str());
     for (int i =0; i< out.size(); i++) {
         values.push_back(out.at(i).unicode());

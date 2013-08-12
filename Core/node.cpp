@@ -266,20 +266,28 @@ void Node::validate(bool forReal){
 
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
+    /*If we already computed its hash,return*/
     for(U32 i =0 ; i < alreadyComputedHash.size();i++){
         if(alreadyComputedHash[i] == _name)
             return;
     }
+    /*Clear the values left to compute the hash key*/
     _hashValue->reset();
+    /*append all values stored in knobs*/
     for(U32 i=0;i<_knobsVector.size();i++){
         _hashValue->appendKnobToHash(_knobsVector[i]);
     }
+    /*append the node name*/
     _hashValue->appendQStringToHash(QString(className().c_str()));
+    /*mark this node as already been computed*/
     alreadyComputedHash.push_back(_name);
+    
+    /*Recursive call to parents and add their hash key*/
     foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
         _hashValue->appendValueToHash(parent->getHash()->getHashValue());
     }
+    /*Compute the hash key*/
     _hashValue->computeHash();
 }
 bool Node::hashChanged(){

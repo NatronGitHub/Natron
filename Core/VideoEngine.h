@@ -321,7 +321,7 @@ private:
     
     bool _paused; /*!< true when the user pressed pause*/
 
-    Hash _treeVersion;/*!< the hash key associated to the current graph*/
+    U64 _treeVersion;/*!< the hash key associated to the current graph*/
     
     int _frameRequestsCount; /*!< The index of the last frame +1 if the engine
                     is forward (-1 otherwise). This value is -1 if we're looping.*/
@@ -529,6 +529,12 @@ public:
 	bool isWorking() const {return _working;}
     
     /**
+     *@returns Returns the number of frame the engine is being executed for.
+     *If it runs indefinately it will return -1. If it is stopped, it will return 0.
+     **/
+    int getFrameCountForCurrentPlayback() const {return _working ?  _frameRequestsCount :  0;}
+    
+    /**
      *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
      *in the future it will be able to handle several engines working at the same time.
      *@param engine A pointer to the Model. It is currently unused.
@@ -565,7 +571,7 @@ public:
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
      *represents the version of the graph.
      **/
-    U64 getCurrentTreeVersion(){return _treeVersion.getHashValue();}
+    U64 getCurrentTreeVersion(){return _treeVersion;}
     
 private:
     
@@ -642,14 +648,6 @@ private:
      *@param output[in] The output node of the graph
      **/
     void _drawOverlay(Node *output) const;
-    
-    /**
-     *@brief Called by VideoEngine::changeTreeVersion().This is a recursive function.
-     *@param alreadyComputed[in,out] A vector of pairs of node's name and node's hash key used to track
-     *hash value already computed.
-     *@param n[in] The current node that will compute its hash key.
-     **/
-    void computeTreeHash(std::vector<std::pair<std::string, U64> > &alreadyComputed, Node* n);
     
     /**
      *@brief Called by almost all VideoEngine slots that respond to a user request(Seek,play,pause etc..).

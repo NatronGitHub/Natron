@@ -281,7 +281,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             return;
         }
         key = FrameEntry::computeHashKey(currentFrame,
-                                         _treeVersion.getHashValue(),
+                                         _treeVersion,
                                          _viewerCacheArgs._zoomFactor,
                                          _viewerCacheArgs._exposure,
                                          _viewerCacheArgs._lut,
@@ -302,7 +302,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             /*Checking that the entry retrieve matches absolutely what we 
              asked for.*/
             assert(iscached->_textureRect == textureRect);
-            assert(iscached->_treeVers == _treeVersion.getHashValue());
+            assert(iscached->_treeVers == _treeVersion);
             // assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
             assert(iscached->_lut == _viewerCacheArgs._lut);
             assert(iscached->_exposure == _viewerCacheArgs._exposure);
@@ -362,7 +362,7 @@ void VideoEngine::dispatchEngine(){
 void VideoEngine::copyFrameToCache(const char* src){
     
     FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(_viewerCacheArgs._hashKey,
-                                                                _treeVersion.getHashValue(),
+                                                                _treeVersion,
                                                                 _viewerCacheArgs._zoomFactor,
                                                                 _viewerCacheArgs._exposure,
                                                                 _viewerCacheArgs._lut,
@@ -749,34 +749,17 @@ void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer
 }
 
 
-void VideoEngine::computeTreeHash(std::vector< std::pair<std::string,U64> > &alreadyComputed, Node *n){
-    for(U32 i =0; i < alreadyComputed.size();i++){
-        if(alreadyComputed[i].first == n->getName())
-            return;
-    }
-    std::vector<std::string> v;
-    n->computeTreeHash(v);
-    U64 hashVal = n->getHash()->getHashValue();
-    alreadyComputed.push_back(make_pair(n->getName(),hashVal));
-    foreach(Node* parent,n->getParents()){
-        computeTreeHash(alreadyComputed, parent);
-    }
-    
-    
-}
 
 void VideoEngine::changeTreeVersion(){
-    std::vector< std::pair<std::string,U64> > nodeHashs;
-    _treeVersion.reset();
+
     if(!_dag.getOutput()){
         return;
     }
-    computeTreeHash(nodeHashs, _dag.getOutput());
-    for(U32 i =0 ;i < nodeHashs.size();i++){
-        _treeVersion.appendValueToHash(nodeHashs[i].second);
-    }
-    _treeVersion.computeHash();
-    
+    Node* output = _dag.getOutput();
+    std::vector<std::string> v;
+    output->computeTreeHash(v);
+    _treeVersion = output->getHash()->getHashValue();
+
 }
 
 
