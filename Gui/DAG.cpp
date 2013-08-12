@@ -18,7 +18,7 @@
 #include "Gui/tabwidget.h"
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
-#include "Gui/arrowGUI.h"
+#include "Gui/edge.h"
 #include "Core/hash.h"
 #include "Gui/DAGQuickNode.h"
 #include "Gui/mainGui.h"

@@ -14,7 +14,7 @@
 
 
 
-#include "arrowGUI.h"
+#include "edge.h"
 
 #include <cmath>
 #include <QPainter>
@@ -25,7 +25,7 @@
 
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
-const int graphicalContainerOffset=5;
+const int graphicalContainerOffset=5; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
@@ -65,23 +65,25 @@ void Edge::initLine(){
 		
 		if(source->getNode()->className() == std::string("Reader")){
 			setLine(x1+(NODE_LENGTH)/2,y1,srcpt.x()+(NODE_LENGTH+PREVIEW_LENGTH)/2,srcpt.y()+NODE_HEIGHT+PREVIEW_HEIGHT);
-			label->setPos(((x1+((NODE_LENGTH)/2)+srcpt.x())/2.)-5,((y1+srcpt.y())/2.)-5);
 		}
 		else{
 			setLine(x1+NODE_LENGTH/2,y1,srcpt.x()+NODE_LENGTH/2,srcpt.y()+NODE_HEIGHT);
-			label->setPos(((x1+(NODE_LENGTH/2)+srcpt.x())/2.)-5,((y1+srcpt.y())/2.)-5);
 		}
+        label->setPos(((x1+((NODE_LENGTH)/2)+srcpt.x())/2.)-5,((y1+srcpt.y())/2.)-5);
         
     }else{
-        qreal sourcex,sourcey;
+        double sourcex,sourcey;
+        
+        sourcex = x1+(NODE_LENGTH/2) + (cos(angle)*UNATTACHED_ARROW_LENGTH);
+        sourcey = y1 - (sin(angle) * UNATTACHED_ARROW_LENGTH);
 
-        sourcex=cos(angle)*UNATTACHED_ARROW_LENGTH;
-        sourcey=sin(angle)*UNATTACHED_ARROW_LENGTH;
-
-
-		setLine(x1+NODE_LENGTH/2,y1,x1+(NODE_LENGTH/2)+sourcex,y1-sourcey);
-		label->setPos(((x1+(NODE_LENGTH/2)+sourcex)-5),(y1-sourcey)/2.-5);
-
+		setLine(x1+NODE_LENGTH/2,y1,sourcex,sourcey);
+        
+        if(cos(angle) < 0){
+            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)-20,(y1+sourcey)/2.-5);
+        }else{
+            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+10,(y1+sourcey)/2.-5);
+        }
         
 
     }

@@ -61,7 +61,7 @@ INCLUDEPATH += $$PWD/
 
 SOURCES += \
     Superviser/main.cpp \
-    Gui/arrowGUI.cpp \
+    Gui/edge.cpp \
     Gui/DAG.cpp \
     Gui/DAGQuickNode.cpp \
     Gui/dockableSettings.cpp \
@@ -127,7 +127,7 @@ SOURCES += \
 
 
 HEADERS += \
-    Gui/arrowGUI.h \
+    Gui/edge.h \
     Gui/comboBox.h \
     Gui/DAG.h \
     Gui/DAGQuickNode.h \

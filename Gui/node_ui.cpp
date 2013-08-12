@@ -20,7 +20,7 @@
 #include <cassert>
 #include <QLayout>
 
-#include "Gui/arrowGUI.h"
+#include "Gui/edge.h"
 #include "Gui/dockableSettings.h"
 #include "Reader/Reader.h"
 #include "Core/node.h"

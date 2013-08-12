@@ -214,6 +214,7 @@ QSplitter::handle:vertical{
 background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 %3, stop:0.55 %2, stop:0.98 black, stop:1 black);
 border: 0px;
 }
+
 QSplitter::handle::horizontal{
 width: 3px;
 }
@@ -269,4 +270,8 @@ background-color: %1;
 }
 QMenu::item:!enabled { /* when user selects item using mouse or keyboard */
 color : rgb(120,120,120);
+}
+QToolButton{
+background-color:%2;
+color: %5;
 }
