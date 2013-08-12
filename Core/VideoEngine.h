@@ -191,7 +191,7 @@ public:
          *false and all subsequent computations should be canceled.
          *@TODO: validate should throw a detailed exception of what failed.
          */
-        void validate(bool forReal);
+        bool validate(bool forReal);
         
         void debug();
     private:

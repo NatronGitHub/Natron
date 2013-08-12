@@ -131,7 +131,7 @@ public:
     
 public slots:
     void notifyWriterForCompletion();
-    void fileTypeChanged(std::string&);
+    void fileTypeChanged(int);
     void startRendering();
     
 protected:
@@ -152,6 +152,7 @@ private:
     WriteKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;
+    std::vector<std::string> _allFileTypes;
     
 };
 

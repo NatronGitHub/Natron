@@ -133,15 +133,14 @@ void Writer::initKnobs(Knob_Callback *cb){
     
     std::string filetypeStr("File type");
     ComboBox_Knob* filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
-    QObject::connect(filetypeCombo, SIGNAL(entryChanged(std::string&)), this, SLOT(fileTypeChanged(std::string&)));
-    vector<string> entries;
+    QObject::connect(filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
     const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();it++){
-        entries.push_back(it->first);
+        _allFileTypes.push_back(it->first);
     }
-    filetypeCombo->populate(entries);
     filetypeCombo->setPointer(&_fileType);
+    filetypeCombo->populate(_allFileTypes);
     Node::initKnobs(cb);
 }
 
@@ -246,7 +245,8 @@ void Writer::startRendering(){
     }
 }
 
-void Writer::fileTypeChanged(std::string& fileType){
+void Writer::fileTypeChanged(int fileTypeIndex){
+    string fileType = _allFileTypes[fileTypeIndex];
     if(_writeOptions){
         _writeOptions->cleanUpKnobs();
         delete _writeOptions;

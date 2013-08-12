@@ -81,7 +81,10 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     _forward = forward;
     _paused = false;
     _aborted = false;
-    _dag.validate(false); // < validating sequence (mostly getting the same frame range for all nodes).
+    if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
+        stopEngine();
+        return;
+    }
     float zoomFactor;
     if(_dag.isOutputAViewer()){
         zoomFactor = gl_viewer->getZoomFactor();
@@ -731,20 +734,25 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
 
 void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,Node* output){
     _dag.resetAndSort(output,true);
-    bool hasFrames = false;
-    bool hasInputDifferentThanReader = false;
-    for (U32 i = 0; i< _dag.getInputs().size(); i++) {
-        Reader* r = static_cast<Reader*>(_dag.getInputs()[i]);
-        if (r) {
-            if (r->hasFrames()) {
-                hasFrames = true;
+    const vector<Node*>& inputs = _dag.getInputs();
+    bool start = false;
+    for (U32 i = 0 ; i < inputs.size(); i++) {
+        if(inputs[i]->className() == "Reader"){
+            Reader* reader = dynamic_cast<Reader*>(inputs[i]);
+            if(reader->hasFrames()) start = true;
+            else{
+                start = false;
+                break;
             }
         }else{
-            hasInputDifferentThanReader = true;
+            if(inputs[0]->isInputNode()){
+                start = true;
+            }
         }
     }
     changeTreeVersion();
-    if(hasInputDifferentThanReader || hasFrames)
+
+    if(start)
         videoEngine(frameCount,initViewer,_forward,sameFrame);
 }
 
@@ -839,11 +847,13 @@ void VideoEngine::DAG::debug(){
 }
 
 /*sets infos accordingly across all the DAG*/
-void VideoEngine::DAG::validate(bool forReal){
+bool VideoEngine::DAG::validate(bool forReal){
     /*Validating the DAG in topological order*/
     for (DAGIterator it = begin(); it!=end(); it++) {
-        (*it)->validate(forReal);
+         if(!(*it)->validate(forReal))
+             return false;
     }
+    return true;
 }
 
 

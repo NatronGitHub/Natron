@@ -51,8 +51,8 @@ void ExrWriteKnobs::initKnobs(Knob_Callback* callback,std::string& fileType){
     for (int i =0; i < 6; i++) {
         compressionEntries.push_back(EXR::compressionNames[i]);
     }
-    compressionCBKnob->populate(compressionEntries);
     compressionCBKnob->setPointer(&_compression);
+    compressionCBKnob->populate(compressionEntries);
     
     std::string depthCBDesc("Data type");
     depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
@@ -61,8 +61,8 @@ void ExrWriteKnobs::initKnobs(Knob_Callback* callback,std::string& fileType){
     for(int i = 0 ; i < 2 ; i++){
         depthEntries.push_back(EXR::depthNames[i]);
     }
-    depthCBKnob->populate(depthEntries);
     depthCBKnob->setPointer(&_dataType);
+    depthCBKnob->populate(depthEntries);
     
     /*calling base-class version at the end*/
     WriteKnobs::initKnobs(callback,fileType);

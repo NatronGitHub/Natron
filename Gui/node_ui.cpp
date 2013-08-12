@@ -125,9 +125,9 @@ NodeGui::~NodeGui(){
         e->removeSource();
         c->substractParent(this);
     }
-    foreach(NodeGui*c,tmpChildrenCopy){
-        _dag->checkIfViewerConnectedAndRefresh(c);
-    }
+//    foreach(NodeGui*c,tmpChildrenCopy){
+//        _dag->checkIfViewerConnectedAndRefresh(c);
+//    }
     if(!node->isOpenFXNode())
         delete node;
 //    if(settings){

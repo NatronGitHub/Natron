@@ -168,7 +168,7 @@ public:
     /*============================*/
     
     /*Calculations related functions*/
-    void validate(bool forReal);
+    bool validate(bool forReal);
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
         Q_UNUSED(y);
         Q_UNUSED(offset);

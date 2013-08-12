@@ -255,13 +255,19 @@ void Node::initInputLabelsMap(){
 }
 
 
-void Node::validate(bool forReal){
+bool Node::validate(bool forReal){
+    if(isOpenFXNode()){
+        if (_parents.size() < (unsigned int)minimumInputs()) {
+            return false;
+        }
+    }
     if(!isInputNode()){
         merge_info(forReal);
     }
     _validate(forReal);
     preProcess();
     _nodeGUI->updateChannelsTooltip();
+    return true;
 }
 
 

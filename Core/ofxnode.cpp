@@ -88,14 +88,14 @@ int OfxNode::maximumInputs(){
 
 int OfxNode::minimumInputs(){
     typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
-    const ClipsMap clips = getDescriptor().getClips();
+    const ClipsMap& clips = getDescriptor().getClips();
     int minimalCount = 0;
     for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); it++) {
         if(!it->second->isOptional()){
             minimalCount++;
         }
     }
-    return minimalCount;
+    return minimalCount-1;// -1 because we counted the "output" clip
 }
 void OfxNode::_validate(bool){
     _firstTime = true;

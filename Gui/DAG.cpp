@@ -420,9 +420,13 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
             const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); i++) {
-                if(inputs[0]->className() == "Reader"){
-                    Reader* reader = dynamic_cast<Reader*>(inputs[0]);
+                if(inputs[i]->className() == "Reader"){
+                    Reader* reader = dynamic_cast<Reader*>(inputs[i]);
                     if(reader->hasFrames()) start = true;
+                    else{
+                        start = false;
+                        break;
+                    }
                 }else{
                     if(inputs[0]->isInputNode()){
                         start = true;
