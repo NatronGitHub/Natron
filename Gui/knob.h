@@ -431,7 +431,7 @@ private:
 };
 /***************************/
 class Group_Knob : public Knob{
-    
+    Q_OBJECT
 public:
     static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
     
@@ -441,16 +441,18 @@ public:
     
     void addKnob(Knob* k);
     
-    void setChecked(bool b);
     
     virtual std::string name(){return "Group";}
     
     virtual ~Group_Knob(){}
-    
+    public slots:
+    void setChecked(bool b);
+
     
 private:
     QGroupBox* _box;
     QVBoxLayout* _boxLayout;
+    std::vector<Knob*> _knobs;
     
 };
 #endif // KNOB_H

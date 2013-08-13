@@ -46,6 +46,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
+    Knob* getKnob() const;
     
     public slots:
     void emitInstanceChanged();
@@ -80,8 +81,12 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
+    
 
 };
 
@@ -107,6 +112,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
 
@@ -135,6 +143,8 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
 
@@ -161,6 +171,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
   
@@ -235,6 +248,10 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
+    
     public slots:
     void onInstanceChanged();
 
@@ -260,6 +277,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
 
@@ -275,6 +295,8 @@ public:
     OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
     void addKnob(Knob* k);
+    
+    Knob* getKnob() const;
     
     virtual ~OfxGroupInstance(){}
 };

@@ -895,6 +895,7 @@ Knob* Group_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, K
 Group_Knob::Group_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask):Knob(cb){
     _box = new QGroupBox(description.c_str(),this);
     _boxLayout = new QVBoxLayout(_box);
+    QObject::connect(_box, SIGNAL(clicked(bool)), this, SLOT(setChecked(bool)));
     _box->setLayout(_boxLayout);
     _box->setCheckable(true);
     layout->addWidget(_box);
@@ -902,8 +903,14 @@ Group_Knob::Group_Knob(Knob_Callback *cb, const std::string& description, Knob_M
 
 
 void Group_Knob::addKnob(Knob* k){
+    k->setParent(this);
     _boxLayout->addWidget(k);
+    k->setVisible(_box->isChecked());
+    _knobs.push_back(k);
 }
 void Group_Knob::setChecked(bool b){
     _box->setChecked(b);
+    for(U32 i = 0 ; i < _knobs.size() ;i++){
+        _knobs[i]->setVisible(b);
+    }
 }

@@ -13,7 +13,7 @@
 
 #ifndef OFXNODE_H
 #define OFXNODE_H
-
+#include <map>
 #include "Core/node.h"
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
@@ -30,6 +30,7 @@ class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instan
     
     
     QMutex _lock;
+    std::map<std::string,OFX::Host::Param::Instance*> _params; // used to re-create parenting between params
     bool _firstTime;
     
 public:

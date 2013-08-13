@@ -44,7 +44,9 @@ void OfxPushButtonInstance::setEnabled(){
 void OfxPushButtonInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-
+Knob* OfxPushButtonInstance::getKnob() const{
+    return _knob;
+}
 
 OfxIntegerInstance::OfxIntegerInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor,effect),_effect(effect), _descriptor(descriptor),_paramName(name){
@@ -93,7 +95,9 @@ void OfxIntegerInstance::setEnabled(){
 void OfxIntegerInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-
+Knob* OfxIntegerInstance::getKnob() const{
+    return _knob;
+}
 
 OfxDoubleInstance::OfxDoubleInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::DoubleInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
@@ -151,6 +155,9 @@ void OfxDoubleInstance::setEnabled(){
 void OfxDoubleInstance::setSecret(){
    _knob->setVisible(!getSecret());
 }
+Knob* OfxDoubleInstance::getKnob() const{
+    return _knob;
+}
 
 OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::BooleanInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
@@ -158,13 +165,6 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name,
     _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
-    string parent = getProperties().getStringProperty(kOfxParamPropParent);
-    cout << parent << endl;
-    OFX::Host::Param::Instance* parentParam = getParentInstance();
-    if(parentParam && parentParam->getType() == kOfxParamTypeGroup){
-        OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(parentParam);
-        group->addKnob(_knob);
-    }
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
     b = _value;
@@ -200,6 +200,10 @@ void OfxBooleanInstance::setEnabled(){
 void OfxBooleanInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
+Knob* OfxBooleanInstance::getKnob() const{
+    return _knob;
+}
+
 
 OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name) {
@@ -268,6 +272,10 @@ void OfxChoiceInstance::setEnabled(){
 void OfxChoiceInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
+Knob* OfxChoiceInstance::getKnob() const{
+    return _knob;
+}
+
 
 
 OfxRGBAInstance::OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
@@ -439,6 +447,10 @@ void OfxDouble2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
 
+Knob* OfxDouble2DInstance::getKnob() const{
+    return _knob;
+}
+
 OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Integer2DInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
@@ -505,6 +517,9 @@ void OfxInteger2DInstance::setEnabled(){
 void OfxInteger2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
+Knob* OfxInteger2DInstance::getKnob() const{
+    return _knob;
+}
 
 
 /***********/
@@ -521,4 +536,8 @@ OFX::Host::Param::GroupInstance(descriptor,effect),_effect(effect),_descriptor(d
 }
 void OfxGroupInstance::addKnob(Knob *k) {
     _knob->addKnob(k);
+}
+
+Knob* OfxGroupInstance::getKnob() const{
+    return _knob;
 }
