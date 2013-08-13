@@ -235,11 +235,8 @@ std::string Node::setInputLabel(int inputNb){
     return out;
 }
 void Node::applyLabelsToInputs(){
-    for(U32 i=0;i<_inputLabelsMap.size();i++){
-        std::map<int, std::string>::iterator it;
-        it =_inputLabelsMap.find(i);
-        _inputLabelsMap.erase(it);
-        _inputLabelsMap[i] =setInputLabel(i);
+    for (std::map<int, std::string>::iterator it = _inputLabelsMap.begin(); it!=_inputLabelsMap.end(); it++) {
+        _inputLabelsMap[it->first] = setInputLabel(it->first);
     }
 }
 void Node::initInputLabelsMap(){

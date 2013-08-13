@@ -440,11 +440,18 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
 }
 
 void NodeGraph::deleteSelectedNode(){
+    Node* n = _nodeSelected->getNode();
+    const vector<Node*>& children = n->getChildren();
+    Node* child = 0;
+    if(children.size() > 0){
+        child = children[0];
+    }
     ctrlPTR->getModel()->removeNode(_nodeSelected->getNode());
-    
     removeNode(_nodeSelected);
     _nodeSelected = 0;
     ctrlPTR->getModel()->resetInternalDAG();
+    if(child)
+        checkIfViewerConnectedAndRefresh(child->getNodeUi());
 }
 
 
