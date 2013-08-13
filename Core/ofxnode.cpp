@@ -23,6 +23,7 @@ OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
 Node(),
 OFX::Host::ImageEffect::Instance(plugin,other,context,false)
 {
+      
 }
 
 
@@ -70,7 +71,7 @@ bool OfxNode::isInputNode(){
 std::string OfxNode::setInputLabel(int inputNb){
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
     if(inputNb < (int)clips.size()){
-        return clips[inputNb]->getShortLabel();
+        return clips[clips.size()-2-inputNb]->getShortLabel();
     }else{
         return Node::setInputLabel(inputNb);
     }
