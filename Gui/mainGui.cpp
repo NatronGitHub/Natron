@@ -234,16 +234,16 @@ void Gui::setupUi()
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     
-	
     
 	/*WORKSHOP PANE*/
 	//======================
 	_workshopPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_workshopPane);
     /*creating DAG gui*/
-	addNodeGraph();
-	
+    addNodeGraph();
+
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
+   
 	
     _middleRightSplitter = new QSplitter(_centralWidget);
     _middleRightSplitter->setContentsMargins(0, 0, 0, 0);
@@ -255,6 +255,7 @@ void Gui::setupUi()
 	_propertiesPane = new TabWidget(TabWidget::NOT_CLOSABLE,this);
     _panes.push_back(_propertiesPane);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
+    _nodeGraphTab->_nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
     _propertiesScrollArea->setObjectName("Properties_GUI");
 	_propertiesContainer=new QWidget(_propertiesScrollArea);
     _propertiesContainer->setObjectName("_propertiesContainer");
@@ -276,7 +277,14 @@ void Gui::setupUi()
 	
     _leftRightSplitter->addWidget(_middleRightSplitter);
     
+    
+    
+    
     _mainLayout->addWidget(_leftRightSplitter);
+    
+    
+
+    
     
 	/*TOOL BAR menus*/
 	//======================
@@ -314,6 +322,8 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
 	retranslateUi(this);
+    
+
     
     Model* model = ctrlPTR->getModel();
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));

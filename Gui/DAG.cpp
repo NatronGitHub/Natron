@@ -15,6 +15,8 @@
 
 
 #include <QGraphicsProxyWidget>
+#include <QScrollArea>
+#include <QScrollBar>
 #include "Gui/tabwidget.h"
 #include "Gui/DAG.h"
 #include "Superviser/controler.h"
@@ -43,7 +45,8 @@ NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
     _lastSelectedPos(0,0),
     _evtState(DEFAULT),
     _nodeSelected(0),
-    _fullscreen(false)
+    _fullscreen(false),
+_propertyBin(0)
 {
     
     setObjectName("DAG_GUI");
@@ -248,7 +251,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
                 
             }
             n->putSettingsPanelFirst();
-
+            _propertyBin->verticalScrollBar()->setValue(0);
             break;
         }
         i++;

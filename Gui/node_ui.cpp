@@ -19,7 +19,6 @@
 
 #include <cassert>
 #include <QLayout>
-
 #include "Gui/edge.h"
 #include "Gui/dockableSettings.h"
 #include "Reader/Reader.h"
@@ -315,7 +314,7 @@ void NodeGui::setSelected(bool b){
     _selected = b;
     update();
     if(settings){
-        
+        settings->setSelected(b);
         settings->update();
     }
 }

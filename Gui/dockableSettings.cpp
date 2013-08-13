@@ -19,7 +19,7 @@
 
 #include <QLayout>
 #include <QTabWidget>
-
+#include <QStyle>
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
@@ -43,7 +43,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     setFrameShape(QFrame::Box);
     
     _headerWidget = new QFrame(this);
-//    setStyleSheet();
     _headerWidget->setFrameShape(QFrame::Box);
     
     _headerLayout = new QHBoxLayout(_headerWidget);
@@ -183,19 +182,16 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
 }
 
 void SettingsPanel::paintEvent(QPaintEvent * event){
-    if(_nodeGUI->isSelected()){
-        QPalette* palette = new QPalette();
-        palette->setColor(QPalette::Foreground,Qt::yellow);
-        setPalette(*palette);
-    }else{
-        QPalette* palette = new QPalette();
-        palette->setColor(QPalette::Foreground,Qt::black);
-        setPalette(*palette);
-    }
+
     QFrame::paintEvent(event);
 }
 
 void SettingsPanel::mousePressEvent(QMouseEvent* e){
     _nodeGUI->getDagGui()->selectNode(_nodeGUI);
     QFrame::mousePressEvent(e);
+}
+void SettingsPanel::setSelected(bool s){
+    _selected = s;
+    style()->unpolish(this);
+    style()->polish(this);
 }

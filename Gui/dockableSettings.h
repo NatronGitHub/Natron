@@ -45,6 +45,7 @@ class SettingsPanel:public QFrame
 {
     Q_OBJECT
     
+    Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
     
     /*Pointer to the node GUI*/
     NodeGui* _nodeGUI;
@@ -75,12 +76,18 @@ class SettingsPanel:public QFrame
     
     /*true if the panel is minimized*/
     bool _minimized;
+    
+    bool _selected;
 
 public:
 
     SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
     
     virtual ~SettingsPanel();
+    
+    void setSelected(bool s);
+    
+    bool isSelected() const {return _selected;}
     
 	void addKnobDynamically(Knob* knob);
     

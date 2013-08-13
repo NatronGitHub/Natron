@@ -31,6 +31,7 @@
 class QVBoxLayout;
 class Node;
 class NodeGui;
+class QScrollArea;
 class Controler;
 class Edge;
 class SmartInputDialog;
@@ -46,6 +47,8 @@ public:
 
     virtual ~NodeGraph();
  
+    void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
+    
     void createNodeGUI(QVBoxLayout *dockContainer,Node *node,double x,double y);
     
     void removeNode(NodeGui* n);
@@ -97,6 +100,7 @@ private:
     bool _nodeCreationShortcutEnabled;
     bool _fullscreen;
     QGraphicsItem* _root;
+    QScrollArea* _propertyBin;
     
 };
 
