@@ -1092,6 +1092,11 @@ void RGBA_Knob::setRGBA(double r,double g,double b,double a){
     _rBox->setValue(r);
     _gBox->setValue(g);
     _bBox->setValue(b);
+    *_r = r;
+    *_g = g;
+    *_b = b;
+    if(_a)
+        *_a = a;
     if(_alphaEnabled)
         _aBox->setValue(a);
 }
