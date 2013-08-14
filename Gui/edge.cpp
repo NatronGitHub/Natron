@@ -25,6 +25,7 @@
 
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
+static const qreal UNATTACHED_ARROW_LENGTH=40.;
 const int graphicalContainerOffset=5; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
@@ -78,11 +79,13 @@ void Edge::initLine(){
         sourcey = y1 - (sin(angle) * UNATTACHED_ARROW_LENGTH);
 
 		setLine(x1+NODE_LENGTH/2,y1,sourcex,sourcey);
-        
-        if(cos(angle) < 0){
-            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)-20,(y1+sourcey)/2.-5);
+        double cosinus = cos(angle);
+        if(cosinus < 0){
+            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)-40,(y1+sourcey)/2.-20);
+        }else if(cosinus >= -0.01 && cosinus <= 0.01){
+            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+5,(y1+sourcey)/2.-25);
         }else{
-            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+10,(y1+sourcey)/2.-5);
+            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+10,(y1+sourcey)/2.-20);
         }
         
 

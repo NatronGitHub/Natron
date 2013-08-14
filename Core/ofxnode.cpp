@@ -14,7 +14,7 @@
 #include "Core/ofxparaminstance.h"
 #include "Core/row.h"
 #include "Core/ofxclipinstance.h"
-
+#include "Core/model.h"
 using namespace std;
 using namespace Powiter;
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -31,7 +31,6 @@ OFX::Host::ImageEffect::Instance(plugin,other,context,false)
 OFX::Host::ImageEffect::ClipInstance* OfxNode::newClipInstance(OFX::Host::ImageEffect::Instance* ,
                                                                OFX::Host::ImageEffect::ClipDescriptor* descriptor,
                                                                int index){
-    
     return new OfxClipInstance(index,this,descriptor);
 }
 ChannelSet OfxNode::ofxComponentsToPowiterChannels(const std::string& comp){
@@ -67,14 +66,36 @@ bool OfxNode::isInputNode(){
         return true;
     return false;
 }
+const std::string OfxNode::className(){
+    std::string label = getShortLabel();
+    if (label!="Viewer") {
+        return label;
+    }else{
+        std::string grouping = getDescriptor().getPluginGrouping();
+        std::vector<std::string> groups = Model::extractAllPartsOfGrouping(grouping);
+        return groups[0]+getLongLabel();
+    }
+}
 
 std::string OfxNode::setInputLabel(int inputNb){
-    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
-    if(inputNb < (int)clips.size()){
-        return clips[clips.size()-2-inputNb]->getShortLabel();
+    
+    MappedInputV copy = inputClipsCopyWithoutOutput();
+    if(inputNb < (int)copy.size()){
+        return copy[copy.size()-1-inputNb]->getShortLabel();
     }else{
         return Node::setInputLabel(inputNb);
     }
+}
+OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput(){
+    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
+    MappedInputV copy;
+    for (U32 i = 0; i < clips.size(); i++) {
+        if(clips[i]->getShortLabel() != "Output"){
+            copy.push_back(clips[i]);
+            // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
+        }
+    }
+    return copy;
 }
 
 int OfxNode::maximumInputs(){
@@ -98,6 +119,10 @@ int OfxNode::minimumInputs(){
     }
     return minimalCount-1;// -1 because we counted the "output" clip
 }
+bool OfxNode::isInputOptional(int inpubNb){
+    MappedInputV inputs = inputClipsCopyWithoutOutput();
+    return inputs[inputs.size()-1-inpubNb]->isOptional();
+}
 void OfxNode::_validate(bool){
     _firstTime = true;
     if (isInputNode()) {
@@ -113,6 +138,13 @@ void OfxNode::_validate(bool){
         _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
         _info->rgbMode(true);
         _info->setYdirection(1);
+        
+        /*This is not working.*/
+        double first,last;
+        first = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,0);
+        last = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,1);
+        _info->firstFrame(first);
+        _info->lastFrame(last);
         
         _info->setChannels(ofxComponentsToPowiterChannels(comp));
     }

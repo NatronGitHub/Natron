@@ -25,6 +25,7 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QKeyEvent>
+#include <QColorDialog>
 #include <QGroupBox>
 
 #include "Gui/knob_callback.h"
@@ -261,6 +262,15 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
     delete groupKnob;
+    
+    Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *RGBAKnobPlugin = new PluginID((HINSTANCE)&RGBA_Knob::BuildKnob,rgbaKnob->name().c_str());
+#else
+    PluginID *RGBAKnobPlugin = new PluginID((void*)&RGBA_Knob::BuildKnob,rgbaKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
+    delete rgbaKnob;
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -317,7 +327,7 @@ void Knob::validateEvent(bool initViewer){
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
-            if (currentFrameCount > 1) {
+            if (currentFrameCount > 1 || currentFrameCount == -1) {
                 ctrlPTR->getModel()->startVideoEngine(-1);
             }else{
                 ctrlPTR->getModel()->startVideoEngine(1);
@@ -580,7 +590,7 @@ Bool_Knob::Bool_Knob(Knob_Callback *cb, const std::string& description, Knob_Mas
     QLabel* _label = new QLabel(description.c_str(),this);
 	checkbox=new QCheckBox(this);
 	checkbox->setChecked(false);
-	QObject::connect(checkbox,SIGNAL(toggled(bool)),this,SLOT(onToggle(bool)));
+	QObject::connect(checkbox,SIGNAL(clicked(bool)),this,SLOT(onToggle(bool)));
     layout->addWidget(_label);
 	layout->addWidget(checkbox);
     layout->addStretch();
@@ -913,4 +923,182 @@ void Group_Knob::setChecked(bool b){
     for(U32 i = 0 ; i < _knobs.size() ;i++){
         _knobs[i]->setVisible(b);
     }
+}
+/*****************************/
+RGBA_Knob::RGBA_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),
+_r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
+    _rBox = new FeedBackSpinBox(this,true);
+    QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onRedValueChanged(double)));
+    _gBox = new FeedBackSpinBox(this,true);
+    QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onGreenValueChanged(double)));
+    _bBox = new FeedBackSpinBox(this,true);
+    QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onBlueValueChanged(double)));
+    _aBox = new FeedBackSpinBox(this,true);
+    QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onAlphaValueChanged(double)));
+    
+    _rBox->setMaximum(1.);
+    _rBox->setMinimum(0.);
+    _rBox->setIncrement(0.1);
+    
+    _gBox->setMaximum(1.);
+    _gBox->setMinimum(0.);
+    _gBox->setIncrement(0.1);
+    
+    _bBox->setMaximum(1.);
+    _bBox->setMinimum(0.);
+    _bBox->setIncrement(0.1);
+    
+    _aBox->setMaximum(1.);
+    _aBox->setMinimum(0.);
+    _aBox->setIncrement(0.1);
+    
+    
+    _rLabel = new QLabel("r",this);
+    _gLabel = new QLabel("g",this);
+    _bLabel = new QLabel("b",this);
+    _aLabel = new QLabel("a",this);
+    
+    QLabel* nameLabel = new QLabel(description.c_str(),this);
+    layout->addWidget(nameLabel);
+    layout->addWidget(_rLabel);
+    layout->addWidget(_rBox);
+    layout->addWidget(_gLabel);
+    layout->addWidget(_gBox);
+    layout->addWidget(_bLabel);
+    layout->addWidget(_bBox);
+    layout->addWidget(_aLabel);
+    layout->addWidget(_aBox);
+    
+    _colorLabel = new QLabel(this);
+    layout->addWidget(_colorLabel);
+    
+    QImage buttonImg(IMAGES_PATH"colorwheel.png");
+    QPixmap buttonPix = QPixmap::fromImage(buttonImg);
+    buttonPix = buttonPix.scaled(25, 20);
+    QIcon buttonIcon(buttonPix);
+    _colorDialogButton = new Button(buttonIcon,"",this);
+    
+    QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
+    layout->addWidget(_colorDialogButton);
+}
+void RGBA_Knob::showColorDialog(){
+    QColorDialog dialog(this);
+    if(dialog.exec()){
+        QColor color = dialog.getColor();
+        *_r = color.redF();
+        *_g = color.greenF();
+        *_b = color.blueF();
+        if(_a)
+            *_a = color.alphaF();
+        else
+            *_a = 1.;
+        setValues();
+        updateLabel(color);
+        validateEvent(false);
+        emit colorChanged(color);
+    }
+}
+
+void RGBA_Knob::onRedValueChanged(double r){
+    QColor color;
+    *_r = r;
+    color.setRedF(r);
+    color.setGreenF(*_g);
+    color.setBlueF(*_b);
+    color.setAlphaF(*_a);
+    setValues();
+    updateLabel(color);
+    validateEvent(false);
+    emit colorChanged(color);
+}
+void RGBA_Knob::onGreenValueChanged(double g){
+    QColor color;
+    *_g = g;
+    color.setRedF(*_r);
+    color.setGreenF(g);
+    color.setBlueF(*_b);
+    color.setAlphaF(*_a);
+    setValues();
+    updateLabel(color);
+    validateEvent(false);
+    emit colorChanged(color);
+}
+void RGBA_Knob::onBlueValueChanged(double b){
+    QColor color;
+    *_b = b;
+    color.setRedF(*_r);
+    color.setGreenF(*_g);
+    color.setBlueF(b);
+    color.setAlphaF(*_a);
+    setValues();
+    updateLabel(color);
+    validateEvent(false);
+    emit colorChanged(color);
+}
+void RGBA_Knob::onAlphaValueChanged(double a){
+    QColor color;
+    *_a = a;
+    color.setRedF(*_r);
+    color.setGreenF(*_g);
+    color.setBlueF(*_b);
+    color.setAlphaF(a);
+    setValues();
+    updateLabel(color);
+    validateEvent(false);
+    emit colorChanged(color);
+}
+
+void RGBA_Knob::setValues(){
+    values.clear();
+    values.push_back(*(reinterpret_cast<U64*>(_r)));
+    values.push_back(*(reinterpret_cast<U64*>(_g)));
+    values.push_back(*(reinterpret_cast<U64*>(_b)));
+    if(_a)
+        values.push_back(*(reinterpret_cast<U64*>(_a)));
+}
+
+Knob* RGBA_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
+    RGBA_Knob* knob=new RGBA_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+void RGBA_Knob::updateLabel(const QColor& color){
+    QImage img(20,20,QImage::Format_RGB32);
+    img.fill(color.rgb());
+    QPixmap pix=QPixmap::fromImage(img);
+    _colorLabel->setPixmap(pix);
+}
+void RGBA_Knob::setPointers(double *r,double *g,double *b,double *a){
+    _r = r; _g = g; _b = b; _a = a;
+    QColor color;
+    color.setRedF(*_r);
+    color.setGreenF(*_g);
+    color.setBlueF(*_b);
+    if(_a)
+        color.setAlphaF(*_a);
+    else
+        color.setAlphaF(1.0);
+    updateLabel(color);
+
+}
+void RGBA_Knob::setRGBA(double r,double g,double b,double a){
+    QColor color;
+    color.setRedF(r);
+    color.setGreenF(g);
+    color.setBlueF(b);
+    color.setAlphaF(a);
+    updateLabel(color);
+    _rBox->setValue(r);
+    _gBox->setValue(g);
+    _bBox->setValue(b);
+    if(_alphaEnabled)
+        _aBox->setValue(a);
+}
+void RGBA_Knob::disablePermantlyAlpha(){
+    _alphaEnabled = false;
+    _aLabel->setVisible(false);
+    _aLabel->setEnabled(false);
+    _aBox->setVisible(false);
+    _aBox->setEnabled(false);
 }

@@ -738,25 +738,7 @@ void Model::resetInternalDAG(){
     }
 }
 
-/*group is a string as such:
- Toto/Superplugins/blabla
- This functions extracts the all parts of such a grouping, e.g in this case
- it would return [Toto,Superplugins,blabla].*/
-static std::vector<std::string> extractAllPartsOfGrouping(const std::string& group){
-    std::vector<std::string> out;
-    QString str(group.c_str());
-    int pos = 0;
-    while(pos < str.size()){
-        std::string newPart;
-        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
-            newPart.append(1,str.at(pos).toLatin1());
-            pos++;
-        }
-        pos++;
-        out.push_back(newPart);
-    }
-    return out;
-}
+
 
 void Model::loadOFXPlugins(){
     /// set the version label in the global cache

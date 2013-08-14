@@ -49,9 +49,11 @@ public:
     
     virtual int minimumInputs();
     
+    bool isInputOptional(int inpubNb);
+    
     virtual bool cacheData(){return false;}
     
-    virtual const std::string className(){return getShortLabel();}
+    virtual const std::string className();
     
     virtual const std::string description(){return "";}
     
@@ -192,6 +194,12 @@ public:
 
 public slots:
     void onInstanceChangedAction(const QString&);
+    
+private:
+    typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
+    
+    MappedInputV inputClipsCopyWithoutOutput();
+    
 };
 
 #endif // OFXNODE_H

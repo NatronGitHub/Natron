@@ -24,6 +24,7 @@
  */
 class Knob;
 class Button_Knob;
+class RGBA_Knob;
 class Int_Knob;
 class Int2D_Knob;
 class Double_Knob;
@@ -185,6 +186,7 @@ protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
 	double _r,_g,_b,_a;
+    RGBA_Knob* _knob;
     std::string _paramName;
 public:
     OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
@@ -198,6 +200,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
 
@@ -210,6 +215,7 @@ protected:
     OfxNode*   _effect;
     OFX::Host::Param::Descriptor& _descriptor;
 	double _r,_g,_b;
+    RGBA_Knob* _knob;
     std::string _paramName;
 public:
     OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
@@ -223,6 +229,9 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
+    
+    Knob* getKnob() const;
+    
     public slots:
     void onInstanceChanged();
 

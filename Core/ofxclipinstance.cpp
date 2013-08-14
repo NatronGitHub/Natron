@@ -10,6 +10,7 @@
  */
 #include "ofxclipinstance.h"
 
+#include <cfloat>
 #include "Core/ofxnode.h"
 #include "Core/settings.h"
 #include "Core/imagefetcher.h"
@@ -28,7 +29,7 @@ Node* OfxClipInstance::getAssociatedNode() const{
     if(isOutput())
         return _node;
     else{
-        return _node->input(_clipIndex);
+        return _node->input(_node->inputCount() - 1 - _clipIndex);
     }
 }
 
@@ -93,8 +94,13 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
-    startFrame = 1;
-    endFrame = 1;
+    if (_node->getContext() == kOfxImageEffectContextGenerator) {
+        startFrame = 0;
+        endFrame = 0;
+    }else{
+        startFrame = _node->getInfo()->firstFrame();
+        endFrame = _node->getInfo()->lastFrame();
+    }
 }
 
 /// Field Order - Which spatial field occurs temporally first in a frame.
@@ -177,6 +183,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         roi.y1 = y;
         roi.y2 = h;
     }
+    
+    /*Return an empty image if the input is optional*/
+    if(isOptional()){
+        return new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
+    }
+    
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
      _node->isPixelDepthSupported(...)
      */

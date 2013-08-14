@@ -28,7 +28,6 @@ class QGraphicsTextItem;
 class QGraphicsSceneMouseEvent;
 class NodeGui;
 class Node;
-static const qreal UNATTACHED_ARROW_LENGTH=30.;
 class Edge: public QGraphicsLineItem
 {
     

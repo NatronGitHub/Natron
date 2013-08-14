@@ -24,6 +24,7 @@
 #include "Reader/Reader.h"
 #include "Core/node.h"
 #include "Gui/DAG.h"
+#include "Core/ofxnode.h"
 #include "Superviser/controler.h"
 
 const qreal pi=3.14159265358979323846264338327950288419717;
@@ -297,8 +298,15 @@ void NodeGui::setName(QString s){
 }
 
 Edge* NodeGui::firstAvailableEdge(){
-    foreach(Edge* a,inputs){
+    for (U32 i = 0 ; i < inputs.size(); i++) {
+        Edge* a = inputs[i];
         if (!a->hasSource()) {
+            
+            if(getNode()->isOpenFXNode()){
+                OfxNode* ofxNode = dynamic_cast<OfxNode*>(getNode());
+                if(ofxNode->isInputOptional(i))
+                    continue;
+            }
             return a;
         }
     }

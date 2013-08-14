@@ -13,6 +13,8 @@
 
 #include <iostream>
 
+#include <QColor>
+
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
 #include "Core/ofxnode.h"
@@ -165,6 +167,9 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name,
     _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
+    int def = getProperties().getIntProperty(kOfxParamPropDefault);
+    _knob->setChecked(def);
+
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
     b = _value;
@@ -279,8 +284,24 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 OfxRGBAInstance::OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBAInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
+:OFX::Host::Param::RGBAInstance(descriptor,effect),
+_effect(effect),
+_descriptor(descriptor),
+_r(0),_g(0),_b(0),_a(1.0),
+_paramName(name){
+    Knob_Callback* cb = _effect->getKnobCallBack();
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
+    _knob->setPointers(&_r, &_g,&_b,&_a);
     
+    QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
+    
+    
+    double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
+    double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
+    double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
+    double defA = getProperties().getDoubleProperty(kOfxParamPropDefault,3);
+    
+    _knob->setRGBA(defR, defG, defB, defA);
 }
 OfxStatus OfxRGBAInstance::get(double& r,double& g,double& b,double& a){
     r = _r;
@@ -301,6 +322,7 @@ OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
 	_g = g;
 	_b = b;
 	_a = a;
+    _knob->setRGBA(r, g, b, a);
 	 return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
@@ -308,6 +330,7 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
 	_g = g;
 	_b = b;
 	_a = a;
+    _knob->setRGBA(r, g, b, a);
 	 return kOfxStatOK;
 }
 
@@ -321,18 +344,34 @@ void OfxRGBAInstance::onInstanceChanged(){
 
 // callback which should set enabled state as appropriate
 void OfxRGBAInstance::setEnabled(){
-    
+    _knob->setEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
 void OfxRGBAInstance::setSecret(){
-    
+    _knob->setVisible(!getSecret());
 }
 
 
+Knob* OfxRGBAInstance::getKnob() const{
+    return _knob;
+}
 OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
+    Knob_Callback* cb = _effect->getKnobCallBack();
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
+    _knob->disablePermantlyAlpha();
+    _knob->setPointers(&_r, &_g,&_b,NULL);
     
+    QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
+    
+    
+    double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
+    double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
+    double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
+    
+    _knob->setRGBA(defR, defG, defB, 1.f);
+
 }
 OfxStatus OfxRGBInstance::get(double& r,double& g,double& b){
 	r = _r;
@@ -350,12 +389,14 @@ OfxStatus OfxRGBInstance::set(double r,double g,double b){
 	_r = r;
 	_g = g;
 	_b = b;
+    _knob->setRGBA(r, g, b, 1.);
 	 return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
 	_r = r;
 	_g = g;
 	_b = b;
+    _knob->setRGBA(r, g, b, 1.);
 	 return kOfxStatOK;
 }
 
@@ -368,12 +409,16 @@ void OfxRGBInstance::onInstanceChanged(){
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
-    
+    _knob->setEnabled(getEnabled());
 }
 
 // callback which should set secret state as appropriate
 void OfxRGBInstance::setSecret(){
-    
+    _knob->setVisible(!getSecret());
+}
+
+Knob* OfxRGBInstance::getKnob() const{
+    return _knob;
 }
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)

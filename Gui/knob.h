@@ -455,4 +455,59 @@ private:
     std::vector<Knob*> _knobs;
     
 };
+
+class RGBA_Knob : public Knob{
+  Q_OBJECT
+public:
+    
+    RGBA_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
+    
+    virtual void setValues();
+    
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    
+    virtual std::string name(){return "RGBA";}
+    
+    void setRGBA(double r,double g,double b,double a);
+    
+    virtual ~RGBA_Knob(){}
+    
+    void setPointers(double *r,double *g,double *b,double *a);
+    
+    /*Must be called before setPointers*/
+    void disablePermantlyAlpha();
+
+signals:
+    void colorChanged(QColor);
+    
+    public slots:
+    void onRedValueChanged(double);
+    void onGreenValueChanged(double);
+    void onBlueValueChanged(double);
+    void onAlphaValueChanged(double);
+    
+    void showColorDialog();
+    
+    
+private:
+    
+    void updateLabel(const QColor& color);
+    
+    double* _r,*_g,*_b,*_a;
+    
+    QLabel* _rLabel;
+    QLabel* _gLabel;
+    QLabel* _bLabel;
+    QLabel* _aLabel;
+    
+    FeedBackSpinBox* _rBox;
+    FeedBackSpinBox* _gBox;
+    FeedBackSpinBox* _bBox;
+    FeedBackSpinBox* _aBox;
+    
+    QLabel* _colorLabel;
+    Button* _colorDialogButton;
+    
+    bool _alphaEnabled;
+};
 #endif // KNOB_H

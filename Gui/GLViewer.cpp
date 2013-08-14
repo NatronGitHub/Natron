@@ -140,7 +140,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ARRAY_BUFFER,0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
-    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
+    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0); // apparantly emits a leak error the 1st time it is rendering an image
     checkGLErrors();
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
