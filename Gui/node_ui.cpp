@@ -116,14 +116,14 @@ NodeGui::~NodeGui(){
     node->removeThisFromChildren();
     node->removeThisFromParents();
     foreach(NodeGui* p,parents){
-        p->substractChild(this);
+        p->removeChild(this);
     }
     std::vector<NodeGui*> tmpChildrenCopy;
     foreach(NodeGui* c,children){
         tmpChildrenCopy.push_back(c);
         Edge* e = c->findConnectedEdge(this);
         e->removeSource();
-        c->substractParent(this);
+        c->removeParent(this);
     }
 //    foreach(NodeGui*c,tmpChildrenCopy){
 //        _dag->checkIfViewerConnectedAndRefresh(c);
@@ -244,7 +244,7 @@ bool NodeGui::isNearby(QPointF &point){
 }
 
 
-void  NodeGui::substractChild(NodeGui* c){
+void  NodeGui::removeChild(NodeGui* c){
 	if(!children.empty()){
 		for(U32 i=0;i<children.size();i++){
             if(children[i] == c){
@@ -254,7 +254,7 @@ void  NodeGui::substractChild(NodeGui* c){
         }
 	}
 }
-void  NodeGui::substractParent(NodeGui* p){
+void  NodeGui::removeParent(NodeGui* p){
 	if(!parents.empty()){
 		for(U32 i=0;i<parents.size();i++){
             if(parents[i] == p){

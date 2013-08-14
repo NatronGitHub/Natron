@@ -56,39 +56,45 @@ Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphi
 
 }
 void Edge::initLine(){
-    qreal x1,y1;
-    x1=dest->boundingRect().x();
-    y1=dest->boundingRect().y();
-    if(has_source){
-        QPointF srcpt;
-        
-        srcpt=source->mapToItem(this,QPointF(source->boundingRect().x(),source->boundingRect().y()));
-		
+    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()))
+        + QPointF(NODE_LENGTH/2,0);
+    QPointF srcpt;
+    if(has_source){        
+        srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+            + QPointF(NODE_LENGTH/2,NODE_HEIGHT);
+		double norm = 0;
 		if(source->getNode()->className() == std::string("Reader")){
-			setLine(x1+(NODE_LENGTH)/2,y1,srcpt.x()+(NODE_LENGTH+PREVIEW_LENGTH)/2,srcpt.y()+NODE_HEIGHT+PREVIEW_HEIGHT);
+            srcpt += QPointF(PREVIEW_LENGTH/2,PREVIEW_HEIGHT);
+			
 		}
-		else{
-			setLine(x1+NODE_LENGTH/2,y1,srcpt.x()+NODE_LENGTH/2,srcpt.y()+NODE_HEIGHT);
-		}
-        label->setPos(((x1+((NODE_LENGTH)/2)+srcpt.x())/2.)-5,((y1+srcpt.y())/2.)-5);
-        
-    }else{
-        double sourcex,sourcey;
-        
-        sourcex = x1+(NODE_LENGTH/2) + (cos(angle)*UNATTACHED_ARROW_LENGTH);
-        sourcey = y1 - (sin(angle) * UNATTACHED_ARROW_LENGTH);
-
-		setLine(x1+NODE_LENGTH/2,y1,sourcex,sourcey);
-        double cosinus = cos(angle);
-        if(cosinus < 0){
-            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)-40,(y1+sourcey)/2.-20);
-        }else if(cosinus >= -0.01 && cosinus <= 0.01){
-            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+5,(y1+sourcey)/2.-25);
+        setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+        norm = sqrt(pow(dst.x() - srcpt.x(),2) + pow(dst.y() - srcpt.y(),2));
+        if(norm > 20.){
+            label->setPos((dst.x()+srcpt.x())/2.-5.,
+                          (dst.y()+srcpt.y())/2.-10);
+            label->show();
         }else{
-            label->setPos(((x1+(NODE_LENGTH/2)+sourcex)/2.)+10,(y1+sourcey)/2.-20);
+            label->hide();
         }
         
-
+    }else{        
+        srcpt = QPointF(dst.x() + (cos(angle)*UNATTACHED_ARROW_LENGTH),
+          dst.y() - (sin(angle) * UNATTACHED_ARROW_LENGTH));
+        
+		setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
+        double cosinus = cos(angle);
+        int yOffset = 0;
+        if(cosinus < 0){
+            yOffset = -40;
+        }else if(cosinus >= -0.01 && cosinus <= 0.01){
+            
+            yOffset = +5;
+        }else{
+            
+            yOffset = +10;
+        }
+        label->setPos(((dst.x()+srcpt.x())/2.)+yOffset,(dst.y()+srcpt.y())/2.-20);
+        
     }
     qreal a;
     a = acos(line().dx() / line().length());

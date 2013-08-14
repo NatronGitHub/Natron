@@ -94,10 +94,10 @@ public:
     void addParent(NodeGui* p){parents.push_back(p);}
     
     /*Removes the child c from the children of this node*/
-    void substractChild(NodeGui* c);
+    void removeChild(NodeGui* c);
     
     /*Removes the parent p from the parents of this node*/
-	void substractParent(NodeGui* p);
+	void removeParent(NodeGui* p);
     
     /*Returns a ref to the vector of the parents of this nodes.*/
     const std::vector<NodeGui*>& getParents(){return parents;}

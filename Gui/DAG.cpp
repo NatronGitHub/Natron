@@ -149,10 +149,10 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         if(_arrowSelected->hasSource()){
 
             _arrowSelected->getSource()->getNode()->removeChild(_arrowSelected->getDest()->getNode());
-            _arrowSelected->getSource()->substractChild(_arrowSelected->getDest());
+            _arrowSelected->getSource()->removeChild(_arrowSelected->getDest());
             
             _arrowSelected->getDest()->getNode()->removeParent(_arrowSelected->getSource()->getNode());
-            _arrowSelected->getDest()->substractParent(_arrowSelected->getSource());
+            _arrowSelected->getDest()->removeParent(_arrowSelected->getSource());
             
             _arrowSelected->removeSource();
             scene()->update();
@@ -204,7 +204,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         QPointF np=_arrowSelected->mapFromScene(newPos);
         _arrowSelected->updatePosition(np);
-    }else if(_evtState==NODE_DRAGGING){
+    }else if(_evtState==NODE_DRAGGING && _nodeSelected){
         QPointF op=_nodeSelected->mapFromScene(old_pos);
         QPointF np=_nodeSelected->mapFromScene(newPos);
         qreal diffx=np.x()-op.x();
@@ -387,32 +387,63 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     Edge* first = 0;
     if(!selected) return;
     bool cont = false;
-    /*dst is outputnode,src isn't*/
-    if(!selected->getNode()->isInputNode()){
+    if(!selected->getNode()->isOutputNode()){
+        /*dst is not outputnode*/
+        
+        /*check first if it has a child and connect the child to the new node*/
+        const vector<Node*>& children = selected->getNode()->getChildren();
+        if (children.size() > 0) {
+            Node* child = children[0];
+            const vector<Edge*>& childEdges = child->getNodeUi()->getInputsArrows();
+            Edge* edgeWithSelectedNode = 0;
+            for (U32 i = 0; i < childEdges.size(); i++) {
+                if (childEdges[i]->getSource() == selected) {
+                    edgeWithSelectedNode = childEdges[i];
+                    break;
+                }
+            }
+            if(edgeWithSelectedNode){
+                child->removeParent(selected->getNode());
+                child->getNodeUi()->removeParent(selected);
+            
+                selected->getNode()->removeChild(child);
+                selected->removeChild(child->getNodeUi());
+                
+                created->addChild(child->getNodeUi());
+                created->getNode()->addChild(child);
+                
+                child->addParent(created->getNode());
+                child->getNodeUi()->addParent(created);
+                
+                edgeWithSelectedNode->setSource(created);
+                edgeWithSelectedNode->initLine();
+            }
+        }
+        first = created->firstAvailableEdge();
+        if(first){
+            first->getDest()->getNode()->addParent(selected->getNode());
+            first->getDest()->addParent(selected);
+            selected->getNode()->addChild(first->getDest()->getNode());
+            selected->addChild(first->getDest());
+            first->setSource(selected);
+            first->initLine();
+            cont = true;
+        }
+        
+       
+    }else{
+        /*dst is outputnode,src isn't*/
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
-                first->getDest()->getNode()->addParent(created->getNode());
-                first->getDest()->addParent(created);
-                created->getNode()->addChild(first->getDest()->getNode());
-                created->addChild(first->getDest());
-                first->setSource(created);
-                first->initLine();
-                cont = true;
-
+            first->getDest()->getNode()->addParent(created->getNode());
+            first->getDest()->addParent(created);
+            created->getNode()->addChild(first->getDest()->getNode());
+            created->addChild(first->getDest());
+            first->setSource(created);
+            first->initLine();
+            cont = true;
+            
         }
-    }else{
-        /*dst is not outputnode*/
-            first = created->firstAvailableEdge();
-            if(first){
-                first->getDest()->getNode()->addParent(selected->getNode());
-                first->getDest()->addParent(selected);
-                selected->getNode()->addChild(first->getDest()->getNode());
-                selected->addChild(first->getDest());
-                first->setSource(selected);
-                first->initLine();
-                cont = true;
-            }
-
     }
     
     if(cont){
