@@ -323,7 +323,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
             rows.push_back(i);
         }
         _lastEngineStatus._x = dataW.x();
-        _lastEngineStatus._r = dataW.right()+1;
+        _lastEngineStatus._r = dataW.right();
     }
     /*If it reaches here, it means the frame neither belong
      to the ViewerCache nor to the TextureCache, we must

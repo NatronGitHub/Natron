@@ -400,7 +400,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                     break;
                 }
             }
-            if(edgeWithSelectedNode){
+            if(edgeWithSelectedNode && !created->getNode()->isOutputNode()){
                 
              
                 child->removeParent(selected->getNode());

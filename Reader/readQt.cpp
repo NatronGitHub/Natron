@@ -45,9 +45,9 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     }
     const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
     foreachChannels(z, channels){
-        float* to = out->writable(z) + offset;
+        float* to = out->writable(z) ;
         if(to!=NULL){
-            from_byteQt(z, to, from, (range-offset),1);
+            from_byteQt(z, to+out->offset(), from, (range-offset),1);
         }
     }     
 }

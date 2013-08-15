@@ -29,7 +29,7 @@ Node* OfxClipInstance::getAssociatedNode() const{
     if(isOutput())
         return _node;
     else{
-        return _node->input(_node->inputCount() - 1 - _clipIndex);
+        return _node->input(_node->maximumInputs() - 1 - _clipIndex);
     }
 }
 

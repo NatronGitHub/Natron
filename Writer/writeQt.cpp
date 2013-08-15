@@ -133,20 +133,24 @@ void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
     const float* alpha = row[Channel_alpha];
     if(!red){
         row.turnOn(Channel_red);
-        red = row[Channel_red];
     }
+    red = row[Channel_red]+row.offset();
+
     if(!green){
         row.turnOn(Channel_green);
-        green = row[Channel_green];
     }
+    green = row[Channel_green]+row.offset();
+
     if(!blue){
         row.turnOn(Channel_blue);
-        blue = row[Channel_blue];
     }
+    blue = row[Channel_blue]+row.offset();
+
     if(!alpha){
         row.turnOn(Channel_alpha);
-        alpha = row[Channel_alpha];
     }
+    alpha = row[Channel_alpha]+row.offset();
+
     to_byte(Channel_red, toR, red, alpha, row.right() - row.offset(),4);
     to_byte(Channel_green, toG, green, alpha, row.right() - row.offset(),4);
     to_byte(Channel_blue, toB, blue, alpha, row.right() - row.offset(),4);

@@ -123,21 +123,10 @@ bool OfxNode::isInputOptional(int inpubNb){
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
-void OfxNode::_validate(bool){
+void OfxNode::_validate(bool forReal){
     _firstTime = true;
     if (isInputNode()) {
-        OfxPointD rS;
-        rS.x = rS.y = 1.0;
-        OfxRectD rod;
-        getRegionOfDefinitionAction(1.0, rS, rod);
         OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
-        string comp = clip->getUnmappedComponents();
-        //  double pa = clip->getAspectRatio();
-        
-        _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""/*,pa*/));
-        _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
-        _info->rgbMode(true);
-        _info->setYdirection(1);
         
         /*This is not working.*/
         double first,last;
@@ -146,7 +135,21 @@ void OfxNode::_validate(bool){
         _info->firstFrame(first);
         _info->lastFrame(last);
         
-        _info->setChannels(ofxComponentsToPowiterChannels(comp));
+        if (forReal) {
+            OfxPointD rS;
+            rS.x = rS.y = 1.0;
+            OfxRectD rod;
+            getRegionOfDefinitionAction(1.0, rS, rod);
+            string comp = clip->getUnmappedComponents();
+            //  double pa = clip->getAspectRatio();
+            
+            _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""/*,pa*/));
+            _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
+            _info->rgbMode(true);
+            _info->setYdirection(1);
+            _info->setChannels(ofxComponentsToPowiterChannels(comp));
+        }
+        
     }
 }
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
