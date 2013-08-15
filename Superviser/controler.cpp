@@ -59,7 +59,7 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
 #endif
 
     delete loadingScreen;
-    createNode("Viewer",0,0);
+    createNode("Viewer");
     
     
 }
@@ -74,11 +74,11 @@ QStringList& Controler::getNodeNameList(){
 }
 
 
-void Controler::createNode(QString name,double x,double y){
+void Controler::createNode(QString name){
    
     Node* node = 0;
     if(_model->createNode(node,name.toStdString())){
-        _gui->createNodeGUI(node,x,y);
+        _gui->createNodeGUI(node);
     }else{
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
     }

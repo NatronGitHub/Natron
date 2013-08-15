@@ -41,6 +41,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
     
+    setPos(x,y);
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
 	if(node->className() == string("Reader")){ // if the node is not a reader

@@ -129,7 +129,7 @@ public:
     
     void createGui();
     
-    void createNodeGUI(Node *node,double x,double y);
+    void createNodeGUI(Node *node);
     
     bool eventFilter(QObject *target, QEvent *event);
 

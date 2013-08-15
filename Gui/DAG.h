@@ -20,6 +20,7 @@
 #include <cmath>
 #include <QGraphicsView>
 #include <iostream>
+#include <QtCore/QRectF>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include <QInputDialog>
@@ -49,7 +50,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    void createNodeGUI(QVBoxLayout *dockContainer,Node *node,double x,double y);
+    void createNodeGUI(QVBoxLayout *dockContainer,Node *node);
     
     void removeNode(NodeGui* n);
 
@@ -68,6 +69,8 @@ public:
     void checkIfViewerConnectedAndRefresh(NodeGui* n);
     
     void selectNode(NodeGui* n);
+    
+    QRectF visibleRect();
     
     void deselect();
 protected:
@@ -92,7 +95,6 @@ private:
     QPointF old_pos;
     QPointF oldp;
     QPointF oldZoom;
-    QPointF _lastSelectedPos;
     EVENT_STATE _evtState;
     NodeGui* _nodeSelected;
     Edge* _arrowSelected;

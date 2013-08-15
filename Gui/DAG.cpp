@@ -42,7 +42,6 @@ using namespace std;
 using namespace Powiter;
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
     QGraphicsView(scene,parent),
-    _lastSelectedPos(0,0),
     _evtState(DEFAULT),
     _nodeSelected(0),
     _fullscreen(false),
@@ -69,26 +68,46 @@ NodeGraph::~NodeGraph(){
     _nodes.clear();
 }
 
-void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node,double x,double y){
+QRectF NodeGraph::visibleRect() {
+    QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
+    QPointF br = tl + viewport()->rect().bottomRight();
+    QMatrix mat = matrix().inverted();
+    return mat.mapRect(QRectF(tl,br));
+}
+
+void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     QGraphicsScene* sc=scene();        
-    int yOffset = rand() % 50 + 50;
-    if(x == INT_MAX)
-        x = _lastSelectedPos.x();
-    if(node->isOutputNode()){
-        if(y == INT_MAX)
-            y = _lastSelectedPos.y() + yOffset;
-    }else {
-        if(y == INT_MAX)
-            y = _lastSelectedPos.y() - yOffset;
+    QPointF selectedPos;
+    QRectF viewPos = visibleRect();
+    double x,y;
+    
+    if(_nodeSelected){
+        selectedPos = _nodeSelected->scenePos();
+        x = selectedPos.x();
+        int yOffset = 0;
+        if(node->className() == "Reader" && _nodeSelected->getNode()->className()!= "Reader"){
+            x -= PREVIEW_LENGTH/2;
+            yOffset -= PREVIEW_HEIGHT;
+        }
+        
+        if(!node->isOutputNode()){
+            yOffset -= (NODE_HEIGHT + 50);
+        }else {
+            yOffset += (NODE_HEIGHT + 50);
+        }
+        y =  selectedPos.y() + yOffset;
+    }else{
+        x = (viewPos.bottomRight().x()-viewPos.topLeft().x())/2.;
+        y = (viewPos.bottomRight().y()-viewPos.topLeft().y())/2.;
     }
-    NodeGui* node_ui=new NodeGui(this,dockContainer,node,x,y,_root,sc);
+    
+    NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root,sc);
     _nodes.push_back(node_ui);
     if(_nodeSelected)
         autoConnect(_nodeSelected, node_ui);
     
     selectNode(node_ui);
     _nodeSelected = node_ui;
-    _lastSelectedPos = QPoint(x,y);
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event){
@@ -104,7 +123,6 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             
             _nodeSelected=n;
             selectNode(n);
-            _lastSelectedPos = n->pos();
             
             _evtState=NODE_DRAGGING;
             found=true;
@@ -136,9 +154,6 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
 void NodeGraph::deselect(){
     for(U32 i = 0 ; i < _nodes.size() ;i++){
         NodeGui* n = _nodes[i];
-        if(n->isSelected()){
-            _lastSelectedPos = n->pos();
-        }
         n->setSelected(false);
         _nodeSelected = 0;
     }
@@ -211,7 +226,6 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         qreal diffy=np.y()-op.y();
         _nodeSelected->moveBy(diffx,diffy);
         /*also moving node creation anchor*/
-        _lastSelectedPos+= QPointF(newPos.x()-old_pos.x() ,newPos.y()-old_pos.y());
         foreach(Edge* arrow,_nodeSelected->getInputsArrows()){
             arrow->initLine();
         }
@@ -226,8 +240,6 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
         _root->moveBy(dx, dy);
-        /*also moving node creation anchor*/
-        _lastSelectedPos+= QPointF(newPos.x()-old_pos.x() ,newPos.y()-old_pos.y());
         
     }
     old_pos=newPos;
@@ -245,12 +257,10 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
                 /*building settings panel*/
                 n->setSettingsPanelEnabled(true);
                 n->getSettingPanel()->setVisible(true);
-                // needed for the layout to work correctly
-                // QWidget* pr=n->getDockContainer()->parentWidget();
-                // pr->setMinimumSize(n->getDockContainer()->sizeHint());
                 
             }
             n->putSettingsPanelFirst();
+            /*scrolling back to the top the selected node's property tab is visible*/
             _propertyBin->verticalScrollBar()->setValue(0);
             break;
         }
@@ -289,13 +299,7 @@ bool NodeGraph::event(QEvent* event){
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
     if(e->key() == Qt::Key_R){
-        try{
-            
-            ctrlPTR->createNode("Reader");
-        }catch(...){
-            std::cout << "(NodeGraph::keyPressEvent) Couldn't create reader. " << std::endl;
-            
-        }
+        ctrlPTR->createNode("Reader");
         Node* reader = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = reader->getKnobs();
         foreach(Knob* k,knobs){
@@ -307,13 +311,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
         
     }else if(e->key() == Qt::Key_W){
-        try{
-            
-            ctrlPTR->createNode("Writer");
-        }catch(...){
-            std::cout << "(NodeGraph::keyPressEvent) Couldn't create writer. " << std::endl;
-            
-        }
+        ctrlPTR->createNode("Writer");
         Node* writer = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = writer->getKnobs();
         foreach(Knob* k,knobs){
@@ -403,6 +401,8 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 }
             }
             if(edgeWithSelectedNode){
+                
+             
                 child->removeParent(selected->getNode());
                 child->getNodeUi()->removeParent(selected);
             
@@ -416,7 +416,43 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 child->getNodeUi()->addParent(created);
                 
                 edgeWithSelectedNode->setSource(created);
+                
+                /*we now try to move the created node in between the 2 previous*/
+                QPointF parentPos = created->mapFromScene(selected->scenePos());
+                if(selected->getNode()->className() == "Reader"){
+                    parentPos.ry() += (NODE_HEIGHT + PREVIEW_HEIGHT);
+                }else{
+                    parentPos.ry() += (NODE_HEIGHT);
+                }
+                QPointF childPos = created->mapFromScene(child->getNodeUi()->scenePos());
+                
+                QPointF newPos = (parentPos + childPos)/2.;
+                
+                QPointF oldPos = created->mapFromScene(created->scenePos());
+                
+                QPointF diff = newPos - oldPos;
+                
+                created->moveBy(diff.x(), diff.y());
+                
+                /*now moving the child node so it is at an appropriate distance (not too close to
+                 the created one)*/
+                QPointF childTopLeft = child->getNodeUi()->scenePos();
+                QPointF createdBottomLeft = created->scenePos()+QPointF(0,created->boundingRect().height());
+                QPointF createdTopLeft = created->scenePos();
+                QPointF parentBottomLeft = selected->scenePos()+QPointF(0,selected->boundingRect().height());
+                
+                double diffY_child_created,diffY_created_parent;
+                diffY_child_created = childTopLeft.y() - createdBottomLeft.y();
+                diffY_created_parent = createdTopLeft.y() - parentBottomLeft.y();
+                
+                double diffX_child_created,diffX_created_parent;
+                diffX_child_created = childTopLeft.x() - createdBottomLeft.x();
+                diffX_created_parent = createdTopLeft.x() - parentBottomLeft.x();
+                
+                child->getNodeUi()->moveBy(diffX_created_parent-diffX_child_created, diffY_created_parent-diffY_child_created);
+                
                 edgeWithSelectedNode->initLine();
+
             }
         }
         first = created->firstAvailableEdge();
