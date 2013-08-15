@@ -322,7 +322,6 @@ void Knob::validateEvent(bool initViewer){
     NodeGui* nodeUI = node->getNodeUi();
     NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
     if(viewer){
-        //Controler* ctrlPTR = viewer->getControler();
         ctrlPTR->getModel()->clearPlaybackCache();
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();

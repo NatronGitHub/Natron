@@ -103,6 +103,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
             n->beginRenderAction(0, 25, 1, true,renderScale);
         }
     }
+    changeTreeVersion();
     
     QFuture<void> future = QtConcurrent::run(this,&VideoEngine::computeFrameRequest,zoomFactor,sameFrame,fitFrameToViewer,false);
     _computeFrameWatcher->setFuture(future);
@@ -680,8 +681,13 @@ void VideoEngine::seekRandomFrame(int f){
             _startEngine(f, 1, false,_forward,false);
         }
     }
-    else
-        appendTask(f, -1, false,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
+    else{
+        if(_frameRequestsCount == -1){
+            appendTask(f, -1, false,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
+        }else{
+            appendTask(f, 1, false,_forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
+        }
+    }
 }
 void VideoEngine::recenterViewer(){
     if(_working){
@@ -750,8 +756,6 @@ void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer
             }
         }
     }
-    changeTreeVersion();
-
     if(start)
         videoEngine(frameCount,initViewer,_forward,sameFrame);
 }

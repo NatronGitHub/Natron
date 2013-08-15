@@ -240,7 +240,6 @@ void Model::loadAllPlugins(){
 
 std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
     _videoEngine->resetAndMakeNewDag(output,isViewer);
-    _videoEngine->changeTreeVersion();
     
     const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
