@@ -385,7 +385,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     Edge* first = 0;
     if(!selected) return;
     bool cont = false;
-    if(!selected->getNode()->isOutputNode()){
+    if(!selected->getNode()->isOutputNode() && !created->getNode()->isInputNode()){
         /*dst is not outputnode*/
         
         /*check first if it has a child and connect the child to the new node*/
