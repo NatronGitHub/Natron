@@ -265,6 +265,7 @@
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
+            float _displayChannels;
             
         public:
             
@@ -568,6 +569,11 @@
              *function while the engine is processing will abort the engine.
              **/
             void disconnectViewer();
+            
+            /**
+             *@brief set the channels the viewer should display 
+             **/
+            void setDisplayChannel(const ChannelSet& channels,bool yMode = false);
             
             public slots:
             /**

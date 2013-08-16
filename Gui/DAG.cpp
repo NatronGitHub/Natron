@@ -51,16 +51,19 @@ _propertyBin(0)
     setObjectName("DAG_GUI");
     setMouseTracking(true);
     setCacheMode(CacheBackground);
-    setViewportUpdateMode(BoundingRectViewportUpdate);
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
     
     scale(qreal(0.8), qreal(0.8));
-    
+        
     smartNodeCreationEnabled=true;
     _root = new QGraphicsLineItem(0);
     scene->addItem(_root);
     oldZoom = QPointF(0,0);
-    srand(2013);
+    _navigator = new NodeGraphNavigator(this);
+    _navigatorProxy = scene->addWidget(_navigator);
+    _navigatorProxy->hide();
+    // autoResizeScene();
 }
 
 NodeGraph::~NodeGraph(){
@@ -74,7 +77,9 @@ QRectF NodeGraph::visibleRect() {
     QMatrix mat = matrix().inverted();
     return mat.mapRect(QRectF(tl,br));
 }
-
+QRectF NodeGraph::visibleRect_v2(){
+    return mapToScene(viewport()->rect()).boundingRect();
+}
 void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     QGraphicsScene* sc=scene();        
     QPointF selectedPos;
@@ -108,6 +113,9 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     
     selectNode(node_ui);
     _nodeSelected = node_ui;
+    
+    
+    //   autoResizeScene();
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event){
@@ -210,8 +218,9 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     scene()->update();
     
     _evtState=DEFAULT;
-    setCursor(QCursor(Qt::ArrowCursor));
-    viewport()->setCursor(QCursor(Qt::ArrowCursor));
+    //    setCursor(QCursor(Qt::ArrowCursor));
+    //viewport()->setCursor(QCursor(Qt::ArrowCursor));
+    
     
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
@@ -237,15 +246,21 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         }
         
     }else if(_evtState==MOVING_AREA){
-        double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
-        double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
+         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
+         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
         _root->moveBy(dx, dy);
-        
     }
     old_pos=newPos;
     oldp=event->pos();
     
+    /*Now update navigator*/
+    //  autoResizeScene();
+    updateNavigator();
+    
+    
 }
+
+
 void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
     U32 i=0;
     while(i<_nodes.size()){
@@ -336,9 +351,6 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         if(_nodeSelected)
             deleteSelectedNode();
     }
-    
-    
-    
 }
 
 
@@ -367,7 +379,8 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
-    scaleView(pow((double)2, event->delta() / 240.0), mapToScene(event->pos()));
+     scaleView(pow((double)2, event->delta() / 240.0), mapToScene(event->pos()));
+    updateNavigator();
 }
 
 
@@ -534,6 +547,7 @@ void NodeGraph::removeNode(NodeGui* n){
             break;
         }
     }
+    //autoResizeScene();
 }
 void NodeGraph::selectNode(NodeGui* n){
     /*now remove previously selected node*/
@@ -564,4 +578,65 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
         }
     }
 
+}
+void NodeGraph::updateNavigator(){
+    if (!areAllNodesVisible()) {
+        _navigator->setImage(getFullSceneScreenShot());
+        QRectF rect = visibleRect();
+        _navigatorProxy->setPos(rect.width()-_navigator->sizeHint().width(),
+                                rect.height()-_navigator->sizeHint().height());
+        _navigator->show();
+    }else{
+        _navigator->hide();
+    }
+}
+bool NodeGraph::areAllNodesVisible(){
+    QRectF rect = visibleRect();
+    for (U32 i = 0; i < _nodes.size(); i++) {
+        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
+        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
+            return false;
+    }
+    return true;
+}
+void NodeGraph::autoResizeScene(){
+    QRectF rect(0,0,1,1);
+    for (U32 i = 0; i < _nodes.size(); i++) {
+        NodeGui* item = _nodes[i];
+        rect = rect.united(item->mapToItem(_root,item->boundingRect()).boundingRect());
+    }
+    setSceneRect(rect);
+}
+QImage NodeGraph::getFullSceneScreenShot(){
+    QImage img(scene()->width(),scene()->height(), QImage::Format_ARGB32_Premultiplied);
+    img.fill(QColor(0,0,0,0));
+    QRectF viewRect = visibleRect();
+    QPainter painter(&img);
+    painter.save();
+    QPen p;
+    p.setColor(Qt::yellow);
+    p.setWidth(10);
+    painter.setPen(p);
+    painter.drawRect(viewRect);
+    painter.restore();
+    scene()->render(&painter);
+    p.setColor(QColor(200,200,200,255));
+    p.setWidth(10);
+    QRect border(0,0,img.width()-1,img.height()-1);
+    painter.setPen(p);
+    painter.drawRect(border);
+    painter.fillRect(viewRect, QColor(200,200,200,100));
+    return img;
+}
+
+
+NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
+_w(120),_h(70){
+    
+}
+
+void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
+    QPixmap pix = QPixmap::fromImage(img);
+    pix = pix.scaled(_w, _h);
+    setPixmap(pix);
 }

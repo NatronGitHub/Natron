@@ -24,6 +24,7 @@
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include <QInputDialog>
+#include <QLabel>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
@@ -36,11 +37,25 @@ class QScrollArea;
 class Controler;
 class Edge;
 class SmartInputDialog;
+class QGraphicsProxyWidget;
 class SettingsPanel;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
     Q_OBJECT
+    
+    class NodeGraphNavigator : public QLabel{
+        int _w,_h;
+    public:
+        
+        NodeGraphNavigator(QWidget* parent = 0);
+        
+        void setImage(const QImage& img);
+        
+        virtual QSize sizeHint() const {return QSize(_w,_h);};
+        
+        virtual ~NodeGraphNavigator(){}
+    };
 
 public:
 
@@ -72,7 +87,15 @@ public:
     
     QRectF visibleRect();
     
+    QRectF visibleRect_v2();
+    
     void deselect();
+    
+    QImage getFullSceneScreenShot();
+    
+    bool areAllNodesVisible();
+    
+    void updateNavigator();
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -91,6 +114,8 @@ private:
     
     void deleteSelectedNode();
     
+    void autoResizeScene();
+    
     bool smartNodeCreationEnabled;
     QPointF old_pos;
     QPointF oldp;
@@ -104,6 +129,8 @@ private:
     QGraphicsItem* _root;
     QScrollArea* _propertyBin;
     
+    NodeGraphNavigator* _navigator;
+    QGraphicsProxyWidget* _navigatorProxy;
 };
 
 

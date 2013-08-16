@@ -76,11 +76,21 @@ void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
          This will write at the appropriate offset in the buffer thanks
          to the zoomedY(). Note that this can be called concurrently since
          2 rows do not overlap in memory.*/
-        _uiContext->viewer->drawRow(row[Channel_red],
-                                    row[Channel_green],
-                                    row[Channel_blue],
-                                    row[Channel_alpha],
-                                    internal->zoomedY());
+        //  const ChannelSet& uiChannels = _uiContext->displayChannels();
+        const float* r = NULL;
+        const float* g = NULL;
+        const float* b = NULL;
+        const float* a = NULL;
+        
+        //        if (uiChannels & Channel_red)
+            r = row[Channel_red];
+        //        if (uiChannels & Channel_green)
+            g = row[Channel_green];
+        //        if (uiChannels & Channel_blue)
+            b = row[Channel_blue];
+        //        if (uiChannels & Channel_alpha)
+            a = row[Channel_alpha];
+        _uiContext->viewer->drawRow(r,g,b,a,internal->zoomedY());
     }
 }
 

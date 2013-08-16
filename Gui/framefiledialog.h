@@ -400,6 +400,8 @@ public:
     
     QStringList selectedFiles();
     
+    QString filesToSave();
+    
     QDir currentDirectory() const;
 
     void addFavorite(const QString& name,const QString& path);

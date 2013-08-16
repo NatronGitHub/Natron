@@ -113,8 +113,8 @@ public:
     bool operator==(const ChannelSet& source) const;
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
     bool operator<(const ChannelSet& source) const;
-    bool operator==(Powiter::ChannelMask v) const { return mask == U32(v); }
-    bool operator!=(Powiter::ChannelMask v) const { return !(*this == v); }
+    bool operator==(Powiter::ChannelMask v) const { return mask == U32(v << 1); }
+    bool operator!=(Powiter::ChannelMask v) const { return !(*this == (v << 1)); }
     bool operator==(Powiter::Channel z) const;
     bool operator!=(Powiter::Channel z) const { return !(*this == z); }
     

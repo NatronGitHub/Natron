@@ -74,7 +74,9 @@ ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(n
     _viewerChannels->addItem("G",QIcon(),QKeySequence(Qt::Key_G));
     _viewerChannels->addItem("B",QIcon(),QKeySequence(Qt::Key_B));
     _viewerChannels->addItem("A",QIcon(),QKeySequence(Qt::Key_A));
-     
+    _viewerChannels->setCurrentIndex(1);
+    QObject::connect(_viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)));
+    
     _zoomCombobox = new ComboBox(_firstSettingsRow);
     _zoomCombobox->addItem("10%");
     _zoomCombobox->addItem("25%");
@@ -411,7 +413,6 @@ ViewerTab::~ViewerTab()
 
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
-    
     if(event->key() == Qt::Key_Space){
         releaseKeyboard();
         if(_fullscreen){
@@ -421,7 +422,20 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             _fullscreen=true;
             ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
         }
+    }else if(event->key() == Qt::Key_Y){
+        _viewerChannels->setCurrentIndex(0);
+    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::ShiftModifier ){
+        _viewerChannels->setCurrentIndex(1);
+    }else if(event->key() == Qt::Key_R && event->modifiers() == Qt::NoModifier){
+        _viewerChannels->setCurrentIndex(2);
+    }else if(event->key() == Qt::Key_G){
+        _viewerChannels->setCurrentIndex(3);
+    }else if(event->key() == Qt::Key_B){
+        _viewerChannels->setCurrentIndex(4);
+    }else if(event->key() == Qt::Key_A){
+        _viewerChannels->setCurrentIndex(5);
     }
+    
     
 }
 void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
@@ -437,5 +451,29 @@ void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
         }
     }
 }
-
+void ViewerTab::onViewerChannelsChanged(int i){
+    switch (i) {
+        case 0:
+            _channelsToDraw = Mask_RGBA;
+            break;
+        case 1:
+            _channelsToDraw = Mask_RGBA;
+            break;
+        case 2:
+            _channelsToDraw = Channel_red;
+            break;
+        case 3:
+            _channelsToDraw = Channel_green;
+            break;
+        case 4:
+            _channelsToDraw = Channel_blue;
+            break;
+        case 5:
+            _channelsToDraw = Channel_alpha;
+            break;
+        default:
+            break;
+    }
+    viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
+}
  

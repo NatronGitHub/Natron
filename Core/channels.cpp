@@ -72,16 +72,10 @@ ChannelSet::ChannelSet(ChannelMask v) {
 }
 
 const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
-    Channel z = source.first();
+    
     clear();
-    if(z < 31){
-        mask |= (1u << z);
-    }
-    for(unsigned int i =1;i < source.size() ; i++){
-        z = source.next(z);
-        if(z < 31){
+    foreachChannels(z, source){
             mask |= (1u << z);
-        }
     }
     _size = source.size();
     return *this;
@@ -93,10 +87,11 @@ const ChannelSet& ChannelSet::operator=(ChannelMask source) {
         _size = MAX_CHANNEL_COUNT;
         return *this;
     }
-    mask = (source<<1);
-    _size=0;
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;
+    mask = (source << 1);
+    _size = 0;
+    for(unsigned int i = 1; i < 32 ; i++) {
+        if(mask & (1 << i))
+            _size++;
     }
     return *this;
 }
@@ -238,20 +233,21 @@ void ChannelSet::operator&=(const ChannelSet& source){
     }
 }
 void ChannelSet::operator&=(ChannelMask source) {
-    mask &= source;
+    mask &= (source << 1);
     if(source & 1){
         _size = MAX_CHANNEL_COUNT;
     }else{
-    _size = 0;
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;
-    }
+        _size = 0;
+        for(unsigned int i = 1; i < 32 ; i++){
+            if(mask & (1 << i)) _size++;
+        }
     }
 }
 
 
 void ChannelSet::operator&=(Channel z){
     mask &= (1 << z);
+    _size = 0;
     for(unsigned int i = 1; i < 32 ; i++){
         if(mask & (1 << i)) _size++;
     }

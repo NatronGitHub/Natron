@@ -122,23 +122,23 @@ void ViewerGL::drawRenderingVAO(){
         r.r+1 , 0.f , //14
         img.w() , 0.f  //15
     };
-
-//    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
-//    << " r = " << r.r << " t = " << r.t << " w = " << r.w
-//    << " h = " << r.h << endl;
+    
+    //    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
+    //    << " r = " << r.r << " t = " << r.t << " w = " << r.w
+    //    << " h = " << r.h << endl;
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(2, GL_FLOAT, 0, 0);
-
+    
     glBindBuffer(GL_ARRAY_BUFFER, _vboTexturesId);
     glClientActiveTexture(GL_TEXTURE0);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0 , 0);
-
+    
     glBindBuffer(GL_ARRAY_BUFFER,0);
-
+    
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
     glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0); // apparantly emits a leak error the 1st time it is rendering an image
     checkGLErrors();
@@ -200,11 +200,12 @@ void ViewerGL::initConstructor(){
 	shaderLC=NULL;
 	shaderRGB=NULL;
     shaderBlack=NULL;
-     _overlay=true;
+    _overlay=true;
     frameData = NULL;
     _colorSpace = Lut::getLut(Lut::VIEWER);
     _defaultDisplayTexture = 0;
     _pBOmapped = false;
+    _displayChannels = 0.f;
 }
 
 ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
@@ -286,7 +287,7 @@ void ViewerGL::resizeGL(int width, int height){
 }
 void ViewerGL::paintGL()
 {
-   
+    
     float w = (float)width();
     float h = (float)height();
     glMatrixMode (GL_PROJECTION);
@@ -320,7 +321,7 @@ void ViewerGL::paintGL()
             shaderBlack->setUniformValue("Tex", 0);
         
     }
-        
+    
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
     checkGLErrors();
@@ -348,7 +349,7 @@ void ViewerGL::paintGL()
 void ViewerGL::drawOverlay(){
     glDisable(GL_TEXTURE_2D);
     _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
-
+    
     QPoint topRight(displayWindow().w(),displayWindow().h());
     QPoint topLeft(0,displayWindow().h());
     QPoint btmLeft(0,0);
@@ -432,15 +433,15 @@ void ViewerGL::initializeGL(){
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferData(GL_ARRAY_BUFFER, 32*sizeof(GLfloat), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+    
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 28*sizeof(GLubyte), triangleStrip, GL_STATIC_DRAW);
     
-   
+    
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+    
     
     
     if(_hasHW){
@@ -454,7 +455,7 @@ void ViewerGL::initializeGL(){
         }
         initShaderGLSL();
     }
-
+    
     
     initBlackTex();
 }
@@ -528,7 +529,7 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
         ret.first = displayWindow.x();
         ret.second = displayWindow.w()-1;
         _textureColumns.clear();
-        return ret; 
+        return ret;
     }
     // testing right now
     x = 0;
@@ -616,6 +617,8 @@ void ViewerGL::activateShaderRGB(){
     shaderRGB->setUniformValue("byteMode", byteMode());
 	shaderRGB->setUniformValue("expMult",  exposure);
     shaderRGB->setUniformValue("lut", _lut);
+    shaderRGB->setUniformValue("channels", _displayChannels);
+    
     
 }
 
@@ -674,15 +677,15 @@ void ViewerGL::initBlackTex(){
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
-
+    
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
+    
 }
 
 
 
 void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
-  
+    
     if(byteMode()==0 && _hasHW){
         convertRowToFitTextureBGRA_fp(r,g,b,_textureColumns,zoomedY,a);
     }
@@ -729,14 +732,14 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     if(byteMode() == 1.f || !_hasHW){
-//        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
-//        << " r = " << region.r << " t = " << region.t << " w = " << region.w
-//        << " h = " << region.h << endl;
+        //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
+        //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
+        //        << " h = " << region.h << endl;
         _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
     }else{
         _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
-
+    
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     frameData = 0;
@@ -937,47 +940,47 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     
     if(_ms == DRAGGING){
         // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
-            QPoint newClick =  event->pos();
-            QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-            QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
-            float dy = (oldClick_opengl.y() - newClick_opengl.y());
-            _zoomCtx._bottom += dy;
-            _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-            _zoomCtx._oldClick = newClick;
-            if(_drawing){
-                emit engineNeeded();
-            }
+        QPoint newClick =  event->pos();
+        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+        float dy = (oldClick_opengl.y() - newClick_opengl.y());
+        _zoomCtx._bottom += dy;
+        _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
+        _zoomCtx._oldClick = newClick;
+        if(_drawing){
+            emit engineNeeded();
+        }
         //    else
-            updateGL();
+        updateGL();
         //  }
         
     }
 }
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
-        
-        float newZoomFactor;
-        if(event->delta() >0){
-            newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
-        }else {
-            newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
-            if(newZoomFactor <= 0.01){
-                newZoomFactor = 0.01;
-            }
+    
+    float newZoomFactor;
+    if(event->delta() >0){
+        newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
+    }else {
+        newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
+        if(newZoomFactor <= 0.01){
+            newZoomFactor = 0.01;
         }
-        QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
-        float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
-        _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
-        _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
-        
-        _zoomCtx._zoomFactor = newZoomFactor;
-        if(_drawing){
-            ctrlPTR->getModel()->clearPlaybackCache();
-            emit engineNeeded();
-        }
+    }
+    QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
+    float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
+    _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
+    
+    _zoomCtx._zoomFactor = newZoomFactor;
+    if(_drawing){
+        ctrlPTR->getModel()->clearPlaybackCache();
+        emit engineNeeded();
+    }
     //  else
-        updateGL();
-
+    updateGL();
+    
     // }
     
     emit zoomChanged( _zoomCtx._zoomFactor*100);
@@ -1060,7 +1063,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
-
+    
 }
 
 
@@ -1139,160 +1142,6 @@ void ViewerGL::updateExposure(double d){
         updateGL();
     
 }
-
-
-//#define SWAP_ROWS_DOUBLE(a, b) { double *_tmp = a; (a)=(b); (b)=_tmp; }
-//#define SWAP_ROWS_FLOAT(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }
-//#define MAT(m,r,c) (m)[(c)*4+(r)]
-//int ViewerGL::_glInvertMatrix(float *m, float *out){
-//    float wtmp[4][8];
-//    float m0, m1, m2, m3, s;
-//    float *r0, *r1, *r2, *r3;
-//    r0 = wtmp[0], r1 = wtmp[1], r2 = wtmp[2], r3 = wtmp[3];
-//    r0[0] = MAT(m, 0, 0), r0[1] = MAT(m, 0, 1),
-//    r0[2] = MAT(m, 0, 2), r0[3] = MAT(m, 0, 3),
-//    r0[4] = 1.0, r0[5] = r0[6] = r0[7] = 0.0,
-//    r1[0] = MAT(m, 1, 0), r1[1] = MAT(m, 1, 1),
-//    r1[2] = MAT(m, 1, 2), r1[3] = MAT(m, 1, 3),
-//    r1[5] = 1.0, r1[4] = r1[6] = r1[7] = 0.0,
-//    r2[0] = MAT(m, 2, 0), r2[1] = MAT(m, 2, 1),
-//    r2[2] = MAT(m, 2, 2), r2[3] = MAT(m, 2, 3),
-//    r2[6] = 1.0, r2[4] = r2[5] = r2[7] = 0.0,
-//    r3[0] = MAT(m, 3, 0), r3[1] = MAT(m, 3, 1),
-//    r3[2] = MAT(m, 3, 2), r3[3] = MAT(m, 3, 3),
-//    r3[7] = 1.0, r3[4] = r3[5] = r3[6] = 0.0;
-//    /* choose pivot - or die */
-//    if (fabsf(r3[0]) > fabsf(r2[0]))
-//        SWAP_ROWS_FLOAT(r3, r2);
-//    if (fabsf(r2[0]) > fabsf(r1[0]))
-//        SWAP_ROWS_FLOAT(r2, r1);
-//    if (fabsf(r1[0]) > fabsf(r0[0]))
-//        SWAP_ROWS_FLOAT(r1, r0);
-//    if (0.0 == r0[0])
-//        return 0;
-//    /* eliminate first variable     */
-//    m1 = r1[0] / r0[0];
-//    m2 = r2[0] / r0[0];
-//    m3 = r3[0] / r0[0];
-//    s = r0[1];
-//    r1[1] -= m1 * s;
-//    r2[1] -= m2 * s;
-//    r3[1] -= m3 * s;
-//    s = r0[2];
-//    r1[2] -= m1 * s;
-//    r2[2] -= m2 * s;
-//    r3[2] -= m3 * s;
-//    s = r0[3];
-//    r1[3] -= m1 * s;
-//    r2[3] -= m2 * s;
-//    r3[3] -= m3 * s;
-//    s = r0[4];
-//    if (s != 0.0) {
-//        r1[4] -= m1 * s;
-//        r2[4] -= m2 * s;
-//        r3[4] -= m3 * s;
-//    }
-//    s = r0[5];
-//    if (s != 0.0) {
-//        r1[5] -= m1 * s;
-//        r2[5] -= m2 * s;
-//        r3[5] -= m3 * s;
-//    }
-//    s = r0[6];
-//    if (s != 0.0) {
-//        r1[6] -= m1 * s;
-//        r2[6] -= m2 * s;
-//        r3[6] -= m3 * s;
-//    }
-//    s = r0[7];
-//    if (s != 0.0) {
-//        r1[7] -= m1 * s;
-//        r2[7] -= m2 * s;
-//        r3[7] -= m3 * s;
-//    }
-//    /* choose pivot - or die */
-//    if (fabsf(r3[1]) > fabsf(r2[1]))
-//        SWAP_ROWS_FLOAT(r3, r2);
-//    if (fabsf(r2[1]) > fabsf(r1[1]))
-//        SWAP_ROWS_FLOAT(r2, r1);
-//    if (0.0 == r1[1])
-//        return 0;
-//    /* eliminate second variable */
-//    m2 = r2[1] / r1[1];
-//    m3 = r3[1] / r1[1];
-//    r2[2] -= m2 * r1[2];
-//    r3[2] -= m3 * r1[2];
-//    r2[3] -= m2 * r1[3];
-//    r3[3] -= m3 * r1[3];
-//    s = r1[4];
-//    if (0.0 != s) {
-//        r2[4] -= m2 * s;
-//        r3[4] -= m3 * s;
-//    }
-//    s = r1[5];
-//    if (0.0 != s) {
-//        r2[5] -= m2 * s;
-//        r3[5] -= m3 * s;
-//    }
-//    s = r1[6];
-//    if (0.0 != s) {
-//        r2[6] -= m2 * s;
-//        r3[6] -= m3 * s;
-//    }
-//    s = r1[7];
-//    if (0.0 != s) {
-//        r2[7] -= m2 * s;
-//        r3[7] -= m3 * s;
-//    }
-//    /* choose pivot - or die */
-//    if (fabsf(r3[2]) > fabsf(r2[2]))
-//        SWAP_ROWS_FLOAT(r3, r2);
-//    if (0.0 == r2[2])
-//        return 0;
-//    /* eliminate third variable */
-//    m3 = r3[2] / r2[2];
-//    r3[3] -= m3 * r2[3], r3[4] -= m3 * r2[4],
-//    r3[5] -= m3 * r2[5], r3[6] -= m3 * r2[6], r3[7] -= m3 * r2[7];
-//    /* last check */
-//    if (0.0 == r3[3])
-//        return 0;
-//    s = 1.0 / r3[3];             /* now back substitute row 3 */
-//    r3[4] *= s;
-//    r3[5] *= s;
-//    r3[6] *= s;
-//    r3[7] *= s;
-//    m2 = r2[3];                  /* now back substitute row 2 */
-//    s = 1.0 / r2[2];
-//    r2[4] = s * (r2[4] - r3[4] * m2), r2[5] = s * (r2[5] - r3[5] * m2),
-//    r2[6] = s * (r2[6] - r3[6] * m2), r2[7] = s * (r2[7] - r3[7] * m2);
-//    m1 = r1[3];
-//    r1[4] -= r3[4] * m1, r1[5] -= r3[5] * m1,
-//    r1[6] -= r3[6] * m1, r1[7] -= r3[7] * m1;
-//    m0 = r0[3];
-//    r0[4] -= r3[4] * m0, r0[5] -= r3[5] * m0,
-//    r0[6] -= r3[6] * m0, r0[7] -= r3[7] * m0;
-//    m1 = r1[2];                  /* now back substitute row 1 */
-//    s = 1.0 / r1[1];
-//    r1[4] = s * (r1[4] - r2[4] * m1), r1[5] = s * (r1[5] - r2[5] * m1),
-//    r1[6] = s * (r1[6] - r2[6] * m1), r1[7] = s * (r1[7] - r2[7] * m1);
-//    m0 = r0[2];
-//    r0[4] -= r2[4] * m0, r0[5] -= r2[5] * m0,
-//    r0[6] -= r2[6] * m0, r0[7] -= r2[7] * m0;
-//    m0 = r0[1];                  /* now back substitute row 0 */
-//    s = 1.0 / r0[0];
-//    r0[4] = s * (r0[4] - r1[4] * m0), r0[5] = s * (r0[5] - r1[5] * m0),
-//    r0[6] = s * (r0[6] - r1[6] * m0), r0[7] = s * (r0[7] - r1[7] * m0);
-//    MAT(out, 0, 0) = r0[4];
-//    MAT(out, 0, 1) = r0[5], MAT(out, 0, 2) = r0[6];
-//    MAT(out, 0, 3) = r0[7], MAT(out, 1, 0) = r1[4];
-//    MAT(out, 1, 1) = r1[5], MAT(out, 1, 2) = r1[6];
-//    MAT(out, 1, 3) = r1[7], MAT(out, 2, 0) = r2[4];
-//    MAT(out, 2, 1) = r2[5], MAT(out, 2, 2) = r2[6];
-//    MAT(out, 2, 3) = r2[7], MAT(out, 3, 0) = r3[4];
-//    MAT(out, 3, 1) = r3[5], MAT(out, 3, 2) = r3[6];
-//    MAT(out, 3, 3) = r3[7];
-//    return 1;
-//}
 
 bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
     double inv[16], det;
@@ -1700,4 +1549,25 @@ void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected
 
 float ViewerGL::byteMode() const {
     return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
+}
+
+void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
+    if(yMode){
+        _displayChannels = 5.f;
+        
+    }else{
+        if(channels == Powiter::Mask_RGB || channels == Powiter::Mask_RGBA)
+            _displayChannels = 0.f;
+        else if((channels & Powiter::Channel_red) == Powiter::Channel_red)
+            _displayChannels = 1.f;
+        else if((channels & Powiter::Channel_green) == Powiter::Channel_green)
+            _displayChannels = 2.f;
+        else if((channels & Powiter::Channel_blue) == Powiter::Channel_blue)
+            _displayChannels = 3.f;
+        else if((channels & Powiter::Channel_alpha) == Powiter::Channel_alpha)
+            _displayChannels = 4.f;
+        
+    }
+    updateGL();
+    
 }

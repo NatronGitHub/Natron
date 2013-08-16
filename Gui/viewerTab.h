@@ -114,6 +114,7 @@ public:
     /*viewerInfo related functions)*/
     void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);
     
+    
 public slots:
     
     void startPause(bool);
@@ -128,6 +129,8 @@ public slots:
     void seekRandomFrame(int);
     void seekRandomFrame(double value){seekRandomFrame((int)value);}
     void centerViewer();
+    
+    void onViewerChannelsChanged(int);
     
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);

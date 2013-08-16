@@ -78,7 +78,6 @@ _dialogMode(mode)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
-   // _mainLayout->setSpacing(0);
     setLayout(_mainLayout);
     /*Creating view and setting directory*/
     _view =  new SequenceDialogView(this);
@@ -129,7 +128,7 @@ _dialogMode(mode)
         
     
     _previewButton = new Button("preview",_buttonsWidget);
-    _previewButton->setVisible(false);//!@todo Implement preview mode for the file dialog
+    _previewButton->setVisible(false);/// @todo Implement preview mode for the file dialog
     _buttonsLayout->addWidget(_previewButton);
     
     
@@ -191,7 +190,10 @@ _dialogMode(mode)
     _selectionLineEdit = new LineEdit(_selectionWidget);
     _selectionLayout->addWidget(_selectionLineEdit);
     
-    _openButton = new Button("Open",_selectionWidget);
+    if(mode==SequenceFileDialog::OPEN_DIALOG)
+        _openButton = new Button("Open",_selectionWidget);
+    else
+        _openButton = new Button("Save",_selectionWidget);
     _selectionLayout->addWidget(_openButton);
     QObject::connect(_openButton, SIGNAL(pressed()), this, SLOT(openSelectedFiles()));
     
@@ -1144,6 +1146,18 @@ QStringList SequenceFileDialog::selectedFiles(){
     }
     return out;
 }
+QString SequenceFileDialog::filesToSave(){
+//    QStringList selected = selectedFiles();
+//    if (selected.size() > 0) {
+//        //extract the number of digits max
+//    }else{
+//        QString text = _selectionLineEdit->text();
+//        
+//    }
+// NOT IMPLEMENTED YET
+    return "";
+}
+
 QDir SequenceFileDialog::currentDirectory() const{
     return _requestedDir;
 }
