@@ -12,8 +12,10 @@
 #include "ofxparaminstance.h"
 
 #include <iostream>
-
 #include <QColor>
+#include <QHBoxLayout>
+//ofx extension
+#include <nuke/fnPublicOfxExtensions.h>
 
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
@@ -26,8 +28,23 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* effect,
                                            OFX::Host::Param::Descriptor& descriptor)
 :  OFX::Host::Param::PushbuttonInstance(descriptor,effect),_effect(effect), _descriptor(descriptor)
 {
-    Knob_Callback* cb = _effect->getKnobCallBack();
+    Knob_Callback* cb = _effect->getKnobCallBack();   
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }        
     _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+    
     _knob->connectButtonToSlot(this, SLOT(emitInstanceChanged()));
     QObject::connect(this, SIGNAL(buttonPressed(QString)), _effect, SLOT(onInstanceChangedAction(QString)));
 }
@@ -53,7 +70,22 @@ Knob* OfxPushButtonInstance::getKnob() const{
 OfxIntegerInstance::OfxIntegerInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor,effect),_effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     QObject::connect(_knob, SIGNAL(valueChanged(int)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
@@ -104,7 +136,22 @@ Knob* OfxIntegerInstance::getKnob() const{
 OfxDoubleInstance::OfxDoubleInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::DoubleInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     QObject::connect(_knob, SIGNAL(valueChanged(double)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
@@ -164,7 +211,22 @@ Knob* OfxDoubleInstance::getKnob() const{
 OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::BooleanInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
@@ -213,7 +275,22 @@ Knob* OfxBooleanInstance::getKnob() const{
 OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name) {
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     QObject::connect(_knob, SIGNAL(entryChanged(int)), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; i++) {
@@ -290,7 +367,22 @@ _descriptor(descriptor),
 _r(0),_g(0),_b(0),_a(1.0),
 _paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     _knob->setPointers(&_r, &_g,&_b,&_a);
     
     QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
@@ -359,7 +451,22 @@ Knob* OfxRGBAInstance::getKnob() const{
 OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+    
     _knob->disablePermantlyAlpha();
     _knob->setPointers(&_r, &_g,&_b,NULL);
     
@@ -424,7 +531,22 @@ Knob* OfxRGBInstance::getKnob() const{
 OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Double2DInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<Double2D_Knob*>(KnobFactory::createKnob("Double2D", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     _knob->setPointers(&_x1, &_x2);
     
     QObject::connect(_knob, SIGNAL(value1Changed(double)), this, SLOT(onInstanceChanged()));
@@ -499,7 +621,22 @@ Knob* OfxDouble2DInstance::getKnob() const{
 OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Integer2DInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
     _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", cb, name, Knob::NONE));
+    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    if(previousKnobLayout){
+        _knob->changeLayout(previousKnobLayout);
+        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+    }
+    if(layoutHint == 2){
+        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+    }
+    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+    _knob->setLayoutMargin(paramSpacing);
+
     _knob->setPointers(&_x1, &_x2);
     
     QObject::connect(_knob, SIGNAL(value1Changed(int)), this, SLOT(onInstanceChanged()));
@@ -571,18 +708,38 @@ Knob* OfxInteger2DInstance::getKnob() const{
 OfxGroupInstance::OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::GroupInstance(descriptor,effect),_effect(effect),_descriptor(descriptor),_paramName(name){
     Knob_Callback* cb = _effect->getKnobCallBack();
-    _knob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, Knob::NONE));
-    int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
-    if (opened) {
-        _knob->setChecked(true);
+    int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
+    if(isTab){
+        Tab_Knob* _tabKnob = _effect->getTabKnob();
+        if(!_tabKnob){
+            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", cb, name, Knob::NONE));
+            _effect->setTabKnob(_tabKnob);
+        }
+        _groupKnob = 0;
+        _tabKnob->addTab(name);
     }else{
-        _knob->setChecked(false);
+        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, Knob::NONE));
+        int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
+        if (opened) {
+            _groupKnob->setChecked(true);
+        }else{
+            _groupKnob->setChecked(false);
+        }
     }
+    
 }
 void OfxGroupInstance::addKnob(Knob *k) {
-    _knob->addKnob(k);
+    if(_groupKnob){
+        _groupKnob->addKnob(k);
+    }else{
+        _effect->getTabKnob()->addKnob(_paramName, k);
+    }
 }
 
 Knob* OfxGroupInstance::getKnob() const{
-    return _knob;
+    if(_groupKnob){
+        return _groupKnob;
+    }else{
+        return _effect->getTabKnob();
+    }
 }

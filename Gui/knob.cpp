@@ -42,7 +42,7 @@
 #include "Gui/viewerTab.h"
 #include "Gui/timeline.h"
 #include "Core/viewernode.h"
-
+#include "Gui/tabwidget.h"
 using namespace Powiter;
 using namespace std;
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
@@ -271,6 +271,16 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
     delete rgbaKnob;
+    
+    
+    Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *TABKnobPlugin = new PluginID((HINSTANCE)&Tab_Knob::BuildKnob,tabKnob->name().c_str());
+#else
+    PluginID *TABKnobPlugin = new PluginID((void*)&Tab_Knob::BuildKnob,tabKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
+    delete tabKnob;
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -303,7 +313,21 @@ Knob::Knob( Knob_Callback *cb):QWidget()
     //cb->addKnob(this);
     setVisible(true);
 }
-
+void Knob::changeLayout(QHBoxLayout* newLayout){
+    QList<QWidget*> allKnobs;
+    for (int i = 0; i < layout->count() ; i++) {
+        QWidget* w = layout->itemAt(i)->widget();
+        if (w) {
+            allKnobs << w;
+        }
+    }
+    for (int i = 0; i < allKnobs.size(); i++) {
+        newLayout->addWidget(allKnobs.at(i));
+    }
+}
+void Knob::setLayoutMargin(int pix){
+    layout->setContentsMargins(0, 0, pix, 0);
+}
 Knob::~Knob(){
     foreach(QWidget* el,elements){
         delete el;
@@ -1105,4 +1129,35 @@ void RGBA_Knob::disablePermantlyAlpha(){
     _aLabel->setEnabled(false);
     _aBox->setVisible(false);
     _aBox->setEnabled(false);
+}
+/*************/
+
+Tab_Knob::Tab_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
+    _tabWidget = new TabWidget(TabWidget::NONE,this);
+    layout->addWidget(_tabWidget);
+}
+
+
+Knob* Tab_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
+    Tab_Knob* knob=new Tab_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+
+
+void Tab_Knob::addTab(const std::string& name){
+    QWidget* newTab = new QWidget(_tabWidget);
+    _tabWidget->appendTab(name.c_str(), newTab);
+    QVBoxLayout* newLayout = new QVBoxLayout(newTab);
+    newTab->setLayout(newLayout);
+    vector<Knob*> knobs;
+    _knobs.insert(make_pair(name, make_pair(newLayout, knobs)));
+}
+void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
+    KnobsTabMap::iterator it = _knobs.find(tabName);
+    if(it!=_knobs.end()){
+        it->second.first->addWidget(k);
+        it->second.second.push_back(k);
+    }
 }

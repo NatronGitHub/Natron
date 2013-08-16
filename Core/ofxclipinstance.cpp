@@ -29,7 +29,15 @@ Node* OfxClipInstance::getAssociatedNode() const{
     if(isOutput())
         return _node;
     else{
-        return _node->input(_node->maximumInputs() - 1 - _clipIndex);
+        int index = 0;
+        OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
+        for (U32 i = 0; i < inputs.size(); i++) {
+            if (inputs[i]->getName() == getName()) {
+                index = i;
+                break;
+            }
+        }
+        return _node->input(index);
     }
 }
 
@@ -179,9 +187,9 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         _node->getProjectExtent(w, h);
         _node->getProjectOffset(x, y);
         roi.x1 = x;
-        roi.x2 = w;
+        roi.x2 = x+w;
         roi.y1 = y;
-        roi.y2 = h;
+        roi.y2 = y+h;
     }
     
     /*Return an empty image if the input is optional*/

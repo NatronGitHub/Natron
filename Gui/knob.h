@@ -47,7 +47,7 @@
 
 
 
-
+class TabWidget;
 class QHBoxLayout;
 class QVBoxLayout;
 class QCheckBox;
@@ -65,10 +65,22 @@ public:
     
     
     Knob(Knob_Callback* cb);
+    
     virtual ~Knob();
 
     std::vector<U64> getValues(){return values;}
+    
 	Knob_Callback* getCallBack(){return cb;}
+    
+    QHBoxLayout* getHorizontalLayout() const {return layout;}
+    
+    /*you can use this to provide a layout coming from another Knob.
+     For example you can provide the layout of the Knob added previously thus
+     stacking 2 knobs on the same line.*/
+    void changeLayout(QHBoxLayout* newLayout);
+    
+    /*Set the spacing between items in the layout*/
+    void setLayoutMargin(int pix);
     
     /*Must return the name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
@@ -455,7 +467,7 @@ private:
     std::vector<Knob*> _knobs;
     
 };
-
+/******************************/
 class RGBA_Knob : public Knob{
   Q_OBJECT
 public:
@@ -509,5 +521,33 @@ private:
     Button* _colorDialogButton;
     
     bool _alphaEnabled;
+};
+
+/*****************************/
+class Tab_Knob : public Knob{
+  
+public:
+    typedef std::map<std::string, std::pair<QVBoxLayout*, std::vector<Knob*> > > KnobsTabMap;
+    
+    Tab_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
+        
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    
+    
+    void addTab(const std::string& name);
+    
+    void addKnob(const std::string& tabName,Knob* k);
+    
+    virtual std::string name(){return "Tab";}
+
+    
+    virtual void setValues(){}
+
+    
+    ~Tab_Knob(){}
+    
+private:
+    TabWidget* _tabWidget;
+    KnobsTabMap _knobs;
 };
 #endif // KNOB_H

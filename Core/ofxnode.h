@@ -24,6 +24,10 @@
 //ours
 class OFX::Host::ImageEffect::ClipInstance;
 
+class Tab_Knob;
+class QHBoxLayout;
+
+
 class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instance
 {
     Q_OBJECT
@@ -31,6 +35,8 @@ class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instan
     
     QMutex _lock;
     std::map<std::string,OFX::Host::Param::Instance*> _params; // used to re-create parenting between params
+    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
+    QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _firstTime;
     
 public:
@@ -191,14 +197,26 @@ public:
     
     /// get the first and last times available on the effect's timeline
     virtual void timeLineGetBounds(double &t1, double &t2);
+    
+    
+    void setTabKnob(Tab_Knob* k){_tabKnob = k;}
+    
+    Tab_Knob* getTabKnob() const {return _tabKnob;}
+    
+    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout){_lastKnobLayoutWithNoNewLine = layout;}
+    
+    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const {return _lastKnobLayoutWithNoNewLine;}
 
+    typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
+
+    
+    MappedInputV inputClipsCopyWithoutOutput();
+
+    
 public slots:
     void onInstanceChangedAction(const QString&);
     
-private:
-    typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     
-    MappedInputV inputClipsCopyWithoutOutput();
     
 };
 

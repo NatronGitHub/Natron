@@ -21,7 +21,9 @@ OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context):
 Node(),
-OFX::Host::ImageEffect::Instance(plugin,other,context,false)
+OFX::Host::ImageEffect::Instance(plugin,other,context,false),
+_tabKnob(0),
+_lastKnobLayoutWithNoNewLine(0)
 {
     
 }
@@ -135,6 +137,8 @@ void OfxNode::_validate(bool forReal){
         _info->firstFrame(first);
         _info->lastFrame(last);
         
+        /*if forReal is true we need to pass down the tree all the infos generated
+         besides just the frame range.*/
         if (forReal) {
             OfxPointD rS;
             rS.x = rS.y = 1.0;
@@ -206,7 +210,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
 // make a parameter instance
 OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::Host::Param::Descriptor& descriptor)
 {
-    std::string name = oldName;
+    std::string name =  descriptor.getShortLabel();
     std::string prep = name.substr(0,1);
     name[0] = std::toupper(prep.at(0));
     if(descriptor.getType()==kOfxParamTypeInteger){

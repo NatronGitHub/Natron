@@ -116,18 +116,20 @@ bool Reader::readCurrentHeader(int current_frame){
     if(_read->supportsScanLine()){
         _read->readHeader(filename, false);
         slContext = new Reader::Buffer::ScanLineContext;
-        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
-            const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
-            if(_fitFrameToViewer){
-                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
-            }
-            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
-        }else{
+        /*TEMPORARY FIX while OpenFX nodes still require the full RoD. This would let the Reads work
+         not properly since they need more rows than just what the viewer wants to display. */
+//        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
+//            const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
+//            if(_fitFrameToViewer){
+//                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
+//            }
+//            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
+//        }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             for (int i = dataW.y() ; i < dataW.top(); i++) {
                 rows.push_back(i);
             }            
-        }
+        // }
         slContext->setRows(rows);
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/

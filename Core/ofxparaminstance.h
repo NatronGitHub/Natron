@@ -24,6 +24,7 @@
  */
 class Knob;
 class Button_Knob;
+class Tab_Knob;
 class RGBA_Knob;
 class Int_Knob;
 class Int2D_Knob;
@@ -298,7 +299,7 @@ class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
     OfxNode* _effect;
     OFX::Host::Param::Descriptor& _descriptor;
     std::string _paramName;
-    Group_Knob* _knob;
+    Group_Knob* _groupKnob;
 public:
     
     OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
