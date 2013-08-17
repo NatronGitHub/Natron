@@ -60,7 +60,7 @@ _propertyBin(0)
     _root = new QGraphicsLineItem(0);
     scene->addItem(_root);
     oldZoom = QPointF(0,0);
-    _navigator = new NodeGraphNavigator(this);
+    _navigator = new NodeGraphNavigator();
     _navigatorProxy = scene->addWidget(_navigator);
     _navigatorProxy->hide();
     // autoResizeScene();

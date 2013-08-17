@@ -627,6 +627,7 @@ void Gui::addPluginToolButton(const std::string& actionName,
     }else{
         ToolButton* tb = new ToolButton(actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
         _toolBox->addWidget(tb);
+        tb->setToolTip(groups.front().c_str());
         _toolGroups.insert(make_pair(groups[0],tb));
     }
     

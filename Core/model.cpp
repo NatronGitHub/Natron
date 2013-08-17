@@ -161,9 +161,9 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     _properties.setStringProperty(kOfxPropLabel, "Powiter");
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, true);
-    _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, true);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, 1);
+    _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGBA, 0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentAlpha, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
@@ -747,6 +747,17 @@ void Model::loadOFXPlugins(){
     
     /// register the image effect cache with the global plugin cache
     _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
+    
+    
+#if defined(WINDOWS)
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
+#endif
+#if defined(__linux__)
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
+#endif
+#if defined(__APPLE__)
+    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
+#endif
     
     /// now read an old cache cache
     std::ifstream ifs("PowiterOFXCache.xml");
