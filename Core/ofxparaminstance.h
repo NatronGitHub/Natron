@@ -12,7 +12,7 @@
 #define OFXPARAMINSTANCE_H
 
 #include <QtCore/QObject>
-
+#include <QStringList>
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -23,6 +23,9 @@
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
 class Knob;
+class String_Knob;
+class File_Knob;
+class OutputFile_Knob;
 class Button_Knob;
 class Tab_Knob;
 class RGBA_Knob;
@@ -36,8 +39,8 @@ class Group_Knob;
 class OfxNode;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
-        
-    signals:
+    
+signals:
     void buttonPressed(QString);
     
 public:
@@ -47,7 +50,7 @@ public:
     
     // callback which should set secret state as appropriate
     virtual void setSecret();
-
+    
     Knob* getKnob() const;
     
     public slots:
@@ -89,7 +92,7 @@ public:
     public slots:
     void onInstanceChanged();
     
-
+    
 };
 
 class OfxDoubleInstance :public QObject, public OFX::Host::Param::DoubleInstance {
@@ -119,7 +122,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 
 class OfxBooleanInstance : public QObject,public OFX::Host::Param::BooleanInstance {
@@ -149,7 +152,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 
 class OfxChoiceInstance :public QObject, public OFX::Host::Param::ChoiceInstance {
@@ -178,7 +181,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-  
+    
 };
 
 class OfxRGBAInstance :public QObject, public OFX::Host::Param::RGBAInstance {
@@ -206,7 +209,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 
 
@@ -235,7 +238,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 
 class OfxDouble2DInstance : public QObject,public OFX::Host::Param::Double2DInstance {
@@ -264,7 +267,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 
 class OfxInteger2DInstance :public QObject, public OFX::Host::Param::Integer2DInstance {
@@ -292,7 +295,7 @@ public:
     
     public slots:
     void onInstanceChanged();
-
+    
 };
 class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
     Q_OBJECT
@@ -309,6 +312,42 @@ public:
     Knob* getKnob() const;
     
     virtual ~OfxGroupInstance(){}
+};
+
+class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance{
+    Q_OBJECT
+    OfxNode* _effect;
+    OFX::Host::Param::Descriptor& _descriptor;
+    std::string _paramName;
+    std::string _string;
+    
+    
+    QStringList _filesList;
+    File_Knob* _fileKnob;
+    OutputFile_Knob* _outputFileKnob;
+    String_Knob* _stringKnob;
+public:
+    
+    OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
+    
+    virtual OfxStatus get(std::string &) ;
+    virtual OfxStatus get(OfxTime time, std::string &) ;
+    virtual OfxStatus set(const char*) ;
+    virtual OfxStatus set(OfxTime time, const char*) ;
+    
+    // callback which should set enabled state as appropriate
+    virtual void setEnabled();
+    
+    // callback which should set secret state as appropriate
+    virtual void setSecret();
+
+    
+    Knob* getKnob() const;
+    
+    virtual ~OfxStringInstance(){}
+    
+    public slots:
+    void onInstanceChanged();
 };
 
 

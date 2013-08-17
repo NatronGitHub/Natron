@@ -140,7 +140,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
         NodeGui* n=_nodes[i];
         
         QPointF evpt=n->mapFromScene(old_pos);
-        if(n->contains(evpt)){
+        if(n->isActive() && n->contains(evpt)){
             
             _nodeSelected=n;
             selectNode(n);
@@ -190,7 +190,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF ep=mapToScene(event->pos());
             QPointF evpt=n->mapFromScene(ep);
             
-            if(n->isNearby(evpt) && n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName()){
+            if(n->isActive() && n->isNearby(evpt) && n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName()){
                 if(n->getNode()->isOutputNode() && _arrowSelected->getDest()->getNode()->isOutputNode()){
                     break;
                 }
@@ -213,7 +213,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         checkIfViewerConnectedAndRefresh(_arrowSelected->getDest());
         
     }else if(_evtState == NODE_DRAGGING){
-        _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
+        if(_nodeSelected)
+            _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
     }
     scene()->update();
     
@@ -261,7 +262,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
         NodeGui* n=_nodes[i];
         
         QPointF evpt=n->mapFromScene(old_pos);
-        if(n->contains(evpt) && n->getNode()->className() != std::string("Viewer")){
+        if(n->isActive() && n->contains(evpt) && n->getNode()->className() != std::string("Viewer")){
             if(!n->isThisPanelEnabled()){
                 /*building settings panel*/
                 n->setSettingsPanelEnabled(true);
@@ -522,6 +523,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
 void NodeGraph::deleteSelectedNode(){
     
     _undoStack->push(new RemoveCommand(this,_nodeSelected));
+    _nodeSelected = 0;
     
 }
 
@@ -685,6 +687,9 @@ _node(node),_graph(graph),_undoWasCalled(false){
 void AddCommand::undo(){
     _undoWasCalled = true;
     _graph->scene()->removeItem(_node);
+    _node->setActive(false);
+    
+    
     _parents = _node->getParents();
     _children = _node->getChildren();
     foreach(NodeGui* p,_parents){
@@ -729,7 +734,7 @@ void AddCommand::undo(){
 void AddCommand::redo(){
     if(_undoWasCalled){
         _graph->scene()->addItem(_node);
-        
+        _node->setActive(true);
         
         foreach(NodeGui* child,_children){
             _node->addChild(child);
@@ -777,7 +782,7 @@ _node(node),_graph(graph){
 }
 void RemoveCommand::undo(){
     _graph->scene()->addItem(_node);
-    
+    _node->setActive(true);
     foreach(NodeGui* child,_children){
         _node->addChild(child);
         _node->getNode()->addChild(child->getNode());
@@ -818,6 +823,7 @@ void RemoveCommand::undo(){
 }
 void RemoveCommand::redo(){
     _graph->scene()->removeItem(_node);
+    _node->setActive(false);
     _parents = _node->getParents();
     _children = _node->getChildren();
     foreach(NodeGui* p,_parents){

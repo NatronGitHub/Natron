@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -27,6 +27,8 @@
 #include <QKeyEvent>
 #include <QColorDialog>
 #include <QGroupBox>
+#include <QStyleFactory>
+
 
 #include "Gui/knob_callback.h"
 #include "Core/node.h"
@@ -281,6 +283,17 @@ void KnobFactory::loadBultinKnobs(){
 #endif
     _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
     delete tabKnob;
+    
+    Knob* strKnob = String_Knob::BuildKnob(NULL,stub,0);
+#ifdef __POWITER_WIN32__
+    PluginID *STRKnobPlugin = new PluginID((HINSTANCE)&String_Knob::BuildKnob,strKnob->name().c_str());
+#else
+    PluginID *STRKnobPlugin = new PluginID((void*)&String_Knob::BuildKnob,strKnob->name().c_str());
+#endif
+    _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
+    delete strKnob;
+    
+
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -520,16 +533,16 @@ Knob* File_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Kn
 }
 void File_Knob::open_file(){
     str->clear();
-
-
+    
+    
     QStringList strlist;
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
     
     SequenceFileDialog dialog(this,filters,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
-         strlist = dialog.selectedFiles();
+        strlist = dialog.selectedFiles();
     }
-
+    
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
         _name->setText(strlist.at(0));
@@ -542,6 +555,7 @@ void File_Knob::open_file(){
             static_cast<Reader*>(node)->showFilePreview();
             validateEvent(true);
         }
+        emit filesSelected();
     }
     
 }
@@ -578,6 +592,9 @@ void File_Knob::setValues(){
     // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache
     // explanation: The algorithm doing the look-up in the cache already takes care of the current frame name.
     // go at VideoEngine::videoEngine(...) at line starting with  key = FrameEntry::computeHashKey to understand the call.
+}
+void File_Knob::setLineEditText(const std::string& str){
+    _name->setText(str.c_str());
 }
 
 Knob* Bool_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
@@ -808,7 +825,7 @@ OutputFile_Knob::OutputFile_Knob(Knob_Callback *cb, const std::string& descripti
 
 void OutputFile_Knob::setValues(){
     values.clear();
-
+    
 }
 
 void OutputFile_Knob::open_file(){
@@ -816,14 +833,14 @@ void OutputFile_Knob::open_file(){
     
     
     
-        QString outFile=QFileDialog::getSaveFileName(this,QString("Save File")
-                                                          ,QString(ROOT)
-                                                          ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-//    QStringList strlist;
-//    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-//    if(dialog.exec()){
-//        strlist = dialog.selectedFiles();
-//    }
+    QString outFile=QFileDialog::getSaveFileName(this,QString("Save File")
+                                                 ,QString(ROOT)
+                                                 ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+    //    QStringList strlist;
+    //    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
+    //    if(dialog.exec()){
+    //        strlist = dialog.selectedFiles();
+    //    }
     
     if(!outFile.isEmpty()){
         _name->setText(outFile);
@@ -854,7 +871,7 @@ Knob* ComboBox_Knob::BuildKnob(Knob_Callback* cb, const std::string& description
     if(cb)
         cb->addKnob(knob);
     return knob;
-
+    
 }
 ComboBox_Knob::ComboBox_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_currentItem(0){
     Q_UNUSED(flags);
@@ -1103,7 +1120,7 @@ void RGBA_Knob::setPointers(double *r,double *g,double *b,double *a){
     else
         color.setAlphaF(1.0);
     updateLabel(color);
-
+    
 }
 void RGBA_Knob::setRGBA(double r,double g,double b,double a){
     QColor color;
@@ -1161,3 +1178,35 @@ void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
         it->second.second.push_back(k);
     }
 }
+
+/*********************/
+Knob* String_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
+    String_Knob* knob=new String_Knob(cb,description,flags);
+    if(cb)
+        cb->addKnob(knob);
+    return knob;
+}
+String_Knob::String_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
+    QLabel* name = new QLabel(description.c_str(),this);
+    layout->addWidget(name);
+    _lineEdit = new LineEdit(this);
+    layout->addWidget(_lineEdit);
+    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SIGNAL(stringChanged(QString)));
+    if(flags == READ_ONLY){
+        _lineEdit->setReadOnly(true);
+    }
+}
+
+void String_Knob::setValues(){
+    values.clear();
+    QString str(_string->c_str());
+    for (int i = 0; i < str.size(); i++) {
+        values.push_back(str.at(i).unicode());
+    }
+}
+void String_Knob::setString(QString str){
+    _lineEdit->setText(str);
+    setValues();
+}
+
+

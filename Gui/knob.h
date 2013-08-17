@@ -49,6 +49,7 @@
 
 class TabWidget;
 class QHBoxLayout;
+class QLabel;
 class QVBoxLayout;
 class QCheckBox;
 class QGroupBox;
@@ -168,10 +169,17 @@ public:
 			
 			this->str->append(el);
 		}
+        emit filesSelected();
 	}
+    
+    void setLineEditText(const std::string& str);
+    
     QStringList* getStr(){return str;}
     public slots:
     void open_file();
+    
+signals:
+    void filesSelected();
     
 private:
     void updateLastOpened(QString str);
@@ -550,4 +558,31 @@ private:
     TabWidget* _tabWidget;
     KnobsTabMap _knobs;
 };
+/*****************************/
+class String_Knob : public Knob{
+    Q_OBJECT
+public:
+    
+    static Knob* BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags);
+    String_Knob(Knob_Callback *cb, const std::string& description, Knob_Mask flags=0);
+	virtual void setValues();
+    
+    virtual std::string name(){return "String";}
+    void setPointer(std::string* val){_string = val;}
+    virtual ~String_Knob(){}
+    
+    public slots:
+    void setString(QString);
+signals:
+    void stringChanged(QString);
+private:
+    std::string *_string;
+	LineEdit* _lineEdit;
+};
+
+
+
+/*****************************/
+
+
 #endif // KNOB_H

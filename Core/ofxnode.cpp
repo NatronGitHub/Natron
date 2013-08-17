@@ -227,9 +227,9 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeDouble){
-       OfxDoubleInstance*  ret = new OfxDoubleInstance(this,name,descriptor);
+        OfxDoubleInstance*  ret = new OfxDoubleInstance(this,name,descriptor);
         if(ret){
             string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
             map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
@@ -242,7 +242,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeBoolean){
         OfxBooleanInstance* ret = new OfxBooleanInstance(this,name,descriptor);
         if(ret){
@@ -257,7 +257,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeChoice){
         OfxChoiceInstance* ret = new OfxChoiceInstance(this,name,descriptor);
         if(ret){
@@ -272,37 +272,37 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeRGBA){
         OfxRGBAInstance* ret = new OfxRGBAInstance(this,name,descriptor);
-//        if(ret){
-//            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-//            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
-//            if(it != _params.end()){
-//                if(it->second->getType() == kOfxParamTypeGroup){
-//                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-//                    group->addKnob(ret->getKnob());
-//                }
-//            }
-//            _params.insert(make_pair(oldName,ret));
-//        }
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeRGB){
         OfxRGBInstance* ret = new OfxRGBInstance(this,name,descriptor);
-//        if(ret){
-//            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-//            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
-//            if(it != _params.end()){
-//                if(it->second->getType() == kOfxParamTypeGroup){
-//                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
-//                    group->addKnob(ret->getKnob());
-//                }
-//            }
-//            _params.insert(make_pair(oldName,ret));
-//        }
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeDouble2D){
         OfxDouble2DInstance* ret = new OfxDouble2DInstance(this,name,descriptor);
         if(ret){
@@ -317,7 +317,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeInteger2D){
         OfxInteger2DInstance* ret = new OfxInteger2DInstance(this,name,descriptor);
         if(ret){
@@ -332,7 +332,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypePushButton){
         OfxPushButtonInstance* ret = new OfxPushButtonInstance(this,name,descriptor);
         if(ret){
@@ -347,7 +347,7 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypeGroup){
         OfxGroupInstance* ret = new OfxGroupInstance(this,name,descriptor);
         if(ret){
@@ -362,12 +362,25 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
             _params.insert(make_pair(oldName,ret));
         }
         return ret;
-
+        
     }else if(descriptor.getType()==kOfxParamTypePage){
         OFX::Host::Param::PageInstance* ret = new OFX::Host::Param::PageInstance(descriptor,this);
         return ret;
+    }else if(descriptor.getType()==kOfxParamTypeString){
+        OfxStringInstance* ret = new OfxStringInstance(this,name,descriptor);if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
     }else{
-         return 0;
+        return 0;
     }
 }
 

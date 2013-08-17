@@ -16,10 +16,25 @@ border: 0px solid black;
 /* QToolBar::handle {
      image: url(handle.png);
  }TODO*/
+QGroupBox{
+ border: 1px solid black;
+ border-radius : 4px;
+ margin-top : 1px;
+}
+QGroupBox::title {
+     subcontrol-origin: margin;
+     subcontrol-position: top left; /* position at the top center */
+     padding: 0 3px;
+
+}
 QGroupBox::indicator:unchecked {
+width :10px;
+height: 10px;
 image: url(:/Resources/Images/groupbox_folded.png);
 }
 QGroupBox::indicator:checked {
+width :10px;
+height: 10px;
 image: url(:/Resources/Images/groupbox_unfolded.png);
 }
  QScrollBar:vertical {

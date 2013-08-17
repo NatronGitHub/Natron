@@ -743,3 +743,143 @@ Knob* OfxGroupInstance::getKnob() const{
         return _effect->getTabKnob();
     }
 }
+
+OfxStringInstance::OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::StringInstance(descriptor,effect),_effect(effect),_descriptor(descriptor),_paramName(name),
+_fileKnob(0),_outputFileKnob(0){
+    Knob_Callback* cb = _effect->getKnobCallBack();
+    std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
+    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    if(layoutHint == 1){
+        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+    }
+    if(mode == kOfxParamStringIsFilePath){
+        _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, Knob::NONE));
+        _fileKnob->setPointer(&_filesList);
+        QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+        QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+        if(previousKnobLayout){
+            _fileKnob->changeLayout(previousKnobLayout);
+            _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        }
+        if(layoutHint == 2){
+            _effect->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
+        }
+        int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+        _fileKnob->setLayoutMargin(paramSpacing);
+    }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
+        Knob::Knob_Flags flags = Knob::NONE;
+        if(mode == kOfxParamStringIsLabel){
+            flags = Knob::READ_ONLY;
+        }
+        _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", cb, name, flags));
+         QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
+        _stringKnob->setPointer(&_string);
+        QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+        if(previousKnobLayout){
+            _stringKnob->changeLayout(previousKnobLayout);
+            _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        }
+        if(layoutHint == 2){
+            _effect->setLastKnobLayoutWithNoNewLine(_stringKnob->getHorizontalLayout());
+        }
+        int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+        _stringKnob->setLayoutMargin(paramSpacing);
+    }
+    
+}
+OfxStatus OfxStringInstance::get(std::string &str) {
+    if(_fileKnob){
+        if(_filesList.size() > 0)
+            str = _filesList.front().toStdString();
+        else
+            str = "";
+    }else{
+        str = _string;
+    }
+    return kOfxStatOK;
+}
+OfxStatus OfxStringInstance::get(OfxTime time, std::string &str) {
+    if(_fileKnob){
+        if(_filesList.size() > 0)
+            str = _filesList.front().toStdString();
+        else
+            str = "";
+    }else{
+        str = _string;
+    }
+    return kOfxStatOK;
+}
+OfxStatus OfxStringInstance::set(const char* str) {
+    _string = str;
+    if(_fileKnob){
+        _fileKnob->setLineEditText(_string);
+    }
+    if(_outputFileKnob){
+
+    }
+    if(_stringKnob){
+        _stringKnob->setString(str);
+    }
+    return kOfxStatOK;
+}
+OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
+    _string = str;
+    if(_fileKnob){
+        _fileKnob->setLineEditText(_string);
+    }
+    if(_outputFileKnob){
+        
+    }
+    if(_stringKnob){
+        _stringKnob->setString(str);
+    }
+    return kOfxStatOK;
+}
+
+Knob* OfxStringInstance::getKnob() const{
+    
+    if(_fileKnob){
+        return _fileKnob;
+    }
+    if(_outputFileKnob){
+        return _outputFileKnob;
+    }
+    if(_stringKnob){
+        return _stringKnob;
+    }
+    return NULL;
+}
+// callback which should set enabled state as appropriate
+void OfxStringInstance::setEnabled(){
+    if(_fileKnob){
+        _fileKnob->setEnabled(getEnabled());
+    }
+    if (_outputFileKnob) {
+        _outputFileKnob->setEnabled(getEnabled());
+    }
+    if (_stringKnob) {
+        _stringKnob->setEnabled(getEnabled());
+    }
+}
+
+// callback which should set secret state as appropriate
+void OfxStringInstance::setSecret(){
+    if(_fileKnob){
+        _fileKnob->setVisible(!getSecret());
+    }
+    if (_outputFileKnob) {
+        _outputFileKnob->setVisible(getSecret());
+    }
+    if (_stringKnob) {
+        _stringKnob->setVisible(getSecret());
+    }
+
+}
+void OfxStringInstance::onInstanceChanged(){
+    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    OfxPointD renderScale;
+    renderScale.x = renderScale.y = 1.0;
+    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+}

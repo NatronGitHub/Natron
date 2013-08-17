@@ -98,6 +98,8 @@ public:
     bool areAllNodesVisible();
     
     void updateNavigator();
+    
+    QGraphicsItem* getRootItem() const {return _root;}
 protected:
 
     void mousePressEvent(QMouseEvent *event);
