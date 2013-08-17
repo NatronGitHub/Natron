@@ -136,13 +136,16 @@ public:
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addViewerTab(Viewer* node,TabWidget* where);
+    ViewerTab* addNewViewerTab(Viewer* node,TabWidget* where);
+    
+    void addViewerTab(ViewerTab* tab,TabWidget* where);
     
     /*Called internally by the viewer node when
      it gets deleted. This removes the 
      associated GUI. It may also be called from the TabWidget
-     that wants to close.*/
-    void removeViewerTab(ViewerTab* tab,bool initiatedFromNode);
+     that wants to close. The deleteData flag tells whether we actually want
+     to destroy the tab/node or just hide them.*/
+    void removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData = true);
     
     void setNewViewerAnchor(TabWidget* where){_nextViewerTabPlace = where;}
     
@@ -173,7 +176,7 @@ public:
                              const std::string& pluginName,
                              const std::string& pluginIconPath,
                              const std::string& groupIconPath);
-    
+    void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
 private:
 
@@ -192,8 +195,6 @@ public:
     QAction *actionSave_project;
     QAction *actionPreferences;
     QAction *actionExit;
-    QAction *actionUndo;
-    QAction *actionRedo;
     QAction *actionProject_settings;
 	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;

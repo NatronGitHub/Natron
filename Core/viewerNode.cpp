@@ -45,7 +45,7 @@ _pboIndex(0)
 }
 
 void Viewer::initializeViewerTab(TabWidget* where){
-   _uiContext = ctrlPTR->getGui()->addViewerTab(this,where);
+   _uiContext = ctrlPTR->getGui()->addNewViewerTab(this,where);
 }
 
 Viewer::~Viewer(){

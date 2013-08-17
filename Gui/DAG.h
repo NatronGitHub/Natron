@@ -25,6 +25,7 @@
 #include <QtGui/QKeyEvent>
 #include <QInputDialog>
 #include <QLabel>
+#include <QUndoCommand>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
@@ -39,6 +40,7 @@ class Edge;
 class SmartInputDialog;
 class QGraphicsProxyWidget;
 class SettingsPanel;
+class QUndoStack;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
@@ -119,6 +121,7 @@ private:
     bool smartNodeCreationEnabled;
     QPointF old_pos;
     QPointF oldp;
+    QPointF _lastNodeDragStartPoint;
     QPointF oldZoom;
     EVENT_STATE _evtState;
     NodeGui* _nodeSelected;
@@ -131,7 +134,68 @@ private:
     
     NodeGraphNavigator* _navigator;
     QGraphicsProxyWidget* _navigatorProxy;
+    
+    QUndoStack* _undoStack;
+    
+    QAction* _undoAction,*_redoAction;
+    
 };
 
+
+class MoveCommand : public QUndoCommand{
+public:
+    MoveCommand(NodeGui *node, const QPointF &oldPos,
+                QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    virtual bool mergeWith(const QUndoCommand *command);
+    
+private:
+    NodeGui* _node;
+    QPointF _oldPos;
+    QPointF _newPos;
+};
+
+
+class AddCommand : public QUndoCommand{
+public:
+
+    AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
+    std::vector<NodeGui*> _parents;
+    NodeGui* _node;
+    NodeGraph* _graph;
+    bool _undoWasCalled;
+};
+
+class RemoveCommand : public QUndoCommand{
+public:
+    
+    RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent = 0);
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
+    std::vector<NodeGui*> _parents;
+    NodeGui* _node;
+    NodeGraph* _graph;
+};
+
+class ConnectCommand : public QUndoCommand{
+public:
+    ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent = 0);
+    
+    virtual void undo();
+    virtual void redo();
+private:
+    Edge* _edge;
+    NodeGui *_oldSrc,*_newSrc;
+    NodeGraph* _graph;
+};
 
 #endif // NODEGRAPH_H

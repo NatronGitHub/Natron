@@ -47,8 +47,6 @@ actionOpen_project(0),
 actionSave_project(0),
 actionPreferences(0),
 actionExit(0),
-actionUndo(0),
-actionRedo(0),
 actionProject_settings(0),
 actionSplitViewersTab(0),
 actionClearDiskCache(0),
@@ -137,8 +135,6 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionSave_project->setText(QApplication::translate("Powiter", "Save project"));
 	actionPreferences->setText(QApplication::translate("Powiter", "Preferences"));
 	actionExit->setText(QApplication::translate("Powiter", "Exit"));
-	actionUndo->setText(QApplication::translate("Powiter", "Undo"));
-	actionRedo->setText(QApplication::translate("Powiter", "Redo"));
 	actionProject_settings->setText(QApplication::translate("Powiter", "Project settings"));
 	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle multi-view area"));
 	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
@@ -166,6 +162,19 @@ void Gui::setupUi()
 	setDockNestingEnabled(false);
     
     loadStyleSheet();
+    
+    /*TOOL BAR menus*/
+	//======================
+	menubar = new QMenuBar(this);
+	menubar->setGeometry(QRect(0, 0, 1159, 21));
+	menuFile = new QMenu(menubar);
+	menuEdit = new QMenu(menubar);
+	menuDisplay = new QMenu(menubar);
+	menuOptions = new QMenu(menubar);
+	viewersMenu= new QMenu(menuDisplay);
+	cacheMenu= new QMenu(menubar);
+    
+	setMenuBar(menubar);
 	
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
@@ -177,10 +186,6 @@ void Gui::setupUi()
 	actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
 	actionExit = new QAction(this);
 	actionExit->setObjectName(QString::fromUtf8("actionExit"));
-	actionUndo = new QAction(this);
-	actionUndo->setObjectName(QString::fromUtf8("actionUndo"));
-	actionRedo = new QAction(this);
-	actionRedo->setObjectName(QString::fromUtf8("actionRedo"));
 	actionProject_settings = new QAction(this);
 	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
 	actionSplitViewersTab=new QAction(this);
@@ -284,20 +289,7 @@ void Gui::setupUi()
     
     
 
-    
-    
-	/*TOOL BAR menus*/
-	//======================
-	menubar = new QMenuBar(this);
-	menubar->setGeometry(QRect(0, 0, 1159, 21));
-	menuFile = new QMenu(menubar);
-	menuEdit = new QMenu(menubar);
-	menuDisplay = new QMenu(menubar);
-	menuOptions = new QMenu(menubar);
-	viewersMenu= new QMenu(menuDisplay);
-	cacheMenu= new QMenu(menubar);
-    
-	setMenuBar(menubar);
+
     
 	
     
@@ -313,8 +305,7 @@ void Gui::setupUi()
 	menuFile->addAction(actionPreferences);
 	menuFile->addSeparator();
 	menuFile->addAction(actionExit);
-	menuEdit->addAction(actionUndo);
-	menuEdit->addAction(actionRedo);
+	
 	menuOptions->addAction(actionProject_settings);
 	menuDisplay->addAction(viewersMenu->menuAction());
 	viewersMenu->addAction(actionSplitViewersTab);
@@ -367,14 +358,27 @@ void Gui::exitFullScreen(){
 }
 
 
-ViewerTab* Gui::addViewerTab(Viewer* node,TabWidget* where){
+ViewerTab* Gui::addNewViewerTab(Viewer* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
     _viewerTabs.push_back(tab);
     where->appendTab(node->getName().c_str(),tab);
     return tab;
 }
+void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
+    bool found = false;
+    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+        if (_viewerTabs[i] == tab) {
+            found = true;
+            break;
+        }
+    }
+    if(!found)
+        _viewerTabs.push_back(tab);
+    where->appendTab(tab->getInternalNode()->getName().c_str(), tab);
+    
+}
 
-void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode){
+void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
     for (U32 i = 0; i < _viewerTabs.size(); i++) {
         if (_viewerTabs[i] == tab) {
             _viewerTabs.erase(_viewerTabs.begin()+i);
@@ -382,14 +386,19 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode){
         }
     }
     
-    if (!initiatedFromNode) {
-        _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
-        ctrlPTR->getModel()->removeNode(tab->getInternalNode());
+    if(deleteData){
+        if (!initiatedFromNode) {
+            _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
+            ctrlPTR->getModel()->removeNode(tab->getInternalNode());
+        }else{
+            
+            TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
+            container->removeTab(tab);
+            delete tab;
+        }
     }else{
-        
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
         container->removeTab(tab);
-        delete tab;
     }
     
 }
@@ -699,4 +708,8 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
 }
 void ActionRef::onTriggered(){
     ctrlPTR->createNode(_nodeName.c_str());
+}
+void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
+    menuEdit->addAction(undoAction);
+	menuEdit->addAction(redoAction);
 }

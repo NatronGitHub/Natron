@@ -38,12 +38,12 @@ public:
     bool contains(const QPointF &point) const;
     void setSource(NodeGui* src){
         this->source=src;
-        has_source=true;
+        src ? has_source=true : has_source=false;
 
     }
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,
                QWidget *parent = 0);
-    void removeSource(){has_source=false; initLine();}
+    void removeSource(){has_source=false; source = NULL; initLine();}
     NodeGui* getDest(){return dest;}
     NodeGui* getSource(){return source;}
     bool hasSource(){return has_source;}

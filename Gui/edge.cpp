@@ -30,6 +30,7 @@ const int graphicalContainerOffset=5; //number of offset pixels from the arrow t
 
 Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
+    source = NULL;
     this->scene=scene;
     this->inputNb=inputNb;
     this->angle=angle;
