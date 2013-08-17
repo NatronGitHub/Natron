@@ -251,7 +251,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     
     /*Now update navigator*/
     //  autoResizeScene();
-    updateNavigator();
+    //  updateNavigator();
 }
 
 
@@ -375,7 +375,7 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
     scaleView(pow((double)2, event->delta() / 240.0), mapToScene(event->pos()));
-    updateNavigator();
+    //   updateNavigator();
 }
 
 
