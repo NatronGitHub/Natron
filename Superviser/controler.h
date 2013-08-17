@@ -76,7 +76,7 @@ public:
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/
-    QStringList& getNodeNameList();
+    const QStringList& getNodeNameList();
     
     /*Pointer to the GUI*/
     Gui* getGui(){return _gui;}
@@ -105,6 +105,7 @@ public:
     
 private:
 	 
+    void addBuiltinPluginToolButtons();
     
     Model* _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern

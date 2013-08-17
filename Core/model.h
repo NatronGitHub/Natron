@@ -122,7 +122,7 @@ public:
     void removeNode(Node* n);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
-    QStringList& getNodeNameList(){return _nodeNames;}
+    const QStringList& getNodeNameList(){return _nodeNames;}
 
     
 	/*output to the console the name of the loaded plugins*/

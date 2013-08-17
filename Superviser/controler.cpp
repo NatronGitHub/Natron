@@ -33,6 +33,8 @@ void Controler::initControler(Model *model,QLabel* loadingScreen){
     _gui=new Gui();
 
     _gui->createGui();
+    
+    addBuiltinPluginToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); i++) {
         string name = _toolButtons[i]->_pluginName;
         name.append("  [");
@@ -68,8 +70,15 @@ Controler::~Controler(){
     delete _model;
 }
 
+void Controler::addBuiltinPluginToolButtons(){
+    vector<string> grouping;
+    grouping.push_back("io");
+    _gui->addPluginToolButton("Reader", grouping, "Reader", "", IMAGES_PATH"ioGroupingIcon.png");
+    _gui->addPluginToolButton("Viewer", grouping, "Viewer", "", IMAGES_PATH"ioGroupingIcon.png");
+    _gui->addPluginToolButton("Writer", grouping, "Writer", "", IMAGES_PATH"ioGroupingIcon.png");
+}
 
-QStringList& Controler::getNodeNameList(){
+const QStringList& Controler::getNodeNameList(){
     return _model->getNodeNameList();
 }
 

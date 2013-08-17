@@ -613,6 +613,7 @@ void Gui::addPluginToolButton(const std::string& actionName,
                               const std::string& pluginName,
                               const std::string& pluginIconPath,
                               const std::string& groupIconPath){
+    
     QIcon pluginIcon,groupIcon;
     if(!pluginIconPath.empty() && QFile::exists(pluginIconPath.c_str())){
         pluginIcon.addFile(pluginIconPath.c_str());
@@ -620,7 +621,6 @@ void Gui::addPluginToolButton(const std::string& actionName,
     if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
         groupIcon.addFile(groupIconPath.c_str());
     }
-    
     std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(groups[0]);
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);
@@ -644,9 +644,9 @@ ToolButton::ToolButton(const std::string& actionName,
     setMenu(_menu);
     setMaximumSize(35,35);
     
-    QMenu* _lastMenu = 0;
-    for (U32 i = 0; i < firstElement.size(); i++) {
-        _lastMenu = _menu->addMenu(firstElement[i].c_str());
+    QMenu* _lastMenu = _menu;
+    for (U32 i = 1; i < firstElement.size(); i++) {
+        _lastMenu = _lastMenu->addMenu(firstElement[i].c_str());
         _subMenus.push_back(_lastMenu);
     }
     QAction* action = 0;
@@ -667,8 +667,8 @@ ToolButton::~ToolButton(){
 
 void ToolButton::addTool(const std::string& actionName,const std::vector<std::string>& grouping,const std::string& pluginName,QIcon pluginIcon){
     std::vector<std::string> subMenuToAdd;
-    int index = 0;
-    QMenu* _lastMenu = 0;
+    int index = 1;
+    QMenu* _lastMenu = _menu;
     while(index < (int)grouping.size()){
         bool found = false;
         for (U32 i =  0; i < _subMenus.size(); i++) {
