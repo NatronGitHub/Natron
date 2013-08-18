@@ -511,8 +511,8 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
     if(e->key()==Qt::Key_Return){
         QString str=this->text();
 		QStringList strlist(str);
-		if(strlist!=*(knob->getStr())){
-			knob->setStr(strlist);
+		if(strlist!=*(knob->getFileNames())){
+			knob->setFileNames(strlist);
 			knob->setValues();
             std::string className=knob->getCallBack()->getNode()->className();
 			if(className == std::string("Reader")){
@@ -532,7 +532,7 @@ Knob* File_Knob::BuildKnob(Knob_Callback *cb, const std::string &description, Kn
     return knob;
 }
 void File_Knob::open_file(){
-    str->clear();
+    filesList->clear();
     
     
     QStringList strlist;
@@ -545,16 +545,16 @@ void File_Knob::open_file(){
     
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
-        _name->setText(strlist.at(0));
-        setStr(strlist);
+        _name->setText(dialog.getSequencePattern());
+        setFileNames(strlist);
         setValues();
         std::string className=getCallBack()->getNode()->className();
         if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
             ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
             static_cast<Reader*>(node)->showFilePreview();
-            validateEvent(true);
         }
+        validateEvent(true);
         emit filesSelected();
     }
     
@@ -567,7 +567,7 @@ void File_Knob::updateLastOpened(QString str){
     _lastOpened = str.left(index);
 }
 
-File_Knob::File_Knob(Knob_Callback *cb, const std::string &description, Knob_Mask ):Knob(cb),str(0),_lastOpened("")
+File_Knob::File_Knob(Knob_Callback *cb, const std::string &description, Knob_Mask ):Knob(cb),filesList(0),_lastOpened("")
 {
     
     QLabel* desc=new QLabel(description.c_str());
@@ -587,6 +587,16 @@ File_Knob::File_Knob(Knob_Callback *cb, const std::string &description, Knob_Mas
     //flags handling: no Knob_Flags makes sense (yet) for the File_Knob. We keep it in parameters in case in the future there're some changes to be made.
     
 }
+void File_Knob::setFileNames(const QStringList& str){
+    for(int i =0;i< str.size();i++){
+        
+        QString el = str[i];
+        
+        this->filesList->append(el);
+    }
+    emit filesSelected();
+}
+
 void File_Knob::setValues(){
     values.clear();
     // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache
@@ -596,7 +606,9 @@ void File_Knob::setValues(){
 void File_Knob::setLineEditText(const std::string& str){
     _name->setText(str.c_str());
 }
-
+std::string File_Knob::getLineEditText() const{
+    return _name->text().toStdString();
+}
 Knob* Bool_Knob::BuildKnob(Knob_Callback* cb, const std::string& description, Knob_Mask flags){
 	Bool_Knob* knob=new Bool_Knob(cb,description,flags);
     if(cb)

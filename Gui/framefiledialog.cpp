@@ -1146,6 +1146,27 @@ QStringList SequenceFileDialog::selectedFiles(){
     }
     return out;
 }
+QString SequenceFileDialog::getSequencePattern(){
+    QStringList selected = selectedFiles();
+    /*get the extension of the first selected file*/
+    if(selected.size() > 0){
+        QString firstInSequence = selected.at(0);
+        QString ext = removeFileExtension(firstInSequence);
+        ext.prepend(".");
+        
+        QString lineEditText = _selectionLineEdit->text();
+        int extPos = lineEditText.lastIndexOf(ext);
+        if(extPos!=-1){
+            int rightMostChar = extPos+ext.size();
+            return lineEditText.left(rightMostChar);
+        }else{
+            return "";
+        }
+        
+    }else{
+        return "";
+    }
+}
 QString SequenceFileDialog::filesToSave(){
 //    QStringList selected = selectedFiles();
 //    if (selected.size() > 0) {

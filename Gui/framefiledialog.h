@@ -400,6 +400,10 @@ public:
     
     QStringList selectedFiles();
     
+    /*Returns the pattern of the sequence, e.g:
+     mySequence#.jpg*/
+    QString getSequencePattern();
+    
     QString filesToSave();
     
     QDir currentDirectory() const;

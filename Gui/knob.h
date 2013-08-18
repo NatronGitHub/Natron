@@ -161,20 +161,16 @@ public:
     virtual void setValues();
     virtual std::string name(){return "InputFile";}
     
-    void setPointer(QStringList* list){str = list;}
-    void setStr(QStringList& str){
-		for(int i =0;i< str.size();i++){
-            
-            QString el = str[i];
-			
-			this->str->append(el);
-		}
-        emit filesSelected();
-	}
+    void setPointer(QStringList* list){filesList = list;}
+    
+    void setFileNames(const QStringList& str);
     
     void setLineEditText(const std::string& str);
     
-    QStringList* getStr(){return str;}
+    std::string getLineEditText() const;
+    
+    QStringList* getFileNames(){return filesList;}
+    
     public slots:
     void open_file();
     
@@ -183,7 +179,7 @@ signals:
     
 private:
     void updateLastOpened(QString str);
-    QStringList* str;
+    QStringList* filesList;
     FileQLineEdit* _name;
     QString _lastOpened;
 };

@@ -319,10 +319,10 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     OfxNode* _effect;
     OFX::Host::Param::Descriptor& _descriptor;
     std::string _paramName;
-    std::string _string;
-    
-    
+        
     QStringList _filesList;
+    std::map<int,QString> _files;
+    
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
@@ -348,6 +348,12 @@ public:
     
     public slots:
     void onInstanceChanged();
+    
+private:
+    void getVideoSequenceFromFilesList();
+    int firstFrame();
+    int lastFrame();
+    int clampToRange(int f);
 };
 
 

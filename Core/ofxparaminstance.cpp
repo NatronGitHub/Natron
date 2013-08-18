@@ -24,15 +24,15 @@ using namespace std;
 
 
 OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* effect,
-                                           const std::string& name,
-                                           OFX::Host::Param::Descriptor& descriptor)
+                                             const std::string& name,
+                                             OFX::Host::Param::Descriptor& descriptor)
 :  OFX::Host::Param::PushbuttonInstance(descriptor,effect),_effect(effect), _descriptor(descriptor)
 {
-    Knob_Callback* cb = _effect->getKnobCallBack();   
+    Knob_Callback* cb = _effect->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
-    }        
+    }
     _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, Knob::NONE));
     QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
@@ -85,7 +85,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode* effect, const std::string& name,
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     QObject::connect(_knob, SIGNAL(valueChanged(int)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
@@ -151,7 +151,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode* effect, const std::string& name, O
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     QObject::connect(_knob, SIGNAL(valueChanged(double)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
@@ -162,7 +162,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode* effect, const std::string& name, O
     _knob->setMaximum(max);
     _knob->setIncrement(incr);
     _knob->setValue(def);
-
+    
 }
 OfxStatus OfxDoubleInstance::get(double& v){
     v = _value;
@@ -202,7 +202,7 @@ void OfxDoubleInstance::setEnabled(){
 
 // callback which should set secret state as appropriate
 void OfxDoubleInstance::setSecret(){
-   _knob->setVisible(!getSecret());
+    _knob->setVisible(!getSecret());
 }
 Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
@@ -226,12 +226,12 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name,
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
     _knob->setChecked(def);
-
+    
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
     b = _value;
@@ -290,7 +290,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, 
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     QObject::connect(_knob, SIGNAL(entryChanged(int)), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; i++) {
@@ -382,7 +382,7 @@ _paramName(name){
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     _knob->setPointers(&_r, &_g,&_b,&_a);
     
     QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
@@ -400,14 +400,14 @@ OfxStatus OfxRGBAInstance::get(double& r,double& g,double& b,double& a){
 	g = _g;
 	b = _b;
 	a = _a;
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::get(OfxTime time, double&r ,double& g,double& b,double& a){
     r = _r;
 	g = _g;
 	b = _b;
 	a = _a;
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
     _r = r;
@@ -415,7 +415,7 @@ OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
 	_b = b;
 	_a = a;
     _knob->setRGBA(r, g, b, a);
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
 	_r = r;
@@ -423,7 +423,7 @@ OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double 
 	_b = b;
 	_a = a;
     _knob->setRGBA(r, g, b, a);
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 
 void OfxRGBAInstance::onInstanceChanged(){
@@ -478,33 +478,33 @@ OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::H
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
     
     _knob->setRGBA(defR, defG, defB, 1.f);
-
+    
 }
 OfxStatus OfxRGBInstance::get(double& r,double& g,double& b){
 	r = _r;
 	g = _g;
 	b = _b;
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::get(OfxTime time, double& r,double& g,double& b){
 	r = _r;
 	g = _g;
 	b = _b;
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(double r,double g,double b){
 	_r = r;
 	_g = g;
 	_b = b;
     _knob->setRGBA(r, g, b, 1.);
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
 	_r = r;
 	_g = g;
 	_b = b;
     _knob->setRGBA(r, g, b, 1.);
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 
 void OfxRGBInstance::onInstanceChanged(){
@@ -546,7 +546,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& nam
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     _knob->setPointers(&_x1, &_x2);
     
     QObject::connect(_knob, SIGNAL(value1Changed(double)), this, SLOT(onInstanceChanged()));
@@ -571,12 +571,12 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& nam
     _knob->setMaximum2(max2);
     _knob->setIncrement2(incr2);
     _knob->setValue2(def2);
-
+    
 }
 OfxStatus OfxDouble2DInstance::get(double& x1,double& x2){
     x1 = _x1;
 	x2 = _x2;
-	 return kOfxStatOK;
+    return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::get(OfxTime time,double& x1,double& x2){
 	x1 = _x1;
@@ -636,7 +636,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& 
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
-
+    
     _knob->setPointers(&_x1, &_x2);
     
     QObject::connect(_knob, SIGNAL(value1Changed(int)), this, SLOT(onInstanceChanged()));
@@ -773,8 +773,8 @@ _fileKnob(0),_outputFileKnob(0){
             flags = Knob::READ_ONLY;
         }
         _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", cb, name, flags));
-         QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
-        _stringKnob->setPointer(&_string);
+        QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
+        _stringKnob->setPointer(&_returnValue);
         QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
         if(previousKnobLayout){
             _stringKnob->changeLayout(previousKnobLayout);
@@ -790,33 +790,46 @@ _fileKnob(0),_outputFileKnob(0){
 }
 OfxStatus OfxStringInstance::get(std::string &str) {
     if(_fileKnob){
-        if(_filesList.size() > 0)
-            str = _filesList.front().toStdString();
-        else
+        int currentFrame = clampToRange((int)_effect->timeLineGetTime());
+        if(currentFrame != INT_MAX && currentFrame != INT_MIN){
+            map<int,QString>::iterator it = _files.find(currentFrame);
+            if(it!=_files.end()){
+                str = it->second.toStdString();
+            }else{
+                str = "";
+            }
+        }else{
             str = "";
+        }
     }else{
-        str = _string;
+        str = _returnValue;
     }
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::get(OfxTime time, std::string &str) {
     if(_fileKnob){
-        if(_filesList.size() > 0)
-            str = _filesList.front().toStdString();
-        else
+        int currentFrame = clampToRange((int)_effect->timeLineGetTime());
+        if(currentFrame != INT_MAX && currentFrame != INT_MIN){
+            map<int,QString>::iterator it = _files.find(currentFrame);
+            if(it!=_files.end()){
+                str = it->second.toStdString();
+            }else{
+                str = "";
+            }
+        }else{
             str = "";
+        }
     }else{
-        str = _string;
-    }
-    return kOfxStatOK;
+        str = _returnValue;
+    }    return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(const char* str) {
-    _string = str;
+    _returnValue = str;
     if(_fileKnob){
-        _fileKnob->setLineEditText(_string);
+        _fileKnob->setLineEditText(_returnValue);
     }
     if(_outputFileKnob){
-
+        
     }
     if(_stringKnob){
         _stringKnob->setString(str);
@@ -824,9 +837,9 @@ OfxStatus OfxStringInstance::set(const char* str) {
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
-    _string = str;
+    _returnValue = str;
     if(_fileKnob){
-        _fileKnob->setLineEditText(_string);
+        _fileKnob->setLineEditText(_returnValue);
     }
     if(_outputFileKnob){
         
@@ -874,12 +887,86 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setVisible(getSecret());
     }
-
+    
 }
 void OfxStringInstance::onInstanceChanged(){
+    if(_fileKnob){
+        getVideoSequenceFromFilesList();
+        _returnValue = _fileKnob->getLineEditText();
+    }
+    
     _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
     _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+}
+
+void OfxStringInstance::getVideoSequenceFromFilesList(){
+    _files.clear();
+    bool first_time=true;
+    QString originalName;
+    foreach(QString Qfilename,_filesList)
+    {	if(Qfilename.at(0) == QChar('.')) continue;
+        QString const_qfilename=Qfilename;
+        if(first_time){
+            Qfilename=Qfilename.remove(Qfilename.length()-4,4);
+            int j=Qfilename.length()-1;
+            QString frameIndex;
+            while(j>0 && Qfilename.at(j).isDigit()){
+                frameIndex.push_front(Qfilename.at(j));
+                j--;
+            }
+            if(j>0){
+				int number=0;
+                if(_filesList.size() > 1){
+                    number = frameIndex.toInt();
+                }
+				_files.insert(make_pair(number,const_qfilename));
+                originalName=Qfilename.remove(j+1,frameIndex.length());
+                
+            }else{
+                _files[0]=const_qfilename;
+            }
+            first_time=false;
+        }else{
+            if(Qfilename.contains(originalName) /*&& (extension)*/){
+                Qfilename.remove(Qfilename.length()-4,4);
+                int j=Qfilename.length()-1;
+                QString frameIndex;
+                while(j>0 && Qfilename.at(j).isDigit()){
+                    frameIndex.push_front(Qfilename.at(j));
+                    j--;
+                }
+                if(j>0){
+                    int number = frameIndex.toInt();
+                    _files[number]=const_qfilename;
+                }else{
+                    cout << " Read handle : WARNING !! several frames read but no frame count found in their name " << endl;
+                }
+            }
+        }
+    }
+    _effect->getInfo()->firstFrame(firstFrame());
+    _effect->getInfo()->lastFrame(lastFrame());
+    
+}
+
+int OfxStringInstance::firstFrame(){
+    std::map<int,QString>::iterator it=_files.begin();
+    if(it == _files.end()) return INT_MIN;
+    return it->first;
+}
+int OfxStringInstance::lastFrame(){
+    std::map<int,QString>::iterator it=_files.end();
+    if(it == _files.begin()) return INT_MAX;
+    it--;
+    return it->first;
+}
+int OfxStringInstance::clampToRange(int f){
+    int first = firstFrame();
+    int last = lastFrame();
+    if(f < first) return first;
+    if(f > last) return last;
+    return f;
 }

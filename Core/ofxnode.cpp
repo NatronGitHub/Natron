@@ -15,6 +15,10 @@
 #include "Core/row.h"
 #include "Core/ofxclipinstance.h"
 #include "Core/model.h"
+#include "Superviser/controler.h"
+#include "Core/viewerNode.h"
+#include "Gui/timeline.h"
+#include "Gui/viewerTab.h"
 using namespace std;
 using namespace Powiter;
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -130,12 +134,12 @@ void OfxNode::_validate(bool forReal){
     if (isInputNode()) {
         OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
         
-        /*This is not working.*/
-        double first,last;
-        first = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,0);
-        last = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,1);
-        _info->firstFrame(first);
-        _info->lastFrame(last);
+//        /*This is not working.*/
+//        double first,last;
+//        first = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,0);
+//        last = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,1);
+//        _info->firstFrame(first);
+//        _info->lastFrame(last);
         
         /*if forReal is true we need to pass down the tree all the infos generated
          besides just the frame range.*/
@@ -425,17 +429,21 @@ bool  OfxNode::progressUpdate(double t)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    return 0;
+    if(currentViewer)
+        return currentViewer->getUiContext()->frameSeeker->currentFrame();
+    else
+        return -1.;
 }
 
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
+    currentViewer->getUiContext()->frameSeeker->seek_notSlot(t);
 }
 
 /// get the first and last times available on the effect's timeline
 void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
-    t1 = 1;
-    t2 = 1;
+    t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
+    t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
 }
