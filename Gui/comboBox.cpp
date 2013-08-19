@@ -192,7 +192,10 @@ void ComboBox::insertSeparator(int index){
 }
 
 QString ComboBox::itemText(int index) const{
-    return _actions[index]->text();
+    if(index < (int)_actions.size())
+        return _actions[index]->text();
+    else
+        return "";
 }
 
 void ComboBox::removeItem(const QString& item){
