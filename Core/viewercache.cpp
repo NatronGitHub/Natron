@@ -23,19 +23,19 @@
 #include <cassert>
 #include "Core/viewercache.h"
 #include "Superviser/controler.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Core/settings.h"
 #include "Gui/GLViewer.h"
-#include "Core/mappedfile.h"
+#include "Core/MemoryFile.h"
 #include "Gui/mainGui.h"
 #include "Gui/viewerTab.h"
 #include "Gui/timeline.h"
 #include <sstream>
 #include "Reader/Reader.h"
-#include "Core/hash.h"
+#include "Core/Hash.h"
 #include <QtCore/QFile>
 #include "Core/row.h"
-#include "Core/displayFormat.h"
+#include "Core/Format.h"
 #include "Core/viewerNode.h"
 using namespace std;
 using namespace Powiter;

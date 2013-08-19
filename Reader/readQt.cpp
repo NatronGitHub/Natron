@@ -22,7 +22,7 @@
 #include <QtGui/QColor>
 #include "Reader/Reader.h"
 #include "Gui/node_ui.h"
-#include "Core/lutclasses.h"
+#include "Core/Lut.h"
 #include "Core/row.h"
 using namespace std;
 using namespace Powiter;

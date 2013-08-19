@@ -23,11 +23,10 @@
 #include "Reader/exrCommons.h"
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include "Gui/node_ui.h"
 #include "Gui/GLViewer.h"
-#include "Core/lookUpTables.h"
-#include "Core/lutclasses.h"
+#include "Core/Lut.h"
 #include "Core/row.h"
 using namespace std;
 using namespace Powiter;

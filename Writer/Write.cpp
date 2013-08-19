@@ -19,7 +19,7 @@
 #include "Write.h"
 #include "Core/row.h"
 #include "Writer/Writer.h"
-#include "Core/lookUpTables.h"
+#include "Core/Lut.h"
 #include "Gui/knob.h"
 using namespace Powiter;
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects

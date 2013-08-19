@@ -28,8 +28,8 @@
 #include "Gui/timeline.h"
 #include "Core/viewercache.h"
 #include "Reader/Reader.h"
-#include "Core/mappedfile.h"
-#include "Core/model.h"
+#include "Core/MemoryFile.h"
+#include "Core/Model.h"
 #include "Core/VideoEngine.h"
 #include "Superviser/controler.h"
 

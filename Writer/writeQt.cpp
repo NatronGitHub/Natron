@@ -18,8 +18,8 @@
 
 
 #include "writeQt.h"
-#include "Core/lookUpTables.h"
-#include "Core/displayFormat.h"
+#include "Core/Lut.h"
+#include "Core/Format.h"
 #include "Writer/Writer.h"
 #include "Core/row.h"
 

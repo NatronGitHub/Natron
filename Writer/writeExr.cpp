@@ -19,7 +19,7 @@
 
 #include "Writer/writeExr.h"
 #include "Writer/Writer.h"
-#include "Core/lookUpTables.h"
+#include "Core/Lut.h"
 #include "Gui/knob.h"
 #include "Core/row.h"
 #include <QtCore/QMutexLocker>

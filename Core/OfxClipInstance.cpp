@@ -8,12 +8,12 @@
  *contact: immarespond at gmail dot com
  *
  */
-#include "ofxclipinstance.h"
+#include "OfxClipInstance.h"
 
 #include <cfloat>
-#include "Core/ofxnode.h"
+#include "Core/OfxNode.h"
 #include "Core/settings.h"
-#include "Core/imagefetcher.h"
+#include "Core/ImageFetcher.h"
 #include "Superviser/powiterFn.h"
 //#include <QtGui/QImage>
 using namespace Powiter;

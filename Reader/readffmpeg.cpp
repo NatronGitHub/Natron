@@ -24,7 +24,7 @@
 #include "Reader/readffmpeg.h"
 #include "Reader/Reader.h"
 #include "Gui/GLViewer.h"
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 #include "Gui/node_ui.h"
 #include "Core/row.h"
 using namespace std;

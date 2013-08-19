@@ -21,9 +21,9 @@
 #include <iostream>
 #include <cstdio>
 #include <map>
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 #include "Superviser/powiterFn.h"
-#include "Core/displayFormat.h"
+#include "Core/Format.h"
 
 class Row;
 class InputRow;

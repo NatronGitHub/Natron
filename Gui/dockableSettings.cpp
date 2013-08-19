@@ -22,7 +22,7 @@
 #include <QStyle>
 #include "Gui/node_ui.h"
 #include "Gui/knob_callback.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include "Gui/knob.h"
 #include "Gui/lineEdit.h"
 #include "Superviser/powiterFn.h"

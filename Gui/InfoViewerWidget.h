@@ -24,7 +24,7 @@
 #include <QLabel>
 #include <QtCore/QPoint>
 #include <QtGui/QVector4D>
-#include "Core/displayFormat.h"
+#include "Core/Format.h"
 class ViewerGL;
 class InfoViewerWidget: public QWidget{
     Q_OBJECT

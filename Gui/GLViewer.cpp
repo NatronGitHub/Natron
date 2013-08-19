@@ -28,18 +28,17 @@
 #include "Gui/tabwidget.h"
 #include "Core/VideoEngine.h"
 #include "Gui/shaders.h"
-#include "Core/lookUpTables.h"
+#include "Core/Lut.h"
 #include "Superviser/controler.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Gui/FeedbackSpinBox.h"
-#include "Core/lutclasses.h"
 #include "Gui/timeline.h"
 #include "Core/viewercache.h"
 #include "Core/settings.h"
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
-#include "Core/mappedfile.h"
+#include "Core/MemoryFile.h"
 #include "Superviser/powiterFn.h"
 
 #ifdef __POWITER_OSX__

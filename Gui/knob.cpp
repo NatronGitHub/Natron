@@ -31,11 +31,11 @@
 
 
 #include "Gui/knob_callback.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include "Gui/node_ui.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"

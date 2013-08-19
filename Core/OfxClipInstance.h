@@ -11,7 +11,7 @@
 #ifndef OFXCLIPINSTANCE_H
 #define OFXCLIPINSTANCE_H
 
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 
 //ofx
 #include "ofxhImageEffect.h"

@@ -23,7 +23,7 @@
 #include <map>
 #include <iostream>
 #include "Superviser/powiterFn.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include <QtCore/QStringList>
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>

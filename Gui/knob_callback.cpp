@@ -17,7 +17,7 @@
 #include "Gui/knob_callback.h"
 #include "Gui/knob.h"
 #include "Gui/dockableSettings.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 Knob_Callback::Knob_Callback(SettingsPanel *panel, Node *node){
     this->panel=panel;
     this->node=node;

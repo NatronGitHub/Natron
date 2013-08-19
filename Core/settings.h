@@ -21,7 +21,6 @@
 #include <QtCore/qglobal.h>
 #include "Superviser/powiterFn.h"
 #include "Core/singleton.h"
-#include "Core/metadata.h"
 #include <map>
 #include <vector>
 class PluginID;

@@ -22,9 +22,9 @@
 #include "Gui/edge.h"
 #include "Gui/dockableSettings.h"
 #include "Reader/Reader.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include "Gui/DAG.h"
-#include "Core/ofxnode.h"
+#include "Core/OfxNode.h"
 #include "Superviser/controler.h"
 
 const qreal pi=3.14159265358979323846264338327950288419717;

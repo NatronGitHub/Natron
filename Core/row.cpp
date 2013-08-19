@@ -16,9 +16,9 @@
 
 
 #include "Core/row.h"
-#include "Core/node.h"
-#include "Core/hash.h"
-#include "Core/mappedfile.h"
+#include "Core/Node.h"
+#include "Core/Hash.h"
+#include "Core/MemoryFile.h"
 #include <algorithm>
 #include <cassert>
 #include <sstream>

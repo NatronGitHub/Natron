@@ -10,11 +10,11 @@
  */
 
 
-#include "ofxnode.h"
-#include "Core/ofxparaminstance.h"
+#include "OfxNode.h"
+#include "Core/OfxParamInstance.h"
 #include "Core/row.h"
-#include "Core/ofxclipinstance.h"
-#include "Core/model.h"
+#include "Core/OfxClipInstance.h"
+#include "Core/Model.h"
 #include "Superviser/controler.h"
 #include "Core/viewerNode.h"
 #include "Gui/timeline.h"

@@ -27,7 +27,7 @@
 #include <QtCore/QTextStream>
 
 #include "Superviser/powiterFn.h"
-#include "Core/mappedfile.h"
+#include "Core/MemoryFile.h"
 
 using namespace std;
 using namespace Powiter;

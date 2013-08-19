@@ -19,7 +19,7 @@
 #include "Gui/GLViewer.h"
 #include "Superviser/controler.h"
 #include "Gui/mainGui.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Gui/viewerTab.h"
 #include "Gui/node_ui.h"
 #include "Core/VideoEngine.h"

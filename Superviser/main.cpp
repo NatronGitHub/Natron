@@ -25,7 +25,7 @@
 #include <QtGui/QPixmap>
 #include "Superviser/powiterFn.h"
 #include "Superviser/controler.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 
 
 using namespace std;

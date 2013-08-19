@@ -28,7 +28,7 @@
 #include "Gui/texture.h"
 #include "Superviser/controler.h"
 #include "Gui/GLViewer.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Core/VideoEngine.h"
 #include "Core/settings.h"
 #include "Gui/tabwidget.h"

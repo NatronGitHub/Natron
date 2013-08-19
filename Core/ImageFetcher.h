@@ -25,7 +25,7 @@
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QFuture>
 #include "Core/row.h"
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 
 class Node;
 /*This class is useful for spatial operators that need several rows, up to the whole image, of an input

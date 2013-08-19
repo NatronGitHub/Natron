@@ -9,7 +9,7 @@
  *
  */
 
-#include "ofxparaminstance.h"
+#include "OfxParamInstance.h"
 
 #include <iostream>
 #include <QColor>
@@ -19,7 +19,7 @@
 
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
-#include "Core/ofxnode.h"
+#include "Core/OfxNode.h"
 using namespace std;
 
 

@@ -24,8 +24,8 @@
 #include <cmath>
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
-#include "Core/displayFormat.h"
-#include "Core/channels.h"
+#include "Core/Format.h"
+#include "Core/ChannelSet.h"
 #include "Gui/textRenderer.h"
 #include "Gui/texture.h"
 

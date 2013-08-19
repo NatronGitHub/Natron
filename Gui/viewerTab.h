@@ -18,7 +18,7 @@
 #ifndef __VIEWER_TAB_H_
 #define __VIEWER_TAB_H_ 
 
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 #include <QWidget>
 
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as

@@ -21,7 +21,7 @@
 #define PowiterOsX_exrCommons_h
 
 #include "Superviser/powiterFn.h"
-#include "Core/channels.h"
+#include "Core/ChannelSet.h"
 #include <iostream>
 
 #include <ImfInputFile.h>

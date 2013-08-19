@@ -20,9 +20,9 @@
 #include "Reader/Read.h"
 #include "Reader/readExr.h"
 #include "Gui/GLViewer.h"
-#include "Core/lookUpTables.h"
+#include "Core/Lut.h"
 #include "Superviser/controler.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Core/VideoEngine.h"
 #include "Core/row.h"
 using namespace std;

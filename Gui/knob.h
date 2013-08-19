@@ -25,8 +25,8 @@
 #include <QtCore/QStringList>
 #include <QLineEdit>
 #include "Superviser/powiterFn.h"
-#include "Core/channels.h"
-#include "Core/model.h"
+#include "Core/ChannelSet.h"
+#include "Core/Model.h"
 #include "Core/singleton.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/comboBox.h"

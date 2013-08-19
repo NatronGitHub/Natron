@@ -22,8 +22,8 @@
 #include <QtCore/QChar>
 #include <map>
 #include <QtCore/QStringList>
-#include "Core/channels.h"
-#include "Core/displayFormat.h"
+#include "Core/ChannelSet.h"
+#include "Core/Format.h"
 #include <QtGui/QRgb>
 #include "Reader/Reader.h"
 class ViewerGL;

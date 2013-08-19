@@ -29,7 +29,7 @@
 #include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
 #endif
-#include "Core/hash.h"
+#include "Core/Hash.h"
 #include "Reader/Reader.h"
 #include "Gui/texture.h"
 

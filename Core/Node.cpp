@@ -15,16 +15,16 @@
 
 
 
-#include "Core/node.h"
-#include "Core/hash.h"
+#include "Core/Node.h"
+#include "Core/Hash.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/knob.h"
 #include "Gui/knob_callback.h"
 #include "Gui/node_ui.h"
-#include "Core/channels.h"
-#include "Core/model.h"
-#include "Core/displayFormat.h"
-#include "Core/nodecache.h"
+#include "Core/ChannelSet.h"
+#include "Core/Model.h"
+#include "Core/Format.h"
+#include "Core/NodeCache.h"
 #include "Reader/Reader.h"
 #include "Superviser/controler.h"
 #include "Gui/timeline.h"
@@ -34,7 +34,7 @@
 #include "Writer/Writer.h"
 #include "Core/VideoEngine.h"
 #include "Core/viewerNode.h"
-#include "Core/ofxnode.h"
+#include "Core/OfxNode.h"
 using namespace std;
 using namespace Powiter;
 void Node::copy_info(Node* parent){

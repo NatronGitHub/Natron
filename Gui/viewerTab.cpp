@@ -32,7 +32,7 @@
 #include "Superviser/controler.h"
 #include "Core/VideoEngine.h"
 #include "Gui/FeedbackSpinBox.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Gui/timeline.h"
 #include "Core/settings.h"
 #include "Gui/ScaleSlider.h"

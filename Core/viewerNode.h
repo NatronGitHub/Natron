@@ -21,7 +21,7 @@
 
 #include <cmath>
 #include "Superviser/powiterFn.h"
-#include "Core/node.h"
+#include "Core/Node.h"
 #include <QtCore/QFuture>
 #include "Gui/texture.h"
 #include <QtCore/QFutureWatcher>

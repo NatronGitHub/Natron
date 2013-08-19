@@ -19,7 +19,7 @@
 #ifndef DISKCACHE_H
 #define DISKCACHE_H
 
-#include "Core/abstractCache.h"
+#include "Core/AbstractCache.h"
 #include "Gui/texture.h"
 #include "Core/singleton.h"
 class Format;

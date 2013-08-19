@@ -29,7 +29,7 @@
 #include "Gui/knob.h"
 #include "Core/settings.h"
 #include "Superviser/controler.h"
-#include "Core/model.h"
+#include "Core/Model.h"
 #include "Core/settings.h"
 
 using namespace std;

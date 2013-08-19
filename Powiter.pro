@@ -81,15 +81,14 @@ SOURCES += \
     Gui/timeline.cpp \
     Gui/viewerTab.cpp \
     Core/Box.cpp \
-    Core/channels.cpp \
+    Core/ChannelSet.cpp \
     Core/DataBuffer.cpp \
-    Core/displayFormat.cpp \
-    Core/hash.cpp \
-    Core/lookUpTables.cpp \
-    Core/mappedfile.cpp \
-    Core/metadata.cpp \
-    Core/model.cpp \
-    Core/node.cpp \
+    Core/Format.cpp \
+    Core/Hash.cpp \
+    Core/Lut.cpp \
+    Core/MemoryFile.cpp \
+    Core/Model.cpp \
+    Core/Node.cpp \
     Core/row.cpp \
     Core/settings.cpp \
     Core/Timer.cpp \
@@ -109,9 +108,9 @@ SOURCES += \
     Writer/Write.cpp \
     Gui/tabwidget.cpp \
     Gui/comboBox.cpp \
-    Core/abstractCache.cpp \
-    Core/imagefetcher.cpp \
-    Core/nodecache.cpp \
+    Core/AbstractCache.cpp \
+    Core/ImageFetcher.cpp \
+    Core/Nodecache.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
@@ -125,9 +124,9 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     Gui/texture.cpp \
-    Core/ofxnode.cpp \
-    Core/ofxclipinstance.cpp \
-    Core/ofxparaminstance.cpp
+    Core/OfxNode.cpp \
+    Core/OfxClipInstance.cpp \
+    Core/OfxParamInstance.cpp
 
 
 HEADERS += \
@@ -149,16 +148,14 @@ HEADERS += \
     Gui/timeline.h \
     Gui/viewerTab.h \
     Core/Box.h \
-    Core/channels.h \
+    Core/ChannelSet.h \
     Core/DataBuffer.h \
-    Core/displayFormat.h \
-    Core/hash.h \
-    Core/lookUpTables.h \
-    Core/lutclasses.h \
-    Core/mappedfile.h \
-    Core/metadata.h \
-    Core/model.h \
-    Core/node.h \
+    Core/Format.h \
+    Core/Hash.h \
+    Core/Lut.h \
+    Core/MemoryFile.h \
+    Core/Model.h \
+    Core/Node.h \
     Core/referenceCountedObj.h \
     Core/row.h \
     Core/settings.h \
@@ -181,20 +178,20 @@ HEADERS += \
     Gui/framefiledialog.h \
     Gui/tabwidget.h \
     Core/LRUcache.h \
-    Core/imagefetcher.h \
+    Core/ImageFetcher.h \
     Reader/exrCommons.h \
     Writer/Writer.h \
     Writer/writeQt.h \
     Writer/writeExr.h \
     Writer/Write.h \
     Gui/lineEdit.h \
-    Core/abstractCache.h \
-    Core/nodecache.h \
+    Core/AbstractCache.h \
+    Core/Nodecache.h \
     Gui/button.h \
     Gui/texture.h \
-    Core/ofxnode.h \
-    Core/ofxclipinstance.h \
-    Core/ofxparaminstance.h \
+    Core/OfxNode.h \
+    Core/OfxClipInstance.h \
+    Core/OfxParamInstance.h \
     libs/OpenFX/HostSupport/include/ofxhBinary.h \
     libs/OpenFX/HostSupport/include/ofxhClip.h \
     libs/OpenFX/HostSupport/include/ofxhHost.h \
