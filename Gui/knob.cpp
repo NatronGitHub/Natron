@@ -1057,7 +1057,8 @@ void RGBA_Knob::onRedValueChanged(double r){
     color.setRedF(r);
     color.setGreenF(*_g);
     color.setBlueF(*_b);
-    color.setAlphaF(*_a);
+    if(_a)
+        color.setAlphaF(*_a);
     setValues();
     updateLabel(color);
     validateEvent(false);
@@ -1069,7 +1070,8 @@ void RGBA_Knob::onGreenValueChanged(double g){
     color.setRedF(*_r);
     color.setGreenF(g);
     color.setBlueF(*_b);
-    color.setAlphaF(*_a);
+    if(_a)
+        color.setAlphaF(*_a);
     setValues();
     updateLabel(color);
     validateEvent(false);
@@ -1081,7 +1083,8 @@ void RGBA_Knob::onBlueValueChanged(double b){
     color.setRedF(*_r);
     color.setGreenF(*_g);
     color.setBlueF(b);
-    color.setAlphaF(*_a);
+    if(_a)
+        color.setAlphaF(*_a);
     setValues();
     updateLabel(color);
     validateEvent(false);
@@ -1093,7 +1096,8 @@ void RGBA_Knob::onAlphaValueChanged(double a){
     color.setRedF(*_r);
     color.setGreenF(*_g);
     color.setBlueF(*_b);
-    color.setAlphaF(a);
+    if(_a)
+        color.setAlphaF(a);
     setValues();
     updateLabel(color);
     validateEvent(false);
