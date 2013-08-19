@@ -26,16 +26,16 @@
 #include <QToolBar>
 
 #include "Gui/Texture.h"
-#include "Superviser/Controler.h"
+#include "Global/Controler.h"
 #include "Gui/ViewerGL.h"
-#include "Core/Model.h"
-#include "Core/VideoEngine.h"
-#include "Core/Settings.h"
+#include "Engine/Model.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Settings.h"
 #include "Gui/TabWidget.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/Timeline.h"
 #include "Gui/NodeGraph.h"
-#include "Core/ViewerNode.h"
+#include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
 
 

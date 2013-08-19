@@ -18,15 +18,15 @@
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <string>
-#include "Reader/ReadExr.h"
-#include "Reader/Reader.h"
-#include "Reader/exrCommons.h"
+#include "Readers/ReadExr.h"
+#include "Readers/Reader.h"
+#include "Readers/exrCommons.h"
 #include "Gui/Knob.h"
-#include "Core/Node.h"
+#include "Engine/Node.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerGL.h"
-#include "Core/Lut.h"
-#include "Core/Row.h"
+#include "Engine/Lut.h"
+#include "Engine/Row.h"
 using namespace std;
 using namespace Powiter;
 

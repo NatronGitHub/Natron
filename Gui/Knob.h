@@ -24,10 +24,10 @@
 #include <QWidget>
 #include <QtCore/QStringList>
 #include <QLineEdit>
-#include "Superviser/GlobalDefines.h"
-#include "Core/ChannelSet.h"
-#include "Core/Model.h"
-#include "Core/Singleton.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/Model.h"
+#include "Engine/Singleton.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"

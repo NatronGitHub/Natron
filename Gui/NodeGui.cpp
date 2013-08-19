@@ -21,11 +21,11 @@
 #include <QLayout>
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
-#include "Reader/Reader.h"
-#include "Core/Node.h"
+#include "Readers/Reader.h"
+#include "Engine/Node.h"
 #include "Gui/NodeGraph.h"
-#include "Core/OfxNode.h"
-#include "Superviser/Controler.h"
+#include "Engine/OfxNode.h"
+#include "Global/Controler.h"
 
 const qreal pi=3.14159265358979323846264338327950288419717;
 using namespace std;

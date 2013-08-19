@@ -15,8 +15,8 @@
 
 
 
-#include "Core/Hash.h"
-#include "Core/Node.h"
+#include "Engine/Hash.h"
+#include "Engine/Node.h"
 #include "Gui/Knob.h"
 using namespace Powiter;
 void Hash::computeHash(){

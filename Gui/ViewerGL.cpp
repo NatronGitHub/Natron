@@ -26,20 +26,20 @@
 #include <cassert>
 #include <map>
 #include "Gui/TabWidget.h"
-#include "Core/VideoEngine.h"
+#include "Engine/VideoEngine.h"
 #include "Gui/shaders.h"
-#include "Core/Lut.h"
-#include "Superviser/Controler.h"
+#include "Engine/Lut.h"
+#include "Global/Controler.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Core/Model.h"
+#include "Engine/Model.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/Timeline.h"
-#include "Core/ViewerCache.h"
-#include "Core/Settings.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/Settings.h"
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
-#include "Core/MemoryFile.h"
-#include "Superviser/GlobalDefines.h"
+#include "Engine/MemoryFile.h"
+#include "Global/GlobalDefines.h"
 
 #ifdef __POWITER_OSX__
 #define glGenVertexArrays glGenVertexArraysAPPLE

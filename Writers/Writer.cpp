@@ -17,19 +17,19 @@
 
 
 
-#include "Writer/Writer.h"
+#include "Writers/Writer.h"
 
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtConcurrentRun>
 
-#include "Core/Row.h"
-#include "Writer/Write.h"
+#include "Engine/Row.h"
+#include "Writers/Write.h"
 #include "Gui/Knob.h"
-#include "Core/Settings.h"
-#include "Superviser/Controler.h"
-#include "Core/Model.h"
-#include "Core/Settings.h"
+#include "Engine/Settings.h"
+#include "Global/Controler.h"
+#include "Engine/Model.h"
+#include "Engine/Settings.h"
 
 using namespace std;
 using namespace Powiter;

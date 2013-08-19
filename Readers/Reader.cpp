@@ -15,34 +15,34 @@
 
 
 
-#include "Reader/Reader.h"
+#include "Readers/Reader.h"
 
 #include <cassert>
 #include <sstream>
 #include <QtGui/QImage>
 
-#include "Superviser/GlobalDefines.h"
-#include "Reader/ReadFFMPEG_deprectated.h"
-#include "Reader/ReadExr.h"
-#include "Reader/ReadQt.h"
-#include "Core/Node.h"
+#include "Global/GlobalDefines.h"
+#include "Readers/ReadFfmpeg_deprecated.h"
+#include "Readers/ReadExr.h"
+#include "Readers/ReadQt.h"
+#include "Engine/Node.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerGL.h"
-#include "Core/MemoryFile.h"
-#include "Superviser/Controler.h"
-#include "Core/VideoEngine.h"
-#include "Core/Model.h"
-#include "Core/Settings.h"
-#include "Reader/Read.h"
+#include "Engine/MemoryFile.h"
+#include "Global/Controler.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Model.h"
+#include "Engine/Settings.h"
+#include "Readers/Read.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
-#include "Core/ViewerCache.h"
+#include "Engine/ViewerCache.h"
 #include "Gui/Knob.h"
-#include "Core/Box.h"
-#include "Core/Format.h"
-#include "Writer/Writer.h"
-#include "Core/ViewerNode.h"
+#include "Engine/Box.h"
+#include "Engine/Format.h"
+#include "Writers/Writer.h"
+#include "Engine/ViewerNode.h"
 
 using namespace Powiter;
 using namespace std;

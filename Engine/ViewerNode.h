@@ -20,8 +20,8 @@
 
 
 #include <cmath>
-#include "Superviser/GlobalDefines.h"
-#include "Core/Node.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Node.h"
 #include <QtCore/QFuture>
 #include "Gui/Texture.h"
 #include <QtCore/QFutureWatcher>

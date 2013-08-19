@@ -19,8 +19,8 @@
 #define PROJECT_H
 #include <vector>
 #include <QtCore/qglobal.h>
-#include "Superviser/GlobalDefines.h"
-#include "Core/Singleton.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Singleton.h"
 #include <map>
 #include <vector>
 class PluginID;

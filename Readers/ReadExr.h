@@ -17,15 +17,15 @@
 
 #ifndef __READ_EXR_H__
 #define __READ_EXR_H__
-#include "Reader/exrCommons.h"
+#include "Readers/exrCommons.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <fstream>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #ifdef __POWITER_WIN32__
 #include <ImfStdIO.h>
 #endif
-#include "Reader/Read.h"
+#include "Readers/Read.h"
 
 
 class Row;

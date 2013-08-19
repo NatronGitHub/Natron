@@ -14,7 +14,7 @@
 #ifndef OFXNODE_H
 #define OFXNODE_H
 #include <map>
-#include "Core/Node.h"
+#include "Engine/Node.h"
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>

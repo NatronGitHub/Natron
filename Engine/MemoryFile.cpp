@@ -15,9 +15,9 @@
 
 
 
-#include "Core/MemoryFile.h"
+#include "Engine/MemoryFile.h"
 
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 
 #ifdef __POWITER_WIN32__
 # include <windows.h>

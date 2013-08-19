@@ -16,7 +16,7 @@
 
 #ifndef PowiterOsX_powiterFn_h
 #define PowiterOsX_powiterFn_h
-#include "Superviser/Enums.h"
+#include "Global/Enums.h"
 #include <string>
 #include <utility>
 #ifdef __APPLE__

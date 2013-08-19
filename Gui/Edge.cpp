@@ -21,7 +21,7 @@
 #include <QGraphicsScene>
 
 #include "Gui/NodeGui.h"
-#include "Core/Node.h"
+#include "Engine/Node.h"
 
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;

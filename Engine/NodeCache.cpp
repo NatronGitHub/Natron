@@ -15,11 +15,11 @@
 
 
 
-#include "Core/NodeCache.h"
-#include "Core/Row.h"
-#include "Core/MemoryFile.h"
-#include "Core/ChannelSet.h"
-#include "Core/Hash.h"
+#include "Engine/NodeCache.h"
+#include "Engine/Row.h"
+#include "Engine/MemoryFile.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/Hash.h"
 #include <sstream>
 #include <cassert>
 #include <QtCore/QDir>

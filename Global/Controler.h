@@ -18,8 +18,8 @@
 #ifndef CONTROLER_H
 #define CONTROLER_H
 #include <QtCore/QObject>
-#include "Superviser/GlobalDefines.h"
-#include "Core/Singleton.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Singleton.h"
 
 
 /*macro to get the unique pointer to the controler*/

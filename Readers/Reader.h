@@ -20,7 +20,7 @@
 #include <QImage>
 #include <QStringList>
 
-#include "Core/Node.h"
+#include "Engine/Node.h"
 
 
 class FrameEntry;

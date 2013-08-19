@@ -22,8 +22,8 @@
 
 #include <map>
 #include <iostream>
-#include "Superviser/GlobalDefines.h"
-#include "Core/Node.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Node.h"
 #include <QtCore/QStringList>
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>

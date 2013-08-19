@@ -20,7 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <QtCore/QStringList>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #ifdef __POWITER_UNIX__
 #include <dlfcn.h>
 #endif

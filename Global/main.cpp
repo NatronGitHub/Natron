@@ -23,9 +23,9 @@
 #include <QtCore/QString>
 #include <QLabel>
 #include <QtGui/QPixmap>
-#include "Superviser/GlobalDefines.h"
-#include "Superviser/Controler.h"
-#include "Core/Model.h"
+#include "Global/GlobalDefines.h"
+#include "Global/Controler.h"
+#include "Engine/Model.h"
 
 
 using namespace std;

@@ -17,14 +17,14 @@
 
 #include <cstdlib>
 #include <QtGui/qrgb.h>
-#include "Reader/Read.h"
-#include "Reader/ReadExr.h"
+#include "Readers/Read.h"
+#include "Readers/ReadExr.h"
 #include "Gui/ViewerGL.h"
-#include "Core/Lut.h"
-#include "Superviser/Controler.h"
-#include "Core/Model.h"
-#include "Core/VideoEngine.h"
-#include "Core/Row.h"
+#include "Engine/Lut.h"
+#include "Global/Controler.h"
+#include "Engine/Model.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Row.h"
 using namespace std;
 using namespace Powiter;
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)

@@ -26,8 +26,8 @@
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 
-#include "Superviser/GlobalDefines.h"
-#include "Core/MemoryFile.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/MemoryFile.h"
 
 using namespace std;
 using namespace Powiter;

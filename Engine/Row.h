@@ -20,8 +20,8 @@
 
 #include <cstdlib>
 #include <map>
-#include "Core/ChannelSet.h"
-#include "Core/AbstractCache.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/AbstractCache.h"
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif

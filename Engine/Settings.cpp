@@ -16,8 +16,8 @@
 
 
 
-#include "Core/Settings.h"
-#include "Core/Model.h"
+#include "Engine/Settings.h"
+#include "Engine/Model.h"
 
 using namespace std;
 Settings::CachingSettings::CachingSettings(){

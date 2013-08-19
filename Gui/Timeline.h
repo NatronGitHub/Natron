@@ -21,7 +21,7 @@
 
 #include <iostream>
 #include <QWidget>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10
 #define LINE_START 15

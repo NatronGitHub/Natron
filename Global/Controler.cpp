@@ -17,12 +17,12 @@
 
 #include <QLabel>
 #include "Gui/ViewerGL.h"
-#include "Superviser/Controler.h"
+#include "Global/Controler.h"
 #include "Gui/Gui.h"
-#include "Core/Model.h"
+#include "Engine/Model.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
-#include "Core/VideoEngine.h"
+#include "Engine/VideoEngine.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
 using namespace std;

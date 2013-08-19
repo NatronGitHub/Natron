@@ -30,19 +30,19 @@
 #include <QStyleFactory>
 
 
-#include "Core/Node.h"
+#include "Engine/Node.h"
 #include "Gui/NodeGui.h"
-#include "Reader/Reader.h"
-#include "Superviser/Controler.h"
-#include "Core/Model.h"
-#include "Core/VideoEngine.h"
+#include "Readers/Reader.h"
+#include "Global/Controler.h"
+#include "Engine/Model.h"
+#include "Engine/VideoEngine.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/SequenceFileDialog.h"
-#include "Core/Settings.h"
+#include "Engine/Settings.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
-#include "Core/viewernode.h"
+#include "Engine/viewernode.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
 using namespace std;

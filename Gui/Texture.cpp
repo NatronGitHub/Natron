@@ -14,7 +14,7 @@
 
 
 
-#include "Superviser/GLIncludes.h"
+#include "Global/GLIncludes.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Texture.h"
 

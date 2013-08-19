@@ -20,8 +20,8 @@
 #ifndef PowiterOsX_exrCommons_h
 #define PowiterOsX_exrCommons_h
 
-#include "Superviser/GlobalDefines.h"
-#include "Core/ChannelSet.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/ChannelSet.h"
 #include <iostream>
 
 #include <ImfInputFile.h>

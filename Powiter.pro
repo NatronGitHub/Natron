@@ -64,7 +64,7 @@ INCLUDEPATH += $$PWD/
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
-    Superviser/main.cpp \
+    Global/main.cpp \
     Gui/Edge.cpp \
     Gui/NodeGraph.cpp \
     Gui/SettingsPanel.cpp \
@@ -78,37 +78,37 @@ SOURCES += \
     Gui/TextRenderer.cpp \
     Gui/Timeline.cpp \
     Gui/ViewerTab.cpp \
-    Core/Box.cpp \
-    Core/ChannelSet.cpp \
-    Core/DataBuffer.cpp \
-    Core/Format.cpp \
-    Core/Hash.cpp \
-    Core/Lut.cpp \
-    Core/MemoryFile.cpp \
-    Core/Model.cpp \
-    Core/Node.cpp \
-    Core/Row.cpp \
-    Core/Settings.cpp \
-    Core/Timer.cpp \
-    Core/VideoEngine.cpp \
-    Core/ViewerNode.cpp \
-    Reader/Read.cpp \
-    Reader/Reader.cpp \
-    Reader/ReadExr.cpp \
-    Reader/ReadFFMPEG_deprectated.cpp \
-    Reader/ReadQt.cpp \
-    Superviser/Controler.cpp \
-    Core/ViewerCache.cpp \
+    Engine/Box.cpp \
+    Engine/ChannelSet.cpp \
+    Engine/DataBuffer.cpp \
+    Engine/Format.cpp \
+    Engine/Hash.cpp \
+    Engine/Lut.cpp \
+    Engine/MemoryFile.cpp \
+    Engine/Model.cpp \
+    Engine/Node.cpp \
+    Engine/Row.cpp \
+    Engine/Settings.cpp \
+    Engine/Timer.cpp \
+    Engine/VideoEngine.cpp \
+    Engine/ViewerNode.cpp \
+    Readers/Read.cpp \
+    Readers/Reader.cpp \
+    Readers/ReadExr.cpp \
+    Readers/ReadFfmpeg_deprecated.cpp \
+    Readers/ReadQt.cpp \
+    Global/Controler.cpp \
+    Engine/ViewerCache.cpp \
     Gui/SequenceFileDialog.cpp \
-    Writer/Writer.cpp \
-    Writer/WriteQt.cpp \
-    Writer/WriteExr.cpp \
-    Writer/Write.cpp \
+    Writers/Writer.cpp \
+    Writers/WriteQt.cpp \
+    Writers/WriteExr.cpp \
+    Writers/Write.cpp \
     Gui/TabWidget.cpp \
     Gui/ComboBox.cpp \
-    Core/AbstractCache.cpp \
-    Core/ImageFetcher.cpp \
-    Core/Nodecache.cpp \
+    Engine/AbstractCache.cpp \
+    Engine/ImageFetcher.cpp \
+    Engine/Nodecache.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
@@ -122,9 +122,9 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     Gui/Texture.cpp \
-    Core/OfxNode.cpp \
-    Core/OfxClipInstance.cpp \
-    Core/OfxParamInstance.cpp
+    Engine/OfxNode.cpp \
+    Engine/OfxClipInstance.cpp \
+    Engine/OfxParamInstance.cpp
 
 
 HEADERS += \
@@ -143,51 +143,51 @@ HEADERS += \
     Gui/TextRenderer.h \
     Gui/Timeline.h \
     Gui/ViewerTab.h \
-    Core/Box.h \
-    Core/ChannelSet.h \
-    Core/DataBuffer.h \
-    Core/Format.h \
-    Core/Hash.h \
-    Core/Lut.h \
-    Core/MemoryFile.h \
-    Core/Model.h \
-    Core/Node.h \
-    Core/ReferenceCountedObject.h \
-    Core/Row.h \
-    Core/Settings.h \
-    Core/Singleton.h \
-    Core/Sleeper.h \
-    Core/Timer.h \
-    Core/VideoEngine.h \
-    Core/ViewerNode.h \
-    Reader/Read.h \
-    Reader/Reader.h \
-    Reader/ReadExr.h \
-    Reader/ReadFFMPEG_deprectated.h \
-    Reader/ReadQt.h \
-    Superviser/Controler.h \
-    Superviser/Enums.h \
-    Superviser/GLIncludes.h \
-    Superviser/MemoryInfo.h \
-    Superviser/GlobalDefines.h \
-    Core/ViewerCache.h \
+    Engine/Box.h \
+    Engine/ChannelSet.h \
+    Engine/DataBuffer.h \
+    Engine/Format.h \
+    Engine/Hash.h \
+    Engine/Lut.h \
+    Engine/MemoryFile.h \
+    Engine/Model.h \
+    Engine/Node.h \
+    Engine/ReferenceCountedObject.h \
+    Engine/Row.h \
+    Engine/Settings.h \
+    Engine/Singleton.h \
+    Engine/Sleeper.h \
+    Engine/Timer.h \
+    Engine/VideoEngine.h \
+    Engine/ViewerNode.h \
+    Readers/Read.h \
+    Readers/Reader.h \
+    Readers/ReadExr.h \
+    Readers/ReadFfmpeg_deprectated.h \
+    Readers/ReadQt.h \
+    Global/Controler.h \
+    Global/Enums.h \
+    Global/GLIncludes.h \
+    Global/MemoryInfo.h \
+    Global/GlobalDefines.h \
+    Engine/ViewerCache.h \
     Gui/SequenceFileDialog.h \
     Gui/TabWidget.h \
-    Core/LRUcache.h \
-    Core/ImageFetcher.h \
-    Reader/exrCommons.h \
-    Writer/Writer.h \
-    Writer/WriteQt.h \
-    Writer/WriteExr.h \
-    Writer/Write.h \
+    Engine/LRUcache.h \
+    Engine/ImageFetcher.h \
+    Readers/exrCommons.h \
+    Writers/Writer.h \
+    Writers/WriteQt.h \
+    Writers/WriteExr.h \
+    Writers/Write.h \
     Gui/LineEdit.h \
-    Core/AbstractCache.h \
-    Core/Nodecache.h \
+    Engine/AbstractCache.h \
+    Engine/Nodecache.h \
     Gui/Button.h \
     Gui/Texture.h \
-    Core/OfxNode.h \
-    Core/OfxClipInstance.h \
-    Core/OfxParamInstance.h \
+    Engine/OfxNode.h \
+    Engine/OfxClipInstance.h \
+    Engine/OfxParamInstance.h \
     libs/OpenFX/HostSupport/include/ofxhBinary.h \
     libs/OpenFX/HostSupport/include/ofxhClip.h \
     libs/OpenFX/HostSupport/include/ofxhHost.h \

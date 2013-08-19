@@ -18,7 +18,7 @@
 
 #ifndef __PowiterOsX__ReadQt__
 #define __PowiterOsX__ReadQt__
-#include "Reader/Read.h"
+#include "Readers/Read.h"
 #include <QtCore/QMutex>
 #include <iostream>
 #include <cstdio>

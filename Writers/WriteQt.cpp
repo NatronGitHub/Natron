@@ -18,10 +18,10 @@
 
 
 #include "WriteQt.h"
-#include "Core/Lut.h"
-#include "Core/Format.h"
-#include "Writer/Writer.h"
-#include "Core/Row.h"
+#include "Engine/Lut.h"
+#include "Engine/Format.h"
+#include "Writers/Writer.h"
+#include "Engine/Row.h"
 
 using namespace std;
 using namespace Powiter;

@@ -49,8 +49,8 @@
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
-#include "Superviser/GlobalDefines.h"
-#include "Superviser/MemoryInfo.h"
+#include "Global/GlobalDefines.h"
+#include "Global/MemoryInfo.h"
 
 using namespace std;
 

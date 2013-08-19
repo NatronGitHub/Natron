@@ -19,9 +19,9 @@
 #ifndef DISKCACHE_H
 #define DISKCACHE_H
 
-#include "Core/AbstractCache.h"
+#include "Engine/AbstractCache.h"
 #include "Gui/Texture.h"
-#include "Core/Singleton.h"
+#include "Engine/Singleton.h"
 class Format;
 class ChannelSet;
 class Box2D;

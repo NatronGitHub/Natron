@@ -20,12 +20,12 @@
 
 #define NOMINMAX ///< Eigen workaround with min/max. It has nothing to do with the Qt5 bug but is the same #define
 
-#include "Superviser/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
+#include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <cmath>
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
-#include "Core/Format.h"
-#include "Core/ChannelSet.h"
+#include "Engine/Format.h"
+#include "Engine/ChannelSet.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/Texture.h"
 

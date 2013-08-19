@@ -18,7 +18,7 @@
 #include <nuke/fnPublicOfxExtensions.h>
 
 #include "Gui/Knob.h"
-#include "Core/OfxNode.h"
+#include "Engine/OfxNode.h"
 using namespace std;
 
 

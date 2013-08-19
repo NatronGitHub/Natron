@@ -21,7 +21,7 @@
 
 #include <map>
 #include <string>
-#include "Core/Box.h"
+#include "Engine/Box.h"
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the

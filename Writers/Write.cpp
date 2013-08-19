@@ -17,9 +17,9 @@
 
 
 #include "Write.h"
-#include "Core/Row.h"
-#include "Writer/Writer.h"
-#include "Core/Lut.h"
+#include "Engine/Row.h"
+#include "Writers/Writer.h"
+#include "Engine/Lut.h"
 #include "Gui/Knob.h"
 using namespace Powiter;
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects

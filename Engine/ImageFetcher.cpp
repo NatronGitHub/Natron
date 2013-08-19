@@ -17,12 +17,12 @@
 
 #ifndef Q_MOC_RUN
 
-#include "Core/ImageFetcher.h"
+#include "Engine/ImageFetcher.h"
 
 #include <QtConcurrentMap>
 #include <QtGui/QImage>
 #include <boost/bind.hpp>
-#include "Core/Node.h"
+#include "Engine/Node.h"
 #endif
 
 using namespace std;

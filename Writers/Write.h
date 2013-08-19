@@ -21,7 +21,7 @@
 #define __PowiterOsX__Write__
 
 #include <iostream>
-#include "Core/ChannelSet.h"
+#include "Engine/ChannelSet.h"
 
 
 class Lut;

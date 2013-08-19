@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 //  contact: immarespond at gmail dot com
 
-#include "Core/VideoEngine.h"
+#include "Engine/VideoEngine.h"
 
 #include <iterator>
 #include <cassert>
@@ -21,18 +21,18 @@
 #include <ImfThreading.h>
 
 #include "Gui/Button.h"
-#include "Core/ViewerNode.h"
-#include "Core/OfxNode.h"
-#include "Core/Settings.h"
-#include "Core/Model.h"
-#include "Core/Hash.h"
-#include "Core/Timer.h"
-#include "Core/Lut.h"
-#include "Core/ViewerCache.h"
-#include "Core/NodeCache.h"
-#include "Core/Row.h"
-#include "Core/MemoryFile.h"
-#include "Writer/Writer.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/OfxNode.h"
+#include "Engine/Settings.h"
+#include "Engine/Model.h"
+#include "Engine/Hash.h"
+#include "Engine/Timer.h"
+#include "Engine/Lut.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/NodeCache.h"
+#include "Engine/Row.h"
+#include "Engine/MemoryFile.h"
+#include "Writers/Writer.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
@@ -40,8 +40,8 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ViewerGL.h"
 
-#include "Superviser/Controler.h"
-#include "Superviser/MemoryInfo.h"
+#include "Global/Controler.h"
+#include "Global/MemoryInfo.h"
 
 
 /* Here's a drawing that represents how the video Engine works:

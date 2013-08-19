@@ -25,7 +25,7 @@
 #include <cmath>
 #include <QtGui/QImage>
 #include <QLabel>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 
 #define BORDER_HEIGHT 10
 #define BORDER_OFFSET 4

@@ -21,10 +21,10 @@
 #include <QTabWidget>
 #include <QStyle>
 #include "Gui/NodeGui.h"
-#include "Core/Node.h"
+#include "Engine/Node.h"
 #include "Gui/Knob.h"
 #include "Gui/LineEdit.h"
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
 

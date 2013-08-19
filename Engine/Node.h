@@ -21,9 +21,9 @@
 #include <iostream>
 #include <cstdio>
 #include <map>
-#include "Core/ChannelSet.h"
-#include "Superviser/GlobalDefines.h"
-#include "Core/Format.h"
+#include "Engine/ChannelSet.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Format.h"
 
 class Row;
 class InputRow;

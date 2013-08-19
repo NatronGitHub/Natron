@@ -21,10 +21,10 @@
 #define __PowiterOsX__writeExr__
 
 #include <iostream>
-#include "Writer/Write.h"
+#include "Writers/Write.h"
 #include <map>
 #include <vector>
-#include "Reader/exrCommons.h"
+#include "Readers/exrCommons.h"
 #include <ImfOutputFile.h>
 
 class ComboBox_Knob;

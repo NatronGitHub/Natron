@@ -17,11 +17,11 @@
 
 
 
-#include "Writer/WriteExr.h"
-#include "Writer/Writer.h"
-#include "Core/Lut.h"
+#include "Writers/WriteExr.h"
+#include "Writers/Writer.h"
+#include "Engine/Lut.h"
 #include "Gui/Knob.h"
-#include "Core/Row.h"
+#include "Engine/Row.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 using namespace std;

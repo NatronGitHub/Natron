@@ -21,8 +21,8 @@
 #define __PowiterOsX__writeQt__
 
 #include <iostream>
-#include "Superviser/GlobalDefines.h"
-#include "Writer/Write.h"
+#include "Global/GlobalDefines.h"
+#include "Writers/Write.h"
 #include <QtGui/QImage>
 
 class WriteQt :public Write{

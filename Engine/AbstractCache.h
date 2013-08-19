@@ -20,8 +20,8 @@
 #ifndef __PowiterOsX__abstractCache__
 #define __PowiterOsX__abstractCache__
 
-#include "Core/LRUcache.h"
-#include "Superviser/GlobalDefines.h"
+#include "Engine/LRUcache.h"
+#include "Global/GlobalDefines.h"
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <vector>

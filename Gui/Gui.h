@@ -21,7 +21,7 @@
 #include <QToolButton>
 #include <QIcon>
 #include <QAction>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #include <QMainWindow>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>

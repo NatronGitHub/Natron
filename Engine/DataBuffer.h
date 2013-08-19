@@ -21,7 +21,7 @@
 #include <iostream>
 #include <QtCore/QMutex>
 #include <map>
-#include "Core/ReferenceCountedObject.h"
+#include "Engine/ReferenceCountedObject.h"
 #include <string>
 #include <cstring>
 

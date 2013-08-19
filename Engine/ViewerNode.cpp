@@ -15,23 +15,23 @@
 
 
 
-#include "Core/ViewerNode.h"
+#include "Engine/ViewerNode.h"
 
 #include <QtConcurrentRun>
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
-#include "Superviser/Controler.h"
+#include "Global/Controler.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
-#include "Core/Row.h"
+#include "Engine/Row.h"
 #include "Gui/Timeline.h"
-#include "Core/ViewerCache.h"
-#include "Reader/Reader.h"
-#include "Core/MemoryFile.h"
-#include "Core/Model.h"
-#include "Core/VideoEngine.h"
-#include "Superviser/Controler.h"
+#include "Engine/ViewerCache.h"
+#include "Readers/Reader.h"
+#include "Engine/MemoryFile.h"
+#include "Engine/Model.h"
+#include "Engine/VideoEngine.h"
+#include "Global/Controler.h"
 
 using namespace Powiter;
 ViewerNode::ViewerNode(ViewerCache* cache):Node(),

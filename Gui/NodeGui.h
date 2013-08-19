@@ -20,7 +20,7 @@
 
 
 //#include <inputarrow.h>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 

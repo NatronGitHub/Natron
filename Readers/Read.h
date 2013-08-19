@@ -22,10 +22,10 @@
 #include <QtCore/QChar>
 #include <map>
 #include <QtCore/QStringList>
-#include "Core/ChannelSet.h"
-#include "Core/Format.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/Format.h"
 #include <QtGui/QRgb>
-#include "Reader/Reader.h"
+#include "Readers/Reader.h"
 class ViewerGL;
 class Lut;
 class Read{

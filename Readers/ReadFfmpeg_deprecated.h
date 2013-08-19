@@ -25,9 +25,9 @@
 #ifndef __PowiterOsX__readffmpeg__
 #define __PowiterOsX__readffmpeg__
 
-#include "Reader/Read.h"
-#include "Core/ReferenceCountedObject.h"
-#include "Core/DataBuffer.h"
+#include "Readers/Read.h"
+#include "Engine/ReferenceCountedObject.h"
+#include "Engine/DataBuffer.h"
 #include <iostream>
 #include <QtCore/QMutex>
 #ifdef _WIN32

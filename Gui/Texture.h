@@ -20,7 +20,7 @@
 #define __PowiterOsX__texturecache__
 
 #include <iostream>
-#include "Core/Box.h"
+#include "Engine/Box.h"
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  *into a texture. x,y,r,t are respectivly the image coordinates of the left,bottom,right,top

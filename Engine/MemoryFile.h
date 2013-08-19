@@ -28,7 +28,7 @@
 #define __PowiterOsX__mappedfile__
 
 #include <iostream>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 
 /*re-writing of the portable mapped-file implementation, as the boost::iostreams::mapped_file does not have the behaviour
 // desired in this case.*/

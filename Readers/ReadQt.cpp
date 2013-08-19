@@ -16,14 +16,14 @@
 
 
 
-#include "Reader/ReadQt.h"
+#include "Readers/ReadQt.h"
 #include "Gui/ViewerGL.h"
 #include <QtGui/QImage>
 #include <QtGui/QColor>
-#include "Reader/Reader.h"
+#include "Readers/Reader.h"
 #include "Gui/NodeGui.h"
-#include "Core/Lut.h"
-#include "Core/Row.h"
+#include "Engine/Lut.h"
+#include "Engine/Row.h"
 using namespace std;
 using namespace Powiter;
 ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}

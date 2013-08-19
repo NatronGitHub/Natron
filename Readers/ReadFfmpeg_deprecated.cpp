@@ -21,12 +21,12 @@
  IS STILL PRESENT
  **/
 
-#include "Reader/readffmpeg.h"
-#include "Reader/Reader.h"
+#include "Readers/ReadFfmpeg_deprecated.h"
+#include "Readers/Reader.h"
 #include "Gui/ViewerGL.h"
-#include "Core/ChannelSet.h"
+#include "Engine/ChannelSet.h"
 #include "Gui/NodeGui.h"
-#include "Core/Row.h"
+#include "Engine/Row.h"
 using namespace std;
 using namespace Powiter;
 

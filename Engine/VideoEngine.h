@@ -29,8 +29,8 @@
 #include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
 #endif
-#include "Core/Hash.h"
-#include "Reader/Reader.h"
+#include "Engine/Hash.h"
+#include "Readers/Reader.h"
 #include "Gui/Texture.h"
 
 

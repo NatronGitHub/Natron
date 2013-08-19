@@ -27,13 +27,13 @@
 #include <QtGui/QDrag>
 #include <QScrollArea>
 
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
-#include "Superviser/Controler.h"
+#include "Global/Controler.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
-#include "Core/ViewerNode.h"
+#include "Engine/ViewerNode.h"
 
 TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):
 QFrame(parent),

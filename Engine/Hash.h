@@ -26,7 +26,7 @@
 #include <vector>
 #include <QtCore/qstring.h>
 #include <QtCore/QChar>
-#include "Superviser/GlobalDefines.h"
+#include "Global/GlobalDefines.h"
 
 
 

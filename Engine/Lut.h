@@ -50,8 +50,8 @@
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
 #include <QtGui/QRgb>
-#include "Superviser/GlobalDefines.h"
-#include "Superviser/MemoryInfo.h"
+#include "Global/GlobalDefines.h"
+#include "Global/MemoryInfo.h"
 
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
