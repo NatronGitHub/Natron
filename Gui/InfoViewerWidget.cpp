@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <QtGui/QImage>
 #include "Gui/InfoViewerWidget.h"
-#include "Gui/GLViewer.h"
+#include "Gui/ViewerGL.h"
 #include "Core/Box.h"
 using namespace std;
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),

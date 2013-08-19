@@ -21,7 +21,7 @@
 
 #include <iostream>
 #include <QtCore/QEvent>
-#include "Gui/lineEdit.h"
+#include "Gui/LineEdit.h"
 class FeedBackSpinBox : public LineEdit
 {
     Q_OBJECT

@@ -65,21 +65,19 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
     Superviser/main.cpp \
-    Gui/edge.cpp \
-    Gui/DAG.cpp \
-    Gui/DAGQuickNode.cpp \
-    Gui/dockableSettings.cpp \
+    Gui/Edge.cpp \
+    Gui/NodeGraph.cpp \
+    Gui/SettingsPanel.cpp \
     Gui/FeedbackSpinBox.cpp \
-    Gui/GLViewer.cpp \
+    Gui/ViewerGL.cpp \
     Gui/InfoViewerWidget.cpp \
-    Gui/knob.cpp \
-    Gui/knob_callback.cpp \
-    Gui/mainGui.cpp \
-    Gui/node_ui.cpp \
+    Gui/Knob.cpp \
+    Gui/Gui.cpp \
+    Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
-    Gui/textRenderer.cpp \
-    Gui/timeline.cpp \
-    Gui/viewerTab.cpp \
+    Gui/TextRenderer.cpp \
+    Gui/Timeline.cpp \
+    Gui/ViewerTab.cpp \
     Core/Box.cpp \
     Core/ChannelSet.cpp \
     Core/DataBuffer.cpp \
@@ -96,18 +94,18 @@ SOURCES += \
     Core/ViewerNode.cpp \
     Reader/Read.cpp \
     Reader/Reader.cpp \
-    Reader/readExr.cpp \
-    Reader/readffmpeg.cpp \
-    Reader/readQt.cpp \
-    Superviser/controler.cpp \
+    Reader/ReadExr.cpp \
+    Reader/ReadFFMPEG_deprectated.cpp \
+    Reader/ReadQt.cpp \
+    Superviser/Controler.cpp \
     Core/ViewerCache.cpp \
-    Gui/framefiledialog.cpp \
+    Gui/SequenceFileDialog.cpp \
     Writer/Writer.cpp \
-    Writer/writeQt.cpp \
-    Writer/writeExr.cpp \
+    Writer/WriteQt.cpp \
+    Writer/WriteExr.cpp \
     Writer/Write.cpp \
-    Gui/tabwidget.cpp \
-    Gui/comboBox.cpp \
+    Gui/TabWidget.cpp \
+    Gui/ComboBox.cpp \
     Core/AbstractCache.cpp \
     Core/ImageFetcher.cpp \
     Core/Nodecache.cpp \
@@ -123,30 +121,28 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhHost.cpp \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
-    Gui/texture.cpp \
+    Gui/Texture.cpp \
     Core/OfxNode.cpp \
     Core/OfxClipInstance.cpp \
     Core/OfxParamInstance.cpp
 
 
 HEADERS += \
-    Gui/edge.h \
-    Gui/comboBox.h \
-    Gui/DAG.h \
-    Gui/DAGQuickNode.h \
-    Gui/dockableSettings.h \
+    Gui/Edge.h \
+    Gui/ComboBox.h \
+    Gui/NodeGraph.h \
+    Gui/SettingsPanel.h \
     Gui/FeedbackSpinBox.h \
-    Gui/GLViewer.h \
+    Gui/ViewerGL.h \
     Gui/InfoViewerWidget.h \
-    Gui/knob.h \
-    Gui/knob_callback.h \
-    Gui/mainGui.h \
-    Gui/node_ui.h \
+    Gui/Knob.h \
+    Gui/Gui.h \
+    Gui/NodeGui.h \
     Gui/ScaleSlider.h \
-    Gui/shaders.h \
-    Gui/textRenderer.h \
-    Gui/timeline.h \
-    Gui/viewerTab.h \
+    Gui/Shaders.h \
+    Gui/TextRenderer.h \
+    Gui/Timeline.h \
+    Gui/ViewerTab.h \
     Core/Box.h \
     Core/ChannelSet.h \
     Core/DataBuffer.h \
@@ -166,29 +162,29 @@ HEADERS += \
     Core/ViewerNode.h \
     Reader/Read.h \
     Reader/Reader.h \
-    Reader/readExr.h \
-    Reader/readffmpeg.h \
-    Reader/readQt.h \
-    Superviser/controler.h \
+    Reader/ReadExr.h \
+    Reader/ReadFFMPEG_deprectated.h \
+    Reader/ReadQt.h \
+    Superviser/Controler.h \
     Superviser/Enums.h \
-    Superviser/gl_OsDependent.h \
+    Superviser/GLIncludes.h \
     Superviser/MemoryInfo.h \
-    Superviser/powiterFn.h \
+    Superviser/GlobalDefines.h \
     Core/ViewerCache.h \
-    Gui/framefiledialog.h \
-    Gui/tabwidget.h \
+    Gui/SequenceFileDialog.h \
+    Gui/TabWidget.h \
     Core/LRUcache.h \
     Core/ImageFetcher.h \
     Reader/exrCommons.h \
     Writer/Writer.h \
-    Writer/writeQt.h \
-    Writer/writeExr.h \
+    Writer/WriteQt.h \
+    Writer/WriteExr.h \
     Writer/Write.h \
-    Gui/lineEdit.h \
+    Gui/LineEdit.h \
     Core/AbstractCache.h \
     Core/Nodecache.h \
-    Gui/button.h \
-    Gui/texture.h \
+    Gui/Button.h \
+    Gui/Texture.h \
     Core/OfxNode.h \
     Core/OfxClipInstance.h \
     Core/OfxParamInstance.h \
