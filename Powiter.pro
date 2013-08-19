@@ -11,6 +11,7 @@ CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
 QT += gui core opengl concurrent
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+
 win32{
     CONFIG += glew
 #ofx needs WINDOWS def
@@ -59,6 +60,8 @@ INCLUDEPATH += $$PWD/libs/OpenFX_extensions
 INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/
 
+
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
     Superviser/main.cpp \

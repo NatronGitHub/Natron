@@ -213,6 +213,7 @@ void Gui::setupUi()
 	_centralWidget->setLayout(_mainLayout);
     
     _leftRightSplitter = new QSplitter(_centralWidget);
+    _leftRightSplitter->setChildrenCollapsible(false);
     _leftRightSplitter->setOrientation(Qt::Horizontal);
     _leftRightSplitter->setContentsMargins(0, 0, 0, 0);
     
@@ -251,6 +252,7 @@ void Gui::setupUi()
    
 	
     _middleRightSplitter = new QSplitter(_centralWidget);
+    _middleRightSplitter->setChildrenCollapsible(false);
     _middleRightSplitter->setContentsMargins(0, 0, 0, 0);
 	_middleRightSplitter->setOrientation(Qt::Horizontal);
     _middleRightSplitter->addWidget(_viewerWorkshopSplitter);
@@ -280,6 +282,7 @@ void Gui::setupUi()
     sizes  <<horizontalSplitterSize.width()- 240;
     _middleRightSplitter->setSizes(sizes);
 	
+    
     _leftRightSplitter->addWidget(_middleRightSplitter);
     
     
