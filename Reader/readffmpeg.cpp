@@ -26,7 +26,7 @@
 #include "Gui/GLViewer.h"
 #include "Core/ChannelSet.h"
 #include "Gui/node_ui.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 using namespace std;
 using namespace Powiter;
 

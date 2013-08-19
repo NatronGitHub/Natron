@@ -23,13 +23,13 @@
 #include "Reader/Reader.h"
 #include "Writer/Writer.h"
 #include "Core/OfxNode.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Gui/mainGui.h"
 #include "Gui/GLViewer.h"
 #include "Gui/tabwidget.h"
 #include "Core/VideoEngine.h"
 #include "Core/Format.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Writer/Write.h"
 #include "Reader/Read.h"
 #include "Reader/readExr.h"
@@ -37,7 +37,7 @@
 #include "Reader/readQt.h"
 #include "Core/Lut.h"
 #include "Core/NodeCache.h"
-#include "Core/viewercache.h"
+#include "Core/ViewerCache.h"
 #include "Gui/knob.h"
 #include "Writer/writeQt.h"
 #include "Writer/writeExr.h"
@@ -300,7 +300,7 @@ bool Model::createNode(Node *&node,const std::string name){
 		initCounterAndGetDescription(node);
         return true;
 	}else if(name =="Viewer"){
-		node=new Viewer(_viewerCache);
+        node=new ViewerNode(_viewerCache);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
@@ -309,7 +309,7 @@ bool Model::createNode(Node *&node,const std::string name){
         }else{
             ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
-        dynamic_cast<Viewer*>(node)->initializeViewerTab(where);
+        dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
         return true;
 	}else if(name == "Writer"){
 		node=new Writer();

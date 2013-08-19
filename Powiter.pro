@@ -89,18 +89,18 @@ SOURCES += \
     Core/MemoryFile.cpp \
     Core/Model.cpp \
     Core/Node.cpp \
-    Core/row.cpp \
-    Core/settings.cpp \
+    Core/Row.cpp \
+    Core/Settings.cpp \
     Core/Timer.cpp \
     Core/VideoEngine.cpp \
-    Core/viewerNode.cpp \
+    Core/ViewerNode.cpp \
     Reader/Read.cpp \
     Reader/Reader.cpp \
     Reader/readExr.cpp \
     Reader/readffmpeg.cpp \
     Reader/readQt.cpp \
     Superviser/controler.cpp \
-    Core/viewercache.cpp \
+    Core/ViewerCache.cpp \
     Gui/framefiledialog.cpp \
     Writer/Writer.cpp \
     Writer/writeQt.cpp \
@@ -156,14 +156,14 @@ HEADERS += \
     Core/MemoryFile.h \
     Core/Model.h \
     Core/Node.h \
-    Core/referenceCountedObj.h \
-    Core/row.h \
-    Core/settings.h \
-    Core/singleton.h \
-    Core/sleeper.h \
+    Core/ReferenceCountedObject.h \
+    Core/Row.h \
+    Core/Settings.h \
+    Core/Singleton.h \
+    Core/Sleeper.h \
     Core/Timer.h \
     Core/VideoEngine.h \
-    Core/viewerNode.h \
+    Core/ViewerNode.h \
     Reader/Read.h \
     Reader/Reader.h \
     Reader/readExr.h \
@@ -174,7 +174,7 @@ HEADERS += \
     Superviser/gl_OsDependent.h \
     Superviser/MemoryInfo.h \
     Superviser/powiterFn.h \
-    Core/viewercache.h \
+    Core/ViewerCache.h \
     Gui/framefiledialog.h \
     Gui/tabwidget.h \
     Core/LRUcache.h \

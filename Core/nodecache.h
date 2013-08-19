@@ -19,7 +19,7 @@
 #ifndef __PowiterOsX__nodecache__
 #define __PowiterOsX__nodecache__
 #include "Core/AbstractCache.h"
-#include "Core/singleton.h"
+#include "Core/Singleton.h"
 
 class ChannelSet;
 class Row;

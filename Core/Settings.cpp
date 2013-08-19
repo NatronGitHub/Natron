@@ -16,7 +16,7 @@
 
 
 
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Core/Model.h"
 
 using namespace std;

@@ -26,7 +26,7 @@
 #define __PowiterOsX__readffmpeg__
 
 #include "Reader/Read.h"
-#include "Core/referenceCountedObj.h"
+#include "Core/ReferenceCountedObject.h"
 #include "Core/DataBuffer.h"
 #include <iostream>
 #include <QtCore/QMutex>

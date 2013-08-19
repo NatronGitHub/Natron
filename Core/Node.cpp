@@ -29,11 +29,11 @@
 #include "Superviser/controler.h"
 #include "Gui/timeline.h"
 #include "Gui/viewerTab.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Gui/mainGui.h"
 #include "Writer/Writer.h"
 #include "Core/VideoEngine.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Core/OfxNode.h"
 using namespace std;
 using namespace Powiter;

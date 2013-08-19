@@ -21,7 +21,7 @@
 #include "Writer/Writer.h"
 #include "Core/Lut.h"
 #include "Gui/knob.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 using namespace std;

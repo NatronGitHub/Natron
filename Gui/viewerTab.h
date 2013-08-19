@@ -40,14 +40,14 @@ class Controler;
 class FeedBackSpinBox;
 class ScaleSlider;
 class TimeLine;
-class Viewer;
+class ViewerNode;
 class ViewerInfos;
 class ViewerTab: public QWidget 
 {
     Q_OBJECT
     
     
-    Viewer* _viewerNode;// < pointer to the internal node
+    ViewerNode* _viewerNode;// < pointer to the internal node
     
     ChannelSet _channelsToDraw;
     
@@ -55,12 +55,12 @@ class ViewerTab: public QWidget
 	bool _fullscreen;
     
 public:
-	ViewerTab(Viewer* node,QWidget* parent=0);
+    ViewerTab(ViewerNode* node,QWidget* parent=0);
     
 	virtual ~ViewerTab();
     
     
-    Viewer* getInternalNode(){return _viewerNode;}
+    ViewerNode* getInternalNode(){return _viewerNode;}
     
     QVBoxLayout* _mainLayout;
 

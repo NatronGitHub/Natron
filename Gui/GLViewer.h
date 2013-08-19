@@ -99,7 +99,7 @@
         class Lut;
         class InfoViewerWidget;
         class Controler;
-        class Viewer;
+        class ViewerNode;
         class ViewerTab;
         
         /**

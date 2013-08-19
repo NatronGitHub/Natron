@@ -24,7 +24,7 @@
 #include <vector>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QFuture>
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Core/ChannelSet.h"
 
 class Node;

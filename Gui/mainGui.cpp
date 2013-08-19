@@ -30,12 +30,12 @@
 #include "Gui/GLViewer.h"
 #include "Core/Model.h"
 #include "Core/VideoEngine.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Gui/tabwidget.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/timeline.h"
 #include "Gui/DAG.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Gui/viewerTab.h"
 
 
@@ -361,7 +361,7 @@ void Gui::exitFullScreen(){
 }
 
 
-ViewerTab* Gui::addNewViewerTab(Viewer* node,TabWidget* where){
+ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
     ViewerTab* tab = new ViewerTab(node,_viewersPane);
     _viewerTabs.push_back(tab);
     where->appendTab(node->getName().c_str(),tab);

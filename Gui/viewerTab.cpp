@@ -34,16 +34,16 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Core/Model.h"
 #include "Gui/timeline.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/comboBox.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Gui/button.h"
 #include "Gui/mainGui.h"
 #include "Gui/tabwidget.h"
 
 using namespace Powiter;
-ViewerTab::ViewerTab(Viewer* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
+ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
 {
     
     setObjectName(node->getName().c_str());

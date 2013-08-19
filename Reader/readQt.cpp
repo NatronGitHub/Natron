@@ -23,7 +23,7 @@
 #include "Reader/Reader.h"
 #include "Gui/node_ui.h"
 #include "Core/Lut.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 using namespace std;
 using namespace Powiter;
 ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}

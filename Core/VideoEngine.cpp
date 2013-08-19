@@ -21,16 +21,16 @@
 #include <ImfThreading.h>
 
 #include "Gui/button.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Core/OfxNode.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Core/Model.h"
 #include "Core/Hash.h"
 #include "Core/Timer.h"
 #include "Core/Lut.h"
-#include "Core/viewercache.h"
+#include "Core/ViewerCache.h"
 #include "Core/NodeCache.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Core/MemoryFile.h"
 #include "Writer/Writer.h"
 
@@ -146,7 +146,7 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
         frameSeeker = currentViewer->getUiContext()->frameSeeker;
     }
     Writer* writer = dynamic_cast<Writer*>(_dag.getOutput());
-    Viewer* viewer = dynamic_cast<Viewer*>(_dag.getOutput());
+    ViewerNode* viewer = dynamic_cast<ViewerNode*>(_dag.getOutput());
     if (!_dag.isOutputAViewer()) {
         assert(writer);
         if(!recursiveCall){
@@ -346,7 +346,7 @@ void VideoEngine::dispatchEngine(){
     //cout << "     _dispatchEngine()" << endl;
     if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE) {
         if (_dag.isOutputAViewer()) {
-            Viewer* viewer = _dag.outputAsViewer();
+            ViewerNode* viewer = _dag.outputAsViewer();
             viewer->makeCurrentViewer();
             _viewerCacheArgs._dataSize = gl_viewer->allocateFrameStorage(_viewerCacheArgs._textureRect.w,
                                                                                 _viewerCacheArgs._textureRect.h);
@@ -356,7 +356,7 @@ void VideoEngine::dispatchEngine(){
         
     }else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){
         //cout << "    _cachedFrameEngine()" << endl;
-        Viewer* viewer = _dag.outputAsViewer();
+        ViewerNode* viewer = _dag.outputAsViewer();
         viewer->cachedFrameEngine(_lastEngineStatus._cachedEntry);
     }
     
@@ -817,9 +817,9 @@ void VideoEngine::DAG::reset(){
     clearGraph();
 }
 
-Viewer* VideoEngine::DAG::outputAsViewer() const {
+ViewerNode* VideoEngine::DAG::outputAsViewer() const {
     if(_output && _isViewer)
-        return dynamic_cast<Viewer*>(_output);
+        return dynamic_cast<ViewerNode*>(_output);
     else
         return NULL;
 }

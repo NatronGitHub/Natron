@@ -30,7 +30,7 @@ class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-class Viewer: public Node
+class ViewerNode: public Node
 {
     
     ViewerInfos* _viewerInfos;
@@ -42,9 +42,9 @@ class Viewer: public Node
 public:
     
         
-    Viewer(ViewerCache* cache);
+    ViewerNode(ViewerCache* cache);
     
-    virtual ~Viewer();
+    virtual ~ViewerNode();
     
     virtual bool isOutputNode(){return true;}
     

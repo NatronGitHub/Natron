@@ -21,7 +21,7 @@
 #include "Core/Lut.h"
 #include "Core/Format.h"
 #include "Writer/Writer.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 
 using namespace std;
 using namespace Powiter;

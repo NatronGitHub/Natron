@@ -33,7 +33,7 @@
 #include "Gui/mainGui.h"
 #include "Gui/DAG.h"
 #include "Gui/viewerTab.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 
 TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):
 QFrame(parent),

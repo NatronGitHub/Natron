@@ -31,7 +31,7 @@
 
 class NodeGui;
 class Model;
-class Viewer;
+class ViewerNode;
 class Writer;
 class Gui;
 class QLabel;
@@ -91,7 +91,7 @@ public:
     /*Returns a pointer to the Viewer currently used
      by the VideoEngine. If the output is not a viewer,
      it will return NULL.*/
-    static Viewer* getCurrentViewer();
+    static ViewerNode* getCurrentViewer();
     
     /*Returns a pointer to the Writer currently used
      by the VideoEngine. If the output is not a writer,

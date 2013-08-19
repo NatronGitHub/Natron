@@ -26,7 +26,7 @@
 #include "Gui/mainGui.h"
 #include "Gui/dockableSettings.h"
 #include "Core/Model.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Reader/Reader.h"
 #include "Gui/knob.h"
 #include "Gui/GLViewer.h"
@@ -36,7 +36,7 @@
 #include <QScrollBar>
 #include <QGraphicsLineItem>
 #include "Gui/timeline.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include <QUndoStack>
 #include <cstdlib>
 
@@ -558,7 +558,7 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
                 ctrlPTR->getModel()->startVideoEngine(1);
             }
             else if(ret.first == 0){ // no inputs, disconnect viewer
-                Viewer* v = static_cast<Viewer*>(viewer->getNode());
+                ViewerNode* v = static_cast<ViewerNode*>(viewer->getNode());
                 if(v){
                     ViewerTab* tab = v->getUiContext();
                     tab->viewer->disconnectViewer();
@@ -720,7 +720,7 @@ void AddCommand::undo(){
         }
         
     }else{
-        Viewer* viewer = dynamic_cast<Viewer*>(_node->getNode());
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
         ctrlPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
@@ -761,7 +761,7 @@ void AddCommand::redo(){
                 _node->getSettingPanel()->setVisible(true);
             }
         }else{
-            Viewer* viewer = dynamic_cast<Viewer*>(_node->getNode());
+            ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
             ctrlPTR->getGui()->addViewerTab(viewer->getUiContext(), ctrlPTR->getGui()->_viewersPane);
             viewer->getUiContext()->show();
         }
@@ -808,7 +808,7 @@ void RemoveCommand::undo(){
             _node->getSettingPanel()->setVisible(true);
         }
     }else{
-        Viewer* viewer = dynamic_cast<Viewer*>(_node->getNode());
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
         ctrlPTR->getGui()->addViewerTab(viewer->getUiContext(), ctrlPTR->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
@@ -854,7 +854,7 @@ void RemoveCommand::redo(){
         }
         
     }else{
-        Viewer* viewer = dynamic_cast<Viewer*>(_node->getNode());
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
         ctrlPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }

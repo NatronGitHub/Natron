@@ -93,7 +93,7 @@ void Controler::createNode(QString name){
     }
 }
 
-Viewer* Controler::getCurrentViewer(){
+ViewerNode* Controler::getCurrentViewer(){
     Controler* ctrl = Controler::instance();
     return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsViewer();
 }

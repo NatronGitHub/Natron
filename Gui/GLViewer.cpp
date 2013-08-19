@@ -34,8 +34,8 @@
 #include "Core/Model.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/timeline.h"
-#include "Core/viewercache.h"
-#include "Core/settings.h"
+#include "Core/ViewerCache.h"
+#include "Core/Settings.h"
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #include "Core/MemoryFile.h"

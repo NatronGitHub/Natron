@@ -43,7 +43,7 @@ class Row;
 class ReaderInfo;
 class Reader;
 class Model;
-class Viewer;
+class ViewerNode;
 class Writer;
 class Timer;
 
@@ -140,7 +140,7 @@ public:
          *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
          *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
          */
-        Viewer* outputAsViewer() const;
+        ViewerNode* outputAsViewer() const;
         
         /**
          *@brief Convenience function. Returns NULL in case the output node is not of the requested type.

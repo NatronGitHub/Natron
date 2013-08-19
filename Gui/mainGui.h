@@ -48,7 +48,7 @@ class Controler;
 class NodeGraph;
 class ViewerTab;
 class Node;
-class Viewer;
+class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
 
@@ -136,7 +136,7 @@ public:
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(Viewer* node,TabWidget* where);
+    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
     
     void addViewerTab(ViewerTab* tab,TabWidget* where);
     

@@ -17,7 +17,7 @@
 
 
 #include "Write.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Writer/Writer.h"
 #include "Core/Lut.h"
 #include "Gui/knob.h"

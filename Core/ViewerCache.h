@@ -21,7 +21,7 @@
 
 #include "Core/AbstractCache.h"
 #include "Gui/texture.h"
-#include "Core/singleton.h"
+#include "Core/Singleton.h"
 class Format;
 class ChannelSet;
 class Box2D;

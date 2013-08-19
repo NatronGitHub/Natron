@@ -142,7 +142,7 @@ public:
  Each cache entry for disk-caches will be under the sub-folder whose name is the 1st byte
  of the hash key.
  You have an example of both AbstractMemoryCache and AbstractDiskCache with 
- NodeCache.h and viewercache.h .*/
+ NodeCache.h and ViewerCache.h .*/
 class AbstractCache {
     
 public:

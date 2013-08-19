@@ -12,7 +12,7 @@
 
 #include <cfloat>
 #include "Core/OfxNode.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Core/ImageFetcher.h"
 #include "Superviser/powiterFn.h"
 //#include <QtGui/QImage>

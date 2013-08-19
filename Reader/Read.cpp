@@ -24,7 +24,7 @@
 #include "Superviser/controler.h"
 #include "Core/Model.h"
 #include "Core/VideoEngine.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 using namespace std;
 using namespace Powiter;
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)

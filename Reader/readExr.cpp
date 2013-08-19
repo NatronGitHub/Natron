@@ -27,7 +27,7 @@
 #include "Gui/node_ui.h"
 #include "Gui/GLViewer.h"
 #include "Core/Lut.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 using namespace std;
 using namespace Powiter;
 

@@ -12,11 +12,11 @@
 
 #include "OfxNode.h"
 #include "Core/OfxParamInstance.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Core/OfxClipInstance.h"
 #include "Core/Model.h"
 #include "Superviser/controler.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 #include "Gui/timeline.h"
 #include "Gui/viewerTab.h"
 using namespace std;

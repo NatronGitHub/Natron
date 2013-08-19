@@ -89,7 +89,7 @@ class NodeCache;
 class ViewerCache;
 class Controler;
 class OutputNode;
-class Viewer;
+class ViewerNodeNode;
 class Hash;
 class VideoEngine;
 class QMutex;

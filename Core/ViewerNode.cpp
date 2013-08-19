@@ -15,7 +15,7 @@
 
 
 
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 
 #include <QtConcurrentRun>
 
@@ -24,9 +24,9 @@
 #include "Superviser/controler.h"
 #include "Gui/viewerTab.h"
 #include "Gui/GLViewer.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Gui/timeline.h"
-#include "Core/viewercache.h"
+#include "Core/ViewerCache.h"
 #include "Reader/Reader.h"
 #include "Core/MemoryFile.h"
 #include "Core/Model.h"
@@ -34,7 +34,7 @@
 #include "Superviser/controler.h"
 
 using namespace Powiter;
-Viewer::Viewer(ViewerCache* cache):Node(),
+ViewerNode::ViewerNode(ViewerCache* cache):Node(),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
@@ -44,28 +44,28 @@ _pboIndex(0)
    QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));
 }
 
-void Viewer::initializeViewerTab(TabWidget* where){
+void ViewerNode::initializeViewerTab(TabWidget* where){
    _uiContext = ctrlPTR->getGui()->addNewViewerTab(this,where);
 }
 
-Viewer::~Viewer(){
+ViewerNode::~ViewerNode(){
     if(ctrlPTR->getGui())
         ctrlPTR->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
 }
 
-void Viewer::_validate(bool){
+void ViewerNode::_validate(bool){
     
    // (void)forReal;
    // makeCurrentViewer();
 }
 
-const std::string Viewer::description(){
+const std::string ViewerNode::description(){
     return "OutputNode";
 }
 
-void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
+void ViewerNode::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     InputRow row(y,offset,range);
     input(0)->get(row);
     Row* internal = row.getInternalRow();
@@ -94,7 +94,7 @@ void Viewer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     }
 }
 
-void Viewer::makeCurrentViewer(){
+void ViewerNode::makeCurrentViewer(){
     if(_viewerInfos){
         delete _viewerInfos;
     }
@@ -108,15 +108,15 @@ void Viewer::makeCurrentViewer(){
     _uiContext->setCurrentViewerInfos(_viewerInfos,false);
 }
 
-int Viewer::firstFrame() const{
+int ViewerNode::firstFrame() const{
     return _uiContext->frameSeeker->firstFrame();
 }
 
-int Viewer::lastFrame() const{
+int ViewerNode::lastFrame() const{
     return _uiContext->frameSeeker->lastFrame();
 }
 
-int Viewer::currentFrame() const{
+int ViewerNode::currentFrame() const{
     return _uiContext->frameSeeker->currentFrame();
 }
 
@@ -158,13 +158,13 @@ void ViewerInfos::operator=(const ViewerInfos &other){
     rgbMode(other._rgbMode);
 }
 
-FrameEntry* Viewer::get(U64 key){
+FrameEntry* ViewerNode::get(U64 key){
     
   return  _viewerCache->get(key);
 }
 
 
-void Viewer::cachedFrameEngine(FrameEntry* frame){
+void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     size_t dataSize = 0;
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
@@ -194,11 +194,11 @@ void Viewer::cachedFrameEngine(FrameEntry* frame){
     checkGLErrors();
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
-    QFuture<void> future = QtConcurrent::run(this,&Viewer::retrieveCachedFrame,cachedFrame,output,dataSize);
+    QFuture<void> future = QtConcurrent::run(this,&ViewerNode::retrieveCachedFrame,cachedFrame,output,dataSize);
     _cacheWatcher->setFuture(future);
    
     
 }
-void Viewer::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
+void ViewerNode::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
     _uiContext->viewer->fillPBO(cachedFrame, dst, dataSize);
 }

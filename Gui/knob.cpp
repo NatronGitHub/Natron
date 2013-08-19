@@ -39,7 +39,7 @@
 #include "Core/VideoEngine.h"
 #include "Gui/dockableSettings.h"
 #include "Gui/framefiledialog.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Gui/button.h"
 #include "Gui/viewerTab.h"
 #include "Gui/timeline.h"

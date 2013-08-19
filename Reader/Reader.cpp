@@ -32,17 +32,17 @@
 #include "Superviser/controler.h"
 #include "Core/VideoEngine.h"
 #include "Core/Model.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Reader/Read.h"
 #include "Gui/timeline.h"
 #include "Gui/viewerTab.h"
 #include "Gui/mainGui.h"
-#include "Core/viewercache.h"
+#include "Core/ViewerCache.h"
 #include "Gui/knob.h"
 #include "Core/Box.h"
 #include "Core/Format.h"
 #include "Writer/Writer.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 
 using namespace Powiter;
 using namespace std;

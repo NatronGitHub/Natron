@@ -21,10 +21,10 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/QVector2D>
 #include <cassert>
-#include "Core/viewercache.h"
+#include "Core/ViewerCache.h"
 #include "Superviser/controler.h"
 #include "Core/Model.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Gui/GLViewer.h"
 #include "Core/MemoryFile.h"
 #include "Gui/mainGui.h"
@@ -34,9 +34,9 @@
 #include "Reader/Reader.h"
 #include "Core/Hash.h"
 #include <QtCore/QFile>
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Core/Format.h"
-#include "Core/viewerNode.h"
+#include "Core/ViewerNode.h"
 using namespace std;
 using namespace Powiter;
 #define gl_viewer currentViewer->viewer

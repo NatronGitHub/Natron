@@ -20,7 +20,7 @@
 #include <vector>
 #include <QtCore/qglobal.h>
 #include "Superviser/powiterFn.h"
-#include "Core/singleton.h"
+#include "Core/Singleton.h"
 #include <map>
 #include <vector>
 class PluginID;

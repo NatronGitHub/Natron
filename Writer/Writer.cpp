@@ -24,13 +24,13 @@
 #include <QtConcurrentRun>
 
 #include "Gui/knob_callback.h"
-#include "Core/row.h"
+#include "Core/Row.h"
 #include "Writer/Write.h"
 #include "Gui/knob.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 #include "Superviser/controler.h"
 #include "Core/Model.h"
-#include "Core/settings.h"
+#include "Core/Settings.h"
 
 using namespace std;
 using namespace Powiter;
