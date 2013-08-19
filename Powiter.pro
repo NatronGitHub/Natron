@@ -194,8 +194,43 @@ HEADERS += \
     Gui/texture.h \
     Core/ofxnode.h \
     Core/ofxclipinstance.h \
-    Core/ofxparaminstance.h
-
+    Core/ofxparaminstance.h \
+    libs/OpenFX/HostSupport/include/ofxhBinary.h \
+    libs/OpenFX/HostSupport/include/ofxhClip.h \
+    libs/OpenFX/HostSupport/include/ofxhHost.h \
+    libs/OpenFX/HostSupport/include/ofxhImageEffect.h \
+    libs/OpenFX/HostSupport/include/ofxhImageEffectAPI.h \
+    libs/OpenFX/HostSupport/include/ofxhInteract.h \
+    libs/OpenFX/HostSupport/include/ofxhMemory.h \
+    libs/OpenFX/HostSupport/include/ofxhParam.h \
+    libs/OpenFX/HostSupport/include/ofxhPluginAPICache.h \
+    libs/OpenFX/HostSupport/include/ofxhPluginCache.h \
+    libs/OpenFX/HostSupport/include/ofxhProgress.h \
+    libs/OpenFX/HostSupport/include/ofxhPropertySuite.h \
+    libs/OpenFX/HostSupport/include/ofxhTimeLine.h \
+    libs/OpenFX/HostSupport/include/ofxhUtilities.h \
+    libs/OpenFX/HostSupport/include/ofxhXml.h \
+    libs/OpenFX/include/ofxCore.h \
+    libs/OpenFX/include/ofxImageEffect.h \
+    libs/OpenFX/include/ofxInteract.h \
+    libs/OpenFX/include/ofxKeySyms.h \
+    libs/OpenFX/include/ofxMemory.h \
+    libs/OpenFX/include/ofxMessage.h \
+    libs/OpenFX/include/ofxMultiThread.h \
+    libs/OpenFX/include/ofxOpenGLRender.h \
+    libs/OpenFX/include/ofxParam.h \
+    libs/OpenFX/include/ofxParametricParam.h \
+    libs/OpenFX/include/ofxPixels.h \
+    libs/OpenFX/include/ofxProgress.h \
+    libs/OpenFX/include/ofxProperty.h \
+    libs/OpenFX/include/ofxTimeLine.h \
+    libs/OpenFX_extensions//nuke/camera.h \
+    libs/OpenFX_extensions//nuke/fnPublicOfxExtensions.h \
+    libs/OpenFX_extensions//tuttle/ofxGraphAPI.h \
+    libs/OpenFX_extensions//tuttle/ofxMetadata.h \
+    libs/OpenFX_extensions//tuttle/ofxParam.h \
+    libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
 
 
 INSTALLS += target
