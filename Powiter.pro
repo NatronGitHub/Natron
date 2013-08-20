@@ -163,7 +163,7 @@ HEADERS += \
     Readers/Read.h \
     Readers/Reader.h \
     Readers/ReadExr.h \
-    Readers/ReadFfmpeg_deprectated.h \
+    Readers/ReadFfmpeg_deprecated.h \
     Readers/ReadQt.h \
     Global/Controler.h \
     Global/Enums.h \
