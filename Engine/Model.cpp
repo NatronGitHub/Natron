@@ -1058,7 +1058,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
 
 void Model::loadProject(const QString& filename){
     
-
+}
 void Model::saveProject(const QString& filename){
     
 }
