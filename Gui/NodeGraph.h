@@ -102,6 +102,9 @@ public:
     void updateNavigator();
     
     QGraphicsItem* getRootItem() const {return _root;}
+    
+    const std::vector<NodeGui*> getAllActiveNodes() const;
+    
 protected:
 
     void mousePressEvent(QMouseEvent *event);

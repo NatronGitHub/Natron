@@ -17,6 +17,7 @@
 
 #include "Gui/Knob.h"
 
+#include <cassert>
 #include <climits>
 #include <QtCore/QString>
 #include <QHBoxLayout>
@@ -363,9 +364,8 @@ Knob* KnobFactory::createKnob(const std::string& name, KnobCallback* callback, c
     }
 }
 
-Knob::Knob( KnobCallback *cb):QWidget()
+Knob::Knob( KnobCallback *cb,const std::string& description):QWidget(),cb(cb),_description(description)
 {
-    this->cb=cb;
     layout=new QHBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
     foreach(QWidget* ele,elements){
@@ -434,7 +434,7 @@ Knob* Int_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Knob
     return knob;
 }
 
-Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),integer(0){
+Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),integer(0){
     QLabel* desc=new QLabel(description.c_str());
     box=new FeedBackSpinBox(this,false);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
@@ -474,6 +474,27 @@ void Int_Knob::setMaximum(int v){
 void Int_Knob::setMinimum(int v){
     box->setMinimum(v);
 }
+
+std::string Int_Knob::serialize() const{
+    int v = 0;
+    if(integer){
+        v = *integer;
+    }
+    QString str = QString::number(v);
+    return str.toStdString();
+}
+void Int_Knob::restoreFromString(const std::string& str){
+    assert(integer);
+    QString s(str.c_str());
+    if(!s.isEmpty()){
+        int i = 0;
+        QString vStr;
+        while(i < s.size() && s.at(i).isDigit()){
+            vStr.append(s.at(i++));
+        }
+        setValue(vStr.toInt());
+    }
+}
 /******INT2D*****/
 
 
@@ -484,7 +505,7 @@ Knob* Int2D_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Kn
     return knob;
 }
 
-Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_value1(0),_value2(0){
+Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
     _box1=new FeedBackSpinBox(this,false);
     _box2=new FeedBackSpinBox(this,false);
@@ -550,7 +571,40 @@ void Int2D_Knob::setMaximum2(int v){
 void Int2D_Knob::setMinimum2(int v){
     _box2->setMinimum(v);
 }
+std::string Int2D_Knob::serialize() const{
+    int v1 = 0,v2 = 0;
+    if(_value1){
+        v1 = *_value1;
+    }
+    if(_value2){
+        v1 = *_value2;
+    }
 
+    QString str1 = QString::number(v1);
+    QString str2 = QString::number(v2);
+    return QString("v1 " + str1 + " v2 " + str2).toStdString();
+}
+void Int2D_Knob::restoreFromString(const std::string& str){
+    assert(_value1 && _value2);
+    QString s(str.c_str());
+    if(!s.isEmpty()){
+        int i = s.indexOf("v1");
+        i+=3;
+        QString v1Str,v2Str;
+        while(i < s.size() && s.at(i).isDigit()){
+            v1Str.append(s.at(i++));
+        }
+        
+        i++;//the ' ' character
+        i+=3;
+        while(i < s.size() && s.at(i).isDigit()){
+            v2Str.append(s.at(i++));
+        }
+        setValue1(v1Str.toInt());
+        setValue2(v2Str.toInt());
+    }
+    
+}
 
 //================================================================
 FileQLineEdit::FileQLineEdit(File_Knob *knob):LineEdit(knob){
@@ -616,7 +670,7 @@ void File_Knob::updateLastOpened(QString str){
     _lastOpened = str.left(index);
 }
 
-File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask ):Knob(cb),filesList(0),_lastOpened("")
+File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask ):Knob(cb,description),filesList(0),_lastOpened("")
 {
     
     QLabel* desc=new QLabel(description.c_str());
@@ -658,6 +712,23 @@ void File_Knob::setLineEditText(const std::string& str){
 std::string File_Knob::getLineEditText() const{
     return _name->text().toStdString();
 }
+
+std::string File_Knob::serialize() const{
+    return getLineEditText();
+}
+void File_Knob::restoreFromString(const std::string& str){
+    _name->setText(str.c_str());
+    *filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
+    setValues();
+    std::string className=getCallBack()->getNode()->className();
+    if(className == string("Reader")){
+        Node* node=getCallBack()->getNode();
+        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+        static_cast<Reader*>(node)->showFilePreview();
+    }
+    validateEvent(true);
+}
+
 Knob* Bool_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
 	Bool_Knob* knob=new Bool_Knob(cb,description,flags);
     if(cb)
@@ -686,7 +757,7 @@ void Bool_Knob::setValues(){
 	}
 }
 
-Bool_Knob::Bool_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb) ,_boolean(0){
+Bool_Knob::Bool_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description) ,_boolean(0){
 	Q_UNUSED(flags);
     QLabel* _label = new QLabel(description.c_str(),this);
 	checkbox=new QCheckBox(this);
@@ -696,13 +767,29 @@ Bool_Knob::Bool_Knob(KnobCallback *cb, const std::string& description, Knob_Mask
 	layout->addWidget(checkbox);
     layout->addStretch();
 }
+std::string Bool_Knob::serialize() const{
+    if (_boolean) {
+        return *_boolean ? "1" : "0";
+    }else{
+        return "";
+    }
+}
+void Bool_Knob::restoreFromString(const std::string& str){
+    assert(_boolean);
+    QString s(str.c_str());
+    if(!s.isEmpty()){
+        int val = s.toInt();
+        setChecked(val);
+    }
+    
+}
 //================================================================
 
 void Double_Knob::setValues(){
     values.clear();
     values.push_back(*(reinterpret_cast<U64*>(_value)));
 }
-Double_Knob::Double_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb),_value(0){
+Double_Knob::Double_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value(0){
     QLabel* desc=new QLabel(description.c_str());
     box=new FeedBackSpinBox(this,true);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
@@ -749,7 +836,26 @@ Knob* Double_Knob::BuildKnob(KnobCallback* cb, const std::string& description, K
         cb->addKnob(knob);
     return knob;
 }
-
+std::string Double_Knob::serialize() const{
+    double v = 0.;
+    if(_value){
+        v = *_value;
+    }
+    QString str = QString::number(v);
+    return str.toStdString();
+}
+void Double_Knob::restoreFromString(const std::string& str){
+    assert(_value);
+    QString s(str.c_str());
+    if(!s.isEmpty()){
+        int i = 0;
+        QString vStr;
+        while(i < s.size() && s.at(i).isDigit()){
+            vStr.append(s.at(i++));
+        }
+        setValue(vStr.toDouble());
+    }
+}
 /*********Double2D******/
 
 Knob* Double2D_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -763,7 +869,7 @@ void Double2D_Knob::setValues(){
     values.push_back(*(reinterpret_cast<U64*>(_value1)));
     values.push_back(*(reinterpret_cast<U64*>(_value2)));
 }
-Double2D_Knob::Double2D_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb),_value1(0),_value2(0){
+Double2D_Knob::Double2D_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
     _box1=new FeedBackSpinBox(this,true);
     _box2=new FeedBackSpinBox(this,true);
@@ -833,7 +939,39 @@ void Double2D_Knob::setMinimum2(double d){
 void Double2D_Knob::setIncrement2(double d){
     _box2->setIncrement(d);
 }
-
+std::string Double2D_Knob::serialize() const{
+    double v1 = 0.,v2 = 0.;
+    if(_value1){
+        v1 = *_value1;
+    }
+    if(_value2){
+        v2 = *_value2;
+    }
+    QString str1 = QString::number(v1);
+    QString str2 = QString::number(v2);
+    return QString("v1 " + str1 + " v2 " + str2).toStdString();
+}
+void Double2D_Knob::restoreFromString(const std::string& str){
+    assert(_value1 && _value2);
+    QString s(str.c_str());
+    if(!s.isEmpty()){
+        int i = s.indexOf("v1");
+        i+=3;
+        QString v1Str,v2Str;
+        while(i < s.size() && s.at(i).isDigit()){
+            v1Str.append(s.at(i++));
+        }
+        
+        i++;//the ' ' character
+        i+=3;
+        while(i < s.size() && s.at(i).isDigit()){
+            v2Str.append(s.at(i++));
+        }
+        setValue1(v1Str.toDouble());
+        setValue2(v2Str.toDouble());
+    }
+    
+}
 /*******/
 
 Knob* Button_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -842,7 +980,7 @@ Knob* Button_Knob::BuildKnob(KnobCallback* cb, const std::string& description, K
         cb->addKnob(knob);
     return knob;
 }
-Button_Knob::Button_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),button(0){
+Button_Knob::Button_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),button(0){
     Q_UNUSED(flags);
     button = new Button(QString(description.c_str()),this);
     QObject::connect(button, SIGNAL(pressed()),this,SLOT(onButtonPressed()));
@@ -856,6 +994,14 @@ void Button_Knob::connectButtonToSlot(QObject* object,const char* slot){
 void Button_Knob::onButtonPressed(){
     validateEvent(false);
 }
+
+std::string Button_Knob::serialize() const{
+   return "";
+}
+void Button_Knob::restoreFromString(const std::string& str){
+    (void)str;
+}
+
 /*******/
 
 
@@ -866,7 +1012,7 @@ Knob* OutputFile_Knob::BuildKnob(KnobCallback* cb, const std::string& descriptio
     return knob;
 }
 
-OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),str(0){
+OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),str(0){
     Q_UNUSED(flags);
     QLabel* desc=new QLabel(description.c_str());
     _name=new OutputFileQLineEdit(this);
@@ -925,6 +1071,13 @@ void OutputFileQLineEdit::keyPressEvent(QKeyEvent *e){
     }
 	QLineEdit::keyPressEvent(e);
 }
+std::string OutputFile_Knob::serialize() const{
+    return _name->text().toStdString();
+}
+void OutputFile_Knob::restoreFromString(const std::string& str){
+    _name->setText(str.c_str());
+    *(this->str) = str;
+}
 /*===============================*/
 
 Knob* ComboBox_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -934,7 +1087,7 @@ Knob* ComboBox_Knob::BuildKnob(KnobCallback* cb, const std::string& description,
     return knob;
     
 }
-ComboBox_Knob::ComboBox_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),_currentItem(0){
+ComboBox_Knob::ComboBox_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_currentItem(0){
     Q_UNUSED(flags);
     _comboBox = new ComboBox(this);
     QLabel* desc = new QLabel(description.c_str());
@@ -975,7 +1128,15 @@ void ComboBox_Knob::setValues(){
         values.push_back(out.at(i).unicode());
     }
 }
-
+std::string ComboBox_Knob::serialize() const{
+    return _comboBox->itemText(_comboBox->activeIndex()).toStdString();
+}
+void ComboBox_Knob::restoreFromString(const std::string& str){
+    assert(_currentItem);
+    _comboBox->setCurrentText(str.c_str());
+    *_currentItem = str;
+    setValues();
+}
 /*============================*/
 
 Knob* Separator_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -984,7 +1145,7 @@ Knob* Separator_Knob::BuildKnob(KnobCallback* cb, const std::string& description
         cb->addKnob(knob);
     return knob;
 }
-Separator_Knob::Separator_Knob(KnobCallback *cb, const std::string& description, Knob_Mask):Knob(cb){
+Separator_Knob::Separator_Knob(KnobCallback *cb, const std::string& description, Knob_Mask):Knob(cb,description){
     QLabel* name = new QLabel(description.c_str(),this);
     layout->addWidget(name);
     line = new QFrame(this);
@@ -1003,7 +1164,7 @@ Knob* Group_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Kn
     return knob;
 }
 
-Group_Knob::Group_Knob(KnobCallback *cb, const std::string& description, Knob_Mask):Knob(cb){
+Group_Knob::Group_Knob(KnobCallback *cb, const std::string& description, Knob_Mask):Knob(cb,description){
     _box = new QGroupBox(description.c_str(),this);
     _boxLayout = new QVBoxLayout(_box);
     QObject::connect(_box, SIGNAL(clicked(bool)), this, SLOT(setChecked(bool)));
@@ -1025,8 +1186,12 @@ void Group_Knob::setChecked(bool b){
         _knobs[i]->setVisible(b);
     }
 }
+
+std::string Group_Knob::serialize() const{
+    return "";
+}
 /*****************************/
-RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb),
+RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),
 _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
     _rBox = new FeedBackSpinBox(this,true);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onRedValueChanged(double)));
@@ -1060,6 +1225,7 @@ _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
     _aLabel = new QLabel("a",this);
     
     QLabel* nameLabel = new QLabel(description.c_str(),this);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(nameLabel);
     layout->addWidget(_rLabel);
     layout->addWidget(_rBox);
@@ -1212,9 +1378,50 @@ void RGBA_Knob::disablePermantlyAlpha(){
     _aBox->setVisible(false);
     _aBox->setEnabled(false);
 }
+std::string RGBA_Knob::serialize() const {
+    double r = 0. , g = 0., b = 0., a = 1.;
+    if(_r)
+        r = *_r;
+    if(_g)
+        g = *_g;
+    if(_b)
+        b = *_b;
+    if(_a)
+        a = *_a;
+    return ("r " + QString::number(r) + " g " + QString::number(g) + " b " +  QString::number(b) + " a " +  QString::number(a)).toStdString();
+}
+void RGBA_Knob::restoreFromString(const std::string& str){
+    QString s(str.c_str());
+    int i = s.indexOf("r");
+    i+=2;
+    QString rStr,gStr,bStr,aStr;
+    while(i < s.size() && s.at(i).isDigit()){
+        rStr.append(s.at(i++));
+    }
+    i = s.indexOf("g");
+    i+=2;
+    while(i < s.size() && s.at(i).isDigit()){
+        gStr.append(s.at(i++));
+    }
+    
+    i = s.indexOf("b");
+    i+=2;
+    while(i < s.size() && s.at(i).isDigit()){
+        bStr.append(s.at(i++));
+    }
+    
+    i = s.indexOf("a");
+    i+=2;
+    while(i < s.size() && s.at(i).isDigit()){
+        aStr.append(s.at(i++));
+    }
+    setRGBA(rStr.toDouble(), gStr.toDouble(), bStr.toDouble(), aStr.toDouble());
+    setValues();
+    
+}
 /*************/
 
-Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
+Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description){
     _tabWidget = new TabWidget(TabWidget::NONE,this);
     layout->addWidget(_tabWidget);
 }
@@ -1251,7 +1458,7 @@ Knob* String_Knob::BuildKnob(KnobCallback* cb, const std::string& description, K
         cb->addKnob(knob);
     return knob;
 }
-String_Knob::String_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb){
+String_Knob::String_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description){
     QLabel* name = new QLabel(description.c_str(),this);
     layout->addWidget(name);
     _lineEdit = new LineEdit(this);
@@ -1273,5 +1480,12 @@ void String_Knob::setString(QString str){
     _lineEdit->setText(str);
     setValues();
 }
+std::string String_Knob::serialize() const{
+    return _string ?  *_string : "";
+}
 
-
+void String_Knob::restoreFromString(const std::string& str){
+    assert(_string);
+    *_string = str;
+    setString(str.c_str());
+}

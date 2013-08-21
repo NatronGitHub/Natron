@@ -30,6 +30,7 @@
 #define currentWriter Controler::getCurrentWriter()
 
 class NodeGui;
+class Node;
 class Model;
 class ViewerNode;
 class Writer;
@@ -72,7 +73,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    void createNode(QString name);
+    Node* createNode(QString name);
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/
@@ -102,6 +103,8 @@ public:
                              const std::string& pluginName,
                              const std::string& pluginIconPath,
                              const std::string& groupIconPath);
+    
+    const std::vector<NodeGui*> getAllActiveNodes() const;
     
 private:
 	 

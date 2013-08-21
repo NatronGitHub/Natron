@@ -207,6 +207,10 @@ public:
         return out;
     }
     
+    void loadProject(const QString& filename);
+    
+    void saveProject(const QString& filename);
+        
 signals:
     void vengineNeeded(int nbFrames);
     
@@ -253,6 +257,18 @@ private:
 	 *to know whether it is an outputNode,InputNode or an operator.*/
     void initCounterAndGetDescription(Node*& node);
 
+    
+    /*Serializes the active nodes in the editor*/
+    QString serializeNodeGraph() const;
+    
+    /*restores the node graph from string*/
+    void restoreGraphFromString(const QString& str);
+
+    
+    /*Analyses and takes action for 1 node ,given 1 line from the serialized version
+     of the node graph.*/
+    void analyseSerializedNodeString(Node* n,const QString& str);
+    
 
     VideoEngine* _videoEngine; // Video Engine
   

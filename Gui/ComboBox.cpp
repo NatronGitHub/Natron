@@ -152,6 +152,12 @@ void ComboBox::setCurrentText(const QString& text){
     str.prepend("  ");
     str.append("  ");
     _currentText->setText(str);
+    for (U32 i = 0; i < _actions.size(); i++) {
+        if(_actions[i]->text() == text){
+            _currentIndex = i;
+            break;
+        }
+    }
 }
 QString ComboBox::text() const{
     return _currentText->text();

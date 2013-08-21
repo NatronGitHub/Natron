@@ -231,7 +231,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         QPointF np=_nodeSelected->mapFromScene(newPos);
         qreal diffx=np.x()-op.x();
         qreal diffy=np.y()-op.y();
-        _nodeSelected->moveBy(diffx,diffy);
+        _nodeSelected->setPos(_nodeSelected->pos()+QPointF(diffx,diffy));
         /*also moving node creation anchor*/
         foreach(Edge* arrow,_nodeSelected->getInputsArrows()){
             arrow->initLine();
@@ -631,6 +631,15 @@ void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
     setPixmap(pix);
 }
 
+const std::vector<NodeGui*> NodeGraph::getAllActiveNodes() const{
+    vector<NodeGui*> out;
+    foreach(NodeGui* n,_nodes){
+        if(n->isActive()){
+            out.push_back(n);
+        }
+    }
+    return out;
+}
 
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
@@ -784,6 +793,7 @@ _node(node),_graph(graph){
 void RemoveCommand::undo(){
     _graph->scene()->addItem(_node);
     _node->setActive(true);
+    
     foreach(NodeGui* child,_children){
         _node->addChild(child);
         _node->getNode()->addChild(child->getNode());
@@ -1003,3 +1013,5 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     }
     return false;
 }
+
+

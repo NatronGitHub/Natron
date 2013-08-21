@@ -93,7 +93,7 @@ public:
     enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2};
     
     
-    Knob(KnobCallback* cb);
+    Knob(KnobCallback* cb,const std::string& description);
     
     virtual ~Knob();
 
@@ -115,6 +115,8 @@ public:
      to create an instance of this knob.*/
     virtual std::string name()=0;
     
+    const std::string& getDescription() const {return _description;}
+    
     //to be called on events functions to tell the engine to start processing
     //made public to allow other class that knob depends on to call validateEvent
     //but shouldn't be called by any other class.
@@ -126,6 +128,11 @@ public:
      it belongs to.*/
     void enqueueForDeletion();
     
+    
+    virtual std::string serialize() const =0;
+    
+    virtual void restoreFromString(const std::string& str) =0;
+    
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
     
@@ -133,6 +140,7 @@ protected:
     QHBoxLayout* layout;
     std::vector<QWidget*> elements;
     std::vector<U64> values;
+    std::string _description;
 };
 
 typedef unsigned int Knob_Mask;
@@ -199,6 +207,11 @@ public:
     
     QStringList* getFileNames(){return filesList;}
     
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
+    
     public slots:
     void open_file();
     
@@ -236,6 +249,11 @@ public:
     void setPointer(std::string* filename){str = filename;}
     
     std::string * getStr(){return str;}
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
+    
 public slots:
     void open_file();
     void setStr(const QString& str){
@@ -273,6 +291,9 @@ public:
     void setMaximum(int);
     void setMinimum(int);
 
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
     
     public slots:
     void onValueChanged(double);
@@ -304,6 +325,9 @@ public:
     void setMaximum2(int);
     void setMinimum2(int);
     
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
     
     public slots:
     void onValue1Changed(double);
@@ -343,6 +367,10 @@ public:
     
     void setValue(double value);
 
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
+    
     public slots:
     void onValueChanged(double);
     
@@ -378,6 +406,10 @@ public:
     void setValue1(double value);
     void setValue2(double value);
     
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
+    
     public slots:
     void onValue1Changed(double);
     void onValue2Changed(double);
@@ -402,6 +434,10 @@ public:
     public slots:
 	void onToggle(bool b);
     void setChecked(bool b);
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
 signals:
     void triggered(bool);
 private:
@@ -422,6 +458,10 @@ public:
     virtual std::string name(){return "Button";}
     virtual void setValues(){}
     virtual ~Button_Knob(){}
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
     
     public slots:
     void onButtonPressed();
@@ -446,6 +486,11 @@ public:
     
     virtual std::string name(){return "ComboBox";}
 
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
+    
 signals:
     void entryChanged(int);
     
@@ -468,6 +513,9 @@ public:
     
     virtual std::string name(){return "Separator";}
 
+    virtual std::string serialize() const {return "";}
+    
+    virtual void restoreFromString(const std::string& str){(void)str;}
     
     virtual ~Separator_Knob(){}
 private:
@@ -487,6 +535,11 @@ public:
     
     
     virtual std::string name(){return "Group";}
+    
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str){(void)str;}
     
     virtual ~Group_Knob(){}
     public slots:
@@ -520,6 +573,10 @@ public:
     
     /*Must be called before setPointers*/
     void disablePermantlyAlpha();
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
 
 signals:
     void colorChanged(QColor);
@@ -575,6 +632,9 @@ public:
     
     virtual void setValues(){}
 
+    virtual std::string serialize() const{return "";}
+    
+    virtual void restoreFromString(const std::string& str){(void)str;}
     
     ~Tab_Knob(){}
     
@@ -594,6 +654,10 @@ public:
     virtual std::string name(){return "String";}
     void setPointer(std::string* val){_string = val;}
     virtual ~String_Knob(){}
+    
+    virtual std::string serialize() const;
+    
+    virtual void restoreFromString(const std::string& str);
     
     public slots:
     void setString(QString);

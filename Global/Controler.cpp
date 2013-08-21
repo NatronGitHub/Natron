@@ -24,6 +24,7 @@
 #include "Gui/NodeGui.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/TabWidget.h"
+#include "Gui/NodeGraph.h"
 using namespace Powiter;
 using namespace std;
 Controler::Controler():_model(0),_gui(0){}
@@ -83,7 +84,7 @@ const QStringList& Controler::getNodeNameList(){
 }
 
 
-void Controler::createNode(QString name){
+Node* Controler::createNode(QString name){
    
     Node* node = 0;
     if(_model->createNode(node,name.toStdString())){
@@ -91,6 +92,7 @@ void Controler::createNode(QString name){
     }else{
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
     }
+    return node;
 }
 
 ViewerNode* Controler::getCurrentViewer(){
@@ -107,4 +109,8 @@ void Controler::stackPluginToolButtons(const std::vector<std::string>& groups,
                                     const std::string& pluginIconPath,
                                     const std::string& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
+}
+const std::vector<NodeGui*> Controler::getAllActiveNodes() const{
+    assert(_gui->_nodeGraphTab->_nodeGraphArea);
+    return _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
 }

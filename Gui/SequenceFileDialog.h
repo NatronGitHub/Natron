@@ -404,6 +404,8 @@ public:
      mySequence#.jpg*/
     QString getSequencePattern();
     
+    static QStringList filesListFromPattern(const QString& pattern);
+    
     QString filesToSave();
     
     QDir currentDirectory() const;

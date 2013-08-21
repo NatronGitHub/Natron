@@ -11,6 +11,7 @@
 
 #include "SequenceFileDialog.h"
 
+#include <cassert>
 #include <locale>
 #include <algorithm>
 #include <QHBoxLayout>
@@ -723,7 +724,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         }
         if(!found){
             if(index.column() == 3){
-                _fd->getSequenceView()->setColumnWidth(3,_fd->getSequenceView()->width()/4);
+                       _fd->getSequenceView()->setColumnWidth(3,_fd->getSequenceView()->width()/4);
             }
             QStyledItemDelegate::paint(painter,option,index);
         }
@@ -1166,6 +1167,33 @@ QString SequenceFileDialog::getSequencePattern(){
     }else{
         return "";
     }
+}
+QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
+    QStringList ret;
+    QString unpathed = removePath(pattern);
+    int indexOfCommonPart = pattern.indexOf(unpathed);
+    QString path = pattern.left(indexOfCommonPart);
+    assert(pattern == (path + unpathed));
+    
+    QString commonPart;
+    int i = 0;
+    while (i < unpathed.size() && unpathed.at(i) != QChar('#')) {
+        commonPart.append(unpathed.at(i++));
+    }
+    if(i == unpathed.size()) return ret;
+    
+   
+    QDir d(path);
+    if(d.isReadable()) {
+        QStringList files = d.entryList();
+        for (int j = 0; j < files.size() ; j++) {
+            if (files.at(j).contains(commonPart)) {
+                ret << files.at(j);
+            }
+        }
+    }
+    return ret;
+    
 }
 QString SequenceFileDialog::filesToSave(){
 //    QStringList selected = selectedFiles();

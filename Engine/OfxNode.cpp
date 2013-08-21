@@ -147,14 +147,15 @@ void OfxNode::_validate(bool forReal){
             OfxPointD rS;
             rS.x = rS.y = 1.0;
             OfxRectD rod;
+            //This function calculates the merge of the inputs RoD.
             getRegionOfDefinitionAction(1.0, rS, rod);
-            string comp = clip->getUnmappedComponents();
             //  double pa = clip->getAspectRatio();
-            
+            //we just set the displayWindow/dataWindow rather than merge it
             _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""/*,pa*/));
             _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
             _info->rgbMode(true);
             _info->setYdirection(1);
+            string comp = clip->getUnmappedComponents();
             _info->setChannels(ofxComponentsToPowiterChannels(comp));
         }
         

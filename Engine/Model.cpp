@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 
 
@@ -42,6 +42,8 @@
 #include "Writers/WriteQt.h"
 #include "Writers/WriteExr.h"
 #include "Gui/Gui.h"
+#include "Gui/NodeGui.h"
+#include "Gui/Edge.h"
 #include <cassert>
 
 
@@ -68,12 +70,12 @@ using namespace std;
 using namespace Powiter;
 Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPluginCache(*this)
 {
-        
+    
     /*node cache initialisation & restoration*/
     _nodeCache = NodeCache::getNodeCache();
     U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
                             Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*
-                            getSystemTotalRAM();
+    getSystemTotalRAM();
     _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);
     
     
@@ -83,7 +85,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
     _viewerCache->restore();
     
-   /*loading all plugins*/
+    /*loading all plugins*/
     loadAllPlugins();
     
     _knobFactory = KnobFactory::instance();
@@ -192,6 +194,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
 
 
 Model::~Model(){
+    
     _viewerCache->save();
     Lut::deallocateLuts();
     _videoEngine->abort();
@@ -317,7 +320,7 @@ bool Model::createNode(Node *&node,const std::string name){
 		initCounterAndGetDescription(node);
         return true;
     }else{
-                
+        
         OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
         if(ofxPlugin != _ofxPlugins.end()){
             OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin->second.first);
@@ -787,7 +790,7 @@ void Model::loadOFXPlugins(){
         groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
         groupIconFilename.append(groups[0]);
         groupIconFilename.append(".png");
-
+        
         ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
@@ -803,12 +806,12 @@ void Model::writeOFXCache(){
 }
 
 OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
-                                                    OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                    OFX::Host::ImageEffect::Descriptor& desc,
-                                                    const std::string& context)
+                                                     OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                     OFX::Host::ImageEffect::Descriptor& desc,
+                                                     const std::string& context)
 {
-
-      return new OfxNode(plugin, desc, context);
+    
+    return new OfxNode(plugin, desc, context);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
@@ -820,7 +823,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect
 
 /// used to construct a context description, rootContext is the main context
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
-                                                         OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
     return desc;
@@ -828,7 +831,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::Image
 
 /// used to construct populate the cache
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bundlePath,
-                                                         OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
     return desc;
@@ -836,9 +839,9 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bun
 
 /// message
 OfxStatus Model::vmessage(const char* type,
-                         const char* ,
-                         const char* format,
-                         va_list args)
+                          const char* ,
+                          const char* format,
+                          va_list args)
 {
     bool isQuestion = false;
     const char *prefix = "Message : ";
@@ -869,3 +872,193 @@ OfxStatus Model::vmessage(const char* type,
     }
 }
 
+QString Model::serializeNodeGraph() const{
+    const std::vector<NodeGui*> activeNodes = ctrlPTR->getAllActiveNodes();
+    QString ret;
+    foreach(NodeGui* n, activeNodes){
+        //serialize inputs
+        ret.append("Node:");
+        if(!n->getNode()->isOpenFXNode()){
+            ret.append(n->getNode()->className().c_str());
+        }else{
+            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
+            std::string name = ofxNode->getShortLabel();
+            std::string grouping = ofxNode->getPluginGrouping();
+            vector<string> groups = extractAllPartsOfGrouping(grouping);
+            name.append("  [");
+            name.append(groups[0]);
+            name.append("]");
+            ret.append(name.c_str());
+        }
+        ret.append(":");
+        ret.append(n->getNode()->getName().c_str());
+        ret.append("{\n");
+        const std::vector<Node*>& parents = n->getNode()->getParents();
+        for (U32 i = 0; i < parents.size(); i++) {
+            ret.append("input");
+            ret.append(QString::number(i));
+            ret.append(":");
+            ret.append(parents[i]->getName().c_str());
+            ret.append("\n");
+        }
+        //serialize knobs
+        const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
+        for (U32 i = 0; i < knobs.size(); i++) {
+            ret.append("knob");
+            ret.append(":");
+            ret.append(knobs[i]->getDescription().c_str());
+            ret.append(":");
+            ret.append(knobs[i]->serialize().c_str());
+            ret.append("\n");
+        }
+        
+        //serialize gui infos
+        ret.append("pos:");
+        ret.append("x=");
+        ret.append(QString::number(n->pos().x()));
+        ret.append("y=");
+        ret.append(QString::number(n->pos().y()));
+        ret.append("\n");
+        
+        //closing brace
+        ret.append("}\n");
+    }
+    return ret;
+}
+
+void Model::restoreGraphFromString(const QString& str){
+    int i = 0,lastNode = 0;
+    std::vector<std::pair<Node*,QString> > actionsMap;
+    i = str.indexOf("Node:",lastNode);
+    while(i != -1){
+        lastNode = i+1;
+        
+        i += 5;
+        QString className;
+        while(i < str.size() && str.at(i) != QChar(':')){
+            className.append(str.at(i++));
+        }
+        if(i  == str.size()) return; // safety check
+        
+        i++;
+        QString nodeName;
+        while(i < str.size() && str.at(i) != QChar('{')){
+            nodeName.append(str.at(i++));
+        }
+        if(i  == str.size()) return; // safety check
+        
+        i++; //the '\n' character
+        
+        Node* n = ctrlPTR->createNode(className);
+        n->setName(nodeName.toStdString());
+        while (i < str.size() && str.at(i) != QChar('}')) {
+            QString line;
+            while(i < str.size() && str.at(i) != QChar('\n')){
+                line.append(str.at(i++));
+            }
+            i++; // the '\n' character
+            actionsMap.push_back(make_pair(n, line));
+        }
+        i = str.indexOf("Node:",lastNode);
+    }
+    
+    //adjusting knobs & connecting nodes now
+    for (U32 i = 0; i < actionsMap.size(); i++) {
+        pair<Node*,QString>& action = actionsMap[i];
+        analyseSerializedNodeString(action.first, action.second);
+    }
+    
+}
+void Model::analyseSerializedNodeString(Node* n,const QString& str){
+    int type = 0;
+    type = str.indexOf("input");
+    if(type != -1){
+        int i = type + 5;
+        QString inputNumberStr;
+        while(i < str.size() && str.at(i) != QChar(':')){
+            inputNumberStr.append(str.at(i++));
+        }
+        i++; // the ':' character
+        QString inputName;
+        while(i < str.size()) inputName.append(str.at(i++));
+        
+        int inputNb = inputNumberStr.toInt();
+        for (U32 j = 0; j < _currentNodes.size(); j++) {
+            if (_currentNodes[j]->getName() == inputName.toStdString()) {
+                n->addParent(_currentNodes[j]);
+                _currentNodes[j]->addChild(n);
+                n->getNodeUi()->addParent(_currentNodes[j]->getNodeUi());
+                _currentNodes[j]->getNodeUi()->addChild(n->getNodeUi());
+                
+                const std::vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
+                assert(inputNb < (int)edges.size());
+                edges[inputNb]->setSource(_currentNodes[j]->getNodeUi());
+                edges[inputNb]->initLine();
+                break;
+            }
+        }
+        return;
+    }
+    type = str.indexOf("knob");
+    if(type != -1){
+        int i = type + 4;
+        
+        i++; // the ':' character
+               
+        QString knobDescription;
+        while(i < str.size() && str.at(i)!= QChar(':')){
+            knobDescription.append(str.at(i++));
+        }
+        
+        if(i  == str.size()) return; // safety check
+        
+        i++; // the ':' character
+        
+        QString value;
+        while(i < str.size()){
+            value.append(str.at(i++));
+        }
+        
+        const std::vector<Knob*>& knobs = n->getKnobs();
+        for (U32 j = 0; j < knobs.size(); j++) {
+            if (knobs[j]->getDescription() == knobDescription.toStdString()) {
+                knobs[j]->restoreFromString(str.toStdString());
+                break;
+            }
+        }
+        
+        return;
+    }
+    
+    type = str.indexOf("pos");
+    if(type != -1){
+        int i = type + 3;
+        i++;// the ':' character
+        i++;// the 'x' character
+        i++;// the '=' character
+        
+        QString xStr,yStr;
+        while(i < str.size() && str.at(i).isDigit()){
+            xStr.append(str.at(i++));
+        }
+        
+        if(i  == str.size()) return; // safety check
+        
+        i++; // the '=' character
+        
+        while(i < str.size() && str.at(i).isDigit()){
+            yStr.append(str.at(i++));
+        }
+        
+        n->getNodeUi()->setPos(xStr.toDouble(), yStr.toDouble());
+        return;
+    }
+    
+}
+
+void Model::loadProject(const QString& filename){
+    
+
+void Model::saveProject(const QString& filename){
+    
+}
