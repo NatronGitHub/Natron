@@ -43,6 +43,7 @@
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
+#include "Gui/Gui.h"
 #include "Engine/viewernode.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
@@ -421,6 +422,7 @@ void Knob::validateEvent(bool initViewer){
             ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
         }
     }
+    ctrlPTR->getGui()->autoSave();
 }
 
 //================================================================
@@ -493,6 +495,7 @@ void Int_Knob::restoreFromString(const std::string& str){
             vStr.append(s.at(i++));
         }
         setValue(vStr.toInt());
+        validateEvent(false);
     }
 }
 /******INT2D*****/
@@ -602,6 +605,7 @@ void Int2D_Knob::restoreFromString(const std::string& str){
         }
         setValue1(v1Str.toInt());
         setValue2(v2Str.toInt());
+        validateEvent(false);
     }
     
 }
@@ -641,7 +645,7 @@ void File_Knob::open_file(){
     QStringList strlist;
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
     
-    SequenceFileDialog dialog(this,filters,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
+    SequenceFileDialog dialog(this,filters,true,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
         strlist = dialog.selectedFiles();
     }
@@ -662,12 +666,10 @@ void File_Knob::open_file(){
     }
     
 }
-void File_Knob::updateLastOpened(QString str){
-    int index = str.lastIndexOf(QChar('/'));
-    if(index==-1){
-        index=str.lastIndexOf(QChar('\\'));
-    }
-    _lastOpened = str.left(index);
+void File_Knob::updateLastOpened(const QString& str){
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
 }
 
 File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask ):Knob(cb,description),filesList(0),_lastOpened("")
@@ -719,6 +721,7 @@ std::string File_Knob::serialize() const{
 void File_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
+    
     setValues();
     std::string className=getCallBack()->getNode()->className();
     if(className == string("Reader")){
@@ -781,6 +784,7 @@ void Bool_Knob::restoreFromString(const std::string& str){
         int val = s.toInt();
         setChecked(val);
     }
+    validateEvent(false);
     
 }
 //================================================================
@@ -854,6 +858,7 @@ void Double_Knob::restoreFromString(const std::string& str){
             vStr.append(s.at(i++));
         }
         setValue(vStr.toDouble());
+        validateEvent(false);
     }
 }
 /*********Double2D******/
@@ -969,6 +974,7 @@ void Double2D_Knob::restoreFromString(const std::string& str){
         }
         setValue1(v1Str.toDouble());
         setValue2(v2Str.toDouble());
+        validateEvent(false);
     }
     
 }
@@ -1077,6 +1083,7 @@ std::string OutputFile_Knob::serialize() const{
 void OutputFile_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *(this->str) = str;
+    validateEvent(false);
 }
 /*===============================*/
 
@@ -1136,6 +1143,7 @@ void ComboBox_Knob::restoreFromString(const std::string& str){
     _comboBox->setCurrentText(str.c_str());
     *_currentItem = str;
     setValues();
+    validateEvent(false);
 }
 /*============================*/
 
@@ -1417,6 +1425,7 @@ void RGBA_Knob::restoreFromString(const std::string& str){
     }
     setRGBA(rStr.toDouble(), gStr.toDouble(), bStr.toDouble(), aStr.toDouble());
     setValues();
+    validateEvent(false);
     
 }
 /*************/
@@ -1488,4 +1497,5 @@ void String_Knob::restoreFromString(const std::string& str){
     assert(_string);
     *_string = str;
     setString(str.c_str());
+    validateEvent(false);
 }

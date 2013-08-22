@@ -376,7 +376,8 @@ public:
     
     
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
-                       const std::vector<std::string>& filters, // the user accepted file types
+                       const std::vector<std::string>& filters, // the user accepted file types. Empty means it supports everything
+                       bool isSequenceDialog = true, // true if this dialog can display sequences
                        FileDialogMode mode = OPEN_DIALOG, // if it is an open or save dialog
                        const std::string& currentDirectory = ""); // the directory to show first
 

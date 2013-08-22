@@ -52,6 +52,7 @@ class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
 
+
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
@@ -178,6 +179,9 @@ public:
                              const std::string& groupIconPath);
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
+    
+    bool isGraphWorthless() const;
+    
 private:
 
     void addNodeGraph();
@@ -186,6 +190,12 @@ private:
 public slots:
     void exit();
     void closeEvent(QCloseEvent *e);
+    void newProject();
+    void openProject();
+    void saveProject();
+    void saveProjectAs();
+    void autoSave();
+    void saveWarning();
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -193,6 +203,7 @@ public:
     QAction *actionNew_project;
     QAction *actionOpen_project;
     QAction *actionSave_project;
+    QAction *actionSaveAs_project;
     QAction *actionPreferences;
     QAction *actionExit;
     QAction *actionProject_settings;

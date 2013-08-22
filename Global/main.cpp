@@ -54,7 +54,15 @@ int main(int argc, char *argv[])
 	/*instancating the controler, that will in turn create the GUI*/
     Controler* ctrl= Controler::instance();
 	/*we create the GUI in the initControler function*/
-    ctrl->initControler(coreEngine,splashScreen);
+    
+    QString projectFile;
+    QStringList args = QCoreApplication::arguments();
+    for (int i = 0 ; i < args.size(); i++) {
+        if(args.at(i).contains(".rs")){
+            projectFile = args.at(i);
+        }
+    }
+    ctrl->initControler(coreEngine,splashScreen,projectFile);
 
     
     

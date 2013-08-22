@@ -18,6 +18,7 @@
 
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
+#include <QDir>
 
 using namespace std;
 Settings::CachingSettings::CachingSettings(){
@@ -32,7 +33,11 @@ Settings::ViewerSettings::ViewerSettings(){
 }
 
 Settings::GeneralSettings::GeneralSettings(){
-    
+    _projectsDirectory = QString(QDir::homePath()+QDir::separator()+"Powiter"+QDir::separator()).toStdString();
+    QDir dir(_projectsDirectory.c_str());
+    if(!dir.exists()){
+        QDir::home().mkdir("Powiter");
+    }
 }
 
 

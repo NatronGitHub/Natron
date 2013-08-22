@@ -103,7 +103,18 @@ public:
     
     QGraphicsItem* getRootItem() const {return _root;}
     
-    const std::vector<NodeGui*> getAllActiveNodes() const;
+    const std::vector<NodeGui*>& getAllActiveNodes() const;
+    
+    void moveToTrash(NodeGui* node);
+    
+    void restoreFromTrash(NodeGui* node);
+    
+    /*Effectivly deletes all nodes. Called on load/save*/
+    void clear();
+    
+    /*Returns true if the graph has no value, i.e:
+     this is just output nodes*/
+    bool isGraphWorthLess() const;
     
 protected:
 
@@ -134,6 +145,7 @@ private:
     NodeGui* _nodeSelected;
     Edge* _arrowSelected;
     std::vector<NodeGui*> _nodes;
+    std::vector<NodeGui*> _nodesTrash;
     bool _nodeCreationShortcutEnabled;
     bool _fullscreen;
     QGraphicsItem* _root;

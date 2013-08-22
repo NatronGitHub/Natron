@@ -67,7 +67,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
-    QObject::connect(_nodeName,SIGNAL(textChanged(QString)),_nodeGUI,SLOT(setName(QString)));
+    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(setName(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_minimize);
@@ -193,4 +193,7 @@ void SettingsPanel::setSelected(bool s){
     _selected = s;
     style()->unpolish(this);
     style()->polish(this);
+}
+void SettingsPanel::setNodeName(const QString& name){
+    _nodeName->setText(name);
 }

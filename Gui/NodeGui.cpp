@@ -123,7 +123,9 @@ NodeGui::~NodeGui(){
     foreach(NodeGui* c,children){
         tmpChildrenCopy.push_back(c);
         Edge* e = c->findConnectedEdge(this);
-        e->removeSource();
+        if(e){
+            e->removeSource();
+        }
         c->removeParent(this);
     }
 //    foreach(NodeGui*c,tmpChildrenCopy){
@@ -295,6 +297,8 @@ void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
 void NodeGui::setName(QString s){
     name->setText(s);
     node->setName(s.toStdString());
+    if(settings)
+        settings->setNodeName(s);
     sc->update();
 }
 

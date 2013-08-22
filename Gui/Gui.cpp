@@ -24,6 +24,8 @@
 #include <QSplitter>
 #include <QMenuBar>
 #include <QToolBar>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "Gui/Texture.h"
 #include "Global/Controler.h"
@@ -37,6 +39,7 @@
 #include "Gui/NodeGraph.h"
 #include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/SequenceFileDialog.h"
 
 
 using namespace std;
@@ -45,6 +48,7 @@ Gui::Gui(QWidget* parent):QMainWindow(parent),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
+actionSaveAs_project(0),
 actionPreferences(0),
 actionExit(0),
 actionProject_settings(0),
@@ -81,6 +85,7 @@ Gui::~Gui(){
     
 }
 void Gui::exit(){
+    saveWarning();
     ctrlPTR->getModel()->getVideoEngine()->abort();
 	ctrlPTR->Destroy();
     delete this;
@@ -133,6 +138,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionNew_project->setText(QApplication::translate("Powiter", "New project"));
 	actionOpen_project->setText(QApplication::translate("Powiter", "Open project"));
 	actionSave_project->setText(QApplication::translate("Powiter", "Save project"));
+    actionSaveAs_project->setText(QApplication::translate("Powiter", "Save project as..."));
 	actionPreferences->setText(QApplication::translate("Powiter", "Preferences"));
 	actionExit->setText(QApplication::translate("Powiter", "Exit"));
 	actionProject_settings->setText(QApplication::translate("Powiter", "Project settings"));
@@ -178,10 +184,20 @@ void Gui::setupUi()
 	
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
+    actionNew_project->setShortcut(QKeySequence::New);
+    QObject::connect(actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
 	actionOpen_project = new QAction(this);
 	actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
+    QObject::connect(actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
+    actionOpen_project->setShortcut(QKeySequence::Open);
 	actionSave_project = new QAction(this);
 	actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
+    QObject::connect(actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
+    actionSave_project->setShortcut(QKeySequence::Save);
+    actionSaveAs_project = new QAction(this);
+	actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
+    QObject::connect(actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
+    actionSaveAs_project->setShortcut(QKeySequence::SaveAs);
 	actionPreferences = new QAction(this);
 	actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
 	actionExit = new QAction(this);
@@ -247,9 +263,9 @@ void Gui::setupUi()
     _panes.push_back(_workshopPane);
     /*creating DAG gui*/
     addNodeGraph();
-
+    
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
-   
+    
 	
     _middleRightSplitter = new QSplitter(_centralWidget);
     _middleRightSplitter->setChildrenCollapsible(false);
@@ -291,8 +307,8 @@ void Gui::setupUi()
     _mainLayout->addWidget(_leftRightSplitter);
     
     
-
-
+    
+    
     
 	
     
@@ -304,6 +320,7 @@ void Gui::setupUi()
 	menuFile->addAction(actionNew_project);
 	menuFile->addAction(actionOpen_project);
 	menuFile->addAction(actionSave_project);
+    menuFile->addAction(actionSaveAs_project);
 	menuFile->addSeparator();
 	menuFile->addAction(actionPreferences);
 	menuFile->addSeparator();
@@ -317,7 +334,7 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearNodeCache);
 	retranslateUi(this);
     
-
+    
     
     Model* model = ctrlPTR->getModel();
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
@@ -336,7 +353,7 @@ void Gui::loadStyleSheet(){
     {
         QTextStream in(&qss);
         QString content(in.readAll());
-       // cout << content.toStdString() << endl;
+        // cout << content.toStdString() << endl;
         setStyleSheet(content
                       .arg("rgb(243,149,0)")
                       .arg("rgb(50,50,50)")
@@ -715,4 +732,66 @@ void ActionRef::onTriggered(){
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
 	menuEdit->addAction(redoAction);
+}
+void Gui::newProject(){
+    saveWarning();
+    currentViewer->getUiContext()->viewer->disconnectViewer();
+    _nodeGraphTab->_nodeGraphArea->clear();
+    ctrlPTR->clearInternalNodes();
+    ctrlPTR->createNode("Viewer");
+}
+void Gui::openProject(){
+    std::vector<std::string> filters;
+    filters.push_back("rs");
+    SequenceFileDialog dialog(this,filters,false,
+                              SequenceFileDialog::OPEN_DIALOG,Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory);
+    if(dialog.exec()){
+        QStringList selectedFiles = dialog.selectedFiles();
+        if (selectedFiles.size() > 0) {
+            //clearing current graph
+            _nodeGraphTab->_nodeGraphArea->clear();
+            ctrlPTR->clearInternalNodes();
+            
+            QString projectName = selectedFiles.at(0);
+            ctrlPTR->loadProject(projectName);
+        }
+    }
+}
+void Gui::saveProject(){
+    if(ctrlPTR->hasProjectBeenSavedByUser()){
+        ctrlPTR->saveProject(ctrlPTR->getCurrentProjectName(),false);
+    }else{
+        saveProjectAs();
+    }
+}
+void Gui::saveProjectAs(){
+    QString outFile=QFileDialog::getSaveFileName(this,QString("Save project")
+                                                 ,Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str()
+                                                 ,"Project Files (*.rs)");
+    if (outFile.size() > 0) {
+        if (outFile.indexOf(".rs") == -1) {
+            outFile.append(".rs");
+        }
+        outFile = SequenceFileDialog::removePath(outFile);
+        ctrlPTR->saveProject(outFile,false);
+    }
+}
+
+void Gui::autoSave(){
+    ctrlPTR->saveProject(ctrlPTR->getCurrentProjectName(), true);
+}
+
+bool Gui::isGraphWorthless() const{
+    return _nodeGraphTab->_nodeGraphArea->isGraphWorthLess();
+}
+
+void Gui::saveWarning(){
+    if(!isGraphWorthless() && !ctrlPTR->isSaveUpToDate()){
+        QMessageBox::StandardButton button = QMessageBox::question(this, "",
+                                                                  QString("Save changes to " + ctrlPTR->getCurrentProjectName() + " ?"),
+                                                                  QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
+        if(button == QMessageBox::Yes){
+            saveProject();
+        }
+    }
 }

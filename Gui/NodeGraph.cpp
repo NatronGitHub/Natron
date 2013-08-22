@@ -33,6 +33,7 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Gui.h"
 #include "Engine/VideoEngine.h"
 #include <QScrollBar>
 #include <QGraphicsLineItem>
@@ -81,6 +82,7 @@ _propertyBin(0)
 NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled=false;
     _nodes.clear();
+    _nodesTrash.clear();
     delete _navigator;
 }
 
@@ -120,8 +122,8 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     }
     
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root,sc);
-    _undoStack->push(new AddCommand(this,node_ui));
     _nodes.push_back(node_ui);
+    _undoStack->push(new AddCommand(this,node_ui));
     if(_nodeSelected)
         autoConnect(_nodeSelected, node_ui);
     
@@ -618,7 +620,16 @@ QImage NodeGraph::getFullSceneScreenShot(){
     painter.fillRect(viewRect, QColor(200,200,200,100));
     return img;
 }
-
+bool NodeGraph::isGraphWorthLess() const{
+    bool worthLess = true;
+    for (U32 i = 0; i < _nodes.size(); i++) {
+        if (_nodes[i]->getNode()->className() != "Writer" && _nodes[i]->getNode()->className() != "Viewer") {
+            worthLess = false;
+            break;
+        }
+    }
+    return worthLess;
+}
 
 NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
 _w(120),_h(70){
@@ -631,16 +642,39 @@ void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
     setPixmap(pix);
 }
 
-const std::vector<NodeGui*> NodeGraph::getAllActiveNodes() const{
-    vector<NodeGui*> out;
-    foreach(NodeGui* n,_nodes){
-        if(n->isActive()){
-            out.push_back(n);
+const std::vector<NodeGui*>& NodeGraph::getAllActiveNodes() const{
+    return _nodes;
+}
+void NodeGraph::moveToTrash(NodeGui* node){
+    for(U32 i = 0; i < _nodes.size() ; i++){
+        if(node == _nodes[i]){
+            _nodesTrash.push_back(_nodes[i]);
+            _nodes.erase(_nodes.begin()+i);
+            break;
         }
     }
-    return out;
+}
+void NodeGraph::restoreFromTrash(NodeGui* node){
+    for(U32 i = 0; i < _nodesTrash.size() ; i++){
+        if(node == _nodesTrash[i]){
+            _nodes.push_back(_nodesTrash[i]);
+            _nodesTrash.erase(_nodesTrash.begin()+i);
+            break;
+        }
+    }
 }
 
+void NodeGraph::clear(){
+    foreach(NodeGui* n,_nodes){
+        scene()->removeItem(n);
+        if(n->getSettingPanel())
+            n->getSettingPanel()->hide();
+        delete n;
+    }
+    _nodes.clear();
+    _nodesTrash.clear();
+    _nodeSelected = 0;
+}
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
 _node(node),
@@ -698,7 +732,7 @@ void AddCommand::undo(){
     _undoWasCalled = true;
     _graph->scene()->removeItem(_node);
     _node->setActive(false);
-    
+    _graph->moveToTrash(_node);
     
     _parents = _node->getParents();
     _children = _node->getChildren();
@@ -740,11 +774,14 @@ void AddCommand::undo(){
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
+    
+    ctrlPTR->getGui()->autoSave();
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
         _graph->scene()->addItem(_node);
         _node->setActive(true);
+        _graph->restoreFromTrash(_node);
         
         foreach(NodeGui* child,_children){
             _node->addChild(child);
@@ -784,6 +821,8 @@ void AddCommand::redo(){
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
     
+    ctrlPTR->getGui()->autoSave();
+    
 }
 
 RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
@@ -793,6 +832,7 @@ _node(node),_graph(graph){
 void RemoveCommand::undo(){
     _graph->scene()->addItem(_node);
     _node->setActive(true);
+    _graph->restoreFromTrash(_node);
     
     foreach(NodeGui* child,_children){
         _node->addChild(child);
@@ -830,11 +870,15 @@ void RemoveCommand::undo(){
     setText(QObject::tr("Remove %1")
             .arg(_node->getNode()->getName().c_str()));
     
+    ctrlPTR->getGui()->autoSave();
+    
     
 }
 void RemoveCommand::redo(){
     _graph->scene()->removeItem(_node);
     _node->setActive(false);
+    _graph->moveToTrash(_node);
+    
     _parents = _node->getParents();
     _children = _node->getChildren();
     foreach(NodeGui* p,_parents){
@@ -876,6 +920,8 @@ void RemoveCommand::redo(){
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
+    
+    ctrlPTR->getGui()->autoSave();
 }
 
 
@@ -914,6 +960,8 @@ void ConnectCommand::undo(){
     }
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
     
+    ctrlPTR->getGui()->autoSave();
+    
 }
 void ConnectCommand::redo(){
     _edge->setSource(_newSrc);
@@ -942,6 +990,8 @@ void ConnectCommand::redo(){
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
+    
+    ctrlPTR->getGui()->autoSave();
 }
 
 

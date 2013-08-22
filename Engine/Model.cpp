@@ -774,6 +774,8 @@ void Model::loadOFXPlugins(){
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < plugins.size(); i++) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
+        if(p->getContexts().size() == 0)
+            continue;
         std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
         std::string rawName = name;
         std::string id = p->getIdentifier();
@@ -873,7 +875,7 @@ OfxStatus Model::vmessage(const char* type,
 }
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeGui*> activeNodes = ctrlPTR->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
     QString ret;
     foreach(NodeGui* n, activeNodes){
         //serialize inputs
@@ -947,10 +949,11 @@ void Model::restoreGraphFromString(const QString& str){
         }
         if(i  == str.size()) return; // safety check
         
-        i++; //the '\n' character
+        i++; //the '\n' character 
         
+        ctrlPTR->deselectAllNodes();
         Node* n = ctrlPTR->createNode(className);
-        n->setName(nodeName.toStdString());
+        n->getNodeUi()->setName(nodeName);
         while (i < str.size() && str.at(i) != QChar('}')) {
             QString line;
             while(i < str.size() && str.at(i) != QChar('\n')){
@@ -1022,7 +1025,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         const std::vector<Knob*>& knobs = n->getKnobs();
         for (U32 j = 0; j < knobs.size(); j++) {
             if (knobs[j]->getDescription() == knobDescription.toStdString()) {
-                knobs[j]->restoreFromString(str.toStdString());
+                knobs[j]->restoreFromString(value.toStdString());
                 break;
             }
         }
@@ -1038,27 +1041,57 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         i++;// the '=' character
         
         QString xStr,yStr;
-        while(i < str.size() && str.at(i).isDigit()){
+        while(i < str.size() && str.at(i)!=QChar('y')){
             xStr.append(str.at(i++));
         }
         
         if(i  == str.size()) return; // safety check
         
+        i++; // the 'y' character
         i++; // the '=' character
         
-        while(i < str.size() && str.at(i).isDigit()){
+        while(i < str.size()){
             yStr.append(str.at(i++));
         }
         
         n->getNodeUi()->setPos(xStr.toDouble(), yStr.toDouble());
+        
+        const vector<NodeGui*>& children = n->getNodeUi()->getChildren();
+        const vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
+        foreach(NodeGui* c,children){
+            const vector<Edge*>& childEdges = c->getInputsArrows();
+            foreach(Edge* e,childEdges){
+                e->initLine();
+            }
+        }
+        foreach(Edge* e,edges){
+            e->initLine();
+        }
+        
         return;
     }
     
 }
 
 void Model::loadProject(const QString& filename){
-    
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream in(&file);
+    restoreGraphFromString(in.readAll());
+    file.close();
 }
 void Model::saveProject(const QString& filename){
-    
+    QFile file(filename);
+    file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+    QTextStream out(&file);
+    out << serializeNodeGraph();
+    file.close();
+}
+
+void Model::clearNodes(){
+    foreach(CounterID* n,_nodeCounters){
+        delete n;
+    }
+    _nodeCounters.clear();
+    _currentNodes.clear();
 }

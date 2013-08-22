@@ -219,7 +219,7 @@ signals:
     void filesSelected();
     
 private:
-    void updateLastOpened(QString str);
+    void updateLastOpened(const QString& str);
     QStringList* filesList;
     FileQLineEdit* _name;
     QString _lastOpened;

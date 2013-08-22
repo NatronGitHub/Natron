@@ -210,6 +210,8 @@ public:
     void loadProject(const QString& filename);
     
     void saveProject(const QString& filename);
+    
+    void clearNodes();
         
 signals:
     void vengineNeeded(int nbFrames);

@@ -56,6 +56,7 @@ public:
     };
     class GeneralSettings{
     public:
+        std::string _projectsDirectory;
         
         GeneralSettings();
     };

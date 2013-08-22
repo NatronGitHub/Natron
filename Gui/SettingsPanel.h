@@ -98,6 +98,10 @@ public:
     virtual void mousePressEvent(QMouseEvent* e);
     
     virtual void paintEvent(QPaintEvent * event);
+    
+    
+    void setNodeName(const QString& name);
+    
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);
