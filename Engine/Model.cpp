@@ -153,7 +153,8 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     
     assert(formatNames.size() == resolutions.size());
     for(U32 i =0;i<formatNames.size();i++){
-        std::vector<float> v = resolutions[i];
+        const std::vector<float>& v = resolutions[i];
+        assert(v.size() >= 3);
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
         addFormat(_frmt);
     }
@@ -743,6 +744,7 @@ void Model::resetInternalDAG(){
 
 
 void Model::loadOFXPlugins(){
+    assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion("PowiterOFXCachev1");
     
@@ -781,9 +783,11 @@ void Model::loadOFXPlugins(){
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
         vector<string> groups = extractAllPartsOfGrouping(grouping);
+        assert(groups.size() >= 1);
         name.append("  [");
         name.append(groups[0]);
         name.append("]");
+        assert(p->getBinary());
         std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
         iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
         iconFilename.append(id);
@@ -801,6 +805,7 @@ void Model::loadOFXPlugins(){
 void Model::writeOFXCache(){
     /// and write a new cache, long version with everything in there
     std::ofstream of("PowiterOFXCache.xml");
+    assert(OFX::Host::PluginCache::getPluginCache());
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
     of.close();
     //Clean up, to be polite.
@@ -880,6 +885,8 @@ QString Model::serializeNodeGraph() const{
     foreach(NodeGui* n, activeNodes){
         //serialize inputs
         ret.append("Node:");
+        assert(n);
+        assert(n->getNode());
         if(!n->getNode()->isOpenFXNode()){
             ret.append(n->getNode()->className().c_str());
         }else{
@@ -887,6 +894,7 @@ QString Model::serializeNodeGraph() const{
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
             vector<string> groups = extractAllPartsOfGrouping(grouping);
+            assert(groups.size() >= 1);
             name.append("  [");
             name.append(groups[0]);
             name.append("]");
@@ -984,9 +992,11 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         i++; // the ':' character
         QString inputName;
         while(i < str.size()) inputName.append(str.at(i++));
-        
+
+        assert(n->getNodeUi());
         int inputNb = inputNumberStr.toInt();
         for (U32 j = 0; j < _currentNodes.size(); j++) {
+            assert(_currentNodes[j]);
             if (_currentNodes[j]->getName() == inputName.toStdString()) {
                 n->addParent(_currentNodes[j]);
                 _currentNodes[j]->addChild(n);
@@ -995,6 +1005,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
                 
                 const std::vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
                 assert(inputNb < (int)edges.size());
+                assert(edges[inputNb]);
                 edges[inputNb]->setSource(_currentNodes[j]->getNodeUi());
                 edges[inputNb]->initLine();
                 break;
@@ -1054,6 +1065,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
             yStr.append(str.at(i++));
         }
         
+        assert(n->getNodeUi());
         n->getNodeUi()->setPos(xStr.toDouble(), yStr.toDouble());
         
         const vector<NodeGui*>& children = n->getNodeUi()->getChildren();
