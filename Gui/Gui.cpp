@@ -147,18 +147,18 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
 	setWindowTitle(QApplication::translate("Powiter", "Powiter"));
-	actionNew_project->setText(QApplication::translate("Powiter", "New project"));
-	actionOpen_project->setText(QApplication::translate("Powiter", "Open project"));
-	actionSave_project->setText(QApplication::translate("Powiter", "Save project"));
-    actionSaveAs_project->setText(QApplication::translate("Powiter", "Save project as..."));
-	actionPreferences->setText(QApplication::translate("Powiter", "Preferences"));
+	actionNew_project->setText(QApplication::translate("Powiter", "New Project"));
+	actionOpen_project->setText(QApplication::translate("Powiter", "Open Project..."));
+	actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
+    actionSaveAs_project->setText(QApplication::translate("Powiter", "Save Project As..."));
+	actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
 	actionExit->setText(QApplication::translate("Powiter", "Exit"));
-	actionProject_settings->setText(QApplication::translate("Powiter", "Project settings"));
+	actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
 	actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
-	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle multi-view area"));
-	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
-	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
-	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear per-node cache"));
+	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
+	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
+	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
+	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
     
     
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
