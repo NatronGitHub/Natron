@@ -42,6 +42,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
 
+#define PLUGIN_GROUP_DEFAULT "Other"
 
 using namespace std;
 using namespace Powiter;
@@ -669,14 +670,15 @@ void Gui::addPluginToolButton(const std::string& actionName,
     if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
         groupIcon.addFile(groupIconPath.c_str());
     }
-    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(groups[0]);
+    std::string mainGroup = groups.size() >= 1 ? groups[0] : PLUGIN_GROUP_DEFAULT;
+    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);
     }else{
         ToolButton* tb = new ToolButton(actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
         _toolBox->addWidget(tb);
-        tb->setToolTip(groups.front().c_str());
-        _toolGroups.insert(make_pair(groups[0],tb));
+        tb->setToolTip(mainGroup.c_str());
+        _toolGroups.insert(make_pair(mainGroup,tb));
     }
     
 }

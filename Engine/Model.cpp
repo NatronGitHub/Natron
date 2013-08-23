@@ -819,20 +819,23 @@ void Model::loadOFXPlugins(){
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
         vector<string> groups = extractAllPartsOfGrouping(grouping);
-        assert(groups.size() >= 1);
-        name.append("  [");
-        name.append(groups[0]);
-        name.append("]");
+        if (groups.size() >= 1) {
+            name.append("  [");
+            name.append(groups[0]);
+            name.append("]");
+        }
         assert(p->getBinary());
         std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
         iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
         iconFilename.append(id);
         iconFilename.append(".png");
-        std::string groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-        groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
-        groupIconFilename.append(groups[0]);
-        groupIconFilename.append(".png");
-        
+        std::string groupIconFilename;
+        if (groups.size() >= 1) {
+            groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
+            groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+            groupIconFilename.append(groups[0]);
+            groupIconFilename.append(".png");
+        }
         ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
@@ -935,10 +938,11 @@ QString Model::serializeNodeGraph() const{
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
             vector<string> groups = extractAllPartsOfGrouping(grouping);
-            assert(groups.size() >= 1);
-            name.append("  [");
-            name.append(groups[0]);
-            name.append("]");
+            if (groups.size() >= 1) {
+                name.append("  [");
+                name.append(groups[0]);
+                name.append("]");
+            }
             ret.append(name.c_str());
         }
         ret.append(":");

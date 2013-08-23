@@ -45,10 +45,13 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
     addBuiltinPluginToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); i++) {
+        assert(_toolButtons[i]);
         string name = _toolButtons[i]->_pluginName;
-        name.append("  [");
-        name.append(_toolButtons[i]->_groups[0]);
-        name.append("]");
+        if (_toolButtons[i]->_groups.size() >= 1) {
+            name.append("  [");
+            name.append(_toolButtons[i]->_groups[0]);
+            name.append("]");
+        }
         _gui->addPluginToolButton(name,
                                   _toolButtons[i]->_groups,
                                   _toolButtons[i]->_pluginName,
