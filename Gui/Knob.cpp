@@ -1263,10 +1263,9 @@ void RGBA_Knob::showColorDialog(){
         *_r = color.redF();
         *_g = color.greenF();
         *_b = color.blueF();
-        if(_a)
+        if(_a) {
             *_a = color.alphaF();
-        else
-            *_a = 1.;
+        }
         setValues();
         updateLabel(color);
         validateEvent(false);
