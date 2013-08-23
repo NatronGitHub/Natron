@@ -43,7 +43,7 @@
 #include "Gui/TabWidget.h"
 
 using namespace Powiter;
-ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_fullscreen(false)
+ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_maximized(false)
 {
     
     setObjectName(node->getName().c_str());
@@ -415,12 +415,12 @@ ViewerTab::~ViewerTab()
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     if(event->key() == Qt::Key_Space){
         releaseKeyboard();
-        if(_fullscreen){
-            _fullscreen=false;
-            ctrlPTR->getGui()->exitFullScreen();
+        if(_maximized){
+            _maximized=false;
+            ctrlPTR->getGui()->minimize();
         }else{
-            _fullscreen=true;
-            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
+            _maximized=true;
+            ctrlPTR->getGui()->maximize(dynamic_cast<TabWidget*>(parentWidget()));
         }
     }else if(event->key() == Qt::Key_Y){
         _viewerChannels->setCurrentIndex(0);

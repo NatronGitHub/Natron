@@ -147,7 +147,7 @@ private:
     std::vector<NodeGui*> _nodes;
     std::vector<NodeGui*> _nodesTrash;
     bool _nodeCreationShortcutEnabled;
-    bool _fullscreen;
+    bool _maximized;
     QGraphicsItem* _root;
     QScrollArea* _propertyBin;
     

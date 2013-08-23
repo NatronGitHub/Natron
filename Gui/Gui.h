@@ -160,9 +160,9 @@ public:
     
     void closePane(TabWidget* what);
     
-    void setFullScreen(TabWidget* what);
+    void maximize(TabWidget* what);
     
-    void exitFullScreen();
+    void minimize();
     
     /*Returns a valid tab if a tab with a matching name has been
      found. Otherwise returns NULL.*/
@@ -189,6 +189,7 @@ private:
 
 public slots:
     void exit();
+    void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();
     void openProject();
@@ -207,6 +208,7 @@ public:
     QAction *actionPreferences;
     QAction *actionExit;
     QAction *actionProject_settings;
+    QAction *actionFullScreen;
 	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
