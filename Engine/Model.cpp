@@ -356,6 +356,15 @@ bool Model::createNode(Node *&node,const std::string name){
                         }
                     }
                 }
+                bool rval ;
+                try{
+                    rval = plugin->getPluginHandle();
+                }
+                catch(const char* str){
+                    cout << str << endl;
+                }
+                if(!rval)
+                    return false;
                 node = dynamic_cast<Node*>(plugin->createInstance(context, NULL));
                 if(node){
                     node->initializeInputs();
@@ -803,6 +812,9 @@ void Model::loadOFXPlugins(){
         if(p->getContexts().size() == 0)
             continue;
         std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
+        if(name.empty()){
+            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
+        }
         std::string rawName = name;
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();

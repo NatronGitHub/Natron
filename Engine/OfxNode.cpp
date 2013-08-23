@@ -74,6 +74,9 @@ bool OfxNode::isInputNode(){
 }
 const std::string OfxNode::className(){
     std::string label = getShortLabel();
+    if(label.empty()){
+        label = getLabel();
+    }
     if (label!="Viewer") {
         return label;
     }else{
