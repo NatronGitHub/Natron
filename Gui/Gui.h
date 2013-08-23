@@ -23,6 +23,7 @@
 #include <QAction>
 #include "Global/GlobalDefines.h"
 #include <QMainWindow>
+
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
@@ -181,6 +182,8 @@ public:
 
     
     bool isGraphWorthless() const;
+    
+    void errorDialog(const QString& title,const QString& text);
     
 private:
 

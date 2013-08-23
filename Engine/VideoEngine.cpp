@@ -26,7 +26,6 @@
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
 #include "Engine/Hash.h"
-#include "Engine/Timer.h"
 #include "Engine/Lut.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/NodeCache.h"
@@ -261,7 +260,8 @@ void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFr
     FrameEntry* iscached= 0;
     U64 key = 0;
     if(_dag.isOutputAViewer()){
-        
+        gl_viewer->drawing(true);
+
         std::pair<int,int> rowSpan = gl_viewer->computeRowSpan(rows,_dispW);
         std::pair<int,int> columnSpan = gl_viewer->computeColumnSpan(columns, _dispW);
         
@@ -404,6 +404,7 @@ void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,N
         _sequenceToWork.push_back(row);
         counter++;
     }
+    gettimeofday(&_lastComputeFrameTime, 0);
     *_workerThreadsResults = QtConcurrent::map(_sequenceToWork,boost::bind(&VideoEngine::metaEnginePerRow,_1,output));
     _workerThreadsWatcher->setFuture(*_workerThreadsResults);
 }
@@ -423,12 +424,10 @@ void VideoEngine::engineLoop(){
     float zoomFactor;
     if(_dag.isOutputAViewer()){
         
-        
-        gl_viewer->drawing(true);
-
         //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
         //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
         //panning/zooming.
+        gl_viewer->stopDisplayingProgressBar();
         if(_lastEngineStatus._returnCode == EngineStatus::NORMAL_ENGINE && !_sameFrame){
                copyFrameToCache(gl_viewer->getFrameData());
         }else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){ // cached engine
@@ -531,6 +530,7 @@ _sameFrame(false)
     _workerThreadsResults = new QFuture<void>;
     _workerThreadsWatcher = new QFutureWatcher<void>;
     connect(_workerThreadsWatcher,SIGNAL(finished()),this,SLOT(engineLoop()));
+    connect(_workerThreadsWatcher,SIGNAL(progressValueChanged(int)),this,SLOT(checkAndDisplayProgress(int)));
     _computeFrameWatcher = new QFutureWatcher<void>;
     connect(_computeFrameWatcher,SIGNAL(finished()),this,SLOT(dispatchEngine()));
     //  connect(_workerThreadsWatcher,SIGNAL(canceled()),this,SLOT(stopEngine()));
@@ -911,3 +911,13 @@ bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
     return true;
 }
 #endif
+
+void VideoEngine::checkAndDisplayProgress(int i){
+    timeval now;
+    gettimeofday(&now, 0);
+    double t =  now.tv_sec  - _lastComputeFrameTime.tv_sec +
+    (now.tv_usec - _lastComputeFrameTime.tv_usec) * 1e-6f;
+    if(t >= 0.5){
+        gl_viewer->updateProgressOnViewer(_viewerCacheArgs._textureRect, i);
+    }
+}

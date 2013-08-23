@@ -267,6 +267,10 @@
             
             float _displayChannels;
             
+            bool _drawProgressBar;
+            
+            int _progressBarY;
+            
         public:
             
             
@@ -575,6 +579,8 @@
              **/
             void setDisplayChannel(const ChannelSet& channels,bool yMode = false);
             
+            void stopDisplayingProgressBar() {_drawProgressBar = false;}
+            
             public slots:
             /**
              *@brief Slot used by the GUI to change the current viewer process applied to all pixels.
@@ -604,6 +610,12 @@
              *@brief Slot called by the GUI. It changes the current exposure settings.
              **/
             void updateExposure(double);
+            
+            
+            /**
+             *@brief Updates the Viewer with what has been computed so far in the texture.
+             **/
+            void updateProgressOnViewer(const TextureRect& region,int progress);
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -743,6 +755,11 @@
              *VideoEngine::drawOverlay()
              **/
             void drawOverlay();
+            
+            /**
+             *@brief draws the progress bar
+             **/
+            void drawProgressBar();
             
             /**
              *@brief Actually converting to ARGB... but it is called BGRA by

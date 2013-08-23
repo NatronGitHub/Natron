@@ -991,8 +991,18 @@ void Model::restoreGraphFromString(const QString& str){
         assert(ctrlPTR);
         ctrlPTR->deselectAllNodes();
         Node* n = ctrlPTR->createNode(className);
-        assert(n);
-        assert(n->getNodeUi());
+        if(!n){
+            QString text("Failed to restore the graph! \n The node ");
+            text.append(className);
+            text.append(" was found in the auto-save script but doesn't seem \n"
+                        "to exist in the currently loaded plug-ins.");
+            ctrlPTR->showErrorDialog("Autosave", text );
+            ctrlPTR->clearInternalNodes();
+            ctrlPTR->clearNodeGuis();
+            ctrlPTR->createNode("Viewer");
+            return;
+        }
+
         n->getNodeUi()->setName(nodeName);
         while (i < str.size() && str.at(i) != QChar('}')) {
             QString line;

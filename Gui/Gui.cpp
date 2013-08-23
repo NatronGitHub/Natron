@@ -27,6 +27,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+
 #include "Gui/Texture.h"
 #include "Global/Controler.h"
 #include "Gui/ViewerGL.h"
@@ -812,4 +813,8 @@ void Gui::saveWarning(){
             saveProject();
         }
     }
+}
+
+void Gui::errorDialog(const QString& title,const QString& text){
+    QMessageBox::critical(this, title, text);
 }
