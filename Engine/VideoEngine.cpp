@@ -875,15 +875,15 @@ void VideoEngine::debugRowSequence(){
     QImage img(w,h,QImage::Format_ARGB32);
     for(int i = 0; i < h ; i++){
         Row* from = _sequenceToWork[i];
-        const float* r = (*from)[Channel_red] + from->offset();
-        const float* g = (*from)[Channel_green]+ from->offset();
-        const float* b = (*from)[Channel_blue]+ from->offset();
-        const float* a = (*from)[Channel_alpha]+ from->offset();
-        for(int j = 0 ; j < w ; j++){
-            QColor c(r ? Lut::clamp((*r++))*255 : 0,
-                     g ? Lut::clamp((*g++))*255 : 0,
-                     b ? Lut::clamp((*b++))*255 : 0,
-                     a? Lut::clamp((*a++))*255 : 255);
+        const float* r = (*from)[Channel_red]   ? (*from)[Channel_red]   + from->offset() : 0;
+        const float* g = (*from)[Channel_green] ? (*from)[Channel_green] + from->offset() : 0;
+        const float* b = (*from)[Channel_blue]  ? (*from)[Channel_blue]  + from->offset() : 0;
+        const float* a = (*from)[Channel_alpha] ? (*from)[Channel_alpha] + from->offset() : 0;
+        for(int j = 0 ; j < w ; ++j) {
+            QColor c(r ? Lut::clamp(r[j])*255 : 0,
+                     g ? Lut::clamp(g[j])*255 : 0,
+                     b ? Lut::clamp(b[j])*255 : 0,
+                     a ? Lut::clamp(a[j])*255 : 255);
             img.setPixel(j, i, c.rgba());
         }
     }
