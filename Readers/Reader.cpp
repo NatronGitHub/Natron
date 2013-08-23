@@ -104,7 +104,7 @@ bool Reader::readCurrentHeader(int current_frame){
     _read = builder(this);
     
     if(!_read){
-        cout << "ERROR : failed to create the decoder " << _read->decoderName() << endl;
+        cout << "ERROR : failed to create the decoder for " << extension.toStdString() << endl;
         return false;
     }
     /*In case the read handle supports scanlines, we read the header to determine
@@ -130,12 +130,13 @@ bool Reader::readCurrentHeader(int current_frame){
                 rows.push_back(i);
             }            
         // }
+        assert(slContext);
         slContext->setRows(rows);
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
     if(found !=_buffer.end()){
-        
+        assert(*found);
         if(!(*found)->supportsScanLines()){
             delete _read;
         }else{
@@ -147,6 +148,7 @@ bool Reader::readCurrentHeader(int current_frame){
             slDesc->_slContext->computeIntersectionAndSetRowsToRead(slContext->getRows());
             delete _read;
         }
+        assert((*found)->_readHandle);
         *_info = static_cast<Node::Info&>(*((*found)->_readHandle->getReaderInfo()));
         readHandle = (*found)->_readHandle;
     }else{
@@ -173,13 +175,16 @@ void Reader::readCurrentData(int current_frame){
         cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName() << ")" << endl;
         return;
     }
+    assert(*found);
     if((*found)->hasToDecode()){
         if((*found)->supportsScanLines()){
             Buffer::ScanLineDescriptor* slDesc = static_cast<Buffer::ScanLineDescriptor*>(*found);
+            assert(slDesc->_readHandle);
             slDesc->_readHandle->readScanLineData(slDesc->_slContext);
             slDesc->_hasRead = true;
         }else{
             Buffer::FullFrameDescriptor* ffDesc = static_cast<Buffer::FullFrameDescriptor*>(*found);
+            assert(ffDesc->_readHandle);
             ffDesc->_readHandle->readData();
             ffDesc->_hasRead = true;
         }
@@ -198,6 +203,7 @@ void Reader::showFilePreview(){
     readCurrentHeader(firstFrame());
     readCurrentData(firstFrame());
 
+    assert(readHandle);
     readHandle->make_preview();
     _buffer.clear();
 }
@@ -209,11 +215,15 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     if(!forReal)
         current_frame = firstFrame();
     else{
+        assert(ctrlPTR->getModel());
+        assert(ctrlPTR->getModel()->getVideoEngine());
         Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
-        if(!writer)
+        if(!writer) {
+            assert(currentViewer);
             current_frame = clampToRange(currentViewer->currentFrame());
-        else
+        } else {
             current_frame = writer->currentFrame();
+        }
     }
     
     QString currentFile = files[current_frame];
@@ -222,6 +232,7 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     if(frame == _buffer.end()) return false;
     
     Node::Info* infos = 0;
+    assert(*frame);
     if((*frame)->_readInfo && !(*frame)->_readHandle){ // cached frame
         infos = dynamic_cast<Node::Info*>((*frame)->_readInfo);
     }else{
@@ -241,14 +252,14 @@ void Reader::_validate(bool){
     //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
     //    return;
     //}
-    
+    assert(_info);
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
 }
 
 void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){
-	readHandle->engine(y,offset,range,c,out);
-	
+	assert(readHandle);
+    readHandle->engine(y,offset,range,c,out);
 }
 
 void Reader::createKnobDynamically(){
@@ -261,6 +272,7 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     if(_buffer.size() == (U32)_bufferSize){
         for(U32 i = 0 ; i < _buffer.size() ;i++){
             Reader::Buffer::Descriptor* frameToRemove = _buffer[i];
+            assert(frameToRemove);
             if(!frameToRemove->hasToDecode()){
                 erase(_buffer.begin()+i);
                 break;
@@ -270,7 +282,8 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     _buffer.push_back(desc);
 }
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
-    for(int i = _buffer.size()-1; i >= 0 ; i--){
+    for(int i = _buffer.size()-1; i >= 0 ; i--) {
+        assert(_buffer[i]);
         if(_buffer[i]->_filename==filename) return _buffer.begin()+i;
     }
     return _buffer.end();
@@ -279,6 +292,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& fil
 void Reader::Buffer::remove(const std::string& filename){
     DecodedFrameIterator it = find(filename);
     if(it!=_buffer.end()){
+        assert(*it);
         if((*it)->_readInfo)
             delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
@@ -295,8 +309,9 @@ bool Reader::Buffer::decodeFinished(const std::string& filename){
 }
 void Reader::Buffer::debugBuffer(){
     cout << "=========BUFFER DUMP=============" << endl;
-    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++){
-            cout << (*it)->_filename << endl;
+    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++) {
+        assert(*it);
+        cout << (*it)->_filename << endl;
     }
     cout << "=================================" << endl;
 }
@@ -305,6 +320,8 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
     if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
+            assert(*ret);
+            assert((*ret)->_readHandle);
             if(!(*ret)->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
@@ -315,6 +332,8 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
     }else if(searchMode == FULL_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
+            assert(*ret);
+            assert((*ret)->_readHandle);
             if((*ret)->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
@@ -330,6 +349,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
 void Reader::Buffer::clear(){
     DecodedFrameIterator it = _buffer.begin();
     for(;it!=_buffer.end();it++){
+        assert(*it);
         if((*it)->_readInfo)
             delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
@@ -395,6 +415,7 @@ void Reader::getVideoSequenceFromFilesList(){
             }
         }
     }
+    assert(_info);
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
     
@@ -407,7 +428,7 @@ int Reader::firstFrame(){
 int Reader::lastFrame(){
     std::map<int,QString>::iterator it=files.end();
     if(it == files.begin()) return INT_MAX;
-    it--;
+    --it;
     return it->first;
 }
 int Reader::clampToRange(int f){
@@ -484,6 +505,7 @@ std::string ReaderInfo::printOut(){
 
 ReaderInfo* ReaderInfo::fromString(QString from){
     ReaderInfo* out = new ReaderInfo;
+    assert(out);
     QString name;
     QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;
     QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
