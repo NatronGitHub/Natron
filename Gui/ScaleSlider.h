@@ -86,14 +86,14 @@ private:
     
     static std::vector<double> logScale(int N,float inf,float sup){
         std::vector<double> out;
-        for(int i =0;i < N;i++){
+        for(int i =0;i < N;++i) {
            out.push_back(powf(i,3)*(sup-inf)/(powf(N-1,3)) + inf);
         }
         return out;
     }
     static std::vector<double> expScale(int N,float inf,float sup){
         std::vector<double> out;
-        for(int i =0;i < N;i++){
+        for(int i =0;i < N;++i) {
             out.push_back(powf(i,1.f/2.2f)*(sup-inf)/(powf(N-1,1.f/2.2f)) + inf);
         }
         return out;
@@ -101,7 +101,7 @@ private:
     static std::vector<double> linearScale(int N,float inf,float sup){
         std::vector<double> out;
         double v=inf;
-        for(int i =0;i < N;i++){
+        for(int i =0;i < N;++i) {
             out.push_back(v);
             v +=(sup-inf)/(double)(N-1);
             

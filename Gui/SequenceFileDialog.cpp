@@ -368,7 +368,7 @@ void SequenceFileDialog::selectionChanged(){
         }
     
     QString finalFiles = allFiles.join(QString(QLatin1Char(' ')));
-    for(unsigned int i = 0 ; i < _nameMapping.size(); i++){
+    for(unsigned int i = 0 ; i < _nameMapping.size(); ++i) {
         if(finalFiles == _nameMapping[i].first){
             finalFiles =  _nameMapping[i].second.second;
             break;
@@ -493,7 +493,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
         /*we found a matching sequence name, we need to figure out if it has the same file type*/
-        for(SequenceIterator it2 = it.first ;it2!=it.second;it2++){
+        for(SequenceIterator it2 = it.first; it2!=it.second; ++it2) {
             if(it2->second._fileType == extension.toStdString()){
                 it2->second.addToSequence(frameNumber,path);
                 if(frameNumber == it2->second._frameIndexes.firstFrame())
@@ -527,10 +527,10 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
      *We just need to change its name to reflect the number
      *of elements in the sequence.
      */
-    // for(SequenceIterator it = _frameSequences.begin() ; it!= _frameSequences.end(); it++){
+    // for(SequenceIterator it = _frameSequences.begin() ; it!= _frameSequences.end(); ++it) {
     //     cout << it->first << " = " << it->second.second.size() << "x " << it->second.first << endl;
     // }
-    for(int c = 0 ; c < _proxy->rowCount(parent) ; c++){
+    for(int c = 0 ; c < _proxy->rowCount(parent) ; ++c) {
         QModelIndex item = _proxy->index(c,0,parent);
         /*We skip directories*/
         if(_model->isDir(_proxy->mapToSource(item))){
@@ -541,7 +541,10 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         QString extension = SequenceFileDialog::removeFileExtension(name);
         int i = name.size() - 1;
         QString fNumber ;
-        while(i>=0 && name.at(i).isDigit()){fNumber.prepend(name.at(i)); i--;}
+        while(i>=0 && name.at(i).isDigit()) {
+            fNumber.prepend(name.at(i));
+            --i;
+        }
         if(i == 0 || i == name.size()-1){
             continue;
         }
@@ -559,8 +562,12 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 int j = k+1;
                 int prev = k;
                 int count = 1;
-                while(j <= frameRanges._frameIndexes.lastFrame() && j == prev+1){ prev = j;j++; count++;}
-                j--;
+                while(j <= frameRanges._frameIndexes.lastFrame() && j == prev+1) {
+                    prev = j;
+                    ++j;
+                    ++count;
+                }
+                --j;
                 chunks.back().second = j;
                 k+=count;
             }
@@ -572,7 +579,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 name.append(QString(" %1-%2").arg(QString::number(chunks[0].first)).arg(QString::number(chunks[0].second)));
             }else{
                 name.append(" ( ");
-                for(unsigned int i = 0 ; i < chunks.size() ; i++){
+                for(unsigned int i = 0 ; i < chunks.size() ; ++i) {
                     if(chunks[i].first != chunks[i].second){
                         name.append(QString(" %1-%2").arg(QString::number(chunks[i].first)).arg(QString::number(chunks[i].second)));
                     }else{
@@ -583,7 +590,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 name.append(" ) ");
             }
             bool foundExistingMapping = false;
-            for(unsigned int j = 0 ; j < _nameMapping.size();j++){
+            for(unsigned int j = 0 ; j < _nameMapping.size();++j) {
                 if(_nameMapping[j].first == originalName){
                     foundExistingMapping = true;
                     break;
@@ -606,7 +613,7 @@ void SequenceFileDialog::setRootIndex(const QModelIndex& index){
 void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
     /*Removing from the sequence any element with a sequence of 1 element*/
     _frameSequences.clear();
-    for(SequenceDialogProxyModel::ConstSequenceIterator it = frameSequences.begin(); it!=frameSequences.end();it++){
+    for(SequenceDialogProxyModel::ConstSequenceIterator it = frameSequences.begin(); it!=frameSequences.end();++it) {
         if(it->second._frameIndexes.size() > 1){
             _frameSequences.insert(*it);
         }
@@ -615,7 +622,7 @@ void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
 }
 const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
     pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
-    for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;it++){
+    for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
         if(it->second._fileType == extension){
             return it->second;
             break;
@@ -637,7 +644,11 @@ bool SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QStr
     int i = path.size() - 1;
     QString fNumber ;
     int digitCount = 0;
-    while(i>=0 && path.at(i).isDigit()){fNumber.prepend(path.at(i)); i--; digitCount++;}
+    while(i>=0 && path.at(i).isDigit()) {
+        fNumber.prepend(path.at(i));
+        --i;
+        ++digitCount;
+    }
     path = path.left(i+1);
     if((i == 0 && path.size() > 1)|| !digitCount){
         *frameNumber = -1;
@@ -674,7 +685,7 @@ void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pa
     _maxW = 200;
     QFont f("Times",6);
     QFontMetrics metric(f);
-    for(unsigned int i = 0 ; i < nameMapping.size() ; i++){
+    for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
         pair<QString,pair<qint64,QString> >& p = nameMapping[i];
         _nameMapping.push_back(p);
         int w = metric.width(p.second.second);
@@ -686,7 +697,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     if(index.column() == 0){
         QString str = index.data().toString();
         bool found = false;
-        for(unsigned int i =0 ;i < _nameMapping.size() ;i++){
+        for(unsigned int i =0 ;i < _nameMapping.size() ;++i) {
             if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
                 QRect r;
                 if (option.state & QStyle::State_Selected){
@@ -724,7 +735,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
         QString str = idx.data().toString();
         bool found = false;
-        for(unsigned int i =0 ;i < _nameMapping.size() ;i++){
+        for(unsigned int i =0 ;i < _nameMapping.size() ;++i) {
             if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
                 QRect r;
                 if (option.state & QStyle::State_Selected){
@@ -789,7 +800,7 @@ QSize SequenceItemDelegate::sizeHint(const QStyleOptionViewItem & option, const 
 bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const{
     if(!_filters.size())
         return true;
-    for(unsigned int i = 0 ; i < _filters.size() ; i++){
+    for(unsigned int i = 0 ; i < _filters.size() ; ++i) {
         if(nocase_equal_string(ext, _filters[i]))
             return true;
     }
@@ -798,7 +809,10 @@ bool SequenceFileDialog::isASupportedFileExtension(const std::string& ext) const
 QString SequenceFileDialog::removeFileExtension(QString& filename){
     int i = filename.size() -1;
     QString extension;
-    while(i>=0 && filename.at(i) != QChar('.')){extension.prepend(filename.at(i)); i--;}
+    while(i>=0 && filename.at(i) != QChar('.')) {
+        extension.prepend(filename.at(i));
+        --i;
+    }
     filename = filename.left(i);
     return extension;
 }
@@ -812,14 +826,14 @@ QString SequenceFileDialog::removePath(const QString& str){
         if(str.at(i) == QChar('/') && hasHitExtension){
             break;
         }
-        i--;
-        count++;
+        --i;
+        ++count;
     }
     return str.right(count);
 }
 
 bool SequenceFileDialog::checkIfContiguous(const std::vector<int>& v){
-    for(unsigned int i = 0 ; i < v.size() ;i++){
+    for(unsigned int i = 0 ; i < v.size() ;++i) {
         if(i < v.size()-1 &&  v[i]+1 == v[i+1])
             return true;
     }
@@ -882,7 +896,8 @@ void SequenceFileDialog::createDir(){
             if (QFile::exists(prefix + folderName)) {
                 qlonglong suffix = 2;
                 while (QFile::exists(prefix + folderName)) {
-                    folderName = newFolderString + QString::number(suffix++);
+                    folderName = newFolderString + QString::number(suffix);
+                    ++suffix;
                 }
                 
             }
@@ -1129,8 +1144,10 @@ QStringList SequenceFileDialog::selectedFiles(){
         QString originalPath = path;
         QString ext = SequenceFileDialog::removeFileExtension(path);
         int i  = path.size() -1;
-        while(i >= 0 && path.at(i).isDigit()){i--;}
-        i++;
+        while(i >= 0 && path.at(i).isDigit()) {
+            --i;
+        }
+        ++i;
         path = path.left(i);
         // FileSequence *sequence = 0;
         pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
@@ -1140,7 +1157,7 @@ QStringList SequenceFileDialog::selectedFiles(){
             //  cout << originalPath.toStdString() << endl;
             out.append(originalPath);
         }else{
-            //            for(SequenceIterator it = range.first ; it!=range.second; it++){
+            //            for(SequenceIterator it = range.first ; it!=range.second; ++it) {
             //                if(it->second._fileType == ext.toStdString()){
             //                    sequence = &(it->second);
             //                    break;
@@ -1149,13 +1166,13 @@ QStringList SequenceFileDialog::selectedFiles(){
             /*now that we now how many frames there are,their extension and the common name, we retrieve them*/
             i = 0;
             QStringList dirEntries = dir.entryList();
-            for(int j = 0 ; j < dirEntries.size(); j++){
+            for(int j = 0 ; j < dirEntries.size(); ++j) {
                 QString s = dirEntries.at(j);
                 s = prefix+s;
                 
                 if(QFile::exists(s) && s.contains(path) && s.contains(ext)){
                     out.append(s);
-                    i++;
+                    ++i;
                 }
                 //if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
             }
@@ -1195,7 +1212,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     QString commonPart;
     int i = 0;
     while (i < unpathed.size() && unpathed.at(i) != QChar('#')) {
-        commonPart.append(unpathed.at(i++));
+        commonPart.append(unpathed.at(++i));
     }
     if(i == unpathed.size()) return ret;
     
@@ -1203,7 +1220,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     QDir d(path);
     if(d.isReadable()) {
         QStringList files = d.entryList();
-        for (int j = 0; j < files.size() ; j++) {
+        for (int j = 0; j < files.size() ; ++j) {
             if (files.at(j).contains(commonPart)) {
                 ret << QString(path + files.at(j));
             }
@@ -1327,7 +1344,7 @@ void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelInd
             newIcon = fileSystemModel->iconProvider()->icon(QFileIconProvider::Folder);
             newName = QFileInfo(url.toLocalFile()).fileName();
             bool invalidUrlFound = false;
-            for(unsigned int i = 0 ; i < invalidUrls.size(); i++){
+            for(unsigned int i = 0 ; i < invalidUrls.size(); ++i) {
                 if(invalidUrls[i]==url){
                     invalidUrlFound = true;
                     break;
@@ -1385,8 +1402,9 @@ void UrlModel::addUrls(const std::vector<QUrl> &list, int row, bool move)
             if (index(j, 0).data(UrlRole).toUrl().toLocalFile() == cleanUrl) {
                 //#endif
                 removeRow(j);
-                if (j <= row)
-                    row--;
+                if (j <= row) {
+                    --row;
+                }
                 break;
             }
         }
@@ -1528,7 +1546,7 @@ void FavoriteView::removeEntry()
 {
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
     QList<QPersistentModelIndex> indexes;
-    for (int i = 0; i < idxs.count(); i++)
+    for (int i = 0; i < idxs.count(); ++i)
         indexes.append(idxs.at(i));
     
     for (int i = 0; i < indexes.count(); ++i)
@@ -1540,7 +1558,7 @@ void FavoriteView::rename(){
     QModelIndex index;
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
     QList<QPersistentModelIndex> indexes;
-    for (int i = 0; i < idxs.count(); i++)  indexes.append(idxs.at(i));
+    for (int i = 0; i < idxs.count(); ++i)  indexes.append(idxs.at(i));
     for (int i = 0; i < indexes.count(); ++i){
         if (!indexes.at(i).data(UrlModel::UrlRole).toUrl().path().isEmpty()){
             index = indexes.at(i);
@@ -1565,7 +1583,7 @@ void FavoriteView::editUrl(){
     QModelIndex index;
     QList<QModelIndex> idxs = selectionModel()->selectedIndexes();
     QList<QPersistentModelIndex> indexes;
-    for (int i = 0; i < idxs.count(); i++)  indexes.append(idxs.at(i));
+    for (int i = 0; i < idxs.count(); ++i)  indexes.append(idxs.at(i));
     for (int i = 0; i < indexes.count(); ++i){
         if (!indexes.at(i).data(UrlModel::UrlRole).toUrl().path().isEmpty()){
             index = indexes.at(i);
@@ -1630,7 +1648,7 @@ QByteArray SequenceFileDialog::saveState() const{
     QDataStream stream(&data, QIODevice::WriteOnly);
     QList<QUrl> urls;
     std::vector<QUrl> stdUrls = _favoriteView->urls();
-    for(unsigned int i = 0 ; i < stdUrls.size(); i++){
+    for(unsigned int i = 0 ; i < stdUrls.size(); ++i) {
         urls.push_back(stdUrls[i]);
     }
     stream << _centerSplitter->saveState();
@@ -1665,7 +1683,7 @@ bool SequenceFileDialog::restoreState(const QByteArray& state){
         _centerSplitter->setSizes(list);
     }
     std::vector<QUrl> stdBookMarks;
-    for(int i = 0 ; i < bookmarks.count() ; i++){
+    for(int i = 0 ; i < bookmarks.count() ; ++i) {
         stdBookMarks.push_back(bookmarks.at(i));
     }
     _favoriteView->setUrls(stdBookMarks);
@@ -1735,7 +1753,7 @@ bool UrlModel::dropMimeData(const QMimeData *data, Qt::DropAction , int row, int
     if (!data->formats().contains(mimeTypes().first()))
         return false;
     std::vector<QUrl> urls;
-    for(int i =0 ; i < data->urls().count() ; i++){
+    for(int i =0 ; i < data->urls().count() ; ++i) {
         urls.push_back(data->urls().at(i));
     }
     addUrls(urls, row);
@@ -1791,7 +1809,7 @@ void FileDialogComboBox::showPopup(){
             m->item(idx.row(), idx.column())->setFlags(flags);
         }
         std::vector<QUrl> stdUrls;
-        for(int i = 0; i < urls.count() ; i++){
+        for(int i = 0; i < urls.count() ; ++i) {
             stdUrls.push_back(urls.at(i));
         }
         urlModel->addUrls(stdUrls, -1, false);
@@ -1853,7 +1871,7 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         _firstFrame = frameIndex;
         _lastFrame = _firstFrame;
         _isEmpty = false;
-        _size++;
+        ++_size;
         return true;
     }
     int offset = frameIndex - _firstFrame -1; // assuming frameIndex is positive,offset is the index in the bits to look for (starting at 0)
@@ -1869,7 +1887,7 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         if(bitsIndex >= (int)_bits.size()){
             _bits.push_back(frames);
         }
-        _size++;
+        ++_size;
         _isEmpty = false;
         if(frameIndex < _firstFrame)
             _firstFrame = frameIndex;

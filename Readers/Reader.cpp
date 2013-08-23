@@ -87,7 +87,7 @@ bool Reader::readCurrentHeader(int current_frame){
     Read* _read = 0;
     
     QString extension;
-    for(int i = filename.size() - 1 ; i>= 0 ; i--){
+    for(int i = filename.size() - 1 ; i>= 0 ; --i) {
         QChar c = filename.at(i);
         if(c != QChar('.'))
             extension.prepend(c);
@@ -126,7 +126,7 @@ bool Reader::readCurrentHeader(int current_frame){
 //            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
 //        }else{
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
-            for (int i = dataW.y() ; i < dataW.top(); i++) {
+            for (int i = dataW.y() ; i < dataW.top(); ++i) {
                 rows.push_back(i);
             }            
         // }
@@ -270,7 +270,7 @@ void Reader::createKnobDynamically(){
 void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == (U32)_bufferSize){
-        for(U32 i = 0 ; i < _buffer.size() ;i++){
+        for(U32 i = 0 ; i < _buffer.size() ;++i) {
             Reader::Buffer::Descriptor* frameToRemove = _buffer[i];
             assert(frameToRemove);
             if(!frameToRemove->hasToDecode()){
@@ -282,7 +282,7 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     _buffer.push_back(desc);
 }
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
-    for(int i = _buffer.size()-1; i >= 0 ; i--) {
+    for(int i = _buffer.size()-1; i >= 0 ; --i) {
         assert(_buffer[i]);
         if(_buffer[i]->_filename==filename) return _buffer.begin()+i;
     }
@@ -309,7 +309,7 @@ bool Reader::Buffer::decodeFinished(const std::string& filename){
 }
 void Reader::Buffer::debugBuffer(){
     cout << "=========BUFFER DUMP=============" << endl;
-    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++) {
+    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; ++it) {
         assert(*it);
         cout << (*it)->_filename << endl;
     }
@@ -348,7 +348,7 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
 
 void Reader::Buffer::clear(){
     DecodedFrameIterator it = _buffer.begin();
-    for(;it!=_buffer.end();it++){
+    for(;it!=_buffer.end();++it) {
         assert(*it);
         if((*it)->_readInfo)
             delete (*it)->_readInfo; // delete readerInfo
@@ -383,7 +383,7 @@ void Reader::getVideoSequenceFromFilesList(){
             QString frameIndex;
             while(j>0 && Qfilename.at(j).isDigit()){
                 frameIndex.push_front(Qfilename.at(j));
-                j--;
+                --j;
             }
             if(j>0){
 				int number=0;
@@ -404,7 +404,7 @@ void Reader::getVideoSequenceFromFilesList(){
                 QString frameIndex;
                 while(j>0 && Qfilename.at(j).isDigit()){
                     frameIndex.push_front(Qfilename.at(j));
-                    j--;
+                    --j;
                 }
                 if(j>0){
                     int number = frameIndex.toInt();
@@ -456,7 +456,7 @@ void Reader::setPreview(QImage* img){
 void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::vector<int>& others){
     ScanLineIterator it = others.begin();
     std::vector<int> rowsCopy = _rows;
-    for(;it!=others.end();it++){
+    for(;it!=others.end();++it) {
         ScanLineIterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
         if(found == rowsCopy.end()){ // if not found, we add the row to rows
             _rowsToRead.push_back(*it);
@@ -468,7 +468,7 @@ void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::v
 
 /*merges _rowsToRead and _rows*/
 void Reader::Buffer::ScanLineContext::merge(){
-    for(U32 i = 0;i < _rowsToRead.size(); i++){
+    for(U32 i = 0;i < _rowsToRead.size(); ++i) {
         _rows.push_back(_rowsToRead[i]);
     }
     _rowsToRead.clear();
@@ -511,41 +511,41 @@ ReaderInfo* ReaderInfo::fromString(QString from){
     QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
     
     int i = 0;
-    while(from.at(i) != QChar('<')){name.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); i++;}
-    i++;
-    while(i < from.size()){channelsStr.append(from.at(i)); i++;}
-    i++;
+    while(from.at(i) != QChar('<')){name.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); ++i;}
+    ++i;
+    while(i < from.size()){channelsStr.append(from.at(i)); ++i;}
+    ++i;
     ChannelSet channels;
     i = 0;
     while(i < channelsStr.size()){
         QString chan;
         while(channelsStr.at(i) != QChar('|')){
             chan.append(channelsStr.at(i));
-            i++;
+            ++i;
         }
-        i++;
+        ++i;
         string chanStd = chan.toStdString();
         channels += getChannelByName(chanStd.c_str());
     }

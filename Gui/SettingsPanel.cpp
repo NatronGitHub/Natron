@@ -124,13 +124,13 @@ void SettingsPanel::close(){
 
     QVBoxLayout* container = _nodeGUI->getDockContainer();
     vector<QWidget*> _panels;
-    for(int i =0 ; i < container->count(); i++){
+    for(int i =0 ; i < container->count(); ++i) {
         if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
             _panels.push_back(myItem);
             container->removeWidget(myItem);
         }
     }
-    for (U32 i =0 ; i < _panels.size(); i++) {
+    for (U32 i =0 ; i < _panels.size(); ++i) {
         container->addWidget(_panels[i]);
     }
  
@@ -148,13 +148,13 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
         vector<QWidget*> _panels;
-        for(int i =0 ; i < container->count(); i++){
+        for(int i =0 ; i < container->count(); ++i) {
             if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
                 container->removeWidget(myItem);
             }
         }
-        for (U32 i =0 ; i < _panels.size(); i++) {
+        for (U32 i =0 ; i < _panels.size(); ++i) {
             container->addWidget(_panels[i]);
         }
     
@@ -167,13 +167,13 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
         vector<QWidget*> _panels;
-        for(int i =0 ; i < container->count(); i++){
+        for(int i =0 ; i < container->count(); ++i) {
             if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
                 container->removeWidget(myItem);
             }
         }
-        for (U32 i =0 ; i < _panels.size(); i++) {
+        for (U32 i =0 ; i < _panels.size(); ++i) {
             container->addWidget(_panels[i]);
         }        
     }

@@ -34,7 +34,7 @@ _dragging(false)
 {
 
     this->setContentsMargins(0, 0, 0, 0);    
-    for(int i =0;i<nbDisplayedValues;i++) _displayedValues.push_back(0);
+    for(int i =0;i<nbDisplayedValues;++i) _displayedValues.push_back(0);
     updateScale();
     _position = initialPos;
     setMinimumWidth(150);
@@ -54,7 +54,7 @@ void ScaleSlider::updateScale(){
     }
     double incr = (double)(_values.size())/(double)(_displayedValues.size()-1);
     double index = 0;
-    for(U32 i =0;i< _displayedValues.size();i++){
+    for(U32 i =0;i< _displayedValues.size();++i) {
         if(ceil(index) >= _values.size()){ _displayedValues[i]=_values.back();index+=incr; continue;}
         if(floor(index) <=0){_displayedValues[i]=_values[0];index+=incr;continue;}
         if(floor(index)==index){_displayedValues[i]=_values[index];index+=incr;continue;}
@@ -83,7 +83,7 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     QPointF pos(BORDER_OFFSET-1,20);
     fillCoordLut();
     // drawing ticks & sub-ticks   
-    for(unsigned int i =0;i<_displayedValues.size();i++){
+    for(unsigned int i =0;i<_displayedValues.size();++i) {
         p.drawText(pos, QString::number(_displayedValues[i],'g',3));
         if(pos.x()-incr > 2) p.drawLine(pos.x()-incr/2,2+BORDER_HEIGHT,pos.x()-incr/2,BORDER_HEIGHT-TICK_HEIGHT/2);
 
@@ -103,7 +103,7 @@ void ScaleSlider::fillCoordLut(){
     double c = BORDER_OFFSET;
     double scaleW = (size().width()-BORDER_OFFSET) - BORDER_OFFSET ;
     double incr= scaleW/(double)(_values.size()-1);
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         _XValues.push_back(c);
         c+=incr;
     }
@@ -136,7 +136,7 @@ void ScaleSlider::seekScalePosition(double d){
         loop=false;
     }
     if(loop){
-        for(unsigned int i=0;i<_values.size();i++){
+        for(unsigned int i=0;i<_values.size();++i) {
             if(i<_values.size()-1 &&  d >= _values[i] && d < _values[i+1]){
                 _position= _values[i];
                 break;
@@ -160,7 +160,7 @@ double ScaleSlider::getScalePosition(double pos){
         return _values[0];
     if(pos >= _XValues[_XValues.size()-1])
         return _values[_XValues.size()-1];
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         if(i<_XValues.size()-1 &&  pos >= _XValues[i] && pos < _XValues[i+1]){
             return _values[i];
         }
@@ -183,7 +183,7 @@ double ScaleSlider::getCoordPosition(double pos){
         
     }
     
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         if(i<_values.size()-1 &&  pos >= _values[i] && pos < _values[i+1]){
             return  _XValues[i];
             

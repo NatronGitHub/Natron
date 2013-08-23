@@ -85,7 +85,10 @@ void Writer::_validate(bool forReal){
                 QString extension;
                 QString filename(_filename.c_str());
                 int i = filename.size()-1;
-                while(i >= 0 && filename.at(i) != QChar('.')){extension.prepend(filename.at(i));i--;}
+                while(i >= 0 && filename.at(i) != QChar('.')) {
+                    extension.prepend(filename.at(i));
+                    --i;
+                }
                 
                 PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(extension.toStdString());
                 QString frameNumber;
@@ -97,7 +100,7 @@ void Writer::_validate(bool forReal){
                     filename.append(".");
                     filename.append(_fileType.c_str());
                 }else{
-                    i--; /*i was at the '.' character, we put it one letter before so we can insert the frame number*/
+                    --i; /*i was at the '.' character, we put it one letter before so we can insert the frame number*/
                     filename.insert(i, frameNumber);
                 }
                 write->setOptionalKnobsPtr(_writeOptions);
@@ -135,7 +138,7 @@ void Writer::initKnobs(KnobCallback *cb){
     QObject::connect(filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
     const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
-    for(;it!=_encoders.end();it++){
+    for(;it!=_encoders.end();++it) {
         _allFileTypes.push_back(it->first);
     }
     filetypeCombo->setPointer(&_fileType);
@@ -186,7 +189,7 @@ void Writer::Buffer::appendTask(Write* task,QFutureWatcher<void>* future){
 }
 
 void Writer::Buffer::removeTask(Write* task){
-    for (U32 i = 0 ; i < _tasks.size(); i++) {
+    for (U32 i = 0 ; i < _tasks.size(); ++i) {
         std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
         if(t.first == task){
             _trash.push_back(t.second);
@@ -196,14 +199,14 @@ void Writer::Buffer::removeTask(Write* task){
     }
 }
 void Writer::Buffer::emptyTrash(){
-    for (U32 i = 0; i < _trash.size(); i++) {
+    for (U32 i = 0; i < _trash.size(); ++i) {
         delete _trash[i];
     }
     _trash.clear();
 }
 
 Writer::Buffer::~Buffer(){
-    for (U32 i = 0 ; i < _tasks.size(); i++) {
+    for (U32 i = 0 ; i < _tasks.size(); ++i) {
         std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
         delete t.second;
     }

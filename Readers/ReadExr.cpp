@@ -53,7 +53,7 @@ std::vector<std::string> split(const std::string& str, char splitChar)
 
 bool IsView(const std::string& name, const std::vector<std::string>& views)
 {
-    for ( size_t i = 0; i < views.size(); i++ ){
+    for ( size_t i = 0; i < views.size(); ++i ){
         if ( views[i] == name ){
             return true;
         }
@@ -67,8 +67,8 @@ std::string removedigitsfromfront(const std::string& str)
     size_t len = str.length();
     size_t i = 0;
     while (isdigit(str[i]) && (i < len))
-        i++;
-    for (; i < len; i++ )
+        ++i;
+    for (; i < len; ++i )
         ret += (str[i]);
     
     return ret;
@@ -78,7 +78,7 @@ std::string removeNonAlphaCharacters(const std::string& str)
 {
     std::string ret = "";
     size_t len = str.length();
-    for ( size_t i = 0; i < len; i++ ){
+    for ( size_t i = 0; i < len; ++i ){
         if (!isalnum(str[i]))
             ret += '_';
         else
@@ -90,7 +90,7 @@ std::string removeNonAlphaCharacters(const std::string& str)
 std::string tolower(const std::string& s)
 {
     std::string r = s;
-    for (size_t i = 0; i < r.size(); i++) {
+    for (size_t i = 0; i < r.size(); ++i) {
         r[i] = tolower(r[i]);
     }
     return r;
@@ -107,7 +107,7 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     
     // remove digits from the front, and remove empty strings
     std::vector<std::string> newsplits;
-    for ( size_t i = 0; i < splits.size(); i++ ){
+    for ( size_t i = 0; i < splits.size(); ++i ){
         std::string s = removedigitsfromfront(splits[i]);
         if ( s.length() > 0 )
             newsplits.push_back(removeNonAlphaCharacters(s));
@@ -118,7 +118,7 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     if ( newsplits.size() > 1 ){
 
         
-        for (U32 i = 0 ; i < (newsplits.size() - 1); i++) {
+        for (U32 i = 0 ; i < (newsplits.size() - 1); ++i) {
             if (IsView(newsplits[i], views)) {
                 _view = newsplits[i];
             } else {
@@ -217,7 +217,7 @@ void ReadExr::readHeader(const QString filename,bool){
             
             bool setHero = false;
             
-            for (size_t i = 0; i < s.size(); i++) {
+            for (size_t i = 0; i < s.size(); ++i) {
                 if (s[i].length()) {
                     views.push_back(s[i]);
                     if (!setHero) {
@@ -233,9 +233,9 @@ void ReadExr::readHeader(const QString filename,bool){
         const Imf::ChannelList& imfchannels = inputfile->header().channels();
         Imf::ChannelList::ConstIterator chan;
         
-        for (chan = imfchannels.begin(); chan != imfchannels.end(); chan++) {
+        for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
             if(!strcmp(chan.name(),"")) continue;
-            pixelTypes[chan.channel().type]++;
+            ++pixelTypes[chan.channel().type];
             ExrChannelExctractor exrExctractor(chan.name(), views);
             std::set<Channel> channels;
             if (exrExctractor.isValid()) {
@@ -244,7 +244,7 @@ void ReadExr::readHeader(const QString filename,bool){
                 if (!channels.empty()) {
                     for (std::set<Channel>::iterator it = channels.begin();
                          it != channels.end();
-                         it++) {
+                         ++it) {
                         Channel channel = *it;
                         //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
                         bool writeChannelMapping = true;
@@ -252,10 +252,9 @@ void ReadExr::readHeader(const QString filename,bool){
                             int existingLength = strlen(channel_map[channel]);
                             int newLength = strlen(chan.name());
                             bool existingChannelHasEmptyLayerName = (existingLength > 0) && channel_map[channel][0] == '.';
-                            if (existingChannelHasEmptyLayerName && existingLength == (newLength + 1)) {                                writeChannelMapping = true;
-                            }
-                            else if (existingLength > newLength) {
-                                
+                            if (existingChannelHasEmptyLayerName && existingLength == (newLength + 1)) {
+                                writeChannelMapping = true;
+                            } else if (existingLength > newLength) {
                                 writeChannelMapping = false;
                             }
                         }
@@ -294,10 +293,10 @@ void ReadExr::readHeader(const QString filename,bool){
         int bt = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
                 datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
-            bx--;
-            by--;
-            br++;
-            bt++;
+            --bx;
+            --by;
+            ++br;
+            ++bt;
             _readInfo->blackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
@@ -344,9 +343,9 @@ void ReadExr::readScanLine(int y){
     foreachChannels(z, channels){
         // blacking out what needs to be blacked out
         float* dest = out->writable(z) ;
-        for (int xx = x; xx < X; xx++)
+        for (int xx = x; xx < X; ++xx)
             dest[xx] = 0;
-        for (int xx = R; xx < r; xx++)
+        for (int xx = R; xx < r; ++xx)
             dest[xx] = 0;
         if(strcmp(channel_map[z],"BY") && strcmp(channel_map[z],"RY")){ // if it is NOT a subsampled buffer
             fbuf.insert(channel_map[z],Imf::Slice(Imf::FLOAT, (char*)(dest + dataOffset),sizeof(float), 0));
@@ -383,7 +382,7 @@ ReadExr::~ReadExr(){
     delete inputStr ;
     delete inputStdStream ;
 #endif
-    for(map<int,Row*>::iterator it =_img.begin();it!= _img.end();it++) delete it->second;
+    for(map<int,Row*>::iterator it =_img.begin();it!= _img.end();++it) delete it->second;
     _img.clear();
     delete inputfile;
 }
@@ -431,14 +430,14 @@ void ReadExr::make_preview(){
     dh < 64 ? h = dh : h = 64;
     dw < 64 ? w = dw : w = 64;
     float zoomFactor = (float)h/(float)dh;
-    for(int i =0 ; i < h ; i++){
+    for(int i =0 ; i < h ; ++i) {
         float y = (float)i*1.f/zoomFactor;
         int nearest;
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
         readScanLine(nearest);
     }
     QImage* img=new QImage(w,h,QImage::Format_ARGB32);
-    for(int i=0;i< h;i++){
+    for(int i=0;i< h;++i) {
         float y = (float)i*1.f/zoomFactor;
         int nearest;
         (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
@@ -454,7 +453,7 @@ void ReadExr::make_preview(){
         if(green) green+=from->offset();
         if(blue) blue+=from->offset();
         if(alpha) alpha+=from->offset();
-        for(int j=0;j<w;j++){
+        for(int j=0;j<w;++j) {
             float x = (float)j*1.f/zoomFactor;
             int nearestX;
             (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
@@ -483,7 +482,7 @@ void ReadExr::make_preview(){
 //     MakeNeededViews(views);*/
 //    for (Imf::Header::ConstIterator i = header.begin();
 //         i != header.end();
-//         i++) {
+//         ++i) {
 //        //const char* type = i.attribute().typeName();
 //
 //        /*std::string key = std::string(MetaData::EXR::EXR_PREFIX) + i.name();
@@ -569,8 +568,8 @@ void ReadExr::make_preview(){
 //         else if (!strcmp(type, "m33f")) {
 //         const Imf::M33fAttribute* attr = static_cast<const Imf::M33fAttribute*>(&i.attribute());
 //         std::vector<float> values;
-//         for (int i = 0; i < 3; i++) {
-//         for (int j = 0; j < 3; j++) {
+//         for (int i = 0; i < 3; ++i) {
+//         for (int j = 0; j < 3; ++j) {
 //         values.push_back((attr->value())[i][j]);
 //         }
 //         }
@@ -579,8 +578,8 @@ void ReadExr::make_preview(){
 //         else if (!strcmp(type, "m44f")) {
 //         const Imf::M44fAttribute* attr = static_cast<const Imf::M44fAttribute*>(&i.attribute());
 //         std::vector<float> values;
-//         for (int i = 0; i < 4; i++) {
-//         for (int j = 0; j < 4; j++) {
+//         for (int i = 0; i < 4; ++i) {
+//         for (int j = 0; j < 4; ++j) {
 //         values.push_back((attr->value())[i][j]);
 //         }
 //         }
@@ -616,16 +615,19 @@ void ReadExr::debug(){
     int h =_img.size();
     map<int,Row*>::iterator it = _img.begin();
     QImage img(w,h,QImage::Format_ARGB32);
-    for(int i =0 ; i < h ; i++){
+    for(int i =0 ; i < h ; ++i) {
         Row* row = it->second;
         const float* r = (*row)[Channel_red] + row->offset();
         const float* g = (*row)[Channel_green] + row->offset();
         const float* b = (*row)[Channel_blue] + row->offset();
-        for(int j = 0 ; j < w ; j++){
-            QColor c(Lut::clamp(*r++)*255,Lut::clamp(*g++)*255,Lut::clamp(*b++)*255);
+        for(int j = 0 ; j < w ; ++j) {
+            QColor c(Lut::clamp(*r)*255, Lut::clamp(*g)*255, Lut::clamp(*b)*255);
+            ++r;
+            ++g;
+            ++b;
             img.setPixel(j, i, c.rgb());
         }
-        it++;
+        ++it;
     }
     img.save("debug.jpg");
 }

@@ -152,7 +152,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     resolutions.push_back(square2K);
     
     assert(formatNames.size() == resolutions.size());
-    for(U32 i =0;i<formatNames.size();i++){
+    for(U32 i =0;i<formatNames.size();++i) {
         const std::vector<float>& v = resolutions[i];
         assert(v.size() >= 3);
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
@@ -206,10 +206,10 @@ Model::~Model(){
     // foreach(PluginID* p,_pluginsLoaded) delete p;
     foreach(CounterID* c,_nodeCounters) delete c;
     foreach(Format* f,_formats) delete f;
-    for(ReadPluginsIterator it = _readPluginsLoaded.begin();it!=_readPluginsLoaded.end();it++){
+    for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         if(it->second){
             /*finding all other reads that have the same pointer to avoid double free*/
-            for(ReadPluginsIterator it2 = _readPluginsLoaded.begin();it2!=_readPluginsLoaded.end();it2++){
+            for(ReadPluginsIterator it2 = _readPluginsLoaded.begin(); it2!=_readPluginsLoaded.end(); ++it2) {
                 if(it2->second == it->second && it2->first!=it->first)
                     it2->second = 0;
             }
@@ -249,7 +249,7 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
     const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
-    for (U32 i = 0; i< inputs.size(); i++) {
+    for (U32 i = 0; i< inputs.size(); ++i) {
         assert(inputs[i]);
         Reader* r = dynamic_cast<Reader*>(inputs[i]);
         if (r) {
@@ -271,7 +271,7 @@ void Model::initCounterAndGetDescription(Node*& node){
         string tmp(counter->second);
         string nodeName = node->className();
         if(tmp==nodeName){
-            (counter->first)++;
+            ++(counter->first);
             found=true;
             string str;
             str.append(nodeName.c_str());
@@ -387,7 +387,7 @@ bool Model::createNode(Node *&node,const std::string name){
 // in the future, display the plugins loaded on the loading wallpaper
 void Model::displayLoadedPlugins(){
     int i=0;
-    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; it++){
+    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; ++it) {
         cout << it->first << endl;
     }
     cout  << i << " plugin(s) loaded." << endl;
@@ -398,7 +398,7 @@ void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
 Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
     
-	for(U32 i =0;i< _formats.size();i++){
+	for(U32 i =0;i< _formats.size();++i) {
 		Format* frmt = _formats[i];
         assert(frmt);
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
@@ -423,13 +423,15 @@ void Model::loadReadPlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
+        for(int i = 0 ; i < fileList.size() ; ++i)
         {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -452,7 +454,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
                         assert(plugin);
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
@@ -488,7 +490,7 @@ void Model::loadReadPlugins(){
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((void*)builder,decoderName.c_str());
                         assert(plugin);
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
@@ -507,7 +509,7 @@ void Model::loadReadPlugins(){
     loadBuiltinReads();
     
     std::map<std::string, PluginID*> defaultMapping;
-    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); it++) {
+    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         if(it->first == "exr" && it->second->second == "OpenEXR"){
             defaultMapping.insert(*it);
         }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
@@ -531,7 +533,7 @@ void Model::loadReadPlugins(){
 
 void Model::displayLoadedReads(){
     ReadPluginsIterator it = _readPluginsLoaded.begin();
-    for (; it!=_readPluginsLoaded.end(); it++) {
+    for (; it!=_readPluginsLoaded.end(); ++it) {
         cout << it->second->second << " : " << it->first << endl;
     }
 }
@@ -547,7 +549,7 @@ void Model::loadBuiltinReads(){
     PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
 #endif
     assert(EXRplugin);
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],EXRplugin));
     }
     delete readExr;
@@ -562,7 +564,7 @@ void Model::loadBuiltinReads(){
 	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
 #endif
     assert(Qtplugin);
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],Qtplugin));
     }
     delete readQt;
@@ -577,7 +579,7 @@ void Model::loadBuiltinReads(){
 	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
 #endif
     assert(FFMPEGplugin);
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],FFMPEGplugin));
     }
     delete readFfmpeg;
@@ -605,13 +607,15 @@ void Model::loadWritePlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
+        for(int i = 0 ; i < fileList.size() ; ++i)
         {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -633,7 +637,7 @@ void Model::loadWritePlugins(){
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((HINSTANCE)builder,encoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _writePluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete write;
@@ -668,7 +672,7 @@ void Model::loadWritePlugins(){
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((void*)builder,encoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete write;
@@ -687,7 +691,7 @@ void Model::loadWritePlugins(){
     loadBuiltinWrites();
     
     std::map<std::string, PluginID*> defaultMapping;
-    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); it++) {
+    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
         if(it->first == "exr" && it->second->second == "OpenEXR"){
             defaultMapping.insert(*it);
         }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
@@ -721,7 +725,7 @@ void Model::loadBuiltinWrites(){
 	PluginID *QtWritePlugin = new PluginID((void*)&WriteQt::BuildWrite,encoderName.c_str());
 #endif
     assert(QtWritePlugin);
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _writePluginsLoaded.push_back(make_pair(extensions[i],QtWritePlugin));
     }
     delete writeQt;
@@ -735,7 +739,7 @@ void Model::loadBuiltinWrites(){
 	PluginID *ExrWritePlugin = new PluginID((void*)&WriteExr::BuildWrite,encoderNameExr.c_str());
 #endif
     assert(ExrWritePlugin);
-    for (U32 i = 0 ; i < extensionsExr.size(); i++) {
+    for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
         _writePluginsLoaded.push_back(make_pair(extensionsExr[i],ExrWritePlugin));
     }
     delete writeEXR;
@@ -760,7 +764,7 @@ void  Model::clearNodeCache(){
 void Model::removeNode(Node* n){
     assert(n);
     /*We DON'T delete as it was already done by the NodeGui associated.*/
-    for(U32 i = 0 ; i < _currentNodes.size();i++){
+    for(U32 i = 0 ; i < _currentNodes.size();++i) {
         if(_currentNodes[i] == n){
             _currentNodes.erase(_currentNodes.begin()+i);
         }
@@ -806,7 +810,7 @@ void Model::loadOFXPlugins(){
     
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
-    for (unsigned int i = 0 ; i < plugins.size(); i++) {
+    for (unsigned int i = 0 ; i < plugins.size(); ++i) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
         assert(p);
         if(p->getContexts().size() == 0)
@@ -949,7 +953,7 @@ QString Model::serializeNodeGraph() const{
         ret.append(n->getNode()->getName().c_str());
         ret.append("{\n");
         const std::vector<Node*>& parents = n->getNode()->getParents();
-        for (U32 i = 0; i < parents.size(); i++) {
+        for (U32 i = 0; i < parents.size(); ++i) {
             ret.append("input");
             ret.append(QString::number(i));
             ret.append(":");
@@ -958,7 +962,7 @@ QString Model::serializeNodeGraph() const{
         }
         //serialize knobs
         const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
-        for (U32 i = 0; i < knobs.size(); i++) {
+        for (U32 i = 0; i < knobs.size(); ++i) {
             ret.append("knob");
             ret.append(":");
             ret.append(knobs[i]->getDescription().c_str());
@@ -991,18 +995,18 @@ void Model::restoreGraphFromString(const QString& str){
         i += 5;
         QString className;
         while(i < str.size() && str.at(i) != QChar(':')){
-            className.append(str.at(i++));
+            className.append(str.at(++i));
         }
         if(i  == str.size()) return; // safety check
         
-        i++;
+        ++i;
         QString nodeName;
         while(i < str.size() && str.at(i) != QChar('{')){
-            nodeName.append(str.at(i++));
+            nodeName.append(str.at(++i));
         }
         if(i  == str.size()) return; // safety check
         
-        i++; //the '\n' character 
+        ++i; //the '\n' character 
         
         assert(ctrlPTR);
         ctrlPTR->deselectAllNodes();
@@ -1023,16 +1027,16 @@ void Model::restoreGraphFromString(const QString& str){
         while (i < str.size() && str.at(i) != QChar('}')) {
             QString line;
             while(i < str.size() && str.at(i) != QChar('\n')){
-                line.append(str.at(i++));
+                line.append(str.at(++i));
             }
-            i++; // the '\n' character
+            ++i; // the '\n' character
             actionsMap.push_back(make_pair(n, line));
         }
         i = str.indexOf("Node:",lastNode);
     }
     
     //adjusting knobs & connecting nodes now
-    for (U32 i = 0; i < actionsMap.size(); i++) {
+    for (U32 i = 0; i < actionsMap.size(); ++i) {
         pair<Node*,QString>& action = actionsMap[i];
         analyseSerializedNodeString(action.first, action.second);
     }
@@ -1046,15 +1050,15 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         int i = type + 5;
         QString inputNumberStr;
         while(i < str.size() && str.at(i) != QChar(':')){
-            inputNumberStr.append(str.at(i++));
+            inputNumberStr.append(str.at(++i));
         }
-        i++; // the ':' character
+        ++i; // the ':' character
         QString inputName;
-        while(i < str.size()) inputName.append(str.at(i++));
+        while(i < str.size()) inputName.append(str.at(++i));
 
         assert(n->getNodeUi());
         int inputNb = inputNumberStr.toInt();
-        for (U32 j = 0; j < _currentNodes.size(); j++) {
+        for (U32 j = 0; j < _currentNodes.size(); ++j) {
             assert(_currentNodes[j]);
             if (_currentNodes[j]->getName() == inputName.toStdString()) {
                 n->addParent(_currentNodes[j]);
@@ -1076,24 +1080,24 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
     if(type != -1){
         int i = type + 4;
         
-        i++; // the ':' character
+        ++i; // the ':' character
                
         QString knobDescription;
         while(i < str.size() && str.at(i)!= QChar(':')){
-            knobDescription.append(str.at(i++));
+            knobDescription.append(str.at(++i));
         }
         
         if(i  == str.size()) return; // safety check
         
-        i++; // the ':' character
+        ++i; // the ':' character
         
         QString value;
         while(i < str.size()){
-            value.append(str.at(i++));
+            value.append(str.at(++i));
         }
         
         const std::vector<Knob*>& knobs = n->getKnobs();
-        for (U32 j = 0; j < knobs.size(); j++) {
+        for (U32 j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getDescription() == knobDescription.toStdString()) {
                 knobs[j]->restoreFromString(value.toStdString());
                 break;
@@ -1106,22 +1110,22 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
     type = str.indexOf("pos");
     if(type != -1){
         int i = type + 3;
-        i++;// the ':' character
-        i++;// the 'x' character
-        i++;// the '=' character
+        ++i;// the ':' character
+        ++i;// the 'x' character
+        ++i;// the '=' character
         
         QString xStr,yStr;
         while(i < str.size() && str.at(i)!=QChar('y')){
-            xStr.append(str.at(i++));
+            xStr.append(str.at(++i));
         }
         
         if(i  == str.size()) return; // safety check
         
-        i++; // the 'y' character
-        i++; // the '=' character
+        ++i; // the 'y' character
+        ++i; // the '=' character
         
         while(i < str.size()){
-            yStr.append(str.at(i++));
+            yStr.append(str.at(++i));
         }
         
         assert(n->getNodeUi());

@@ -104,29 +104,29 @@ FrameEntry* FrameEntry::recoverFromString(QString str){
     
     QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,xStr,yStr,rightStr,topStr,wStr,hStr;
     int i =0 ;
-    while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){expStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){lutStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){treeStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){byteStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){xStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){yStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){rightStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){topStr.append(str.at(i));i++;}
-    i++;
-    while(str.at(i)!= QChar(' ')){wStr.append(str.at(i));i++;}
-    i++;
-    while(i < str.size()){hStr.append(str.at(i));i++;}
+    while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){expStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){lutStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){treeStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){byteStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){xStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){yStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){rightStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){topStr.append(str.at(i));++i;}
+    ++i;
+    while(str.at(i)!= QChar(' ')){wStr.append(str.at(i));++i;}
+    ++i;
+    while(i < str.size()){hStr.append(str.at(i));++i;}
       
     
     TextureRect textureRect(xStr.toInt(),yStr.toInt(),rightStr.toInt(),topStr.toInt(),wStr.toInt(),hStr.toInt());
@@ -140,10 +140,10 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
     if(str.isEmpty()) return make_pair(0, (MemoryMappedEntry*)NULL);
     QString path,entryStr;
     int i =0 ;
-    while(str.at(i)!= QChar(' ')){path.append(str.at(i));i++;}
-    i++;
-    while(i < str.size()){entryStr.append(str.at(i));i++;}
-    i++;
+    while(str.at(i)!= QChar(' ')){path.append(str.at(i));++i;}
+    ++i;
+    while(i < str.size()){entryStr.append(str.at(i));++i;}
+    ++i;
     
     if (!QFile::exists(path)) {
         return make_pair(0, (MemoryMappedEntry*)NULL);;
@@ -169,13 +169,18 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
     }
     QString hashKey;
     int j = path.size() - 1;
-    while(path.at(j) != QChar('.')) j--;
-    j--;
-    while(path.at(j) != QChar('/')){hashKey.prepend(path.at(j));j--;}
-    j--;
+    while(path.at(j) != QChar('.')) {
+        --j;
+    }
+    --j;
+    while(path.at(j) != QChar('/')) {
+        hashKey.prepend(path.at(j));
+        --j;
+    }
+    --j;
     while (path.at(j) != QChar('/')) {
         hashKey.prepend(path.at(j));
-        j--;
+        --j;
     }
     bool ok;
     U64 key = hashKey.toULongLong(&ok,16);

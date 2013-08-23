@@ -31,7 +31,7 @@ Node* OfxClipInstance::getAssociatedNode() const{
     else{
         int index = 0;
         OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < inputs.size(); i++) {
+        for (U32 i = 0; i < inputs.size(); ++i) {
             if (inputs[i]->getName() == getName()) {
                 index = i;
                 break;
@@ -228,7 +228,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
             try{
-                for (int y = roi.y1; y < roi.y2; y++) {
+                for (int y = roi.y1; y < roi.y2; ++y) {
                     OfxRGBAColourF* dstImg = ret->pixelF(0, y);
                     assert(dstImg);
                     const InputRow& row = srcImg.at(y);
@@ -329,9 +329,9 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
 //    int w = (bounds.x2-bounds.x1);
 //    int h = (bounds.y2-bounds.y1);
 //    QImage* out = new QImage(w,h,QImage::Format_ARGB32_Premultiplied);
-//    for (int i = 0 ; i < h ; i++) {
+//    for (int i = 0 ; i < h ; ++i) {
 //        QRgb* row = (QRgb*)out->scanLine(i);
-//        for (int j = 0; j < w; j++) {
+//        for (int j = 0; j < w; ++j) {
 //            OfxRGBAColourF pix = _data[i*w+j];
 //            row[j] = qRgba(pix.r*255, pix.g*255, pix.b*255, pix.a*255);
 //        }

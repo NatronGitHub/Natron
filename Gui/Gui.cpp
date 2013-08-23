@@ -384,7 +384,7 @@ void Gui::loadStyleSheet(){
 }
 
 void Gui::maximize(TabWidget* what){
-    for (U32 i =0; i < _panes.size(); i++) {
+    for (U32 i =0; i < _panes.size(); ++i) {
         if (_panes[i] != what) {
             _panes[i]->hide();
         }
@@ -392,7 +392,7 @@ void Gui::maximize(TabWidget* what){
 }
 
 void Gui::minimize(){
-    for (U32 i =0; i < _panes.size(); i++) {
+    for (U32 i =0; i < _panes.size(); ++i) {
         _panes[i]->show();
     }
 }
@@ -406,7 +406,7 @@ ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
 }
 void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
     bool found = false;
-    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
         if (_viewerTabs[i] == tab) {
             found = true;
             break;
@@ -419,7 +419,7 @@ void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
 }
 
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
-    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
         if (_viewerTabs[i] == tab) {
             _viewerTabs.erase(_viewerTabs.begin()+i);
             break;
@@ -456,7 +456,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
     if(from == where){
         /*We check that even if it is the same TabWidget, it really exists.*/
         bool found = false;
-        for (int i =0; i < from->count(); i++) {
+        for (int i =0; i < from->count(); ++i) {
             if (what == from->tabAt(i)) {
                 found = true;
                 break;
@@ -567,7 +567,7 @@ void Gui::closePane(TabWidget* what){
     if(!container) return;
     
     /*Removing it from the _panes vector*/
-    for (U32 i = 0; i < _panes.size(); i++) {
+    for (U32 i = 0; i < _panes.size(); ++i) {
         if (_panes[i] == what) {
             _panes.erase(_panes.begin()+i);
             break;
@@ -589,7 +589,7 @@ void Gui::closePane(TabWidget* what){
     
     /*identifying the other tab*/
     TabWidget* other = 0;
-    for (int i = 0; i < container->count(); i++) {
+    for (int i = 0; i < container->count(); ++i) {
         TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
         if (tab) {
             other = tab;
@@ -604,7 +604,7 @@ void Gui::closePane(TabWidget* what){
     
     /*Removing the container from the mainContainer*/
     int subSplitterIndex = 0;
-    for (int i = 0; i < mainContainer->count(); i++) {
+    for (int i = 0; i < mainContainer->count(); ++i) {
         QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
         if (subSplitter && subSplitter == container) {
             subSplitterIndex = i;
@@ -696,7 +696,7 @@ ToolButton::ToolButton(const std::string& actionName,
     setMaximumSize(35,35);
     
     QMenu* _lastMenu = _menu;
-    for (U32 i = 1; i < firstElement.size(); i++) {
+    for (U32 i = 1; i < firstElement.size(); ++i) {
         _lastMenu = _lastMenu->addMenu(firstElement[i].c_str());
         _subMenus.push_back(_lastMenu);
     }
@@ -711,7 +711,7 @@ ToolButton::ToolButton(const std::string& actionName,
     
 }
 ToolButton::~ToolButton(){
-    for(U32 i = 0; i < _actions.size() ; i++){
+    for(U32 i = 0; i < _actions.size() ; ++i) {
         delete _actions[i];
     }
 }
@@ -722,7 +722,7 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
     QMenu* _lastMenu = _menu;
     while(index < (int)grouping.size()){
         bool found = false;
-        for (U32 i =  0; i < _subMenus.size(); i++) {
+        for (U32 i =  0; i < _subMenus.size(); ++i) {
             if (_subMenus[i]->title() == QString(grouping[index].c_str())) {
                 _lastMenu = _subMenus[i];
                 found = true;
@@ -733,7 +733,7 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
             break;
         ++index;
     }
-    for(int i = index; i < (int)grouping.size() ; i++){
+    for(int i = index; i < (int)grouping.size() ; ++i) {
         QMenu* menu = _lastMenu->addMenu(grouping[index].c_str());
         _subMenus.push_back(menu);
         _lastMenu = menu;

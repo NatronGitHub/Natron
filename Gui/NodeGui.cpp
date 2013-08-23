@@ -178,7 +178,7 @@ void NodeGui::initInputArrows(){
         Edge* edge=new Edge(i,angle,this,this,sc);
         inputs.push_back(edge);
         angle-=piDividedbyX;
-        i++;
+        ++i;
     }
 }
 bool NodeGui::contains(const QPointF &point) const{
@@ -249,7 +249,7 @@ bool NodeGui::isNearby(QPointF &point){
 
 void  NodeGui::removeChild(NodeGui* c){
 	if(!children.empty()){
-		for(U32 i=0;i<children.size();i++){
+		for(U32 i=0;i<children.size();++i) {
             if(children[i] == c){
                 children.erase(children.begin()+i);
                 break;
@@ -259,7 +259,7 @@ void  NodeGui::removeChild(NodeGui* c){
 }
 void  NodeGui::removeParent(NodeGui* p){
 	if(!parents.empty()){
-		for(U32 i=0;i<parents.size();i++){
+		for(U32 i=0;i<parents.size();++i) {
             if(parents[i] == p){
                 parents.erase(parents.begin()+i);
                 break;
@@ -303,7 +303,7 @@ void NodeGui::setName(QString s){
 }
 
 Edge* NodeGui::firstAvailableEdge(){
-    for (U32 i = 0 ; i < inputs.size(); i++) {
+    for (U32 i = 0 ; i < inputs.size(); ++i) {
         Edge* a = inputs[i];
         if (!a->hasSource()) {
             
@@ -333,7 +333,7 @@ void NodeGui::setSelected(bool b){
 }
 
 Edge* NodeGui::findConnectedEdge(NodeGui* parent){
-    for (U32 i =0 ; i < inputs.size(); i++) {
+    for (U32 i =0 ; i < inputs.size(); ++i) {
         Edge* e = inputs[i];
         if (e->getSource() == parent) {
             return e;

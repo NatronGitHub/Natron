@@ -57,7 +57,7 @@ ChannelSet OfxNode::supportedComponents(){
     OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
     const vector<string>& suppComponents = clip->getSupportedComponents();
     ChannelSet supportedComp;
-    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); it++) {
+    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
         supportedComp += OfxNode::ofxComponentsToPowiterChannels(*it);
     }
     return supportedComp;
@@ -98,7 +98,7 @@ std::string OfxNode::setInputLabel(int inputNb){
 OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput(){
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
     MappedInputV copy;
-    for (U32 i = 0; i < clips.size(); i++) {
+    for (U32 i = 0; i < clips.size(); ++i) {
         if(clips[i]->getShortLabel() != "Output"){
             copy.push_back(clips[i]);
             // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
@@ -121,9 +121,9 @@ int OfxNode::minimumInputs(){
     typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
     const ClipsMap& clips = getDescriptor().getClips();
     int minimalCount = 0;
-    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); it++) {
+    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
         if(!it->second->isOptional()){
-            minimalCount++;
+            ++minimalCount;
         }
     }
     return minimalCount-1;// -1 because we counted the "output" clip

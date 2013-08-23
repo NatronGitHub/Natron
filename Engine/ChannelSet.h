@@ -51,7 +51,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                i++;
+                ++i;
             }
             _cur = Powiter::Channel_black;
         }
@@ -62,7 +62,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                i++;
+                ++i;
             }
         }
         void operator--(){
@@ -72,7 +72,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                i--;
+                --i;
             }
             _cur = Powiter::Channel_black;
         }
@@ -83,7 +83,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                i--;
+                --i;
             }
             _cur = Powiter::Channel_black;
         }
