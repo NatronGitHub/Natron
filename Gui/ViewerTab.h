@@ -52,7 +52,7 @@ class ViewerTab: public QWidget
     ChannelSet _channelsToDraw;
     
     /*True if the viewer is currently fullscreen*/
-	bool _fullscreen;
+	bool _maximized;
     
 public:
     ViewerTab(ViewerNode* node,QWidget* parent=0);

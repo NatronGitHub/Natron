@@ -53,6 +53,7 @@ actionSaveAs_project(0),
 actionPreferences(0),
 actionExit(0),
 actionProject_settings(0),
+actionFullScreen(0),
 actionSplitViewersTab(0),
 actionClearDiskCache(0),
 actionClearPlayBackCache(0),
@@ -93,6 +94,16 @@ void Gui::exit(){
     qApp->exit(0);
     
 }
+
+void Gui::toggleFullScreen()
+{
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
+    }
+}
+
 void Gui::closeEvent(QCloseEvent *e){
     // save project ...
     exit();
@@ -143,6 +154,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionPreferences->setText(QApplication::translate("Powiter", "Preferences"));
 	actionExit->setText(QApplication::translate("Powiter", "Exit"));
 	actionProject_settings->setText(QApplication::translate("Powiter", "Project settings"));
+	actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
 	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle multi-view area"));
 	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
 	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
@@ -205,6 +217,9 @@ void Gui::setupUi()
 	actionExit->setObjectName(QString::fromUtf8("actionExit"));
 	actionProject_settings = new QAction(this);
 	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
+	actionFullScreen = new QAction(this);
+	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
+	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
 	actionSplitViewersTab=new QAction(this);
 	actionSplitViewersTab->setObjectName(QString::fromUtf8("actionSplitViewersTab"));
 	actionClearDiskCache = new QAction(this);
@@ -329,6 +344,8 @@ void Gui::setupUi()
 	
 	menuOptions->addAction(actionProject_settings);
 	menuDisplay->addAction(viewersMenu->menuAction());
+    menuDisplay->addSeparator();
+	menuDisplay->addAction(actionFullScreen);
 	viewersMenu->addAction(actionSplitViewersTab);
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
@@ -338,13 +355,14 @@ void Gui::setupUi()
     
     
     Model* model = ctrlPTR->getModel();
+    QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearNodeCache()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     
 	QMetaObject::connectSlotsByName(this);
-    
+
 } // setupUi
 
 void Gui::loadStyleSheet(){
@@ -364,7 +382,7 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::setFullScreen(TabWidget* what){
+void Gui::maximize(TabWidget* what){
     for (U32 i =0; i < _panes.size(); i++) {
         if (_panes[i] != what) {
             _panes[i]->hide();
@@ -372,7 +390,7 @@ void Gui::setFullScreen(TabWidget* what){
     }
 }
 
-void Gui::exitFullScreen(){
+void Gui::minimize(){
     for (U32 i =0; i < _panes.size(); i++) {
         _panes[i]->show();
     }
@@ -455,7 +473,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
     }else{
         name = from->getTabName(what);
-        
+
     }
     
     

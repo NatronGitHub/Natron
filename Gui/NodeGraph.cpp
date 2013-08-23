@@ -48,7 +48,7 @@ NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
 QGraphicsView(scene,parent),
 _evtState(DEFAULT),
 _nodeSelected(0),
-_fullscreen(false),
+_maximized(false),
 _propertyBin(0)
 {
     
@@ -336,12 +336,12 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
     }else if(e->key() == Qt::Key_Space){
         
-        if(!_fullscreen){
-            _fullscreen = true;
-            ctrlPTR->getGui()->setFullScreen(dynamic_cast<TabWidget*>(parentWidget()));
+        if(!_maximized){
+            _maximized = true;
+            ctrlPTR->getGui()->maximize(dynamic_cast<TabWidget*>(parentWidget()));
         }else{
-            _fullscreen = false;
-            ctrlPTR->getGui()->exitFullScreen();
+            _maximized = false;
+            ctrlPTR->getGui()->minimize();
         }
         
     }else if(e->key() == Qt::Key_Backspace){
