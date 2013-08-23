@@ -225,11 +225,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
             srcImg.claimInterest(true);
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
-            
+            assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
             try{
                 for (int y = roi.y1; y < roi.y2; y++) {
                     OfxRGBAColourF* dstImg = ret->pixelF(0, y);
+                    assert(dstImg);
                     const InputRow& row = srcImg.at(y);
                     const float* r = row[Channel_red];
                     const float* g = row[Channel_green];

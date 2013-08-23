@@ -13,6 +13,8 @@
 
 #include "Engine/ChannelSet.h"
 
+#include <cassert>
+
 //ofx
 #include "ofxhImageEffect.h"
 #include "ofxpixels.h"
@@ -170,6 +172,7 @@ inline void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
                                int w,
                                OfxRGBAColourF* dst
                                ){
+    assert(dst);
     if(plane){
         if(channel == Powiter::Channel_red)
             for (int i = 0; i < w; i++) {
