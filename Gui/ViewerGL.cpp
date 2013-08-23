@@ -205,6 +205,8 @@ void ViewerGL::initConstructor(){
     _defaultDisplayTexture = 0;
     _pBOmapped = false;
     _displayChannels = 0.f;
+    _progressBarY = -1;
+    _drawProgressBar = false;
 }
 
 ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
@@ -340,6 +342,9 @@ void ViewerGL::paintGL()
     if(_overlay){
         drawOverlay();
     }
+    if(_drawProgressBar){
+        drawProgressBar();
+    }
 }
 
 
@@ -408,6 +413,17 @@ void ViewerGL::drawOverlay(){
     //reseting color for next pass
     glColor4f(1, 1, 1, 1);
     checkGLErrors();
+}
+void ViewerGL::drawProgressBar(){
+    const Format& dW = displayWindow();
+    glLineWidth(5);
+    glBegin(GL_LINES);
+    
+    glVertex3f(dW.x(),_progressBarY,1);
+    glVertex3f(dW.right(),_progressBarY,1);
+   
+    glEnd();
+    glLineWidth(1);
 }
 
 
@@ -1569,4 +1585,21 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     }
     updateGL();
     
+}
+void ViewerGL::updateProgressOnViewer(const TextureRect& region,int progress){
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    checkGLErrors();
+    if(byteMode() == 1.f || !_hasHW){
+        //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
+        //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
+        //        << " h = " << region.h << endl;
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+    }else{
+        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
+    }
+    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    _drawProgressBar = true;
+    _progressBarY = progress;
+    updateGL();
+   
 }

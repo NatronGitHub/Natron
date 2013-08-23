@@ -32,7 +32,7 @@
 #include "Engine/Hash.h"
 #include "Readers/Reader.h"
 #include "Gui/Texture.h"
-
+#include "Engine/Timer.h"
 
 class FrameEntry;
 class InputNode;
@@ -351,6 +351,8 @@ private:
     
     EngineStatus _lastEngineStatus; /*!< The last engine return status. This can be used to query whether it used the
                                      viewer cache/texture cache or not and to query other infos.*/
+    timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
+    
 
 public slots:
 	/**
@@ -478,6 +480,12 @@ public slots:
      *@brief Resets the video engine state and ensures that all worker threads are stopped.
      **/
     void stopEngine();
+    
+    /**
+     *@brief displays progress if the time to compute the current frame exeeded 
+     * 0.5 sec.
+     **/
+    void checkAndDisplayProgress(int i);
     
     signals:
     /**
@@ -678,6 +686,7 @@ private:
      **/
     void debugRowSequence();
     
+  
 #ifdef PW_DEBUG
     /*
      *@brief Range-check to be sure buffers are allocated correctly

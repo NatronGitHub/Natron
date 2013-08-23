@@ -106,6 +106,7 @@ Node* Controler::createNode(QString name){
         _gui->createNodeGUI(node);
     }else{
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
+        return NULL;
     }
     return node;
 }
@@ -179,7 +180,9 @@ void Controler::removeAutoSaves() const{
 void Controler::clearInternalNodes(){
     _model->clearNodes();
 }
-
+void Controler::clearNodeGuis(){
+    _gui->_nodeGraphTab->_nodeGraphArea->clear();
+}
 bool Controler::isSaveUpToDate() const{
     return _currentProject._age == _currentProject._lastAutoSave;
 }
@@ -227,4 +230,8 @@ bool Controler::findAutoSave(){
 }
 void Controler::deselectAllNodes() const{
     _gui->_nodeGraphTab->_nodeGraphArea->deselect();
+}
+
+void Controler::showErrorDialog(const QString& title,const QString& message) const{
+    _gui->errorDialog(title, message);
 }

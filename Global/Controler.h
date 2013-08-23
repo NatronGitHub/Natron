@@ -134,9 +134,13 @@ public:
     
     void clearInternalNodes();
     
+    void clearNodeGuis();
+    
     bool isSaveUpToDate() const;
     
     void deselectAllNodes() const;
+    
+    void showErrorDialog(const QString& title,const QString& message) const;
     
 private:
 	void removeAutoSaves() const;

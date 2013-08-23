@@ -89,7 +89,7 @@ public:
 private:
     
     /*private hack : we don't use this function here*/
-    virtual bool fillOrAllocateTexture(U64 ,const char* path = 0){(void)path;return true;}
+    virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
     
 };
 
