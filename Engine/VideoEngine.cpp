@@ -377,12 +377,12 @@ void VideoEngine::copyFrameToCache(const char* src){
     
     if(entry){
         memcpy(entry->getMappedFile()->data(),src,_viewerCacheArgs._dataSize);
+        entry->removeReference(); // removing reference as we're done with the entry.
     }else{
 #ifdef PW_DEBUG
         cout << "WARNING: caching does not seem to work properly..failing to add the entry." << endl;
 #endif
     }
-    entry->removeReference(); // removing reference as we're done with the entry.
 }
 void VideoEngine::computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node *output){
     /*If playback is on (i.e: not panning/zooming or changing the graph) we clear the cache

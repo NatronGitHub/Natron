@@ -156,6 +156,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
         const std::vector<float>& v = resolutions[i];
         assert(v.size() >= 3);
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
+        assert(_frmt);
         addFormat(_frmt);
     }
     
@@ -249,6 +250,7 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
     for (U32 i = 0; i< inputs.size(); i++) {
+        assert(inputs[i]);
         Reader* r = dynamic_cast<Reader*>(inputs[i]);
         if (r) {
             if (r->hasFrames()) {
@@ -262,8 +264,10 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
 }
 
 void Model::initCounterAndGetDescription(Node*& node){
+    assert(node);
     bool found=false;
     foreach(CounterID* counter,_nodeCounters){
+        assert(counter);
         string tmp(counter->second);
         string nodeName = node->className();
         if(tmp==nodeName){
@@ -280,7 +284,7 @@ void Model::initCounterAndGetDescription(Node*& node){
     }
     if(!found){
         CounterID* count=new CounterID(1,node->className());
-        
+        assert(count);
         _nodeCounters.push_back(count);
         string str;
         str.append(node->className().c_str());
@@ -300,11 +304,13 @@ void Model::initCounterAndGetDescription(Node*& node){
 bool Model::createNode(Node *&node,const std::string name){
 	if(name=="Reader"){
 		node=new Reader();
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         return true;
 	}else if(name =="Viewer"){
         node=new ViewerNode(_viewerCache);
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
@@ -317,6 +323,7 @@ bool Model::createNode(Node *&node,const std::string name){
         return true;
 	}else if(name == "Writer"){
 		node=new Writer();
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         return true;
@@ -384,6 +391,7 @@ Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
     
 	for(U32 i =0;i< _formats.size();i++){
 		Format* frmt = _formats[i];
+        assert(frmt);
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;
 		}
@@ -430,9 +438,11 @@ void Model::loadReadPlugins(){
                     ReadBuilder builder=(ReadBuilder)GetProcAddress(lib,"BuildRead");
                     if(builder!=NULL){
                         Read* read=builder(NULL);
+                        assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
+                        assert(plugin);
                         for (U32 i = 0 ; i < extensions.size(); i++) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
@@ -464,9 +474,11 @@ void Model::loadReadPlugins(){
                     ReadBuilder builder=(ReadBuilder)dlsym(lib,"BuildRead");
                     if(builder!=NULL){
                         Read* read=builder(NULL);
+                        assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((void*)builder,decoderName.c_str());
+                        assert(plugin);
                         for (U32 i = 0 ; i < extensions.size(); i++) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
@@ -517,6 +529,7 @@ void Model::displayLoadedReads(){
 
 void Model::loadBuiltinReads(){
     Read* readExr = ReadExr::BuildRead(NULL);
+    assert(readExr);
     std::vector<std::string> extensions = readExr->fileTypesDecoded();
     std::string decoderName = readExr->decoderName();
 #ifdef __POWITER_WIN32__
@@ -524,13 +537,14 @@ void Model::loadBuiltinReads(){
 #else
     PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
 #endif
-    
+    assert(EXRplugin);
     for (U32 i = 0 ; i < extensions.size(); i++) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],EXRplugin));
     }
     delete readExr;
     
     Read* readQt = ReadQt::BuildRead(NULL);
+    assert(readQt);
     extensions = readQt->fileTypesDecoded();
     decoderName = readQt->decoderName();
 #ifdef __POWITER_WIN32__
@@ -538,12 +552,14 @@ void Model::loadBuiltinReads(){
 #else
 	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
 #endif
+    assert(Qtplugin);
     for (U32 i = 0 ; i < extensions.size(); i++) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],Qtplugin));
     }
     delete readQt;
     
     Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
+    assert(readFfmpeg);
     extensions = readFfmpeg->fileTypesDecoded();
     decoderName = readFfmpeg->decoderName();
 #ifdef __POWITER_WIN32__
@@ -551,6 +567,7 @@ void Model::loadBuiltinReads(){
 #else
 	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
 #endif
+    assert(FFMPEGplugin);
     for (U32 i = 0 ; i < extensions.size(); i++) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],FFMPEGplugin));
     }
@@ -603,6 +620,7 @@ void Model::loadWritePlugins(){
                     WriteBuilder builder=(WriteBuilder)GetProcAddress(lib,"BuildRead");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
+                        assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((HINSTANCE)builder,encoderName.c_str());
@@ -637,6 +655,7 @@ void Model::loadWritePlugins(){
                     WriteBuilder builder=(WriteBuilder)dlsym(lib,"BuildRead");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
+                        assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((void*)builder,encoderName.c_str());
@@ -684,6 +703,7 @@ void Model::loadWritePlugins(){
 /*loads writes that are built-ins*/
 void Model::loadBuiltinWrites(){
     Write* writeQt = WriteQt::BuildWrite(NULL);
+    assert(writeQt);
     std::vector<std::string> extensions = writeQt->fileTypesEncoded();
     string encoderName = writeQt->encoderName();
 #ifdef __POWITER_WIN32__
@@ -691,6 +711,7 @@ void Model::loadBuiltinWrites(){
 #else
 	PluginID *QtWritePlugin = new PluginID((void*)&WriteQt::BuildWrite,encoderName.c_str());
 #endif
+    assert(QtWritePlugin);
     for (U32 i = 0 ; i < extensions.size(); i++) {
         _writePluginsLoaded.push_back(make_pair(extensions[i],QtWritePlugin));
     }
@@ -704,6 +725,7 @@ void Model::loadBuiltinWrites(){
 #else
 	PluginID *ExrWritePlugin = new PluginID((void*)&WriteExr::BuildWrite,encoderNameExr.c_str());
 #endif
+    assert(ExrWritePlugin);
     for (U32 i = 0 ; i < extensionsExr.size(); i++) {
         _writePluginsLoaded.push_back(make_pair(extensionsExr[i],ExrWritePlugin));
     }
@@ -727,6 +749,7 @@ void  Model::clearNodeCache(){
 
 
 void Model::removeNode(Node* n){
+    assert(n);
     /*We DON'T delete as it was already done by the NodeGui associated.*/
     for(U32 i = 0 ; i < _currentNodes.size();i++){
         if(_currentNodes[i] == n){
@@ -776,6 +799,7 @@ void Model::loadOFXPlugins(){
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < plugins.size(); i++) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
+        assert(p);
         if(p->getContexts().size() == 0)
             continue;
         std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
@@ -817,13 +841,14 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
                                                      OFX::Host::ImageEffect::Descriptor& desc,
                                                      const std::string& context)
 {
-    
+    assert(plugin);
     return new OfxNode(plugin, desc, context);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
     return desc;
 }
@@ -832,6 +857,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
                                                           OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
     return desc;
 }
@@ -840,6 +866,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::Image
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bundlePath,
                                                           OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
     return desc;
 }
@@ -850,6 +877,8 @@ OfxStatus Model::vmessage(const char* type,
                           const char* format,
                           va_list args)
 {
+    assert(type);
+    assert(format);
     bool isQuestion = false;
     const char *prefix = "Message : ";
     if (strcmp(type, kOfxMessageLog) == 0) {
@@ -959,6 +988,7 @@ void Model::restoreGraphFromString(const QString& str){
         
         i++; //the '\n' character 
         
+        assert(ctrlPTR);
         ctrlPTR->deselectAllNodes();
         Node* n = ctrlPTR->createNode(className);
         if(!n){
@@ -972,6 +1002,7 @@ void Model::restoreGraphFromString(const QString& str){
             ctrlPTR->createNode("Viewer");
             return;
         }
+
         n->getNodeUi()->setName(nodeName);
         while (i < str.size() && str.at(i) != QChar('}')) {
             QString line;
@@ -992,6 +1023,7 @@ void Model::restoreGraphFromString(const QString& str){
     
 }
 void Model::analyseSerializedNodeString(Node* n,const QString& str){
+    assert(n);
     int type = 0;
     type = str.indexOf("input");
     if(type != -1){
