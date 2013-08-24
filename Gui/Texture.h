@@ -41,8 +41,8 @@ public:
     w(w),
     h(h){}
     
-    int x,y,r,t;
-    int w,h;
+    int x,y,r,t; // the edges of the texture. These are coordinates in the full size image
+    int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
 };
 inline bool operator==(const TextureRect& first ,const TextureRect& second){
    return first.x == second.x &&
@@ -80,6 +80,8 @@ public:
     
     /*allocates the texture*/
     void fillOrAllocateTexture(const TextureRect& texRect,DataType type);
+    
+    void updatePartOfTexture(const TextureRect& fullRegion,int zoomedY,DataType type);
             
     const TextureRect& getTextureRect() const {return _textureRect;}
    

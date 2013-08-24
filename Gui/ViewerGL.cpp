@@ -421,7 +421,7 @@ void ViewerGL::drawProgressBar(){
     
     glVertex3f(dW.x(),_progressBarY,1);
     glVertex3f(dW.right(),_progressBarY,1);
-   
+    
     glEnd();
     glLineWidth(1);
 }
@@ -711,7 +711,12 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
 }
 
 size_t ViewerGL::allocateFrameStorage(int w,int h){
-    
+    GLint currentBoundPBO;
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+    if (currentBoundPBO != 0) {
+        cout << "(ViewerGL::allocateFrameStorage : Another PBO is currently mapped, glMap failed." << endl;
+        return 0;
+    }
     size_t dataSize = 0;
     if(byteMode() == 1 || !_hasHW){
         dataSize = sizeof(U32)*w*h;
@@ -1586,20 +1591,18 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     updateGL();
     
 }
-void ViewerGL::updateProgressOnViewer(const TextureRect& region,int progress){
+void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     if(byteMode() == 1.f || !_hasHW){
-        //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
-        //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
-        //        << " h = " << region.h << endl;
-        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
+        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
     }else{
-        _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
+        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
     }
-    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     _drawProgressBar = true;
-    _progressBarY = progress;
+    _progressBarY = y;
     updateGL();
-   
+    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    
+    
 }

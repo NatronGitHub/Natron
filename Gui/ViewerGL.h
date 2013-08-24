@@ -266,7 +266,7 @@
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
             float _displayChannels;
-            
+                        
             bool _drawProgressBar;
             
             int _progressBarY;
@@ -615,7 +615,7 @@
             /**
              *@brief Updates the Viewer with what has been computed so far in the texture.
              **/
-            void updateProgressOnViewer(const TextureRect& region,int progress);
+            void updateProgressOnViewer(const TextureRect& region,int y , int texY);
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.

@@ -451,3 +451,10 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
     t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
     t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
 }
+OfxStatus OfxNode::vmessage(const char* type,
+                   const char* id,
+                   const char* format,
+                   va_list args) {
+    return ctrlPTR->getModel()->vmessage(type, id, format, args);
+}
+
