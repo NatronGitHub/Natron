@@ -137,7 +137,7 @@ NodeGui::~NodeGui(){
 //        delete settings;
 //        settings = 0;
 //    }
-    foreach(Edge* a,inputs) delete a;
+    // foreach(Edge* a,inputs) delete a;
 }
 
 void NodeGui::remove(){
@@ -175,7 +175,7 @@ void NodeGui::initInputArrows(){
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){
-        Edge* edge=new Edge(i,angle,this,this,sc);
+        Edge* edge=new Edge(i,angle,this,parentItem(),sc);
         inputs.push_back(edge);
         angle-=piDividedbyX;
         ++i;

@@ -25,7 +25,7 @@
 
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
-static const qreal UNATTACHED_ARROW_LENGTH=40.;
+static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=5; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
@@ -41,6 +41,8 @@ Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraph
     label->setParentItem(this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
+    setFlag(QGraphicsItem::ItemStacksBehindParent);
+    setZValue(-1.1);
 }
 Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
 {
@@ -57,22 +59,45 @@ Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphi
 
 }
 void Edge::initLine(){
-    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()))
-        + QPointF(NODE_LENGTH/2,0);
+    int h = NODE_HEIGHT;
+    int w = NODE_LENGTH;
+    if(dest->getNode()->className() == std::string("Reader")){
+        h += PREVIEW_HEIGHT;
+        w += PREVIEW_LENGTH;
+    }
+    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                                           + QPointF(w/2.,h/2.));
     QPointF srcpt;
-    if(has_source){        
+    if(has_source){
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+
+        if(source->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
         srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
-            + QPointF(NODE_LENGTH/2,NODE_HEIGHT);
-		double norm = 0;
-		if(source->getNode()->className() == std::string("Reader")){
-            srcpt += QPointF(PREVIEW_LENGTH/2,PREVIEW_HEIGHT);
-			
-		}
+            + QPointF(w/2.,h/2.);
         setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
-        norm = sqrt(pow(dst.x() - srcpt.x(),2) + pow(dst.y() - srcpt.y(),2));
+        
+        
+        /*adjusting src and dst to show label at the middle of the line*/
+        QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+        + QPointF(w/2.,h);
+
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+        
+        if(dest->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
+        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                          + QPointF(w/2.,0));
+               double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
         if(norm > 20.){
-            label->setPos((dst.x()+srcpt.x())/2.-5.,
-                          (dst.y()+srcpt.y())/2.-10);
+            label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
+                          (labelDst.y()+labelSrcpt.y())/2.-10);
             label->show();
         }else{
             label->hide();
@@ -94,8 +119,34 @@ void Edge::initLine(){
             
             yOffset = +10;
         }
-        label->setPos(((dst.x()+srcpt.x())/2.)+yOffset,(dst.y()+srcpt.y())/2.-20);
         
+        /*adjusting dst to show label at the middle of the line*/
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+        
+        if(dest->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
+        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                          + QPointF(w/2.,0));
+               
+        label->setPos(((labelDst.x()+srcpt.x())/2.)+yOffset,(labelDst.y()+srcpt.y())/2.-20);
+        
+    }
+    QPointF dstPost = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()));
+    QLineF edges[] = { QLineF(dstPost.x()+w,dstPost.y(),dstPost.x()+w,dstPost.y()+h), // right
+        QLineF(dstPost.x()+w,dstPost.y()+h,dstPost.x(),dstPost.y()+h), // bottom
+        QLineF(dstPost.x(),dstPost.y()+h,dstPost.x(),dstPost.y()), // left
+        QLineF(dstPost.x(),dstPost.y(),dstPost.x()+w,dstPost.y())}; // top
+    
+    for(int i = 0 ; i < 4 ; i++){
+        QPointF intersection;
+        QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
+        if(type == QLineF::BoundedIntersection){
+            setLine(QLineF(intersection,line().p2()));
+            break;
+        }
     }
     qreal a;
     a = acos(line().dx() / line().length());
@@ -108,7 +159,7 @@ void Edge::initLine(){
                                             cos(a + pi - pi / 3) * arrowSize);
 
     arrowHead.clear();
-    arrowHead << line().p1() << arrowP1 << arrowP2;
+    arrowHead << dst << arrowP1 << arrowP2;
 }
 
 
