@@ -101,7 +101,7 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _drawing ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f , img.h() , // 0
@@ -687,7 +687,7 @@ void ViewerGL::initBlackTex(){
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     U32* output = reinterpret_cast<U32*>(frameData);
-    for(int i = 0 ; i < texSize.w*texSize.h ; i++){
+    for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
@@ -782,15 +782,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     if(_colorSpace->linear()){
         int start = (int)(rand()%columnSpan.size());
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size(); i++){
+        for(unsigned int i = start ; i < columnSpan.size(); ++i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -804,14 +804,14 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
-        for(int i = start-1 ; i >= 0 ; i--){
+        for(int i = start-1 ; i >= 0 ; --i){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -833,15 +833,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size() ; i++){
+        for(unsigned int i = start ; i < columnSpan.size() ; ++i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -862,15 +862,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         error_g = 0x80;
         error_b = 0x80;
         
-        for(int i = start-1 ; i >= 0 ; i--){
+        for(int i = start-1 ; i >= 0 ; --i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -900,12 +900,12 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
     output+=yOffset;
-    for (unsigned int i = 0 ; i < columnSpan.size(); i++) {
+    for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
         int col = columnSpan[i];
-        r!=NULL? output[i]= r[col] : output[i]=0.f;
-        g!=NULL? output[i+1]=g[col] : output[i+1]=0.f;
-        b!=NULL? output[i+2]=b[col] : output[i+2]=0.f;
-        alpha!=NULL? output[i+3]=alpha[col] : output[i+3]=1.f;
+        output[i]   = (r != NULL) ? r[col] : 0.f;
+        output[i+1] = (g != NULL) ? g[col] : 0.f;
+        output[i+2] = (b != NULL) ? b[col] : 0.f;
+        output[i+3] = (alpha != NULL) ? alpha[col] : 1.f;
     }
     
 }
@@ -1079,7 +1079,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
     float w = (float)(displayWindow.w());
     float zoomFactor = (float)height()/h;
-    zoomFactor > 0.06 ? setZoomFactor(zoomFactor-0.05) : setZoomFactor(zoomFactor);
+    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : zoomFactor );
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
@@ -1286,7 +1286,7 @@ bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
     
     det = 1.0 / det;
     
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < 16; ++i)
         invOut[i] = inv[i] * det;
     
     return true;

@@ -355,9 +355,7 @@ private:
                                                 results of the function and calls
                                                 VideoEngine::dispatchComputeFrameRequestThread()
                                                 when finished.*/
-    
-    std::vector<Row*> _sequenceToWork;/*!< The sequence of all rows for the current frame to process.*/
-    
+        
     ViewerCacheArgs _viewerCacheArgs; /*!< The last arguments passed to the viewer cache.*/
     
     EngineStatus _lastEngineStatus; /*!< The last engine return status. This can be used to query whether it used the
@@ -667,11 +665,6 @@ private:
      *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
      **/
     void runTasks();
-    
-    /**
-     *@brief debug function
-     **/
-    void debugRowSequence();
     
     
 #ifdef PW_DEBUG

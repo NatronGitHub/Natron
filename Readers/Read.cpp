@@ -101,19 +101,19 @@ void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
         if(_readInfo->getYdirection() < 0){
             //top to bottom
             vector<int>::const_reverse_iterator it  = rows.rbegin();
-            for(; it!=rows.rend() ; it++){
+            for(; it!=rows.rend() ; ++it) {
                 readScanLine(*it);
             }
         }else{
             //bottom to top
             vector<int>::const_iterator it = rows.begin();
-            for(; it!=rows.end() ; it++){
+            for(; it!=rows.end() ; ++it) {
                 readScanLine(*it);
             }
         }
     }else{
         const std::vector<int>& rows = slContext->getRowsToRead();
-        for(U32 i = 0; i <rows.size();i++){
+        for(U32 i = 0; i <rows.size();++i) {
             readScanLine(rows[i]);
         }
         slContext->merge();

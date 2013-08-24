@@ -61,12 +61,14 @@ size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 		extra = nb_bytes - _size;
 		int index=0;
 		for(U32 i=0; i < _size;i+=step){
-			_buffer[index++] = inbuffer[i];
+			_buffer[index] = inbuffer[i];
+            ++index;
 		}
 	}else{
 		int index=0;
 		for(U32 i=0; i < nb_bytes;i+=step){
-			_buffer[index++] = inbuffer[i];
+			_buffer[index] = inbuffer[i];
+            ++index;
 		}
 	}
 	return extra;

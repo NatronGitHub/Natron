@@ -93,7 +93,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
     }
     
     /*beginRenderAction for all openFX nodes*/
-    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++) {
+    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
         OfxNode* n = dynamic_cast<OfxNode*>(*it);
         if(n){
             OfxPointD renderScale;
@@ -120,7 +120,7 @@ void VideoEngine::stopEngine(){
     _timer->playState=PAUSE;
     
     /*endRenderAction for all openFX nodes*/
-    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); it++) {
+    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
         OfxNode* n = dynamic_cast<OfxNode*>(*it);
         if(n){
             OfxPointD renderScale;
@@ -231,8 +231,9 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
     }
     
     std::vector<Reader*> readers;
+
     const std::vector<Node*>& inputs = _engine->_dag.getInputs();
-    for(U32 j=0;j<inputs.size();j++){
+    for(U32 j=0;j<inputs.size();++j) {
         Node* currentInput=inputs[j];
         if(currentInput->className() == string("Reader")){
             Reader* inp = static_cast<Reader*>(currentInput);
@@ -318,7 +319,7 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
         }
         
     }else{
-        for (int i = dataW.y(); i < dataW.top(); i++) {
+        for (int i = dataW.y(); i < dataW.top(); ++i) {
             rows.push_back(i);
         }
         _engine->_lastEngineStatus._x = dataW.x();
@@ -402,7 +403,6 @@ void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node 
     for(vector<int>::const_iterator it = rows.begin(); it!=rows.end() ; it++){
         Row* row = new Row(x,*it,r,outChannels);
         row->zoomedY(counter);
-        // _engine->_sequenceToWork.push_back(row);
         RowRunnable* worker = new RowRunnable(row,output);
         if(counter%10 == 0){
             /* UNCOMMENT to report progress.
@@ -410,7 +410,7 @@ void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node 
              **/
         }
         _threadPool->start(worker);
-        counter++;
+        ++counter;
     }
     _threadPool->waitForDone();
 }
@@ -422,12 +422,10 @@ void VideoEngine::engineLoop(){
     if(_frameRequestIndex == 0 && _frameRequestsCount == 1 && !_sameFrame){
         _frameRequestsCount = 0;
     }else if(_frameRequestsCount!=-1){ // if the frameRequestCount is defined (i.e: not indefinitely running)
-        _frameRequestsCount--;
+        --_frameRequestsCount;
     }
-    _frameRequestIndex++;//incrementing the frame counter
+    ++_frameRequestIndex;//incrementing the frame counter
     
-    //clearing the Row objects used by the QtConcurrent::map call, note that all Row's already have been destroyed.
-    //  _sequenceToWork.clear();
     float zoomFactor;
     if(_dag.isOutputAViewer()){
         
@@ -762,7 +760,7 @@ void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer
     _dag.resetAndSort(output,true);
     const vector<Node*>& inputs = _dag.getInputs();
     bool start = false;
-    for (U32 i = 0 ; i < inputs.size(); i++) {
+    for (U32 i = 0 ; i < inputs.size(); ++i) {
         if(inputs[i]->className() == "Reader"){
             Reader* reader = dynamic_cast<Reader*>(inputs[i]);
             if(reader->hasFrames()) start = true;
@@ -814,7 +812,7 @@ void VideoEngine::DAG::clearGraph(){
     
 }
 void VideoEngine::DAG::topologicalSort(){
-    for(U32 i = 0 ; i < _graph.size(); i++){
+    for(U32 i = 0 ; i < _graph.size(); ++i) {
         Node* n = _graph[i];
         if(!n->isMarked())
             _depthCycle(n);
@@ -865,7 +863,7 @@ void VideoEngine::DAG::resetAndSort(Node* out,bool isViewer){
 }
 void VideoEngine::DAG::debug(){
     cout << "Topological ordering of the DAG is..." << endl;
-    for(DAG::DAGIterator it = begin(); it != end() ;it++){
+    for(DAG::DAGIterator it = begin(); it != end() ;++it) {
         cout << (*it)->getName() << endl;
     }
 }
@@ -873,7 +871,7 @@ void VideoEngine::DAG::debug(){
 /*sets infos accordingly across all the DAG*/
 bool VideoEngine::DAG::validate(bool forReal){
     /*Validating the DAG in topological order*/
-    for (DAGIterator it = begin(); it!=end(); it++) {
+    for (DAGIterator it = begin(); it!=end(); ++it) {
          if(!(*it)->validate(forReal))
              return false;
     }
@@ -888,42 +886,14 @@ int VideoEngine::DAG::lastFrame() const{
     return _output->getInfo()->lastFrame();
 }
 
-void VideoEngine::debugRowSequence(){
-    int h = _sequenceToWork.size();
-    int w = _sequenceToWork[0]->right() - _sequenceToWork[0]->offset();
-    if(h == 0 || w == 0) cout << "empty img" << endl;
-    QImage img(w,h,QImage::Format_ARGB32);
-    for(int i = 0; i < h ; i++){
-        Row* from = _sequenceToWork[i];
-        const float* r = (*from)[Channel_red] + from->offset();
-        const float* g = (*from)[Channel_green]+ from->offset();
-        const float* b = (*from)[Channel_blue]+ from->offset();
-        const float* a = (*from)[Channel_alpha]+ from->offset();
-        for(int j = 0 ; j < w ; j++){
-            QColor c(r ? Lut::clamp((*r++))*255 : 0,
-                     g ? Lut::clamp((*g++))*255 : 0,
-                     b ? Lut::clamp((*b++))*255 : 0,
-                     a? Lut::clamp((*a++))*255 : 255);
-            img.setPixel(j, i, c.rgba());
-        }
-    }
-    string name("debug_");
-    char tmp[60];
-    sprintf(tmp,"%i",w);
-    name.append(tmp);
-    name.append("x");
-    sprintf(tmp, "%i",h);
-    name.append(tmp);
-    name.append(".png");
-    img.save(name.c_str());
-}
+
 
 void VideoEngine::resetAndMakeNewDag(Node* output,bool isViewer){
     _dag.resetAndSort(output,isViewer);
 }
 #ifdef PW_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
-    for (unsigned int i = 0; i < columns.size(); i++) {
+    for (unsigned int i = 0; i < columns.size(); ++i) {
         if(columns[i] < x || columns[i] > r){
             return false;
         }

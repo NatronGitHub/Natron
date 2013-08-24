@@ -52,7 +52,7 @@ void Settings::ReadersSettings::changeMapping(const std::string& filetype, Plugi
 
 /*use to initialise default mapping*/
 void Settings::ReadersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
-    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();it++){
+    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
@@ -84,14 +84,14 @@ void Settings::WritersSettings::changeMapping(const std::string& filetype,Plugin
 
 /*use to initialise default mapping*/
 void Settings::WritersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
-    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();it++){
+    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
 
 std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
     vector<string> out;
-    for(std::map<std::string,PluginID*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();it++){
+    for(std::map<std::string,PluginID*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it) {
         out.push_back(it->first);
     }
     return out;

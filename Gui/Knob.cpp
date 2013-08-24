@@ -73,13 +73,13 @@ KnobCallback::KnobCallback(SettingsPanel *panel, Node *node){
 }
 
 KnobCallback::~KnobCallback(){
-//    for (U32 i = 0 ; i< knobs.size(); i++) {
+//    for (U32 i = 0 ; i< knobs.size(); ++i) {
 //        delete knobs[i];
 //    }
     knobs.clear();
 }
 void KnobCallback::initNodeKnobsVector(){
-    for(U32 i=0;i<knobs.size();i++){
+    for(U32 i=0;i<knobs.size();++i) {
         Knob* pair=knobs[i];
         node->addToKnobVector(pair);
     }
@@ -89,7 +89,7 @@ void KnobCallback::createKnobDynamically(){
     const std::vector<Knob*>& node_knobs=node->getKnobs();
     foreach(Knob* knob,knobs){
         bool already_exists=false;
-        for(U32 i=0;i<node_knobs.size();i++){
+        for(U32 i=0;i<node_knobs.size();++i) {
             if(node_knobs[i]==knob){
                 already_exists=true;
             }
@@ -103,7 +103,7 @@ void KnobCallback::createKnobDynamically(){
 
 void KnobCallback::removeAndDeleteKnob(Knob* knob){
     node->removeKnob(knob);
-    for (U32 i = 0; i< knobs.size(); i++) {
+    for (U32 i = 0; i< knobs.size(); ++i) {
         if (knobs[i] == knob) {
             knobs.erase(knobs.begin()+i);
             break;
@@ -118,7 +118,7 @@ KnobFactory::KnobFactory(){
 }
 
 KnobFactory::~KnobFactory(){
-    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; it++) {
+    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; ++it) {
         delete it->second;
     }
     _loadedKnobs.clear();
@@ -138,13 +138,14 @@ void KnobFactory::loadKnobPlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
-        {
+        for(int i = 0 ; i < fileList.size() ; ++i) {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -378,13 +379,13 @@ Knob::Knob( KnobCallback *cb,const std::string& description):QWidget(),cb(cb),_d
 }
 void Knob::changeLayout(QHBoxLayout* newLayout){
     QList<QWidget*> allKnobs;
-    for (int i = 0; i < layout->count() ; i++) {
+    for (int i = 0; i < layout->count() ; ++i) {
         QWidget* w = layout->itemAt(i)->widget();
         if (w) {
             allKnobs << w;
         }
     }
-    for (int i = 0; i < allKnobs.size(); i++) {
+    for (int i = 0; i < allKnobs.size(); ++i) {
         newLayout->addWidget(allKnobs.at(i));
     }
 }
@@ -492,7 +493,8 @@ void Int_Knob::restoreFromString(const std::string& str){
         int i = 0;
         QString vStr;
         while(i < s.size() && s.at(i).isDigit()){
-            vStr.append(s.at(i++));
+            vStr.append(s.at(i));
+            ++i;
         }
         setValue(vStr.toInt());
         validateEvent(false);
@@ -595,13 +597,15 @@ void Int2D_Knob::restoreFromString(const std::string& str){
         i+=3;
         QString v1Str,v2Str;
         while(i < s.size() && s.at(i).isDigit()){
-            v1Str.append(s.at(i++));
+            v1Str.append(s.at(i));
+            ++i;
         }
         
-        i++;//the ' ' character
+        ++i;//the ' ' character
         i+=3;
         while(i < s.size() && s.at(i).isDigit()){
-            v2Str.append(s.at(i++));
+            v2Str.append(s.at(i));
+            ++i;
         }
         setValue1(v1Str.toInt());
         setValue2(v2Str.toInt());
@@ -693,7 +697,7 @@ File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask
     
 }
 void File_Knob::setFileNames(const QStringList& str){
-    for(int i =0;i< str.size();i++){
+    for(int i =0;i< str.size();++i) {
         
         QString el = str[i];
         
@@ -855,7 +859,8 @@ void Double_Knob::restoreFromString(const std::string& str){
         int i = 0;
         QString vStr;
         while(i < s.size() && s.at(i).isDigit()){
-            vStr.append(s.at(i++));
+            vStr.append(s.at(i));
+            ++i;
         }
         setValue(vStr.toDouble());
         validateEvent(false);
@@ -964,13 +969,15 @@ void Double2D_Knob::restoreFromString(const std::string& str){
         i+=3;
         QString v1Str,v2Str;
         while(i < s.size() && s.at(i).isDigit()){
-            v1Str.append(s.at(i++));
+            v1Str.append(s.at(i));
+            ++i;
         }
         
-        i++;//the ' ' character
+        ++i;//the ' ' character
         i+=3;
         while(i < s.size() && s.at(i).isDigit()){
-            v2Str.append(s.at(i++));
+            v2Str.append(s.at(i));
+            ++i;
         }
         setValue1(v1Str.toDouble());
         setValue2(v2Str.toDouble());
@@ -1104,7 +1111,7 @@ ComboBox_Knob::ComboBox_Knob(KnobCallback *cb, const std::string& description, K
     layout->addStretch();
 }
 void ComboBox_Knob::populate(const std::vector<std::string>& entries){
-    for (U32 i = 0; i < entries.size(); i++) {
+    for (U32 i = 0; i < entries.size(); ++i) {
         _comboBox->addItem(entries[i].c_str());
     }
     setCurrentItem(0);
@@ -1131,7 +1138,7 @@ void ComboBox_Knob::setPointer(std::string* str){
 void ComboBox_Knob::setValues(){
     values.clear();
     QString out(_currentItem->c_str());
-    for (int i =0; i< out.size(); i++) {
+    for (int i =0; i< out.size(); ++i) {
         values.push_back(out.at(i).unicode());
     }
 }
@@ -1190,7 +1197,7 @@ void Group_Knob::addKnob(Knob* k){
 }
 void Group_Knob::setChecked(bool b){
     _box->setChecked(b);
-    for(U32 i = 0 ; i < _knobs.size() ;i++){
+    for(U32 i = 0 ; i < _knobs.size() ;++i) {
         _knobs[i]->setVisible(b);
     }
 }
@@ -1403,24 +1410,28 @@ void RGBA_Knob::restoreFromString(const std::string& str){
     i+=2;
     QString rStr,gStr,bStr,aStr;
     while(i < s.size() && s.at(i).isDigit()){
-        rStr.append(s.at(i++));
+        rStr.append(s.at(i));
+        ++i;
     }
     i = s.indexOf("g");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        gStr.append(s.at(i++));
+        gStr.append(s.at(i));
+        ++i;
     }
     
     i = s.indexOf("b");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        bStr.append(s.at(i++));
+        bStr.append(s.at(i));
+        ++i;
     }
     
     i = s.indexOf("a");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        aStr.append(s.at(i++));
+        aStr.append(s.at(i));
+        ++i;
     }
     setRGBA(rStr.toDouble(), gStr.toDouble(), bStr.toDouble(), aStr.toDouble());
     setValues();
@@ -1480,7 +1491,7 @@ String_Knob::String_Knob(KnobCallback *cb, const std::string& description, Knob_
 void String_Knob::setValues(){
     values.clear();
     QString str(_string->c_str());
-    for (int i = 0; i < str.size(); i++) {
+    for (int i = 0; i < str.size(); ++i) {
         values.push_back(str.at(i).unicode());
     }
 }

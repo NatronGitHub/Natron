@@ -199,9 +199,9 @@ public:
             std::string newPart;
             while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
                 newPart.append(1,str.at(pos).toLatin1());
-                pos++;
+                ++pos;
             }
-            pos++;
+            ++pos;
             out.push_back(newPart);
         }
         return out;

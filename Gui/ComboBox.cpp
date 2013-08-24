@@ -78,8 +78,8 @@ void ComboBox::mouseReleaseEvent(QMouseEvent* e){
 
 void ComboBox::createMenu(){
     _menu->clear();
-    for (U32 i = 0 ; i < _actions.size(); i++) {
-        for (U32 j = 0; j < _separators.size(); j++) {
+    for (U32 i = 0 ; i < _actions.size(); ++i) {
+        for (U32 j = 0; j < _separators.size(); ++j) {
             if (_separators[j] == (int)i) {
                 _menu->addSeparator();
                 break;
@@ -88,7 +88,7 @@ void ComboBox::createMenu(){
         _menu->addAction(_actions[i]);
     }
     QAction* triggered = _menu->exec(this->mapToGlobal(QPoint(0,height())));
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (triggered == _actions[i]) {
             setCurrentIndex(i);
             break;
@@ -152,7 +152,7 @@ void ComboBox::setCurrentText(const QString& text){
     str.prepend("  ");
     str.append("  ");
     _currentText->setText(str);
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if(_actions[i]->text() == text){
             _currentIndex = i;
             break;
@@ -179,9 +179,9 @@ void ComboBox::setCurrentIndex(int index){
         int dsize = _maximumTextSize - str.size();
         dsize/=2;
         str.prepend("  ");
-        for (int i = 0; i < dsize ; i++) {str.prepend(" ");}
+        for (int i = 0; i < dsize ; ++i) {str.prepend(" ");}
         str.append("  ");
-        for (int i = 0; i < dsize ; i++) {str.append(" ");}
+        for (int i = 0; i < dsize ; ++i) {str.append(" ");}
     }else{
         str = "    ";
     }
@@ -205,23 +205,23 @@ QString ComboBox::itemText(int index) const{
 }
 
 void ComboBox::removeItem(const QString& item){
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (_actions[i]->text() == item) {
             _actions.erase(_actions.begin()+i);
             if (_currentText->text() == item) {
                 setCurrentIndex(i-1);
             }
             /*adjust separators that were placed after this item*/
-            for (U32 j = 0; j < _separators.size(); j++) {
+            for (U32 j = 0; j < _separators.size(); ++j) {
                 if (_separators[j] >= (int)i) {
-                    _separators[j]--;
+                    --_separators[j];
                 }
             }
         }
     }
     /*we also need to re-calculate the maximum text size*/
     _maximumTextSize = 0;
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (_actions[i]->text().size() > _maximumTextSize) {
             _maximumTextSize = _actions[i]->text().size();
         }
@@ -232,7 +232,7 @@ void ComboBox::setItemText(int index,const QString& item){
     _actions[index]->setText(item);
     /*we also need to re-calculate the maximum text size*/
     _maximumTextSize = 0;
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (_actions[i]->text().size() > _maximumTextSize) {
             _maximumTextSize = _actions[i]->text().size();
         }

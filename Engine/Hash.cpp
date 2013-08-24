@@ -24,7 +24,7 @@ void Hash::computeHash(){
     boost::crc_optimal<64,0x42F0E1EBA9EA3693,0,0,false,false> result;
     U64* data=(U64*)malloc(sizeof(U64)*node_values.size());
 
-    for(U32 i=0;i<node_values.size();i++){
+    for(U32 i=0;i<node_values.size();++i) {
 
         data[i]=node_values[i];
     }
@@ -44,13 +44,13 @@ void Hash::appendValueToHash(U64 hashValue){
 
 void Hash::appendKnobToHash(Knob* knob){
     std::vector<U64> values= knob->getValues();
-    for(U32 i=0;i<values.size();i++){
+    for(U32 i=0;i<values.size();++i) {
         node_values.push_back(values[i]);
     }
 }
 
 void Hash::appendQStringToHash(QString str){
-    for(int i =0 ; i< str.size();i++){
+    for(int i =0 ; i< str.size();++i) {
         node_values.push_back((U64)str.at(i).unicode());
     }
 }

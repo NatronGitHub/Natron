@@ -42,18 +42,18 @@ public:
         iterator(int y, int x, int l, int r) : y(y), x(x), l(l), r(r) { }
         
         void operator++() {
-            x++;
+            ++x;
             if (x == r) {
                 x = l;
-                y++;
+                ++y;
             }
         }
         
         void operator++(int) {
-            x++;
+            ++x;
             if (x == r) {
                 x = l;
-                y++;
+                ++y;
             }
         }
         
@@ -137,10 +137,14 @@ public:
      *of the image.*/
     void pad(int dx, int dy, int dr, int dt)
     {
-        if (_r > _x + 1) { _x += dx;
-            _r += dr; }
-        if (_t > _y + 1) { _y += dy;
-            _t += dt; }
+        if (_r > _x + 1) {
+            _x += dx;
+            _r += dr;
+        }
+        if (_t > _y + 1) {
+            _y += dy;
+            _t += dt;
+        }
         _modified = true;
     }
     

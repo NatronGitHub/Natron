@@ -26,7 +26,7 @@ _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_
     
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
    // setMinimumSize(500,40);
-    for(int i =0;i <=100;i++) _values.push_back(i);
+    for(int i =0;i <=100;++i) _values.push_back(i);
     _displayedValues << 0 << 10 <<  20 << 30 << 40 << 50 << 60 << 70 << 80 << 90 << 100;
     _increment=10;
     setMouseTracking(true);
@@ -47,7 +47,7 @@ void TimeLine::updateScale(){
 //    int _minimum = _last;
     
     if((_maximum - _minimum)==0){
-        for(int i =0;i <=100;i++) _values.push_back(i);
+        for(int i =0;i <=100;++i) _values.push_back(i);
         _displayedValues << 0 << 10 <<  20 << 30 << 40 << 50 << 60 << 70 << 80 << 90 << 100;
         _increment=10;
         
@@ -55,21 +55,21 @@ void TimeLine::updateScale(){
     else if((_maximum- _minimum) <=50){ // display every multiple of 5
         int c = _minimum;
         while(c%5!=0 && c>=0){
-            c--;
+            --c;
         }
         int realMin = c;
         c = _maximum;
         while(c%5!=0){
-            c++;
+            ++c;
         }
         int realMax = c;
-        for(int i = realMin ; i <= realMax;i++) _values.push_back(i);
+        for(int i = realMin ; i <= realMax;++i) _values.push_back(i);
         c=realMin;
 
 
         _increment=5;
         while(c%5!=0 && c<=_maximum){
-            c++;
+            ++c;
         }
         if( c != _maximum){
             while(c <realMax){
@@ -82,21 +82,21 @@ void TimeLine::updateScale(){
     }else{ // display only multiple of 10
         int c = _minimum;
         while(c%10!=0 && c>=0){
-            c--;
+            --c;
         }
         int realMin = c;
         c = _maximum;
         while(c%10!=0){
-            c++;
+            ++c;
         }
         int realMax = c;
-        for(int i = realMin ; i <= realMax;i++) _values.push_back(i);
+        for(int i = realMin ; i <= realMax;++i) _values.push_back(i);
         c=realMin;
 
 
         _increment=10;
         while(c%10!=0 && c<=_maximum){
-            c++;
+            ++c;
         }
         if( c != _maximum){
             while(c <realMax){
@@ -251,7 +251,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
     else if(_increment==10)
         offset/=10.0;
     p.setPen(cachedColor);
-    for(U32 i =0 ; i < _cached.size() ; i++){
+    for(U32 i =0 ; i < _cached.size() ; ++i) {
         double pos = getCoordPosition(_cached[i]);
 
         p.drawLine(pos-offset/2.0,BORDER_HEIGHT_+LINE_START+2,pos+offset/2.0,BORDER_HEIGHT_+LINE_START+2);
@@ -274,7 +274,7 @@ void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
         incr=((scaleW)/(double)(_displayedValues.size()-1))/10.f;
     }
     QPointF pos(BORDER_OFFSET_-1,23+LINE_START);
-    for(int i =0;i<_displayedValues.size();i++){
+    for(int i =0;i<_displayedValues.size();++i) {
         p->setPen(QColor(200,200,200));
         QString nbStr = QString::number(_displayedValues[i]);
         if(nbStr.size()==1){
@@ -289,7 +289,7 @@ void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
         }
         p->setPen(scaleColor);
         if(i != _displayedValues.size()-1){
-            for(int j=1;j<_increment;j++){
+            for(int j=1;j<_increment;++j) {
                 p->drawLine(pos.x()+j*incr,2+BORDER_HEIGHT_+LINE_START,pos.x()+j*incr,BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_/2);
             }
         }
@@ -307,7 +307,7 @@ double TimeLine::getScalePosition(double pos){
         return _values[0];
     if(pos >= _XValues[_XValues.size()-1])
         return _values[_XValues.size()-1];
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         if(i<_XValues.size()-1 &&  pos >= _XValues[i] && pos < _XValues[i+1]){
             return _values[i];
         }
@@ -326,7 +326,7 @@ double TimeLine::getCoordPosition(double pos){
     if(pos > _values[_values.size()-1]){
         return _XValues[_XValues.size()-1];
     }
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         if(i<_values.size()-1 &&  pos >= _values[i] && pos < _values[i+1]){
             return  _XValues[i];
         }
@@ -350,7 +350,7 @@ void TimeLine::fillCoordLut(){
     double c = BORDER_OFFSET_;
     double scaleW = (size().width()-BORDER_OFFSET_) - BORDER_OFFSET_ ;
     double incr= scaleW/(double)(_values.size()-1);
-    for(unsigned int i=0;i<_values.size();i++){
+    for(unsigned int i=0;i<_values.size();++i) {
         _XValues.push_back(c);
         c+=incr;
     }

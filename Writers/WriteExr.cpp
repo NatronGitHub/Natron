@@ -48,7 +48,7 @@ void ExrWriteKnobs::initKnobs(KnobCallback* callback,std::string& fileType){
     compressionCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
                                                                             compressionCBDesc, Knob::NONE));
     vector<string> compressionEntries;
-    for (int i =0; i < 6; i++) {
+    for (int i =0; i < 6; ++i) {
         compressionEntries.push_back(EXR::compressionNames[i]);
     }
     compressionCBKnob->setPointer(&_compression);
@@ -58,7 +58,7 @@ void ExrWriteKnobs::initKnobs(KnobCallback* callback,std::string& fileType){
     depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
                                                                       depthCBDesc, Knob::NONE));
     vector<string> depthEntries;
-    for(int i = 0 ; i < 2 ; i++){
+    for(int i = 0 ; i < 2 ; ++i) {
         depthEntries.push_back(EXR::depthNames[i]);
     }
     depthCBKnob->setPointer(&_dataType);
@@ -191,10 +191,10 @@ void WriteExr::writeAllData(){
                                            (char*)(&(*halfwriterow)[cur][0] - exrDataW->min.x),
                                            sizeof((*halfwriterow)[cur][0]), 0));
                     const float* from = (*row)[z];
-                    for(int i = exrDataW->min.x; i < exrDataW->max.x ; i++){
+                    for(int i = exrDataW->min.x; i < exrDataW->max.x ; ++i) {
                         (*halfwriterow)[cur][i - exrDataW->min.x] = from[i];
                     }
-                    cur++;
+                    ++cur;
                 }
                 delete halfwriterow;
             }
@@ -218,12 +218,12 @@ void WriteExr::writeAllData(){
 
 void WriteExr::debug(){
     int notValidC = 0;
-    for (map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); it++) {
+    for (map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); ++it) {
         cout << "img[" << it->first << "] = ";
         if(it->second) cout << "valid row" << endl;
         else{
             cout << "NOT VALID" << endl;
-            notValidC++;
+            ++notValidC;
         }
     }
     cout << "Img size : " << _img.size() << " . Invalid rows = " << notValidC << endl;

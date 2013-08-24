@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     
     QString projectFile;
     QStringList args = QCoreApplication::arguments();
-    for (int i = 0 ; i < args.size(); i++) {
+    for (int i = 0 ; i < args.size(); ++i) {
         if(args.at(i).contains(".rs")){
             projectFile = args.at(i);
         }

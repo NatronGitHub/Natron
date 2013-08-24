@@ -292,7 +292,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, 
     
     QObject::connect(_knob, SIGNAL(entryChanged(int)), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
-    for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; i++) {
+    for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         _entries.push_back(pSet.getStringProperty(kOfxParamPropChoiceOption,i));
     }
     _knob->setPointer(&_currentEntry);
@@ -302,7 +302,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, 
     set(def);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
-    for (unsigned int i = 0; i < _entries.size(); i++) {
+    for (unsigned int i = 0; i < _entries.size(); ++i) {
         if (_entries[i] == _currentEntry) {
             v = i;
             return kOfxStatOK;
@@ -311,7 +311,7 @@ OfxStatus OfxChoiceInstance::get(int& v){
     return kOfxStatErrBadIndex;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime time, int& v){
-    for (unsigned int i = 0; i < _entries.size(); i++) {
+    for (unsigned int i = 0; i < _entries.size(); ++i) {
         if (_entries[i] == _currentEntry) {
             v = i;
             return kOfxStatOK;
@@ -914,7 +914,7 @@ void OfxStringInstance::getVideoSequenceFromFilesList(){
             QString frameIndex;
             while(j>0 && Qfilename.at(j).isDigit()){
                 frameIndex.push_front(Qfilename.at(j));
-                j--;
+                --j;
             }
             if(j>0){
 				int number=0;
@@ -935,7 +935,7 @@ void OfxStringInstance::getVideoSequenceFromFilesList(){
                 QString frameIndex;
                 while(j>0 && Qfilename.at(j).isDigit()){
                     frameIndex.push_front(Qfilename.at(j));
-                    j--;
+                    --j;
                 }
                 if(j>0){
                     int number = frameIndex.toInt();
@@ -959,7 +959,7 @@ int OfxStringInstance::firstFrame(){
 int OfxStringInstance::lastFrame(){
     std::map<int,QString>::iterator it=_files.end();
     if(it == _files.begin()) return INT_MAX;
-    it--;
+    --it;
     return it->first;
 }
 int OfxStringInstance::clampToRange(int f){

@@ -44,11 +44,14 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     _gui->createGui();
     
     addBuiltinPluginToolButtons();
-    for (U32 i = 0; i < _toolButtons.size(); i++) {
+    for (U32 i = 0; i < _toolButtons.size(); ++i) {
+        assert(_toolButtons[i]);
         string name = _toolButtons[i]->_pluginName;
-        name.append("  [");
-        name.append(_toolButtons[i]->_groups[0]);
-        name.append("]");
+        if (_toolButtons[i]->_groups.size() >= 1) {
+            name.append("  [");
+            name.append(_toolButtons[i]->_groups[0]);
+            name.append("]");
+        }
         _gui->addPluginToolButton(name,
                                   _toolButtons[i]->_groups,
                                   _toolButtons[i]->_pluginName,
@@ -168,7 +171,7 @@ void Controler::removeAutoSaves() const{
     /*removing all previous autosave files*/
     QDir savesDir(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str());
     QStringList entries = savesDir.entryList();
-    for(int i = 0; i < entries.size();i++){
+    for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         int suffixPos = entry.indexOf(".rs.");
         if (suffixPos != -1) {
@@ -190,7 +193,7 @@ bool Controler::isSaveUpToDate() const{
 bool Controler::findAutoSave(){
     QDir savesDir(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str());
     QStringList entries = savesDir.entryList();
-    for(int i = 0; i < entries.size();i++){
+    for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         int suffixPos = entry.indexOf(".rs.");
         if (suffixPos != -1) {

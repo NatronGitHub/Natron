@@ -30,7 +30,7 @@ void Lut::fillToTable(){
     // float increment = 1.f /65535.f;
     if(init_) return;
     bool linearTrue = true;
-    for (int i = 0; i < 0x10000; i++) {
+    for (int i = 0; i < 0x10000; ++i) {
         float inp = index_to_float(i);
         float f = to_byte(inp);
         if(!isEqual_float(f, inp*255.f, 10000))
@@ -50,7 +50,7 @@ void Lut::fillFromTable()
 {
     if(init_) return;
     int i;
-    for (int b = 0; b <= 255; b++) {
+    for (int b = 0; b <= 255; ++b) {
         float f[1]; f[0] = from_byte((float)b);
         from_byte_table[b] = f[0];
         i = highFloatPart(f);
@@ -381,10 +381,10 @@ void Lut::allocateLuts(){
 }
 
 void Lut::deallocateLuts(){
-    for(std::map<DataType,Lut*>::iterator it = _luts.begin();it!=_luts.end();it++){
+    for(std::map<DataType,Lut*>::iterator it = _luts.begin(); it!=_luts.end(); ++it) {
         if(it->second){
             // now finding in map all other members that have the same pointer to avoid double free
-            for(std::map<DataType,Lut*>::iterator it2 = _luts.begin();it2!=_luts.end();it2++){
+            for(std::map<DataType,Lut*>::iterator it2 = _luts.begin(); it2!=_luts.end(); ++it2) {
                 if(it2->second == it->second && it->first!=it2->first)
                     it2->second = 0;
             }

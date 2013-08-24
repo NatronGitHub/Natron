@@ -117,7 +117,7 @@ public:
     
     void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
     
-    void incrementCurrentFrame(){_currentFrame++;}
+    void incrementCurrentFrame(){++_currentFrame;}
     
     const ChannelSet& requestedChannels() const {return _requestedChannels;}
     

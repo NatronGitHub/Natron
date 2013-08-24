@@ -175,36 +175,36 @@ inline void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
     assert(dst);
     if(plane){
         if(channel == Powiter::Channel_red)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].r = plane[i];
             }
         else if(channel == Powiter::Channel_green)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].g = plane[i];
             }
         else if(channel == Powiter::Channel_blue)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].b = plane[i];
             }
         else if(channel == Powiter::Channel_alpha)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].a = plane[i];
             }
     }else{
         if(channel == Powiter::Channel_red)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].r = 0.f;
             }
         else if(channel == Powiter::Channel_green)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].g = 0.f;
             }
         else if(channel == Powiter::Channel_blue)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].b = 0.f;
             }
         else if(channel == Powiter::Channel_alpha)
-            for (int i = 0; i < w; i++) {
+            for (int i = 0; i < w; ++i) {
                 dst[i].a = 1.f;
             }
     }
@@ -216,19 +216,19 @@ void ofxPackedBufferToRowPlane(Powiter::Channel channel,
                                int w,
                                float* plane){
     if(channel == Powiter::Channel_red)
-    for (int i = 0; i < w; i++) {
+    for (int i = 0; i < w; ++i) {
         plane[i] =  src[i].r ;
     }
     else if(channel == Powiter::Channel_green)
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w; ++i) {
             plane[i] =  src[i].g ;
         }
     else if(channel == Powiter::Channel_blue)
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w; ++i) {
             plane[i] =  src[i].b ;
         }
     else if(channel == Powiter::Channel_alpha)
-        for (int i = 0; i < w; i++) {
+        for (int i = 0; i < w; ++i) {
             plane[i] =  src[i].a ;
         }
     

@@ -137,7 +137,7 @@ AbstractCache::AbstractCache():_maximumCacheSize(0),_size(0){
 }
 AbstractCache::~AbstractCache(){
     QMutexLocker guard(&_lock);
-    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
+    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
         delete entry;
     }
@@ -149,7 +149,7 @@ AbstractCache::~AbstractCache(){
 void AbstractCache::clear(){
     QMutexLocker guard(&_lock);
     std::vector<std::pair<U64,CacheEntry*> > backUp;
-    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; it++){
+    for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
             if(entry->isMemoryMappedEntry()){
                 MemoryMappedEntry* mmapEntry = dynamic_cast<MemoryMappedEntry*>(entry);
@@ -167,7 +167,7 @@ void AbstractCache::clear(){
         }
     }
     _cache.clear();
-    for (unsigned int i = 0; i < backUp.size(); i++) {
+    for (unsigned int i = 0; i < backUp.size(); ++i) {
         add(backUp[i].first, backUp[i].second);
     }
 }
@@ -261,7 +261,7 @@ void AbstractDiskCache::initializeSubDirectories(){
     QDir cache(CACHE_ROOT_PATH);
     QStringList entries = cache.entryList();
     bool foundDir = false;
-    for(int i =0 ; i < entries.size();i++){
+    for(int i =0 ; i < entries.size();++i) {
         if(entries[i].toStdString() == CACHE_FOLDER_NAME){
             foundDir=true;
             break;
@@ -277,7 +277,7 @@ void AbstractDiskCache::initializeSubDirectories(){
     QDir cacheFolder(cacheFolderName);
     entries = cacheFolder.entryList();
     foundDir = false;
-    for(int i =0 ; i < entries.size();i++){
+    for(int i =0 ; i < entries.size();++i) {
         if(entries[i].toStdString() == cacheName()){
             foundDir=true;
             break;
@@ -287,8 +287,8 @@ void AbstractDiskCache::initializeSubDirectories(){
         cacheFolder.mkdir(cacheName().c_str());
         cacheFolderName.append(cacheName().c_str());
         QDir newCache(cacheFolderName);
-        for(U32 i = 0x00 ; i <= 0xF; i++){
-            for(U32 j = 0x00 ; j <= 0xF ; j++){
+        for(U32 i = 0x00 ; i <= 0xF; ++i) {
+            for(U32 j = 0x00 ; j <= 0xF ; ++j) {
                 ostringstream oss;
                 oss << hex <<  i;
                 oss << hex << j ;
@@ -307,8 +307,8 @@ void AbstractDiskCache::initializeSubDirectories(){
                 newCache.rmdir(e);
             }
         }
-        for(U32 i = 0x00 ; i <= 0xF; i++){
-            for(U32 j = 0x00 ; j <= 0xF ; j++){
+        for(U32 i = 0x00 ; i <= 0xF; ++i) {
+            for(U32 j = 0x00 ; j <= 0xF ; ++j) {
                 ostringstream oss;
                 oss << hex <<  i;
                 oss << hex << j ;
@@ -352,7 +352,7 @@ void AbstractDiskCache::save(){
     QTextStream out(&_restoreFile);
     /*clearing in-memory cache so only the on-disk portion has entries left.*/
     clearInMemoryCache();
-    for(CacheIterator it = _cache.begin(); it!= _cache.end() ; it++){
+    for(CacheIterator it = _cache.begin(); it!= _cache.end() ; ++it) {
         MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
         assert(mmEntry);
         out << mmEntry->printOut().c_str() << endl;
@@ -379,17 +379,19 @@ void AbstractDiskCache::restore(){
         /*check if there's 256 subfolders, otherwise reset cache.*/
         int count = 0; // -1 because of the restoreFile
         int subFolderCount = 0;
-        for(int i =0 ; i< files.size() ;i++){
+        for(int i =0 ; i< files.size() ;++i) {
             QString subFolder(newCachePath);
             subFolder.append("/");
             subFolder.append(files[i]);
             if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
             QDir d(subFolder);
             if(d.exists()){
-                subFolderCount++;
+                ++subFolderCount;
                 QStringList items = d.entryList();
-                for(int j = 0 ; j < items.size();j++){
-                    if(items[j] != QString(".") && items[j] != QString("..")) count++;
+                for(int j = 0 ; j < items.size();++j) {
+                    if(items[j] != QString(".") && items[j] != QString("..")) {
+                        ++count;
+                    }
                 }
             }
         }
@@ -422,7 +424,7 @@ void AbstractDiskCache::restore(){
             }
             _restoreFile.close();
             if ((U32)count == entries.size()) {
-                for (U32 i = 0; i < entries.size(); i++) {
+                for (U32 i = 0; i < entries.size(); ++i) {
                     std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
                     add(entry.first,entry.second);
                 }
@@ -460,7 +462,7 @@ void AbstractDiskCache::restore(){
         QDir root(CACHE_ROOT_PATH);
         QStringList rootEntries = root.entryList();
         bool foundCache = false;
-        for (int i =0 ; i< rootEntries.size(); i++) {
+        for (int i =0 ; i< rootEntries.size(); ++i) {
             if (rootEntries[i] == CACHE_FOLDER_NAME) {
                 foundCache = true;
                 break;
@@ -472,7 +474,7 @@ void AbstractDiskCache::restore(){
         QDir cacheDir(cacheFolderName);
         QStringList cacheRootEntries = root.entryList();
         bool foundCacheName = false;
-        for (int i =0 ; i< cacheRootEntries.size(); i++) {
+        for (int i =0 ; i< cacheRootEntries.size(); ++i) {
             if (cacheRootEntries[i] == QString(cacheName().c_str())) {
                 foundCacheName = true;
                 break;
@@ -526,7 +528,7 @@ void AbstractDiskCache::debug(){
     QMutexLocker g(&_lock);
     cout << "====================DEBUGING: " << cacheName() << " =========" << endl;
     cout << "-------------------IN MEMORY ENTRIES-------------------" << endl;
-    for (CacheIterator it = _inMemoryPortion.begin(); it!=_inMemoryPortion.end(); it++) {
+    for (CacheIterator it = _inMemoryPortion.begin(); it!=_inMemoryPortion.end(); ++it) {
         MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
@@ -538,7 +540,7 @@ void AbstractDiskCache::debug(){
         cout << "Key:" << it->first << endl;
     }
     cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
-    for (CacheIterator it = _cache.begin(); it!=_cache.end(); it++) {
+    for (CacheIterator it = _cache.begin(); it!=_cache.end(); ++it) {
         MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";

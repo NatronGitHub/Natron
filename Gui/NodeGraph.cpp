@@ -165,11 +165,11 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
                     found=true;
                     break;
                 }
-                j++;
+                ++j;
             }
             
         }
-        i++;
+        ++i;
     }
     if(!found){
         deselect();
@@ -177,7 +177,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
     }
 }
 void NodeGraph::deselect(){
-    for(U32 i = 0 ; i < _nodes.size() ;i++){
+    for(U32 i = 0 ; i < _nodes.size() ;++i) {
         NodeGui* n = _nodes[i];
         n->setSelected(false);
         _nodeSelected = 0;
@@ -203,7 +203,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 break;
             }
             
-            i++;
+            ++i;
         }
         if(!foundSrc){
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
@@ -277,7 +277,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
             _propertyBin->verticalScrollBar()->setValue(0);
             break;
         }
-        i++;
+        ++i;
     }
     
 }
@@ -406,7 +406,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
             Node* child = children[0];
             const vector<Edge*>& childEdges = child->getNodeUi()->getInputsArrows();
             Edge* edgeWithSelectedNode = 0;
-            for (U32 i = 0; i < childEdges.size(); i++) {
+            for (U32 i = 0; i < childEdges.size(); ++i) {
                 if (childEdges[i]->getSource() == selected) {
                     edgeWithSelectedNode = childEdges[i];
                     break;
@@ -503,7 +503,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
             const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
             const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
-            for (U32 i = 0 ; i < inputs.size(); i++) {
+            for (U32 i = 0 ; i < inputs.size(); ++i) {
                 if(inputs[i]->className() == "Reader"){
                     Reader* reader = dynamic_cast<Reader*>(inputs[i]);
                     if(reader->hasFrames()) start = true;
@@ -532,7 +532,7 @@ void NodeGraph::deleteSelectedNode(){
 
 
 void NodeGraph::removeNode(NodeGui* n){
-    for(U32 i = 0 ; i < _nodes.size();i++){
+    for(U32 i = 0 ; i < _nodes.size();++i) {
         if (n == _nodes[i]) {
             n->remove();
             _nodes.erase(_nodes.begin()+i);
@@ -543,7 +543,7 @@ void NodeGraph::removeNode(NodeGui* n){
 }
 void NodeGraph::selectNode(NodeGui* n){
     /*now remove previously selected node*/
-    for(U32 i = 0 ; i < _nodes.size() ;i++){
+    for(U32 i = 0 ; i < _nodes.size() ;++i) {
         _nodes[i]->setSelected(false);
     }
     n->setSelected(true);
@@ -584,7 +584,7 @@ void NodeGraph::updateNavigator(){
 }
 bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleRect();
-    for (U32 i = 0; i < _nodes.size(); i++) {
+    for (U32 i = 0; i < _nodes.size(); ++i) {
         QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
         if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
             return false;
@@ -593,7 +593,7 @@ bool NodeGraph::areAllNodesVisible(){
 }
 void NodeGraph::autoResizeScene(){
     QRectF rect(0,0,1,1);
-    for (U32 i = 0; i < _nodes.size(); i++) {
+    for (U32 i = 0; i < _nodes.size(); ++i) {
         NodeGui* item = _nodes[i];
         rect = rect.united(item->mapToItem(_root,item->boundingRect()).boundingRect());
     }
@@ -622,7 +622,7 @@ QImage NodeGraph::getFullSceneScreenShot(){
 }
 bool NodeGraph::isGraphWorthLess() const{
     bool worthLess = true;
-    for (U32 i = 0; i < _nodes.size(); i++) {
+    for (U32 i = 0; i < _nodes.size(); ++i) {
         if (_nodes[i]->getNode()->className() != "Writer" && _nodes[i]->getNode()->className() != "Viewer") {
             worthLess = false;
             break;
@@ -646,7 +646,7 @@ const std::vector<NodeGui*>& NodeGraph::getAllActiveNodes() const{
     return _nodes;
 }
 void NodeGraph::moveToTrash(NodeGui* node){
-    for(U32 i = 0; i < _nodes.size() ; i++){
+    for(U32 i = 0; i < _nodes.size() ; ++i) {
         if(node == _nodes[i]){
             _nodesTrash.push_back(_nodes[i]);
             _nodes.erase(_nodes.begin()+i);
@@ -655,7 +655,7 @@ void NodeGraph::moveToTrash(NodeGui* node){
     }
 }
 void NodeGraph::restoreFromTrash(NodeGui* node){
-    for(U32 i = 0; i < _nodesTrash.size() ; i++){
+    for(U32 i = 0; i < _nodesTrash.size() ; ++i) {
         if(node == _nodesTrash[i]){
             _nodes.push_back(_nodesTrash[i]);
             _nodesTrash.erase(_nodesTrash.begin()+i);
