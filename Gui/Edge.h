@@ -47,7 +47,7 @@ public:
     NodeGui* getDest(){return dest;}
     NodeGui* getSource(){return source;}
     bool hasSource(){return has_source;}
-    void updatePosition(QPointF pos);
+    void updatePosition(const QPointF& src);
     void initLine();
 
 protected:

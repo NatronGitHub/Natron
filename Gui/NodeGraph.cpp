@@ -158,7 +158,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             while(j<arrows.size()){
                 Edge* a=arrows[j];
                 
-                if(a->contains(evpt)){
+                if(a->contains(a->mapFromScene(old_pos))){
                     
                     _arrowSelected=a;
                     _evtState=ARROW_DRAGGING;
