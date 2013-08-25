@@ -267,11 +267,8 @@ private:
      *and the frame number truncated.
      *It returns in framenumber the number of the frame
      *and in extension the name of file type
-     *This function returns false if it if it couldn't detect
-     *it as part of a sequence or if the file extension is not supported by the filters
-     *of the file dialog.
-     **/
-    bool parseFilename(QString &path, int* frameNumber, QString &extension) const;
+    **/
+    void parseFilename(QString &path, int* frameNumber, QString &extension) const;
     
     /*
     *Check if the path is accepted by the filter installed by the user
@@ -480,6 +477,7 @@ public slots:
     void enableSequenceMode(bool);
     void sequenceComboBoxSlot(const QString&);
     void showFilterMenu();
+    void defaultFiltersSlot();
     void dotStarFilterSlot();
     void starSlashFilterSlot();
     void emptyFilterSlot();
@@ -501,6 +499,10 @@ private:
     void itemsToSequence(const QModelIndex &parent);
     
     QModelIndex select(const QModelIndex& index);
+    
+    QString generateStringFromFilters();
+    
+    
 };
 
 

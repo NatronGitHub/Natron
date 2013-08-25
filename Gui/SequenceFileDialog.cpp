@@ -221,6 +221,9 @@ _dialogMode(mode)
     
     _filterLineEdit = new LineEdit(_filterWidget);
     _filterLayout->addWidget(_filterLineEdit);
+    QString filter = generateStringFromFilters();
+    _filterLineEdit->setText(filter);
+    _proxy->setFilter(filter);
     
     QImage dropDownImg(IMAGES_PATH"combobox.png");
     QPixmap pixDropDown = QPixmap::fromImage(dropDownImg);
@@ -442,10 +445,37 @@ bool SequenceFileDialog::sequenceModeEnabled() const{
 
 bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
     if(_filter.isEmpty()) return true;
-    QRegExp rx(_filter,Qt::CaseInsensitive,QRegExp::Wildcard);
-    if(!rx.isValid())
+    std::vector<QString> regExps;
+    int i = 0;
+    while (i < _filter.size()) {
+        QString regExp;
+        while( i < _filter.size() && _filter.at(i) != QChar(' ')){
+            regExp.append(_filter.at(i));
+            ++i;
+        }
+        ++i;
+        regExps.push_back(regExp);
+    }
+    bool recognized = false;
+    bool noRegExpValid = true;
+    for(U32 j = 0 ; j < regExps.size() ; j++){
+        QRegExp rx(regExps[j],Qt::CaseInsensitive,QRegExp::Wildcard);
+        if(!rx.isValid()){
+            continue;
+        }else{
+            noRegExpValid = false;
+            if(rx.exactMatch(path)){
+                recognized = true;
+                break;
+            }
+        }
+        
+    }
+    if(!noRegExpValid && recognized){
         return true;
-    return rx.exactMatch(path);
+    }else{
+        return false;
+    }
 }
 void FileSequence::addToSequence(int frameIndex,const QString& path){
     if(_frameIndexes.addToSequence(frameIndex)){
@@ -478,10 +508,8 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     QString pathCpy = path;
     QString extension;
     /*extracting the frame number if any and the file type.
-     This function returns false if the file type is not supported by
-     the filters set at the creation of the dialog.*/
-    if(!parseFilename(pathCpy,&frameNumber,extension))
-        return false;
+     */
+    parseFilename(pathCpy,&frameNumber,extension);
     
     /*If file sequence fetching is disabled, just call the base class version*/
     if(!_fd->sequenceModeEnabled() || frameNumber == -1){
@@ -632,14 +660,14 @@ const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string&
 }
 
 
-bool SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QString &extension) const{
+void SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QString &extension) const{
     
     /*removing the file extension if any*/
     
     extension = SequenceFileDialog::removeFileExtension(path);
-    if(!_fd->isASupportedFileExtension(extension.toStdString())){
-        return false;
-    }
+    //  if(!_fd->isASupportedFileExtension(extension.toStdString())){
+    //  return false;
+    //}
     /*removing the frame number if any*/
     int i = path.size() - 1;
     QString fNumber ;
@@ -655,9 +683,7 @@ bool SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QStr
         path = "";
     }else{
         *frameNumber = fNumber.toInt();
-    }
-    return true;
-    
+    }    
 }
 
 SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
@@ -1265,6 +1291,12 @@ void SequenceFileDialog::showFilterMenu(){
     QPoint position(_filterLineEdit->mapToGlobal(_filterLineEdit->pos()));
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
+    
+    
+    QAction *defaultFilters = new QAction(generateStringFromFilters(),this);
+    QObject::connect(defaultFilters, SIGNAL(triggered()), this, SLOT(defaultFiltersSlot()));
+    actions.append(defaultFilters);
+    
     QAction *startSlash = new QAction("*/", this);
     QObject::connect(startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()));
     actions.append(startSlash);
@@ -1284,6 +1316,22 @@ void SequenceFileDialog::showFilterMenu(){
         menu.setFixedSize(_filterLineEdit->width(),menu.sizeHint().height());
         menu.exec(position);
     }
+}
+QString SequenceFileDialog::generateStringFromFilters(){
+    QString ret;
+    for (U32 i = 0 ; i < _filters.size(); i++) {
+        ret.append("*");
+        ret.append(".");
+        ret.append(_filters[i].c_str());
+        if(i < _filters.size() -1)
+            ret.append(" ");
+    }
+    return ret;
+}
+void SequenceFileDialog::defaultFiltersSlot(){
+    QString filter = generateStringFromFilters();
+    _filterLineEdit->setText(filter);
+    applyFilter(filter);
 }
 void SequenceFileDialog::dotStarFilterSlot(){
     QString filter(".*");
