@@ -58,6 +58,13 @@ Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphi
 
 
 }
+
+Edge::~Edge(){
+    if(dest){
+        dest->markInputNull(this);
+    }
+}
+
 void Edge::initLine(){
     int h = NODE_HEIGHT;
     int w = NODE_LENGTH;

@@ -207,9 +207,9 @@ public:
         return out;
     }
     
-    void loadProject(const QString& filename);
+    void loadProject(const QString& filename,bool autoSave = false);
     
-    void saveProject(const QString& filename);
+    void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     void clearNodes();
         

@@ -34,6 +34,9 @@ class Edge: public QGraphicsLineItem
 public:
     Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
     Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    
+    virtual ~Edge();
+    
     QPainterPath shape() const;
     bool contains(const QPointF &point) const;
     void setSource(NodeGui* src){
@@ -49,7 +52,7 @@ public:
     bool hasSource(){return has_source;}
     void updatePosition(const QPointF& src);
     void initLine();
-
+    QGraphicsScene* getScene() const {return scene;}
 protected:
 
 

@@ -74,11 +74,19 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
     delete loadingScreen;
     
+    /*Check if auto-save dir already exists*/
+    QDir dir(QDir::tempPath()+QDir::separator()+"Powiter");
+    if(!dir.exists()){
+        QDir::temp().mkdir("Powiter");
+    }
+    
     if(!findAutoSave()){
         if(projectName.isEmpty()){
             createNode("Viewer");
         }else{
-            loadProject(projectName);
+            QString name = SequenceFileDialog::removePath(projectName);
+            QString path = projectName.left(projectName.indexOf(name));
+            loadProject(path,name);
         }
     }
     
@@ -133,26 +141,26 @@ const std::vector<NodeGui*>& Controler::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
     return _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
 }
-void Controler::loadProject(const QString& name){
-    _model->loadProject(name);
+void Controler::loadProject(const QString& path,const QString& name){
+    _model->loadProject(path+name);
     QDateTime time = QDateTime::currentDateTime();
     _currentProject._hasProjectBeenSavedByUser = true;
-    _currentProject._projectName = SequenceFileDialog::removePath(name);
+    _currentProject._projectName = name;
+    _currentProject._projectPath = path;
     _currentProject._age = time;
     _currentProject._lastAutoSave = time;
 }
-void Controler::saveProject(const QString& name,bool autoSave){
+void Controler::saveProject(const QString& path,const QString& name,bool autoSave){
     QDateTime time = QDateTime::currentDateTime();
     if(!autoSave) {
         
         if((_currentProject._age != _currentProject._lastAutoSave) ||
-           !QFile::exists(QString(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str()+
-                                 name))){
+           !QFile::exists(path+name)){
             
-            _model->saveProject(QString(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str()+
-                                        name));
+            _model->saveProject(path,name);
             _currentProject._hasProjectBeenSavedByUser = true;
             _currentProject._projectName = name;
+            _currentProject._projectPath = path;
             _currentProject._age = time;
             _currentProject._lastAutoSave = time;
         }
@@ -160,16 +168,16 @@ void Controler::saveProject(const QString& name,bool autoSave){
         if(!_gui->isGraphWorthless()){
             
             removeAutoSaves();
-            _model->saveProject(QString(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str()+
-                                        name)+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"));
+            _model->saveProject(path,name+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"),true);
             _currentProject._projectName = name;
+            _currentProject._projectPath = path;
             _currentProject._lastAutoSave = time;
         }
     }
 }
 void Controler::removeAutoSaves() const{
     /*removing all previous autosave files*/
-    QDir savesDir(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str());
+    QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
     for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
@@ -191,17 +199,30 @@ bool Controler::isSaveUpToDate() const{
 }
 
 bool Controler::findAutoSave(){
-    QDir savesDir(Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str());
+    QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
     for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         int suffixPos = entry.indexOf(".rs.");
         if (suffixPos != -1) {
+            QFile autoSave(savesDir.path()+QDir::separator()+entry);
+            autoSave.open(QIODevice::ReadOnly);
+            QTextStream inStream(&autoSave);
+            QString firstLine = inStream.readLine();
+            QString path;
+            if(!firstLine.isEmpty()){
+                int j = 0;
+                while(j < firstLine.size() &&  (firstLine.at(j) != QChar('\n'))){
+                    path.append(firstLine.at(j));
+                    ++j;
+                }
+            }
+            autoSave.close();
             QString filename = entry.left(suffixPos+3);
-            QString filenameWithPath = savesDir.path() + QDir::separator() + filename;
+            QString filenameWithPath = path + QDir::separator() + filename;
             bool exists = QFile::exists(filenameWithPath);
             QString text;
-            _model->loadProject(savesDir.path()+ QDir::separator() + entry);
+            _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
             if(exists){
                 text = "A recent auto-save of " + filename + " was found. You can preview it now.\n"
                 "Would you like to restore it entirely? Clicking No will remove this auto-save.";
@@ -220,9 +241,10 @@ bool Controler::findAutoSave(){
                 if(exists){
                     QDateTime now = QDateTime::currentDateTime();
                     _currentProject._projectName = filename;
+                    _currentProject._projectPath = path;
                     _currentProject._lastAutoSave = now;
                     _currentProject._hasProjectBeenSavedByUser = true;
-                    _currentProject._age = now;
+                    _currentProject._age = now.addSecs(1);
                 }
                 return true;
             }
@@ -231,6 +253,8 @@ bool Controler::findAutoSave(){
     removeAutoSaves();
     return false;
 }
+const QString Controler::autoSavesDir() {return QString(QDir::tempPath() + QDir::separator() + "Powiter" + QDir::separator());}
+
 void Controler::deselectAllNodes() const{
     _gui->_nodeGraphTab->_nodeGraphArea->deselect();
 }

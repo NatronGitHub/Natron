@@ -140,6 +140,8 @@ public:
     
     void remove();
     
+    void markInputNull(Edge* e);
+    
 private:
     /*used internally by hasViewerConnected.*/
     static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);

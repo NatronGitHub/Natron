@@ -759,47 +759,50 @@ void Gui::newProject(){
     currentViewer->getUiContext()->viewer->disconnectViewer();
     _nodeGraphTab->_nodeGraphArea->clear();
     ctrlPTR->clearInternalNodes();
+    ctrlPTR->resetCurrentProject();
     ctrlPTR->createNode("Viewer");
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
     filters.push_back("rs");
     SequenceFileDialog dialog(this,filters,false,
-                              SequenceFileDialog::OPEN_DIALOG,Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory);
+                              SequenceFileDialog::OPEN_DIALOG);
     if(dialog.exec()){
         QStringList selectedFiles = dialog.selectedFiles();
         if (selectedFiles.size() > 0) {
             //clearing current graph
             _nodeGraphTab->_nodeGraphArea->clear();
             ctrlPTR->clearInternalNodes();
-            
-            QString projectName = selectedFiles.at(0);
-            ctrlPTR->loadProject(projectName);
+            QString file = selectedFiles.at(0);
+            QString name = SequenceFileDialog::removePath(file);
+            QString path = file.left(file.indexOf(name));
+            ctrlPTR->loadProject(path,name);
         }
     }
 }
 void Gui::saveProject(){
     if(ctrlPTR->hasProjectBeenSavedByUser()){
-        ctrlPTR->saveProject(ctrlPTR->getCurrentProjectName(),false);
+        ctrlPTR->saveProject(ctrlPTR->getCurrentProjectPath(),ctrlPTR->getCurrentProjectName(),false);
     }else{
         saveProjectAs();
     }
 }
 void Gui::saveProjectAs(){
     QString outFile=QFileDialog::getSaveFileName(this,QString("Save project")
-                                                 ,Settings::getPowiterCurrentSettings()->_generalSettings._projectsDirectory.c_str()
+                                                 ,ROOT
                                                  ,"Project Files (*.rs)");
     if (outFile.size() > 0) {
         if (outFile.indexOf(".rs") == -1) {
             outFile.append(".rs");
         }
-        outFile = SequenceFileDialog::removePath(outFile);
-        ctrlPTR->saveProject(outFile,false);
+        QString file = SequenceFileDialog::removePath(outFile);
+        QString path = outFile.left(outFile.indexOf(file));
+        ctrlPTR->saveProject(path,file,false);
     }
 }
 
 void Gui::autoSave(){
-    ctrlPTR->saveProject(ctrlPTR->getCurrentProjectName(), true);
+    ctrlPTR->saveProject(ctrlPTR->getCurrentProjectPath(),ctrlPTR->getCurrentProjectName(), true);
 }
 
 bool Gui::isGraphWorthless() const{
