@@ -203,6 +203,14 @@ QString ComboBox::itemText(int index) const{
     else
         return "";
 }
+int ComboBox::itemIndex(const QString& str) const{
+    for (U32 i = 0; i < _actions.size(); i++) {
+        if (_actions[i]->text() == str) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 void ComboBox::removeItem(const QString& item){
     for (U32 i = 0; i < _actions.size(); ++i) {

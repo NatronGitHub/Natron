@@ -788,9 +788,13 @@ void Gui::saveProject(){
     }
 }
 void Gui::saveProjectAs(){
-    QString outFile=QFileDialog::getSaveFileName(this,QString("Save project")
-                                                 ,ROOT
-                                                 ,"Project Files (*.rs)");
+    vector<string> filter;
+    filter.push_back("rs");
+    SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
+    QString outFile;
+    if(dialog.exec()){
+        outFile = dialog.filesToSave();
+    }
     if (outFile.size() > 0) {
         if (outFile.indexOf(".rs") == -1) {
             outFile.append(".rs");
