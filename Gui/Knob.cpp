@@ -734,8 +734,8 @@ void File_Knob::restoreFromString(const std::string& str){
             ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
             static_cast<Reader*>(node)->showFilePreview();
         }
+        validateEvent(true);
     }
-    validateEvent(true);
 }
 
 Knob* Bool_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
