@@ -130,9 +130,6 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     selectNode(node_ui);
     _nodeSelected = node_ui;
     
-    
-    //   autoResizeScene();
-    
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event){
     old_pos=mapToScene(event->pos());
@@ -371,7 +368,6 @@ void NodeGraph::leaveEvent(QEvent *event)
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
         setFocus();
-        //releaseMouse();
         releaseKeyboard();
     }
 }
@@ -413,23 +409,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 }
             }
             if(edgeWithSelectedNode && !created->getNode()->isOutputNode()){
-                
-                
-                child->removeParent(selected->getNode());
-                child->getNodeUi()->removeParent(selected);
-                
-                selected->getNode()->removeChild(child);
-                selected->removeChild(child->getNodeUi());
-                
-                created->addChild(child->getNodeUi());
-                created->getNode()->addChild(child);
-                
-                child->addParent(created->getNode());
-                child->getNodeUi()->addParent(created);
-                
-                edgeWithSelectedNode->setSource(created);
-                
-                
+                _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
                 
                 /*we now try to move the created node in between the 2 previous*/
                 QPointF parentPos = created->mapFromScene(selected->scenePos());
@@ -471,26 +451,16 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         }
         first = created->firstAvailableEdge();
         if(first){
-            first->getDest()->getNode()->addParent(selected->getNode());
-            first->getDest()->addParent(selected);
-            selected->getNode()->addChild(first->getDest()->getNode());
-            selected->addChild(first->getDest());
-            first->setSource(selected);
-            first->initLine();
+            _undoStack->push(new ConnectCommand(this,first,first->getSource(),selected));
             cont = true;
         }
         
         
     }else{
-        /*dst is outputnode,src isn't*/
+        /*dst is outputnode,src isn't*/        
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
-            first->getDest()->getNode()->addParent(created->getNode());
-            first->getDest()->addParent(created);
-            created->getNode()->addChild(first->getDest()->getNode());
-            created->addChild(first->getDest());
-            first->setSource(created);
-            first->initLine();
+            _undoStack->push(new ConnectCommand(this,first,first->getSource(),created));
             cont = true;
             
         }
@@ -734,6 +704,12 @@ void AddCommand::undo(){
     _node->setActive(false);
     _graph->moveToTrash(_node);
     
+    foreach(Edge* e,_node->getInputsArrows()){
+        _graph->scene()->removeItem(e);
+        e->setActive(false);
+    }
+    
+    
     _parents = _node->getParents();
     _children = _node->getChildren();
     foreach(NodeGui* p,_parents){
@@ -782,6 +758,12 @@ void AddCommand::redo(){
         _graph->scene()->addItem(_node);
         _node->setActive(true);
         _graph->restoreFromTrash(_node);
+        
+        foreach(Edge* e,_node->getInputsArrows()){
+            _graph->scene()->addItem(e);
+            e->setActive(true);
+        }
+        
         
         foreach(NodeGui* child,_children){
             _node->addChild(child);
@@ -834,6 +816,11 @@ void RemoveCommand::undo(){
     _node->setActive(true);
     _graph->restoreFromTrash(_node);
     
+    foreach(Edge* e,_node->getInputsArrows()){
+        _graph->scene()->addItem(e);
+        e->setActive(true);
+    }
+    
     foreach(NodeGui* child,_children){
         _node->addChild(child);
         _node->getNode()->addChild(child->getNode());
@@ -884,6 +871,10 @@ void RemoveCommand::redo(){
     foreach(NodeGui* p,_parents){
         p->removeChild(_node);
         p->getNode()->removeChild(_node->getNode());
+    }
+    foreach(Edge* e,_node->getInputsArrows()){
+        _graph->scene()->removeItem(e);
+        e->setActive(false);
     }
     NodeGui* firstChild = 0;
     if(_children.size() > 0){

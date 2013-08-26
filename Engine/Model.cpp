@@ -1008,7 +1008,7 @@ void Model::restoreGraphFromString(const QString& str){
         }
         if(i  == str.size()) return; // safety check
         
-        ++i; //the '\n' character 
+        ++i; //the '\n' character
         
         assert(ctrlPTR);
         ctrlPTR->deselectAllNodes();
@@ -1024,7 +1024,7 @@ void Model::restoreGraphFromString(const QString& str){
             ctrlPTR->createNode("Viewer");
             return;
         }
-
+        
         n->getNodeUi()->setName(nodeName);
         while (i < str.size() && str.at(i) != QChar('}')) {
             QString line;
@@ -1062,7 +1062,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
             inputName.append(str.at(i));
             ++i;
         }
-
+        
         assert(n->getNodeUi());
         int inputNb = inputNumberStr.toInt();
         for (U32 j = 0; j < _currentNodes.size(); ++j) {
@@ -1088,7 +1088,7 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         int i = type + 4;
         
         ++i; // the ':' character
-               
+        
         QString knobDescription;
         while(i < str.size() && str.at(i)!= QChar(':')){
             knobDescription.append(str.at(i));
@@ -1159,19 +1159,43 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
     
 }
 
-void Model::loadProject(const QString& filename){
+void Model::loadProject(const QString& filename,bool autoSave){
     QFile file(filename);
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     QTextStream in(&file);
-    restoreGraphFromString(in.readAll());
+    QString content = in.readAll();
+    if(autoSave){
+        QString toRemove = content.left(content.indexOf('\n')+1);
+        content = content.remove(toRemove);
+    }
+    restoreGraphFromString(content);
     file.close();
 }
-void Model::saveProject(const QString& filename){
-    QFile file(filename);
-    file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-    QTextStream out(&file);
-    out << serializeNodeGraph();
-    file.close();
+void Model::saveProject(const QString& path,const QString& filename,bool autoSave){
+    if(autoSave){
+        QFile file(Controler::autoSavesDir()+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        if(!path.isEmpty())
+            out << path << endl;
+        else
+            out << "unsaved" << endl;
+        out << serializeNodeGraph();
+        file.close();
+    }else{
+        QFile file(path+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout << (path+filename).toStdString() <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        out << serializeNodeGraph();
+        file.close();
+
+    }
 }
 
 void Model::clearNodes(){

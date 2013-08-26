@@ -254,14 +254,17 @@ public:
     
     virtual void restoreFromString(const std::string& str);
     
+    void updateLastOpened(const QString& str);
+    
 public slots:
     void open_file();
-    void setStr(const QString& str){
-		*(this->str) = str.toStdString();
-	}
+    void setStr(const QString& str);
+signals:
+    void filesSelected();
 private:
     std::string *str; // TODO: why keep a pointer here?
     OutputFileQLineEdit* _name;
+    QString _lastOpened;
 };
 
 class OutputFileQLineEdit:public LineEdit{
@@ -491,6 +494,7 @@ public:
     
     virtual void restoreFromString(const std::string& str);
     
+    const std::string& activeEntry() const;
 signals:
     void entryChanged(int);
     

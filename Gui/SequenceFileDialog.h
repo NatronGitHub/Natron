@@ -260,20 +260,18 @@ public:
     
     inline void setFilter(QString filter){ _filter = filter;}
 
-protected:
-    virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
-private:
     /**@brief Returns in path the name of the file with the extension truncated and
      *and the frame number truncated.
      *It returns in framenumber the number of the frame
      *and in extension the name of file type
-     *This function returns false if it if it couldn't detect
-     *it as part of a sequence or if the file extension is not supported by the filters
-     *of the file dialog.
      **/
-    bool parseFilename(QString &path, int* frameNumber, QString &extension) const;
+    void parseFilename(QString &path, int* frameNumber, QString &extension) const;
+
     
-    /*
+protected:
+    virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
+private:
+       /*
     *Check if the path is accepted by the filter installed by the user
     */
     bool isAcceptedByUser(const QString& path) const;
@@ -341,6 +339,7 @@ private:
     QLabel* _filterLabel;
     LineEdit* _filterLineEdit;
     Button* _filterDropDown;
+    ComboBox* _fileExtensionCombo;
 
     
     QHBoxLayout* _buttonsLayout;
@@ -403,7 +402,7 @@ public:
     
     /*Returns the pattern of the sequence, e.g:
      mySequence#.jpg*/
-    QString getSequencePattern();
+    QString getSequencePatternFromLineEdit();
     
     static QStringList filesListFromPattern(const QString& pattern);
     
@@ -459,6 +458,9 @@ public:
     QStringList typedFiles() const;
 
     QString getEnvironmentVariable(const QString &string);
+    
+    FileDialogMode getDialogMode() const {return _dialogMode;}
+    
 public slots:
 
     void enterDirectory(const QModelIndex& index);
@@ -480,6 +482,7 @@ public slots:
     void enableSequenceMode(bool);
     void sequenceComboBoxSlot(const QString&);
     void showFilterMenu();
+    void defaultFiltersSlot();
     void dotStarFilterSlot();
     void starSlashFilterSlot();
     void emptyFilterSlot();
@@ -489,6 +492,7 @@ public slots:
     void pathChanged(const QString &newPath);
     void autoCompleteFileName(const QString&);
     void goToDirectory(const QString&);
+    void setFileExtensionOnLineEdit(const QString&);
 protected:
     virtual void keyPressEvent(QKeyEvent *e);
 
@@ -501,6 +505,10 @@ private:
     void itemsToSequence(const QModelIndex &parent);
     
     QModelIndex select(const QModelIndex& index);
+    
+    QString generateStringFromFilters();
+    
+    
 };
 
 

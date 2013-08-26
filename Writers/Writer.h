@@ -31,6 +31,8 @@
 class Write;
 class QMutex;
 class Row;
+class OutputFile_Knob;
+class ComboBox_Knob;
 class WriteKnobs;
 class KnobCallback;
 class Writer: public QObject, public Node{
@@ -133,6 +135,7 @@ public slots:
     void notifyWriterForCompletion();
     void fileTypeChanged(int);
     void startRendering();
+    void onFilesSelected();
     
 protected:
 	virtual void initKnobs(KnobCallback *cb);
@@ -153,6 +156,10 @@ private:
     std::string _filename;
     std::string _fileType;
     std::vector<std::string> _allFileTypes;
+    
+    
+    OutputFile_Knob* _fileKnob;
+    ComboBox_Knob* _filetypeCombo;
     
 };
 

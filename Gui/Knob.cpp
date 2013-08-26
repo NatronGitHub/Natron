@@ -69,13 +69,13 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
 KnobCallback::KnobCallback(SettingsPanel *panel, Node *node){
     this->panel=panel;
     this->node=node;
-
+    
 }
 
 KnobCallback::~KnobCallback(){
-//    for (U32 i = 0 ; i< knobs.size(); ++i) {
-//        delete knobs[i];
-//    }
+    //    for (U32 i = 0 ; i< knobs.size(); ++i) {
+    //        delete knobs[i];
+    //    }
     knobs.clear();
 }
 void KnobCallback::initNodeKnobsVector(){
@@ -83,7 +83,7 @@ void KnobCallback::initNodeKnobsVector(){
         Knob* pair=knobs[i];
         node->addToKnobVector(pair);
     }
-
+    
 }
 void KnobCallback::createKnobDynamically(){
     const std::vector<Knob*>& node_knobs=node->getKnobs();
@@ -345,7 +345,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
     delete strKnob;
     
-
+    
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -584,7 +584,7 @@ std::string Int2D_Knob::serialize() const{
     if(_value2){
         v1 = *_value2;
     }
-
+    
     QString str1 = QString::number(v1);
     QString str2 = QString::number(v2);
     return QString("v1 " + str1 + " v2 " + str2).toStdString();
@@ -656,7 +656,7 @@ void File_Knob::open_file(){
     
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
-        _name->setText(dialog.getSequencePattern());
+        _name->setText(dialog.getSequencePatternFromLineEdit());
         setFileNames(strlist);
         setValues();
         std::string className=getCallBack()->getNode()->className();
@@ -727,13 +727,15 @@ void File_Knob::restoreFromString(const std::string& str){
     *filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
     
     setValues();
-    std::string className=getCallBack()->getNode()->className();
-    if(className == string("Reader")){
-        Node* node=getCallBack()->getNode();
-        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
-        static_cast<Reader*>(node)->showFilePreview();
+    if(filesList->size() > 0){
+        std::string className=getCallBack()->getNode()->className();
+        if(className == string("Reader")){
+            Node* node=getCallBack()->getNode();
+            ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+            static_cast<Reader*>(node)->showFilePreview();
+        }
+        validateEvent(true);
     }
-    validateEvent(true);
 }
 
 Knob* Bool_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -1009,7 +1011,7 @@ void Button_Knob::onButtonPressed(){
 }
 
 std::string Button_Knob::serialize() const{
-   return "";
+    return "";
 }
 void Button_Knob::restoreFromString(const std::string& str){
     (void)str;
@@ -1037,36 +1039,42 @@ OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& descriptio
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
-    QObject::connect(_name,SIGNAL(textChanged(const QString&)),this,SLOT(setStr(const QString&)));
+    QObject::connect(_name,SIGNAL(textEdited(const QString&)),this,SLOT(setStr(const QString&)));
     layout->addWidget(desc);
     layout->addWidget(_name);
     layout->addWidget(openFile);
+}
+void OutputFile_Knob::setStr(const QString& str){
+    *(this->str) = str.toStdString();
+    _name->setText(str);
 }
 
 void OutputFile_Knob::setValues(){
     values.clear();
     
 }
+void OutputFile_Knob::updateLastOpened(const QString& str){
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
+}
 
 void OutputFile_Knob::open_file(){
     str->clear();
     
+    std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    SequenceFileDialog dialog(this,filters,true,SequenceFileDialog::SAVE_DIALOG,_lastOpened.toStdString());
     
+    if(dialog.exec()){
+        *str = dialog.filesToSave().toStdString();
+    }
     
-    QString outFile=QFileDialog::getSaveFileName(this,QString("Save File")
-                                                 ,QString(ROOT)
-                                                 ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-    //    QStringList strlist;
-    //    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-    //    if(dialog.exec()){
-    //        strlist = dialog.selectedFiles();
-    //    }
-    
-    if(!outFile.isEmpty()){
-        _name->setText(outFile);
-        setStr(outFile);
+    if(!str->empty()){
+        updateLastOpened(SequenceFileDialog::removePath(str->c_str()));
+        _name->setText(str->c_str());
         setValues();
-        std::string className=getCallBack()->getNode()->className();
+        validateEvent(true);
+        emit filesSelected();
     }
 }
 
@@ -1122,6 +1130,9 @@ void ComboBox_Knob::onCurrentIndexChanged(int i){
     setValues();
     validateEvent(false);
     
+}
+const std::string& ComboBox_Knob::activeEntry() const{
+    return _comboBox->itemText(_comboBox->activeIndex()).toStdString();
 }
 
 void ComboBox_Knob::setCurrentItem(int index){

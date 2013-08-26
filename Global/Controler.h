@@ -48,6 +48,7 @@ public:
     }
     
     QString _projectName;
+    QString _projectPath;
     bool _hasProjectBeenSavedByUser;
     QDateTime _age;
     QDateTime _lastAutoSave;
@@ -124,13 +125,21 @@ public:
     
     const QString& getCurrentProjectName() const {return _currentProject._projectName;}
     
+    const QString& getCurrentProjectPath() const {return _currentProject._projectPath;}
+    
     void setCurrentProjectName(const QString& name) {_currentProject._projectName = name;}
     
-    void loadProject(const QString& name);
+    void loadProject(const QString& path,const QString& name);
     
-    void saveProject(const QString& name,bool autoSave);
+    void saveProject(const QString& path,const QString& name,bool autoSave);
         
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
+    
+    void resetCurrentProject(){
+        _currentProject._hasProjectBeenSavedByUser = false;
+        _currentProject._projectName = "Untitled.rs";
+        _currentProject._projectPath = "";
+    }
     
     void clearInternalNodes();
     
@@ -141,6 +150,10 @@ public:
     void deselectAllNodes() const;
     
     void showErrorDialog(const QString& title,const QString& message) const;
+    
+    static const QString autoSavesDir();
+    
+    
     
 private:
 	void removeAutoSaves() const;

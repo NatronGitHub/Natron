@@ -55,9 +55,7 @@ public:
         ViewerSettings();
     };
     class GeneralSettings{
-    public:
-        std::string _projectsDirectory;
-        
+    public:        
         GeneralSettings();
     };
     class ReadersSettings{
