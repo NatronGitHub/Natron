@@ -15,7 +15,7 @@
 
 //ofx
 #include "ofxhImageEffect.h"
-#include "ofxpixels.h"
+#include "ofxPixels.h"
 
 
 class OfxImage;
