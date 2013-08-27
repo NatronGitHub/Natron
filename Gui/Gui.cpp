@@ -43,6 +43,7 @@
 #include "Gui/SequenceFileDialog.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH IMAGES_PATH"openeffects.png"
 
 using namespace std;
 using namespace Powiter;
@@ -702,7 +703,14 @@ void Gui::addPluginToolButton(const std::string& actionName,
     if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
         groupIcon.addFile(groupIconPath.c_str());
     }
-    std::string mainGroup = groups.size() >= 1 ? groups[0] : PLUGIN_GROUP_DEFAULT;
+    std::string mainGroup;
+    if(groups.size()){
+        mainGroup = groups[0];
+    }else{
+        mainGroup = PLUGIN_GROUP_DEFAULT;
+        groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+    }
+    
     std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);

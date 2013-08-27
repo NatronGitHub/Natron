@@ -822,6 +822,8 @@ void Model::loadOFXPlugins(){
         std::string rawName = name;
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
+        
+
         vector<string> groups = extractAllPartsOfGrouping(grouping);
         if (groups.size() >= 1) {
             name.append("  [");
@@ -855,7 +857,7 @@ void Model::writeOFXCache(){
     OFX::Host::PluginCache::clearPluginCache();
 }
 
-OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
+OFX::Host::ImageEffect::Instance* Model::newInstance(void* ,
                                                      OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                      OFX::Host::ImageEffect::Descriptor& desc,
                                                      const std::string& context)
