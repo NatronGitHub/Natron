@@ -406,6 +406,9 @@ public:
     
     static QStringList filesListFromPattern(const QString& pattern);
     
+    /*files must have the same extension and a digit placed before the . character prepending the extension*/
+    static QString patternFromFilesList(const QStringList& files);
+    
     QString filesToSave();
     
     QDir currentDirectory() const;

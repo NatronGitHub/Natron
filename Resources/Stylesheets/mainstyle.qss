@@ -154,6 +154,20 @@ color: %5;
 QPushButton{
 background-color: %3;
 color: %5;
+border: 0.5px solid black;
+border-radius : 3px;
+padding : 3px;
+}
+QPushButton:Pressed{
+background-color : %4;
+}
+QPushButton:hover
+{
+    border: 1px solid gray;
+}
+QPushButton:focus {
+border: 2px solid %1;
+
 }
 QToolButton{
 background-color: %3;

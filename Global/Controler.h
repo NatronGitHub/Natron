@@ -132,6 +132,10 @@ public:
     void loadProject(const QString& path,const QString& name);
     
     void saveProject(const QString& path,const QString& name,bool autoSave);
+    
+    void autoSave();
+    
+    void triggerAutoSaveOnNextEngineRun();
         
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
     

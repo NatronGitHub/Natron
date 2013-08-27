@@ -191,7 +191,7 @@ private:
 
 
 public slots:
-    void exit();
+    bool exit();
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
     void newProject();
@@ -199,7 +199,14 @@ public slots:
     void saveProject();
     void saveProjectAs();
     void autoSave();
-    void saveWarning();
+    
+    /*Returns a code from the save dialog:
+     * -1  = unrecognized code
+     * 0 = Save
+     * 1 = Discard
+     * 2 = Cancel or Escape
+     **/
+    int saveWarning();
     
 public:
     /*TOOL BAR ACTIONS*/

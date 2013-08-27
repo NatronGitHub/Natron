@@ -19,6 +19,9 @@
 
 #include <cassert>
 #include <QLayout>
+#include <QAction> 
+#include <QUndoStack>
+#include <QUndoCommand>
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
 #include "Readers/Reader.h"
@@ -110,6 +113,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     // needed for the layout to work correctly
     //  QWidget* pr=dockContainer->parentWidget();
     //  pr->setMinimumSize(dockContainer->sizeHint());
+    _undoStack = new QUndoStack;
     
 }
 
@@ -149,7 +153,29 @@ NodeGui::~NodeGui(){
     //        delete settings;
     //        settings = 0;
     //    }
-    
+    delete _undoStack;
+
+}
+void NodeGui::pushUndoCommand(QUndoCommand* command){
+    _undoStack->push(command);
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
+}
+void NodeGui::undoCommand(){
+    _undoStack->undo();
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
+}
+void NodeGui::redoCommand(){
+    _undoStack->redo();
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
 }
 
 void NodeGui::markInputNull(Edge* e){

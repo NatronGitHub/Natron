@@ -26,7 +26,7 @@
 #include <QToolBar>
 #include <QFileDialog>
 #include <QMessageBox>
-
+ 
 
 #include "Gui/Texture.h"
 #include "Global/Controler.h"
@@ -96,12 +96,18 @@ Gui::~Gui(){
     
     
 }
-void Gui::exit(){
-    saveWarning();
+bool Gui::exit(){
+    int ret = saveWarning();
+    if(ret == 0){
+        saveProject();
+    }else if(ret == 2){
+        return false;
+    }
     ctrlPTR->getModel()->getVideoEngine()->abort();
 	ctrlPTR->Destroy();
     delete this;
     qApp->exit(0);
+    return true;
     
 }
 
@@ -115,8 +121,10 @@ void Gui::toggleFullScreen()
 }
 
 void Gui::closeEvent(QCloseEvent *e){
-    // save project ...
-    exit();
+    if(!exit()){
+        e->ignore();
+        return;
+    }
     e->accept();
 }
 
@@ -381,7 +389,7 @@ void Gui::setupUi()
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     
 	QMetaObject::connectSlotsByName(this);
-
+    
 } // setupUi
 
 void Gui::loadStyleSheet(){
@@ -454,14 +462,14 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-            assert(container);
-            container->removeTab(tab);
+            if(container)
+                container->removeTab(tab);
             delete tab;
         }
     } else {
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-        assert(container);
-        container->removeTab(tab);
+        if(container)
+            container->removeTab(tab);
     }
     
 }
@@ -498,7 +506,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
     }else{
         name = from->getTabName(what);
-
+        
     }
     
     
@@ -779,7 +787,12 @@ void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
 	menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
-    saveWarning();
+    int ret = saveWarning();
+    if(ret == 0){
+        saveProject();
+    }else if(ret == 2){
+        return;
+    }
     currentViewer->getUiContext()->viewer->disconnectViewer();
     _nodeGraphTab->_nodeGraphArea->clear();
     ctrlPTR->clearInternalNodes();
@@ -830,22 +843,29 @@ void Gui::saveProjectAs(){
 }
 
 void Gui::autoSave(){
-    ctrlPTR->saveProject(ctrlPTR->getCurrentProjectPath(),ctrlPTR->getCurrentProjectName(), true);
+    ctrlPTR->autoSave();
 }
 
 bool Gui::isGraphWorthless() const{
     return _nodeGraphTab->_nodeGraphArea->isGraphWorthLess();
 }
 
-void Gui::saveWarning(){
+int Gui::saveWarning(){
+    
     if(!isGraphWorthless() && !ctrlPTR->isSaveUpToDate()){
-        QMessageBox::StandardButton button = QMessageBox::question(this, "",
-                                                                  QString("Save changes to " + ctrlPTR->getCurrentProjectName() + " ?"),
-                                                                  QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
-        if(button == QMessageBox::Yes){
-            saveProject();
+        QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
+                                     QString("Save changes to " + ctrlPTR->getCurrentProjectName() + " ?"),
+                                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
+        if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
+            return 2;
+        }else if(ret == QMessageBox::Discard){
+            return 1;
+        }else{
+            return 0;
         }
     }
+    return -1;
+
 }
 
 void Gui::errorDialog(const QString& title,const QString& text){

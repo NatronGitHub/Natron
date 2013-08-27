@@ -97,8 +97,10 @@ _dialogMode(mode)
     _buttonsWidget = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsWidget);
     _buttonsWidget->setLayout(_buttonsLayout);
-    
-    _lookInLabel = new QLabel("Look in :",_buttonsWidget);
+    if(mode == OPEN_DIALOG)
+        _lookInLabel = new QLabel("Look in:",_buttonsWidget);
+    else
+        _lookInLabel = new QLabel("Save in:",_buttonsWidget);
     _buttonsLayout->addWidget(_lookInLabel);
     
     _lookInCombobox = new FileDialogComboBox(_buttonsWidget);
@@ -215,9 +217,9 @@ _dialogMode(mode)
     _filterLineWidget->setLayout(_filterLineLayout);
     
     if(_dialogMode == OPEN_DIALOG){
-        _filterLabel = new QLabel("Filter",_filterLineWidget);
+        _filterLabel = new QLabel("Filter:",_filterLineWidget);
     }else{
-        _filterLabel = new QLabel("File Type",_filterLineWidget);
+        _filterLabel = new QLabel("File type:",_filterLineWidget);
     }
     _filterLineLayout->addWidget(_filterLabel);
     
@@ -1370,7 +1372,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     
     QString commonPart;
     int i = 0;
-    while (i < unpathed.size() && unpathed.at(i) != QChar('#')) {
+    while (i < unpathed.size() && unpathed.at(i) != QChar('#') && unpathed.at(i) != QChar('.')) {
         commonPart.append(unpathed.at(i));
         ++i;
     }
@@ -1388,6 +1390,28 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     }
     return ret;
     
+}
+QString SequenceFileDialog::patternFromFilesList(const QStringList& files){
+    if(files.size() == 0)
+        return "";
+    QString firstFile = files.at(0);
+    int pos = firstFile.lastIndexOf(QChar('.'));
+    int extensionPos = pos+1;
+    --pos;
+    while (pos >=0 && firstFile.at(pos).isDigit()) {
+        --pos;
+    }
+    ++pos;
+    QString commonPart = firstFile.left(pos);
+    QString ext;
+    while(extensionPos < firstFile.size()){
+        ext.append(firstFile.at(extensionPos));
+        ++extensionPos;
+    }
+    if(files.size() > 1)
+        return QString(commonPart + "#." +  ext);
+    else
+        return QString(commonPart + "." + ext);
 }
 QString SequenceFileDialog::filesToSave(){
     QString pattern = getSequencePatternFromLineEdit();

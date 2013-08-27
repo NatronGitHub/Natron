@@ -36,6 +36,9 @@ class QVBoxLayout;
 class Node;
 class Controler;
 class NodeGraph;
+class QAction;
+class QUndoCommand;
+class QUndoStack;
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
@@ -142,6 +145,10 @@ public:
     
     void markInputNull(Edge* e);
     
+    void pushUndoCommand(QUndoCommand* command);
+    
+    
+    
 private:
     /*used internally by hasViewerConnected.*/
     static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);
@@ -149,6 +156,9 @@ private:
     
 public slots:
     void setName(QString);
+    void undoCommand();
+    void redoCommand();
+    
 protected:
 
     /*children of the node*/
@@ -191,6 +201,8 @@ protected:
     bool settingsPanel_displayed;
     SettingsPanel* settings;
 
+    QUndoStack* _undoStack;
+  
 };
 
 #endif // NODE_UI_H

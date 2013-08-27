@@ -82,9 +82,13 @@ void Reader::initKnobs(KnobCallback *cb){
 
 bool Reader::readCurrentHeader(int current_frame){
     current_frame = clampToRange(current_frame);
-    assert(files.find(current_frame) != files.end()); // FIXME: when loading an autosave, this is often not true
-    // don't use operator [] to read elements in a map: it may create a non-existing element
-    QString filename = files.at(current_frame);
+    QString filename;
+    try{
+        filename = files.at(current_frame);
+    }catch(...){
+        cout << "ERROR: Couldn't find a filename for frame number " << current_frame << endl;
+        return false;
+    }
     /*the read handle used to decode the frame*/
     Read* _read = 0;
     
@@ -170,7 +174,13 @@ bool Reader::readCurrentHeader(int current_frame){
 
 void Reader::readCurrentData(int current_frame){
     current_frame = clampToRange(current_frame);
-    QString filename = files.at(current_frame);
+    QString filename;
+    try{
+        filename = files.at(current_frame);
+    }catch(...){
+        cout << "ERROR: Couldn't find a filename for frame number " << current_frame << endl;
+        return;
+    }
     
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
@@ -228,8 +238,13 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
             current_frame = writer->currentFrame();
         }
     }
-    
-    QString currentFile = files.at(current_frame);
+    QString currentFile;
+    try {
+        currentFile = files.at(current_frame);
+    } catch (...) {
+        cout << "ERROR: Couldn't find file for frame number " << current_frame << endl;
+        return false;
+    }
     Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
                                                                     Buffer::ALL_FRAMES);
     if(frame == _buffer.end()) return false;
@@ -443,7 +458,13 @@ int Reader::clampToRange(int f){
 }
 
 std::string Reader::getRandomFrameName(int f){
-    return files.at(f).toStdString();
+    std::string ret;
+    try {
+        ret = files.at(f).toStdString();
+    } catch (...) {
+        cout << "ERROR: Couldn't find file for frame number " << f << endl;
+    }
+    return ret;
 }
 
 void Reader::setPreview(QImage* img){

@@ -38,13 +38,13 @@
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/SettingsPanel.h"
-#include "Gui/SequenceFileDialog.h"
 #include "Engine/Settings.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Gui/Gui.h"
 #include "Engine/viewernode.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
 using namespace std;
@@ -404,7 +404,9 @@ Knob::~Knob(){
 void Knob::enqueueForDeletion(){
     cb->removeAndDeleteKnob(this);
 }
-
+void Knob::pushUndoCommand(QUndoCommand* cmd){
+    cb->getNode()->getNodeUi()->pushUndoCommand(cmd);
+}
 void Knob::validateEvent(bool initViewer){
     Node* node = getCallBack()->getNode();
     NodeGui* nodeUI = node->getNodeUi();
@@ -414,6 +416,7 @@ void Knob::validateEvent(bool initViewer){
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
+            ctrlPTR->triggerAutoSaveOnNextEngineRun();
             if (currentFrameCount > 1 || currentFrameCount == -1) {
                 ctrlPTR->getModel()->startVideoEngine(-1);
             }else{
@@ -423,7 +426,6 @@ void Knob::validateEvent(bool initViewer){
             ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
         }
     }
-    ctrlPTR->getGui()->autoSave();
 }
 
 //================================================================
@@ -623,8 +625,7 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
         QString str=this->text();
 		QStringList strlist(str);
 		if(strlist!=*(knob->getFileNames())){
-			knob->setFileNames(strlist);
-			knob->setValues();
+			knob->pushUndoCommand(new FileCommand(knob,*(knob->getFileNames()),strlist));
             std::string className=knob->getCallBack()->getNode()->className();
 			if(className == std::string("Reader")){
                 Node* node=knob->getCallBack()->getNode();
@@ -656,17 +657,7 @@ void File_Knob::open_file(){
     
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
-        _name->setText(dialog.getSequencePatternFromLineEdit());
-        setFileNames(strlist);
-        setValues();
-        std::string className=getCallBack()->getNode()->className();
-        if(className == string("Reader")){
-            Node* node=getCallBack()->getNode();
-            ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
-            static_cast<Reader*>(node)->showFilePreview();
-        }
-        validateEvent(true);
-        emit filesSelected();
+        pushUndoCommand(new FileCommand(this,*filesList,strlist));        
     }
     
 }
@@ -674,6 +665,37 @@ void File_Knob::updateLastOpened(const QString& str){
     QString withoutPath = SequenceFileDialog::removePath(str);
     int pos = str.indexOf(withoutPath);
     _lastOpened = str.left(pos);
+}
+void FileCommand::undo(){
+    _knob->setFileNames(_oldList);
+    _knob->setLineEditText(SequenceFileDialog::patternFromFilesList(_oldList).toStdString());
+    _knob->setValues();
+    
+    std::string className= _knob->getCallBack()->getNode()->className();
+    if(className == string("Reader")){
+        Node* node= _knob->getCallBack()->getNode();
+        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+        static_cast<Reader*>(node)->showFilePreview();
+    }
+    _knob->validateEvent(true);
+    
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void FileCommand::redo(){
+    _knob->setFileNames(_newList);
+    _knob->setLineEditText(SequenceFileDialog::patternFromFilesList(_newList).toStdString());
+    _knob->setValues();
+    
+    std::string className= _knob->getCallBack()->getNode()->className();
+    if(className == string("Reader")){
+        Node* node= _knob->getCallBack()->getNode();
+        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+        static_cast<Reader*>(node)->showFilePreview();
+    }
+    _knob->validateEvent(true);    
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
 }
 
 File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask ):Knob(cb,description),filesList(0),_lastOpened("")

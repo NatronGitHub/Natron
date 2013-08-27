@@ -161,46 +161,109 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);
-    _currentFrameBox->setToolTip(QApplication::translate("MainWindow", "<html><head/><body><p>Frame number</p></body></html>" ));
+    _currentFrameBox->setToolTip("<p></br><b>Current frame number</b></p>");
 	_playerLayout->addWidget(_currentFrameBox);
     
 	_playerLayout->addStretch();
     
 	firstFrame_Button = new Button(_playerButtonsContainer);
+    QKeySequence firstFrameKey(Qt::CTRL + Qt::Key_Left);
+    firstFrame_Button->setShortcut(firstFrameKey);
+    QString tooltip = "First frame";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(firstFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    firstFrame_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(firstFrame_Button);
     
     
     previousKeyFrame_Button=new Button(_playerButtonsContainer);
+    QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
+    previousKeyFrame_Button->setShortcut(previousKeyFrameKey);
+    tooltip = "Previous keyframe";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(previousKeyFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    previousKeyFrame_Button->setToolTip(tooltip);
     _playerLayout->addWidget(previousKeyFrame_Button);
     
     
     play_Backward_Button=new Button(_playerButtonsContainer);
+    QKeySequence playbackFrameKey(Qt::Key_J);
+    play_Backward_Button->setShortcut(playbackFrameKey);
+    tooltip = "Play backward";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(playbackFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    play_Backward_Button->setToolTip(tooltip);
     play_Backward_Button->setCheckable(true);
     _playerLayout->addWidget(play_Backward_Button);
     
     
 	previousFrame_Button = new Button(_playerButtonsContainer);
+    QKeySequence previousFrameKey(Qt::Key_Left);
+    previousFrame_Button->setShortcut(previousFrameKey);
+    tooltip = "Previous frame";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(previousFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    previousFrame_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(previousFrame_Button);
     
     
     stop_Button = new Button(_playerButtonsContainer);
+    QKeySequence stopKey(Qt::Key_K);
+    stop_Button->setShortcut(stopKey);
+    tooltip = "Stop";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(stopKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    stop_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(stop_Button);
     
     
     nextFrame_Button = new Button(_playerButtonsContainer);
+    QKeySequence nextFrameKey(Qt::Key_Right);
+    nextFrame_Button->setShortcut(nextFrameKey);
+    tooltip = "Next frame";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(nextFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    nextFrame_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(nextFrame_Button);
     
     
 	play_Forward_Button = new Button(_playerButtonsContainer);
+    QKeySequence playKey(Qt::Key_L);
+    play_Forward_Button->setShortcut(playKey);
+    tooltip = "Play forward";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(playKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    play_Forward_Button->setToolTip(tooltip);
     play_Forward_Button->setCheckable(true);
 	_playerLayout->addWidget(play_Forward_Button);
 	
     
     nextKeyFrame_Button = new Button(_playerButtonsContainer);
+    QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
+    nextKeyFrame_Button->setShortcut(nextKeyFrameKey);
+    tooltip = "Next keyframe";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(nextKeyFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    nextKeyFrame_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(nextKeyFrame_Button);
     
     
 	lastFrame_Button = new Button(_playerButtonsContainer);
+    QKeySequence lastFrameKey(Qt::CTRL + Qt::Key_Right);
+    lastFrame_Button->setShortcut(lastFrameKey);
+    tooltip = "Last frame";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(lastFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    lastFrame_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(lastFrame_Button);
     
     
@@ -208,15 +271,32 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     
     
     previousIncrement_Button = new Button(_playerButtonsContainer);
+    QKeySequence previousIncrFrameKey(Qt::SHIFT + Qt::Key_Left);
+    previousIncrement_Button->setShortcut(previousIncrFrameKey);
+    tooltip = "Previous increment";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(previousIncrFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    previousIncrement_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(previousIncrement_Button);
     
     
     incrementSpinBox=new FeedBackSpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
+    incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
+                                 "The previous/next increment buttons step"
+                                 " with this increment.");
     _playerLayout->addWidget(incrementSpinBox);
     
     
     nextIncrement_Button = new Button(_playerButtonsContainer);
+    QKeySequence nextIncrFrameKey(Qt::SHIFT + Qt::Key_Right);
+    nextIncrement_Button->setShortcut(nextIncrFrameKey);
+    tooltip = "Next increment";
+    tooltip.append("<p></br><b>Keyboard shortcut: ");
+    tooltip.append(nextIncrFrameKey.toString(QKeySequence::NativeText));
+    tooltip.append("</b></p>");
+    nextIncrement_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(nextIncrement_Button);
     
     
@@ -226,6 +306,8 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
+    fpsBox->setToolTip("<p></br><b>fps: \n</b></p>"
+                                 "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
         
     

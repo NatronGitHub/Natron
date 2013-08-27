@@ -20,6 +20,7 @@
 #include <vector>
 #include <map>
 #include <QtCore/QString>
+#include <QUndoCommand>
 #include <QSpinBox>
 #include <QWidget>
 #include <QtCore/QStringList>
@@ -30,6 +31,7 @@
 #include "Engine/Singleton.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ComboBox.h"
+
 #include "Gui/LineEdit.h"
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
@@ -133,6 +135,8 @@ public:
     
     virtual void restoreFromString(const std::string& str) =0;
     
+    void pushUndoCommand(QUndoCommand* cmd);
+    
 protected:
     virtual void setValues()=0; // function to add the specific values of the knob to the values vector.
     
@@ -223,6 +227,25 @@ private:
     QStringList* filesList;
     FileQLineEdit* _name;
     QString _lastOpened;
+};
+
+class FileCommand : public QUndoCommand{
+    
+public:
+    
+    FileCommand(File_Knob* knob,const QStringList& oldList,const QStringList& newList,QUndoCommand *parent = 0):QUndoCommand(parent),
+    _oldList(oldList),
+    _newList(newList),
+    _knob(knob)
+    {}
+    virtual void undo();
+    virtual void redo();
+    
+private:
+    QString _pattern;
+    QStringList _oldList;
+    QStringList _newList;
+    File_Knob* _knob;
 };
 //the following class is necessary for the File_Knob Class
 class FileQLineEdit:public LineEdit{

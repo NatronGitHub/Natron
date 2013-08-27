@@ -4,14 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -53,9 +53,14 @@ void Settings::ReadersSettings::fillMap(std::map<std::string,PluginID*>& default
 }
 
 PluginID* Settings::ReadersSettings::decoderForFiletype(const std::string& type){
-    std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
-    if (found!=_fileTypesMap.end()) {
-        return found->second;
+    for(std::map<std::string,PluginID*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+        QString sType(type.c_str());
+        QString curType(it->first.c_str());
+        sType = sType.toUpper();
+        curType = curType.toUpper();
+        if(sType == curType){
+            return it->second;
+        }
     }
     return NULL;
 }
@@ -65,9 +70,14 @@ Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
 /*Returns a pluginID if it could find an encoder for the filetype,
  otherwise returns NULL.*/
 PluginID* Settings::WritersSettings::encoderForFiletype(const std::string& type){
-    std::map<std::string,PluginID*>::iterator found = _fileTypesMap.find(type);
-    if (found!=_fileTypesMap.end()) {
-        return found->second;
+    for(std::map<std::string,PluginID*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+        QString sType(type.c_str());
+        QString curType(it->first.c_str());
+        sType = sType.toUpper();
+        curType = curType.toUpper();
+        if(sType == curType){
+            return it->second;
+        }
     }
     return NULL;
 }
