@@ -335,6 +335,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
 }
 
 void ViewerTab::updateZoomComboBox(int value){
+    assert(value > 0);
     QString str = QString::number(value);
     str.append(QChar('%'));
     str.prepend("  ");
