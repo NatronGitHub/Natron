@@ -20,7 +20,7 @@
 using namespace std;
 
 
-Format::Format(int x, int y, int r, int t, const std::string& name, double pa):Box2D(x,y,r,t),_name(name),_pixel_aspect(pa){}
+Format::Format(int x, int y, int r, int t, const std::string& name, double pa):Box2D(x,y,r,t),_pixel_aspect(pa),_name(name){}
 
 Format::Format():Box2D(),_pixel_aspect(0),_name(""){
     
@@ -30,5 +30,5 @@ std::string Format::name() const {return _name;}
 
 double Format::pixel_aspect() const {return _pixel_aspect;}
 
-void Format::pixel_aspect( float p)  {_pixel_aspect=p;}
+void Format::pixel_aspect( double p)  {_pixel_aspect=p;}
 

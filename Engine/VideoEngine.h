@@ -9,7 +9,7 @@
 *
 */
 
- 
+
 
  
 
@@ -295,10 +295,10 @@ private:
             _byteMode(0),_dataSize(0){}
 
         U64 _hashKey;
-        float _zoomFactor;
-        float _exposure;
-        float _lut;
-        float _byteMode;
+        double _zoomFactor;
+        double _exposure;
+        float _lut;// FIXME why use a float as an enum?
+        float _byteMode;// FIXME why use a float as an enum?
         int _texW,_texH;
         TextureRect _textureRect;
         size_t _dataSize;
@@ -602,7 +602,7 @@ private:
      *as well as a list of the rows indexes the engine should compute if the frame is not cached.
      */
 
-    void computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
+    void computeFrameRequest(double zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall = false);
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.

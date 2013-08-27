@@ -169,7 +169,7 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
     Texture::DataType type;
-    if(frame->_byteMode==1.0){
+    if(frame->_byteMode==1.0){ // FIXME why use a float as an enum?
         dataSize  = w * h * sizeof(U32) ;
         type = Texture::BYTE;
     }else{

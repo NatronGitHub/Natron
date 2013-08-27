@@ -85,7 +85,7 @@ void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,
         stopEngine();
         return;
     }
-    float zoomFactor;
+    double zoomFactor;
     if(_dag.isOutputAViewer()){
         zoomFactor = gl_viewer->getZoomFactor();
         currentViewer->getUiContext()->play_Forward_Button->setChecked(_forward);
@@ -135,7 +135,7 @@ void VideoEngine::stopEngine(){
 }
 
 
-void VideoEngine::computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
+void VideoEngine::computeFrameRequest(double zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
     //cout << "     _computeFrameRequest()" << endl;
     _working = true;
     _sameFrame = sameFrame;
@@ -420,7 +420,7 @@ void VideoEngine::engineLoop(){
     
     //clearing the Row objects used by the QtConcurrent::map call, note that all Row's already have been destroyed.
     _sequenceToWork.clear();
-    float zoomFactor;
+    double zoomFactor;
     if(_dag.isOutputAViewer()){
         
         
@@ -491,7 +491,7 @@ void VideoEngine::updateProgressBar(){
 void VideoEngine::updateDisplay(){
     int width = gl_viewer->width();
     int height = gl_viewer->height();
-    float ap = gl_viewer->displayWindow().pixel_aspect();
+    double ap = gl_viewer->displayWindow().pixel_aspect();
     if(ap > 1.f){
         glViewport (0, 0, width*ap, height);
     }else{

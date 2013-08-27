@@ -38,7 +38,7 @@ public:
     std::string name() const ;
     void name(const std::string& n) const{this->_name = n;}
     double pixel_aspect() const;
-    void pixel_aspect( float p) ;
+    void pixel_aspect( double p) ;
 	
 	Format operator=(const Format& other){
         set(other.x(), other.y(), other.right(), other.top());
