@@ -139,11 +139,7 @@ public:
         
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
     
-    void resetCurrentProject(){
-        _currentProject._hasProjectBeenSavedByUser = false;
-        _currentProject._projectName = "Untitled.rs";
-        _currentProject._projectPath = "";
-    }
+    void resetCurrentProject();
     
     void clearInternalNodes();
     

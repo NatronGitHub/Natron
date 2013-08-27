@@ -83,6 +83,9 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
     if(!findAutoSave()){
         if(projectName.isEmpty()){
+            QString text("Powiter - ");
+            text.append(_currentProject._projectName);
+            _gui->setWindowTitle(text);
             createNode("Viewer");
         }else{
             QString name = SequenceFileDialog::removePath(projectName);
@@ -150,6 +153,9 @@ void Controler::loadProject(const QString& path,const QString& name){
     _currentProject._projectPath = path;
     _currentProject._age = time;
     _currentProject._lastAutoSave = time;
+    QString text("Powiter - ");
+    text.append(_currentProject._projectName);
+    _gui->setWindowTitle(text);
 }
 void Controler::saveProject(const QString& path,const QString& name,bool autoSave){
     QDateTime time = QDateTime::currentDateTime();
@@ -164,6 +170,9 @@ void Controler::saveProject(const QString& path,const QString& name,bool autoSav
             _currentProject._projectPath = path;
             _currentProject._age = time;
             _currentProject._lastAutoSave = time;
+            QString text("Powiter - ");
+            text.append(_currentProject._projectName);
+            _gui->setWindowTitle(text);
         }
     }else{
         if(!_gui->isGraphWorthless()){
@@ -182,6 +191,10 @@ void Controler::autoSave(){
 }
 void Controler::triggerAutoSaveOnNextEngineRun(){
     _model->getVideoEngine()->triggerAutoSaveOnNextRun();
+    QString text("Powiter - ");
+    text.append(_currentProject._projectName);
+    text.append(" (*)");
+    _gui->setWindowTitle(text);
 }
 void Controler::removeAutoSaves() const{
     /*removing all previous autosave files*/
@@ -205,7 +218,14 @@ void Controler::clearNodeGuis(){
 bool Controler::isSaveUpToDate() const{
     return _currentProject._age == _currentProject._lastAutoSave;
 }
-
+void Controler::resetCurrentProject(){
+    _currentProject._hasProjectBeenSavedByUser = false;
+    _currentProject._projectName = "Untitled.rs";
+    _currentProject._projectPath = "";
+    QString text("Powiter - ");
+    text.append(_currentProject._projectName);
+    _gui->setWindowTitle(text);
+}
 bool Controler::findAutoSave(){
     QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
