@@ -455,8 +455,13 @@ void VideoEngine::engineLoop(){
     _mainEntry->setArgsForNextRun(zoomFactor, _sameFrame, false, true);    
     _computeFrameWatcher->setFuture(QtConcurrent::run(_mainEntry,&EngineMainEntry::computeFrame));
 
+    
     if(_dag.isOutputAViewer()){
         updateDisplay(); // updating viewer & pixel aspect ratio if needed
+    }
+    if(_autoSaveOnNextRun){
+        _autoSaveOnNextRun = false;
+        ctrlPTR->autoSave();
     }
 }
 
@@ -536,7 +541,8 @@ _frameRequestsCount(0),
 _frameRequestIndex(0),
 _forward(true),
 _loopMode(true),
-_sameFrame(false)
+_sameFrame(false),
+_autoSaveOnNextRun(false)
 
 {
     _workerThreadsResults = new QFuture<void>;

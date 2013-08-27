@@ -745,13 +745,13 @@ void AddCommand::undo(){
         viewer->getUiContext()->hide();
     }
     if(firstChild){
+        ctrlPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
     
-    ctrlPTR->getGui()->autoSave();
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
@@ -795,6 +795,7 @@ void AddCommand::redo(){
             viewer->getUiContext()->show();
         }
         if(firstChild){
+            ctrlPTR->triggerAutoSaveOnNextEngineRun();
             _graph->checkIfViewerConnectedAndRefresh(firstChild);
         }
         
@@ -803,7 +804,6 @@ void AddCommand::redo(){
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
     
-    ctrlPTR->getGui()->autoSave();
     
 }
 
@@ -851,13 +851,13 @@ void RemoveCommand::undo(){
         viewer->getUiContext()->show();
     }
     if(firstChild){
+        ctrlPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     _graph->scene()->update();
     setText(QObject::tr("Remove %1")
             .arg(_node->getNode()->getName().c_str()));
     
-    ctrlPTR->getGui()->autoSave();
     
     
 }
@@ -905,6 +905,7 @@ void RemoveCommand::redo(){
         viewer->getUiContext()->hide();
     }
     if(firstChild){
+        ctrlPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     
@@ -912,7 +913,6 @@ void RemoveCommand::redo(){
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
     
-    ctrlPTR->getGui()->autoSave();
 }
 
 
@@ -949,9 +949,9 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
+    ctrlPTR->triggerAutoSaveOnNextEngineRun();
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
     
-    ctrlPTR->getGui()->autoSave();
     
 }
 void ConnectCommand::redo(){
@@ -980,9 +980,9 @@ void ConnectCommand::redo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
+    ctrlPTR->triggerAutoSaveOnNextEngineRun();
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
     
-    ctrlPTR->getGui()->autoSave();
 }
 
 

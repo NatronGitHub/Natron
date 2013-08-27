@@ -29,6 +29,7 @@
 #include "Gui/NodeGraph.h"
 #include "Engine/Settings.h"
 #include "Gui/SequenceFileDialog.h"
+#include "Engine/ViewerNode.h"
 
 
 using namespace Powiter;
@@ -175,6 +176,13 @@ void Controler::saveProject(const QString& path,const QString& name,bool autoSav
         }
     }
 }
+
+void Controler::autoSave(){
+    saveProject(_currentProject._projectPath, _currentProject._projectName, true);
+}
+void Controler::triggerAutoSaveOnNextEngineRun(){
+    _model->getVideoEngine()->triggerAutoSaveOnNextRun();
+}
 void Controler::removeAutoSaves() const{
     /*removing all previous autosave files*/
     QDir savesDir(autoSavesDir());
@@ -232,9 +240,13 @@ bool Controler::findAutoSave(){
                 "Would you like to restore it ? Clicking No will remove this auto-save forever.";
             }
             QMessageBox::StandardButton ret = QMessageBox::question(_gui, "Auto-save", text,
-                                                                    QMessageBox::Yes | QMessageBox::No);
+                                                                    QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
             if(ret == QMessageBox::No || ret == QMessageBox::Escape){
                 removeAutoSaves();
+                currentViewer->getUiContext()->viewer->disconnectViewer();
+                clearNodeGuis();
+                clearInternalNodes();
+                resetCurrentProject();
                 return false;
             }else{
                 removeAutoSaves();

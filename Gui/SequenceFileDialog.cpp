@@ -1370,7 +1370,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     
     QString commonPart;
     int i = 0;
-    while (i < unpathed.size() && unpathed.at(i) != QChar('#')) {
+    while (i < unpathed.size() && unpathed.at(i) != QChar('#') && unpathed.at(i) != QChar('.')) {
         commonPart.append(unpathed.at(i));
         ++i;
     }

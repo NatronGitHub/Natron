@@ -345,6 +345,8 @@ private:
     
     bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
     
+    bool _autoSaveOnNextRun; /*!< on if we need to to an autosave at the end of the next compute frame.*/
+    
     QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/
@@ -508,6 +510,11 @@ signals:
     void fpsChanged(double d);
     
 public:
+    /**
+     *@brief Sets the _autoSaveOnNextRun to true
+     **/
+    void triggerAutoSaveOnNextRun(){_autoSaveOnNextRun = true;}
+    
     /**
      *@brief Convenience function calling DAG::isOutputAViewer()
      **/

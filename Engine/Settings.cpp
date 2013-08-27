@@ -78,8 +78,8 @@ PluginID* Settings::WritersSettings::encoderForFiletype(const std::string& type)
         if(sType == curType){
             return it->second;
         }
-        return NULL;
     }
+    return NULL;
 }
 
 /*changes the encoder for files identified by the filetype*/

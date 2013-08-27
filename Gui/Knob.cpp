@@ -416,6 +416,7 @@ void Knob::validateEvent(bool initViewer){
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
+            ctrlPTR->triggerAutoSaveOnNextEngineRun();
             if (currentFrameCount > 1 || currentFrameCount == -1) {
                 ctrlPTR->getModel()->startVideoEngine(-1);
             }else{
@@ -425,7 +426,6 @@ void Knob::validateEvent(bool initViewer){
             ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
         }
     }
-    ctrlPTR->getGui()->autoSave();
 }
 
 //================================================================
