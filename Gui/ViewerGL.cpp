@@ -27,7 +27,7 @@
 #include <map>
 #include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"
-#include "Gui/shaders.h"
+#include "Gui/Shaders.h"
 #include "Engine/Lut.h"
 #include "Global/Controler.h"
 #include "Gui/InfoViewerWidget.h"
