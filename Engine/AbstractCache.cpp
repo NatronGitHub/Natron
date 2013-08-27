@@ -19,7 +19,7 @@
 #define CACHE_FOLDER_NAME "PowiterCache"
 
 
-#include "abstractCache.h"
+#include "AbstractCache.h"
 
 #include <sstream>
 #include <QtCore/QDir>
