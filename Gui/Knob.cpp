@@ -43,7 +43,7 @@
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
-#include "Engine/viewernode.h"
+#include "Engine/ViewerNode.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
 using namespace std;
