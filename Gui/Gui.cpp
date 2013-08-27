@@ -46,6 +46,15 @@
 
 using namespace std;
 using namespace Powiter;
+
+// Helper function: Get the icon with the given name from the icon theme.
+// If unavailable, fall back to the built-in icon. Icon names conform to this specification:
+// http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+static QIcon get_icon(const QString &name)
+{
+    return QIcon::fromTheme(name, QIcon(QString(":icons/") + name));
+}
+
 Gui::Gui(QWidget* parent):QMainWindow(parent),
 actionNew_project(0),
 actionOpen_project(0),
@@ -161,7 +170,7 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 	actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
     actionSaveAs_project->setText(QApplication::translate("Powiter", "Save Project As..."));
 	actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
-	actionExit->setText(QApplication::translate("Powiter", "Exit"));
+    actionExit->setText(QApplication::translate("Powiter", "Exit"));
 	actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
 	actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
 	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
@@ -207,28 +216,37 @@ void Gui::setupUi()
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
     actionNew_project->setShortcut(QKeySequence::New);
+    actionNew_project->setIcon(get_icon("document-new"));
     QObject::connect(actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
 	actionOpen_project = new QAction(this);
 	actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
-    QObject::connect(actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
     actionOpen_project->setShortcut(QKeySequence::Open);
+    actionOpen_project->setIcon(get_icon("document-open"));
+    QObject::connect(actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
 	actionSave_project = new QAction(this);
 	actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
-    QObject::connect(actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
     actionSave_project->setShortcut(QKeySequence::Save);
+    actionSave_project->setIcon(get_icon("document-save"));
+    QObject::connect(actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
     actionSaveAs_project = new QAction(this);
 	actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
-    QObject::connect(actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
     actionSaveAs_project->setShortcut(QKeySequence::SaveAs);
+    actionSaveAs_project->setIcon(get_icon("document-save-as"));
+    QObject::connect(actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
 	actionPreferences = new QAction(this);
 	actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
+	actionPreferences->setMenuRole(QAction::PreferencesRole);
 	actionExit = new QAction(this);
 	actionExit->setObjectName(QString::fromUtf8("actionExit"));
+	actionExit->setMenuRole(QAction::QuitRole);
+    actionExit->setIcon(get_icon("application-exit"));
 	actionProject_settings = new QAction(this);
 	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
+    actionProject_settings->setIcon(get_icon("document-properties"));
 	actionFullScreen = new QAction(this);
 	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
 	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
+    actionFullScreen->setIcon(get_icon("view-fullscreen"));
 	actionSplitViewersTab=new QAction(this);
 	actionSplitViewersTab->setObjectName(QString::fromUtf8("actionSplitViewersTab"));
 	actionClearDiskCache = new QAction(this);
@@ -427,6 +445,7 @@ void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
 }
 
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
+    assert(tab);
     for (U32 i = 0; i < _viewerTabs.size(); ++i) {
         if (_viewerTabs[i] == tab) {
             _viewerTabs.erase(_viewerTabs.begin()+i);
@@ -436,16 +455,18 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     
     if(deleteData){
         if (!initiatedFromNode) {
+            assert(_nodeGraphTab);
+            assert(_nodeGraphTab->_nodeGraphArea);
             _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
             ctrlPTR->getModel()->removeNode(tab->getInternalNode());
-        }else{
+        } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
             if(container)
                 container->removeTab(tab);
             delete tab;
         }
-    }else{
+    } else {
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
         if(container)
             container->removeTab(tab);
@@ -455,6 +476,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
 void Gui::addNodeGraph(){
     NodeGraphTab* tab = new NodeGraphTab(_workshopPane);
     _nodeGraphTab = tab;
+    assert(_workshopPane);
     _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
 }
 

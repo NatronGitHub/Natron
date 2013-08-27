@@ -293,4 +293,5 @@ void Controler::deselectAllNodes() const{
 
 void Controler::showErrorDialog(const QString& title,const QString& message) const{
     _gui->errorDialog(title, message);
+
 }
