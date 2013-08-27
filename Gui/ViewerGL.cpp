@@ -105,19 +105,19 @@ void ViewerGL::drawRenderingVAO(){
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f               , (GLfloat)img.h() , //0
-        r.x               , (GLfloat)img.h() , //1
+        (GLfloat)r.x      , (GLfloat)img.h() , //1
         (GLfloat)r.r + 1.f, (GLfloat)img.h() , //2
         (GLfloat)img.w()  , (GLfloat)img.h() , //3
         0.f               , (GLfloat)r.t + 1., //4
-        r.x               , (GLfloat)r.t + 1., //5
+        (GLfloat)r.x      , (GLfloat)r.t + 1., //5
         (GLfloat)r.r + 1.f, (GLfloat)r.t + 1., //6
         (GLfloat)img.w()  , (GLfloat)r.t + 1., //7
-        0.f               , r.y              , //8
-        r.x               , r.y              , //9
-        (GLfloat)r.r + 1.f, r.y              , //10
-        (GLfloat)img.w()  , r.y              , //11
+        0.f               , (GLfloat)r.y     , //8
+        (GLfloat)r.x      , (GLfloat)r.y     , //9
+        (GLfloat)r.r + 1.f, (GLfloat)r.y     , //10
+        (GLfloat)img.w()  , (GLfloat)r.y     , //11
         0.f               , 0.f              , //12
-        r.x               , 0.f              , //13
+        (GLfloat)r.x      , 0.f              , //13
         (GLfloat)r.r + 1.f, 0.f              , //14
         (GLfloat)img.w()  , 0.f                //15
     };
