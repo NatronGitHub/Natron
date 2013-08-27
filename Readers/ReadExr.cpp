@@ -9,16 +9,11 @@
 *
 */
 
-
-
-
-
-
+#include "ReadExr.h"
 
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <string>
-#include "Readers/ReadExr.h"
 #include "Readers/Reader.h"
 #include "Readers/exrCommons.h"
 #include "Gui/Knob.h"

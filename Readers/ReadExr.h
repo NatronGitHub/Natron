@@ -17,7 +17,6 @@
 
 #ifndef __READ_EXR_H__
 #define __READ_EXR_H__
-#include "Readers/exrCommons.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <fstream>
@@ -27,6 +26,9 @@
 #endif
 #include "Readers/Read.h"
 
+namespace Imf {
+    class InputFile;
+}
 
 class Row;
 class ReaderInfo;

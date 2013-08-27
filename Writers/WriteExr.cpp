@@ -9,21 +9,16 @@
 *
 */
 
- 
+#include "WriteExr.h"
 
- 
-
-
-
-
-
-#include "Writers/WriteExr.h"
+#include <QtCore/QMutexLocker>
+#include <QtCore/QMutex>
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
 #include "Gui/Knob.h"
 #include "Engine/Row.h"
-#include <QtCore/QMutexLocker>
-#include <QtCore/QMutex>
+#include "Readers/exrCommons.h"
+
 using namespace std;
 using namespace Powiter;
 WriteExr::WriteExr(Writer* writer):Write(writer),outfile(0),_lock(0){
