@@ -104,22 +104,22 @@ void ViewerGL::drawRenderingVAO(){
     const TextureRect& r = _drawing? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
-        0.f , img.h() , // 0
-        r.x , img.h() , //1
-        r.r+1 , img.h() ,//2
-        img.w() , img.h() , //3
-        0.f , r.t+1 , // 4
-        r.x , r.t+1 , //5
-        r.r+1 , r.t+1 , //6
-        img.w() , r.t+1 , //7
-        0.f , r.y , //8
-        r.x , r.y , //9
-        r.r+1 , r.y , //10
-        img.w() , r.y ,//11
-        0.f , 0.f , // 12
-        r.x , 0.f , //13
-        r.r+1 , 0.f , //14
-        img.w() , 0.f  //15
+        0.f               , (GLfloat)img.h() , //0
+        r.x               , (GLfloat)img.h() , //1
+        (GLfloat)r.r + 1.f, (GLfloat)img.h() , //2
+        (GLfloat)img.w()  , (GLfloat)img.h() , //3
+        0.f               , (GLfloat)r.t + 1., //4
+        r.x               , (GLfloat)r.t + 1., //5
+        (GLfloat)r.r + 1.f, (GLfloat)r.t + 1., //6
+        (GLfloat)img.w()  , (GLfloat)r.t + 1., //7
+        0.f               , r.y              , //8
+        r.x               , r.y              , //9
+        (GLfloat)r.r + 1.f, r.y              , //10
+        (GLfloat)img.w()  , r.y              , //11
+        0.f               , 0.f              , //12
+        r.x               , 0.f              , //13
+        (GLfloat)r.r + 1.f, 0.f              , //14
+        (GLfloat)img.w()  , 0.f                //15
     };
     
     //    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
