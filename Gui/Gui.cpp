@@ -26,7 +26,7 @@
 #include <QToolBar>
 #include <QFileDialog>
 #include <QMessageBox>
-
+ 
 
 #include "Gui/Texture.h"
 #include "Global/Controler.h"
