@@ -289,16 +289,21 @@ void ViewerGL::resizeGL(int width, int height){
 void ViewerGL::paintGL()
 {
     
-    float w = (float)width();
-    float h = (float)height();
+    double w = (double)width();
+    double h = (double)height();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    float bottom = _zoomCtx._bottom;
-    float left = _zoomCtx._left;
-    float top =  bottom +  h / _zoomCtx._zoomFactor;
-    float right = left +  w / _zoomCtx._zoomFactor;
+    assert(_zoomCtx._zoomFactor > 0);
+    assert(_zoomCtx._zoomFactor <= 1024);
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
+    double right = left +  w / (double)_zoomCtx._zoomFactor;
+    assert(left != right);
+    assert(top != bottom);
     glOrtho(left, right, bottom, top, -1, 1);
-    
+    checkGLErrors();
+
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
@@ -322,7 +327,8 @@ void ViewerGL::paintGL()
             shaderBlack->setUniformValue("Tex", 0);
         
     }
-    
+    checkGLErrors();
+
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
     checkGLErrors();
@@ -617,9 +623,11 @@ void ViewerGL::activateShaderLC(){
 	}
 	shaderLC->setUniformValue("Tex", 0);
 	shaderLC->setUniformValue("yw",1.0,1.0,1.0);
-    shaderLC->setUniformValue("expMult",  exposure);
-    shaderLC->setUniformValue("lut", _lut);
-    shaderLC->setUniformValue("byteMode", byteMode());
+    shaderLC->setUniformValue("expMult",  (GLfloat)exposure);
+    // FIXME: why a float to really represent an enum????
+    shaderLC->setUniformValue("lut", (GLfloat)_lut);
+    // FIXME: why a float to really represent an enum????
+    shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
 }
 void ViewerGL::activateShaderRGB(){
@@ -629,10 +637,13 @@ void ViewerGL::activateShaderRGB(){
 	}
     
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("byteMode", byteMode());
-	shaderRGB->setUniformValue("expMult",  exposure);
-    shaderRGB->setUniformValue("lut", _lut);
-    shaderRGB->setUniformValue("channels", _displayChannels);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
+	shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("lut", (GLfloat)_lut);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("channels", (GLfloat)_displayChannels);
     
     
 }
@@ -979,17 +990,19 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
     
-    float newZoomFactor;
-    if(event->delta() >0){
-        newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
-    }else {
-        newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
-        if(newZoomFactor <= 0.01){
-            newZoomFactor = 0.01;
-        }
+    double newZoomFactor;
+    if(event->delta() >0) {
+        newZoomFactor =   _zoomCtx._zoomFactor*std::pow(1.01,event->delta());
+    } else {
+        newZoomFactor = _zoomCtx._zoomFactor/std::pow(1.01,-event->delta());
+    }
+    if(newZoomFactor <= 0.01) {
+        newZoomFactor = 0.01;
+    } else if(newZoomFactor > 1024.) {
+        newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
-    float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
     _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
     
@@ -1002,15 +1015,24 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     updateGL();
     
     // }
-    
-    emit zoomChanged( _zoomCtx._zoomFactor*100);
-    
-    
+    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
+    int zoomValue = 100*_zoomCtx._zoomFactor;
+    if (zoomValue == 0) {
+        zoomValue = 1; // sometimes, floor(100*0.01) makes 0
+    }
+    assert(zoomValue > 0);
+    emit zoomChanged(zoomValue);
 }
+
 void ViewerGL::zoomSlot(int v){
+    assert(v > 0);
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-        float value = v/100.f;
-        if(value < 0.01f) value = 0.01f;
+        double value = v/100.f;
+        if(value < 0.01) {
+            value = 0.01;
+        } else if (value > 1024.) {
+            value = 1024.;
+        }
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
@@ -1022,7 +1044,9 @@ void ViewerGL::zoomSlot(int v){
 }
 void ViewerGL::zoomSlot(QString str){
     str.remove(QChar('%'));
-    zoomSlot(str.toInt());
+    int v = str.toInt();
+    assert(v > 0);
+    zoomSlot(v);
 }
 
 QPoint ViewerGL::toWidgetCoordinates(int x, int y){
