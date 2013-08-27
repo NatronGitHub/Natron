@@ -68,14 +68,26 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QImage imgUndo(IMAGES_PATH"undo.png");
     QPixmap pixUndo = QPixmap::fromImage(imgUndo);
     pixUndo = pixUndo.scaled(15, 15);
-    _undoButton = new Button(QIcon(pixUndo),"",_headerWidget);
+    QImage imgUndo_gray(IMAGES_PATH"undo_grayscale.png");
+    QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
+    pixUndo_gray = pixUndo_gray.scaled(15, 15);
+    QIcon icUndo;
+    icUndo.addPixmap(pixUndo,QIcon::Normal);
+    icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
+    _undoButton = new Button(icUndo,"",_headerWidget);
     _undoButton->setToolTip("Undo the last change made to this operator");
     _undoButton->setEnabled(false);
     
     QImage imgRedo(IMAGES_PATH"redo.png");
     QPixmap pixRedo = QPixmap::fromImage(imgRedo);
     pixRedo = pixRedo.scaled(15, 15);
-    _redoButton = new Button(QIcon(pixRedo),"",_headerWidget);
+    QImage imgRedo_gray(IMAGES_PATH"redo_grayscale.png");
+    QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
+    pixRedo_gray = pixRedo_gray.scaled(15, 15);
+    QIcon icRedo;
+    icRedo.addPixmap(pixRedo,QIcon::Normal);
+    icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
+    _redoButton = new Button(icRedo,"",_headerWidget);
     _redoButton->setToolTip("Redo the last change undone to this operator");
     _redoButton->setEnabled(false);
     
