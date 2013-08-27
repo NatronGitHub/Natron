@@ -18,6 +18,7 @@
 #include "Gui/SettingsPanel.h"
 
 #include <QLayout>
+#include <QAction>
 #include <QTabWidget>
 #include <QStyle>
 #include "Gui/NodeGui.h"
@@ -52,10 +53,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     QImage imgM(IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM.scaled(15,15);
+    pixM = pixM.scaled(15,15);
     QImage imgC(IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC.scaled(15,15);
+    pixC = pixC.scaled(15,15);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
     _minimize->setFixedSize(15,15);
     _minimize->setCheckable(true);
@@ -63,12 +64,31 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _cross=new Button(QIcon(pixC),"",_headerWidget);
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
-   
+    
+    QImage imgUndo(IMAGES_PATH"undo.png");
+    QPixmap pixUndo = QPixmap::fromImage(imgUndo);
+    pixUndo = pixUndo.scaled(15, 15);
+    _undoButton = new Button(QIcon(pixUndo),"",_headerWidget);
+    _undoButton->setToolTip("Undo the last change made to this operator");
+    _undoButton->setEnabled(false);
+    
+    QImage imgRedo(IMAGES_PATH"redo.png");
+    QPixmap pixRedo = QPixmap::fromImage(imgRedo);
+    pixRedo = pixRedo.scaled(15, 15);
+    _redoButton = new Button(QIcon(pixRedo),"",_headerWidget);
+    _redoButton->setToolTip("Redo the last change undone to this operator");
+    _redoButton->setEnabled(false);
+    
+    QObject::connect(_undoButton, SIGNAL(pressed()),_nodeGUI, SLOT(undoCommand()));
+    QObject::connect(_redoButton, SIGNAL(pressed()),_nodeGUI, SLOT(redoCommand()));
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
     QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(setName(QString)));
     _headerLayout->addWidget(_nodeName);
+    _headerLayout->addStretch();
+    _headerLayout->addWidget(_undoButton);
+    _headerLayout->addWidget(_redoButton);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_minimize);
     _headerLayout->addWidget(_cross);
@@ -98,6 +118,13 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
 }
 SettingsPanel::~SettingsPanel(){}
+
+void SettingsPanel::setEnabledUndoButton(bool b){
+    _undoButton->setEnabled(b);
+}
+void SettingsPanel::setEnabledRedoButton(bool b){
+    _redoButton->setEnabled(b);
+}
 
 void SettingsPanel::initialize_knobs(){
     

@@ -16,6 +16,7 @@
 
 
 #include "Engine/Node.h"
+
 #include "Engine/Hash.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
@@ -34,6 +35,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+
 using namespace std;
 using namespace Powiter;
 void Node::copy_info(Node* parent){

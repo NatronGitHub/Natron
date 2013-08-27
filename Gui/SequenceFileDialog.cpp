@@ -1389,6 +1389,28 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     return ret;
     
 }
+QString SequenceFileDialog::patternFromFilesList(const QStringList& files){
+    if(files.size() == 0)
+        return "";
+    QString firstFile = files.at(0);
+    int pos = firstFile.lastIndexOf(QChar('.'));
+    int extensionPos = pos+1;
+    --pos;
+    while (pos >=0 && firstFile.at(pos).isDigit()) {
+        --pos;
+    }
+    ++pos;
+    QString commonPart = firstFile.left(pos);
+    QString ext;
+    while(extensionPos < firstFile.size()){
+        ext.append(firstFile.at(extensionPos));
+        ++extensionPos;
+    }
+    if(files.size() > 1)
+        return QString(commonPart + "#." +  ext);
+    else
+        return QString(commonPart + "." + ext);
+}
 QString SequenceFileDialog::filesToSave(){
     QString pattern = getSequencePatternFromLineEdit();
     if(filesListFromPattern(pattern).size() > 0){
