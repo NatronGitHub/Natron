@@ -193,7 +193,7 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();
-    assert(output);
+    assert(output); // FIXME: crashes here when using two viewers, each connected to a different reader
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
     assert(cachedFrame);
