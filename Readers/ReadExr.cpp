@@ -71,7 +71,7 @@ static Powiter::Channel fromExrChannel(const std::string& from)
         from == "depth") {
         return Powiter::Channel_Z;
     }
-    // The following may throw if from is not a channel name which begins with "Chennel_"
+    // The following may throw if from is not a channel name which begins with "Channel_"
     return getChannelByName(from);
 }
 } // namespace EXR
