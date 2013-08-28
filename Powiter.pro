@@ -32,7 +32,9 @@ unix {
      expat:     PKGCONFIG += expat
 } #unix
 
-
+linux {
+     LIBS += -lGLU -ldl
+}
 
 debug{
 warning("Compiling in DEBUG mode.")
