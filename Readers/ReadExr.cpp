@@ -11,11 +11,13 @@
 
 #include "ReadExr.h"
 
+#include <string>
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
-#include <string>
+#include <ImfPixelType.h>
+#include <ImfInputFile.h>
+#include <ImfChannelList.h>
 #include "Readers/Reader.h"
-#include "Readers/exrCommons.h"
 #include "Gui/Knob.h"
 #include "Engine/Node.h"
 #include "Gui/NodeGui.h"
@@ -25,7 +27,28 @@
 using namespace std;
 using namespace Powiter;
 
-
+namespace EXR {
+static Powiter::Channel fromExrChannel(const std::string& from)
+{
+    if (from == "R" || from == "r" || from == "Red" || from == "RED" || from == "red" || from == "y" || from == "Y")
+        return Powiter::Channel_red;
+    if (from == "G" || from == "g" || from == "Green" || from == "GREEN" || from == "green" || from == "ry" || from == "RY")
+        return Powiter::Channel_green;
+    if (from == "B" || from == "b" || from == "Blue" || from == "BLUE" || from == "blue" || from == "by" || from == "BY")
+        return Powiter::Channel_blue;
+    if (from == "A" || from == "a" || from == "Alpha" || from == "ALPHA" || from == "alpha")
+        return Powiter::Channel_alpha;
+    if (from == "Z" || from == "z" || from == "Depth" || from == "DEPTH" || from == "depth")
+        return Powiter::Channel_Z;
+    try{
+        Powiter::Channel ret = getChannelByName(from.c_str());
+        return ret;
+    }catch(const char* str){
+        throw str; // forward exception
+        return Powiter::Channel_black;
+    }
+}
+} // namespace EXR
 
 std::vector<std::string> split(const std::string& str, char splitChar)
 {
@@ -188,7 +211,9 @@ void ReadExr::readHeader(const QString filename,bool){
         }
         inputfile = new Imf::InputFile(ba.constData());
 #endif
-        
+
+        // multiview is only supported with OpenEXR >= 1.7.0
+#ifdef INCLUDED_IMF_STRINGVECTOR_ATTRIBUTE_H // use ImfStringVectorAttribute.h's #include guard
         //int view = r->view_for_reader();
         const Imf::StringAttribute* stringMultiView = 0;
         const Imf::StringVectorAttribute* vectorMultiView = 0;
@@ -222,6 +247,8 @@ void ReadExr::readHeader(const QString filename,bool){
                 }
             }
         }
+#endif // !OPENEXR_NO_MULTIVIEW
+
         // handling channels in the exr file to convert them to powiter channels
         ChannelSet mask;
         bool rgb= true;
