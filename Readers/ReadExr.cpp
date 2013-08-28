@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
- *
- */
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
 
 #include "ReadExr.h"
 
@@ -28,26 +28,52 @@ using namespace std;
 using namespace Powiter;
 
 namespace EXR {
-    static Powiter::Channel fromExrChannel(const std::string& from)
-    {
-        if (from == "R" || from == "r" || from == "Red" || from == "RED" || from == "red" || from == "y" || from == "Y")
-            return Powiter::Channel_red;
-        if (from == "G" || from == "g" || from == "Green" || from == "GREEN" || from == "green" || from == "ry" || from == "RY")
-            return Powiter::Channel_green;
-        if (from == "B" || from == "b" || from == "Blue" || from == "BLUE" || from == "blue" || from == "by" || from == "BY")
-            return Powiter::Channel_blue;
-        if (from == "A" || from == "a" || from == "Alpha" || from == "ALPHA" || from == "alpha")
-            return Powiter::Channel_alpha;
-        if (from == "Z" || from == "z" || from == "Depth" || from == "DEPTH" || from == "depth")
-            return Powiter::Channel_Z;
-        try{
-            Powiter::Channel ret = getChannelByName(from.c_str());
-            return ret;
-        }catch(const char* str){
-            throw str; // forward exception
-            return Powiter::Channel_black;
-        }
+static Powiter::Channel fromExrChannel(const std::string& from)
+{
+    if (from == "R" ||
+        from == "r" ||
+        from == "Red" ||
+        from == "RED" ||
+        from == "red" ||
+        from == "y" ||
+        from == "Y") {
+        return Powiter::Channel_red;
     }
+    if (from == "G" ||
+        from == "g" ||
+        from == "Green" ||
+        from == "GREEN" ||
+        from == "green" ||
+        from == "ry" ||
+        from == "RY") {
+        return Powiter::Channel_green;
+    }
+    if (from == "B" ||
+        from == "b" ||
+        from == "Blue" ||
+        from == "BLUE" ||
+        from == "blue" ||
+        from == "by" ||
+        from == "BY") {
+        return Powiter::Channel_blue;
+    }
+    if (from == "A" ||
+        from == "a" ||
+        from == "Alpha" ||
+        from == "ALPHA" ||
+        from == "alpha") {
+        return Powiter::Channel_alpha;
+    }
+    if (from == "Z" ||
+        from == "z" ||
+        from == "Depth" ||
+        from == "DEPTH" ||
+        from == "depth") {
+        return Powiter::Channel_Z;
+    }
+    // The following may throw if from is not a channel name which begins with "Chennel_"
+    return getChannelByName(from);
+}
 } // namespace EXR
 
 std::vector<std::string> split(const std::string& str, char splitChar)
@@ -134,7 +160,7 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     // get the names out
     //size_t offset = 0;
     if ( newsplits.size() > 1 ){
-        
+
         
         for (U32 i = 0 ; i < (newsplits.size() - 1); i++) {
             if (IsView(newsplits[i], views)) {
@@ -152,28 +178,28 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     }
     
     // std::string viewpart = (channelName._view.length() > 0) ? channelName._view : heroview;
-    
-    //if (viewname(view) == viewpart) {
-    //is_stereo= true;
-    Channel chan;
-    try{
-        chan = EXR::fromExrChannel(_chan);
-    }catch(const char* e){
-        std::cout << e << endl;
-        return false;
-    }
-    _mappedChannel = chan;
-    return true;
-    //}
-    
-    //    if (viewpart != "" && viewpart != heroview) {
-    //        return false;
-    //    }
-    
-    //    exrToPowiterChannelMapping(channel, otherpart.c_str());
-    
-    //    return true;
-    
+
+     //if (viewname(view) == viewpart) {
+     //is_stereo= true;
+     Channel chan;
+     try{
+         chan = EXR::fromExrChannel(_chan);
+     }catch(const char* e){
+         std::cout << e << endl;
+         return false;
+     }
+     _mappedChannel = chan;
+     return true;
+     //}
+
+     //    if (viewpart != "" && viewpart != heroview) {
+     //        return false;
+     //    }
+
+     //    exrToPowiterChannelMapping(channel, otherpart.c_str());
+
+     //    return true;
+
     //	std::cout << "Turned '"<<channelname<<"' into "<<layer<<"."<<chan<<std::endl;
     
 }
@@ -211,10 +237,10 @@ void ReadExr::readHeader(const QString filename,bool){
         }
         inputfile = new Imf::InputFile(ba.constData());
 #endif
-        
+
         // multiview is only supported with OpenEXR >= 1.7.0
 #ifdef INCLUDED_IMF_STRINGVECTOR_ATTRIBUTE_H // use ImfStringVectorAttribute.h's #include guard
-                                             //int view = r->view_for_reader();
+        //int view = r->view_for_reader();
         const Imf::StringAttribute* stringMultiView = 0;
         const Imf::StringVectorAttribute* vectorMultiView = 0;
         
@@ -248,7 +274,7 @@ void ReadExr::readHeader(const QString filename,bool){
             }
         }
 #endif // !OPENEXR_NO_MULTIVIEW
-        
+
         // handling channels in the exr file to convert them to powiter channels
         ChannelSet mask;
         bool rgb= true;
@@ -293,7 +319,7 @@ void ReadExr::readHeader(const QString filename,bool){
                 }
             }
         }
-        
+
         const Imath::Box2i& datawin = inputfile->header().dataWindow();
         const Imath::Box2i& dispwin = inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
@@ -315,7 +341,7 @@ void ReadExr::readHeader(const QString filename,bool){
         int br = datawin.max.x + dataOffset;
         int bt = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
-            datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
+                datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
             bx--;
             by--;
             br++;
@@ -386,7 +412,7 @@ void ReadExr::readScanLine(int y){
             //iop->error(exc.what());
         }
     }
-    
+
 }
 
 ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
@@ -651,3 +677,4 @@ void ReadExr::debug(){
     }
     img.save("debug.jpg");
 }
+

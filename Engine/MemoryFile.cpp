@@ -32,6 +32,7 @@
 #include <cstdio>
 #endif
 #include <iostream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -108,14 +109,14 @@ file_handle_(-1)
         if (file_handle_ == -1){
             string str("MemoryFile EXC : Failed to open ");
             str.append(pathname);
-            throw str.c_str();
+            throw std::runtime_error(str);
             return;
         }
         struct stat sbuf;
         if (::fstat(file_handle_, &sbuf) == -1){
             string str("MemoryFile EXC : Failed to get file infos: ");
             str.append(pathname);
-            throw str.c_str();
+            throw std::runtime_error(str);
             return;
         }
         size_t initial_file_size = sbuf.st_size;
@@ -127,7 +128,7 @@ file_handle_(-1)
             data_ = 0;
             string str("MemoryFile EXC : Failed to create mapping: ");
             str.append(pathname);
-            throw str.c_str();
+            throw std::runtime_error(str);
             
         }
         else {
@@ -159,7 +160,7 @@ file_handle_(-1)
                 default:
                     string str("MemoryFile EXC : Invalid open mode. ");
                     str.append(pathname);
-                    throw str.c_str();
+                    throw std::runtime_error(str);
                     return;
             }
             const size_t min_file_size = 4096;
@@ -168,7 +169,7 @@ file_handle_(-1)
             if (file_handle_ == INVALID_HANDLE_VALUE){
                 string str("MemoryFile EXC : Failed to open file ");
                 str.append(pathname);
-                throw str.c_str();
+                throw std::runtime_error(str);
                 return;
             }
             size_t initial_file_size = ::GetFileSize(file_handle_, 0);
@@ -178,7 +179,7 @@ file_handle_(-1)
             if (file_mapping_handle_ == INVALID_HANDLE_VALUE){
                 string str("MemoryFile EXC : Failed to create mapping :  ");
                 str.append(pathname);
-                throw str.c_str();
+                throw std::runtime_error(str);
                 return;
             }
             data_ = static_cast<char*>(::MapViewOfFile(

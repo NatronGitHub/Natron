@@ -51,7 +51,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                ++i;
+                i++;
             }
             _cur = Powiter::Channel_black;
         }
@@ -62,7 +62,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                ++i;
+                i++;
             }
         }
         void operator--(){
@@ -72,7 +72,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                --i;
+                i--;
             }
             _cur = Powiter::Channel_black;
         }
@@ -83,7 +83,7 @@ public:
                     _cur = (Powiter::Channel)i;
                     return;
                 }
-                --i;
+                i--;
             }
             _cur = Powiter::Channel_black;
         }
@@ -114,7 +114,7 @@ public:
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
     bool operator<(const ChannelSet& source) const;
     bool operator==(Powiter::ChannelMask v) const { return mask == U32(v << 1); }
-    bool operator!=(Powiter::ChannelMask v) const { return !(*this == (v << 1)); }
+    bool operator!=(Powiter::ChannelMask v) const { return mask != U32(v << 1); }
     bool operator==(Powiter::Channel z) const;
     bool operator!=(Powiter::Channel z) const { return !(*this == z); }
     
@@ -166,7 +166,7 @@ public:
 
 
 /*returns the channel of name "name"*/
-Powiter::Channel getChannelByName(const char *name);
+Powiter::Channel getChannelByName(const std::string &name);
 
 /*Return a cstring with the name of the channel c*/
 std::string getChannelName(Powiter::Channel c);

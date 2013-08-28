@@ -19,6 +19,7 @@
 
 #include "Engine/ImageFetcher.h"
 
+#include <stdexcept>
 #include <QtConcurrentMap>
 #include <QtGui/QImage>
 #include <boost/bind.hpp>
@@ -60,7 +61,7 @@ const InputRow& ImageFetcher::at(int y) const {
         
         QString toThrow("Interest::at : Couldn't return a valid row for y = ");
         toThrow.append(QString::number(y));
-        throw toThrow.toStdString();
+        throw std::runtime_error(toThrow.toStdString());
     }
 }
 

@@ -62,19 +62,22 @@ static int depthNameToInt(const std::string& name){
 }
 
 static std::string toExrChannel(Powiter::Channel from){
-    if(from == Powiter::Channel_red) return "R";
-    if(from == Powiter::Channel_green) return "G";
-    if(from == Powiter::Channel_blue) return "B";
-    if(from == Powiter::Channel_alpha) return "A";
-    if(from == Powiter::Channel_Z) return "Z";
-    std::string ret = getChannelName(from);
-    if(ret.empty()){
-        throw "Couldn't find an appropriate OpenEXR channel for this channel"; // forward exception
-        return "";
-    }else{
-        return ret;
+    if (from == Powiter::Channel_red) {
+        return "R";
     }
-
+    if (from == Powiter::Channel_green) {
+        return "G";
+    }
+    if (from == Powiter::Channel_blue) {
+        return "B";
+    }
+    if (from == Powiter::Channel_alpha) {
+        return "A";
+    }
+    if (from == Powiter::Channel_Z) {
+        return "Z";
+    }
+    return getChannelName(from);
 }
 
 #if 0 // unused functions

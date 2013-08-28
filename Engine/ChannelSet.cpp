@@ -15,46 +15,59 @@
 
 #include "Engine/ChannelSet.h"
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
+
 using namespace std;
 using namespace Powiter;
-Channel getChannelByName(const char *name){
-    if(strcmp(name,"Channel_unused")==0){
-        return Channel_unused;
-    }else if(strcmp(name,"Channel_red")==0){
+
+Channel getChannelByName(const std::string &name){
+    if (name == "Channel_red") {
         return Channel_red;
-    }else if(strcmp(name,"Channel_green")==0){
+    }
+    if (name == "Channel_green") {
         return Channel_green;
-    }else if(strcmp(name,"Channel_blue")==0){
+    }
+    if (name == "Channel_blue") {
         return Channel_blue;
-    }else if(strcmp(name,"Channel_alpha")==0){
+    }
+    if (name == "Channel_alpha") {
         return Channel_alpha;
-    }else if(strcmp(name,"Channel_Z")==0){
+    }
+    if (name == "Channel_Z") {
         return Channel_Z;
-    }else{
-        throw std::string("(getChannelByName):Bad channel name");
     }
+    std::string c("Channel_");
+    if (name.compare(0, c.length(), c) == 0) {
+        int id;
+        std::istringstream iss(name.substr(c.length(), name.length()-c.length()));
+        if (iss >> id) {
+            return (Channel)id;
+        }
+    }
+    throw std::runtime_error("(getChannelByName):Bad channel name");
 }
+
 std::string getChannelName(Channel c){
-    if(c==Channel_red){
-        return "Channel_red";
-    }else if(c==Channel_green){
-        return "Channel_green";
-    }else if(c==Channel_blue){
-        return "Channel_blue";
-        
-    }else if(c==Channel_alpha){
-        return "Channel_alpha";
-        
-    }else if(c==Channel_unused){
-        return "Channel_unused";
-        
-    }else if(c==Channel_Z){
-        return "Channel_Z";
-        
-    }else if(c==Channel_black){
-        return "Channel_black";
+    switch (c) {
+        case Channel_black:
+            return "Channel_black";
+        case Channel_red:
+            return "Channel_red";
+        case Channel_green:
+            return "Channel_green";
+        case Channel_blue:
+            return "Channel_blue";
+        case Channel_alpha:
+            return "Channel_alpha";
+        case Channel_Z:
+            return "Channel_Z";
+        case Channel_unused:
+            ; // do the default action below
     }
-    return "";
+    std::ostringstream s;
+    s << "Channel_" << (int)c;
+    return s.str();
 }
 
 ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.size()){}
