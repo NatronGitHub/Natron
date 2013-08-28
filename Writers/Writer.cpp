@@ -275,7 +275,7 @@ void Writer::onFilesSelected(){
     QString file(_filename.c_str());
     int pos = file.lastIndexOf(QChar('.'));
     string ext = _filename.substr(pos+1).c_str();
-    for (U32 i = 0; i < _allFileTypes.size(); i++) {
+    for (U32 i = 0; i < _allFileTypes.size(); ++i) {
         if (_allFileTypes[i] == ext) {
             _filetypeCombo->setCurrentItem(i);
             break;

@@ -165,6 +165,7 @@ FrameEntry* ViewerNode::get(U64 key){
 
 
 void ViewerNode::cachedFrameEngine(FrameEntry* frame){
+    assert(frame);
     size_t dataSize = 0;
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
@@ -192,13 +193,17 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();
+    assert(output);
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
+    assert(cachedFrame);
     QFuture<void> future = QtConcurrent::run(this,&ViewerNode::retrieveCachedFrame,cachedFrame,output,dataSize);
     _cacheWatcher->setFuture(future);
    
     
 }
 void ViewerNode::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
+    assert(dst);
+    assert(cachedFrame);
     _uiContext->viewer->fillPBO(cachedFrame, dst, dataSize);
 }
