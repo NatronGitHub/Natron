@@ -87,7 +87,7 @@ bool Reader::readCurrentHeader(int current_frame){
     Read* _read = 0;
     
     QString extension;
-    for(int i = filename.size() - 1 ; i>= 0 ; i--){
+    for (int i = filename.size() - 1; i >= 0; --i) {
         QChar c = filename.at(i);
         if(c != QChar('.'))
             extension.prepend(c);
@@ -125,6 +125,7 @@ bool Reader::readCurrentHeader(int current_frame){
 //            }
 //            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
 //        }else{
+            assert(_read->getReaderInfo());
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
             for (int i = dataW.y() ; i < dataW.top(); i++) {
                 rows.push_back(i);
@@ -135,7 +136,7 @@ bool Reader::readCurrentHeader(int current_frame){
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
     if(found !=_buffer.end()){
-        
+        assert(*found);
         if(!(*found)->supportsScanLines()){
             delete _read;
         }else{
@@ -147,6 +148,7 @@ bool Reader::readCurrentHeader(int current_frame){
             slDesc->_slContext->computeIntersectionAndSetRowsToRead(slContext->getRows());
             delete _read;
         }
+        assert((*found)->_readHandle);
         *_info = static_cast<Node::Info&>(*((*found)->_readHandle->getReaderInfo()));
         readHandle = (*found)->_readHandle;
     }else{
@@ -173,6 +175,7 @@ void Reader::readCurrentData(int current_frame){
         cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName() << ")" << endl;
         return;
     }
+    assert(*found);
     if((*found)->hasToDecode()){
         if((*found)->supportsScanLines()){
             Buffer::ScanLineDescriptor* slDesc = static_cast<Buffer::ScanLineDescriptor*>(*found);
@@ -198,6 +201,7 @@ void Reader::showFilePreview(){
     readCurrentHeader(firstFrame());
     readCurrentData(firstFrame());
 
+    assert(readHandle);
     readHandle->make_preview();
     _buffer.clear();
 }
@@ -210,22 +214,26 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
         current_frame = firstFrame();
     else{
         Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
-        if(!writer)
+        if(!writer) {
+            assert(currentViewer);
             current_frame = clampToRange(currentViewer->currentFrame());
-        else
+        } else {
             current_frame = writer->currentFrame();
+        }
     }
-    
+
     QString currentFile = files[current_frame];
     Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
                                                                     Buffer::ALL_FRAMES);
     if(frame == _buffer.end()) return false;
     
     Node::Info* infos = 0;
+    assert(*frame);
     if((*frame)->_readInfo && !(*frame)->_readHandle){ // cached frame
         infos = dynamic_cast<Node::Info*>((*frame)->_readInfo);
     }else{
         readHandle = (*frame)->_readHandle;
+        assert(readHandle);
         infos = dynamic_cast<Node::Info*>(readHandle->getReaderInfo());
         assert(infos);
         *_info = *infos;
@@ -241,13 +249,14 @@ void Reader::_validate(bool){
     //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
     //    return;
     //}
-    
+    assert(_info);
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
 }
 
 void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){
-	readHandle->engine(y,offset,range,c,out);
+	assert(readHandle);
+    readHandle->engine(y,offset,range,c,out);
 	
 }
 
@@ -261,6 +270,7 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     if(_buffer.size() == (U32)_bufferSize){
         for(U32 i = 0 ; i < _buffer.size() ;i++){
             Reader::Buffer::Descriptor* frameToRemove = _buffer[i];
+            assert(frameToRemove);
             if(!frameToRemove->hasToDecode()){
                 erase(_buffer.begin()+i);
                 break;
@@ -270,15 +280,19 @@ void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     _buffer.push_back(desc);
 }
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
-    for(int i = _buffer.size()-1; i >= 0 ; i--){
-        if(_buffer[i]->_filename==filename) return _buffer.begin()+i;
+    for (int i = _buffer.size()-1; i >= 0 ; --i) {
+        assert(_buffer[i]);
+        if(_buffer[i]->_filename==filename) {
+            return _buffer.begin()+i;
+        }
     }
     return _buffer.end();
 }
 
 void Reader::Buffer::remove(const std::string& filename){
     DecodedFrameIterator it = find(filename);
-    if(it!=_buffer.end()){
+    if (it!=_buffer.end()) {
+        assert(*it);
         if((*it)->_readInfo)
             delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
@@ -295,8 +309,9 @@ bool Reader::Buffer::decodeFinished(const std::string& filename){
 }
 void Reader::Buffer::debugBuffer(){
     cout << "=========BUFFER DUMP=============" << endl;
-    for(DecodedFrameIterator it = _buffer.begin(); it != _buffer.end() ; it++){
-            cout << (*it)->_filename << endl;
+    for (DecodedFrameIterator it = _buffer.begin(); it != _buffer.end(); ++it) {
+        assert(*it);
+        cout << (*it)->_filename << endl;
     }
     cout << "=================================" << endl;
 }
@@ -304,7 +319,9 @@ void Reader::Buffer::debugBuffer(){
 Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::string& filename,SEARCH_TYPE searchMode){
     if(searchMode == SCANLINE_FRAME){
         DecodedFrameIterator ret = find(filename);
-        if(ret != _buffer.end()){
+        if (ret != _buffer.end()) {
+            assert(*ret);
+            assert((*ret)->_readHandle);
             if(!(*ret)->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
@@ -315,6 +332,8 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
     }else if(searchMode == FULL_FRAME){
         DecodedFrameIterator ret = find(filename);
         if(ret != _buffer.end()){
+            assert(*ret);
+            assert((*ret)->_readHandle);
             if((*ret)->_readHandle->supportsScanLine()){
                 return _buffer.end();
             }
@@ -329,7 +348,8 @@ Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::strin
 
 void Reader::Buffer::clear(){
     DecodedFrameIterator it = _buffer.begin();
-    for(;it!=_buffer.end();it++){
+    for (; it!=_buffer.end(); ++it) {
+        assert(*it);
         if((*it)->_readInfo)
             delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
@@ -337,13 +357,16 @@ void Reader::Buffer::clear(){
     }
     _buffer.clear();
 }
-void Reader::Buffer::erase(DecodedFrameIterator it){
+
+void Reader::Buffer::erase(DecodedFrameIterator it) {
+    assert(*it);
     if((*it)->_readInfo)
         delete (*it)->_readInfo; // delete readerInfo
     if((*it)->_readHandle)
         delete (*it)->_readHandle; // delete readHandle
     delete (*it);
-    _buffer.erase(it);}
+    _buffer.erase(it);
+}
 
 void Reader::getVideoSequenceFromFilesList(){
     files.clear();
@@ -395,19 +418,24 @@ void Reader::getVideoSequenceFromFilesList(){
             }
         }
     }
+    assert(_info);
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
     
 }
 int Reader::firstFrame(){
-    std::map<int,QString>::iterator it=files.begin();
-    if(it == files.end()) return INT_MIN;
+    std::map<int,QString>::iterator it = files.begin();
+    if (it == files.end()) {
+        return INT_MIN;
+    }
     return it->first;
 }
 int Reader::lastFrame(){
-    std::map<int,QString>::iterator it=files.end();
-    if(it == files.begin()) return INT_MAX;
-    it--;
+    std::map<int,QString>::iterator it = files.end();
+    if(it == files.begin()) {
+        return INT_MAX;
+    }
+    --it;
     return it->first;
 }
 int Reader::clampToRange(int f){
@@ -427,6 +455,7 @@ void Reader::setPreview(QImage* img){
         delete preview;
     preview=img;
     hasPreview(true);
+    assert(getNodeUi());
     getNodeUi()->updatePreviewImageForReader();
 }
 
@@ -435,7 +464,7 @@ void Reader::setPreview(QImage* img){
 void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::vector<int>& others){
     ScanLineIterator it = others.begin();
     std::vector<int> rowsCopy = _rows;
-    for(;it!=others.end();it++){
+    for (; it!=others.end(); ++it) {
         ScanLineIterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
         if(found == rowsCopy.end()){ // if not found, we add the row to rows
             _rowsToRead.push_back(*it);
