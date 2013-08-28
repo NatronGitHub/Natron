@@ -179,7 +179,7 @@ void NodeGui::redoCommand(){
 }
 
 void NodeGui::markInputNull(Edge* e){
-    for (U32 i = 0; i < inputs.size(); i++) {
+    for (U32 i = 0; i < inputs.size(); ++i) {
         if (inputs[i] == e) {
             inputs[i] = 0;
         }

@@ -147,7 +147,7 @@ void Edge::initLine(){
         QLineF(dstPost.x(),dstPost.y()+h,dstPost.x(),dstPost.y()), // left
         QLineF(dstPost.x(),dstPost.y(),dstPost.x()+w,dstPost.y())}; // top
     
-    for(int i = 0 ; i < 4 ; i++){
+    for (int i = 0; i < 4; ++i) {
         QPointF intersection;
         QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
         if(type == QLineF::BoundedIntersection){

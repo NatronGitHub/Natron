@@ -247,7 +247,7 @@ _dialogMode(mode)
         
     }else{
         _fileExtensionCombo = new ComboBox(_filterWidget);
-        for (U32 i = 0; i < _filters.size(); i++) {
+        for (U32 i = 0; i < _filters.size(); ++i) {
             _fileExtensionCombo->addItem(_filters[i].c_str());
         }
         _filterLineLayout->addWidget(_fileExtensionCombo);
@@ -523,7 +523,7 @@ bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
     }
     bool recognized = false;
     bool noRegExpValid = true;
-    for(U32 j = 0 ; j < regExps.size() ; j++){
+    for (U32 j = 0; j < regExps.size(); ++j) {
         QRegExp rx(regExps[j],Qt::CaseInsensitive,QRegExp::Wildcard);
         if(!rx.isValid()){
             continue;
@@ -1480,7 +1480,7 @@ void SequenceFileDialog::showFilterMenu(){
 }
 QString SequenceFileDialog::generateStringFromFilters(){
     QString ret;
-    for (U32 i = 0 ; i < _filters.size(); i++) {
+    for (U32 i = 0 ; i < _filters.size(); ++i) {
         ret.append("*");
         ret.append(".");
         ret.append(_filters[i].c_str());

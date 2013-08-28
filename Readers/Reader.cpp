@@ -127,7 +127,7 @@ bool Reader::readCurrentHeader(int current_frame){
 //        }else{
             assert(_read->getReaderInfo());
             const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
-            for (int i = dataW.y() ; i < dataW.top(); i++) {
+            for (int i = dataW.y() ; i < dataW.top(); ++i) {
                 rows.push_back(i);
             }            
         // }
@@ -268,7 +268,7 @@ void Reader::createKnobDynamically(){
 void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
     //if buffer is full, we remove previously computed frame
     if(_buffer.size() == (U32)_bufferSize){
-        for(U32 i = 0 ; i < _buffer.size() ;i++){
+        for (U32 i = 0 ;i < _buffer.size(); ++i) {
             Reader::Buffer::Descriptor* frameToRemove = _buffer[i];
             assert(frameToRemove);
             if(!frameToRemove->hasToDecode()){
@@ -476,7 +476,7 @@ void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(std::v
 
 /*merges _rowsToRead and _rows*/
 void Reader::Buffer::ScanLineContext::merge(){
-    for(U32 i = 0;i < _rowsToRead.size(); i++){
+    for( U32 i = 0; i < _rowsToRead.size(); ++i) {
         _rows.push_back(_rowsToRead[i]);
     }
     _rowsToRead.clear();
@@ -518,41 +518,41 @@ ReaderInfo* ReaderInfo::fromString(QString from){
     QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
     
     int i = 0;
-    while(from.at(i) != QChar('<')){name.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); i++;}
-    i++;
-    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); i++;}
-    i++;
-    while(i < from.size()){channelsStr.append(from.at(i)); i++;}
-    i++;
+    while(from.at(i) != QChar('<')){name.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); ++i;}
+    ++i;
+    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); ++i;}
+    ++i;
+    while(i < from.size()){channelsStr.append(from.at(i)); ++i;}
+    ++i;
     ChannelSet channels;
     i = 0;
     while(i < channelsStr.size()){
         QString chan;
         while(channelsStr.at(i) != QChar('|')){
             chan.append(channelsStr.at(i));
-            i++;
+            ++i;
         }
-        i++;
+        ++i;
         // The following may throw if from is not a channel name which begins with "Channel_"
         channels += getChannelByName(chan.toStdString());
     }

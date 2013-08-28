@@ -403,7 +403,7 @@ void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node 
    
     int counter = 0;
     gettimeofday(&_engine->_lastComputeFrameTime, 0);
-    for(vector<int>::const_iterator it = rows.begin(); it!=rows.end() ; it++){
+    for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         Row* row = new Row(x,*it,r,outChannels);
         row->zoomedY(counter);
         RowRunnable* worker = new RowRunnable(row,output);

@@ -210,7 +210,7 @@ QString ComboBox::itemText(int index) const{
     }
 }
 int ComboBox::itemIndex(const QString& str) const{
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (_actions[i]->text() == str) {
             return i;
         }
