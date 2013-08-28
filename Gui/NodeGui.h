@@ -9,25 +9,15 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_NODEGUI_H_
+#define POWITER_GUI_NODEGUI_H_
 
- 
-
-
-
-#ifndef NODE_UI_H
-#define NODE_UI_H
-
-
-//#include <inputarrow.h>
-#include "Global/GlobalDefines.h"
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
-static const int NODE_LENGTH=80;
-static const int NODE_HEIGHT=30;
-static const int PREVIEW_LENGTH=40;
-static const int PREVIEW_HEIGHT=40;
+#include "Global/GlobalDefines.h"
+
+
 class Edge;
 class QPainterPath;
 class QScrollArea;
@@ -39,6 +29,7 @@ class NodeGraph;
 class QAction;
 class QUndoCommand;
 class QUndoStack;
+
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
@@ -147,7 +138,10 @@ public:
     
     void pushUndoCommand(QUndoCommand* command);
     
-    
+    static const int NODE_LENGTH = 80;
+    static const int NODE_HEIGHT = 30;
+    static const int PREVIEW_LENGTH = 40;
+    static const int PREVIEW_HEIGHT = 40;
     
 private:
     /*used internally by hasViewerConnected.*/
@@ -205,4 +199,4 @@ protected:
   
 };
 
-#endif // NODE_UI_H
+#endif // POWITER_GUI_NODEGUI_H_

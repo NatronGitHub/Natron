@@ -78,11 +78,11 @@ void Read::createKnobDynamically(){
 }
 
 void Read::setReaderInfo(Format dispW,
-	Box2D dataW,
-	QString file,
+	const Box2D& dataW,
+	const QString& file,
 	ChannelSet channels,
-	int Ydirection ,
-	bool rgb ){
+	int Ydirection,
+	bool rgb) {
     _readInfo->setDisplayWindow(dispW);
     _readInfo->set(dataW);
     _readInfo->setChannels(channels);

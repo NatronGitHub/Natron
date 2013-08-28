@@ -103,14 +103,14 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
         x = selectedPos.x();
         int yOffset = 0;
         if(node->className() == "Reader" && _nodeSelected->getNode()->className()!= "Reader"){
-            x -= PREVIEW_LENGTH/2;
-            yOffset -= PREVIEW_HEIGHT;
+            x -= NodeGui::PREVIEW_LENGTH/2;
+            yOffset -= NodeGui::PREVIEW_HEIGHT;
         }
         
         if(!node->isOutputNode()){
-            yOffset -= (NODE_HEIGHT + 50);
+            yOffset -= (NodeGui::NODE_LENGTH + 50);
         }else {
-            yOffset += (NODE_HEIGHT + 50);
+            yOffset += (NodeGui::NODE_LENGTH + 50);
         }
         y =  selectedPos.y() + yOffset;
     }else{
@@ -411,9 +411,9 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 /*we now try to move the created node in between the 2 previous*/
                 QPointF parentPos = created->mapFromScene(selected->scenePos());
                 if(selected->getNode()->className() == "Reader"){
-                    parentPos.ry() += (NODE_HEIGHT + PREVIEW_HEIGHT);
+                    parentPos.ry() += (NodeGui::NODE_LENGTH + NodeGui::PREVIEW_HEIGHT);
                 }else{
-                    parentPos.ry() += (NODE_HEIGHT);
+                    parentPos.ry() += (NodeGui::NODE_LENGTH);
                 }
                 QPointF childPos = created->mapFromScene(child->getNodeUi()->scenePos());
                 

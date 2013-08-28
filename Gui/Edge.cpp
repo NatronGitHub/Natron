@@ -61,22 +61,22 @@ Edge::~Edge(){
 }
 
 void Edge::initLine(){
-    int h = NODE_HEIGHT;
-    int w = NODE_LENGTH;
+    int h = NodeGui::NODE_HEIGHT;
+    int w = NodeGui::NODE_LENGTH;
     if(dest->getNode()->className() == std::string("Reader")){
-        h += PREVIEW_HEIGHT;
-        w += PREVIEW_LENGTH;
+        h += NodeGui::PREVIEW_HEIGHT;
+        w += NodeGui::PREVIEW_LENGTH;
     }
     QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                                            + QPointF(w/2.,h/2.));
     QPointF srcpt;
     if(has_source){
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_LENGTH;
+        w = NodeGui::NODE_LENGTH;
 
         if(source->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
             + QPointF(w/2.,h/2.);
@@ -87,12 +87,12 @@ void Edge::initLine(){
         QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
         + QPointF(w/2.,h);
 
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_LENGTH;
+        w = NodeGui::NODE_LENGTH;
         
         if(dest->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                           + QPointF(w/2.,0));
@@ -123,12 +123,12 @@ void Edge::initLine(){
         }
         
         /*adjusting dst to show label at the middle of the line*/
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_LENGTH;
+        w = NodeGui::NODE_LENGTH;
         
         if(dest->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                           + QPointF(w/2.,0));
