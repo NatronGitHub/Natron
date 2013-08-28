@@ -121,7 +121,7 @@ public:
     
     void incrementCurrentFrame(){++_currentFrame;}
     
-    const ChannelSet& requestedChannels() const {return _requestedChannels;}
+    const ChannelSet& requestedChannels() const {return _requestedChannels;} // FIXME: never return reference to internals!
     
     virtual bool isOutputNode(){return true;}
     

@@ -386,14 +386,18 @@ void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node 
     //  cout << "<<<COMPUTE FRAME>>>" << endl;
     /*If playback is on (i.e: not panning/zooming or changing the graph) we clear the cache
      for every frame.*/
+    assert(_engine);
     if(!_engine->_sameFrame){
         NodeCache::getNodeCache()->clear();
     }
     ChannelSet outChannels;
     if(_engine->_dag.isOutputAViewer()){
+        assert(currentViewer);
+        assert(currentViewer->getUiContext());
         outChannels = currentViewer->getUiContext()->displayChannels();
     }
     else{// channels requested are those requested by the user
+        assert(_engine->_dag.getOutput());
         outChannels = static_cast<Writer*>(_engine->_dag.getOutput())->requestedChannels();
     }
    

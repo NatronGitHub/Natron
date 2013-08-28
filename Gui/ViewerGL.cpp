@@ -750,6 +750,8 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
 }
 
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
+    assert(dst);
+    assert(src);
     memcpy(dst, src, byteCount);
 }
 
