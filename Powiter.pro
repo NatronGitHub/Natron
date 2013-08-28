@@ -175,7 +175,6 @@ HEADERS += \
     Gui/TabWidget.h \
     Engine/LRUcache.h \
     Engine/ImageFetcher.h \
-    Readers/exrCommons.h \
     Writers/Writer.h \
     Writers/WriteQt.h \
     Writers/WriteExr.h \
