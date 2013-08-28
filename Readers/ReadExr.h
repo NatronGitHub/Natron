@@ -1,24 +1,22 @@
-
 //  Powiter
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
 #ifndef __READ_EXR_H__
 #define __READ_EXR_H__
-#include "Readers/exrCommons.h"
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <fstream>
@@ -28,6 +26,9 @@
 #endif
 #include "Readers/Read.h"
 
+namespace Imf {
+    class InputFile;
+}
 
 class Row;
 class ReaderInfo;
@@ -35,12 +36,12 @@ class ExrChannelExctractor
 {
 public:
     ExrChannelExctractor(const char* name, const std::vector<std::string>& views) :
-        _mappedChannel(Powiter::Channel_black),
-        _valid(false)
+    _mappedChannel(Powiter::Channel_black),
+    _valid(false)
     {     _valid = extractExrChannelName(name, views);  }
-
+    
     ~ExrChannelExctractor() {}
-
+    
     Powiter::Channel _mappedChannel;
     bool _valid;
     std::string _chan;
@@ -48,22 +49,22 @@ public:
     std::string _view;
     std::string exrName() const;
     bool isValid() const {return _valid;}
-
+    
 private:
-
+    
     bool extractExrChannelName(const char* channelname,
                                const std::vector<std::string>& views);
 };
 
 
 class ReadExr : public Read{
-
+    
 public:
     
     static Read* BuildRead(Reader* reader){return new ReadExr(reader);}
-
+    
 	ReadExr(Reader* op);
-
+    
 	virtual ~ReadExr();
     
 	
@@ -85,7 +86,7 @@ public:
     virtual void make_preview();
     virtual void initializeColorSpace();
     void debug();
-
+    
 private:
 	Imf::InputFile* inputfile;
 	std::map<Powiter::Channel, const char*> channel_map;
@@ -98,7 +99,7 @@ private:
     Imf::StdIFStream* inputStdStream;
 #endif
 	
-
+    
 };
 
 #endif // __READ_EXR_H__
