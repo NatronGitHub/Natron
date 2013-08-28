@@ -9,18 +9,14 @@
 *
 */
 
- 
+#include "Hash.h"
 
- 
-
-
-
-#include "Engine/Hash.h"
 #include "Engine/Node.h"
 #include "Gui/Knob.h"
-using namespace Powiter;
-void Hash::computeHash(){
 
+using namespace Powiter;
+
+void Hash::computeHash() {
     boost::crc_optimal<64,0x42F0E1EBA9EA3693,0,0,false,false> result;
     U64* data=(U64*)malloc(sizeof(U64)*node_values.size());
 
@@ -32,6 +28,7 @@ void Hash::computeHash(){
     hash=result.checksum();
     free(data);
 }
+
 void Hash::reset(){
     node_values.clear();
     hash=0;

@@ -9,21 +9,18 @@
 *
 */
 
- 
-
- 
-
-
+#include "Lut.h"
 
 #include <iostream>
-#include "Engine/Lut.h"
+
 #ifndef FLT_MAX
 # define FLT_MAX 3.40282347e+38F
 #endif
 
 using namespace std;
 using namespace Powiter;
-std::map<Lut::DataType,Lut*> Lut::_luts;
+
+std::map<Lut::DataType,Lut*> Lut::_luts; // FIXME: are we sure this doesn't need protection with a mutex?
 
 
 void Lut::fillToTable(){

@@ -9,18 +9,14 @@
  *
  */
 
+#include "Settings.h"
 
-
-
-
-
-
-
-#include "Engine/Settings.h"
-#include "Engine/Model.h"
 #include <QDir>
 
+#include "Engine/Model.h"
+
 using namespace std;
+
 Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;

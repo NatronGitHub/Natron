@@ -8,19 +8,19 @@
  *
  */
 
+#include "NodeGraph.h"
 
-
-
-
-
-
+#include <cstdlib>
 #include <QGraphicsProxyWidget>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QComboBox>
 #include <QVBoxLayout>
+#include <QScrollBar>
+#include <QGraphicsLineItem>
+#include <QUndoStack>
+
 #include "Gui/TabWidget.h"
-#include "Gui/NodeGraph.h"
 #include "Global/Controler.h"
 #include "Gui/Edge.h"
 #include "Engine/Hash.h"
@@ -35,15 +35,12 @@
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Engine/VideoEngine.h"
-#include <QScrollBar>
-#include <QGraphicsLineItem>
 #include "Gui/Timeline.h"
 #include "Engine/ViewerNode.h"
-#include <QUndoStack>
-#include <cstdlib>
 
 using namespace std;
 using namespace Powiter;
+
 NodeGraph::NodeGraph(QGraphicsScene* scene,QWidget *parent):
 QGraphicsView(scene,parent),
 _evtState(DEFAULT),

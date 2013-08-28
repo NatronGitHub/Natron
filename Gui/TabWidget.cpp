@@ -8,13 +8,6 @@
 *
 */
 
- 
-
- 
-
-
-
-
 #include "TabWidget.h"
 
 #include <QLayout>

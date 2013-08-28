@@ -9,24 +9,19 @@
 *
 */
 
- 
-
- 
-
-
-
-
 /**
  ALL THE CODE IN THAT FILE IS DEPRECATED AND NEED TO BE REVIEWED THOROUGHLY, DO NOT PAY HEED TO THE CODE WHILE THIS WARNING
  IS STILL PRESENT
  **/
 
-#include "Readers/ReadFfmpeg_deprecated.h"
+#include "ReadFfmpeg_deprecated.h"
+
 #include "Readers/Reader.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/ChannelSet.h"
 #include "Gui/NodeGui.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
 

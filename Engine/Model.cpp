@@ -8,16 +8,16 @@
  *
  */
 
+#include "Model.h"
 
-
+#include <cassert>
+#include <cstdio>
+#include <fstream>
 #include <QtCore/QMutex>
 #include <QtCore/QDir>
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
-#include <cassert>
-#include <cstdio>
-#include <fstream>
-#include "Engine/Model.h"
+
 #include "Global/Controler.h"
 #include "Engine/Hash.h"
 #include "Engine/Node.h"
@@ -46,10 +46,6 @@
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
-#include <cassert>
-
-
-#include <fstream>
 
 // ofx
 #include "ofxCore.h"

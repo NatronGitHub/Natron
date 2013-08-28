@@ -9,32 +9,31 @@
 *
 */
 
- 
+#include "ReadQt.h"
 
- 
-
-
-
-
-#include "Readers/ReadQt.h"
-#include "Gui/ViewerGL.h"
 #include <QtGui/QImage>
 #include <QtGui/QColor>
+
+#include "Gui/ViewerGL.h"
 #include "Readers/Reader.h"
 #include "Gui/NodeGui.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
+
 ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
 
 void ReadQt::initializeColorSpace(){
     _lut=Lut::getLut(Lut::VIEWER);
 }
+
 ReadQt::~ReadQt(){
     if(_img)
         delete _img;
 }
+
 void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     uchar* buffer;
     int h = op->getInfo()->getDisplayWindow().h();

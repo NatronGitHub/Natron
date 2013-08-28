@@ -8,12 +8,6 @@
  *
  */
 
-
-
-
-
-
-
 #include "Gui/Gui.h"
 
 #include <cassert>

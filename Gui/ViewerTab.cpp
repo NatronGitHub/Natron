@@ -8,12 +8,9 @@
 *
 */
 
- 
+#include "ViewerTab.h"
 
- 
-
-
-
+#include <cassert>
 #include <QApplication>
 #include <QSlider>
 #include <QComboBox>
@@ -26,7 +23,7 @@
 #include <QAbstractItemView>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QKeySequence>
-#include "Gui/ViewerTab.h"
+
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Global/Controler.h"
@@ -43,6 +40,7 @@
 #include "Gui/TabWidget.h"
 
 using namespace Powiter;
+
 ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_maximized(false)
 {
     

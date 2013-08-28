@@ -9,16 +9,6 @@
  *
  */
 
-
-
-
-
-
-
-
-#define CACHE_FOLDER_NAME "PowiterCache"
-
-
 #include "AbstractCache.h"
 
 #include <sstream>
@@ -31,6 +21,8 @@
 
 using namespace std;
 using namespace Powiter;
+
+#define CACHE_FOLDER_NAME "PowiterCache"
 
 #if QT_VERSION < 0x050000
 static bool removeRecursively(const QString & dirName)

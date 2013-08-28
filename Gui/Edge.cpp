@@ -8,12 +8,6 @@
 *
 */
 
- 
-
- 
-
-
-
 #include "Edge.h"
 
 #include <cmath>
@@ -24,6 +18,7 @@
 #include "Engine/Node.h"
 
 using namespace std;
+
 const qreal pi= 3.14159265358979323846264338327950288419717;
 static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not

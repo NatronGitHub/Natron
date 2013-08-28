@@ -9,27 +9,23 @@
 *
 */
 
- 
+#include "NodeCache.h"
 
- 
+#include <sstream>
+#include <cassert>
+#include <QtCore/QDir>
 
-
-
-#include "Engine/NodeCache.h"
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Hash.h"
-#include <sstream>
-#include <cassert>
-#include <QtCore/QDir>
+
 using namespace std;
 
 NodeCache::NodeCache() : AbstractMemoryCache() {
-    
 }
-NodeCache::~NodeCache(){
-    
+
+NodeCache::~NodeCache() {    
 }
 
 NodeCache* NodeCache::getNodeCache(){

@@ -9,20 +9,16 @@
 *
 */
 
- 
+#include "Row.h"
 
- 
-
-
-
-#include "Engine/Row.h"
-#include "Engine/Node.h"
-#include "Engine/Hash.h"
-#include "Engine/MemoryFile.h"
 #include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <QtCore/QFile>
+
+#include "Engine/Node.h"
+#include "Engine/Hash.h"
+#include "Engine/MemoryFile.h"
 
 using namespace std;
 using namespace Powiter;

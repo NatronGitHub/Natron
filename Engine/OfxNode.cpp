@@ -9,8 +9,8 @@
  *
  */
 
-
 #include "OfxNode.h"
+
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -19,8 +19,10 @@
 #include "Engine/ViewerNode.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
+
 using namespace std;
 using namespace Powiter;
+
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context):

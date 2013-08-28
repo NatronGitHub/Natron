@@ -8,13 +8,6 @@
  *
  */
 
-
-
-
-
-
-
-
 #include "Gui/Knob.h"
 
 #include <climits>
@@ -45,11 +38,9 @@
 #include "Engine/ViewerNode.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
+
 using namespace Powiter;
 using namespace std;
-
-
-
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
     unsigned int i=0x1;

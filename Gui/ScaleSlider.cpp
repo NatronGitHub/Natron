@@ -8,21 +8,13 @@
 *
 */
 
- 
-
- 
-
-
-
+#include "ScaleSlider.h"
 
 #include <qlayout.h>
 #include <QtGui/qevent.h>
 #include <QtGui/qpainter.h>
 
-#include "Gui/ScaleSlider.h"
 using namespace std;
-
-
 
 ScaleSlider::ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter::Scale_Type type,int nbDisplayedValues,QWidget* parent):
 QWidget(parent),

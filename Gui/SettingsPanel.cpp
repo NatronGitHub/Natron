@@ -8,14 +8,7 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#include "Gui/SettingsPanel.h"
+#include "SettingsPanel.h"
 
 #include <QLayout>
 #include <QAction>

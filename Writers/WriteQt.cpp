@@ -9,15 +9,9 @@
 *
 */
 
- 
-
- 
-
-
-
-
 
 #include "WriteQt.h"
+
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
 #include "Writers/Writer.h"
@@ -25,6 +19,7 @@
 
 using namespace std;
 using namespace Powiter;
+
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
 std::vector<std::string> WriteQt::fileTypesEncoded(){
     std::vector<std::string> out;

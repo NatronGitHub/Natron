@@ -9,15 +9,7 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
-#include "Writers/Writer.h"
+#include "Writer.h"
 
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
@@ -33,6 +25,7 @@
 
 using namespace std;
 using namespace Powiter;
+
 Writer::Writer():
 Node(),
 _requestedChannels(Mask_RGB), // temporary

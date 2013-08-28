@@ -9,13 +9,7 @@
 *
 */
 
- 
-
- 
-
-
-
-#include "Engine/ViewerNode.h"
+#include "ViewerNode.h"
 
 #include <QtConcurrentRun>
 
@@ -34,6 +28,7 @@
 #include "Global/Controler.h"
 
 using namespace Powiter;
+
 ViewerNode::ViewerNode(ViewerCache* cache):Node(),
 _viewerInfos(0),
 _uiContext(0),

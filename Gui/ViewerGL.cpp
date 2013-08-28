@@ -8,16 +8,7 @@
  *
  */
 
-
-
-
-
-
-
-
-/*This class is the the core of the viewer : what displays images, overlays, etc...
- Everything related to OpenGL will (almost always) be in this class */
-#include "Gui/ViewerGL.h"
+#include "ViewerGL.h"
 
 #include <cassert>
 #include <map>
@@ -29,7 +20,7 @@
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
 #ifdef WITH_EIGEN
-#include <Eigne/Dense>
+#include <Eigen/Dense>
 #endif
 
 #include "Gui/TabWidget.h"
@@ -45,6 +36,9 @@
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
 #include "Global/GlobalDefines.h"
+
+/*This class is the the core of the viewer : what displays images, overlays, etc...
+ Everything related to OpenGL will (almost always) be in this class */
 
 #ifdef __POWITER_OSX__
 #define glGenVertexArrays glGenVertexArraysAPPLE
