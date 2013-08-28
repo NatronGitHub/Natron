@@ -236,14 +236,14 @@ public:
      exceeding the size.*/
     void setMaximumCacheSize(U64 size){_maximumCacheSize = size;}
     
-    const U64& getMaximumSize() const {return _maximumCacheSize;}
+    const U64 getMaximumSize() const {return _maximumCacheSize;}
     
-    const U64& getCurrentSize() const {return _size;}
+    const U64 getCurrentSize() const {return _size;}
     
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.
      */
-    CacheEntry* getCacheEntry(const U64& key) ;
+    CacheEntry* getCacheEntry(U64 key) ;
     
 
 protected:
@@ -329,9 +329,9 @@ public:
      maximum cache size).*/
     void setMaximumInMemorySize(double percentage){ _maximumInMemorySize = percentage;}
     
-    const double& getMaximumInMemorySize() const {return _maximumInMemorySize;}
+    double getMaximumInMemorySize() const {return _maximumInMemorySize;}
     
-    const U64& getCurrentInMemoryPortionSize() const {return _inMemorySize;}
+    U64 getCurrentInMemoryPortionSize() const {return _inMemorySize;}
     
     /*Saves cache to disk as a settings file.
      */
@@ -350,7 +350,7 @@ protected:
      to a valid cache entry, otherwise it points to to end.
      Protected so the derived class must explicitly encapsulate
      this function: the CacheIterator should be opaque to the end user.*/
-    CacheEntry* isInMemory(const U64& key);
+    CacheEntry* isInMemory(U64 key);
     
     
 private:
