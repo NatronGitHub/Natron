@@ -941,13 +941,11 @@ QString Model::serializeNodeGraph() const{
     writer.writeStartElement("Nodes");
     foreach(NodeGui* n, activeNodes){
         //serialize inputs
-        // ret.append("Node:");
         assert(n);
         assert(n->getNode());
         writer.writeStartElement("Node");
         
         if(!n->getNode()->isOpenFXNode()){
-            //ret.append(n->getNode()->className().c_str());
             writer.writeAttribute("ClassName",n->getNode()->className().c_str());
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
@@ -959,12 +957,8 @@ QString Model::serializeNodeGraph() const{
                 name.append(groups[0]);
                 name.append("]");
             }
-            // ret.append(name.c_str());
             writer.writeAttribute("ClassName",name.c_str());
         }
-        //  ret.append(":");
-        //ret.append(n->getNode()->getName().c_str());
-        //ret.append("{\n");
         writer.writeAttribute("Label", n->getNode()->getName().c_str());
         
         writer.writeStartElement("Inputs");
@@ -972,11 +966,6 @@ QString Model::serializeNodeGraph() const{
         for (U32 i = 0; i < parents.size(); ++i) {
             writer.writeStartElement("Input");
             writer.writeAttribute("Number", QString::number(i));
-            //            ret.append("input");
-            //            ret.append(QString::number(i));
-            //            ret.append(":");
-            //            ret.append(parents[i]->getName().c_str());
-            //            ret.append("\n");
             writer.writeAttribute("Name", parents[i]->getName().c_str());
             writer.writeEndElement();// end input
         }
@@ -986,12 +975,6 @@ QString Model::serializeNodeGraph() const{
         writer.writeStartElement("Knobs");
         for (U32 i = 0; i < knobs.size(); ++i) {
             writer.writeStartElement("Knob");
-            //            ret.append("knob");
-            //            ret.append(":");
-            //            ret.append(knobs[i]->getDescription().c_str());
-            //            ret.append(":");
-            //            ret.append(knobs[i]->serialize().c_str());
-            //            ret.append("\n");
             writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
             writer.writeAttribute("Param", knobs[i]->serialize().c_str());
             writer.writeEndElement();//end knob
@@ -999,12 +982,7 @@ QString Model::serializeNodeGraph() const{
         writer.writeEndElement(); // end knobs
         
         //serialize gui infos
-        //        ret.append("pos:");
-        //        ret.append("x=");
-        //        ret.append(QString::number(n->pos().x()));
-        //        ret.append("y=");
-        //        ret.append(QString::number(n->pos().y()));
-        //        ret.append("\n");
+      
         writer.writeStartElement("Gui");
         
         writer.writeAttribute("X", QString::number(n->pos().x()));
@@ -1012,8 +990,6 @@ QString Model::serializeNodeGraph() const{
         
         writer.writeEndElement();//end gui
         
-        //closing brace
-        //ret.append("}\n");
         writer.writeEndElement();//end node
     }
     writer.writeEndElement(); // end nodes

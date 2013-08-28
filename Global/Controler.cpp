@@ -251,6 +251,25 @@ bool Controler::findAutoSave(){
             bool exists = QFile::exists(filenameWithPath);
             QString text;
             _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
+            
+            
+            QDateTime time = QDateTime::currentDateTime();
+            if(exists){
+                _currentProject._hasProjectBeenSavedByUser = true;
+                _currentProject._projectName = filename;
+                _currentProject._projectPath = path;
+            }else{
+                _currentProject._hasProjectBeenSavedByUser = false;
+                _currentProject._projectName = "Untitled.rs";
+                _currentProject._projectPath = "";
+            }
+            _currentProject._age = time;
+            _currentProject._lastAutoSave = time;
+            QString title("Powiter - ");
+            title.append(_currentProject._projectName);
+            title.append(" (*)");
+            _gui->setWindowTitle(title);
+
             if(exists){
                 text = "A recent auto-save of " + filename + " was found. You can preview it now.\n"
                 "Would you like to restore it entirely? Clicking No will remove this auto-save.";
@@ -259,6 +278,8 @@ bool Controler::findAutoSave(){
                 "You can preview it now.\n"
                 "Would you like to restore it ? Clicking No will remove this auto-save forever.";
             }
+
+            
             QMessageBox::StandardButton ret = QMessageBox::question(_gui, "Auto-save", text,
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
             if(ret == QMessageBox::No || ret == QMessageBox::Escape){
