@@ -42,7 +42,7 @@
 using namespace Powiter;
 using namespace std;
 
-std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
+std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
     unsigned int i=0x1;
     std::vector<Knob::Knob_Flags> flags;
     if(m!=0){

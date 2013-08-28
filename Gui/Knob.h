@@ -145,7 +145,7 @@ protected:
 };
 
 typedef unsigned int Knob_Mask;
-std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask& m);
+std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
 
 
 /*Class inheriting Knob, must have a function named BuildKnob with the following signature:
