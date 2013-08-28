@@ -472,7 +472,7 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::metaReadHeader(Reader* reader,int current_frame){
-    reader->readCurrentHeader(current_frame);
+    reader->readCurrentHeader(current_frame); // FIXME: return value may be false and reader->readHandle may be NULL
 }
 
 void VideoEngine::metaReadData(Reader* reader,int current_frame){

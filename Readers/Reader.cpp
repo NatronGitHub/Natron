@@ -179,10 +179,12 @@ void Reader::readCurrentData(int current_frame){
     if((*found)->hasToDecode()){
         if((*found)->supportsScanLines()){
             Buffer::ScanLineDescriptor* slDesc = static_cast<Buffer::ScanLineDescriptor*>(*found);
+            assert(slDesc->_readHandle);
             slDesc->_readHandle->readScanLineData(slDesc->_slContext);
             slDesc->_hasRead = true;
         }else{
             Buffer::FullFrameDescriptor* ffDesc = static_cast<Buffer::FullFrameDescriptor*>(*found);
+            assert(ffDesc->_readHandle);
             ffDesc->_readHandle->readData();
             ffDesc->_hasRead = true;
         }
@@ -198,7 +200,7 @@ void Reader::showFilePreview(){
     
     fitFrameToViewer(false);
     
-    readCurrentHeader(firstFrame());
+    readCurrentHeader(firstFrame()); // FIXME: return value may be false and reader->readHandle may be NULL
     readCurrentData(firstFrame());
 
     assert(readHandle);
