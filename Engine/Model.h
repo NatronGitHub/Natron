@@ -82,6 +82,50 @@ public:
     std::string second;
 };
 
+namespace XMLProjectLoader {
+    
+
+class XMLParsedElement{
+public:
+    QString _element;
+    XMLParsedElement(const QString& element):
+    _element(element)
+    {
+    }
+};
+
+class InputXMLParsedElement : public XMLParsedElement{
+public:
+    int _number;
+    QString _name;
+    InputXMLParsedElement(const QString& name, int number):XMLParsedElement("Input"),
+    _number(number),_name(name)
+    {
+    }
+};
+
+class KnobXMLParsedElement :  public XMLParsedElement{
+public:
+    QString _description;
+    QString _param;
+    KnobXMLParsedElement(const QString& description, const QString& param):XMLParsedElement("Knob"),
+    _description(description),_param(param)
+    {
+    }
+};
+
+class NodeGuiXMLParsedElement :  public XMLParsedElement{
+public:
+    double _x,_y;
+    NodeGuiXMLParsedElement(double x, double y):XMLParsedElement("Gui"),
+    _x(x),_y(y)
+    {
+    }
+};
+
+}
+
+
 class KnobFactory;
 class Format;
 class InputNode;
@@ -266,10 +310,11 @@ private:
     /*restores the node graph from string*/
     void restoreGraphFromString(const QString& str);
 
-    
-    /*Analyses and takes action for 1 node ,given 1 line from the serialized version
+
+        
+    /*Analyses and takes action for 1 node ,given 1 attribute from the serialized version
      of the node graph.*/
-    void analyseSerializedNodeString(Node* n,const QString& str);
+    void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
     
 
     VideoEngine* _videoEngine; // Video Engine

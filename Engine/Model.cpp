@@ -12,6 +12,8 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QDir>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -823,7 +825,7 @@ void Model::loadOFXPlugins(){
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
         
-
+        
         vector<string> groups = extractAllPartsOfGrouping(grouping);
         if (groups.size() >= 1) {
             name.append("  [");
@@ -932,13 +934,21 @@ OfxStatus Model::vmessage(const char* type,
 QString Model::serializeNodeGraph() const{
     const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
     QString ret;
+    
+    QXmlStreamWriter writer(&ret);
+    writer.setAutoFormatting(true);
+    writer.writeStartDocument();
+    writer.writeStartElement("Nodes");
     foreach(NodeGui* n, activeNodes){
         //serialize inputs
-        ret.append("Node:");
+        // ret.append("Node:");
         assert(n);
         assert(n->getNode());
+        writer.writeStartElement("Node");
+        
         if(!n->getNode()->isOpenFXNode()){
-            ret.append(n->getNode()->className().c_str());
+            //ret.append(n->getNode()->className().c_str());
+            writer.writeAttribute("ClassName",n->getNode()->className().c_str());
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
             std::string name = ofxNode->getShortLabel();
@@ -949,127 +959,211 @@ QString Model::serializeNodeGraph() const{
                 name.append(groups[0]);
                 name.append("]");
             }
-            ret.append(name.c_str());
+            // ret.append(name.c_str());
+            writer.writeAttribute("ClassName",name.c_str());
         }
-        ret.append(":");
-        ret.append(n->getNode()->getName().c_str());
-        ret.append("{\n");
+        //  ret.append(":");
+        //ret.append(n->getNode()->getName().c_str());
+        //ret.append("{\n");
+        writer.writeAttribute("Label", n->getNode()->getName().c_str());
+        
+        writer.writeStartElement("Inputs");
         const std::vector<Node*>& parents = n->getNode()->getParents();
         for (U32 i = 0; i < parents.size(); ++i) {
-            ret.append("input");
-            ret.append(QString::number(i));
-            ret.append(":");
-            ret.append(parents[i]->getName().c_str());
-            ret.append("\n");
+            writer.writeStartElement("Input");
+            writer.writeAttribute("Number", QString::number(i));
+            //            ret.append("input");
+            //            ret.append(QString::number(i));
+            //            ret.append(":");
+            //            ret.append(parents[i]->getName().c_str());
+            //            ret.append("\n");
+            writer.writeAttribute("Name", parents[i]->getName().c_str());
+            writer.writeEndElement();// end input
         }
-        //serialize knobs
+        writer.writeEndElement(); // end inputs
+                                  //serialize knobs
         const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
+        writer.writeStartElement("Knobs");
         for (U32 i = 0; i < knobs.size(); ++i) {
-            ret.append("knob");
-            ret.append(":");
-            ret.append(knobs[i]->getDescription().c_str());
-            ret.append(":");
-            ret.append(knobs[i]->serialize().c_str());
-            ret.append("\n");
+            writer.writeStartElement("Knob");
+            //            ret.append("knob");
+            //            ret.append(":");
+            //            ret.append(knobs[i]->getDescription().c_str());
+            //            ret.append(":");
+            //            ret.append(knobs[i]->serialize().c_str());
+            //            ret.append("\n");
+            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
+            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
+            writer.writeEndElement();//end knob
         }
+        writer.writeEndElement(); // end knobs
         
         //serialize gui infos
-        ret.append("pos:");
-        ret.append("x=");
-        ret.append(QString::number(n->pos().x()));
-        ret.append("y=");
-        ret.append(QString::number(n->pos().y()));
-        ret.append("\n");
+        //        ret.append("pos:");
+        //        ret.append("x=");
+        //        ret.append(QString::number(n->pos().x()));
+        //        ret.append("y=");
+        //        ret.append(QString::number(n->pos().y()));
+        //        ret.append("\n");
+        writer.writeStartElement("Gui");
+        
+        writer.writeAttribute("X", QString::number(n->pos().x()));
+        writer.writeAttribute("Y", QString::number(n->pos().y()));
+        
+        writer.writeEndElement();//end gui
         
         //closing brace
-        ret.append("}\n");
+        //ret.append("}\n");
+        writer.writeEndElement();//end node
     }
+    writer.writeEndElement(); // end nodes
+    writer.writeEndDocument();
     return ret;
 }
 
 void Model::restoreGraphFromString(const QString& str){
-    int i = 0,lastNode = 0;
-    std::vector<std::pair<Node*,QString> > actionsMap;
-    i = str.indexOf("Node:",lastNode);
-    while(i != -1){
-        lastNode = i+1;
-        
-        i += 5;
-        QString className;
-        while(i < str.size() && str.at(i) != QChar(':')){
-            className.append(str.at(i));
-            ++i;
-        }
-        if(i  == str.size()) return; // safety check
-        
-        ++i;
-        QString nodeName;
-        while(i < str.size() && str.at(i) != QChar('{')){
-            nodeName.append(str.at(i));
-            ++i;
-        }
-        if(i  == str.size()) return; // safety check
-        
-        ++i; //the '\n' character
-        
-        assert(ctrlPTR);
-        ctrlPTR->deselectAllNodes();
-        Node* n = ctrlPTR->createNode(className);
-        if(!n){
-            QString text("Failed to restore the graph! \n The node ");
-            text.append(className);
-            text.append(" was found in the auto-save script but doesn't seem \n"
-                        "to exist in the currently loaded plug-ins.");
-            ctrlPTR->showErrorDialog("Autosave", text );
-            ctrlPTR->clearInternalNodes();
-            ctrlPTR->clearNodeGuis();
-            ctrlPTR->createNode("Viewer");
-            return;
-        }
-        
-        n->getNodeUi()->setName(nodeName);
-        while (i < str.size() && str.at(i) != QChar('}')) {
-            QString line;
-            while(i < str.size() && str.at(i) != QChar('\n')){
-                line.append(str.at(i));
-                ++i;
-            }
-            ++i; // the '\n' character
-            actionsMap.push_back(make_pair(n, line));
-        }
-        i = str.indexOf("Node:",lastNode);
-    }
+    // pair< Node, pair< AttributeName, AttributeValue> >
+    std::vector<std::pair<Node*, XMLProjectLoader::XMLParsedElement* > > actionsMap;
+    QXmlStreamReader reader(str);
     
+    while(!reader.atEnd() && !reader.hasError()){
+        QXmlStreamReader::TokenType token = reader.readNext();
+        /* If token is just StartDocument, we'll go to next.*/
+        if(token == QXmlStreamReader::StartDocument) {
+            continue;
+        }
+        /* If token is StartElement, we'll see if we can read it.*/
+        if(token == QXmlStreamReader::StartElement) {
+            /* If it's named Nodes, we'll go to the next.*/
+            if(reader.name() == "Nodes") {
+                continue;
+            }
+            /* If it's named Node, we'll dig the information from there.*/
+            if(reader.name() == "Node") {
+                /* Let's check that we're really getting a Node. */
+                if(reader.tokenType() != QXmlStreamReader::StartElement &&
+                   reader.name() == "Node") {
+                    ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    return;
+                }
+                QString className,label;
+                QXmlStreamAttributes nodeAttributes = reader.attributes();
+                if(nodeAttributes.hasAttribute("ClassName")) {
+                    className = nodeAttributes.value("ClassName").toString();
+                }
+                if(nodeAttributes.hasAttribute("Label")) {
+                    label = nodeAttributes.value("Label").toString();
+                }
+                
+                assert(ctrlPTR);
+                ctrlPTR->deselectAllNodes();
+                Node* n = ctrlPTR->createNode(className);
+                if(!n){
+                    QString text("Failed to restore the graph! \n The node ");
+                    text.append(className);
+                    text.append(" was found in the auto-save script but doesn't seem \n"
+                                "to exist in the currently loaded plug-ins.");
+                    ctrlPTR->showErrorDialog("Autosave", text );
+                    ctrlPTR->clearInternalNodes();
+                    ctrlPTR->clearNodeGuis();
+                    ctrlPTR->createNode("Viewer");
+                    return;
+                }
+                n->getNodeUi()->setName(label);
+                
+                reader.readNext();
+                while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                        reader.name() == "Node")) {
+                    if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                        
+                        if(reader.name() == "Inputs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Inputs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Input") {
+                                        QXmlStreamAttributes inputAttributes = reader.attributes();
+                                        int number = -1;
+                                        QString name;
+                                        if(inputAttributes.hasAttribute("Number")){
+                                            number = inputAttributes.value("Number").toString().toInt();
+                                        }
+                                        if(inputAttributes.hasAttribute("Name")){
+                                            name = inputAttributes.value("Name").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::InputXMLParsedElement(name,number)));
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        
+                        if(reader.name() == "Knobs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Knobs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Knob") {
+                                        QXmlStreamAttributes knobAttributes = reader.attributes();
+                                        QString description,param;
+                                        if(knobAttributes.hasAttribute("Description")){
+                                            description = knobAttributes.value("Description").toString();
+                                        }
+                                        if(knobAttributes.hasAttribute("Param")){
+                                            param = knobAttributes.value("Param").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::KnobXMLParsedElement(description,param)));
+                                    }
+                                }
+                            }
+                            
+                        }
+                        
+                        if(reader.name() == "Gui") {
+                            double x = 0,y = 0;
+                            QXmlStreamAttributes posAttributes = reader.attributes();
+                            QString description,param;
+                            if(posAttributes.hasAttribute("X")){
+                                x = posAttributes.value("X").toString().toDouble();
+                            }
+                            if(posAttributes.hasAttribute("Y")){
+                                y = posAttributes.value("Y").toString().toDouble();
+                            }
+                            
+                            
+                            actionsMap.push_back(make_pair(n,new XMLProjectLoader::NodeGuiXMLParsedElement(x,y)));
+                            
+                        }
+                    }
+                    reader.readNext();
+                }
+            }
+        }
+    }
+    if(reader.hasError()){
+        ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        return;
+    }
     //adjusting knobs & connecting nodes now
     for (U32 i = 0; i < actionsMap.size(); ++i) {
-        pair<Node*,QString>& action = actionsMap[i];
+        pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
         analyseSerializedNodeString(action.first, action.second);
     }
     
 }
-void Model::analyseSerializedNodeString(Node* n,const QString& str){
+void Model::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v){
     assert(n);
-    int type = 0;
-    type = str.indexOf("input");
-    if(type != -1){
-        int i = type + 5;
-        QString inputNumberStr;
-        while(i < str.size() && str.at(i) != QChar(':')){
-            inputNumberStr.append(str.at(i));
-            ++i;
-        }
-        ++i; // the ':' character
-        QString inputName;
-        while(i < str.size()){
-            inputName.append(str.at(i));
-            ++i;
-        }
-        
+    
+    if(v->_element == "Input"){
+        XMLProjectLoader::InputXMLParsedElement* inputEl = static_cast<XMLProjectLoader::InputXMLParsedElement*>(v);
+        assert(inputEl);
         assert(n->getNodeUi());
-        int inputNb = inputNumberStr.toInt();
+        int inputNb = inputEl->_number;
         for (U32 j = 0; j < _currentNodes.size(); ++j) {
             assert(_currentNodes[j]);
-            if (_currentNodes[j]->getName() == inputName.toStdString()) {
+            if (_currentNodes[j]->getName() == inputEl->_name.toStdString()) {
                 n->addParent(_currentNodes[j]);
                 _currentNodes[j]->addChild(n);
                 n->getNodeUi()->addParent(_currentNodes[j]->getNodeUi());
@@ -1083,67 +1177,23 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
                 break;
             }
         }
-        return;
-    }
-    type = str.indexOf("knob");
-    if(type != -1){
-        int i = type + 4;
-        
-        ++i; // the ':' character
-        
-        QString knobDescription;
-        while(i < str.size() && str.at(i)!= QChar(':')){
-            knobDescription.append(str.at(i));
-            ++i;
-        }
-        
-        if(i  == str.size()) return; // safety check
-        
-        ++i; // the ':' character
-        
-        QString value;
-        while(i < str.size()){
-            value.append(str.at(i));
-            ++i;
-        }
-        
+        //  cout << "Input: " << inputEl->_number << " :" << inputEl->_name.toStdString() << endl;
+    }else if(v->_element == "Knob"){
+        XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
+        assert(inputEl);
         const std::vector<Knob*>& knobs = n->getKnobs();
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if (knobs[j]->getDescription() == knobDescription.toStdString()) {
-                knobs[j]->restoreFromString(value.toStdString());
+            if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
+                knobs[j]->restoreFromString(inputEl->_param.toStdString());
                 break;
             }
         }
-        
-        return;
-    }
-    
-    type = str.indexOf("pos");
-    if(type != -1){
-        int i = type + 3;
-        ++i;// the ':' character
-        ++i;// the 'x' character
-        ++i;// the '=' character
-        
-        QString xStr,yStr;
-        while(i < str.size() && str.at(i)!=QChar('y')){
-            xStr.append(str.at(i));
-            ++i;
-        }
-        
-        if(i  == str.size()) return; // safety check
-        
-        ++i; // the 'y' character
-        ++i; // the '=' character
-        
-        while(i < str.size()){
-            yStr.append(str.at(i));
-            ++i;
-        }
-        
+        //cout << "Knob: " << inputEl->_description.toStdString() << " :" << inputEl->_param.toStdString() << endl;
+    }else if(v->_element == "Gui"){
+        XMLProjectLoader::NodeGuiXMLParsedElement* inputEl = static_cast<XMLProjectLoader::NodeGuiXMLParsedElement*>(v);
+        assert(inputEl);
         assert(n->getNodeUi());
-        n->getNodeUi()->setPos(xStr.toDouble(), yStr.toDouble());
-        
+        n->getNodeUi()->setPos(inputEl->_x,inputEl->_y);
         const vector<NodeGui*>& children = n->getNodeUi()->getChildren();
         const vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
         foreach(NodeGui* c,children){
@@ -1155,10 +1205,8 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
         foreach(Edge* e,edges){
             e->initLine();
         }
-        
-        return;
+        //  cout << "Gui/Pos: " << inputEl->_x << " , " << inputEl->_y << endl;
     }
-    
 }
 
 void Model::loadProject(const QString& filename,bool autoSave){
@@ -1196,7 +1244,7 @@ void Model::saveProject(const QString& path,const QString& filename,bool autoSav
         QTextStream out(&file);
         out << serializeNodeGraph();
         file.close();
-
+        
     }
 }
 

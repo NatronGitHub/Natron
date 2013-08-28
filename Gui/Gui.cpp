@@ -44,7 +44,7 @@
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH IMAGES_PATH"openeffects.png"
-
+ 
 using namespace std;
 using namespace Powiter;
 
