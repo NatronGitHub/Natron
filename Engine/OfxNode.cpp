@@ -187,7 +187,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxImage* img = dynamic_cast<OfxImage*>(getClip("Output")->getImage(0.0,NULL));
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
-        const OfxRGBAColourB* srcPixels = img->pixelB(0, y);
+        const OfxRGBAColourB* srcPixels = img->pixelB(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -196,7 +196,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
     {
-        const OfxRGBAColourS* srcPixels = img->pixelS(0, y);
+        const OfxRGBAColourS* srcPixels = img->pixelS(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -205,7 +205,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
     {
-        const OfxRGBAColourF* srcPixels = img->pixelF(0, y);
+        const OfxRGBAColourF* srcPixels = img->pixelF(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
