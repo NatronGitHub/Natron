@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include "Engine/Box.h"
+#include "Global/GlobalDefines.h"
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  *into a texture. x,y,r,t are respectivly the image coordinates of the left,bottom,right,top

@@ -9,26 +9,22 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_GUI_H_
+#define POWITER_GUI_GUI_H_
 
- 
-
-
-
-#ifndef GUI_H
-#define GUI_H
+#include <map>
+#ifndef Q_MOC_RUN
+#include <boost/noncopyable.hpp>
+#endif
 #include <QtCore/QVariant>
 #include <QToolButton>
 #include <QIcon>
 #include <QAction>
-#include "Global/GlobalDefines.h"
 #include <QMainWindow>
-
-#ifndef Q_MOC_RUN
-#include <boost/noncopyable.hpp>
-#endif
 #include <QDialog>
-#include <map>
+
+#include "Global/GlobalDefines.h"
+
 class QString;
 class QAction;
 class TabWidget;
@@ -100,7 +96,7 @@ class FloatingWidget : public QWidget{
     QWidget* _embeddedWidget;
     QVBoxLayout* _layout;
 public:
-    FloatingWidget(QWidget* parent = 0);
+    explicit FloatingWidget(QWidget* parent = 0);
     virtual ~FloatingWidget(){}
     
     /*Set the embedded widget. Only 1 widget can be embedded
@@ -125,7 +121,7 @@ class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
 public:
-    Gui(QWidget* parent=0);
+    explicit Gui(QWidget* parent=0);
     
     virtual ~Gui();
     
@@ -288,4 +284,4 @@ public:
     
 };
 
-#endif // GUI_H
+#endif // POWITER_GUI_GUI_H_

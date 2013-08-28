@@ -56,7 +56,7 @@ public slots:
         
 public:
     
-    TimeLine(QWidget* parent=0);
+    explicit TimeLine(QWidget* parent=0);
     virtual ~TimeLine(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/

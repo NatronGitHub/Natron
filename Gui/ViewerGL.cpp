@@ -12,6 +12,9 @@
 
 #include <cassert>
 #include <map>
+#ifdef WITH_EIGEN
+#include <Eigen/Dense>
+#endif
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
@@ -19,9 +22,6 @@
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
-#ifdef WITH_EIGEN
-#include <Eigen/Dense>
-#endif
 
 #include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"

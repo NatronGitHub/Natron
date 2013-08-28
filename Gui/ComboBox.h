@@ -9,22 +9,15 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
-#ifndef PowiterOsX_comboBox_h
-#define PowiterOsX_comboBox_h
+#ifndef POWITER_GUI_COMBOBOX_H_
+#define POWITER_GUI_COMBOBOX_H_
 
 #include <QFrame>
 #include <QtCore/QStringList>
 #include <vector>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
+
 class QHBoxLayout;
 class QLabel;
 class QMouseEvent;
@@ -53,7 +46,7 @@ class ComboBox : public QFrame
 
 public:
     
-    ComboBox(QWidget* parent = 0);
+    explicit ComboBox(QWidget* parent = 0);
     
     virtual ~ComboBox(){}
     

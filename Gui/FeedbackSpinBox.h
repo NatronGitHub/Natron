@@ -9,19 +9,14 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#ifndef __PowiterOsX__FeedbackSpinBox__
-#define __PowiterOsX__FeedbackSpinBox__
+#ifndef POWITER_GUI_FEEDBACKSPINBOX_H_
+#define POWITER_GUI_FEEDBACKSPINBOX_H_
 
 #include <iostream>
 #include <QtCore/QEvent>
+
 #include "Gui/LineEdit.h"
+
 class FeedBackSpinBox : public LineEdit
 {
     Q_OBJECT
@@ -31,7 +26,7 @@ class FeedBackSpinBox : public LineEdit
     double _increment;
     double _mini,_maxi;
 public:
-    FeedBackSpinBox(QWidget* parent=0,bool mode=false);
+    explicit FeedBackSpinBox(QWidget* parent=0, bool mode=false);
     void decimals(int d){
         _decimals=d;
         setMaxLength(_decimals+3);
@@ -61,4 +56,4 @@ public slots:
     
 };
 
-#endif /* defined(__PowiterOsX__FeedbackSpinBox__) */
+#endif /* defined(POWITER_GUI_FEEDBACKSPINBOX_H_) */

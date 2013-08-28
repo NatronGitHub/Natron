@@ -9,15 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef SETTINGSPANEL_H
-#define SETTINGSPANEL_H
-
+#ifndef POWITER_GUI_SETTINGSPANEL_H_
+#define POWITER_GUI_SETTINGSPANEL_H_
 
 #include <QFrame>
 
@@ -84,7 +77,7 @@ class SettingsPanel:public QFrame
 
 public:
 
-    SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
+    explicit SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
     
     virtual ~SettingsPanel();
     
@@ -122,4 +115,4 @@ private:
 	
 };
 
-#endif // SETTINGSPANEL_H
+#endif // POWITER_GUI_SETTINGSPANEL_H_

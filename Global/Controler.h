@@ -18,6 +18,9 @@
 #ifndef CONTROLER_H
 #define CONTROLER_H
 
+#include <vector>
+#include <string>
+
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
 

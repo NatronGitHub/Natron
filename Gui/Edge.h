@@ -9,16 +9,12 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_EDGE_H_
+#define POWITER_GUI_EDGE_H_
 
- 
-
-
-
-#ifndef ARROW_H
-#define ARROW_H
 #include <QGraphicsLineItem>
 #include <QtCore/QPoint>
+
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
 class QRectF;
@@ -71,4 +67,4 @@ private:
     NodeGui* source;
 };
 
-#endif // ARROW_H
+#endif // POWITER_GUI_EDGE_H_

@@ -66,7 +66,7 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
     
-    UrlModel(QObject *parent = 0);
+    explicit UrlModel(QObject *parent = 0);
     
     QStringList mimeTypes() const;
     virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
@@ -117,7 +117,7 @@ signals:
     void urlRequested(const QUrl &url);
     
 public:
-    FavoriteView(QWidget *parent = 0);
+    explicit FavoriteView(QWidget *parent = 0);
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
     
@@ -162,7 +162,7 @@ class SequenceItemDelegate : public QStyledItemDelegate {
     std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
     SequenceFileDialog* _fd;
 public:
-    SequenceItemDelegate(SequenceFileDialog* fd);
+    explicit SequenceItemDelegate(SequenceFileDialog* fd);
 
     void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
 
@@ -177,7 +177,7 @@ protected:
 class SequenceDialogView: public QTreeView{
     
 public:
-    SequenceDialogView(QWidget* parent);
+    explicit SequenceDialogView(QWidget* parent);
     
     void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
 
@@ -251,7 +251,7 @@ public:
     typedef std::multimap<std::string, FileSequence >::iterator SequenceIterator;
     typedef std::multimap<std::string, FileSequence >::const_iterator ConstSequenceIterator;
     
-    SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
+    explicit SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
     void clear(){_frameSequences.clear();}
     
     
@@ -281,7 +281,7 @@ private:
 class FileDialogComboBox : public QComboBox
 {
 public:
-    FileDialogComboBox(QWidget *parent = 0) : QComboBox(parent), urlModel(0) {}
+    explicit FileDialogComboBox(QWidget *parent = 0) : QComboBox(parent), urlModel(0) {}
     void setFileDialogPointer(SequenceFileDialog *p);
     void showPopup();
     void setHistory(const QStringList &paths);

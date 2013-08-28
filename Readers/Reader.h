@@ -514,7 +514,7 @@ protected:
 
 	virtual void initKnobs(KnobCallback *cb);
     
-    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
+    virtual ChannelSet supportedComponents() { return ChannelSet(Powiter::Mask_All); }
 private:
 	QImage *preview;
 	bool has_preview;

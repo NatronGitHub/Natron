@@ -115,8 +115,8 @@ public:
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
 	void setReaderInfo(Format dispW,
-                       Box2D dataW,
-                       QString file,
+                       const Box2D& dataW,
+                       const QString& file,
                        ChannelSet channels,
                        int Ydirection ,
                        bool rgb );

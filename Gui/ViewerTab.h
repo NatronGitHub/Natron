@@ -55,7 +55,7 @@ class ViewerTab: public QWidget
 	bool _maximized;
     
 public:
-    ViewerTab(ViewerNode* node,QWidget* parent=0);
+    explicit ViewerTab(ViewerNode* node,QWidget* parent=0);
     
 	virtual ~ViewerTab();
     

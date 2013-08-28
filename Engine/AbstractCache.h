@@ -292,7 +292,7 @@ public:
     /*Constructs an empty disk cache of size 0. You must explicitly call
      setMaximumCacheSize to allow the cache to grow. The inMemoryUsage indicates
      the percentage of the maximumCacheSize that you allow to be in memory.*/
-    AbstractDiskCache(double inMemoryUsage);
+    explicit AbstractDiskCache(double inMemoryUsage);
     virtual ~AbstractDiskCache();
     
     /*Creates empty sub-directories for the cache, counting them

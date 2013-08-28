@@ -89,7 +89,7 @@ class TabBar : public QTabBar{
     
 public:
     
-    TabBar(TabWidget* tabWidget,QWidget* parent = 0);
+    explicit TabBar(TabWidget* tabWidget,QWidget* parent = 0);
     
 //    void addTab(const QString& text);
 //    
@@ -159,7 +159,7 @@ private:
 public:
     
         
-    TabWidget(TabWidget::Decorations decorations,QWidget* parent = 0);
+    explicit TabWidget(TabWidget::Decorations decorations,QWidget* parent = 0);
     
     virtual ~TabWidget();
     

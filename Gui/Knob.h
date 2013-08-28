@@ -9,14 +9,9 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_KNOB_H_
+#define POWITER_GUI_KNOB_H_
 
- 
-
-
-
-#ifndef KNOB_H
-#define KNOB_H
 #include <vector>
 #include <map>
 #include <cassert>
@@ -26,14 +21,15 @@
 #include <QWidget>
 #include <QtCore/QStringList>
 #include <QLineEdit>
+
 #include "Global/GlobalDefines.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Model.h"
 #include "Engine/Singleton.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ComboBox.h"
-
 #include "Gui/LineEdit.h"
+
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
  the GUI stuff. If you want say an int_knob for your operator, then just call Knob::int_knob(...) in the function initKnobs(..)
@@ -293,7 +289,7 @@ private:
 
 class OutputFileQLineEdit:public LineEdit{
 public:
-    OutputFileQLineEdit(OutputFile_Knob* knob);
+    explicit OutputFileQLineEdit(OutputFile_Knob* knob);
     void keyPressEvent(QKeyEvent *);
 private:
     OutputFile_Knob* knob;
@@ -936,4 +932,4 @@ private:
 /*****************************/
 
 
-#endif // KNOB_H
+#endif // POWITER_GUI_KNOB_H_
