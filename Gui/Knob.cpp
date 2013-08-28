@@ -42,7 +42,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Gui/Gui.h"
-#include "Engine/viewernode.h"
+#include "Engine/ViewerNode.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
