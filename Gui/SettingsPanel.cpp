@@ -18,6 +18,7 @@
 #include "Gui/SettingsPanel.h"
 
 #include <QLayout>
+#include <QAction>
 #include <QTabWidget>
 #include <QStyle>
 #include "Gui/NodeGui.h"
@@ -52,10 +53,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     QImage imgM(IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
-    pixM.scaled(15,15);
+    pixM = pixM.scaled(15,15);
     QImage imgC(IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
-    pixC.scaled(15,15);
+    pixC = pixC.scaled(15,15);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
     _minimize->setFixedSize(15,15);
     _minimize->setCheckable(true);
@@ -63,12 +64,43 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _cross=new Button(QIcon(pixC),"",_headerWidget);
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
-   
+    
+    QImage imgUndo(IMAGES_PATH"undo.png");
+    QPixmap pixUndo = QPixmap::fromImage(imgUndo);
+    pixUndo = pixUndo.scaled(15, 15);
+    QImage imgUndo_gray(IMAGES_PATH"undo_grayscale.png");
+    QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
+    pixUndo_gray = pixUndo_gray.scaled(15, 15);
+    QIcon icUndo;
+    icUndo.addPixmap(pixUndo,QIcon::Normal);
+    icUndo.addPixmap(pixUndo_gray,QIcon::Disabled);
+    _undoButton = new Button(icUndo,"",_headerWidget);
+    _undoButton->setToolTip("Undo the last change made to this operator");
+    _undoButton->setEnabled(false);
+    
+    QImage imgRedo(IMAGES_PATH"redo.png");
+    QPixmap pixRedo = QPixmap::fromImage(imgRedo);
+    pixRedo = pixRedo.scaled(15, 15);
+    QImage imgRedo_gray(IMAGES_PATH"redo_grayscale.png");
+    QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
+    pixRedo_gray = pixRedo_gray.scaled(15, 15);
+    QIcon icRedo;
+    icRedo.addPixmap(pixRedo,QIcon::Normal);
+    icRedo.addPixmap(pixRedo_gray,QIcon::Disabled);
+    _redoButton = new Button(icRedo,"",_headerWidget);
+    _redoButton->setToolTip("Redo the last change undone to this operator");
+    _redoButton->setEnabled(false);
+    
+    QObject::connect(_undoButton, SIGNAL(pressed()),_nodeGUI, SLOT(undoCommand()));
+    QObject::connect(_redoButton, SIGNAL(pressed()),_nodeGUI, SLOT(redoCommand()));
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
-    QObject::connect(_nodeName,SIGNAL(textChanged(QString)),_nodeGUI,SLOT(setName(QString)));
+    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(setName(QString)));
     _headerLayout->addWidget(_nodeName);
+    _headerLayout->addStretch();
+    _headerLayout->addWidget(_undoButton);
+    _headerLayout->addWidget(_redoButton);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_minimize);
     _headerLayout->addWidget(_cross);
@@ -99,6 +131,13 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
 }
 SettingsPanel::~SettingsPanel(){}
 
+void SettingsPanel::setEnabledUndoButton(bool b){
+    _undoButton->setEnabled(b);
+}
+void SettingsPanel::setEnabledRedoButton(bool b){
+    _redoButton->setEnabled(b);
+}
+
 void SettingsPanel::initialize_knobs(){
     
     _cb=_nodeGUI->getNode()->getKnobCallBack();
@@ -124,13 +163,13 @@ void SettingsPanel::close(){
 
     QVBoxLayout* container = _nodeGUI->getDockContainer();
     vector<QWidget*> _panels;
-    for(int i =0 ; i < container->count(); i++){
+    for(int i =0 ; i < container->count(); ++i) {
         if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
             _panels.push_back(myItem);
             container->removeWidget(myItem);
         }
     }
-    for (U32 i =0 ; i < _panels.size(); i++) {
+    for (U32 i =0 ; i < _panels.size(); ++i) {
         container->addWidget(_panels[i]);
     }
  
@@ -148,13 +187,13 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
         vector<QWidget*> _panels;
-        for(int i =0 ; i < container->count(); i++){
+        for(int i =0 ; i < container->count(); ++i) {
             if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
                 container->removeWidget(myItem);
             }
         }
-        for (U32 i =0 ; i < _panels.size(); i++) {
+        for (U32 i =0 ; i < _panels.size(); ++i) {
             container->addWidget(_panels[i]);
         }
     
@@ -167,13 +206,13 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         
         QVBoxLayout* container = _nodeGUI->getDockContainer();
         vector<QWidget*> _panels;
-        for(int i =0 ; i < container->count(); i++){
+        for(int i =0 ; i < container->count(); ++i) {
             if (QWidget *myItem = dynamic_cast <QWidget*>(container->itemAt(i))){
                 _panels.push_back(myItem);
                 container->removeWidget(myItem);
             }
         }
-        for (U32 i =0 ; i < _panels.size(); i++) {
+        for (U32 i =0 ; i < _panels.size(); ++i) {
             container->addWidget(_panels[i]);
         }        
     }
@@ -193,4 +232,7 @@ void SettingsPanel::setSelected(bool s){
     _selected = s;
     style()->unpolish(this);
     style()->polish(this);
+}
+void SettingsPanel::setNodeName(const QString& name){
+    _nodeName->setText(name);
 }

@@ -117,7 +117,7 @@ TabWidget::~TabWidget(){
 
 void TabWidget::destroyTabs(){
     
-    for (U32 i = 0; i < _tabs.size(); i++) {
+    for (U32 i = 0; i < _tabs.size(); ++i) {
         destroyTab(_tabs[i]);
     }
 }
@@ -200,7 +200,7 @@ QString TabWidget::getTabName(int index) const {
 }
 
 QString TabWidget::getTabName(QWidget* tab) const{
-    for (U32 i = 0; i < _tabs.size(); i++) {
+    for (U32 i = 0; i < _tabs.size(); ++i) {
         if (_tabs[i] == tab) {
             return _tabBar->tabText(i);
         }
@@ -244,7 +244,7 @@ bool TabWidget::appendTab(const QString& title,QWidget* widget){
     _tabs.push_back(widget);
     _tabBar->addTab(title);
     if(_tabs.size() == 1){
-        for (int i =0; i < _mainLayout->count(); i++) {
+        for (int i =0; i < _mainLayout->count(); ++i) {
             QSpacerItem* item = dynamic_cast<QSpacerItem*>(_mainLayout->itemAt(i));
             if(item)
                 _mainLayout->removeItem(item);
@@ -263,7 +263,7 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
     _tabs.push_back(widget);
     _tabBar->addTab(icon,title);
     if(_tabs.size() == 1){
-        for (int i =0; i < _mainLayout->count(); i++) {
+        for (int i =0; i < _mainLayout->count(); ++i) {
             QSpacerItem* item = dynamic_cast<QSpacerItem*>(_mainLayout->itemAt(i));
             if(item)
                 _mainLayout->removeItem(item);
@@ -321,7 +321,7 @@ QWidget*  TabWidget::removeTab(int index){
     }
 }
 void TabWidget::removeTab(QWidget* widget){
-    for (U32 i = 0; i < _tabs.size(); i++) {
+    for (U32 i = 0; i < _tabs.size(); ++i) {
         if (_tabs[i] == widget) {
             _tabs.erase(_tabs.begin()+i);
             _tabBar->removeTab(i);
@@ -473,7 +473,7 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
 //        _currentIndex = -1;
 //        emit currentChanged(-1);
 //    }
-//    for (int i =0 ; i < count(); i++) {
+//    for (int i =0 ; i < count(); ++i) {
 //        Tab* tab = dynamic_cast<Tab*>(_mainLayout->itemAt(index));
 //        if (tab) {
 //            if (i == index) {

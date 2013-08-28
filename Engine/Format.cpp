@@ -20,10 +20,18 @@
 using namespace std;
 
 
-Format::Format(int x, int y, int r, int t, const std::string& name, double pa):Box2D(x,y,r,t),_pixel_aspect(pa),_name(name){}
+Format::Format(int x, int y, int r, int t, const std::string& name, double pa)
+: Box2D(x,y,r,t)
+, _pixel_aspect(pa)
+, _name(name)
+{
+}
 
-Format::Format():Box2D(),_pixel_aspect(0),_name(""){
-    
+Format::Format()
+: Box2D()
+, _pixel_aspect(0)
+, _name("")
+{
 }
 
 std::string Format::name() const {return _name;}

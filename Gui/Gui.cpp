@@ -24,6 +24,9 @@
 #include <QSplitter>
 #include <QMenuBar>
 #include <QToolBar>
+#include <QFileDialog>
+#include <QMessageBox>
+ 
 
 #include "Gui/Texture.h"
 #include "Global/Controler.h"
@@ -37,17 +40,31 @@
 #include "Gui/NodeGraph.h"
 #include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/SequenceFileDialog.h"
 
-
+#define PLUGIN_GROUP_DEFAULT "Other"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH IMAGES_PATH"openeffects.png"
+ 
 using namespace std;
 using namespace Powiter;
+
+// Helper function: Get the icon with the given name from the icon theme.
+// If unavailable, fall back to the built-in icon. Icon names conform to this specification:
+// http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+static QIcon get_icon(const QString &name)
+{
+    return QIcon::fromTheme(name, QIcon(QString(":icons/") + name));
+}
+
 Gui::Gui(QWidget* parent):QMainWindow(parent),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
+actionSaveAs_project(0),
 actionPreferences(0),
 actionExit(0),
 actionProject_settings(0),
+actionFullScreen(0),
 actionSplitViewersTab(0),
 actionClearDiskCache(0),
 actionClearPlayBackCache(0),
@@ -80,16 +97,35 @@ Gui::~Gui(){
     
     
 }
-void Gui::exit(){
+bool Gui::exit(){
+    int ret = saveWarning();
+    if(ret == 0){
+        saveProject();
+    }else if(ret == 2){
+        return false;
+    }
     ctrlPTR->getModel()->getVideoEngine()->abort();
 	ctrlPTR->Destroy();
     delete this;
     qApp->exit(0);
+    return true;
     
 }
+
+void Gui::toggleFullScreen()
+{
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
+    }
+}
+
 void Gui::closeEvent(QCloseEvent *e){
-    // save project ...
-    exit();
+    if(!exit()){
+        e->ignore();
+        return;
+    }
     e->accept();
 }
 
@@ -130,16 +166,18 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
 	setWindowTitle(QApplication::translate("Powiter", "Powiter"));
-	actionNew_project->setText(QApplication::translate("Powiter", "New project"));
-	actionOpen_project->setText(QApplication::translate("Powiter", "Open project"));
-	actionSave_project->setText(QApplication::translate("Powiter", "Save project"));
-	actionPreferences->setText(QApplication::translate("Powiter", "Preferences"));
-	actionExit->setText(QApplication::translate("Powiter", "Exit"));
-	actionProject_settings->setText(QApplication::translate("Powiter", "Project settings"));
-	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle multi-view area"));
-	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear disk cache"));
-	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear playback cache"));
-	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear per-node cache"));
+	actionNew_project->setText(QApplication::translate("Powiter", "New Project"));
+	actionOpen_project->setText(QApplication::translate("Powiter", "Open Project..."));
+	actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
+    actionSaveAs_project->setText(QApplication::translate("Powiter", "Save Project As..."));
+	actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
+    actionExit->setText(QApplication::translate("Powiter", "Exit"));
+	actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
+	actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
+	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
+	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
+	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
+	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
     
     
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
@@ -178,16 +216,38 @@ void Gui::setupUi()
 	
 	actionNew_project = new QAction(this);
 	actionNew_project->setObjectName(QString::fromUtf8("actionNew_project"));
+    actionNew_project->setShortcut(QKeySequence::New);
+    actionNew_project->setIcon(get_icon("document-new"));
+    QObject::connect(actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()));
 	actionOpen_project = new QAction(this);
 	actionOpen_project->setObjectName(QString::fromUtf8("actionOpen_project"));
+    actionOpen_project->setShortcut(QKeySequence::Open);
+    actionOpen_project->setIcon(get_icon("document-open"));
+    QObject::connect(actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()));
 	actionSave_project = new QAction(this);
 	actionSave_project->setObjectName(QString::fromUtf8("actionSave_project"));
+    actionSave_project->setShortcut(QKeySequence::Save);
+    actionSave_project->setIcon(get_icon("document-save"));
+    QObject::connect(actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()));
+    actionSaveAs_project = new QAction(this);
+	actionSaveAs_project->setObjectName(QString::fromUtf8("actionSaveAs_project"));
+    actionSaveAs_project->setShortcut(QKeySequence::SaveAs);
+    actionSaveAs_project->setIcon(get_icon("document-save-as"));
+    QObject::connect(actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()));
 	actionPreferences = new QAction(this);
 	actionPreferences->setObjectName(QString::fromUtf8("actionPreferences"));
+	actionPreferences->setMenuRole(QAction::PreferencesRole);
 	actionExit = new QAction(this);
 	actionExit->setObjectName(QString::fromUtf8("actionExit"));
+	actionExit->setMenuRole(QAction::QuitRole);
+    actionExit->setIcon(get_icon("application-exit"));
 	actionProject_settings = new QAction(this);
 	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
+    actionProject_settings->setIcon(get_icon("document-properties"));
+	actionFullScreen = new QAction(this);
+	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
+	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
+    actionFullScreen->setIcon(get_icon("view-fullscreen"));
 	actionSplitViewersTab=new QAction(this);
 	actionSplitViewersTab->setObjectName(QString::fromUtf8("actionSplitViewersTab"));
 	actionClearDiskCache = new QAction(this);
@@ -247,9 +307,9 @@ void Gui::setupUi()
     _panes.push_back(_workshopPane);
     /*creating DAG gui*/
     addNodeGraph();
-
+    
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
-   
+    
 	
     _middleRightSplitter = new QSplitter(_centralWidget);
     _middleRightSplitter->setChildrenCollapsible(false);
@@ -291,8 +351,8 @@ void Gui::setupUi()
     _mainLayout->addWidget(_leftRightSplitter);
     
     
-
-
+    
+    
     
 	
     
@@ -304,6 +364,7 @@ void Gui::setupUi()
 	menuFile->addAction(actionNew_project);
 	menuFile->addAction(actionOpen_project);
 	menuFile->addAction(actionSave_project);
+    menuFile->addAction(actionSaveAs_project);
 	menuFile->addSeparator();
 	menuFile->addAction(actionPreferences);
 	menuFile->addSeparator();
@@ -311,15 +372,18 @@ void Gui::setupUi()
 	
 	menuOptions->addAction(actionProject_settings);
 	menuDisplay->addAction(viewersMenu->menuAction());
+    menuDisplay->addSeparator();
+	menuDisplay->addAction(actionFullScreen);
 	viewersMenu->addAction(actionSplitViewersTab);
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
 	retranslateUi(this);
     
-
+    
     
     Model* model = ctrlPTR->getModel();
+    QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearNodeCache()));
@@ -336,7 +400,7 @@ void Gui::loadStyleSheet(){
     {
         QTextStream in(&qss);
         QString content(in.readAll());
-       // cout << content.toStdString() << endl;
+        // cout << content.toStdString() << endl;
         setStyleSheet(content
                       .arg("rgb(243,149,0)")
                       .arg("rgb(50,50,50)")
@@ -346,16 +410,16 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::setFullScreen(TabWidget* what){
-    for (U32 i =0; i < _panes.size(); i++) {
+void Gui::maximize(TabWidget* what){
+    for (U32 i =0; i < _panes.size(); ++i) {
         if (_panes[i] != what) {
             _panes[i]->hide();
         }
     }
 }
 
-void Gui::exitFullScreen(){
-    for (U32 i =0; i < _panes.size(); i++) {
+void Gui::minimize(){
+    for (U32 i =0; i < _panes.size(); ++i) {
         _panes[i]->show();
     }
 }
@@ -369,7 +433,7 @@ ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
 }
 void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
     bool found = false;
-    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
         if (_viewerTabs[i] == tab) {
             found = true;
             break;
@@ -382,7 +446,8 @@ void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
 }
 
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
-    for (U32 i = 0; i < _viewerTabs.size(); i++) {
+    assert(tab);
+    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
         if (_viewerTabs[i] == tab) {
             _viewerTabs.erase(_viewerTabs.begin()+i);
             break;
@@ -391,23 +456,28 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     
     if(deleteData){
         if (!initiatedFromNode) {
+            assert(_nodeGraphTab);
+            assert(_nodeGraphTab->_nodeGraphArea);
             _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
             ctrlPTR->getModel()->removeNode(tab->getInternalNode());
-        }else{
+        } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-            container->removeTab(tab);
+            if(container)
+                container->removeTab(tab);
             delete tab;
         }
-    }else{
+    } else {
         TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
-        container->removeTab(tab);
+        if(container)
+            container->removeTab(tab);
     }
     
 }
 void Gui::addNodeGraph(){
     NodeGraphTab* tab = new NodeGraphTab(_workshopPane);
     _nodeGraphTab = tab;
+    assert(_workshopPane);
     _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
 }
 
@@ -419,7 +489,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
     if(from == where){
         /*We check that even if it is the same TabWidget, it really exists.*/
         bool found = false;
-        for (int i =0; i < from->count(); i++) {
+        for (int i =0; i < from->count(); ++i) {
             if (what == from->tabAt(i)) {
                 found = true;
                 break;
@@ -530,7 +600,7 @@ void Gui::closePane(TabWidget* what){
     if(!container) return;
     
     /*Removing it from the _panes vector*/
-    for (U32 i = 0; i < _panes.size(); i++) {
+    for (U32 i = 0; i < _panes.size(); ++i) {
         if (_panes[i] == what) {
             _panes.erase(_panes.begin()+i);
             break;
@@ -552,7 +622,7 @@ void Gui::closePane(TabWidget* what){
     
     /*identifying the other tab*/
     TabWidget* other = 0;
-    for (int i = 0; i < container->count(); i++) {
+    for (int i = 0; i < container->count(); ++i) {
         TabWidget* tab = dynamic_cast<TabWidget*>(container->widget(i));
         if (tab) {
             other = tab;
@@ -567,7 +637,7 @@ void Gui::closePane(TabWidget* what){
     
     /*Removing the container from the mainContainer*/
     int subSplitterIndex = 0;
-    for (int i = 0; i < mainContainer->count(); i++) {
+    for (int i = 0; i < mainContainer->count(); ++i) {
         QSplitter* subSplitter = dynamic_cast<QSplitter*>(mainContainer->widget(i));
         if (subSplitter && subSplitter == container) {
             subSplitterIndex = i;
@@ -633,14 +703,22 @@ void Gui::addPluginToolButton(const std::string& actionName,
     if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
         groupIcon.addFile(groupIconPath.c_str());
     }
-    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(groups[0]);
+    std::string mainGroup;
+    if(groups.size()){
+        mainGroup = groups[0];
+    }else{
+        mainGroup = PLUGIN_GROUP_DEFAULT;
+        groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
+    }
+    
+    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);
     }else{
         ToolButton* tb = new ToolButton(actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
         _toolBox->addWidget(tb);
-        tb->setToolTip(groups.front().c_str());
-        _toolGroups.insert(make_pair(groups[0],tb));
+        tb->setToolTip(mainGroup.c_str());
+        _toolGroups.insert(make_pair(mainGroup,tb));
     }
     
 }
@@ -658,7 +736,7 @@ ToolButton::ToolButton(const std::string& actionName,
     setMaximumSize(35,35);
     
     QMenu* _lastMenu = _menu;
-    for (U32 i = 1; i < firstElement.size(); i++) {
+    for (U32 i = 1; i < firstElement.size(); ++i) {
         _lastMenu = _lastMenu->addMenu(firstElement[i].c_str());
         _subMenus.push_back(_lastMenu);
     }
@@ -673,7 +751,7 @@ ToolButton::ToolButton(const std::string& actionName,
     
 }
 ToolButton::~ToolButton(){
-    for(U32 i = 0; i < _actions.size() ; i++){
+    for(U32 i = 0; i < _actions.size() ; ++i) {
         delete _actions[i];
     }
 }
@@ -684,7 +762,7 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
     QMenu* _lastMenu = _menu;
     while(index < (int)grouping.size()){
         bool found = false;
-        for (U32 i =  0; i < _subMenus.size(); i++) {
+        for (U32 i =  0; i < _subMenus.size(); ++i) {
             if (_subMenus[i]->title() == QString(grouping[index].c_str())) {
                 _lastMenu = _subMenus[i];
                 found = true;
@@ -695,7 +773,7 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
             break;
         ++index;
     }
-    for(int i = index; i < (int)grouping.size() ; i++){
+    for(int i = index; i < (int)grouping.size() ; ++i) {
         QMenu* menu = _lastMenu->addMenu(grouping[index].c_str());
         _subMenus.push_back(menu);
         _lastMenu = menu;
@@ -715,4 +793,89 @@ void ActionRef::onTriggered(){
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
 	menuEdit->addAction(redoAction);
+}
+void Gui::newProject(){
+    int ret = saveWarning();
+    if(ret == 0){
+        saveProject();
+    }else if(ret == 2){
+        return;
+    }
+    currentViewer->getUiContext()->viewer->disconnectViewer();
+    _nodeGraphTab->_nodeGraphArea->clear();
+    ctrlPTR->clearInternalNodes();
+    ctrlPTR->resetCurrentProject();
+    ctrlPTR->createNode("Viewer");
+}
+void Gui::openProject(){
+    std::vector<std::string> filters;
+    filters.push_back("rs");
+    SequenceFileDialog dialog(this,filters,false,
+                              SequenceFileDialog::OPEN_DIALOG);
+    if(dialog.exec()){
+        QStringList selectedFiles = dialog.selectedFiles();
+        if (selectedFiles.size() > 0) {
+            //clearing current graph
+            _nodeGraphTab->_nodeGraphArea->clear();
+            ctrlPTR->clearInternalNodes();
+            QString file = selectedFiles.at(0);
+            QString name = SequenceFileDialog::removePath(file);
+            QString path = file.left(file.indexOf(name));
+            ctrlPTR->loadProject(path,name);
+        }
+    }
+}
+void Gui::saveProject(){
+    if(ctrlPTR->hasProjectBeenSavedByUser()){
+        ctrlPTR->saveProject(ctrlPTR->getCurrentProjectPath(),ctrlPTR->getCurrentProjectName(),false);
+    }else{
+        saveProjectAs();
+    }
+}
+void Gui::saveProjectAs(){
+    vector<string> filter;
+    filter.push_back("rs");
+    SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
+    QString outFile;
+    if(dialog.exec()){
+        outFile = dialog.filesToSave();
+    }
+    if (outFile.size() > 0) {
+        if (outFile.indexOf(".rs") == -1) {
+            outFile.append(".rs");
+        }
+        QString file = SequenceFileDialog::removePath(outFile);
+        QString path = outFile.left(outFile.indexOf(file));
+        ctrlPTR->saveProject(path,file,false);
+    }
+}
+
+void Gui::autoSave(){
+    ctrlPTR->autoSave();
+}
+
+bool Gui::isGraphWorthless() const{
+    return _nodeGraphTab->_nodeGraphArea->isGraphWorthLess();
+}
+
+int Gui::saveWarning(){
+    
+    if(!isGraphWorthless() && !ctrlPTR->isSaveUpToDate()){
+        QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
+                                     QString("Save changes to " + ctrlPTR->getCurrentProjectName() + " ?"),
+                                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
+        if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
+            return 2;
+        }else if(ret == QMessageBox::Discard){
+            return 1;
+        }else{
+            return 0;
+        }
+    }
+    return -1;
+
+}
+
+void Gui::errorDialog(const QString& title,const QString& text){
+    QMessageBox::critical(this, title, text);
 }

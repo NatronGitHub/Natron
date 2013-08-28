@@ -84,22 +84,23 @@ void Writer::_validate(bool forReal){
                 /*check if the filename already contains the extension, otherwise appending it*/
                 QString extension;
                 QString filename(_filename.c_str());
-                int i = filename.size()-1;
-                while(i >= 0 && filename.at(i) != QChar('.')){extension.prepend(filename.at(i));i--;}
-                
-                PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(extension.toStdString());
-                QString frameNumber;
-                char tmp[50];
-                sprintf(tmp, "%i",_currentFrame);
-                frameNumber.append(tmp);
-                if(!isValid || extension.toStdString()!=_fileType){ //extension not contained in filename, append it
-                    filename.append(frameNumber);
-                    filename.append(".");
-                    filename.append(_fileType.c_str());
+                int i = filename.lastIndexOf(QChar('.'));
+                if(i != -1){
+                    extension.append(filename.toStdString().substr(i).c_str());
+                    filename = filename.replace(i+1, extension.size(), _fileType.c_str());
                 }else{
-                    i--; /*i was at the '.' character, we put it one letter before so we can insert the frame number*/
-                    filename.insert(i, frameNumber);
+                    filename.append(extension);
                 }
+                
+                i = filename.lastIndexOf(QChar('#'));
+                QString n = QString::number(_currentFrame);
+                if(i != -1){
+                    filename = filename.replace(i,1,n);
+                }else{
+                    i = filename.lastIndexOf(QChar('.'));
+                    filename = filename.insert(i, n);
+                }
+                
                 write->setOptionalKnobsPtr(_writeOptions);
                 write->setupFile(filename.toStdString());
                 write->initializeColorSpace();
@@ -118,9 +119,11 @@ void Writer::createKnobDynamically(){
 }
 void Writer::initKnobs(KnobCallback *cb){
     std::string fileDesc("File");
-    OutputFile_Knob* file = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, Knob::NONE));
-    assert(file);
-	file->setPointer(&_filename);
+    _fileKnob = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, Knob::NONE));
+    assert(_fileKnob);
+	_fileKnob->setPointer(&_filename);
+    QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onFilesSelected()));
+    
     std::string renderDesc("Render");
     Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, renderDesc, Knob::NONE));
     assert(renderButton);
@@ -131,15 +134,15 @@ void Writer::initKnobs(KnobCallback *cb){
     premult->setPointer(&_premult);
     
     std::string filetypeStr("File type");
-    ComboBox_Knob* filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
-    QObject::connect(filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
+    _filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
+    QObject::connect(_filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
     const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
-    for(;it!=_encoders.end();it++){
+    for(;it!=_encoders.end();++it) {
         _allFileTypes.push_back(it->first);
     }
-    filetypeCombo->setPointer(&_fileType);
-    filetypeCombo->populate(_allFileTypes);
+    _filetypeCombo->setPointer(&_fileType);
+    _filetypeCombo->populate(_allFileTypes);
     Node::initKnobs(cb);
 }
 
@@ -186,7 +189,7 @@ void Writer::Buffer::appendTask(Write* task,QFutureWatcher<void>* future){
 }
 
 void Writer::Buffer::removeTask(Write* task){
-    for (U32 i = 0 ; i < _tasks.size(); i++) {
+    for (U32 i = 0 ; i < _tasks.size(); ++i) {
         std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
         if(t.first == task){
             _trash.push_back(t.second);
@@ -196,14 +199,14 @@ void Writer::Buffer::removeTask(Write* task){
     }
 }
 void Writer::Buffer::emptyTrash(){
-    for (U32 i = 0; i < _trash.size(); i++) {
+    for (U32 i = 0; i < _trash.size(); ++i) {
         delete _trash[i];
     }
     _trash.clear();
 }
 
 Writer::Buffer::~Buffer(){
-    for (U32 i = 0 ; i < _tasks.size(); i++) {
+    for (U32 i = 0 ; i < _tasks.size(); ++i) {
         std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
         delete t.second;
     }
@@ -254,6 +257,12 @@ void Writer::fileTypeChanged(int fileTypeIndex){
     PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!isValid) return;
     
+    QString file(_filename.c_str());
+    int pos = file.lastIndexOf(QChar('.'));
+    ++pos;
+    file.replace(pos, file.size() - pos, _fileType.c_str());
+    _fileKnob->setStr(file);
+    
     /*checking if channels are supported*/
     WriteBuilder builder = (WriteBuilder)isValid->first;
     Write* write = builder(this);
@@ -261,4 +270,15 @@ void Writer::fileTypeChanged(int fileTypeIndex){
     if(_writeOptions)
         _writeOptions->initKnobs(getKnobCallBack(),fileType);
     delete write;
+}
+void Writer::onFilesSelected(){
+    QString file(_filename.c_str());
+    int pos = file.lastIndexOf(QChar('.'));
+    string ext = _filename.substr(pos+1).c_str();
+    for (U32 i = 0; i < _allFileTypes.size(); i++) {
+        if (_allFileTypes[i] == ext) {
+            _filetypeCombo->setCurrentItem(i);
+            break;
+        }
+    }
 }

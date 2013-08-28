@@ -25,8 +25,8 @@
 
 using namespace std;
 const qreal pi= 3.14159265358979323846264338327950288419717;
-static const qreal UNATTACHED_ARROW_LENGTH=40.;
-const int graphicalContainerOffset=5; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
+static const qreal UNATTACHED_ARROW_LENGTH=60.;
+const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
 Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
 
@@ -41,6 +41,8 @@ Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraph
     label->setParentItem(this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
+    setFlag(QGraphicsItem::ItemStacksBehindParent);
+    setZValue(-1.1);
 }
 Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
 {
@@ -56,23 +58,53 @@ Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphi
 
 
 }
+
+Edge::~Edge(){
+    if(dest){
+        dest->markInputNull(this);
+    }
+}
+
 void Edge::initLine(){
-    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()))
-        + QPointF(NODE_LENGTH/2,0);
+    int h = NODE_HEIGHT;
+    int w = NODE_LENGTH;
+    if(dest->getNode()->className() == std::string("Reader")){
+        h += PREVIEW_HEIGHT;
+        w += PREVIEW_LENGTH;
+    }
+    QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                                           + QPointF(w/2.,h/2.));
     QPointF srcpt;
-    if(has_source){        
+    if(has_source){
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+
+        if(source->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
         srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
-            + QPointF(NODE_LENGTH/2,NODE_HEIGHT);
-		double norm = 0;
-		if(source->getNode()->className() == std::string("Reader")){
-            srcpt += QPointF(PREVIEW_LENGTH/2,PREVIEW_HEIGHT);
-			
-		}
+            + QPointF(w/2.,h/2.);
         setLine(dst.x(),dst.y(),srcpt.x(),srcpt.y());
-        norm = sqrt(pow(dst.x() - srcpt.x(),2) + pow(dst.y() - srcpt.y(),2));
+        
+        
+        /*adjusting src and dst to show label at the middle of the line*/
+        QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
+        + QPointF(w/2.,h);
+
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+        
+        if(dest->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
+        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                          + QPointF(w/2.,0));
+               double norm = sqrt(pow(labelDst.x() - labelSrcpt.x(),2) + pow(labelDst.y() - labelSrcpt.y(),2));
         if(norm > 20.){
-            label->setPos((dst.x()+srcpt.x())/2.-5.,
-                          (dst.y()+srcpt.y())/2.-10);
+            label->setPos((labelDst.x()+labelSrcpt.x())/2.-5.,
+                          (labelDst.y()+labelSrcpt.y())/2.-10);
             label->show();
         }else{
             label->hide();
@@ -94,8 +126,34 @@ void Edge::initLine(){
             
             yOffset = +10;
         }
-        label->setPos(((dst.x()+srcpt.x())/2.)+yOffset,(dst.y()+srcpt.y())/2.-20);
         
+        /*adjusting dst to show label at the middle of the line*/
+        h = NODE_HEIGHT;
+        w = NODE_LENGTH;
+        
+        if(dest->getNode()->className() == std::string("Reader")){
+            h += PREVIEW_HEIGHT;
+            w += PREVIEW_LENGTH;
+        }
+        QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
+                          + QPointF(w/2.,0));
+               
+        label->setPos(((labelDst.x()+srcpt.x())/2.)+yOffset,(labelDst.y()+srcpt.y())/2.-20);
+        
+    }
+    QPointF dstPost = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y()));
+    QLineF edges[] = { QLineF(dstPost.x()+w,dstPost.y(),dstPost.x()+w,dstPost.y()+h), // right
+        QLineF(dstPost.x()+w,dstPost.y()+h,dstPost.x(),dstPost.y()+h), // bottom
+        QLineF(dstPost.x(),dstPost.y()+h,dstPost.x(),dstPost.y()), // left
+        QLineF(dstPost.x(),dstPost.y(),dstPost.x()+w,dstPost.y())}; // top
+    
+    for(int i = 0 ; i < 4 ; i++){
+        QPointF intersection;
+        QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
+        if(type == QLineF::BoundedIntersection){
+            setLine(QLineF(intersection,line().p2()));
+            break;
+        }
     }
     qreal a;
     a = acos(line().dx() / line().length());
@@ -108,7 +166,7 @@ void Edge::initLine(){
                                             cos(a + pi - pi / 3) * arrowSize);
 
     arrowHead.clear();
-    arrowHead << line().p1() << arrowP1 << arrowP2;
+    arrowHead << dst << arrowP1 << arrowP2;
 }
 
 
@@ -120,49 +178,48 @@ QPainterPath Edge::shape() const
 
      return path;
  }
+static double dist2(const QPointF& p1,const QPointF& p2){
+    return  pow(p2.x() - p1.x(),2) +  pow(p2.y() - p1.y(),2);
+}
+
+static double distToSegment(const QLineF& line,const QPointF& p){
+    double length = pow(line.length(),2);
+    const QPointF& p1 = line.p1();
+    const QPointF &p2 = line.p2();
+    if(length == 0.)
+        dist2(p, p1);
+    // Consider the line extending the segment, parameterized as p1 + t (p2 - p1).
+    // We find projection of point p onto the line.
+    // It falls where t = [(p-p1) . (p2-p1)] / |p2-p1|^2
+    double t = ((p.x() - p1.x()) * (p2.x() - p1.x()) + (p.y() - p1.y()) * (p2.y() - p1.y())) / length;
+    if (t < 0) return dist2(p, p1);
+    if (t > 1) return dist2(p, p2);
+    return sqrt(dist2(p, QPointF(p1.x() + t * (p2.x() - p1.x()),
+         p1.y() + t * (p2.y() - p1.y()))));
+}
 
 bool Edge::contains(const QPointF &point) const{
-    QPointF ULeft,LRight;
-    qreal a = acos(line().dx() / line().length());
-    if (line().dy() >= 0)
-        a = 2*pi - a;
-    ULeft = line().p1() + QPointF(cos(a + pi / 2) * graphicalContainerOffset,sin(a + pi / 2) * graphicalContainerOffset);
-    LRight=line().p2() + QPointF(cos(a  - pi / 2) * graphicalContainerOffset,sin(a  - pi / 2) * graphicalContainerOffset);
-
-    QRectF rect(ULeft,LRight);
-    //cout << "x1 " << line().x1() << " y1 " << line().y1() << " x2 " << line().x2() << " y2 " << line().y2() << endl;
-   // cout << "rect x1 " << rect.x() << " rect y1 " << rect.y() << " rect x2 " << rect.x()+rect.width() << " rect y2 " << rect.y()+rect.height() << endl;
-    return rect.contains(point);
+    double dist = distToSegment(line(), point);
+    return  dist <= graphicalContainerOffset;
 }
-void Edge::updatePosition(QPointF pos){
-
-
-    qreal x1,y1;
-    x1=dest->boundingRect().x();
-    y1=dest->boundingRect().y();  
-    qreal x2,y2;
-    x2=pos.x();
-    y2=pos.y();
-    qreal a;
-    a = acos(line().dx() / line().length());
+void Edge::updatePosition(const QPointF& src){
+    double a = acos(line().dx() / line().length());
     if (line().dy() >= 0)
         a = 2*pi - a;
 
-
-    qreal arrowSize = 5;
+    double arrowSize = 5;
     QPointF arrowP1 = line().p1() + QPointF(sin(a + pi / 3) * arrowSize,
                                             cos(a + pi / 3) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(sin(a + pi - pi / 3) * arrowSize,
                                             cos(a + pi - pi / 3) * arrowSize);
-
     arrowHead.clear();
 	arrowHead << line().p1() << arrowP1 << arrowP2;
 
+	setLine(QLineF(line().p1(),src));
+    
+	label->setPos(QPointF(((line().p1().x()+src.x())/2.)-5,((line().p1().y()+src.y())/2.)-5));
 
-	setLine(x1+NODE_LENGTH/2,y1,x2,y2);
-	label->setPos(((x1+(NODE_LENGTH/2)+x2)/2.)-5,((y1+y2)/2.)-5);
-
-
+   
 
 }
 void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,

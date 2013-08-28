@@ -17,10 +17,12 @@
 
 #ifndef CONTROLER_H
 #define CONTROLER_H
+
 #include <QtCore/QObject>
+#include <QtCore/QDateTime>
+
 #include "Global/GlobalDefines.h"
 #include "Engine/Singleton.h"
-
 
 /*macro to get the unique pointer to the controler*/
 #define ctrlPTR Controler::instance()
@@ -36,6 +38,21 @@ class ViewerNode;
 class Writer;
 class Gui;
 class QLabel;
+
+
+class Project{
+public:
+    Project():_hasProjectBeenSavedByUser(false){
+        _projectName = "Untitled.rs";
+        _age = QDateTime::currentDateTime();
+    }
+    
+    QString _projectName;
+    QString _projectPath;
+    bool _hasProjectBeenSavedByUser;
+    QDateTime _age;
+    QDateTime _lastAutoSave;
+};
 
 /*Controler (see Model-view-controler pattern on wikipedia). This class
  implements the singleton pattern to ensure there's only 1 single
@@ -87,7 +104,7 @@ public:
     
     /*initialize the pointers to the model and the view. It also call 
      gui->createGUI() and build a viewer node.*/
-    void initControler(Model* model,QLabel* loadingScreen);
+    void initControler(Model* model,QLabel* loadingScreen,QString projectName = QString());
     
     /*Returns a pointer to the Viewer currently used
      by the VideoEngine. If the output is not a viewer,
@@ -104,15 +121,54 @@ public:
                              const std::string& pluginIconPath,
                              const std::string& groupIconPath);
     
-    const std::vector<NodeGui*> getAllActiveNodes() const;
+    const std::vector<NodeGui*>& getAllActiveNodes() const;
+    
+    const QString& getCurrentProjectName() const {return _currentProject._projectName;}
+    
+    const QString& getCurrentProjectPath() const {return _currentProject._projectPath;}
+    
+    void setCurrentProjectName(const QString& name) {_currentProject._projectName = name;}
+    
+    void loadProject(const QString& path,const QString& name);
+    
+    void saveProject(const QString& path,const QString& name,bool autoSave);
+    
+    void autoSave();
+    
+    void triggerAutoSaveOnNextEngineRun();
+        
+    bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
+    
+    void resetCurrentProject();
+    
+    void clearInternalNodes();
+    
+    void clearNodeGuis();
+    
+    bool isSaveUpToDate() const;
+    
+    void deselectAllNodes() const;
+    
+    void showErrorDialog(const QString& title,const QString& message) const;
+    
+    static const QString autoSavesDir();
+    
+    
     
 private:
-	 
+	void removeAutoSaves() const;
+    
+    /*Attemps to find an autosave. If found one,prompts the user
+     whether he/she wants to load it. If something was loaded this function
+     returns true,otherwise false.*/
+    bool findAutoSave();
+    
     void addBuiltinPluginToolButtons();
     
     Model* _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
-
+    
+    Project _currentProject;
 };
 
 

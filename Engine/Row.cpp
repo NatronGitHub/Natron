@@ -38,7 +38,7 @@ void Row::turnOn(Channel c){
         buffers[c] = (float*)calloc((r-x),sizeof(float));
     else{
         buffers[c] = (float*)malloc((r-x)*sizeof(float));
-        for(int i =0 ;i <  (r-x) ;i++){
+        for(int i =0 ;i <  (r-x) ;++i) {
             buffers[c][i] = 1.f;
         }
     }
@@ -63,7 +63,7 @@ bool Row::allocateRow(const char*){
             buffers[z] = (float*)calloc((r-x),sizeof(float));
         else{
             buffers[z] = (float*)malloc(dataSize);
-            for(int i =0 ;i <  (r-x) ;i++){
+            for(int i =0 ;i <  (r-x) ;++i) {
                 buffers[z][i] = 1.f;
             }
         }
@@ -111,7 +111,11 @@ void Row::copy(const Row *source,ChannelSet channels,int o,int r){
         const float* sourcePtr = (*source)[z] + o;
         float* to = buffers[z] -x + o;
         float* end = to + r;
-        while(to!=end) *to++ = *sourcePtr++;
+        while (to != end) {
+            *to = *sourcePtr;
+            ++to;
+            ++sourcePtr;
+        }
     }
 }
 void Row::erase(Channel c){

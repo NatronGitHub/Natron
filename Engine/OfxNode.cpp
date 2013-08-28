@@ -57,7 +57,7 @@ ChannelSet OfxNode::supportedComponents(){
     OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
     const vector<string>& suppComponents = clip->getSupportedComponents();
     ChannelSet supportedComp;
-    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); it++) {
+    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
         supportedComp += OfxNode::ofxComponentsToPowiterChannels(*it);
     }
     return supportedComp;
@@ -74,6 +74,9 @@ bool OfxNode::isInputNode(){
 }
 const std::string OfxNode::className(){
     std::string label = getShortLabel();
+    if(label.empty()){
+        label = getLabel();
+    }
     if (label!="Viewer") {
         return label;
     }else{
@@ -95,7 +98,7 @@ std::string OfxNode::setInputLabel(int inputNb){
 OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput(){
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
     MappedInputV copy;
-    for (U32 i = 0; i < clips.size(); i++) {
+    for (U32 i = 0; i < clips.size(); ++i) {
         if(clips[i]->getShortLabel() != "Output"){
             copy.push_back(clips[i]);
             // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
@@ -118,9 +121,9 @@ int OfxNode::minimumInputs(){
     typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
     const ClipsMap& clips = getDescriptor().getClips();
     int minimalCount = 0;
-    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); it++) {
+    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
         if(!it->second->isOptional()){
-            minimalCount++;
+            ++minimalCount;
         }
     }
     return minimalCount-1;// -1 because we counted the "output" clip
@@ -184,7 +187,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxImage* img = dynamic_cast<OfxImage*>(getClip("Output")->getImage(0.0,NULL));
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
-        const OfxRGBAColourB* srcPixels = img->pixelB(0, y);
+        const OfxRGBAColourB* srcPixels = img->pixelB(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -193,7 +196,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
     {
-        const OfxRGBAColourS* srcPixels = img->pixelS(0, y);
+        const OfxRGBAColourS* srcPixels = img->pixelS(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -202,7 +205,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
     {
-        const OfxRGBAColourF* srcPixels = img->pixelF(0, y);
+        const OfxRGBAColourF* srcPixels = img->pixelF(out->offset(), y);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -448,3 +451,10 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
     t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
     t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
 }
+OfxStatus OfxNode::vmessage(const char* type,
+                   const char* id,
+                   const char* format,
+                   va_list args) {
+    return ctrlPTR->getModel()->vmessage(type, id, format, args);
+}
+

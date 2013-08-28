@@ -101,7 +101,7 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _drawing ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f               , (GLfloat)img.h()  , //0
@@ -205,6 +205,8 @@ void ViewerGL::initConstructor(){
     _defaultDisplayTexture = 0;
     _pBOmapped = false;
     _displayChannels = 0.f;
+    _progressBarY = -1;
+    _drawProgressBar = false;
 }
 
 ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
@@ -287,16 +289,21 @@ void ViewerGL::resizeGL(int width, int height){
 void ViewerGL::paintGL()
 {
     
-    float w = (float)width();
-    float h = (float)height();
+    double w = (double)width();
+    double h = (double)height();
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity();
-    float bottom = _zoomCtx._bottom;
-    float left = _zoomCtx._left;
-    float top =  bottom +  h / _zoomCtx._zoomFactor;
-    float right = left +  w / _zoomCtx._zoomFactor;
+    assert(_zoomCtx._zoomFactor > 0);
+    assert(_zoomCtx._zoomFactor <= 1024);
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
+    double right = left +  w / (double)_zoomCtx._zoomFactor;
+    assert(left != right);
+    assert(top != bottom);
     glOrtho(left, right, bottom, top, -1, 1);
-    
+    checkGLErrors();
+
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
@@ -320,7 +327,8 @@ void ViewerGL::paintGL()
             shaderBlack->setUniformValue("Tex", 0);
         
     }
-    
+    checkGLErrors();
+
     glClearColor(0.0,0.0,0.0,1.0);
     glClear (GL_COLOR_BUFFER_BIT);
     checkGLErrors();
@@ -339,6 +347,9 @@ void ViewerGL::paintGL()
     }
     if(_overlay){
         drawOverlay();
+    }
+    if(_drawProgressBar){
+        drawProgressBar();
     }
 }
 
@@ -408,6 +419,17 @@ void ViewerGL::drawOverlay(){
     //reseting color for next pass
     glColor4f(1, 1, 1, 1);
     checkGLErrors();
+}
+void ViewerGL::drawProgressBar(){
+    const Format& dW = displayWindow();
+    glLineWidth(5);
+    glBegin(GL_LINES);
+    
+    glVertex3f(dW.x(),_progressBarY,1);
+    glVertex3f(dW.right(),_progressBarY,1);
+    
+    glEnd();
+    glLineWidth(1);
 }
 
 
@@ -601,9 +623,11 @@ void ViewerGL::activateShaderLC(){
 	}
 	shaderLC->setUniformValue("Tex", 0);
 	shaderLC->setUniformValue("yw",1.0,1.0,1.0);
-    shaderLC->setUniformValue("expMult",  exposure);
-    shaderLC->setUniformValue("lut", _lut);
-    shaderLC->setUniformValue("byteMode", byteMode());
+    shaderLC->setUniformValue("expMult",  (GLfloat)exposure);
+    // FIXME: why a float to really represent an enum????
+    shaderLC->setUniformValue("lut", (GLfloat)_lut);
+    // FIXME: why a float to really represent an enum????
+    shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
 }
 void ViewerGL::activateShaderRGB(){
@@ -613,10 +637,13 @@ void ViewerGL::activateShaderRGB(){
 	}
     
     shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("byteMode", byteMode());
-	shaderRGB->setUniformValue("expMult",  exposure);
-    shaderRGB->setUniformValue("lut", _lut);
-    shaderRGB->setUniformValue("channels", _displayChannels);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
+	shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("lut", (GLfloat)_lut);
+    // FIXME: why a float to really represent an enum????
+    shaderRGB->setUniformValue("channels", (GLfloat)_displayChannels);
     
     
 }
@@ -671,7 +698,7 @@ void ViewerGL::initBlackTex(){
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     U32* output = reinterpret_cast<U32*>(frameData);
-    for(int i = 0 ; i < texSize.w*texSize.h ; i++){
+    for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
@@ -695,7 +722,12 @@ void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float*
 }
 
 size_t ViewerGL::allocateFrameStorage(int w,int h){
-    
+    GLint currentBoundPBO;
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+    if (currentBoundPBO != 0) {
+        cout << "(ViewerGL::allocateFrameStorage : Another PBO is currently mapped, glMap failed." << endl;
+        return 0;
+    }
     size_t dataSize = 0;
     if(byteMode() == 1 || !_hasHW){
         dataSize = sizeof(U32)*w*h;
@@ -761,15 +793,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     if(_colorSpace->linear()){
         int start = (int)(rand()%columnSpan.size());
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size(); i++){
+        for(unsigned int i = start ; i < columnSpan.size(); ++i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -783,14 +815,14 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
-        for(int i = start-1 ; i >= 0 ; i--){
+        for(int i = start-1 ; i >= 0 ; --i){
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -812,15 +844,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size() ; i++){
+        for(unsigned int i = start ; i < columnSpan.size() ; ++i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -841,15 +873,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         error_g = 0x80;
         error_b = 0x80;
         
-        for(int i = start-1 ; i >= 0 ; i--){
+        for(int i = start-1 ; i >= 0 ; --i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
-            r!=NULL? _r=r[col] : _r=0.f;
-            g!=NULL? _g=g[col] : _g=0.f;
-            b!=NULL? _b=b[col] : _b=0.f;
-            alpha!=NULL? _a=alpha[col] : _a=1.f;
-            
+            _r = (r != NULL) ? r[col] : 0.f;
+            _g = (g != NULL) ? g[col] : 0.f;
+            _b = (b != NULL) ? b[col] : 0.f;
+            _a = (alpha != NULL) ? alpha[col] : 1.f;
+
             if(!rgbMode()){
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -879,12 +911,12 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
     output+=yOffset;
-    for (unsigned int i = 0 ; i < columnSpan.size(); i++) {
+    for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
         int col = columnSpan[i];
-        r!=NULL? output[i]= r[col] : output[i]=0.f;
-        g!=NULL? output[i+1]=g[col] : output[i+1]=0.f;
-        b!=NULL? output[i+2]=b[col] : output[i+2]=0.f;
-        alpha!=NULL? output[i+3]=alpha[col] : output[i+3]=1.f;
+        output[i]   = (r != NULL) ? r[col] : 0.f;
+        output[i+1] = (g != NULL) ? g[col] : 0.f;
+        output[i+2] = (b != NULL) ? b[col] : 0.f;
+        output[i+3] = (alpha != NULL) ? alpha[col] : 1.f;
     }
     
 }
@@ -958,17 +990,19 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
     
-    float newZoomFactor;
-    if(event->delta() >0){
-        newZoomFactor =   _zoomCtx._zoomFactor*pow(1.01f,event->delta());
-    }else {
-        newZoomFactor = _zoomCtx._zoomFactor/pow(1.01f,-event->delta());
-        if(newZoomFactor <= 0.01){
-            newZoomFactor = 0.01;
-        }
+    double newZoomFactor;
+    if(event->delta() >0) {
+        newZoomFactor =   _zoomCtx._zoomFactor*std::pow(1.01,event->delta());
+    } else {
+        newZoomFactor = _zoomCtx._zoomFactor/std::pow(1.01,-event->delta());
+    }
+    if(newZoomFactor <= 0.01) {
+        newZoomFactor = 0.01;
+    } else if(newZoomFactor > 1024.) {
+        newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
-    float zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
     _zoomCtx._left = zoomCenter.x() - (zoomCenter.x() - _zoomCtx._left)*zoomRatio;
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
     
@@ -981,15 +1015,24 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     updateGL();
     
     // }
-    
-    emit zoomChanged( _zoomCtx._zoomFactor*100);
-    
-    
+    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
+    int zoomValue = 100*_zoomCtx._zoomFactor;
+    if (zoomValue == 0) {
+        zoomValue = 1; // sometimes, floor(100*0.01) makes 0
+    }
+    assert(zoomValue > 0);
+    emit zoomChanged(zoomValue);
 }
+
 void ViewerGL::zoomSlot(int v){
+    assert(v > 0);
     if(!ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-        float value = v/100.f;
-        if(value < 0.01f) value = 0.01f;
+        double value = v/100.f;
+        if(value < 0.01) {
+            value = 0.01;
+        } else if (value > 1024.) {
+            value = 1024.;
+        }
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             ctrlPTR->getModel()->clearPlaybackCache();
@@ -1001,7 +1044,9 @@ void ViewerGL::zoomSlot(int v){
 }
 void ViewerGL::zoomSlot(QString str){
     str.remove(QChar('%'));
-    zoomSlot(str.toInt());
+    int v = str.toInt();
+    assert(v > 0);
+    zoomSlot(v);
 }
 
 QPoint ViewerGL::toWidgetCoordinates(int x, int y){
@@ -1058,7 +1103,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     float h = (float)(displayWindow.h());
     float w = (float)(displayWindow.w());
     float zoomFactor = (float)height()/h;
-    zoomFactor > 0.06 ? setZoomFactor(zoomFactor-0.05) : setZoomFactor(zoomFactor);
+    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : zoomFactor );
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
@@ -1265,7 +1310,7 @@ bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
     
     det = 1.0 / det;
     
-    for (i = 0; i < 16; i++)
+    for (i = 0; i < 16; ++i)
         invOut[i] = inv[i] * det;
     
     return true;
@@ -1568,5 +1613,20 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
         
     }
     updateGL();
+    
+}
+void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    checkGLErrors();
+    if(byteMode() == 1.f || !_hasHW){
+        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
+    }else{
+        _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::FLOAT);
+    }
+    _drawProgressBar = true;
+    _progressBarY = y;
+    updateGL();
+    frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    
     
 }

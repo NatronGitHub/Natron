@@ -66,8 +66,10 @@ ChannelSet::ChannelSet(ChannelMask v) {
     }
     mask = (v << 1);
     _size=0;
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;
+    for(unsigned int i = 1; i < 32 ; ++i) {
+        if(mask & (1 << i)) {
+            ++_size;
+        }
     }
 }
 
@@ -89,9 +91,9 @@ const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     }
     mask = (source << 1);
     _size = 0;
-    for(unsigned int i = 1; i < 32 ; i++) {
+    for(unsigned int i = 1; i < 32 ; ++i) {
         if(mask & (1 << i))
-            _size++;
+            ++_size;
     }
     return *this;
 }
@@ -112,7 +114,7 @@ bool ChannelSet::operator==(const ChannelSet& source) const{
     if(z != thisZ)
         return false;
     else{
-        for(unsigned int i =1 ; i < source.size(); i++){
+        for(unsigned int i =1 ; i < source.size(); ++i) {
             z = source.next(z);
             thisZ = next(thisZ);
             if(z != thisZ)
@@ -131,7 +133,7 @@ bool ChannelSet::operator<(const ChannelSet& source) const{
         sum+=z;
         Channel thisZ = first();
         thisSum+=thisZ;
-        for(unsigned int i =1 ; i < source.size(); i++){
+        for(unsigned int i =1 ; i < source.size(); ++i) {
             z = source.next(z);
             thisZ = next(thisZ);
             sum+=z;
@@ -154,7 +156,7 @@ void ChannelSet::operator+=(const ChannelSet& source){
     }
     Channel z = source.first();
     *this+=z;
-    for(unsigned i = 1; i < source.size();i++){
+    for(unsigned i = 1; i < source.size();++i) {
         z=source.next(z);
         *this+=z;
     }
@@ -171,8 +173,10 @@ void ChannelSet::operator+=(ChannelMask source) {
     }
     _size = 0;
     mask |= (source << 1);//shift from 1 bit on the left because the first bit is reserved for the Mask_all
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;
+    for(unsigned int i = 1; i < 32 ; ++i) {
+        if(mask & (1 << i)) {
+            ++_size;
+        }
     }
 }
 
@@ -185,7 +189,7 @@ void ChannelSet::operator+=(Channel z){
         if(z < 31){
             mask |= (1 << z);
         }
-        _size++;
+        ++_size;
     }
 }
 void ChannelSet::operator-=(const ChannelSet& source){
@@ -195,7 +199,7 @@ void ChannelSet::operator-=(const ChannelSet& source){
     }
     Channel z = source.first();
     *this-=z;
-    for(unsigned i = 0; i < source.size();i++){
+    for(unsigned i = 0; i < source.size();++i) {
         z=source.next(z);
         *this-=z;
     }
@@ -207,8 +211,11 @@ void ChannelSet::operator-=(ChannelMask source) {
     }
     mask &= ~source;
     _size = 0;
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;    }
+    for(unsigned int i = 1; i < 32 ; ++i) {
+        if(mask & (1 << i)) {
+            ++_size;
+        }
+    }
 }
 
 
@@ -216,7 +223,7 @@ void ChannelSet::operator-=(Channel z){
     if(z < 31 && *this&z){// if it is a valid channel and it is effectivly contained
         mask &= ~1; // removing the flag all if it was set
         mask &= ~(1 << z); // setting to 0 the channel z
-        _size--; // decrementing channels count
+        --_size; // decrementing channels count
     }
     
 }
@@ -226,8 +233,10 @@ void ChannelSet::operator&=(const ChannelSet& source){
         _size = MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
-        for(unsigned int i = 1; i < 32 ; i++){
-            if(mask & (1 << i)) _size++;
+        for(unsigned int i = 1; i < 32 ; ++i) {
+            if(mask & (1 << i)) {
+                ++_size;
+            }
         }
         
     }
@@ -238,8 +247,10 @@ void ChannelSet::operator&=(ChannelMask source) {
         _size = MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
-        for(unsigned int i = 1; i < 32 ; i++){
-            if(mask & (1 << i)) _size++;
+        for(unsigned int i = 1; i < 32 ; ++i) {
+            if(mask & (1 << i)) {
+                ++_size;
+            }
         }
     }
 }
@@ -248,8 +259,10 @@ void ChannelSet::operator&=(ChannelMask source) {
 void ChannelSet::operator&=(Channel z){
     mask &= (1 << z);
     _size = 0;
-    for(unsigned int i = 1; i < 32 ; i++){
-        if(mask & (1 << i)) _size++;
+    for(unsigned int i = 1; i < 32 ; ++i) {
+        if(mask & (1 << i)) {
+            ++_size;
+        }
     }
 }
 ChannelSet ChannelSet::operator&(const ChannelSet& c) const{
@@ -291,7 +304,7 @@ Channel ChannelSet::first() const{
         if(mask & (1 << i)){
             return (Channel)i;
         }
-        i++;
+        ++i;
     }
     return Channel_black;
 }
@@ -301,26 +314,26 @@ Channel ChannelSet::next(Channel k) const{
         if(mask & (1 << i)){
             return (Channel)i;
         }
-        i++;
+        ++i;
     }
     return Channel_black;
 }
 Channel ChannelSet::last() const{
-    int i =31;
+    int i = 31;
     while(i >=0){
         if(mask & (1 << i))
             return (Channel)i;
-        i--;
+        --i;
     }
     return Channel_black;
 }
 Channel ChannelSet::previous(Channel k) const{
-    int i = (int)k; i--;
+    int i = (int)k-1;
     while(i >= 0){
         if(mask & (1 << i)){
             return (Channel)i;
         }
-        i--;
+        --i;
     }
     return Channel_black;
 }

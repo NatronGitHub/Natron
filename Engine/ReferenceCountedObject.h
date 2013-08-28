@@ -27,7 +27,7 @@ public:
 	~ReferenceCountedObject(){}
 	void ref()
 	{
-		_refNb++;
+		++_refNb;
 	}
 	void unref()
 	{

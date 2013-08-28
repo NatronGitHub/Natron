@@ -40,5 +40,10 @@
         <file>Resources/Images/groupbox_unfolded.png</file>
         <file>Resources/Images/colorwheel.png</file>
         <file>Resources/Images/ioGroupingIcon.png</file>
+        <file>Resources/Images/redo.png</file>
+        <file>Resources/Images/undo.png</file>
+        <file>Resources/Images/redo_grayscale.png</file>
+        <file>Resources/Images/undo_grayscale.png</file>
+        <file>Resources/Images/openeffects.png</file>
     </qresource>
 </RCC>

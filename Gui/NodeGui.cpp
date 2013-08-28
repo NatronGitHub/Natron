@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
- 
 
- 
+
+
 
 
 
@@ -19,6 +19,9 @@
 
 #include <cassert>
 #include <QLayout>
+#include <QAction> 
+#include <QUndoStack>
+#include <QUndoCommand>
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
 #include "Readers/Reader.h"
@@ -108,14 +111,25 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	}
     
     // needed for the layout to work correctly
-  //  QWidget* pr=dockContainer->parentWidget();
-  //  pr->setMinimumSize(dockContainer->sizeHint());
-        
+    //  QWidget* pr=dockContainer->parentWidget();
+    //  pr->setMinimumSize(dockContainer->sizeHint());
+    _undoStack = new QUndoStack;
+    
 }
 
 NodeGui::~NodeGui(){
-    node->removeThisFromChildren();
-    node->removeThisFromParents();
+    
+    foreach(Edge* e,inputs){
+        if(e){
+            QGraphicsScene* scene = e->getScene();
+            if(scene){
+                scene->removeItem(e);
+            }
+            e->setParentItem(NULL);
+            delete e;
+        }
+    }
+    
     foreach(NodeGui* p,parents){
         p->removeChild(this);
     }
@@ -123,19 +137,53 @@ NodeGui::~NodeGui(){
     foreach(NodeGui* c,children){
         tmpChildrenCopy.push_back(c);
         Edge* e = c->findConnectedEdge(this);
-        e->removeSource();
+        if(e){
+            e->removeSource();
+        }
         c->removeParent(this);
     }
-//    foreach(NodeGui*c,tmpChildrenCopy){
-//        _dag->checkIfViewerConnectedAndRefresh(c);
-//    }
+    node->removeThisFromChildren();
+    node->removeThisFromParents();
+    //    foreach(NodeGui*c,tmpChildrenCopy){
+    //        _dag->checkIfViewerConnectedAndRefresh(c);
+    //    }
     if(!node->isOpenFXNode())
         delete node;
-//    if(settings){
-//        delete settings;
-//        settings = 0;
-//    }
-    foreach(Edge* a,inputs) delete a;
+    //    if(settings){
+    //        delete settings;
+    //        settings = 0;
+    //    }
+    delete _undoStack;
+
+}
+void NodeGui::pushUndoCommand(QUndoCommand* command){
+    _undoStack->push(command);
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
+}
+void NodeGui::undoCommand(){
+    _undoStack->undo();
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
+}
+void NodeGui::redoCommand(){
+    _undoStack->redo();
+    if(settings){
+        settings->setEnabledUndoButton(_undoStack->canUndo());
+        settings->setEnabledRedoButton(_undoStack->canRedo());
+    }
+}
+
+void NodeGui::markInputNull(Edge* e){
+    for (U32 i = 0; i < inputs.size(); i++) {
+        if (inputs[i] == e) {
+            inputs[i] = 0;
+        }
+    }
 }
 
 void NodeGui::remove(){
@@ -165,7 +213,7 @@ void NodeGui::updatePreviewImageForReader(){
 	QPixmap prev_pixmap=QPixmap::fromImage(*prev);
 	prev_pixmap=prev_pixmap.scaled(60,40);
     prev_pix->setPixmap(prev_pixmap);
-
+    
 }
 void NodeGui::initInputArrows(){
     int i=0;
@@ -173,10 +221,10 @@ void NodeGui::initInputArrows(){
     double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
     double angle=pi-piDividedbyX;
     while(i<inputnb){
-        Edge* edge=new Edge(i,angle,this,this,sc);
+        Edge* edge=new Edge(i,angle,this,parentItem(),sc);
         inputs.push_back(edge);
         angle-=piDividedbyX;
-        i++;
+        ++i;
     }
 }
 bool NodeGui::contains(const QPointF &point) const{
@@ -247,7 +295,7 @@ bool NodeGui::isNearby(QPointF &point){
 
 void  NodeGui::removeChild(NodeGui* c){
 	if(!children.empty()){
-		for(U32 i=0;i<children.size();i++){
+		for(U32 i=0;i<children.size();++i) {
             if(children[i] == c){
                 children.erase(children.begin()+i);
                 break;
@@ -257,7 +305,7 @@ void  NodeGui::removeChild(NodeGui* c){
 }
 void  NodeGui::removeParent(NodeGui* p){
 	if(!parents.empty()){
-		for(U32 i=0;i<parents.size();i++){
+		for(U32 i=0;i<parents.size();++i) {
             if(parents[i] == p){
                 parents.erase(parents.begin()+i);
                 break;
@@ -295,11 +343,13 @@ void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
 void NodeGui::setName(QString s){
     name->setText(s);
     node->setName(s.toStdString());
+    if(settings)
+        settings->setNodeName(s);
     sc->update();
 }
 
 Edge* NodeGui::firstAvailableEdge(){
-    for (U32 i = 0 ; i < inputs.size(); i++) {
+    for (U32 i = 0 ; i < inputs.size(); ++i) {
         Edge* a = inputs[i];
         if (!a->hasSource()) {
             
@@ -329,9 +379,10 @@ void NodeGui::setSelected(bool b){
 }
 
 Edge* NodeGui::findConnectedEdge(NodeGui* parent){
-    for (U32 i =0 ; i < inputs.size(); i++) {
+    for (U32 i =0 ; i < inputs.size(); ++i) {
         Edge* e = inputs[i];
-        if (e->getSource() == parent) {
+        
+        if (e && e->getSource() == parent) {
             return e;
         }
     }

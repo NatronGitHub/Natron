@@ -60,6 +60,9 @@ class SettingsPanel:public QFrame
     Button* _minimize;
     Button* _cross;
     
+    Button* _undoButton;
+    Button* _redoButton;
+    
     /*Tab related*/
     QTabWidget* _tabWidget;
     
@@ -98,6 +101,16 @@ public:
     virtual void mousePressEvent(QMouseEvent* e);
     
     virtual void paintEvent(QPaintEvent * event);
+    
+    
+    void setNodeName(const QString& name);
+    
+    void setUndoRedoActions();
+    
+    void setEnabledUndoButton(bool);
+    
+    void setEnabledRedoButton(bool);
+    
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);

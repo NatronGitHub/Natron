@@ -181,18 +181,18 @@
                 
             public:
                 
-                ZoomContext():_bottom(0),_left(0),_zoomFactor(1)
+                ZoomContext():_bottom(0.),_left(0.),_zoomFactor(1.)
                 {}
                 
                 QPoint _oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
-                float _bottom; /// the bottom edge of orthographic projection
-                float _left; /// the left edge of the orthographic projection
-                float _zoomFactor; /// the zoom factor applied to the current image
+                double _bottom; /// the bottom edge of orthographic projection
+                double _left; /// the left edge of the orthographic projection
+                double _zoomFactor; /// the zoom factor applied to the current image
                                                 
                 /*!< the level of zoom used to display the frame*/
-                void setZoomFactor(float f){_zoomFactor = f;}
+                void setZoomFactor(double f){_zoomFactor = f;}
                 
-                float getZoomFactor() const {return _zoomFactor;}
+                double getZoomFactor() const {return _zoomFactor;}
             };
             
             /**
@@ -223,6 +223,7 @@
             
             bool _shaderLoaded;/*!< Flag to check whether the shaders have already been loaded.*/
             
+            // FIXME: why a float to really represent an enum????
             float _lut; /*!< a value coding the current color-space used to render.
                          0 = NONE , 1 = sRGB , 2 = Rec 709*/
             
@@ -234,7 +235,7 @@
             
             InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
             
-            float exposure ;/*!< Current exposure setting, all pixels are multiplied
+            double exposure ;/*!< Current exposure setting, all pixels are multiplied
                              by pow(2,expousre) before they appear on the screen.*/
             
             ViewerInfos* _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
@@ -265,7 +266,12 @@
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
+            // FIXME: why a float to really represent an enum????
             float _displayChannels;
+                        
+            bool _drawProgressBar;
+            
+            int _progressBarY;
             
         public:
             
@@ -352,18 +358,20 @@
              *0 = NONE , 1 = sRGB , 2 = Rec 709.
              *Not that this will probably change in the future,allowing the user to add custom a viewer process.
              **/
+            // FIXME: why a float to really represent an enum????
             float lutType() const {return _lut;}
             
             /**
              *@returns Returns the current exposure setting, all pixels are multiplied
-             *by pow(2,expousre) before they appear on the screen.
+             *by pow(2,exposure) before they appear on the screen.
              **/
-            float getExposure() const {return exposure;}
+            double getExposure() const {return exposure;}
             
             /**
              *@returns Returns 1.f if the viewer is using 8bit textures.
              *Returns 0.f if the viewer is using 32bit f.p textures.
              **/
+            // FIXME: why a float to really represent an enum????
             float byteMode() const;
             
             /**
@@ -375,22 +383,22 @@
             /**
              *@returns Returns the height of the frame with the scale factor applied to it.
              **/
-            float zoomedHeight(){return floor((float)displayWindow().h()*_zoomCtx._zoomFactor);}
+            double zoomedHeight(){return std::floor(displayWindow().h()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
-            float zoomedWidth(){return floor((float)displayWindow().w()*_zoomCtx._zoomFactor);}
+            double zoomedWidth(){return std::floor(displayWindow().w()*_zoomCtx._zoomFactor);}
             
             /**
              *@brief Set the zoom factor used to render.
              **/
-            void setZoomFactor(float f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
+            void setZoomFactor(double f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
              **/
-            float getZoomFactor(){return _zoomCtx.getZoomFactor();}
+            double getZoomFactor(){return _zoomCtx.getZoomFactor();}
             
             /**
              *@brief Computes what are the rows that should be displayed on viewer
@@ -575,6 +583,8 @@
              **/
             void setDisplayChannel(const ChannelSet& channels,bool yMode = false);
             
+            void stopDisplayingProgressBar() {_drawProgressBar = false;}
+            
             public slots:
             /**
              *@brief Slot used by the GUI to change the current viewer process applied to all pixels.
@@ -604,6 +614,12 @@
              *@brief Slot called by the GUI. It changes the current exposure settings.
              **/
             void updateExposure(double);
+            
+            
+            /**
+             *@brief Updates the Viewer with what has been computed so far in the texture.
+             **/
+            void updateProgressOnViewer(const TextureRect& region,int y , int texY);
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -743,6 +759,11 @@
              *VideoEngine::drawOverlay()
              **/
             void drawOverlay();
+            
+            /**
+             *@brief draws the progress bar
+             **/
+            void drawProgressBar();
             
             /**
              *@brief Actually converting to ARGB... but it is called BGRA by

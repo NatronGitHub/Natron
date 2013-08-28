@@ -89,11 +89,7 @@ public:
     virtual OfxStatus vmessage(const char* type,
                                const char* id,
                                const char* format,
-                               va_list args) {
-        printf("%s %s ",type,id);
-        vprintf(format,args);
-        return kOfxStatOK;
-    }
+                               va_list args)  ;
 
     //
     // live parameters

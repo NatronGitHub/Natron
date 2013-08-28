@@ -55,8 +55,7 @@ public:
         ViewerSettings();
     };
     class GeneralSettings{
-    public:
-        
+    public:        
         GeneralSettings();
     };
     class ReadersSettings{

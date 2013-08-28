@@ -17,7 +17,6 @@
 
 #include "Gui/Knob.h"
 
-#include <cassert>
 #include <climits>
 #include <QtCore/QString>
 #include <QHBoxLayout>
@@ -38,12 +37,13 @@
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/SettingsPanel.h"
-#include "Gui/SequenceFileDialog.h"
 #include "Engine/Settings.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
-#include "Engine/ViewerNode.h"
+#include "Gui/Gui.h"
+#include "Engine/viewernode.h"
+#include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
 using namespace Powiter;
 using namespace std;
@@ -68,27 +68,27 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(Knob_Mask &m){
 KnobCallback::KnobCallback(SettingsPanel *panel, Node *node){
     this->panel=panel;
     this->node=node;
-
+    
 }
 
 KnobCallback::~KnobCallback(){
-//    for (U32 i = 0 ; i< knobs.size(); i++) {
-//        delete knobs[i];
-//    }
+    //    for (U32 i = 0 ; i< knobs.size(); ++i) {
+    //        delete knobs[i];
+    //    }
     knobs.clear();
 }
 void KnobCallback::initNodeKnobsVector(){
-    for(U32 i=0;i<knobs.size();i++){
+    for(U32 i=0;i<knobs.size();++i) {
         Knob* pair=knobs[i];
         node->addToKnobVector(pair);
     }
-
+    
 }
 void KnobCallback::createKnobDynamically(){
     const std::vector<Knob*>& node_knobs=node->getKnobs();
     foreach(Knob* knob,knobs){
         bool already_exists=false;
-        for(U32 i=0;i<node_knobs.size();i++){
+        for(U32 i=0;i<node_knobs.size();++i) {
             if(node_knobs[i]==knob){
                 already_exists=true;
             }
@@ -102,7 +102,7 @@ void KnobCallback::createKnobDynamically(){
 
 void KnobCallback::removeAndDeleteKnob(Knob* knob){
     node->removeKnob(knob);
-    for (U32 i = 0; i< knobs.size(); i++) {
+    for (U32 i = 0; i< knobs.size(); ++i) {
         if (knobs[i] == knob) {
             knobs.erase(knobs.begin()+i);
             break;
@@ -117,7 +117,7 @@ KnobFactory::KnobFactory(){
 }
 
 KnobFactory::~KnobFactory(){
-    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; it++) {
+    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; ++it) {
         delete it->second;
     }
     _loadedKnobs.clear();
@@ -137,13 +137,14 @@ void KnobFactory::loadKnobPlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
-        {
+        for(int i = 0 ; i < fileList.size() ; ++i) {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -343,7 +344,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
     delete strKnob;
     
-
+    
 }
 
 /*Calls the unique instance of the KnobFactory and
@@ -377,13 +378,13 @@ Knob::Knob( KnobCallback *cb,const std::string& description):QWidget(),cb(cb),_d
 }
 void Knob::changeLayout(QHBoxLayout* newLayout){
     QList<QWidget*> allKnobs;
-    for (int i = 0; i < layout->count() ; i++) {
+    for (int i = 0; i < layout->count() ; ++i) {
         QWidget* w = layout->itemAt(i)->widget();
         if (w) {
             allKnobs << w;
         }
     }
-    for (int i = 0; i < allKnobs.size(); i++) {
+    for (int i = 0; i < allKnobs.size(); ++i) {
         newLayout->addWidget(allKnobs.at(i));
     }
 }
@@ -402,7 +403,9 @@ Knob::~Knob(){
 void Knob::enqueueForDeletion(){
     cb->removeAndDeleteKnob(this);
 }
-
+void Knob::pushUndoCommand(QUndoCommand* cmd){
+    cb->getNode()->getNodeUi()->pushUndoCommand(cmd);
+}
 void Knob::validateEvent(bool initViewer){
     Node* node = getCallBack()->getNode();
     NodeGui* nodeUI = node->getNodeUi();
@@ -412,6 +415,7 @@ void Knob::validateEvent(bool initViewer){
         ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
         int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
+            ctrlPTR->triggerAutoSaveOnNextEngineRun();
             if (currentFrameCount > 1 || currentFrameCount == -1) {
                 ctrlPTR->getModel()->startVideoEngine(-1);
             }else{
@@ -454,10 +458,9 @@ Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask f
     }
 }
 void Int_Knob::onValueChanged(double v){
-    *integer = (int)v;
-    setValues();
+    pushUndoCommand(new IntCommand(this,*integer,(int)v));
     emit valueChanged((int)v);
-    validateEvent(false);
+    
 }
 void Int_Knob::setValue(int value){
     *integer = value;
@@ -473,6 +476,28 @@ void Int_Knob::setMaximum(int v){
 }
 void Int_Knob::setMinimum(int v){
     box->setMinimum(v);
+}
+void IntCommand::undo(){
+    _knob->setValue(_old);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void IntCommand::redo(){
+    _knob->setValue(_new);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool IntCommand::mergeWith(const QUndoCommand *command){
+    const IntCommand *_command = static_cast<const IntCommand *>(command);
+    Int_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new = knob->getValue();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
 }
 
 std::string Int_Knob::serialize() const{
@@ -490,9 +515,11 @@ void Int_Knob::restoreFromString(const std::string& str){
         int i = 0;
         QString vStr;
         while(i < s.size() && s.at(i).isDigit()){
-            vStr.append(s.at(i++));
+            vStr.append(s.at(i));
+            ++i;
         }
         setValue(vStr.toInt());
+        validateEvent(false);
     }
 }
 /******INT2D*****/
@@ -533,16 +560,13 @@ Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Ma
     }
 }
 void Int2D_Knob::onValue1Changed(double v){
-    *_value1 = (int)v;
-    setValues();
+    pushUndoCommand(new Int2DCommand(this,*_value1,*_value2,(int)v,*_value2));
     emit value1Changed((int)v);
-    validateEvent(false);
 }
 void Int2D_Knob::onValue2Changed(double v){
-    *_value2 = (int)v;
-    setValues();
+    pushUndoCommand(new Int2DCommand(this,*_value1,*_value2,*_value1,(int)v));
     emit value2Changed((int)v);
-    validateEvent(false);
+    
 }
 void Int2D_Knob::setValue1(int value){
     *_value1 = value;
@@ -554,6 +578,33 @@ void Int2D_Knob::setValue2(int value){
     _box2->setValue(value);
     setValues();
 }
+void Int2DCommand::undo(){
+    _knob->setValue1(_old1);
+    _knob->setValue2(_old2);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void Int2DCommand::redo(){
+    
+    _knob->setValue1(_new1);
+    _knob->setValue2(_new2);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool Int2DCommand::mergeWith(const QUndoCommand *command){
+    const Int2DCommand *_command = static_cast<const Int2DCommand *>(command);
+    Int2D_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new1 = knob->getValue1();
+    _new2 = knob->getValue2();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
+}
+
 void Int2D_Knob::setValues(){
     values.clear();
     values.push_back((U64)_value1);
@@ -579,7 +630,7 @@ std::string Int2D_Knob::serialize() const{
     if(_value2){
         v1 = *_value2;
     }
-
+    
     QString str1 = QString::number(v1);
     QString str2 = QString::number(v2);
     return QString("v1 " + str1 + " v2 " + str2).toStdString();
@@ -592,16 +643,19 @@ void Int2D_Knob::restoreFromString(const std::string& str){
         i+=3;
         QString v1Str,v2Str;
         while(i < s.size() && s.at(i).isDigit()){
-            v1Str.append(s.at(i++));
+            v1Str.append(s.at(i));
+            ++i;
         }
         
-        i++;//the ' ' character
+        ++i;//the ' ' character
         i+=3;
         while(i < s.size() && s.at(i).isDigit()){
-            v2Str.append(s.at(i++));
+            v2Str.append(s.at(i));
+            ++i;
         }
         setValue1(v1Str.toInt());
         setValue2(v2Str.toInt());
+        validateEvent(false);
     }
     
 }
@@ -615,8 +669,7 @@ void FileQLineEdit::keyPressEvent(QKeyEvent *e){
         QString str=this->text();
 		QStringList strlist(str);
 		if(strlist!=*(knob->getFileNames())){
-			knob->setFileNames(strlist);
-			knob->setValues();
+			knob->pushUndoCommand(new FileCommand(knob,*(knob->getFileNames()),strlist));
             std::string className=knob->getCallBack()->getNode()->className();
 			if(className == std::string("Reader")){
                 Node* node=knob->getCallBack()->getNode();
@@ -641,33 +694,62 @@ void File_Knob::open_file(){
     QStringList strlist;
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
     
-    SequenceFileDialog dialog(this,filters,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
+    SequenceFileDialog dialog(this,filters,true,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
         strlist = dialog.selectedFiles();
     }
     
     if(!strlist.isEmpty()){
         updateLastOpened(strlist[0]);
-        _name->setText(dialog.getSequencePattern());
-        setFileNames(strlist);
-        setValues();
-        std::string className=getCallBack()->getNode()->className();
-        if(className == string("Reader")){
-            Node* node=getCallBack()->getNode();
-            ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
-            static_cast<Reader*>(node)->showFilePreview();
-        }
-        validateEvent(true);
-        emit filesSelected();
+        pushUndoCommand(new FileCommand(this,*filesList,strlist));        
     }
     
 }
-void File_Knob::updateLastOpened(QString str){
-    int index = str.lastIndexOf(QChar('/'));
-    if(index==-1){
-        index=str.lastIndexOf(QChar('\\'));
+void File_Knob::updateLastOpened(const QString& str){
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
+}
+void FileCommand::undo(){
+    _knob->setFileNames(_oldList);
+    _knob->setLineEditText(SequenceFileDialog::patternFromFilesList(_oldList).toStdString());
+    _knob->setValues();
+    
+    std::string className= _knob->getCallBack()->getNode()->className();
+    if(className == string("Reader")){
+        Node* node= _knob->getCallBack()->getNode();
+        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+        static_cast<Reader*>(node)->showFilePreview();
     }
-    _lastOpened = str.left(index);
+    _knob->validateEvent(true);
+    
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void FileCommand::redo(){
+    _knob->setFileNames(_newList);
+    _knob->setLineEditText(SequenceFileDialog::patternFromFilesList(_newList).toStdString());
+    _knob->setValues();
+    
+    std::string className= _knob->getCallBack()->getNode()->className();
+    if(className == string("Reader")){
+        Node* node= _knob->getCallBack()->getNode();
+        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+        static_cast<Reader*>(node)->showFilePreview();
+    }
+    _knob->validateEvent(true);    
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool FileCommand::mergeWith(const QUndoCommand *command){
+    const FileCommand *fileCommand = static_cast<const FileCommand *>(command);
+    File_Knob* knob = fileCommand->_knob;
+    if(_knob != knob)
+        return false;
+    _newList = (*knob->getFileNames());
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
 }
 
 File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask ):Knob(cb,description),filesList(0),_lastOpened("")
@@ -691,7 +773,7 @@ File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask
     
 }
 void File_Knob::setFileNames(const QStringList& str){
-    for(int i =0;i< str.size();i++){
+    for(int i =0;i< str.size();++i) {
         
         QString el = str[i];
         
@@ -719,14 +801,17 @@ std::string File_Knob::serialize() const{
 void File_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
+    
     setValues();
-    std::string className=getCallBack()->getNode()->className();
-    if(className == string("Reader")){
-        Node* node=getCallBack()->getNode();
-        ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
-        static_cast<Reader*>(node)->showFilePreview();
+    if(filesList->size() > 0){
+        std::string className=getCallBack()->getNode()->className();
+        if(className == string("Reader")){
+            Node* node=getCallBack()->getNode();
+            ctrlPTR->getModel()->setVideoEngineRequirements(NULL,false);
+            static_cast<Reader*>(node)->showFilePreview();
+        }
+        validateEvent(true);
     }
-    validateEvent(true);
 }
 
 Knob* Bool_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
@@ -737,11 +822,33 @@ Knob* Bool_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Kno
     
 }
 void Bool_Knob::onToggle(bool b){
-    *_boolean=b;
+    pushUndoCommand(new BoolCommand(this,*_boolean,b));
     emit triggered(b);
-	setValues();
-    validateEvent(false);
 }
+void BoolCommand::undo(){
+    _knob->setChecked(_old);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void BoolCommand::redo(){
+    _knob->setChecked(_new);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool BoolCommand::mergeWith(const QUndoCommand *command){
+    const BoolCommand *_command = static_cast<const BoolCommand *>(command);
+    Bool_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new = knob->isChecked();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
+}
+
+
 void Bool_Knob::setChecked(bool b){
     *_boolean = b;
     checkbox->setChecked(b);
@@ -781,6 +888,7 @@ void Bool_Knob::restoreFromString(const std::string& str){
         int val = s.toInt();
         setChecked(val);
     }
+    validateEvent(false);
     
 }
 //================================================================
@@ -809,16 +917,39 @@ Double_Knob::Double_Knob(KnobCallback * cb, const std::string& description, Knob
     }
 }
 void Double_Knob::onValueChanged(double d){
-    *_value = d;
+    pushUndoCommand(new DoubleCommand(this,*_value,d));
     emit valueChanged(d);
-    setValues();
-    validateEvent(false);
+    
 }
 void Double_Knob::setValue(double value){
     *_value = value;
     box->setValue(value);
     setValues();
 }
+
+void DoubleCommand::undo(){
+    _knob->setValue(_old);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void DoubleCommand::redo(){
+    _knob->setValue(_new);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool DoubleCommand::mergeWith(const QUndoCommand *command){
+    const DoubleCommand *_command = static_cast<const DoubleCommand *>(command);
+    Double_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new = knob->getValue();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
+}
+
 void Double_Knob::setMaximum(double d){
     box->setMaximum(d);
 }
@@ -851,9 +982,11 @@ void Double_Knob::restoreFromString(const std::string& str){
         int i = 0;
         QString vStr;
         while(i < s.size() && s.at(i).isDigit()){
-            vStr.append(s.at(i++));
+            vStr.append(s.at(i));
+            ++i;
         }
         setValue(vStr.toDouble());
+        validateEvent(false);
     }
 }
 /*********Double2D******/
@@ -897,17 +1030,14 @@ Double2D_Knob::Double2D_Knob(KnobCallback * cb, const std::string& description, 
     }
 }
 void Double2D_Knob::onValue1Changed(double d){
-    *_value1 = d;
+    pushUndoCommand(new Double2DCommand(this,*_value1,*_value2,d,*_value2));
     emit value1Changed(d);
-    setValues();
-    validateEvent(false);
+    
 }
 void Double2D_Knob::onValue2Changed(double d){
-    *_value2 = d;
+    pushUndoCommand(new Double2DCommand(this,*_value1,*_value2,*_value1,d));
     emit value2Changed(d);
-    setValues();
-    validateEvent(false);
-}
+    }
 void Double2D_Knob::setValue1(double value){
     *_value1 = value;
     _box1->setValue(value);
@@ -918,6 +1048,34 @@ void Double2D_Knob::setValue2(double value){
     _box2->setValue(value);
     setValues();
 }
+void Double2DCommand::undo(){
+    _knob->setValue1(_old1);
+    _knob->setValue2(_old2);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void Double2DCommand::redo(){
+    
+    _knob->setValue1(_new1);
+    _knob->setValue2(_new2);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+
+bool Double2DCommand::mergeWith(const QUndoCommand *command){
+    const Double2DCommand *_command = static_cast<const Double2DCommand *>(command);
+    Double2D_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new1 = knob->getValue1();
+    _new2 = knob->getValue2();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
+}
+
 void Double2D_Knob::setMaximum1(double d){
     _box1->setMaximum(d);
 }
@@ -959,16 +1117,19 @@ void Double2D_Knob::restoreFromString(const std::string& str){
         i+=3;
         QString v1Str,v2Str;
         while(i < s.size() && s.at(i).isDigit()){
-            v1Str.append(s.at(i++));
+            v1Str.append(s.at(i));
+            ++i;
         }
         
-        i++;//the ' ' character
+        ++i;//the ' ' character
         i+=3;
         while(i < s.size() && s.at(i).isDigit()){
-            v2Str.append(s.at(i++));
+            v2Str.append(s.at(i));
+            ++i;
         }
         setValue1(v1Str.toDouble());
         setValue2(v2Str.toDouble());
+        validateEvent(false);
     }
     
 }
@@ -996,7 +1157,7 @@ void Button_Knob::onButtonPressed(){
 }
 
 std::string Button_Knob::serialize() const{
-   return "";
+    return "";
 }
 void Button_Knob::restoreFromString(const std::string& str){
     (void)str;
@@ -1024,37 +1185,62 @@ OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& descriptio
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
-    QObject::connect(_name,SIGNAL(textChanged(const QString&)),this,SLOT(setStr(const QString&)));
+    QObject::connect(_name,SIGNAL(textEdited(const QString&)),this,SLOT(setStr(const QString&)));
     layout->addWidget(desc);
     layout->addWidget(_name);
     layout->addWidget(openFile);
+}
+void OutputFile_Knob::setStr(const QString& str){
+    *(this->str) = str.toStdString();
+    _name->setText(str);
 }
 
 void OutputFile_Knob::setValues(){
     values.clear();
     
 }
+void OutputFile_Knob::updateLastOpened(const QString& str){
+    QString withoutPath = SequenceFileDialog::removePath(str);
+    int pos = str.indexOf(withoutPath);
+    _lastOpened = str.left(pos);
+}
 
 void OutputFile_Knob::open_file(){
     str->clear();
     
+    std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    SequenceFileDialog dialog(this,filters,true,SequenceFileDialog::SAVE_DIALOG,_lastOpened.toStdString());
     
-    
-    QString outFile=QFileDialog::getSaveFileName(this,QString("Save File")
-                                                 ,QString(ROOT)
-                                                 ,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-    //    QStringList strlist;
-    //    FrameFileDialog dialog(this,QString("Open File"),_lastOpened,"Image Files (*.png *.jpg *.bmp *.exr *.pgm *.ppm *.pbm *.jpeg *.dpx)");
-    //    if(dialog.exec()){
-    //        strlist = dialog.selectedFiles();
-    //    }
-    
-    if(!outFile.isEmpty()){
-        _name->setText(outFile);
-        setStr(outFile);
-        setValues();
-        std::string className=getCallBack()->getNode()->className();
+    if(dialog.exec()){
+        updateLastOpened(SequenceFileDialog::removePath(str->c_str()));
+        pushUndoCommand(new OutputFileCommand(this,*str,dialog.filesToSave().toStdString()));
+        emit filesSelected();
     }
+    
+}
+
+void OutputFileCommand::undo(){
+    _knob->setStr(_old.c_str());
+    _knob->setValues();
+    _knob->validateEvent(true);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void OutputFileCommand::redo(){
+    _knob->setStr(_new.c_str());
+    _knob->setValues();
+    _knob->validateEvent(true);
+
+}
+bool OutputFileCommand::mergeWith(const QUndoCommand *command){
+    const OutputFileCommand *fileCommand = static_cast<const OutputFileCommand *>(command);
+    OutputFile_Knob* knob = fileCommand->_knob;
+    if(_knob != knob)
+        return false;
+    _new = (*knob->getStr());
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
 }
 
 OutputFileQLineEdit::OutputFileQLineEdit(OutputFile_Knob* knob):LineEdit(knob){
@@ -1065,8 +1251,7 @@ void OutputFileQLineEdit::keyPressEvent(QKeyEvent *e){
     if(e->key()==Qt::Key_Return){
         QString str=this->text();
 		if(str.toStdString()!=*(knob->getStr())){
-			knob->setStr(str);
-			knob->setValues();
+			knob->pushUndoCommand(new OutputFileCommand(knob,*(knob->getStr()),str.toStdString()));
 		}
     }
 	QLineEdit::keyPressEvent(e);
@@ -1077,6 +1262,7 @@ std::string OutputFile_Knob::serialize() const{
 void OutputFile_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *(this->str) = str;
+    validateEvent(false);
 }
 /*===============================*/
 
@@ -1097,17 +1283,45 @@ ComboBox_Knob::ComboBox_Knob(KnobCallback *cb, const std::string& description, K
     layout->addStretch();
 }
 void ComboBox_Knob::populate(const std::vector<std::string>& entries){
-    for (U32 i = 0; i < entries.size(); i++) {
+    for (U32 i = 0; i < entries.size(); ++i) {
         _comboBox->addItem(entries[i].c_str());
     }
     setCurrentItem(0);
 }
 void ComboBox_Knob::onCurrentIndexChanged(int i){
-    setCurrentItem(i);
+    pushUndoCommand(new ComboBoxCommand(this,_comboBox->itemIndex(_currentItem->c_str()),i));
     emit entryChanged(i);
-    setValues();
-    validateEvent(false);
-    
+   
+        
+}
+const std::string ComboBox_Knob::activeEntry() const{
+    return _comboBox->itemText(_comboBox->activeIndex()).toStdString();
+}
+int ComboBox_Knob::currentIndex() const{
+    return _comboBox->activeIndex();
+}
+void ComboBoxCommand::undo(){
+    _knob->setCurrentItem(_old);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void ComboBoxCommand::redo(){
+    _knob->setCurrentItem(_new);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+
+bool ComboBoxCommand::mergeWith(const QUndoCommand *command){
+    const ComboBoxCommand *_command = static_cast<const ComboBoxCommand *>(command);
+    ComboBox_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    _new = knob->currentIndex();
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
 }
 
 void ComboBox_Knob::setCurrentItem(int index){
@@ -1124,7 +1338,7 @@ void ComboBox_Knob::setPointer(std::string* str){
 void ComboBox_Knob::setValues(){
     values.clear();
     QString out(_currentItem->c_str());
-    for (int i =0; i< out.size(); i++) {
+    for (int i =0; i< out.size(); ++i) {
         values.push_back(out.at(i).unicode());
     }
 }
@@ -1136,6 +1350,7 @@ void ComboBox_Knob::restoreFromString(const std::string& str){
     _comboBox->setCurrentText(str.c_str());
     *_currentItem = str;
     setValues();
+    validateEvent(false);
 }
 /*============================*/
 
@@ -1182,7 +1397,7 @@ void Group_Knob::addKnob(Knob* k){
 }
 void Group_Knob::setChecked(bool b){
     _box->setChecked(b);
-    for(U32 i = 0 ; i < _knobs.size() ;i++){
+    for(U32 i = 0 ; i < _knobs.size() ;++i) {
         _knobs[i]->setVisible(b);
     }
 }
@@ -1255,10 +1470,9 @@ void RGBA_Knob::showColorDialog(){
         *_r = color.redF();
         *_g = color.greenF();
         *_b = color.blueF();
-        if(_a)
+        if(_a) {
             *_a = color.alphaF();
-        else
-            *_a = 1.;
+        }
         setValues();
         updateLabel(color);
         validateEvent(false);
@@ -1268,57 +1482,94 @@ void RGBA_Knob::showColorDialog(){
 
 void RGBA_Knob::onRedValueChanged(double r){
     QColor color;
-    *_r = r;
-    color.setRedF(r);
+    color.setRedF(*_r);
     color.setGreenF(*_g);
     color.setBlueF(*_b);
     if(_a)
         color.setAlphaF(*_a);
-    setValues();
-    updateLabel(color);
+    pushUndoCommand(new RGBACommand(this,
+                                    color.redF(),color.greenF(),color.blueF(),color.alphaF(),
+                                    r,color.greenF(),color.blueF(),color.alphaF()));
+    *_r = r;
+    color.setRedF(r);
     validateEvent(false);
     emit colorChanged(color);
 }
 void RGBA_Knob::onGreenValueChanged(double g){
     QColor color;
-    *_g = g;
     color.setRedF(*_r);
-    color.setGreenF(g);
+    color.setGreenF(*_g);
     color.setBlueF(*_b);
     if(_a)
         color.setAlphaF(*_a);
-    setValues();
-    updateLabel(color);
+    pushUndoCommand(new RGBACommand(this,
+                                    color.redF(),color.greenF(),color.blueF(),color.alphaF(),
+                                    color.redF(),g,color.blueF(),color.alphaF()));
+    *_g = g;
+    color.setGreenF(g);
     validateEvent(false);
     emit colorChanged(color);
 }
 void RGBA_Knob::onBlueValueChanged(double b){
     QColor color;
-    *_b = b;
     color.setRedF(*_r);
     color.setGreenF(*_g);
-    color.setBlueF(b);
+    color.setBlueF(*_b);
     if(_a)
         color.setAlphaF(*_a);
-    setValues();
-    updateLabel(color);
+    pushUndoCommand(new RGBACommand(this,
+                                    color.redF(),color.greenF(),color.blueF(),color.alphaF(),
+                                    color.redF(),color.greenF(),b,color.alphaF()));
+    *_b = b;
+    color.setBlueF(b);
     validateEvent(false);
     emit colorChanged(color);
 }
 void RGBA_Knob::onAlphaValueChanged(double a){
     QColor color;
-    *_a = a;
     color.setRedF(*_r);
     color.setGreenF(*_g);
     color.setBlueF(*_b);
     if(_a)
-        color.setAlphaF(a);
-    setValues();
-    updateLabel(color);
+        color.setAlphaF(*_a);
+    pushUndoCommand(new RGBACommand(this,
+                                   color.redF(),color.greenF(),color.blueF(),color.alphaF(),
+                                    color.redF(),color.greenF(),color.blueF(),a));
+    if(_a)
+        *_a = a;
+    color.setAlphaF(a);
     validateEvent(false);
+    
     emit colorChanged(color);
 }
 
+void RGBACommand::undo(){
+    _knob->setRGBA(_oldr, _oldg, _oldb, _olda);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void RGBACommand::redo(){
+    _knob->setRGBA(_newr, _newg, _newb, _newa);
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool RGBACommand::mergeWith(const QUndoCommand *command){
+    const RGBACommand *_command = static_cast<const RGBACommand *>(command);
+    RGBA_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    double r,g,b,a;
+    knob->getColor(&r, &g, &b, &a);
+    _newr = r;
+    _newg = g;
+    _newb = b;
+    _newa = a;
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
+}
 void RGBA_Knob::setValues(){
     values.clear();
     values.push_back(*(reinterpret_cast<U64*>(_r)));
@@ -1353,6 +1604,16 @@ void RGBA_Knob::setPointers(double *r,double *g,double *b,double *a){
     updateLabel(color);
     
 }
+void RGBA_Knob::getColor(double *r,double *g,double *b,double *a){
+    assert(_r && _g && _b);
+    *r = *_r;
+    *g = *_g;
+    *b = *_b;
+    if(_a)
+        *a = *_a;
+    else
+        *a = 1.0;
+}
 void RGBA_Knob::setRGBA(double r,double g,double b,double a){
     QColor color;
     color.setRedF(r);
@@ -1360,6 +1621,7 @@ void RGBA_Knob::setRGBA(double r,double g,double b,double a){
     color.setBlueF(b);
     color.setAlphaF(a);
     updateLabel(color);
+    setValues();
     _rBox->setValue(r);
     _gBox->setValue(g);
     _bBox->setValue(b);
@@ -1396,27 +1658,32 @@ void RGBA_Knob::restoreFromString(const std::string& str){
     i+=2;
     QString rStr,gStr,bStr,aStr;
     while(i < s.size() && s.at(i).isDigit()){
-        rStr.append(s.at(i++));
+        rStr.append(s.at(i));
+        ++i;
     }
     i = s.indexOf("g");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        gStr.append(s.at(i++));
+        gStr.append(s.at(i));
+        ++i;
     }
     
     i = s.indexOf("b");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        bStr.append(s.at(i++));
+        bStr.append(s.at(i));
+        ++i;
     }
     
     i = s.indexOf("a");
     i+=2;
     while(i < s.size() && s.at(i).isDigit()){
-        aStr.append(s.at(i++));
+        aStr.append(s.at(i));
+        ++i;
     }
     setRGBA(rStr.toDouble(), gStr.toDouble(), bStr.toDouble(), aStr.toDouble());
     setValues();
+    validateEvent(false);
     
 }
 /*************/
@@ -1463,22 +1730,49 @@ String_Knob::String_Knob(KnobCallback *cb, const std::string& description, Knob_
     layout->addWidget(name);
     _lineEdit = new LineEdit(this);
     layout->addWidget(_lineEdit);
-    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SIGNAL(stringChanged(QString)));
+    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
     if(flags == READ_ONLY){
         _lineEdit->setReadOnly(true);
     }
 }
-
+void String_Knob::onStringChanged(const QString& str){
+    pushUndoCommand(new StringCommand(this,*_string,str.toStdString()));
+    emit stringChanged(str);
+}
 void String_Knob::setValues(){
     values.clear();
     QString str(_string->c_str());
-    for (int i = 0; i < str.size(); i++) {
+    for (int i = 0; i < str.size(); ++i) {
         values.push_back(str.at(i).unicode());
     }
 }
 void String_Knob::setString(QString str){
     _lineEdit->setText(str);
     setValues();
+}
+void StringCommand::undo(){
+    _knob->setString(_old.c_str());
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+void StringCommand::redo(){
+    _knob->setString(_new.c_str());
+    _knob->validateEvent(false);
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+}
+bool StringCommand::mergeWith(const QUndoCommand *command){
+    const StringCommand *_command = static_cast<const StringCommand *>(command);
+    String_Knob* knob = _command->_knob;
+    if(_knob != knob)
+        return false;
+    
+    _new = knob->getString();
+    
+    setText(QObject::tr("Change %1")
+            .arg(_knob->getDescription().c_str()));
+    return true;
 }
 std::string String_Knob::serialize() const{
     return _string ?  *_string : "";
@@ -1488,4 +1782,5 @@ void String_Knob::restoreFromString(const std::string& str){
     assert(_string);
     *_string = str;
     setString(str.c_str());
+    validateEvent(false);
 }

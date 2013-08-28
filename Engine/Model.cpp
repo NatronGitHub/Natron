@@ -12,6 +12,8 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QDir>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -152,9 +154,11 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     resolutions.push_back(square2K);
     
     assert(formatNames.size() == resolutions.size());
-    for(U32 i =0;i<formatNames.size();i++){
-        std::vector<float> v = resolutions[i];
+    for(U32 i =0;i<formatNames.size();++i) {
+        const std::vector<float>& v = resolutions[i];
+        assert(v.size() >= 3);
         Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
+        assert(_frmt);
         addFormat(_frmt);
     }
     
@@ -204,10 +208,10 @@ Model::~Model(){
     // foreach(PluginID* p,_pluginsLoaded) delete p;
     foreach(CounterID* c,_nodeCounters) delete c;
     foreach(Format* f,_formats) delete f;
-    for(ReadPluginsIterator it = _readPluginsLoaded.begin();it!=_readPluginsLoaded.end();it++){
+    for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         if(it->second){
             /*finding all other reads that have the same pointer to avoid double free*/
-            for(ReadPluginsIterator it2 = _readPluginsLoaded.begin();it2!=_readPluginsLoaded.end();it2++){
+            for(ReadPluginsIterator it2 = _readPluginsLoaded.begin(); it2!=_readPluginsLoaded.end(); ++it2) {
                 if(it2->second == it->second && it2->first!=it->first)
                     it2->second = 0;
             }
@@ -247,7 +251,8 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
     const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
     bool hasFrames = false;
     bool hasInputDifferentThanReader = false;
-    for (U32 i = 0; i< inputs.size(); i++) {
+    for (U32 i = 0; i< inputs.size(); ++i) {
+        assert(inputs[i]);
         Reader* r = dynamic_cast<Reader*>(inputs[i]);
         if (r) {
             if (r->hasFrames()) {
@@ -261,12 +266,14 @@ std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer
 }
 
 void Model::initCounterAndGetDescription(Node*& node){
+    assert(node);
     bool found=false;
     foreach(CounterID* counter,_nodeCounters){
+        assert(counter);
         string tmp(counter->second);
         string nodeName = node->className();
         if(tmp==nodeName){
-            (counter->first)++;
+            ++(counter->first);
             found=true;
             string str;
             str.append(nodeName.c_str());
@@ -279,7 +286,7 @@ void Model::initCounterAndGetDescription(Node*& node){
     }
     if(!found){
         CounterID* count=new CounterID(1,node->className());
-        
+        assert(count);
         _nodeCounters.push_back(count);
         string str;
         str.append(node->className().c_str());
@@ -299,11 +306,13 @@ void Model::initCounterAndGetDescription(Node*& node){
 bool Model::createNode(Node *&node,const std::string name){
 	if(name=="Reader"){
 		node=new Reader();
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         return true;
 	}else if(name =="Viewer"){
         node=new ViewerNode(_viewerCache);
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
@@ -316,6 +325,7 @@ bool Model::createNode(Node *&node,const std::string name){
         return true;
 	}else if(name == "Writer"){
 		node=new Writer();
+        assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         return true;
@@ -348,6 +358,15 @@ bool Model::createNode(Node *&node,const std::string name){
                         }
                     }
                 }
+                bool rval ;
+                try{
+                    rval = plugin->getPluginHandle();
+                }
+                catch(const char* str){
+                    cout << str << endl;
+                }
+                if(!rval)
+                    return false;
                 node = dynamic_cast<Node*>(plugin->createInstance(context, NULL));
                 if(node){
                     node->initializeInputs();
@@ -370,7 +389,7 @@ bool Model::createNode(Node *&node,const std::string name){
 // in the future, display the plugins loaded on the loading wallpaper
 void Model::displayLoadedPlugins(){
     int i=0;
-    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; it++){
+    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; ++it) {
         cout << it->first << endl;
     }
     cout  << i << " plugin(s) loaded." << endl;
@@ -381,8 +400,9 @@ void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
 Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
     
-	for(U32 i =0;i< _formats.size();i++){
+	for(U32 i =0;i< _formats.size();++i) {
 		Format* frmt = _formats[i];
+        assert(frmt);
 		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;
 		}
@@ -405,13 +425,15 @@ void Model::loadReadPlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
+        for(int i = 0 ; i < fileList.size() ; ++i)
         {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -429,10 +451,12 @@ void Model::loadReadPlugins(){
                     ReadBuilder builder=(ReadBuilder)GetProcAddress(lib,"BuildRead");
                     if(builder!=NULL){
                         Read* read=builder(NULL);
+                        assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        assert(plugin);
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
@@ -463,10 +487,12 @@ void Model::loadReadPlugins(){
                     ReadBuilder builder=(ReadBuilder)dlsym(lib,"BuildRead");
                     if(builder!=NULL){
                         Read* read=builder(NULL);
+                        assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
                         plugin = new PluginID((void*)builder,decoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        assert(plugin);
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete read;
@@ -485,7 +511,7 @@ void Model::loadReadPlugins(){
     loadBuiltinReads();
     
     std::map<std::string, PluginID*> defaultMapping;
-    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); it++) {
+    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         if(it->first == "exr" && it->second->second == "OpenEXR"){
             defaultMapping.insert(*it);
         }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
@@ -509,13 +535,14 @@ void Model::loadReadPlugins(){
 
 void Model::displayLoadedReads(){
     ReadPluginsIterator it = _readPluginsLoaded.begin();
-    for (; it!=_readPluginsLoaded.end(); it++) {
+    for (; it!=_readPluginsLoaded.end(); ++it) {
         cout << it->second->second << " : " << it->first << endl;
     }
 }
 
 void Model::loadBuiltinReads(){
     Read* readExr = ReadExr::BuildRead(NULL);
+    assert(readExr);
     std::vector<std::string> extensions = readExr->fileTypesDecoded();
     std::string decoderName = readExr->decoderName();
 #ifdef __POWITER_WIN32__
@@ -523,13 +550,14 @@ void Model::loadBuiltinReads(){
 #else
     PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
 #endif
-    
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    assert(EXRplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],EXRplugin));
     }
     delete readExr;
     
     Read* readQt = ReadQt::BuildRead(NULL);
+    assert(readQt);
     extensions = readQt->fileTypesDecoded();
     decoderName = readQt->decoderName();
 #ifdef __POWITER_WIN32__
@@ -537,12 +565,14 @@ void Model::loadBuiltinReads(){
 #else
 	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
 #endif
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    assert(Qtplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],Qtplugin));
     }
     delete readQt;
     
     Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
+    assert(readFfmpeg);
     extensions = readFfmpeg->fileTypesDecoded();
     decoderName = readFfmpeg->decoderName();
 #ifdef __POWITER_WIN32__
@@ -550,7 +580,8 @@ void Model::loadBuiltinReads(){
 #else
 	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
 #endif
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    assert(FFMPEGplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _readPluginsLoaded.push_back(make_pair(extensions[i],FFMPEGplugin));
     }
     delete readFfmpeg;
@@ -578,13 +609,15 @@ void Model::loadWritePlugins(){
 #endif
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ;i ++)
+        for(int i = 0 ; i < fileList.size() ; ++i)
         {
             QString filename = fileList.at(i);
             if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
                 QString className;
                 int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) index--;
+                while(filename.at(index) != QChar('.')) {
+                    --index;
+                }
                 className = filename.left(index);
                 PluginID* plugin = 0;
 #ifdef __POWITER_WIN32__
@@ -602,10 +635,11 @@ void Model::loadWritePlugins(){
                     WriteBuilder builder=(WriteBuilder)GetProcAddress(lib,"BuildRead");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
+                        assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((HINSTANCE)builder,encoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _writePluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete write;
@@ -636,10 +670,11 @@ void Model::loadWritePlugins(){
                     WriteBuilder builder=(WriteBuilder)dlsym(lib,"BuildRead");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
+                        assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
                         plugin = new PluginID((void*)builder,encoderName.c_str());
-                        for (U32 i = 0 ; i < extensions.size(); i++) {
+                        for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
                         delete write;
@@ -658,7 +693,7 @@ void Model::loadWritePlugins(){
     loadBuiltinWrites();
     
     std::map<std::string, PluginID*> defaultMapping;
-    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); it++) {
+    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
         if(it->first == "exr" && it->second->second == "OpenEXR"){
             defaultMapping.insert(*it);
         }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
@@ -683,6 +718,7 @@ void Model::loadWritePlugins(){
 /*loads writes that are built-ins*/
 void Model::loadBuiltinWrites(){
     Write* writeQt = WriteQt::BuildWrite(NULL);
+    assert(writeQt);
     std::vector<std::string> extensions = writeQt->fileTypesEncoded();
     string encoderName = writeQt->encoderName();
 #ifdef __POWITER_WIN32__
@@ -690,7 +726,8 @@ void Model::loadBuiltinWrites(){
 #else
 	PluginID *QtWritePlugin = new PluginID((void*)&WriteQt::BuildWrite,encoderName.c_str());
 #endif
-    for (U32 i = 0 ; i < extensions.size(); i++) {
+    assert(QtWritePlugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
         _writePluginsLoaded.push_back(make_pair(extensions[i],QtWritePlugin));
     }
     delete writeQt;
@@ -703,7 +740,8 @@ void Model::loadBuiltinWrites(){
 #else
 	PluginID *ExrWritePlugin = new PluginID((void*)&WriteExr::BuildWrite,encoderNameExr.c_str());
 #endif
-    for (U32 i = 0 ; i < extensionsExr.size(); i++) {
+    assert(ExrWritePlugin);
+    for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
         _writePluginsLoaded.push_back(make_pair(extensionsExr[i],ExrWritePlugin));
     }
     delete writeEXR;
@@ -726,8 +764,9 @@ void  Model::clearNodeCache(){
 
 
 void Model::removeNode(Node* n){
+    assert(n);
     /*We DON'T delete as it was already done by the NodeGui associated.*/
-    for(U32 i = 0 ; i < _currentNodes.size();i++){
+    for(U32 i = 0 ; i < _currentNodes.size();++i) {
         if(_currentNodes[i] == n){
             _currentNodes.erase(_currentNodes.begin()+i);
         }
@@ -743,6 +782,7 @@ void Model::resetInternalDAG(){
 
 
 void Model::loadOFXPlugins(){
+    assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion("PowiterOFXCachev1");
     
@@ -772,25 +812,38 @@ void Model::loadOFXPlugins(){
     
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
-    for (unsigned int i = 0 ; i < plugins.size(); i++) {
+    for (unsigned int i = 0 ; i < plugins.size(); ++i) {
         OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
+        assert(p);
+        if(p->getContexts().size() == 0)
+            continue;
         std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
+        if(name.empty()){
+            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
+        }
         std::string rawName = name;
         std::string id = p->getIdentifier();
         std::string grouping = p->getDescriptor().getPluginGrouping();
+        
+        
         vector<string> groups = extractAllPartsOfGrouping(grouping);
-        name.append("  [");
-        name.append(groups[0]);
-        name.append("]");
+        if (groups.size() >= 1) {
+            name.append("  [");
+            name.append(groups[0]);
+            name.append("]");
+        }
+        assert(p->getBinary());
         std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
         iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
         iconFilename.append(id);
         iconFilename.append(".png");
-        std::string groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-        groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
-        groupIconFilename.append(groups[0]);
-        groupIconFilename.append(".png");
-        
+        std::string groupIconFilename;
+        if (groups.size() >= 1) {
+            groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
+            groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+            groupIconFilename.append(groups[0]);
+            groupIconFilename.append(".png");
+        }
         ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
@@ -799,24 +852,26 @@ void Model::loadOFXPlugins(){
 void Model::writeOFXCache(){
     /// and write a new cache, long version with everything in there
     std::ofstream of("PowiterOFXCache.xml");
+    assert(OFX::Host::PluginCache::getPluginCache());
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
     of.close();
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
 }
 
-OFX::Host::ImageEffect::Instance* Model::newInstance(void* clientData,
+OFX::Host::ImageEffect::Instance* Model::newInstance(void* ,
                                                      OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                      OFX::Host::ImageEffect::Descriptor& desc,
                                                      const std::string& context)
 {
-    
+    assert(plugin);
     return new OfxNode(plugin, desc, context);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
     return desc;
 }
@@ -825,6 +880,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
                                                           OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
     return desc;
 }
@@ -833,6 +889,7 @@ OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::Image
 OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bundlePath,
                                                           OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
+    assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
     return desc;
 }
@@ -843,6 +900,8 @@ OfxStatus Model::vmessage(const char* type,
                           const char* format,
                           va_list args)
 {
+    assert(type);
+    assert(format);
     bool isQuestion = false;
     const char *prefix = "Message : ";
     if (strcmp(type, kOfxMessageLog) == 0) {
@@ -873,118 +932,214 @@ OfxStatus Model::vmessage(const char* type,
 }
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeGui*> activeNodes = ctrlPTR->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
     QString ret;
+    
+    QXmlStreamWriter writer(&ret);
+    writer.setAutoFormatting(true);
+    writer.writeStartDocument();
+    writer.writeStartElement("Nodes");
     foreach(NodeGui* n, activeNodes){
         //serialize inputs
-        ret.append("Node:");
+        assert(n);
+        assert(n->getNode());
+        writer.writeStartElement("Node");
+        
         if(!n->getNode()->isOpenFXNode()){
-            ret.append(n->getNode()->className().c_str());
+            writer.writeAttribute("ClassName",n->getNode()->className().c_str());
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
             vector<string> groups = extractAllPartsOfGrouping(grouping);
-            name.append("  [");
-            name.append(groups[0]);
-            name.append("]");
-            ret.append(name.c_str());
+            if (groups.size() >= 1) {
+                name.append("  [");
+                name.append(groups[0]);
+                name.append("]");
+            }
+            writer.writeAttribute("ClassName",name.c_str());
         }
-        ret.append(":");
-        ret.append(n->getNode()->getName().c_str());
-        ret.append("{\n");
+        writer.writeAttribute("Label", n->getNode()->getName().c_str());
+        
+        writer.writeStartElement("Inputs");
         const std::vector<Node*>& parents = n->getNode()->getParents();
-        for (U32 i = 0; i < parents.size(); i++) {
-            ret.append("input");
-            ret.append(QString::number(i));
-            ret.append(":");
-            ret.append(parents[i]->getName().c_str());
-            ret.append("\n");
+        for (U32 i = 0; i < parents.size(); ++i) {
+            writer.writeStartElement("Input");
+            writer.writeAttribute("Number", QString::number(i));
+            writer.writeAttribute("Name", parents[i]->getName().c_str());
+            writer.writeEndElement();// end input
         }
-        //serialize knobs
+        writer.writeEndElement(); // end inputs
+                                  //serialize knobs
         const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
-        for (U32 i = 0; i < knobs.size(); i++) {
-            ret.append("knob");
-            ret.append(":");
-            ret.append(knobs[i]->getDescription().c_str());
-            ret.append(":");
-            ret.append(knobs[i]->serialize().c_str());
-            ret.append("\n");
+        writer.writeStartElement("Knobs");
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            writer.writeStartElement("Knob");
+            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
+            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
+            writer.writeEndElement();//end knob
         }
+        writer.writeEndElement(); // end knobs
         
         //serialize gui infos
-        ret.append("pos:");
-        ret.append("x=");
-        ret.append(QString::number(n->pos().x()));
-        ret.append("y=");
-        ret.append(QString::number(n->pos().y()));
-        ret.append("\n");
+      
+        writer.writeStartElement("Gui");
         
-        //closing brace
-        ret.append("}\n");
+        writer.writeAttribute("X", QString::number(n->pos().x()));
+        writer.writeAttribute("Y", QString::number(n->pos().y()));
+        
+        writer.writeEndElement();//end gui
+        
+        writer.writeEndElement();//end node
     }
+    writer.writeEndElement(); // end nodes
+    writer.writeEndDocument();
     return ret;
 }
 
 void Model::restoreGraphFromString(const QString& str){
-    int i = 0,lastNode = 0;
-    std::vector<std::pair<Node*,QString> > actionsMap;
-    i = str.indexOf("Node:",lastNode);
-    while(i != -1){
-        lastNode = i+1;
-        
-        i += 5;
-        QString className;
-        while(i < str.size() && str.at(i) != QChar(':')){
-            className.append(str.at(i++));
-        }
-        if(i  == str.size()) return; // safety check
-        
-        i++;
-        QString nodeName;
-        while(i < str.size() && str.at(i) != QChar('{')){
-            nodeName.append(str.at(i++));
-        }
-        if(i  == str.size()) return; // safety check
-        
-        i++; //the '\n' character
-        
-        Node* n = ctrlPTR->createNode(className);
-        n->setName(nodeName.toStdString());
-        while (i < str.size() && str.at(i) != QChar('}')) {
-            QString line;
-            while(i < str.size() && str.at(i) != QChar('\n')){
-                line.append(str.at(i++));
-            }
-            i++; // the '\n' character
-            actionsMap.push_back(make_pair(n, line));
-        }
-        i = str.indexOf("Node:",lastNode);
-    }
+    // pair< Node, pair< AttributeName, AttributeValue> >
+    std::vector<std::pair<Node*, XMLProjectLoader::XMLParsedElement* > > actionsMap;
+    QXmlStreamReader reader(str);
     
+    while(!reader.atEnd() && !reader.hasError()){
+        QXmlStreamReader::TokenType token = reader.readNext();
+        /* If token is just StartDocument, we'll go to next.*/
+        if(token == QXmlStreamReader::StartDocument) {
+            continue;
+        }
+        /* If token is StartElement, we'll see if we can read it.*/
+        if(token == QXmlStreamReader::StartElement) {
+            /* If it's named Nodes, we'll go to the next.*/
+            if(reader.name() == "Nodes") {
+                continue;
+            }
+            /* If it's named Node, we'll dig the information from there.*/
+            if(reader.name() == "Node") {
+                /* Let's check that we're really getting a Node. */
+                if(reader.tokenType() != QXmlStreamReader::StartElement &&
+                   reader.name() == "Node") {
+                    ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    return;
+                }
+                QString className,label;
+                QXmlStreamAttributes nodeAttributes = reader.attributes();
+                if(nodeAttributes.hasAttribute("ClassName")) {
+                    className = nodeAttributes.value("ClassName").toString();
+                }
+                if(nodeAttributes.hasAttribute("Label")) {
+                    label = nodeAttributes.value("Label").toString();
+                }
+                
+                assert(ctrlPTR);
+                ctrlPTR->deselectAllNodes();
+                Node* n = ctrlPTR->createNode(className);
+                if(!n){
+                    QString text("Failed to restore the graph! \n The node ");
+                    text.append(className);
+                    text.append(" was found in the auto-save script but doesn't seem \n"
+                                "to exist in the currently loaded plug-ins.");
+                    ctrlPTR->showErrorDialog("Autosave", text );
+                    ctrlPTR->clearInternalNodes();
+                    ctrlPTR->clearNodeGuis();
+                    ctrlPTR->createNode("Viewer");
+                    return;
+                }
+                n->getNodeUi()->setName(label);
+                
+                reader.readNext();
+                while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                        reader.name() == "Node")) {
+                    if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                        
+                        if(reader.name() == "Inputs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Inputs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Input") {
+                                        QXmlStreamAttributes inputAttributes = reader.attributes();
+                                        int number = -1;
+                                        QString name;
+                                        if(inputAttributes.hasAttribute("Number")){
+                                            number = inputAttributes.value("Number").toString().toInt();
+                                        }
+                                        if(inputAttributes.hasAttribute("Name")){
+                                            name = inputAttributes.value("Name").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::InputXMLParsedElement(name,number)));
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        
+                        if(reader.name() == "Knobs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Knobs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Knob") {
+                                        QXmlStreamAttributes knobAttributes = reader.attributes();
+                                        QString description,param;
+                                        if(knobAttributes.hasAttribute("Description")){
+                                            description = knobAttributes.value("Description").toString();
+                                        }
+                                        if(knobAttributes.hasAttribute("Param")){
+                                            param = knobAttributes.value("Param").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::KnobXMLParsedElement(description,param)));
+                                    }
+                                }
+                            }
+                            
+                        }
+                        
+                        if(reader.name() == "Gui") {
+                            double x = 0,y = 0;
+                            QXmlStreamAttributes posAttributes = reader.attributes();
+                            QString description,param;
+                            if(posAttributes.hasAttribute("X")){
+                                x = posAttributes.value("X").toString().toDouble();
+                            }
+                            if(posAttributes.hasAttribute("Y")){
+                                y = posAttributes.value("Y").toString().toDouble();
+                            }
+                            
+                            
+                            actionsMap.push_back(make_pair(n,new XMLProjectLoader::NodeGuiXMLParsedElement(x,y)));
+                            
+                        }
+                    }
+                    reader.readNext();
+                }
+            }
+        }
+    }
+    if(reader.hasError()){
+        ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        return;
+    }
     //adjusting knobs & connecting nodes now
-    for (U32 i = 0; i < actionsMap.size(); i++) {
-        pair<Node*,QString>& action = actionsMap[i];
+    for (U32 i = 0; i < actionsMap.size(); ++i) {
+        pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
         analyseSerializedNodeString(action.first, action.second);
     }
     
 }
-void Model::analyseSerializedNodeString(Node* n,const QString& str){
-    int type = 0;
-    type = str.indexOf("input");
-    if(type != -1){
-        int i = type + 5;
-        QString inputNumberStr;
-        while(i < str.size() && str.at(i) != QChar(':')){
-            inputNumberStr.append(str.at(i++));
-        }
-        i++; // the ':' character
-        QString inputName;
-        while(i < str.size()) inputName.append(str.at(i++));
-        
-        int inputNb = inputNumberStr.toInt();
-        for (U32 j = 0; j < _currentNodes.size(); j++) {
-            if (_currentNodes[j]->getName() == inputName.toStdString()) {
+void Model::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v){
+    assert(n);
+    
+    if(v->_element == "Input"){
+        XMLProjectLoader::InputXMLParsedElement* inputEl = static_cast<XMLProjectLoader::InputXMLParsedElement*>(v);
+        assert(inputEl);
+        assert(n->getNodeUi());
+        int inputNb = inputEl->_number;
+        for (U32 j = 0; j < _currentNodes.size(); ++j) {
+            assert(_currentNodes[j]);
+            if (_currentNodes[j]->getName() == inputEl->_name.toStdString()) {
                 n->addParent(_currentNodes[j]);
                 _currentNodes[j]->addChild(n);
                 n->getNodeUi()->addParent(_currentNodes[j]->getNodeUi());
@@ -992,73 +1147,87 @@ void Model::analyseSerializedNodeString(Node* n,const QString& str){
                 
                 const std::vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
                 assert(inputNb < (int)edges.size());
+                assert(edges[inputNb]);
                 edges[inputNb]->setSource(_currentNodes[j]->getNodeUi());
                 edges[inputNb]->initLine();
                 break;
             }
         }
-        return;
-    }
-    type = str.indexOf("knob");
-    if(type != -1){
-        int i = type + 4;
-        
-        i++; // the ':' character
-               
-        QString knobDescription;
-        while(i < str.size() && str.at(i)!= QChar(':')){
-            knobDescription.append(str.at(i++));
-        }
-        
-        if(i  == str.size()) return; // safety check
-        
-        i++; // the ':' character
-        
-        QString value;
-        while(i < str.size()){
-            value.append(str.at(i++));
-        }
-        
+        //  cout << "Input: " << inputEl->_number << " :" << inputEl->_name.toStdString() << endl;
+    }else if(v->_element == "Knob"){
+        XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
+        assert(inputEl);
         const std::vector<Knob*>& knobs = n->getKnobs();
-        for (U32 j = 0; j < knobs.size(); j++) {
-            if (knobs[j]->getDescription() == knobDescription.toStdString()) {
-                knobs[j]->restoreFromString(str.toStdString());
+        for (U32 j = 0; j < knobs.size(); ++j) {
+            if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
+                knobs[j]->restoreFromString(inputEl->_param.toStdString());
                 break;
             }
         }
-        
-        return;
-    }
-    
-    type = str.indexOf("pos");
-    if(type != -1){
-        int i = type + 3;
-        i++;// the ':' character
-        i++;// the 'x' character
-        i++;// the '=' character
-        
-        QString xStr,yStr;
-        while(i < str.size() && str.at(i).isDigit()){
-            xStr.append(str.at(i++));
+        //cout << "Knob: " << inputEl->_description.toStdString() << " :" << inputEl->_param.toStdString() << endl;
+    }else if(v->_element == "Gui"){
+        XMLProjectLoader::NodeGuiXMLParsedElement* inputEl = static_cast<XMLProjectLoader::NodeGuiXMLParsedElement*>(v);
+        assert(inputEl);
+        assert(n->getNodeUi());
+        n->getNodeUi()->setPos(inputEl->_x,inputEl->_y);
+        const vector<NodeGui*>& children = n->getNodeUi()->getChildren();
+        const vector<Edge*>& edges = n->getNodeUi()->getInputsArrows();
+        foreach(NodeGui* c,children){
+            const vector<Edge*>& childEdges = c->getInputsArrows();
+            foreach(Edge* e,childEdges){
+                e->initLine();
+            }
         }
-        
-        if(i  == str.size()) return; // safety check
-        
-        i++; // the '=' character
-        
-        while(i < str.size() && str.at(i).isDigit()){
-            yStr.append(str.at(i++));
+        foreach(Edge* e,edges){
+            e->initLine();
         }
-        
-        n->getNodeUi()->setPos(xStr.toDouble(), yStr.toDouble());
-        return;
+        //  cout << "Gui/Pos: " << inputEl->_x << " , " << inputEl->_y << endl;
     }
-    
 }
 
-void Model::loadProject(const QString& filename){
-    
+void Model::loadProject(const QString& filename,bool autoSave){
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream in(&file);
+    QString content = in.readAll();
+    if(autoSave){
+        QString toRemove = content.left(content.indexOf('\n')+1);
+        content = content.remove(toRemove);
+    }
+    restoreGraphFromString(content);
+    file.close();
 }
-void Model::saveProject(const QString& filename){
-    
+void Model::saveProject(const QString& path,const QString& filename,bool autoSave){
+    if(autoSave){
+        QFile file(Controler::autoSavesDir()+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        if(!path.isEmpty())
+            out << path << endl;
+        else
+            out << "unsaved" << endl;
+        out << serializeNodeGraph();
+        file.close();
+    }else{
+        QFile file(path+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout << (path+filename).toStdString() <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        out << serializeNodeGraph();
+        file.close();
+        
+    }
+}
+
+void Model::clearNodes(){
+    foreach(CounterID* n,_nodeCounters){
+        delete n;
+    }
+    _nodeCounters.clear();
+    _currentNodes.clear();
 }

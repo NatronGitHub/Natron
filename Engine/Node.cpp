@@ -16,6 +16,7 @@
 
 
 #include "Engine/Node.h"
+
 #include "Engine/Hash.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
@@ -34,6 +35,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+
 using namespace std;
 using namespace Powiter;
 void Node::copy_info(Node* parent){
@@ -88,7 +90,7 @@ void Node::merge_info(bool forReal){
 	int final_direction=0;
 	ChannelSet chans;
     bool displayMode = _info->rgbMode();
-	for (int i =0 ; i < inputCount(); i++) {
+	for (int i =0 ; i < inputCount(); ++i) {
         Node* parent = _parents[i];
         merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
         if(forReal){
@@ -167,7 +169,7 @@ Node::Node(){
 }
 
 void Node::removeKnob(Knob* knob){
-    for(U32 i = 0 ; i < _knobsVector.size() ; i++){
+    for(U32 i = 0 ; i < _knobsVector.size() ; ++i) {
         if (knob == _knobsVector[i]) {
             _knobsVector.erase(_knobsVector.begin()+i);
             break;
@@ -184,7 +186,7 @@ void Node::removeChild(Node* child){
             _children.erase(_children.begin()+i);
             break;
         }
-        i++;
+        ++i;
     }
 }
 void Node::removeParent(Node* parent){
@@ -195,18 +197,18 @@ void Node::removeParent(Node* parent){
             _parents.erase(_parents.begin()+i);
             break;
         }
-        i++;
+        ++i;
     }
 }
 
 void Node::removeThisFromParents(){
-    for(U32 i = 0 ; i < _parents.size() ; i++){
+    for(U32 i = 0 ; i < _parents.size() ; ++i) {
         _parents[i]->removeChild(this);
     }
 }
 
 void Node::removeThisFromChildren(){
-    for(U32 i = 0 ; i < _children.size() ; i++){
+    for(U32 i = 0 ; i < _children.size() ; ++i) {
         _children[i]->removeParent(this);
     }
 
@@ -234,7 +236,7 @@ std::string Node::setInputLabel(int inputNb){
     return out;
 }
 void Node::applyLabelsToInputs(){
-    for (std::map<int, std::string>::iterator it = _inputLabelsMap.begin(); it!=_inputLabelsMap.end(); it++) {
+    for (std::map<int, std::string>::iterator it = _inputLabelsMap.begin(); it!=_inputLabelsMap.end(); ++it) {
         _inputLabelsMap[it->first] = setInputLabel(it->first);
     }
 }
@@ -245,7 +247,7 @@ void Node::initInputLabelsMap(){
         str[0] =i+65;
         str[1]='\0';
         _inputLabelsMap[i]=str;
-        i++;
+        ++i;
     }
     
 }
@@ -269,14 +271,14 @@ bool Node::validate(bool forReal){
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     /*If we already computed its hash,return*/
-    for(U32 i =0 ; i < alreadyComputedHash.size();i++){
+    for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
         if(alreadyComputedHash[i] == _name)
             return;
     }
     /*Clear the values left to compute the hash key*/
     _hashValue->reset();
     /*append all values stored in knobs*/
-    for(U32 i=0;i<_knobsVector.size();i++){
+    for(U32 i=0;i<_knobsVector.size();++i) {
         _hashValue->appendKnobToHash(_knobsVector[i]);
     }
     /*append the node name*/

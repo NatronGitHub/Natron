@@ -603,8 +603,7 @@ bool FFMPEGFile::decode(unsigned char* buffer, unsigned frame, unsigned streamId
                             {
                                 std::cout << ", Bytes:";
                                 int count = (blockSize > 16 ? 16 : blockSize);
-                                for (int offset = 0; offset < count; offset++)
-                                {
+                                for (int offset = 0; offset < count; ++offset) {
                                     static const char hexTable[] = "0123456789ABCDEF";
                                     uint8_t byte = data[offset];
                                     std::cout << ' ' << hexTable[byte >> 4] << hexTable[byte & 0xF];

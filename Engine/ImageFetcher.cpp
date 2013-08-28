@@ -29,7 +29,7 @@ using namespace std;
 using namespace Powiter;
 ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):
 _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
-    for (int i = y; i <= t; i++) {
+    for (int i = y; i <= t; ++i) {
         InputRow* row = new InputRow(i,x,r);
         _interest.insert(std::make_pair(i,row));
         _sequence.push_back(row);
@@ -65,7 +65,7 @@ const InputRow& ImageFetcher::at(int y) const {
 }
 
 ImageFetcher::~ImageFetcher(){
-    for (U32 i = 0; i < _sequence.size(); i++) {
+    for (U32 i = 0; i < _sequence.size(); ++i) {
         delete _sequence[i]; // deleting will decrease ref counting and allow the cache to free these elements again
     }
     delete _results;
@@ -79,7 +79,7 @@ void ImageFetcher::debugImageFetcher(const std::string& filename){
     int w = _r - _x;
     int h = _t - _y + 1;
     QImage img(w,h,QImage::Format_ARGB32);
-    for (int i = _y; i < h+_y; i++) {
+    for (int i = _y; i < h+_y; ++i) {
         QRgb* dstPixels = (QRgb*)img.scanLine(i);
         map<int,InputRow*>::const_iterator it = _interest.find(i);
         if(it!=_interest.end()){
@@ -88,7 +88,7 @@ void ImageFetcher::debugImageFetcher(const std::string& filename){
             const float* g = srcPixels[Channel_green];
             const float* b = srcPixels[Channel_blue] ;
             const float* a = srcPixels[Channel_alpha] ;
-            for (int j = _x; j < w+_x ; j++) {
+            for (int j = _x; j < w+_x ; ++j) {
                 dstPixels[j] = qRgba(r ? (int)(r[i]*255.f) : 0,
                                      g ? (int)(g[i]*255.f) : 0,
                                      b ? (int)(b[i]*255.f) : 0,

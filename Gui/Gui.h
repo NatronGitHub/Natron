@@ -23,6 +23,7 @@
 #include <QAction>
 #include "Global/GlobalDefines.h"
 #include <QMainWindow>
+
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
@@ -51,6 +52,7 @@ class Node;
 class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
+
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
@@ -159,9 +161,9 @@ public:
     
     void closePane(TabWidget* what);
     
-    void setFullScreen(TabWidget* what);
+    void maximize(TabWidget* what);
     
-    void exitFullScreen();
+    void minimize();
     
     /*Returns a valid tab if a tab with a matching name has been
      found. Otherwise returns NULL.*/
@@ -178,14 +180,33 @@ public:
                              const std::string& groupIconPath);
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
+    
+    bool isGraphWorthless() const;
+    
+    void errorDialog(const QString& title,const QString& text);
+    
 private:
 
     void addNodeGraph();
 
 
 public slots:
-    void exit();
+    bool exit();
+    void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
+    void newProject();
+    void openProject();
+    void saveProject();
+    void saveProjectAs();
+    void autoSave();
+    
+    /*Returns a code from the save dialog:
+     * -1  = unrecognized code
+     * 0 = Save
+     * 1 = Discard
+     * 2 = Cancel or Escape
+     **/
+    int saveWarning();
     
 public:
     /*TOOL BAR ACTIONS*/
@@ -193,9 +214,11 @@ public:
     QAction *actionNew_project;
     QAction *actionOpen_project;
     QAction *actionSave_project;
+    QAction *actionSaveAs_project;
     QAction *actionPreferences;
     QAction *actionExit;
     QAction *actionProject_settings;
+    QAction *actionFullScreen;
 	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
