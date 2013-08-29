@@ -71,7 +71,7 @@ void Edge::initLine(){
                                            + QPointF(w/2.,h/2.));
     QPointF srcpt;
     if(has_source){
-        h = NodeGui::NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
 
         if(source->getNode()->className() == std::string("Reader")){
@@ -87,7 +87,7 @@ void Edge::initLine(){
         QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
         + QPointF(w/2.,h);
 
-        h = NodeGui::NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
         if(dest->getNode()->className() == std::string("Reader")){
@@ -123,7 +123,7 @@ void Edge::initLine(){
         }
         
         /*adjusting dst to show label at the middle of the line*/
-        h = NodeGui::NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
         if(dest->getNode()->className() == std::string("Reader")){

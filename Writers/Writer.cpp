@@ -101,6 +101,7 @@ bool Writer::_validate(bool forReal){
             }
         }
     }
+    return true;
 }
 
 void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){

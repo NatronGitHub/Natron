@@ -54,6 +54,7 @@ bool ViewerNode::_validate(bool){
     
    // (void)forReal;
    // makeCurrentViewer();
+    return true;
 }
 
 const std::string ViewerNode::description(){
