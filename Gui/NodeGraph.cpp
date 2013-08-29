@@ -343,9 +343,31 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         if(_nodeSelected){
             deleteSelectedNode();
         }
+    }else if(e->key() == Qt::Key_1){
+        if(_nodeSelected){
+            connectCurrentViewerToSelection();
+        }
     }
 }
-
+void NodeGraph::connectCurrentViewerToSelection(){
+    Edge* toConnect = NULL;
+    vector<NodeGui*> viewers;
+    for (U32 i = 0; i < _nodes.size(); i++) {
+        if (_nodes[i]->getNode()->className() == "Viewer") {
+            const vector<Edge*>& edges = _nodes[i]->getInputsArrows();
+            if (edges.size() > 0 && !edges[0]->hasSource()) {
+                toConnect = edges[0];
+            }
+            viewers.push_back(_nodes[i]);
+        }
+        if((i == _nodes.size() -1) && !toConnect){
+            toConnect = viewers[0]->getInputsArrows()[0];
+        }
+    }
+    if(toConnect){
+        _undoStack->push(new ConnectCommand(this,toConnect,toConnect->getSource(),_nodeSelected));
+    }
+}
 
 void NodeGraph::enterEvent(QEvent *event)
 {

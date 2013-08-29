@@ -112,6 +112,8 @@ public:
      this is just output nodes*/
     bool isGraphWorthLess() const;
     
+    void connectCurrentViewerToSelection();
+    
 protected:
 
     void mousePressEvent(QMouseEvent *event);
