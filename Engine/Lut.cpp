@@ -67,21 +67,23 @@ void Lut::validate()
 }
 float Lut::index_to_float(const U16 i)
 {
-    float f[1];
-    unsigned short *s = (unsigned short *)f;
+	union {
+		float f;
+		unsigned short us[2];
+	} tmp;
     /* positive and negative zeros, and all gradual underflow, turn into zero: */
     if (i<0x80 || (i >= 0x8000 && i < 0x8080)) return 0;
     /* All NaN's and infinity turn into the largest possible legal float: */
     if (i>=0x7f80 && i<0x8000) return FLT_MAX;
     if (i>=0xff80) return -FLT_MAX;
     if(_bigEndian){
-        s[0] = i;
-        s[1] = 0x8000;
+        tmp.us[0] = i;
+        tmp.us[1] = 0x8000;
     }else{
-        s[0] = 0x8000;
-        s[1] = i;
+        tmp.us[0] = 0x8000;
+        tmp.us[1] = i;
     }
-    return f[0];
+    return tmp.f;
 }
 
 
