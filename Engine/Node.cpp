@@ -9,13 +9,7 @@
 *
 */
 
- 
-
- 
-
-
-
-#include "Engine/Node.h"
+#include "Node.h"
 
 #include "Engine/Hash.h"
 #include "Gui/SettingsPanel.h"
@@ -38,6 +32,7 @@
 
 using namespace std;
 using namespace Powiter;
+
 void Node::copy_info(Node* parent){
     clear_info();
     const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());

@@ -9,19 +9,16 @@
  *
  */
 
+#include "ViewerCache.h"
 
-
-
-
-
-
-
+#include <cassert>
+#include <sstream>
 #include <QtCore/QDir>
 #include <QtCore/qtextstream.h>
 #include <QtCore/qdebug.h>
 #include <QtGui/QVector2D>
-#include <cassert>
-#include "Engine/ViewerCache.h"
+#include <QtCore/QFile>
+
 #include "Global/Controler.h"
 #include "Engine/Model.h"
 #include "Engine/Settings.h"
@@ -30,15 +27,15 @@
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
-#include <sstream>
 #include "Readers/Reader.h"
 #include "Engine/Hash.h"
-#include <QtCore/QFile>
 #include "Engine/Row.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerNode.h"
+
 using namespace std;
 using namespace Powiter;
+
 #define gl_viewer currentViewer->viewer
 
 ViewerCache::ViewerCache() : AbstractDiskCache(0){}

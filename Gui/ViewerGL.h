@@ -9,27 +9,20 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_VIEWERGL_H_
+#define POWITER_GUI_VIEWERGL_H_
 
- 
-
-
-
-#ifndef GL_VIEWER_HEADER__
-#define GL_VIEWER_HEADER__
-
-#define NOMINMAX ///< Eigen workaround with min/max. It has nothing to do with the Qt5 bug but is the same #define
+#include <cmath>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include <cmath>
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
+
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/Texture.h"
 
-#include <Eigen/Dense>
 #ifndef PW_DEBUG
 #define checkGLErrors() ((void)0)
 #else
@@ -280,9 +273,9 @@
              When constructing a viewer for the 1st time in the app, you must pass a NULL shareWidget. Otherwise,you
              can pass a pointer to the 1st viewer you created. It allows the viewers to share the same OpenGL context.
              */
-            ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-            ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-            ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
             
             virtual ~ViewerGL();
             
@@ -808,58 +801,5 @@
              *@brief Resets the mouse position
              **/
             void resetMousePos(){_zoomCtx._oldClick.setX(0); _zoomCtx._oldClick.setY(0);}
-            
-            
-            /**
-             *@typedef Typedef used by all _gl functions. It defines an Eigen 4x4 matrix of floats.
-             **/
-            typedef Eigen::Matrix4f M44f;
-            
-            /**
-             *@brief Computes the inverse matrix of m and stores it in out
-             **/
-            static bool _glInvertMatrix(float* m ,float* invOut);
-            
-            /**
-             *@brief Multiplys matrix1 by matrix2 and stores the result in result
-             **/
-            static void _glMultMats44(float *result, float *matrix1, float *matrix2);
-            
-            /**
-             *@brief Multiply the matrix by the vector and stores it in resultvector
-             **/
-            static void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
-            
-            /**
-             *@brief Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)
-             **/
-            static int _glMultMat44Vect_onlyYComponent(float *yComponent, const M44f& matrix, const Eigen::Vector4f&);
-            
-            /**
-             *@brief Replicate of the glOrtho func, but for an identity matrix.
-             WARNING: All the content of matrix will be modified when returning from this function.
-             **/
-            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_);
-            
-            /**
-             *@brief Replicate of the glScale function but for a custom matrix
-             **/
-            static void _glScale(M44f& result,const M44f& matrix,float x,float y,float z);
-            
-            /**
-             *@brief Replicate of the glTranslate function but for a custom matrix
-             **/
-            static void _glTranslate(M44f& result,const M44f& matrix,float x,float y,float z);
-            
-            /**
-             *@brief Replicate of the glRotate function but for a custom matrix.
-             **/
-            static void _glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z);
-            
-            /**
-             *@briefReplicate of the glLoadIdentity function but for a custom matrix
-             **/
-            static void _glLoadIdentity(M44f& matrix);
-            
         };
 #endif // GLVIEWER_H

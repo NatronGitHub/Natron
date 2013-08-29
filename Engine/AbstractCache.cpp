@@ -9,16 +9,6 @@
  *
  */
 
-
-
-
-
-
-
-
-#define CACHE_FOLDER_NAME "PowiterCache"
-
-
 #include "AbstractCache.h"
 
 #include <sstream>
@@ -31,6 +21,8 @@
 
 using namespace std;
 using namespace Powiter;
+
+#define CACHE_FOLDER_NAME "PowiterCache"
 
 #if QT_VERSION < 0x050000
 static bool removeRecursively(const QString & dirName)
@@ -177,7 +169,7 @@ void AbstractCache::erase(CacheIterator it){
 
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
-CacheEntry* AbstractCache::getCacheEntry(const U64& key)  {
+CacheEntry* AbstractCache::getCacheEntry(U64 key)  {
     QMutexLocker g(&_lock);
     CacheEntry* ret = _cache(key);
     if(ret) ret->addReference();
@@ -250,7 +242,7 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
     return false;
 }
 
-CacheEntry* AbstractDiskCache::isInMemory(const U64 &key) {
+CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
     QMutexLocker g(&_lock);
     CacheEntry* ret = _inMemoryPortion(key);
     if(ret)ret->addReference();

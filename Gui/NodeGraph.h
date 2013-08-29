@@ -9,17 +9,12 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_NODEGRAPH_H_
+#define POWITER_GUI_NODEGRAPH_H_
 
- 
-
-
-
-#ifndef NODEGRAPH_H
-#define NODEGRAPH_H
 #include <cmath>
-#include <QGraphicsView>
 #include <iostream>
+#include <QGraphicsView>
 #include <QtCore/QRectF>
 #include <QtCore/QEvent>
 #include <QtGui/QKeyEvent>
@@ -30,6 +25,7 @@
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
+
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
@@ -52,7 +48,7 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
         int _w,_h;
     public:
         
-        NodeGraphNavigator(QWidget* parent = 0);
+        explicit NodeGraphNavigator(QWidget* parent = 0);
         
         void setImage(const QImage& img);
         
@@ -63,7 +59,7 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
 
 public:
 
-    NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
+    explicit NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
 
     virtual ~NodeGraph();
  
@@ -223,7 +219,7 @@ class SmartInputDialog:public QDialog
 Q_OBJECT
 
 public:
-    SmartInputDialog(NodeGraph* graph);
+    explicit SmartInputDialog(NodeGraph* graph);
     virtual ~SmartInputDialog(){}
     void keyPressEvent(QKeyEvent *e);
     bool eventFilter(QObject * obj, QEvent * e);
@@ -233,4 +229,4 @@ private:
     QLabel* textLabel;
     QComboBox* textEdit;
 };
-#endif // NODEGRAPH_H
+#endif // POWITER_GUI_NODEGRAPH_H_

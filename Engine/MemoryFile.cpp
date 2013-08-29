@@ -9,15 +9,7 @@
 *
 */
 
- 
-
- 
-
-
-
 #include "Engine/MemoryFile.h"
-
-#include "Global/GlobalDefines.h"
 
 #ifdef __POWITER_WIN32__
 # include <windows.h>
@@ -33,6 +25,8 @@
 #endif
 #include <iostream>
 #include <stdexcept>
+
+#include "Global/GlobalDefines.h"
 
 using namespace std;
 

@@ -8,23 +8,21 @@
  *
  */
 
+#include "ViewerGL.h"
 
-
-
-
-
-
-
-/*This class is the the core of the viewer : what displays images, overlays, etc...
- Everything related to OpenGL will (almost always) be in this class */
-#include "Gui/ViewerGL.h"
+#include <cassert>
+#include <map>
+#ifdef WITH_EIGEN
+#include <Eigen/Dense>
+#endif
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
 #include <QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
-#include <cassert>
-#include <map>
+#include <QtCore/QEvent>
+#include <QtGui/QKeyEvent>
+
 #include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/Shaders.h"
@@ -36,10 +34,11 @@
 #include "Gui/Timeline.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/Settings.h"
-#include <QtCore/QEvent>
-#include <QtGui/QKeyEvent>
 #include "Engine/MemoryFile.h"
 #include "Global/GlobalDefines.h"
+
+/*This class is the the core of the viewer : what displays images, overlays, etc...
+ Everything related to OpenGL will (almost always) be in this class */
 
 #ifdef __POWITER_OSX__
 #define glGenVertexArrays glGenVertexArraysAPPLE
@@ -51,7 +50,7 @@ using namespace Imf;
 using namespace Imath;
 using namespace std;
 
-const double pi= 3.14159265358979323846264338327950288419717;
+static const double pi= 3.14159265358979323846264338327950288419717;
 
 
 static GLfloat renderingTextureCoordinates[32] = {
@@ -81,11 +80,64 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
     8,12,9,13,10,14,11,15
 };
 
+#ifdef WITH_EIGEN
+/**
+ *@typedef Typedef used by all _gl functions. It defines an Eigen 4x4 matrix of floats.
+ **/
+typedef Eigen::Matrix4f M44f;
+
+/**
+ *@brief Computes the inverse matrix of m and stores it in out
+ **/
+static bool _glInvertMatrix(float* m ,float* invOut);
+
+/**
+ *@brief Multiplys matrix1 by matrix2 and stores the result in result
+ **/
+static void _glMultMats44(float *result, float *matrix1, float *matrix2);
+
+/**
+ *@brief Multiply the matrix by the vector and stores it in resultvector
+ **/
+static void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
+
+/**
+ *@brief Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)
+ **/
+static int _glMultMat44Vect_onlyYComponent(float *yComponent, const M44f& matrix, const Eigen::Vector4f&);
+
+/**
+ *@brief Replicate of the glOrtho func, but for an identity matrix.
+ WARNING: All the content of matrix will be modified when returning from this function.
+ **/
+static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_);
+
+/**
+ *@brief Replicate of the glScale function but for a custom matrix
+ **/
+static void _glScale(M44f& result,const M44f& matrix,float x,float y,float z);
+
+/**
+ *@brief Replicate of the glTranslate function but for a custom matrix
+ **/
+static void _glTranslate(M44f& result,const M44f& matrix,float x,float y,float z);
+
+/**
+ *@brief Replicate of the glRotate function but for a custom matrix.
+ **/
+static void _glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z);
+
+/**
+ *@briefReplicate of the glLoadIdentity function but for a custom matrix
+ **/
+static void _glLoadIdentity(M44f& matrix);
+#endif
+
 /*
  ASCII art of the vertices used to render.
  The actual texture seen on the viewport is the rect (5,9,10,6).
  We draw  3*6 strips
- 
+
  0 ___1___2___3
  |  /|  /|  /|
  | / | / | / |
@@ -1189,7 +1241,8 @@ void ViewerGL::updateExposure(double d){
     
 }
 
-bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
+#ifdef WITH_EIGEN
+bool glInvertMatrix(float *m ,float* invOut){
     double inv[16], det;
     int i;
     
@@ -1317,7 +1370,7 @@ bool ViewerGL::_glInvertMatrix(float *m ,float* invOut){
     
     return true;
 }
-void ViewerGL::_glMultMats44(float *result, float *matrix1, float *matrix2){
+void glMultMats44(float *result, float *matrix1, float *matrix2){
     result[0]=matrix1[0]*matrix2[0]+
     matrix1[4]*matrix2[1]+
     matrix1[8]*matrix2[2]+
@@ -1383,13 +1436,13 @@ void ViewerGL::_glMultMats44(float *result, float *matrix1, float *matrix2){
     matrix1[11]*matrix2[14]+
     matrix1[15]*matrix2[15];
 }
-void ViewerGL::_glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector){
+void glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector){
     resultvector[0]=matrix[0]*pvector[0]+matrix[4]*pvector[1]+matrix[8]*pvector[2]+matrix[12]*pvector[3];
     resultvector[1]=matrix[1]*pvector[0]+matrix[5]*pvector[1]+matrix[9]*pvector[2]+matrix[13]*pvector[3];
     resultvector[2]=matrix[2]*pvector[0]+matrix[6]*pvector[1]+matrix[10]*pvector[2]+matrix[14]*pvector[3];
     resultvector[3]=matrix[3]*pvector[0]+matrix[7]*pvector[1]+matrix[11]*pvector[2]+matrix[15]*pvector[3];
 }
-int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matrix, const Eigen::Vector4f& pvector){
+int glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matrix, const Eigen::Vector4f& pvector){
     Eigen::Vector4f ret = matrix * pvector;
     if(!ret.w()) return 0;
     ret.w() = 1.f / ret.w();
@@ -1398,7 +1451,7 @@ int ViewerGL::_glMultMat44Vect_onlyYComponent(float *yComponent,const M44f& matr
 }
 
 /*Replicate of the glOrtho func, but for a custom matrix*/
-void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_){
+void glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_){
     float r_l = right - left;
     float t_b = top - bottom;
     float f_n = far_ - near_;
@@ -1427,7 +1480,7 @@ void ViewerGL::_glOrthoFromIdentity(M44f& matrix,float left,float right,float bo
 }
 
 /*Replicate of the glScale function but for a custom matrix*/
-void ViewerGL::_glScale(M44f& result,const M44f& matrix,float x,float y,float z){
+void glScale(M44f& result,const M44f& matrix,float x,float y,float z){
     M44f scale;
     scale(0,0) = x;
     scale(0,1) = 0;
@@ -1454,7 +1507,7 @@ void ViewerGL::_glScale(M44f& result,const M44f& matrix,float x,float y,float z)
 }
 
 /*Replicate of the glTranslate function but for a custom matrix*/
-void ViewerGL::_glTranslate(M44f& result,const M44f& matrix,float x,float y,float z){
+void glTranslate(M44f& result,const M44f& matrix,float x,float y,float z){
     M44f translate;
     translate(0,0) = 1;
     translate(0,1) = 0;
@@ -1481,7 +1534,7 @@ void ViewerGL::_glTranslate(M44f& result,const M44f& matrix,float x,float y,floa
 }
 
 /*Replicate of the glRotate function but for a custom matrix*/
-void ViewerGL::_glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z){
+void glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z){
     
     a = a * pi / 180.0; // convert to radians
 	float s = sin(a);
@@ -1523,7 +1576,7 @@ void ViewerGL::_glRotate(M44f& result,const M44f& matrix,float a,float x,float y
 }
 
 /*Replicate of the glLoadIdentity function but for a custom matrix*/
-void ViewerGL::_glLoadIdentity(M44f& matrix){
+void glLoadIdentity(M44f& matrix){
     
     matrix.setIdentity();
     //    matrix[0] = 1.0f;
@@ -1546,6 +1599,7 @@ void ViewerGL::_glLoadIdentity(M44f& matrix){
     //    matrix[14] = 0.0f;
     //    matrix[15] = 1.0f;
 }
+#endif // WITH_EIGEN
 
 void ViewerGL::disconnectViewer(){
     ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work

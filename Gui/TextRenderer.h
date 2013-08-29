@@ -37,7 +37,7 @@ protected:
     void do_end();
     
 public:
-    TextRenderer(ViewerGL *glwidget);
+    explicit TextRenderer(ViewerGL *glwidget);
     ~TextRenderer();
     
     void print( int x, int y, const QString &string,QColor color);

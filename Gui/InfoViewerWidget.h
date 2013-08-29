@@ -9,14 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef __PowiterOsX__InfoViewerWidget__
-#define __PowiterOsX__InfoViewerWidget__
+#ifndef POWITER_GUI_INFOVIEWERWIDGET_H_
+#define POWITER_GUI_INFOVIEWERWIDGET_H_
 
 #include <iostream>
 #include <QWidget>
@@ -25,12 +19,14 @@
 #include <QtCore/QPoint>
 #include <QtGui/QVector4D>
 #include "Engine/Format.h"
+
 class ViewerGL;
+
 class InfoViewerWidget: public QWidget{
     Q_OBJECT
     
 public:
-    InfoViewerWidget(ViewerGL* v,QWidget* parent=0);
+    explicit InfoViewerWidget(ViewerGL* v,QWidget* parent=0);
     virtual ~InfoViewerWidget();
     void setColor(QVector4D v){colorUnderMouse = v;}
     void setMousePos(QPoint p){mousePos =p;}
@@ -72,4 +68,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__InfoViewerWidget__) */
+#endif /* defined(POWITER_GUI_INFOVIEWERWIDGET_H_) */

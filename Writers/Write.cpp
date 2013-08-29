@@ -9,19 +9,15 @@
 *
 */
 
- 
-
- 
-
-
-
-
 #include "Write.h"
+
 #include "Engine/Row.h"
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
 #include "Gui/Knob.h"
+
 using namespace Powiter;
+
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
  initializeColorSpace. This function is called after the constructor and before any

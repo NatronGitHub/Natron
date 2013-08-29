@@ -84,7 +84,7 @@ public:
     
     Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) , _modified(false){}
     
-    Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t) , _modified(false){}
+    explicit Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t) , _modified(false){}
     
     int x() const { return _x; }
     void x(int v) { _x = v; }

@@ -20,6 +20,7 @@
 #include "Global/GlobalDefines.h"
 
 using namespace std;
+
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false){
     
     _mainLayout = new QHBoxLayout(this);

@@ -9,15 +9,10 @@
 *
 */
 
- 
-
- 
-
-
-
+#include "DataBuffer.h"
 
 #include "Global/GlobalDefines.h"
-#include "Engine/DataBuffer.h"
+
 DataBuffer::DataBuffer(){
 	this->_lock = new QMutex();
 	_buffer=NULL;

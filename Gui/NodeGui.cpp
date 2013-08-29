@@ -8,20 +8,14 @@
  *
  */
 
-
-
-
-
-
-
-
-#include "Gui/NodeGui.h"
+#include "NodeGui.h"
 
 #include <cassert>
 #include <QLayout>
 #include <QAction> 
 #include <QUndoStack>
 #include <QUndoCommand>
+
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
 #include "Readers/Reader.h"
@@ -30,8 +24,10 @@
 #include "Engine/OfxNode.h"
 #include "Global/Controler.h"
 
-const qreal pi=3.14159265358979323846264338327950288419717;
 using namespace std;
+
+static const qreal pi=3.14159265358979323846264338327950288419717;
+
 NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) :QObject(parentObj), QGraphicsItem(parent),settings(0)
 {
     
@@ -48,9 +44,9 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
 	if(node->className() == string("Reader")){ // if the node is not a reader
-		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT)));
+		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_LENGTH+NodeGui::PREVIEW_HEIGHT)));
 	}else{
-		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NODE_LENGTH,NODE_HEIGHT)));
+		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_LENGTH)));
 	}
 	
     rectangle->setParentItem(this);

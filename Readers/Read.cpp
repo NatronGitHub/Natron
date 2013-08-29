@@ -9,15 +9,11 @@
 *
 */
 
- 
-
- 
-
-
+#include "Read.h"
 
 #include <cstdlib>
 #include <QtGui/qrgb.h>
-#include "Readers/Read.h"
+
 #include "Readers/ReadExr.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
@@ -25,16 +21,16 @@
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
+
 Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
 {
-	
 	_readInfo = new ReaderInfo; // deleted by the reader which manages this read handle
-
 }
+
 Read::~Read(){
-	
 }
 
 void Read::from_byte(Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta ){
@@ -82,11 +78,11 @@ void Read::createKnobDynamically(){
 }
 
 void Read::setReaderInfo(Format dispW,
-	Box2D dataW,
-	QString file,
+	const Box2D& dataW,
+	const QString& file,
 	ChannelSet channels,
-	int Ydirection ,
-	bool rgb ){
+	int Ydirection,
+	bool rgb) {
     _readInfo->setDisplayWindow(dispW);
     _readInfo->set(dataW);
     _readInfo->setChannels(channels);

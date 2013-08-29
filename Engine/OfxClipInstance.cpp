@@ -11,11 +11,12 @@
 #include "OfxClipInstance.h"
 
 #include <cfloat>
+
 #include "Engine/OfxNode.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
 #include "Global/GlobalDefines.h"
-//#include <QtGui/QImage>
+
 using namespace Powiter;
 using namespace std;
 

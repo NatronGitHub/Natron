@@ -8,18 +8,14 @@
  *
  */
 
+#include "Controler.h"
 
-
-
-
-
-
-
+#include <cassert>
 #include <QLabel>
 #include <QMessageBox>
 #include <QtCore/QDir>
+
 #include "Gui/ViewerGL.h"
-#include "Global/Controler.h"
 #include "Gui/Gui.h"
 #include "Engine/Model.h"
 #include "Gui/ViewerTab.h"
@@ -34,8 +30,8 @@
 
 using namespace Powiter;
 using namespace std;
+
 Controler::Controler():_model(0),_gui(0){
-    
 }
 
 void Controler::initControler(Model *model,QLabel* loadingScreen,QString projectName){

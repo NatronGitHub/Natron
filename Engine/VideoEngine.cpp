@@ -7,7 +7,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 //  contact: immarespond at gmail dot com
 
-#include "Engine/VideoEngine.h"
+#include "VideoEngine.h"
 
 #include <iterator>
 #include <cassert>
@@ -66,6 +66,7 @@
 
 using namespace std;
 using namespace Powiter;
+
 #define gl_viewer currentViewer->getUiContext()->viewer
 
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
@@ -495,7 +496,7 @@ void VideoEngine::engineLoop(){
 
 
 void VideoEngine::metaReadHeader(Reader* reader,int current_frame){
-    reader->readCurrentHeader(current_frame);
+    reader->readCurrentHeader(current_frame); // FIXME: return value may be false and reader->readHandle may be NULL
 }
 
 void VideoEngine::metaReadData(Reader* reader,int current_frame){

@@ -9,21 +9,16 @@
 *
 */
 
- 
-
- 
-
-
-
 #ifndef __PowiterOsX__DataBuffer__
 #define __PowiterOsX__DataBuffer__
 
 #include <iostream>
-#include <QtCore/QMutex>
 #include <map>
-#include "Engine/ReferenceCountedObject.h"
+#include <QtCore/QMutex>
 #include <string>
 #include <cstring>
+
+#include "Engine/ReferenceCountedObject.h"
 
 /*This class implements a generic Buffer with reference counting.
  *When using it you should not directly use the DataBuffer class

@@ -17,6 +17,7 @@
 #include <ImfPixelType.h>
 #include <ImfInputFile.h>
 #include <ImfChannelList.h>
+
 #include "Readers/Reader.h"
 #include "Gui/Knob.h"
 #include "Engine/Node.h"
@@ -24,6 +25,7 @@
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
 
