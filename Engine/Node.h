@@ -209,7 +209,7 @@ protected:
     
     virtual ChannelSet supportedComponents() =0;
     virtual void preProcess(){}
-	virtual bool _validate(bool forReal){(void)forReal;}
+	virtual bool _validate(bool /*forReal*/) = 0;
     
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	std::vector<Node*> _parents;
