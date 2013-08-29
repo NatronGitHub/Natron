@@ -61,7 +61,7 @@ class Lut{
 	float from_byte_table[256]; // values between 0-1.f.
 	bool init_;
 	bool linear_;
-    bool _bigEndian;
+    const bool _bigEndian;
             
 protected:
     
@@ -70,7 +70,7 @@ protected:
     
     
 public:
-    Lut() : init_(false), linear_(false) { _bigEndian = isBigEndian();}
+    Lut() : init_(false), linear_(false), _bigEndian(isBigEndian()) {}
     virtual ~Lut() {}
     
     bool linear() {  return linear_; }
