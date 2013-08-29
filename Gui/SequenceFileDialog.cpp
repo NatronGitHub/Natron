@@ -185,8 +185,8 @@ _dialogMode(mode)
     _selectionWidget->setLayout(_selectionLayout);
     
     _sequenceButton = new ComboBox(_buttonsWidget);
-    _sequenceButton->addItem("Sequences");
-    _sequenceButton->addItem("File");
+    _sequenceButton->addItem("Sequence:");
+    _sequenceButton->addItem("File:");
     if(isSequenceDialog){
         _sequenceButton->setCurrentIndex(0);
     }else{
