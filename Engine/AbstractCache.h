@@ -236,9 +236,9 @@ public:
      exceeding the size.*/
     void setMaximumCacheSize(U64 size){_maximumCacheSize = size;}
     
-    const U64 getMaximumSize() const {return _maximumCacheSize;}
+    U64 getMaximumSize() const {return _maximumCacheSize;}
     
-    const U64 getCurrentSize() const {return _size;}
+    U64 getCurrentSize() const {return _size;}
     
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.

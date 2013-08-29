@@ -22,8 +22,6 @@
 #include "ofxhImageEffect.h"
 
 //ours
-class OFX::Host::ImageEffect::ClipInstance;
-
 class Tab_Knob;
 class QHBoxLayout;
 

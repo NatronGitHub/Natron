@@ -94,7 +94,7 @@ public:
          *Once filled up, you can access the nodes in topological order with the iterators.
          *The reverse iterator will give you the opposite of the topological order.
          */
-        DAG():_output(0),_isViewer(false){}
+        DAG():_output(0),_isViewer(false),_isOutputOpenFXNode(false){}
         
         /**
          *@brief Clears the structure and fill it with a new graph, represented by the OutputNode.
@@ -236,7 +236,7 @@ public:
     };
     
     /**
-     *@class EngineStatus
+     *@struct EngineStatus
      *@brief This class is used as a return code from the function
      *VideoEngine::computeFrameRequest(bool,bool,bool).
      *The members of this class helps the video engine to know what decision to make after
@@ -244,8 +244,7 @@ public:
      *the engine will either go in cache mode (i.e: reading data from the cache) or start computations
      *in the graph.
      **/
-    class EngineStatus{
-    public:
+    struct EngineStatus{
         enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , ABORTED = 2};
         
         EngineStatus():_cachedEntry(0),_key(0),_x(0),_r(0),_returnCode(NORMAL_ENGINE){}
@@ -283,13 +282,12 @@ private:
     typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,Node*);
     
     /**
-     *@class VideoEngine::Task
+     *@struct VideoEngine::Task
      *@brief This class holds all necessary infos to store a function call that will be queued. This is used mainly to delay
      *user requested operation like "Seek" "Play" etc... so it doesn't mess with the currently running computations. Once
      *the engine finishes its computations, it will then execute the stored Task.
      **/
-    class Task{
-    public:
+    struct Task{
         int _newFrameNB;
         int _frameCount;
         bool _initViewer;
@@ -309,8 +307,7 @@ private:
      * This saves the burden of re-calling all the arguments separatly into
      * member variables or even re-compute some of them.
      */
-    class ViewerCacheArgs{
-    public:
+    struct ViewerCacheArgs{
         ViewerCacheArgs():_hashKey(0),
         _zoomFactor(0),_exposure(0),_lut(0),
         _byteMode(0),_dataSize(0){}
