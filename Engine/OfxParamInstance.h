@@ -362,6 +362,7 @@ private:
     int firstFrame();
     int lastFrame();
     int clampToRange(int f);
+    
 };
 
 

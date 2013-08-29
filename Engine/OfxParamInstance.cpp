@@ -19,6 +19,7 @@
 
 #include "Gui/Knob.h"
 #include "Engine/OfxNode.h"
+#include "Engine/OfxClipInstance.h"
 
 using namespace std;
 
@@ -915,14 +916,16 @@ void OfxStringInstance::onInstanceChanged(){
     if(_fileKnob){
         getVideoSequenceFromFilesList();
         _returnValue = _fileKnob->getLineEditText();
+         _effect->computePreviewImage();
+
     }
     _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
     _effect->endInstanceChangedAction(kOfxChangeUserEdited);
-}
 
+}
 void OfxStringInstance::getVideoSequenceFromFilesList(){
     _files.clear();
     bool first_time=true;

@@ -25,6 +25,7 @@
 class Tab_Knob;
 class QHBoxLayout;
 
+class QImage;
 
 class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instance
 {
@@ -39,6 +40,9 @@ class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instan
     bool _isOutput;
     int _currentFrame; // valid only when _isOutput is true
     std::pair<int,int> _frameRange; // valid only when _isOutput is true
+    QImage* _preview;
+    bool _canHavePreview;
+    
 public:
     OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             OFX::Host::ImageEffect::Descriptor         &other,
@@ -51,6 +55,14 @@ public:
     virtual bool isOutputNode();
     
     void setAsOutputNode() {_isOutput = true;}
+    
+    bool hasPreviewImage() const {return _preview!=NULL;}
+    
+    bool canHavePreviewImage() const {return _canHavePreview;}
+    
+    void setCanHavePreviewImage() {_canHavePreview = true;}
+    
+    QImage* getPreview() const {return _preview;}
     
     int firstFrame(){return _frameRange.first;}
     
@@ -226,10 +238,10 @@ public:
     
     MappedInputV inputClipsCopyWithoutOutput();
 
-    
+    void computePreviewImage();
+
 public slots:
     void onInstanceChangedAction(const QString&);
-    
     
     
 };

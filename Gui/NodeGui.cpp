@@ -43,7 +43,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     setPos(x,y);
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
-	if(node->className() == string("Reader")){ // if the node is not a reader
+	if(hasPreviewImage()){ 
 		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)));
 	}else{
 		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)));
@@ -66,32 +66,56 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	
     name=scene->addSimpleText(node->getName().c_str());
 	
-	if(node->className() == string("Reader")){
+	if(hasPreviewImage()){
 		name->setX(itemPos.x()+35);
 		name->setY(itemPos.y()+1);
 	}else{
 		name->setX(itemPos.x()+10);
 		name->setY(itemPos.y()+channels->boundingRect().height()+5);
 	}
-    if(node->className() == string("Reader")){
-		if(static_cast<Reader*>(node)->hasPreview()){
-			QImage *prev=static_cast<Reader*>(node)->getPreview();
-			QPixmap prev_pixmap=QPixmap::fromImage(*prev);
-			prev_pixmap=prev_pixmap.scaled(60,40);
-			prev_pix=scene->addPixmap(prev_pixmap);
-			prev_pix->setX(itemPos.x()+30);
-			prev_pix->setY(itemPos.y()+20);
-			prev_pix->setParentItem(this);
-		}else{
-			QImage prev(60,40,QImage::Format_ARGB32);
-			prev.fill(Qt::black);
-			QPixmap prev_pixmap=QPixmap::fromImage(prev);
-			prev_pix=scene->addPixmap(prev_pixmap);
-			prev_pix->setX(itemPos.x()+30);
-			prev_pix->setY(itemPos.y()+20);
-			prev_pix->setParentItem(this);
-		}
-		
+    if(int ret = hasPreviewImage()){
+        if(ret == 1){
+            Reader* n = dynamic_cast<Reader*>(node);
+            if(n->hasPreview()){
+                QImage *prev=n->getPreview();
+                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                prev_pixmap=prev_pixmap.scaled(60,40);
+                prev_pix=scene->addPixmap(prev_pixmap);
+                prev_pix->setX(itemPos.x()+30);
+                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setParentItem(this);
+            }else{
+                QImage prev(60,40,QImage::Format_ARGB32);
+                prev.fill(Qt::black);
+                QPixmap prev_pixmap=QPixmap::fromImage(prev);
+                prev_pix=scene->addPixmap(prev_pixmap);
+                prev_pix->setX(itemPos.x()+30);
+                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setParentItem(this);
+            }
+            
+        }else if(ret == 2){
+            OfxNode* n = dynamic_cast<OfxNode*>(node);
+            if(n->hasPreviewImage()){
+                QImage *prev=n->getPreview();
+                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                prev_pixmap=prev_pixmap.scaled(60,40);
+                prev_pix=scene->addPixmap(prev_pixmap);
+                prev_pix->setX(itemPos.x()+30);
+                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setParentItem(this);
+            }else{
+                QImage prev(60,40,QImage::Format_ARGB32);
+                prev.fill(Qt::black);
+                QPixmap prev_pixmap=QPixmap::fromImage(prev);
+                prev_pix=scene->addPixmap(prev_pixmap);
+                prev_pix->setX(itemPos.x()+30);
+                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setParentItem(this);
+            }
+
+        }
+        
 	}
     
     name->setParentItem(this);
@@ -152,6 +176,21 @@ NodeGui::~NodeGui(){
     delete _undoStack;
 
 }
+int NodeGui::hasPreviewImage(){
+    if (node->className() == "Reader") {
+        return 1;
+    }
+    if(node->isOpenFXNode()){
+        OfxNode* n = dynamic_cast<OfxNode*>(node);
+        if(n->canHavePreviewImage())
+            return 2;
+        else
+            return 0;
+    }else{
+        return 0;
+    }
+}
+
 void NodeGui::pushUndoCommand(QUndoCommand* command){
     _undoStack->push(command);
     if(settings){
@@ -201,15 +240,24 @@ void NodeGui::updateChannelsTooltip(){
 }
 
 void NodeGui::updatePreviewImageForReader(){
-    Reader* reader = static_cast<Reader*>(node);
-    /*the node must be a reader to call this function.*/
-    if(!reader) return;
-    
-	QImage *prev = reader->getPreview();
-	QPixmap prev_pixmap=QPixmap::fromImage(*prev);
-	prev_pixmap=prev_pixmap.scaled(60,40);
-    prev_pix->setPixmap(prev_pixmap);
-    
+    if(int ret = hasPreviewImage()){
+        if(ret == 1){
+            Reader* reader = dynamic_cast<Reader*>(node);
+            QImage *prev = reader->getPreview();
+            QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+            prev_pixmap=prev_pixmap.scaled(60,40);
+            prev_pix->setPixmap(prev_pixmap);
+        }else if(ret == 2){
+            OfxNode* n = dynamic_cast<OfxNode*>(node);
+            if(n->hasPreviewImage()){
+                QImage *prev = n->getPreview();
+                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                prev_pixmap=prev_pixmap.scaled(60,40);
+                prev_pix->setPixmap(prev_pixmap);
+            }
+            
+        }
+    }
 }
 void NodeGui::initInputArrows(){
     int i=0;

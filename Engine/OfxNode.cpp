@@ -21,7 +21,7 @@
 #include "Engine/VideoEngine.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
-
+#include "Gui/NodeGui.h"
 using namespace std;
 using namespace Powiter;
 
@@ -33,7 +33,9 @@ OFX::Host::ImageEffect::Instance(plugin,other,context,false),
 _tabKnob(0),
 _lastKnobLayoutWithNoNewLine(0),
 _isOutput(false),
-_currentFrame(-1)
+_currentFrame(-1),
+_preview(NULL),
+_canHavePreview(false)
 {
     
 }
@@ -517,4 +519,70 @@ OfxStatus OfxNode::vmessage(const char* type,
                             va_list args) {
     return ctrlPTR->getModel()->vmessage(type, id, format, args);
 }
+void OfxNode::computePreviewImage(){
+    if(getContext() != kOfxImageEffectContextGenerator){
+        return;
+    }
+    //iterate over param and find if there's an unvalid param
+    // e.g: an empty filename
+    for (map<string,OFX::Host::Param::Instance*>::iterator it = _params.begin(); it!=_params.end(); ++it) {
+        if(it->second->getType() == kOfxParamTypeString){
+            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+            assert(param);
+            if(!param->isValid()){
+                return;
+            }
+        }
+    }
+
+    if(_preview){
+        delete _preview;
+        _preview = 0;
+    }
+    
+    QImage* ret = new QImage(64,64,QImage::Format_ARGB32);
+    OfxPointD rS;
+    rS.x = rS.y = 1.0;
+    OfxRectD rod;
+    //This function calculates the merge of the inputs RoD.
+    getRegionOfDefinitionAction(1.0, rS, rod);
+    OfxRectI renderW;
+    renderW.x1 = rod.x1;
+    renderW.x2 = rod.x2;
+    renderW.y1 = rod.y1;
+    renderW.y2 = rod.y2;
+    Box2D oldBox(_info->getDataWindow());
+    _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
+    OfxPointD renderScale;
+    renderScale.x = renderScale.y = 1.;
+    beginRenderAction(0, 25, 1, true, renderScale);
+    renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+    OfxImage* img = dynamic_cast<OfxImage*>(getClip("Output")->getImage(0.0,NULL));
+    OfxRectI bounds = img->getBounds();
+    int w = (bounds.x2-bounds.x1) < 64 ? (bounds.x2-bounds.x1) : 64;
+    int h = (bounds.y2-bounds.y1) < 64 ? (bounds.y2-bounds.y1) : 64;
+    float zoomFactor = (float)h/(float)(bounds.y2-bounds.y1);
+    for (int i = 0; i < h; ++i) {
+        float y = (float)i*1.f/zoomFactor;
+        int nearest;
+        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
+        OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearest);
+        QRgb *dst_pixels = (QRgb *) ret->scanLine(i);
+        assert(src_pixels);
+        for(int j = 0 ; j < w ; ++j) {
+            float x = (float)j*1.f/zoomFactor;
+            int nearestX;
+            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            OfxRGBAColourF p = src_pixels[nearestX];
+            dst_pixels[j] = qRgba(p.r*255, p.g*255, p.b*255,p.a ? p.a*255 : 255);
+        }
+    }
+    _info->set(oldBox);
+    endRenderAction(0, 25, 1, true, renderScale);
+
+    
+    _preview = ret;
+    _nodeGUI->updatePreviewImageForReader();
+}
+
 

@@ -46,6 +46,8 @@ public:
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
     
+    /*0 if not, 1 if yes and this is a Reader, 2 if yes and this is an OpenFX node*/
+    int hasPreviewImage();
   
     /*Returns tru if the NodeGUI contains the point*/
     virtual bool contains(const QPointF &point) const;

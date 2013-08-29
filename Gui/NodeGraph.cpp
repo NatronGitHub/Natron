@@ -36,6 +36,7 @@
 #include "Gui/Gui.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/Timeline.h"
+#include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
 
 using namespace std;
@@ -102,7 +103,7 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
         selectedPos = _nodeSelected->scenePos();
         x = selectedPos.x();
         int yOffset = 0;
-        if(node->className() == "Reader" && _nodeSelected->getNode()->className()!= "Reader"){
+        if(node->isInputNode() && !_nodeSelected->getNode()->isInputNode()){
             x -= NodeGui::PREVIEW_LENGTH/2;
             yOffset -= NodeGui::PREVIEW_HEIGHT;
         }
@@ -126,6 +127,13 @@ void NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     
     selectNode(node_ui);
     _nodeSelected = node_ui;
+    
+    if(int ret = node_ui->hasPreviewImage()){
+        if(ret == 2){
+            OfxNode* n = dynamic_cast<OfxNode*>(node_ui->getNode());
+            n->computePreviewImage();
+        }
+    }
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event){
@@ -432,7 +440,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 
                 /*we now try to move the created node in between the 2 previous*/
                 QPointF parentPos = created->mapFromScene(selected->scenePos());
-                if(selected->getNode()->className() == "Reader"){
+                if(selected->hasPreviewImage()){
                     parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
                 }else{
                     parentPos.ry() += (NodeGui::NODE_HEIGHT);

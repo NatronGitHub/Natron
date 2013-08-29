@@ -861,7 +861,12 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* ,
                                                      const std::string& context)
 {
     assert(plugin);
-    return new OfxNode(plugin, desc, context);
+    
+    OfxNode* ret =  new OfxNode(plugin, desc, context);
+    if(context == kOfxImageEffectContextGenerator){
+        ret->setCanHavePreviewImage();
+    }
+    return ret;
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
