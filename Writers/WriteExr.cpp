@@ -186,21 +186,21 @@ void WriteExr::initializeColorSpace(){
 
 /*This must be implemented to do the output colorspace conversion*/
 void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
-    InputRow row(y, offset, range);
-    op->input(0)->get(row);
-    const float* a = row[Channel_alpha];
+    Row* row = op->input(0)->get(y,offset,range);
+    const float* a = (*row)[Channel_alpha];
     if (a) {
-        a+=row.offset();
+        a+=row->offset();
     }
     Row* toRow = new Row(offset,y,range,channels);
     toRow->allocateRow();
     foreachChannels(z, channels){
-        const float* from = row[z] + row.offset();
-        float* to = toRow->writable(z)+row.offset();
-        to_float(z, to , from, a, row.right()- row.offset());
+        const float* from = (*row)[z] + row->offset();
+        float* to = toRow->writable(z)+row->offset();
+        to_float(z, to , from, a, row->right()- row->offset());
     }
     QMutexLocker g(_lock);
     _img.insert(make_pair(y,toRow));
+    row->release();
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like

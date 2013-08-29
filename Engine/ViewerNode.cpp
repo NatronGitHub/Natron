@@ -61,12 +61,10 @@ const std::string ViewerNode::description(){
     return "OutputNode";
 }
 
-void ViewerNode::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    InputRow row(y,offset,range);
-    input(0)->get(row);
-    Row* internal = row.getInternalRow();
-    if(internal){
-        internal->zoomedY(out->zoomedY());
+void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
+    Row* row = input(0)->get(y,offset,range);
+    if(row){
+        row->zoomedY(out->zoomedY());
         
         /*drawRow will fill a portion of the RAM buffer holding the frame.
          This will write at the appropriate offset in the buffer thanks
@@ -79,15 +77,16 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet channels,Row* out)
         const float* a = NULL;
         
         //        if (uiChannels & Channel_red)
-            r = row[Channel_red];
+            r = (*row)[Channel_red];
         //        if (uiChannels & Channel_green)
-            g = row[Channel_green];
+            g = (*row)[Channel_green];
         //        if (uiChannels & Channel_blue)
-            b = row[Channel_blue];
+            b = (*row)[Channel_blue];
         //        if (uiChannels & Channel_alpha)
-            a = row[Channel_alpha];
-        _uiContext->viewer->drawRow(r,g,b,a,internal->zoomedY());
+            a = (*row)[Channel_alpha];
+        _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
     }
+    row->release();
 }
 
 void ViewerNode::makeCurrentViewer(){

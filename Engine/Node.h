@@ -26,7 +26,6 @@
 #include "Engine/Format.h"
 
 class Row;
-class InputRow;
 class Model;
 class SettingsPanel;
 class Hash;
@@ -195,8 +194,7 @@ public:
      for the line y , channels and range (r-x). Data may come from the cache,
      otherwise engine() gets called.
      */
-    // FIXME: row is both input and output! The inputs should really be int y, int x, int offset (see Row constructor), and it should return a Row*
-    void get(InputRow& row);
+    Row* get(int y,int x,int r);
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/

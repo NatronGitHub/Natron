@@ -305,7 +305,7 @@ void Node::createKnobDynamically(){
 }
 
 
-void Node::get(InputRow& row){
+Row* Node::get(int y,int x,int r){
     NodeCache* cache = NodeCache::getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
@@ -325,25 +325,24 @@ void Node::get(InputRow& row){
     }
     Row* out = 0;
     U64 key = _hashValue->getHashValue();
-    pair<U64,Row*> entry = cache->get(key , filename, row.offset(), row.right(), row.y(),_info->channels());
+    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,_info->channels());
     if(entry.second && entry.first!=0) out = entry.second;
     if(out){
         /*checking that the entry matches what we asked for*/
-        assert(out->offset() == row.offset() && out->right() == row.right());
-        row.setInternalRow(out);
-        return;
+        assert(out->offset() == x && out->right() ==  r);
+        return out;
     }else{
         if(cacheData()){
-            out = cache->addRow(entry.first,row.offset(), row.right(), row.y(), _info->channels(), filename);
-            if(!out) return;
+            out = cache->addRow(entry.first,x,r,y, _info->channels(), filename);
+            if(!out)
+                return NULL;
         }else{
-            out = new Row(row.offset(),row.y(),row.right(),_info->channels());
+            out = new Row(x,y,r,_info->channels());
             out->allocateRow();
         }
-        assert(out->offset() == row.offset() && out->right() == row.right());
-        row.setInternalRow(out);
-        engine(row.y(), row.offset(), row.right(), _info->channels(), out);
-        return;
+        assert(out->offset() == x && out->right() == r);
+        engine(y,x,r, _info->channels(), out);
+        return out;
     }
 }
 

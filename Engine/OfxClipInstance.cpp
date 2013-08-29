@@ -228,35 +228,36 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
-            try{
-                for (int y = roi.y1; y < roi.y2; ++y) {
-                    OfxRGBAColourF* dstImg = ret->pixelF(0, y);
-                    assert(dstImg);
-                    const InputRow& row = srcImg.at(y);
-                    const float* r = row[Channel_red];
-                    const float* g = row[Channel_green];
-                    const float* b = row[Channel_blue];
-                    const float* a = row[Channel_alpha];
-                    if(r)
-                        rowPlaneToOfxPackedBuffer(Channel_red, r+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_red, NULL , row.right()-row.offset(), dstImg);
-                    if(g)
-                        rowPlaneToOfxPackedBuffer(Channel_green, g+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_green, NULL , row.right()-row.offset(), dstImg);
-                    if(b)
-                        rowPlaneToOfxPackedBuffer(Channel_blue, b+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row.right()-row.offset(), dstImg);
-                    if(a)
-                        rowPlaneToOfxPackedBuffer(Channel_alpha, a+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row.right()-row.offset(), dstImg);
+            for (int y = roi.y1; y < roi.y2; ++y) {
+                OfxRGBAColourF* dstImg = ret->pixelF(0, y);
+                assert(dstImg);
+                Row* row = srcImg.at(y);
+                if(!row){
+                    cout << "Couldn't find row for index " << y << "...skipping this row" << endl;
+                    continue;
                 }
-            }catch(const std::string& str){
-                cout << str << endl;
+                const float* r = (*row)[Channel_red];
+                const float* g = (*row)[Channel_green];
+                const float* b = (*row)[Channel_blue];
+                const float* a = (*row)[Channel_alpha];
+                if(r)
+                    rowPlaneToOfxPackedBuffer(Channel_red, r+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_red, NULL , row->right()-row->offset(), dstImg);
+                if(g)
+                    rowPlaneToOfxPackedBuffer(Channel_green, g+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_green, NULL , row->right()-row->offset(), dstImg);
+                if(b)
+                    rowPlaneToOfxPackedBuffer(Channel_blue, b+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row->right()-row->offset(), dstImg);
+                if(a)
+                    rowPlaneToOfxPackedBuffer(Channel_alpha, a+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row->right()-row->offset(), dstImg);
             }
+            
             return ret;
         }
     }

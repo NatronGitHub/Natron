@@ -95,8 +95,7 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
 }
 
 void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
-    InputRow row(y,offset,range) ;
-    op->input(0)->get(row);
+    Row* row = op->input(0)->get(y,offset,range);
     const Format& frmt = op->getInfo()->getDisplayWindow();
     
     /*invert y to be in top-to-bottom increasing order*/
@@ -122,34 +121,35 @@ void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
         toA = toR+1;
     }
 
-    const float* red = row[Channel_red];
-    const float* green = row[Channel_green];
-    const float* blue = row[Channel_blue];
-    const float* alpha = row[Channel_alpha];
+    const float* red = (*row)[Channel_red];
+    const float* green = (*row)[Channel_green];
+    const float* blue = (*row)[Channel_blue];
+    const float* alpha = (*row)[Channel_alpha];
     if(!red){
-        row.turnOn(Channel_red);
+        row->turnOn(Channel_red);
     }
-    red = row[Channel_red]+row.offset();
+    red = (*row)[Channel_red]+row->offset();
 
     if(!green){
-        row.turnOn(Channel_green);
+        row->turnOn(Channel_green);
     }
-    green = row[Channel_green]+row.offset();
+    green = (*row)[Channel_green]+row->offset();
 
     if(!blue){
-        row.turnOn(Channel_blue);
+        row->turnOn(Channel_blue);
     }
-    blue = row[Channel_blue]+row.offset();
+    blue = (*row)[Channel_blue]+row->offset();
 
     if(!alpha){
-        row.turnOn(Channel_alpha);
+        row->turnOn(Channel_alpha);
     }
-    alpha = row[Channel_alpha]+row.offset();
+    alpha = (*row)[Channel_alpha]+row->offset();
 
-    to_byte(Channel_red, toR, red, alpha, row.right() - row.offset(),4);
-    to_byte(Channel_green, toG, green, alpha, row.right() - row.offset(),4);
-    to_byte(Channel_blue, toB, blue, alpha, row.right() - row.offset(),4);
-    to_byte(Channel_alpha, toA, alpha, alpha, row.right() - row.offset(),4);
+    to_byte(Channel_red, toR, red, alpha, row->right() - row->offset(),4);
+    to_byte(Channel_green, toG, green, alpha, row->right() - row->offset(),4);
+    to_byte(Channel_blue, toB, blue, alpha, row->right() - row->offset(),4);
+    to_byte(Channel_alpha, toA, alpha, alpha, row->right() - row->offset(),4);
+    row->release();
     
 }
 
