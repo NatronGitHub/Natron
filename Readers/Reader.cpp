@@ -194,11 +194,11 @@ void Reader::showFilePreview(){
     
     fitFrameToViewer(false);
     
-    readCurrentHeader(firstFrame()); // FIXME: return value may be false and reader->readHandle may be NULL
-    readCurrentData(firstFrame());
-
-    assert(readHandle);
-    readHandle->make_preview();
+    if(readCurrentHeader(firstFrame())){ // FIXME: return value may be false and reader->readHandle may be NULL
+        readCurrentData(firstFrame());
+        assert(readHandle);
+        readHandle->make_preview();
+    }
     _buffer.clear();
 }
 

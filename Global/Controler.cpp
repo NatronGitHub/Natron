@@ -246,7 +246,6 @@ bool Controler::findAutoSave(){
             QString filenameWithPath = path + QDir::separator() + filename;
             bool exists = QFile::exists(filenameWithPath);
             QString text;
-            _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
             
             
             QDateTime time = QDateTime::currentDateTime();
@@ -267,11 +266,10 @@ bool Controler::findAutoSave(){
             _gui->setWindowTitle(title);
 
             if(exists){
-                text = "A recent auto-save of " + filename + " was found. You can preview it now.\n"
+                text = "A recent auto-save of " + filename + " was found.\n"
                 "Would you like to restore it entirely? Clicking No will remove this auto-save.";
             }else{
                 text = "An auto-save was restored successfully. It didn't belong to any project\n"
-                "You can preview it now.\n"
                 "Would you like to restore it ? Clicking No will remove this auto-save forever.";
             }
 
@@ -280,12 +278,14 @@ bool Controler::findAutoSave(){
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
             if(ret == QMessageBox::No || ret == QMessageBox::Escape){
                 removeAutoSaves();
-                currentViewer->getUiContext()->viewer->disconnectViewer();
+                if(currentViewer)
+                    currentViewer->getUiContext()->viewer->disconnectViewer();
                 clearNodeGuis();
                 clearInternalNodes();
                 resetCurrentProject();
                 return false;
             }else{
+                _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
                 removeAutoSaves();
                 if(exists){
                     QDateTime now = QDateTime::currentDateTime();

@@ -248,7 +248,7 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
         }
     }
     
-    std::vector<Reader*> readers;
+    QList<Reader*> readers;
     
     const std::vector<Node*>& inputs = _engine->_dag.getInputs();
     for(U32 j=0;j<inputs.size();++j) {
@@ -256,11 +256,18 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
         if(currentInput->className() == string("Reader")){
             Reader* inp = static_cast<Reader*>(currentInput);
             inp->fitFrameToViewer(fitFrameToViewer);
-            readers.push_back(inp);
+            readers << inp;
         }
     }
     
-    QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
+    
+    QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
+    for (int i = 0; i < readHeaderResults.size(); i++) {
+        if (readHeaderResults.at(i) == false) {
+            _engine->stopEngine();
+            return;
+        }
+    }
     
     _engine->_dag.validate(true);
     
@@ -495,8 +502,10 @@ void VideoEngine::engineLoop(){
 
 
 
-void VideoEngine::metaReadHeader(Reader* reader,int current_frame){
-    reader->readCurrentHeader(current_frame); // FIXME: return value may be false and reader->readHandle may be NULL
+bool VideoEngine::metaReadHeader(Reader* reader,int current_frame){
+    if(!reader->readCurrentHeader(current_frame)) // FIXME: return value may be false and reader->readHandle may be NULL
+        return false;
+    return true;
 }
 
 void VideoEngine::metaReadData(Reader* reader,int current_frame){
@@ -812,7 +821,11 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
 }
 
 void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,Node* output){
-    _dag.resetAndSort(output,true);
+    bool isViewer = false;
+    if(dynamic_cast<ViewerNode*>(output)){
+        isViewer = true;
+    }
+    _dag.resetAndSort(output,isViewer);
     const vector<Node*>& inputs = _dag.getInputs();
     bool start = false;
     for (U32 i = 0 ; i < inputs.size(); ++i) {
@@ -916,6 +929,8 @@ void VideoEngine::DAG::resetAndSort(Node* out,bool isViewer){
     _isViewer = isViewer;
     if(out && out->isOpenFXNode()){
         _isOutputOpenFXNode = true;
+    }else{
+        _isOutputOpenFXNode = false;
     }
     clearGraph();
     if(!_output){

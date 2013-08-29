@@ -23,7 +23,7 @@ Format::Format(int x, int y, int r, int t, const std::string& name, double pa)
 
 Format::Format()
 : Box2D()
-, _pixel_aspect(0)
+, _pixel_aspect(1.0)
 , _name("")
 {
 }

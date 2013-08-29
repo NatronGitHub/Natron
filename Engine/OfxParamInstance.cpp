@@ -819,6 +819,8 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         }else{
             str = "";
         }
+    }else if(_outputFileKnob){
+        str = filenameFromPattern(_effect->timeLineGetTime());
     }else{
         str = _returnValue;
     }
@@ -837,6 +839,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string &str) {
         }else{
             str = "";
         }
+    }else if(_outputFileKnob){
+        str = filenameFromPattern(_effect->timeLineGetTime());
     }else{
         str = _returnValue;
     }    return kOfxStatOK;
@@ -847,7 +851,7 @@ OfxStatus OfxStringInstance::set(const char* str) {
         _fileKnob->setLineEditText(_returnValue);
     }
     if(_outputFileKnob){
-        
+        _outputFileKnob->setStr(str);
     }
     if(_stringKnob){
         _stringKnob->setString(str);
@@ -860,7 +864,7 @@ OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
         _fileKnob->setLineEditText(_returnValue);
     }
     if(_outputFileKnob){
-        
+         _outputFileKnob->setStr(str);
     }
     if(_stringKnob){
         _stringKnob->setString(str);
@@ -912,10 +916,6 @@ void OfxStringInstance::onInstanceChanged(){
         getVideoSequenceFromFilesList();
         _returnValue = _fileKnob->getLineEditText();
     }
-    if(_outputFileKnob){
-        
-    }
-    
     _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;

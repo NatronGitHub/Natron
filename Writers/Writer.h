@@ -121,6 +121,11 @@ public:
     
     void incrementCurrentFrame(){++_currentFrame;}
     
+    void setCurrentFrame(int f){
+        if(f >= _frameRange.first && f <= _frameRange.second)
+            _currentFrame = f;
+    }
+    
     const ChannelSet& requestedChannels() const {return _requestedChannels;} // FIXME: never return reference to internals!
     
     virtual bool isOutputNode(){return true;}

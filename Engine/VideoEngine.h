@@ -639,7 +639,7 @@ private:
      *@param reader[in] A pointer to the reader that will read the header.
      *@param current_frame[in] The frame number in the sequence to decode.
      */
-    static void metaReadHeader(Reader* reader,int current_frame);
+    static bool metaReadHeader(Reader* reader,int current_frame);
     
     /**
      *@brief The callback reading the data of the current frame for a reader.

@@ -15,6 +15,7 @@
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/Model.h"
+#include "Writers/Writer.h"
 #include "Global/Controler.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
@@ -151,15 +152,16 @@ bool OfxNode::_validate(bool forReal){
             OfxRectD rod;
             //This function calculates the merge of the inputs RoD.
             getRegionOfDefinitionAction(1.0, rS, rod);
-            //  double pa = clip->getAspectRatio();
+            double pa = clip->getAspectRatio();
+            //  cout << "pa : " << pa << endl;
             //we just set the displayWindow/dataWindow rather than merge it
-            _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, ""/*,pa*/));
+            _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
             _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
             _info->rgbMode(true);
             _info->setYdirection(1);
             string comp = clip->getUnmappedComponents();
             _info->setChannels(ofxComponentsToPowiterChannels(comp));
-        
+            
         }
         
     }
@@ -175,7 +177,7 @@ bool OfxNode::_validate(bool forReal){
         }
     }
     return true;
-
+    
 }
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
@@ -447,39 +449,72 @@ bool  OfxNode::progressUpdate(double t)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    if(currentViewer)
-        return currentViewer->getUiContext()->frameSeeker->currentFrame();
-    else
+    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
         return -1.;
+    }
+    if(dag.isOutputAnOpenFXNode()){
+        return dag.outputAsOpenFXNode()->currentFrame();
+    }else{
+        if(dag.isOutputAViewer()){
+            return currentViewer->getUiContext()->frameSeeker->currentFrame();
+            
+        }else{
+            return dag.outputAsWriter()->currentFrame();
+        }
+    }
 }
 
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
-    currentViewer->getUiContext()->frameSeeker->seek_notSlot(t);
+    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
+        return;
+    }
+
+    if(dag.isOutputAnOpenFXNode()){
+        return dag.outputAsOpenFXNode()->setCurrentFrame(t);
+    }else{
+        if(dag.isOutputAViewer()){
+            currentViewer->getUiContext()->frameSeeker->seek_notSlot(t);
+        }else{
+            return dag.outputAsWriter()->setCurrentFrame(t);
+        }
+    }
 }
+
 
 /// get the first and last times available on the effect's timeline
 void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
-    t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
-    t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
+   
+
+    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
+        t1 = -1.;
+        t2 = -1.;
+        return;
+    }
+    if(dag.isOutputAnOpenFXNode()){
+        t1 = dag.outputAsOpenFXNode()->firstFrame();
+        t2 = dag.outputAsOpenFXNode()->lastFrame();
+
+    }else{
+        if(dag.isOutputAViewer()){
+            t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
+            t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
+        }else{
+            t1 = dag.outputAsWriter()->firstFrame();
+            t2 = dag.outputAsWriter()->lastFrame();
+        }
+    }
 }
+
 OfxStatus OfxNode::vmessage(const char* type,
-                   const char* id,
-                   const char* format,
-                   va_list args) {
+                            const char* id,
+                            const char* format,
+                            va_list args) {
     return ctrlPTR->getModel()->vmessage(type, id, format, args);
 }
 
-std::string OfxNode::getCurrentFrameName() const{
-    string ret;
-    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.begin(); it!=_params.end(); ++it) {
-        if(it->second->getType() == kOfxParamTypeString){
-            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
-            assert(param);
-            ret = param->filenameFromPattern(_currentFrame);
-        }
-    }
-    return ret;
-}

@@ -54,10 +54,6 @@ public:
     
     void setAsOutputNode() {_isOutput = true;}
     
-    /*Returns the filename of the current frame if _isOutput is true.
-     If an error occured an empty string is returned.*/
-    std::string getCurrentFrameName() const;
-    
     int firstFrame(){return _frameRange.first;}
     
     int lastFrame(){return _frameRange.second;}
@@ -65,6 +61,11 @@ public:
     void incrementCurrentFrame() {++_currentFrame;}
     
     void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
+    
+    void setCurrentFrame(int f){
+        if(f >= _frameRange.first && f <= _frameRange.second)
+            _currentFrame = f;
+    }
     
     /*Useful only when _isOutput is true*/
     int currentFrame() const {return _currentFrame;}
