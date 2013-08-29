@@ -55,7 +55,7 @@ ViewerNode::~ViewerNode(){
         delete _viewerInfos;
 }
 
-void ViewerNode::_validate(bool){
+bool ViewerNode::_validate(bool){
     
    // (void)forReal;
    // makeCurrentViewer();

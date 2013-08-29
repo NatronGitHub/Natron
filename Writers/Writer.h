@@ -84,7 +84,7 @@ public:
      the filename selected in the GUI. If the buffer is full, it appends
      the Write task to the _queuedTasks vector. They will be launched
      by the notifyWriterForCompletion() function.*/
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool forReal);
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
 	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);

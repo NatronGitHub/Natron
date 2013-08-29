@@ -89,7 +89,7 @@ protected:
 private:
     
     void retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize);
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool forReal);
     
     
 };

@@ -451,7 +451,7 @@ public:
     /**
      * @brief Not documented yet as it will be revisited soon.
      */
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool forReal);
 	
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)

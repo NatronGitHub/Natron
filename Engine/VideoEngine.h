@@ -46,6 +46,7 @@ class Model;
 class ViewerNode;
 class Writer;
 class Timer;
+class OfxNode;
 class EngineMainEntry;
 class Worker;
 
@@ -156,9 +157,21 @@ public:
         Writer* outputAsWriter() const;
         
         /**
+         *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
+         *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
+         */
+        OfxNode* outputAsOpenFXNode() const;
+        
+        /**
          *@brief Returns true if the output node is a viewer.
          */
         bool isOutputAViewer() const {return _isViewer;}
+        
+        
+        /**
+         *@brief Returns true if the output node is an OpenFX node.
+         */
+        bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
         
         /**
          *@brief Accesses the input nodes of the graph.
@@ -219,6 +232,7 @@ public:
         std::vector<Node*> _sorted; /*!<the sorted DAG*/
         std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
+        bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
     };
     
     /**

@@ -244,7 +244,7 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     return true;
 }
 
-void Reader::_validate(bool){
+bool Reader::_validate(bool){
    // if(forReal && !makeCurrentDecodedFrame(true)){
     //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
     //    return;
@@ -252,6 +252,7 @@ void Reader::_validate(bool){
     assert(_info);
     _info->firstFrame(firstFrame());
     _info->lastFrame(lastFrame());
+    return true;
 }
 
 void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){

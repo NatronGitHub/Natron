@@ -323,6 +323,8 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     QStringList _filesList;
     std::map<int,QString> _files;
     
+    std::string _outputFilePattern;
+    
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
@@ -341,6 +343,12 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
+    // returns true if it is a file param and that it is not empty
+    bool isValid() const;
+    
+    /*Returns the frame name according to the current pattern stored by this param
+     for the frame frameIndex.*/
+    std::string filenameFromPattern(int frameIndex) const;
     
     Knob* getKnob() const;
     

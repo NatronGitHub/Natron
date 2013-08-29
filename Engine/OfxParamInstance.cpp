@@ -753,19 +753,37 @@ _fileKnob(0),_outputFileKnob(0){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
-        _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, Knob::NONE));
-        _fileKnob->setPointer(&_filesList);
-        QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
-        QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
-        if(previousKnobLayout){
-            _fileKnob->changeLayout(previousKnobLayout);
-            _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        if(effect->isInputNode()){
+            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, Knob::NONE));
+            _fileKnob->setPointer(&_filesList);
+            QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+            QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+            if(previousKnobLayout){
+                _fileKnob->changeLayout(previousKnobLayout);
+                _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+            }
+            if(layoutHint == 2){
+                _effect->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
+            }
+            int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+            _fileKnob->setLayoutMargin(paramSpacing);
+        }else{
+            _effect->setAsOutputNode(); // IMPORTANT ! 
+            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, name, Knob::NONE));
+            _outputFileKnob->setPointer(&_outputFilePattern);
+            QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+            QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+            if(previousKnobLayout){
+                _outputFileKnob->changeLayout(previousKnobLayout);
+                _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+            }
+            if(layoutHint == 2){
+                _effect->setLastKnobLayoutWithNoNewLine(_outputFileKnob->getHorizontalLayout());
+            }
+            int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
+            _outputFileKnob->setLayoutMargin(paramSpacing);
+
         }
-        if(layoutHint == 2){
-            _effect->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
-        }
-        int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-        _fileKnob->setLayoutMargin(paramSpacing);
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
         Knob::Knob_Flags flags = Knob::NONE;
         if(mode == kOfxParamStringIsLabel){
@@ -893,6 +911,9 @@ void OfxStringInstance::onInstanceChanged(){
         getVideoSequenceFromFilesList();
         _returnValue = _fileKnob->getLineEditText();
     }
+    if(_outputFileKnob){
+        
+    }
     
     _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
@@ -968,4 +989,22 @@ int OfxStringInstance::clampToRange(int f){
     if(f < first) return first;
     if(f > last) return last;
     return f;
+}
+bool OfxStringInstance::isValid() const{
+    if(_fileKnob){
+        return !_filesList.isEmpty();
+    }
+    if(_outputFileKnob){
+        return !_outputFilePattern.empty();
+    }
+    return true;
+}
+std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
+    if(_outputFileKnob){
+        if(isValid()){
+            QString p(_outputFilePattern.c_str());
+            return p.replace("#", QString::number(frameIndex)).toStdString();
+        }
+    }
+    return "";
 }

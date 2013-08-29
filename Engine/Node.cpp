@@ -262,7 +262,8 @@ bool Node::validate(bool forReal){
     if(!isInputNode()){
         merge_info(forReal);
     }
-    _validate(forReal);
+    if(!_validate(forReal))
+        return false;
     preProcess();
     _nodeGUI->updateChannelsTooltip();
     return true;
@@ -315,11 +316,16 @@ void Node::get(InputRow& row){
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
         int current_frame;
-        Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
-        if(!writer)
-            current_frame = reader->clampToRange(currentViewer->currentFrame());
-        else
-            current_frame = writer->currentFrame();
+        const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+        if(dag.isOutputAnOpenFXNode()){
+            current_frame = dag.outputAsOpenFXNode()->currentFrame();
+        }else{
+            if(dag.isOutputAViewer()){
+                current_frame = reader->clampToRange(currentViewer->currentFrame());
+            }else{
+                current_frame = dag.outputAsWriter()->currentFrame();
+            }
+        }
         filename = reader->getRandomFrameName(current_frame);
     }
     Row* out = 0;

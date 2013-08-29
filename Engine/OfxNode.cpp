@@ -17,6 +17,7 @@
 #include "Engine/Model.h"
 #include "Global/Controler.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/VideoEngine.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 using namespace std;
@@ -27,7 +28,9 @@ OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
 Node(),
 OFX::Host::ImageEffect::Instance(plugin,other,context,false),
 _tabKnob(0),
-_lastKnobLayoutWithNoNewLine(0)
+_lastKnobLayoutWithNoNewLine(0),
+_isOutput(false),
+_currentFrame(-1)
 {
     
 }
@@ -64,7 +67,7 @@ ChannelSet OfxNode::supportedComponents(){
 }
 
 bool OfxNode::isOutputNode(){
-    return false;
+    return _isOutput;
 }
 
 bool OfxNode::isInputNode(){
@@ -132,18 +135,12 @@ bool OfxNode::isInputOptional(int inpubNb){
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
-void OfxNode::_validate(bool forReal){
+bool OfxNode::_validate(bool forReal){
     _firstTime = true;
+    _frameRange.first = _info->firstFrame();
+    _frameRange.second = _info->lastFrame();
     if (isInputNode()) {
         OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
-        
-//        /*This is not working.*/
-//        double first,last;
-//        first = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,0);
-//        last = clip->getProps().getDoubleProperty(kOfxImageEffectPropFrameRange,1);
-//        _info->firstFrame(first);
-//        _info->lastFrame(last);
-        
         /*if forReal is true we need to pass down the tree all the infos generated
          besides just the frame range.*/
         if (forReal) {
@@ -160,9 +157,23 @@ void OfxNode::_validate(bool forReal){
             _info->setYdirection(1);
             string comp = clip->getUnmappedComponents();
             _info->setChannels(ofxComponentsToPowiterChannels(comp));
+        
         }
         
     }
+    //iterate over param and find if there's an unvalid param
+    // e.g: an empty filename
+    for (map<string,OFX::Host::Param::Instance*>::iterator it = _params.begin(); it!=_params.end(); ++it) {
+        if(it->second->getType() == kOfxParamTypeString){
+            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+            assert(param);
+            if(!param->isValid()){
+                return false;
+            }
+        }
+    }
+    return true;
+
 }
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
@@ -396,10 +407,11 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     double frame  = getFrameRecursive();
     OfxPointD renderScale;
     getRenderScaleRecursive(renderScale.x, renderScale.y);
-    
     beginInstanceChangedAction(kOfxChangeUserEdited);
     paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     endInstanceChangedAction(kOfxChangeUserEdited);
+    
+    ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
 OfxStatus OfxNode::editBegin(const std::string& name)
@@ -458,3 +470,14 @@ OfxStatus OfxNode::vmessage(const char* type,
     return ctrlPTR->getModel()->vmessage(type, id, format, args);
 }
 
+std::string OfxNode::getCurrentFrameName() const{
+    string ret;
+    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.begin(); it!=_params.end(); ++it) {
+        if(it->second->getType() == kOfxParamTypeString){
+            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+            assert(param);
+            ret = param->filenameFromPattern(_currentFrame);
+        }
+    }
+    return ret;
+}

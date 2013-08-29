@@ -62,7 +62,7 @@ const std::string Writer::description(){
     return "OutputNode";
 }
 
-void Writer::_validate(bool forReal){
+bool Writer::_validate(bool forReal){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
     _frameRange.first = _info->firstFrame();

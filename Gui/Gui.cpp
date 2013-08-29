@@ -702,6 +702,8 @@ void Gui::addPluginToolButton(const std::string& actionName,
     }
     if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
         groupIcon.addFile(groupIconPath.c_str());
+    }else{
+        groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
     }
     std::string mainGroup;
     if(groups.size()){

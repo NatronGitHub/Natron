@@ -33,12 +33,14 @@ class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instan
     Q_OBJECT
     
     
-    QMutex _lock;
+    QMutex _lock; // lock used in engine(...) function
     std::map<std::string,OFX::Host::Param::Instance*> _params; // used to re-create parenting between params
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
-    bool _firstTime;
-    
+    bool _firstTime; //used in engine(...) to operate once per frame
+    bool _isOutput;
+    int _currentFrame; // valid only when _isOutput is true
+    std::pair<int,int> _frameRange; // valid only when _isOutput is true
 public:
     OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             OFX::Host::ImageEffect::Descriptor         &other,
@@ -49,6 +51,23 @@ public:
     virtual bool isInputNode();
     
     virtual bool isOutputNode();
+    
+    void setAsOutputNode() {_isOutput = true;}
+    
+    /*Returns the filename of the current frame if _isOutput is true.
+     If an error occured an empty string is returned.*/
+    std::string getCurrentFrameName() const;
+    
+    int firstFrame(){return _frameRange.first;}
+    
+    int lastFrame(){return _frameRange.second;}
+    
+    void incrementCurrentFrame() {++_currentFrame;}
+    
+    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
+    
+    /*Useful only when _isOutput is true*/
+    int currentFrame() const {return _currentFrame;}
     
     /*Returns the clips count minus the output clip*/
     virtual int maximumInputs();
@@ -71,7 +90,7 @@ public:
     
     virtual ChannelSet supportedComponents();
     
-    virtual void _validate(bool);
+    virtual bool _validate(bool);
     
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
