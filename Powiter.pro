@@ -8,8 +8,8 @@ TEMPLATE = app
 CONFIG += app
 CONFIG += moc rcc
 CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
-QT += gui core opengl concurrent
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += gui core opengl
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
 
 win32{
@@ -32,7 +32,7 @@ unix {
      expat:     PKGCONFIG += expat
 } #unix
 
-linux {
+linux-g++ {
      LIBS += -lGLU -ldl
 }
 
