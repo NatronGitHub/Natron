@@ -97,29 +97,11 @@ enum
 };
 static const union { uint8_t bytes[4]; uint32_t value; } o32_host_order = { { 0, 1, 2, 3 } };
 #define O32_HOST_ORDER (o32_host_order.value)
-
-#if 1
-static std::map<LutType,const Lut*> _luts; // FIXME: use a singleton
-#else
-// a Singleton that holds precomputed LUTs
-class LutSingleton
-{
-public:
-    static LutSingleton& Instance();
-    const Lut* getLut(LutType type);
-private:
-    LutSingleton& operator= (const LutSingleton&){return *this;}
-    LutSingleton (const LutSingleton&){}
-
-    static LutSingleton m_instance;
-    LutSingleton();
-    ~LutSingleton();
-
-    std::map<LutType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
-};
-#endif
+}
 
 
+
+namespace {
 static U16 hipart(const float f)
 {
 	union {
@@ -502,6 +484,16 @@ void linear_to_float(float* to, const float* from, int W, int delta ){
     memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
 }
 
+//////////////////////////
+// GLOBAL LUTs
+//////////////////////////
+#if 0
+// 1st solution: a global variable.
+// problem: it requires to be explicitely allocated and deallocated...
+namespace {
+    static std::map<LutType,const Lut*> _luts;
+}
+
 const Lut* getLut(LutType type) {
     std::map<LutType,const Lut*>::iterator found = _luts.find(type);
     if(found != _luts.end()){
@@ -535,6 +527,70 @@ void deallocateLuts() {
     }
     _luts.clear();
 }
+#else
+// 2nd solution: a singleton with a static member.
+namespace {
+    // a Singleton that holds precomputed LUTs
+    class LutSingleton
+    {
+    public:
+        static LutSingleton& Instance() { return m_instance; };
+        const Lut* getLut(LutType type) {
+            std::map<LutType,const Lut*>::iterator found = luts.find(type);
+            if(found != luts.end()){
+                return found->second;
+            }
+            return NULL;
+        }
+
+    private:
+        LutSingleton& operator= (const LutSingleton&){return *this;}
+        LutSingleton (const LutSingleton&){}
+
+        static LutSingleton m_instance;
+        LutSingleton();
+        ~LutSingleton();
+
+        std::map<LutType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
+    };
+
+    LutSingleton::LutSingleton() {
+        Lut* srgb = new sRGB;
+        Lut* lin = new LinearLut();
+        Lut* rec709 = new Rec709;
+        luts.insert(make_pair(LUT_DEFAULT_VIEWER,srgb));
+        luts.insert(make_pair(LUT_DEFAULT_FLOAT,lin));
+        luts.insert(make_pair(LUT_DEFAULT_INT8,srgb));
+        luts.insert(make_pair(LUT_DEFAULT_INT16,srgb));
+        luts.insert(make_pair(LUT_DEFAULT_MONITOR,rec709));
+    }
+
+    LutSingleton::~LutSingleton() {
+        for(std::map<LutType,const Lut*>::iterator it = luts.begin(); it!=luts.end(); ++it) {
+            if(it->second){
+                // now finding in map all other members that have the same pointer to avoid double free
+                for(std::map<LutType,const Lut*>::iterator it2 = luts.begin(); it2!=luts.end(); ++it2) {
+                    if(it2->second == it->second && it->first!=it2->first)
+                        it2->second = 0;
+                }
+                delete it->second;
+                it->second = 0;
+            }
+        }
+        luts.clear();
+    }
+
+    LutSingleton LutSingleton::m_instance=LutSingleton();
+}
+
+const Lut* getLut(LutType type) {
+    return LutSingleton::Instance().getLut(type);
+}
+
+void allocateLuts() {}
+
+void deallocateLuts() {}
+#endif
 
 } // namespace Color
 } // namespace Powiter
