@@ -78,7 +78,14 @@ static Powiter::Channel fromExrChannel(const std::string& from)
 }
 } // namespace EXR
 
-std::vector<std::string> split(const std::string& str, char splitChar)
+static float clamp(float v, float min = 0.f, float max= 1.f){
+    if(v > max) v = max;
+    if(v < min) v = min;
+    return v;
+}
+
+
+static std::vector<std::string> split(const std::string& str, char splitChar)
 {
     std::vector<std::string> ret;
     size_t i = str.find(splitChar);
@@ -97,7 +104,7 @@ std::vector<std::string> split(const std::string& str, char splitChar)
     return ret;
 }
 
-bool IsView(const std::string& name, const std::vector<std::string>& views)
+static bool IsView(const std::string& name, const std::vector<std::string>& views)
 {
     for ( size_t i = 0; i < views.size(); ++i ){
         if ( views[i] == name ){
@@ -107,7 +114,7 @@ bool IsView(const std::string& name, const std::vector<std::string>& views)
     
     return false;
 }
-std::string removedigitsfromfront(const std::string& str)
+static std::string removedigitsfromfront(const std::string& str)
 {
     std::string ret = "";
     size_t len = str.length();
@@ -120,7 +127,7 @@ std::string removedigitsfromfront(const std::string& str)
     return ret;
 }
 
-std::string removeNonAlphaCharacters(const std::string& str)
+static std::string removeNonAlphaCharacters(const std::string& str)
 {
     std::string ret = "";
     size_t len = str.length();
@@ -133,7 +140,7 @@ std::string removeNonAlphaCharacters(const std::string& str)
     
     return ret;
 }
-std::string tolower(const std::string& s)
+static std::string tolower(const std::string& s)
 {
     std::string r = s;
     for (size_t i = 0; i < r.size(); ++i) {
@@ -510,9 +517,9 @@ void ReadExr::make_preview(){
             float x = (float)j*1.f/zoomFactor;
             int nearestX;
             (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
-            float r = red ? Lut::clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
-            float g = green ? Lut::clamp(sRGB::toSRGB(green[nearestX])) : 0.f;
-            float b = blue ? Lut::clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
+            float r = red ? clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
+            float g = green ? clamp(sRGB::toSRGB(green[nearestX])) : 0.f;
+            float b = blue ? clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
             float a = alpha ? alpha[nearestX] : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
@@ -674,7 +681,7 @@ void ReadExr::debug(){
         const float* g = (*row)[Channel_green] + row->offset();
         const float* b = (*row)[Channel_blue] + row->offset();
         for (int j = 0; j < w; ++j) {
-            QColor c(Lut::clamp(*r++)*255,Lut::clamp(*g++)*255,Lut::clamp(*b++)*255);
+            QColor c(clamp(*r++)*255,clamp(*g++)*255,clamp(*b++)*255);
             img.setPixel(j, i, c.rgb());
         }
         ++it;
