@@ -50,39 +50,24 @@
 #include <QtGui/QRgb>
 #include "Global/GlobalDefines.h"
 
+namespace Powiter {
+namespace Color {
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
 
-class Lut{
-    U16 to_byte_table[0x10000]; // contains  2^16 = 65536 values
-	float from_byte_table[256]; // values between 0-1.f.
-	bool init_;
-    
-protected:
-    
-    void fillToTable();
-    void fillFromTable();
-    
+class Lut {
+    // the fast lookup tables are mutable, because they are automatically initialized post-construction,
+    // and never change afterwards
+    mutable U16 to_byte_table[0x10000]; // contains  2^16 = 65536 values
+	mutable float from_byte_table[256]; // values between 0-1.f.
+	mutable bool init_;
     
 public:
     Lut() : init_(false) {}
     virtual ~Lut() {}
     
     virtual bool linear() const = 0;
-  
-    static void allocateLuts();
 
-    static void deallocateLuts();
-    
-    void validate();
-    
-    //takes in input a float clamped to [0 - 1.f] and  return
-    // the value after color-space conversion is in [0 - 255.f]
-    virtual float to_byte(float) const = 0;
-    
-    float toFloat(float v) const { return to_byte(v) / 255.f; }
-    float toFloatFast(float v) const;
-    
     /*! Convert an array of linear floating point pixel values to an
      array of destination lut values, with error diffusion to avoid posterizing
      artifacts.
@@ -105,12 +90,7 @@ public:
     
     
     
-    // takes in input a float clamped to [0 - 255.f] and do the math to convert it
-    // to have the opposite effect of to_byte(float), returns it between [0 - 1.f]
-    virtual float from_byte(float) const = 0;
 
-    float fromFloat(float v) const { return from_byte(v * 255.f); }
-    float fromFloatFast(float v) const;
     
     void from_byte(float* to, const uchar* from, int W, int delta = 1) const;
     void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) const;
@@ -121,16 +101,64 @@ public:
     
     void from_float(float* to, const float* from, int W, int delta = 1) const;
     void from_float(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
-    
-//
-    // luts : linear,srgb,rec709,cineon,gamma 1.8,gamma2.2,panalog,redlog,viperlog,alexaV3logC,ploglin,slog,redspace
-    // default : monitor = srgb,8bit :srgb, 16 bit:srgb, log :cineon,float : linear
-    enum DataType { MONITOR = 0, VIEWER=1, INT8=2, INT16=3, LOG=4, FLOAT=5, GAMMA1_8=6, GAMMA2_2=7,
-         PANALOG=8, REDLOG=9, VIPERLOG=10, ALEXAV3LOGC=11, PLOGLIN=12, SLOG=13, TYPES_END=14 };
-//     // Return a LUT associated to the datatype
-    static const Lut* getLut(DataType);
-    
+
+private:
+
+    //takes in input a float clamped to [0 - 1.f] and  return
+    // the value after color-space conversion is in [0 - 255.f]
+    virtual float to_byte(float) const = 0;
+
+    // takes in input a float clamped to [0 - 255.f] and do the math to convert it
+    // to have the opposite effect of to_byte(float), returns it between [0 - 1.f]
+    virtual float from_byte(float) const = 0;
+
+    void fillTables() const;
+
+    // post-constructor
+    void validate() const {
+        if (init_) {
+            return;
+        }
+        if (!linear()) {
+            fillTables();
+        }
+        init_=true;
+    }
+
+    //float toFloat(float v) const { return to_byte(v) / 255.f; }
+    inline float toFloatFast(float v) const;
+    //float fromFloat(float v) const { return from_byte(v * 255.f); }
+    inline float fromFloatFast(float v) const;
 };
+
+// DEFAULT/GLOBAL LUTS
+//
+// luts : linear,srgb,rec709,cineon,gamma 1.8,gamma2.2,panalog,redlog,viperlog,alexaV3logC,ploglin,slog,redspace
+// default : monitor = srgb,8bit :srgb, 16 bit:srgb, log :cineon,float : linear
+enum LutType {
+    LUT_DEFAULT_MONITOR = 0,
+    LUT_DEFAULT_VIEWER = 1,
+    LUT_DEFAULT_INT8 = 2,
+    LUT_DEFAULT_INT16 = 3,
+    LUT_LOG = 4,
+    LUT_DEFAULT_FLOAT = 5,
+    LUT_GAMMA1_8 = 6,
+    LUT_GAMMA2_2 = 7,
+    LUT_PANALOG = 8,
+    LUT_REDLOG = 9,
+    LUT_VIPERLOG = 10,
+    LUT_ALEXAV3LOGC = 11,
+    LUT_PLOGLIN = 12,
+    LUT_SLOG = 13,
+    LUT_TYPES_END = 14
+};
+
+void allocateLuts();
+
+void deallocateLuts();
+
+//     // Return a LUT associated to the datatype
+const Lut* getLut(LutType);
 
 inline void gamma_correct(float *c, float gamma)
 {
@@ -169,25 +197,26 @@ inline float linearrgb_to_srgb(float c)
 		return 1.055f * powf(c, 1.0f / 2.4f) - 0.055f;
 }
 
-namespace Linear {
-    void from_byte(float* to, const uchar* from, int W, int delta = 1);
-    void from_byteQt(float* to, const QRgb* from,Powiter::Channel z, int W, int delta = 1);
-    void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1);
-    void from_float(float* to, const float* from, int W, int delta = 1);
+void linear_from_byte(float* to, const uchar* from, int W, int delta = 1);
+void linear_from_byteQt(float* to, const QRgb* from,Powiter::Channel z, int W, int delta = 1);
+void linear_from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1);
+void linear_from_float(float* to, const float* from, int W, int delta = 1);
 
-    /*! Convert an array of floating point pixel values to an array of
-     bytes by multiplying by 255 and doing error diffusion to avoid
-     banding. This should be used to convert mattes and alpha channels.
+/*! Convert an array of floating point pixel values to an array of
+ bytes by multiplying by 255 and doing error diffusion to avoid
+ banding. This should be used to convert mattes and alpha channels.
 
-     \a W is the number of pixels to convert.  \a delta is the distance
-     between the output bytes (useful for interlacing them into a buffer
-     for screen display).
+ \a W is the number of pixels to convert.  \a delta is the distance
+ between the output bytes (useful for interlacing them into a buffer
+ for screen display).
 
-     The input and output buffers must not overlap in memory.
-     */
-    void to_byte(uchar* to, const float* from, int W, int delta = 1);
-    void to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1);
-    void to_float(float* to, const float* from, int W, int delta = 1);
-}
+ The input and output buffers must not overlap in memory.
+ */
+void linear_to_byte(uchar* to, const float* from, int W, int delta = 1);
+void linear_to_short(U16* to, const float* from, int W, int bits = 16, int delta = 1);
+void linear_to_float(float* to, const float* from, int W, int delta = 1);
+
+} // namespace Powiter
+} // namespace Color
 
 #endif //__LUT_CLASS_H__

@@ -432,7 +432,7 @@ ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
 }
 
 void ReadExr::initializeColorSpace(){
-    _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
+    _lut=Color::getLut(Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
 }
 
 ReadExr::~ReadExr(){
@@ -517,9 +517,9 @@ void ReadExr::make_preview(){
             float x = (float)j*1.f/zoomFactor;
             int nearestX;
             (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
-            float r = red ? clamp(linearrgb_to_srgb(red[nearestX])) : 0.f;
-            float g = green ? clamp(linearrgb_to_srgb(green[nearestX])) : 0.f;
-            float b = blue ? clamp(linearrgb_to_srgb(blue[nearestX])) : 0.f;
+            float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
+            float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
+            float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
             float a = alpha ? alpha[nearestX] : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);

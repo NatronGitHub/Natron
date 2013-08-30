@@ -41,7 +41,7 @@ void Read::from_byte(Channel z, float* to, const uchar* from, const uchar* alpha
             _lut->from_byte(to, from, W,delta);
         }
     }else{
-        Linear::from_byte(to, from, W,delta);
+        Color::linear_from_byte(to, from, W,delta);
     }
 }
 void Read::from_byteQt(Channel z, float* to, const QRgb* from, int W, int delta){
@@ -57,7 +57,7 @@ void Read::from_short(Channel z, float* to, const U16* from, const U16* alpha, i
             _lut->from_short(to, from, W,delta);
         }
     }else{
-        Linear::from_short(to, from, W,delta);
+        Color::linear_from_short(to, from, W,delta);
     }
 }
 void Read::from_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta ){
@@ -68,7 +68,7 @@ void Read::from_float(Channel z, float* to, const float* from, const float* alph
             _lut->from_float(to, from, W,delta);
         }
     }else{
-        Linear::from_float(to, from, W,delta);
+        Color::linear_from_float(to, from, W,delta);
     }
 }
 

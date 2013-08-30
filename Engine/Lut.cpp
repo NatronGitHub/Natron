@@ -23,11 +23,14 @@
 
 using namespace std;
 using namespace Powiter;
+using namespace Powiter::Color;
+
+namespace Powiter {
+namespace Color {
 
 
 namespace Linear {
     inline float fromFloat(float v) { return v; }
-    inline float fromFloatFast(float v) { return v; }
     inline float toFloat(float v) { return v; }
     inline float toFloatFast(float v) { return v; }
 }
@@ -39,6 +42,7 @@ public:
 
     sRGB():Lut(){}
 
+private:
     virtual bool linear() const {  return false; }
 
     virtual float to_byte(float v) const {
@@ -54,6 +58,7 @@ public:
 
     Rec709() : Lut(){}
 
+private:
     virtual bool linear() const {  return false; }
 
     virtual float to_byte(float v) const {
@@ -67,6 +72,9 @@ public:
 
 class LinearLut:public Lut{
 public:
+    LinearLut() : Lut(){}
+
+private:
     virtual bool linear() const {  return true; }
 
     float to_byte(float v) const {
@@ -91,14 +99,14 @@ static const union { uint8_t bytes[4]; uint32_t value; } o32_host_order = { { 0,
 #define O32_HOST_ORDER (o32_host_order.value)
 
 #if 1
-static std::map<Lut::DataType,const Lut*> _luts; // FIXME: use a singleton
+static std::map<LutType,const Lut*> _luts; // FIXME: use a singleton
 #else
 // a Singleton that holds precomputed LUTs
 class LutSingleton
 {
 public:
     static LutSingleton& Instance();
-    const Lut* getLut(Lut::DataType type);
+    const Lut* getLut(LutType type);
 private:
     LutSingleton& operator= (const LutSingleton&){return *this;}
     LutSingleton (const LutSingleton&){}
@@ -107,7 +115,7 @@ private:
     LutSingleton();
     ~LutSingleton();
 
-    std::map<Lut::DataType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
+    std::map<LutType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
 };
 #endif
 
@@ -177,10 +185,10 @@ static bool isEqual_float(float A, float B, int maxUlps)
 #endif
 }
 
-void Lut::fillToTable(){
+void Lut::fillTables() const {
     // float increment = 1.f /65535.f;
     if(init_) return;
-    //bool linearTrue = true; // linear() is a class property
+    //bool linearTrue = true; // linear() is a class property, no need to test it
     for (int i = 0; i < 0x10000; ++i) {
         float inp = index_to_float(i);
         float f = to_byte(inp);
@@ -190,34 +198,14 @@ void Lut::fillToTable(){
         else if (f < 255) to_byte_table[i] = (unsigned short)(f*0x100+.5);
         else to_byte_table[i] = 0xff00;
     }
-    //if (linearTrue) {
-    //    linear_=true;
-    //}
-    
-}
 
-
-void Lut::fillFromTable()
-{
-    if(init_) return;
-    int i;
     for (int b = 0; b <= 255; ++b) {
         float f = from_byte((float)b);
         from_byte_table[b] = f;
-        i = hipart(f);
+        int i = hipart(f);
         to_byte_table[i] = b*0x100;
     }
 
-}
-
-void Lut::validate()
-{
-    if (!linear()) {
-        fillToTable();
-        fillFromTable();
-    }
-    init_=true;
-	
 }
 
 
@@ -227,19 +215,26 @@ float Lut::fromFloatFast(float v) const {
 float Lut::toFloatFast(float v) const {
     return (float)to_byte_table[hipart(v)];
 }
+
 void Lut::from_byte(float* to, const uchar* from, int W, int delta) const {
+    assert(!linear());
+    validate();
     for(int i =0 ; i < W ; i+=delta){
         to[i]=from_byte_table[(int)from[i]];
     }
 }
 
 void Lut::from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta ) const {
+    assert(!linear());
+    validate();
     for(int i =0 ; i < W ; i+=delta){
         float a = (float)alpha[i];
         to[i]=from_byte_table[(int)from[i]/(int)a] * a;
     }
 }
 void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta) const {
+    assert(!linear());
+    validate();
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
@@ -260,7 +255,7 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
             break;
     }
     if(z == Powiter::Channel_alpha){
-        Linear::from_byteQt(to, from, z, W,delta);
+        linear_from_byteQt(to, from, z, W,delta);
     }else{
         if(premult){
             for(int i =0 ; i < W ; i+=delta){
@@ -278,6 +273,8 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
 }
 
 void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) const {
+    assert(!linear());
+    validate();
     (void)to;
     (void)from;
     (void)W;
@@ -286,6 +283,8 @@ void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) c
     cout << "Lut::from_short not yet implemented" << endl;
 }
 void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bits , int delta ) const {
+    assert(!linear());
+    validate();
     (void)to;
     (void)from;
     (void)W;
@@ -295,11 +294,15 @@ void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bi
     cout << "Lut::from_short not yet implemented" << endl;
 }
 void Lut::from_float(float* to, const float* from, int W, int delta ) const {
+    assert(!linear());
+    validate();
     for(int i=0;i< W;i+=delta){
         to[i]=fromFloatFast(from[i]*255.f);
     }
 }
 void Lut::from_float(float* to, const float* from, const float* alpha, int W, int delta) const {
+    assert(!linear());
+    validate();
     for(int i=0;i< W;i+=delta){
         float a = alpha[i];
         to[i]=fromFloatFast((from[i]/a)*255.f) * a * 255.f;
@@ -309,11 +312,15 @@ void Lut::from_float(float* to, const float* from, const float* alpha, int W, in
 
 
 void Lut::to_byte(uchar* to, const float* from, int W, int delta ) const {
+    assert(!linear());
+    validate();
     unsigned char* end = to+W*delta;
     int start = rand()%W;
     const float* q;
     unsigned char* p;
     unsigned error;
+    validate();
+
     /* go fowards from starting point to end of line: */
     error = 0x80;
     for (p = to+start*delta, q = from+start; p < end; p += delta) {
@@ -328,7 +335,8 @@ void Lut::to_byte(uchar* to, const float* from, int W, int delta ) const {
     }
 }
 void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int delta ) const {
-    
+    assert(!linear());
+    validate();
     unsigned char* end = to+W*delta;
     int start = rand()%W;
     const float* q;
@@ -353,6 +361,8 @@ void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int d
 }
 
 void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ) const {
+    assert(!linear());
+    validate();
     (void)to;
     (void)from;
     (void)W;
@@ -360,7 +370,10 @@ void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ) con
     (void)delta;
     cout << "Lut::to_short not implemented yet." << endl;
 }
+
 void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bits , int delta ) const {
+    assert(!linear());
+    validate();
     (void)to;
     (void)from;
     (void)W;
@@ -371,23 +384,28 @@ void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bi
 }
 
 void Lut::to_float(float* to, const float* from, int W, int delta ) const {
+    assert(!linear());
+    validate();
     for(int i=0;i< W;i+=delta){
         to[i]=toFloatFast(from[i]);
     }
 }
+
 void Lut::to_float(float* to, const float* from, const float* alpha, int W, int delta ) const {
+    assert(!linear());
+    validate();
     for(int i=0;i< W;i+=delta){
         to[i]=toFloatFast(from[i])*alpha[i];
     }
 }
 
 
-void Linear::from_byte(float* to, const uchar* from, int W, int delta ){
+void linear_from_byte(float* to, const uchar* from, int W, int delta ){
     from += (W-1)*delta;
     to += W;
     for (; --W >= 0; from -= delta) *--to = *from*(1.0f/255.f);
 }
-void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta ){
+void linear_from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta ){
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
@@ -410,32 +428,32 @@ void Linear::from_byteQt(float* to, const QRgb* from,Channel z, int W, int delta
     if(z == Powiter::Channel_alpha){
         for(int i = 0 ; i < W ; i+=delta){
             const QRgb c = from[i];
-            to[i] = fromFloatFast((float)qAlpha(c)/255.f);
+            to[i] = (float)qAlpha(c)/255.f;
         }
     }else{
         
         for(int i =0 ; i < W ; i+=delta){
             const QRgb c = from[i];
-            to[i] = fromFloatFast((*lookup)(c));
+            to[i] = (float)(*lookup)(c);
         }
     }
     
 }
-void Linear::from_short(float* to, const U16* from, int W, int bits , int delta ){
+void linear_from_short(float* to, const U16* from, int W, int bits , int delta ){
     (void)to;
     (void)from;
     (void)W;
     (void)bits;
     (void)delta;
-    cout << "Linear::from_short not yet implemented" << endl;
+    cout << "linear_from_short not yet implemented" << endl;
 }
-void Linear::from_float(float* to, const float* from, int W, int delta ){
+void linear_from_float(float* to, const float* from, int W, int delta ){
     for(int i=0;i< W;i+=delta){
-        to[i]=fromFloatFast(from[i]);
+        to[i] = from[i];
     }
 }
 
-void Linear::to_byte(uchar* to, const float* from, int W, int delta ){
+void linear_to_byte(uchar* to, const float* from, int W, int delta ){
     unsigned char* end = to+W*delta;
     int start = rand()%W;
     const float* q;
@@ -470,47 +488,44 @@ void Linear::to_byte(uchar* to, const float* from, int W, int delta ){
     }
 }
 
-void Linear::to_short(U16* to, const float* from, int W, int bits , int delta ){
+void linear_to_short(U16* to, const float* from, int W, int bits , int delta ){
     (void)to;
     (void)from;
     (void)W;
     (void)bits;
     (void)delta;
-    cout << "Linear::to_short not implemented yet." << endl;
+    cout << "linear_to_short not implemented yet." << endl;
 }
-void Linear::to_float(float* to, const float* from, int W, int delta ){
+void linear_to_float(float* to, const float* from, int W, int delta ){
 
     (void)delta;
     memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
 }
 
-const Lut* Lut::getLut(DataType type){
-    std::map<DataType,const Lut*>::iterator found = _luts.find(type);
+const Lut* getLut(LutType type) {
+    std::map<LutType,const Lut*>::iterator found = _luts.find(type);
     if(found != _luts.end()){
         return found->second;
     }
     return NULL;
 }
 
-void Lut::allocateLuts(){
+void allocateLuts() {
     Lut* srgb = new sRGB;
-    srgb->validate();
     Lut* lin = new LinearLut();
-    lin->validate();
     Lut* rec709 = new Rec709;
-    rec709->validate();
-    _luts.insert(make_pair(VIEWER,srgb));
-    _luts.insert(make_pair(FLOAT,lin));
-    _luts.insert(make_pair(INT8,srgb));
-    _luts.insert(make_pair(INT16,srgb));
-    _luts.insert(make_pair(MONITOR,rec709));
+    _luts.insert(make_pair(LUT_DEFAULT_VIEWER,srgb));
+    _luts.insert(make_pair(LUT_DEFAULT_FLOAT,lin));
+    _luts.insert(make_pair(LUT_DEFAULT_INT8,srgb));
+    _luts.insert(make_pair(LUT_DEFAULT_INT16,srgb));
+    _luts.insert(make_pair(LUT_DEFAULT_MONITOR,rec709));
 }
 
-void Lut::deallocateLuts(){
-    for(std::map<DataType,const Lut*>::iterator it = _luts.begin(); it!=_luts.end(); ++it) {
+void deallocateLuts() {
+    for(std::map<LutType,const Lut*>::iterator it = _luts.begin(); it!=_luts.end(); ++it) {
         if(it->second){
             // now finding in map all other members that have the same pointer to avoid double free
-            for(std::map<DataType,const Lut*>::iterator it2 = _luts.begin(); it2!=_luts.end(); ++it2) {
+            for(std::map<LutType,const Lut*>::iterator it2 = _luts.begin(); it2!=_luts.end(); ++it2) {
                 if(it2->second == it->second && it->first!=it2->first)
                     it2->second = 0;
             }
@@ -520,3 +535,6 @@ void Lut::deallocateLuts(){
     }
     _luts.clear();
 }
+
+} // namespace Color
+} // namespace Powiter
