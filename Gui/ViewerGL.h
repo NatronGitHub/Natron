@@ -220,7 +220,7 @@
             float _lut; /*!< a value coding the current color-space used to render.
                          0 = NONE , 1 = sRGB , 2 = Rec 709*/
             
-            Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
+            const Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
             
             bool _usingColorSpace;/*!< True when the viewer is using the Lut. It locks it so
                                    the the software will not try to change the current lut at

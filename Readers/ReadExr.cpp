@@ -517,9 +517,9 @@ void ReadExr::make_preview(){
             float x = (float)j*1.f/zoomFactor;
             int nearestX;
             (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
-            float r = red ? clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
-            float g = green ? clamp(sRGB::toSRGB(green[nearestX])) : 0.f;
-            float b = blue ? clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
+            float r = red ? clamp(linearrgb_to_srgb(red[nearestX])) : 0.f;
+            float g = green ? clamp(linearrgb_to_srgb(green[nearestX])) : 0.f;
+            float b = blue ? clamp(linearrgb_to_srgb(blue[nearestX])) : 0.f;
             float a = alpha ? alpha[nearestX] : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);

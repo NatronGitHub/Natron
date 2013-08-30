@@ -78,7 +78,7 @@ class Write {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
-    Lut* _lut; /// the lut used by the Write to apply colorspace conversion
+    const Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* op; /// a pointer to the Writer
     WriteKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
 public:
@@ -157,7 +157,7 @@ public:
     virtual void supportsChannelsForWriting(ChannelSet& channels)=0;
     
     /** @return Returns the reader colorspace*/
-    Lut* lut(){return _lut;}
+    const Lut* lut(){return _lut;}
     
     /** @brief Overload it if you need fileType specific knobs. See the
     * comment in WriteKnobs.

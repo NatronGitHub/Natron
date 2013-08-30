@@ -110,7 +110,7 @@ public:
     virtual void initializeColorSpace()=0;
     
     /*Returns the reader colorspace*/
-    Lut* lut(){return _lut;}
+    const Lut* lut(){return _lut;}
     
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
@@ -136,7 +136,7 @@ protected:
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;
 	Reader* op;
-    Lut* _lut;
+    const Lut* _lut;
     ReaderInfo* _readInfo;
     
 };

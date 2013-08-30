@@ -11,7 +11,11 @@
 
 #include "Lut.h"
 
+#include <stdint.h>
+#include <cassert>
 #include <iostream>
+#include <map>
+#include "Global/GlobalDefines.h"
 
 #ifndef FLT_MAX
 # define FLT_MAX 3.40282347e+38F
@@ -20,52 +24,114 @@
 using namespace std;
 using namespace Powiter;
 
-std::map<Lut::DataType,Lut*> Lut::_luts; // FIXME: are we sure this doesn't need protection with a mutex?
 
-
-void Lut::fillToTable(){
-    // float increment = 1.f /65535.f;
-    if(init_) return;
-    bool linearTrue = true;
-    for (int i = 0; i < 0x10000; ++i) {
-        float inp = index_to_float(i);
-        float f = to_byte(inp);
-        if(!isEqual_float(f, inp*255.f, 10000))
-            linearTrue = false;
-        if (f <= 0) to_byte_table[i] = 0;
-        else if (f < 255) to_byte_table[i] = (unsigned short)(f*0x100+.5);
-        else to_byte_table[i] = 0xff00;
-    }
-    if (linearTrue) {
-        linear_=true;
-    }
-    
+namespace Linear {
+    inline float fromFloat(float v) { return v; }
+    inline float fromFloatFast(float v) { return v; }
+    inline float toFloat(float v) { return v; }
+    inline float toFloatFast(float v) { return v; }
 }
 
 
-void Lut::fillFromTable()
+namespace {
+class sRGB:public Lut{
+public:
+
+    sRGB():Lut(){}
+
+    virtual bool linear() const {  return false; }
+
+    virtual float to_byte(float v) const {
+        return linearrgb_to_srgb(v) * 255.f;
+    }
+
+    virtual float from_byte(float v) const {
+        return srgb_to_linearrgb(v / 255.f);
+    }
+};
+class Rec709:public Lut{
+public:
+
+    Rec709() : Lut(){}
+
+    virtual bool linear() const {  return false; }
+
+    virtual float to_byte(float v) const {
+        return linearrgb_to_rec709(v) * 255.f;
+    }
+
+    virtual float from_byte(float v) const {
+        return rec709_to_linearrgb(v / 255.f);
+    }
+};
+
+class LinearLut:public Lut{
+public:
+    virtual bool linear() const {  return true; }
+
+    float to_byte(float v) const {
+        return v * 255.f;
+    }
+    float from_byte(float v) const {
+        return v / 255.f;
+    }
+};
+
+
+// compile-time endianness checking found on:
+// http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
+// if(O32_HOST_ORDER == O32_BIG_ENDIAN) will always be optimized by gcc -O2
+enum
 {
-    if(init_) return;
-    int i;
-    for (int b = 0; b <= 255; ++b) {
-        float f[1]; f[0] = from_byte((float)b);
-        from_byte_table[b] = f[0];
-        i = highFloatPart(f);
-        to_byte_table[i] = b*0x100;
-    }
+    O32_LITTLE_ENDIAN = 0x03020100ul,
+    O32_BIG_ENDIAN = 0x00010203ul,
+    O32_PDP_ENDIAN = 0x01000302ul
+};
+static const union { uint8_t bytes[4]; uint32_t value; } o32_host_order = { { 0, 1, 2, 3 } };
+#define O32_HOST_ORDER (o32_host_order.value)
 
-}
-
-void Lut::validate()
+#if 1
+static std::map<Lut::DataType,const Lut*> _luts; // FIXME: use a singleton
+#else
+// a Singleton that holds precomputed LUTs
+class LutSingleton
 {
-    if (!linear_) {
-        fillToTable();
-        fillFromTable();
+public:
+    static LutSingleton& Instance();
+    const Lut* getLut(Lut::DataType type);
+private:
+    LutSingleton& operator= (const LutSingleton&){return *this;}
+    LutSingleton (const LutSingleton&){}
+
+    static LutSingleton m_instance;
+    LutSingleton();
+    ~LutSingleton();
+
+    std::map<Lut::DataType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
+};
+#endif
+
+
+static U16 hipart(const float f)
+{
+	union {
+		float f;
+		unsigned short us[2];
+	} tmp;
+
+	tmp.f = f;
+
+    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
+        return tmp.us[0];
+    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
+        return tmp.us[1];
+    } else {
+        assert((O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN));
+        return 0;
     }
-    init_=true;
-	
 }
-float Lut::index_to_float(const U16 i)
+
+static float index_to_float(const U16 i)
 {
 	union {
 		float f;
@@ -76,36 +142,104 @@ float Lut::index_to_float(const U16 i)
     /* All NaN's and infinity turn into the largest possible legal float: */
     if (i>=0x7f80 && i<0x8000) return FLT_MAX;
     if (i>=0xff80) return -FLT_MAX;
-    if(_bigEndian){
+    if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
         tmp.us[0] = i;
         tmp.us[1] = 0x8000;
-    }else{
+    } else if (O32_HOST_ORDER == O32_LITTLE_ENDIAN) {
         tmp.us[0] = 0x8000;
         tmp.us[1] = i;
+    } else {
+        assert((O32_HOST_ORDER == O32_LITTLE_ENDIAN) || (O32_HOST_ORDER == O32_BIG_ENDIAN));
     }
+
     return tmp.f;
 }
 
+#if 0
+static bool isEqual_float(float A, float B, int maxUlps)
+{
+    // Make sure maxUlps is non-negative and small enough that the
+    // default NAN won't compare as equal to anything.
+    //maxUlps > 0 && maxUlps < 4 * 1024 * 1024);
+    int aInt = *(int*)&A;
+    // Make aInt lexicographically ordered as a twos-complement int
+    if (aInt < 0)
+        aInt = 0x80000000 - aInt;
+    // Make bInt lexicographically ordered as a twos-complement int
+    int bInt = *(int*)&B;
+    if (bInt < 0)
+        bInt = 0x80000000 - bInt;
+    int intDiff = abs(aInt - bInt);
+    if (intDiff <= maxUlps)
+        return true;
+    return false;
+}
+#endif
+}
 
-float Lut::fromFloatFast(float v) {
+void Lut::fillToTable(){
+    // float increment = 1.f /65535.f;
+    if(init_) return;
+    //bool linearTrue = true; // linear() is a class property
+    for (int i = 0; i < 0x10000; ++i) {
+        float inp = index_to_float(i);
+        float f = to_byte(inp);
+        //if(!isEqual_float(f, inp*255.f, 10000))
+        //    linearTrue = false;
+        if (f <= 0) to_byte_table[i] = 0;
+        else if (f < 255) to_byte_table[i] = (unsigned short)(f*0x100+.5);
+        else to_byte_table[i] = 0xff00;
+    }
+    //if (linearTrue) {
+    //    linear_=true;
+    //}
+    
+}
+
+
+void Lut::fillFromTable()
+{
+    if(init_) return;
+    int i;
+    for (int b = 0; b <= 255; ++b) {
+        float f = from_byte((float)b);
+        from_byte_table[b] = f;
+        i = hipart(f);
+        to_byte_table[i] = b*0x100;
+    }
+
+}
+
+void Lut::validate()
+{
+    if (!linear()) {
+        fillToTable();
+        fillFromTable();
+    }
+    init_=true;
+	
+}
+
+
+float Lut::fromFloatFast(float v) const {
 	return from_byte_table[(int)v];
 }
-float Lut::toFloatFast(float v)  {
-    return (float)to_byte_table[highFloatPart(&v)];
+float Lut::toFloatFast(float v) const {
+    return (float)to_byte_table[hipart(v)];
 }
-void Lut::from_byte(float* to, const uchar* from, int W, int delta) {
+void Lut::from_byte(float* to, const uchar* from, int W, int delta) const {
     for(int i =0 ; i < W ; i+=delta){
         to[i]=from_byte_table[(int)from[i]];
     }
 }
 
-void Lut::from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta ) {
+void Lut::from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta ) const {
     for(int i =0 ; i < W ; i+=delta){
         float a = (float)alpha[i];
         to[i]=from_byte_table[(int)from[i]/(int)a] * a;
     }
 }
-void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta) {
+void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,int delta) const {
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
@@ -143,7 +277,7 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
     }
 }
 
-void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) {
+void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) const {
     (void)to;
     (void)from;
     (void)W;
@@ -151,7 +285,7 @@ void Lut::from_short(float* to, const U16* from, int W, int bits , int delta ) {
     (void)delta;
     cout << "Lut::from_short not yet implemented" << endl;
 }
-void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bits , int delta ) {
+void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bits , int delta ) const {
     (void)to;
     (void)from;
     (void)W;
@@ -160,12 +294,12 @@ void Lut::from_short(float* to, const U16* from, const U16* alpha, int W, int bi
     (void)delta;
     cout << "Lut::from_short not yet implemented" << endl;
 }
-void Lut::from_float(float* to, const float* from, int W, int delta ) {
+void Lut::from_float(float* to, const float* from, int W, int delta ) const {
     for(int i=0;i< W;i+=delta){
         to[i]=fromFloatFast(from[i]*255.f);
     }
 }
-void Lut::from_float(float* to, const float* from, const float* alpha, int W, int delta) {
+void Lut::from_float(float* to, const float* from, const float* alpha, int W, int delta) const {
     for(int i=0;i< W;i+=delta){
         float a = alpha[i];
         to[i]=fromFloatFast((from[i]/a)*255.f) * a * 255.f;
@@ -174,7 +308,7 @@ void Lut::from_float(float* to, const float* from, const float* alpha, int W, in
 }
 
 
-void Lut::to_byte(uchar* to, const float* from, int W, int delta ) {
+void Lut::to_byte(uchar* to, const float* from, int W, int delta ) const {
     unsigned char* end = to+W*delta;
     int start = rand()%W;
     const float* q;
@@ -183,17 +317,17 @@ void Lut::to_byte(uchar* to, const float* from, int W, int delta ) {
     /* go fowards from starting point to end of line: */
     error = 0x80;
     for (p = to+start*delta, q = from+start; p < end; p += delta) {
-        error = (error&0xff) + to_byte_table[highFloatPart(q)]; ++q;
+        error = (error&0xff) + to_byte_table[hipart(*q)]; ++q;
         *p = (error>>8);
     }
     /* go backwards from starting point to start of line: */
     error = 0x80;
     for (p = to+(start-1)*delta, q = from+start; p >= to; p -= delta) {
-        --q; error = (error&0xff) + to_byte_table[highFloatPart(q)];
+        --q; error = (error&0xff) + to_byte_table[hipart(*q)];
         *p = (error>>8);
     }
 }
-void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int delta ){
+void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int delta ) const {
     
     unsigned char* end = to+W*delta;
     int start = rand()%W;
@@ -205,20 +339,20 @@ void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int d
     error = 0x80;
     for (p = to+start*delta, q = from+start,a+=start; p < end; p += delta) {
         const float v = *q * *a;
-        error = (error&0xff) + to_byte_table[highFloatPart(&v)]; ++q; ++a;
+        error = (error&0xff) + to_byte_table[hipart(v)]; ++q; ++a;
         *p = (error>>8);
     }
     /* go backwards from starting point to start of line: */
     error = 0x80;
     for (p = to+(start-1)*delta, q = from+start , a = alpha+start; p >= to; p -= delta) {
         const float v = *q * *a;
-        --q;--a; error = (error&0xff) + to_byte_table[highFloatPart(&v)];
+        --q;--a; error = (error&0xff) + to_byte_table[hipart(v)];
         *p = (error>>8);
     }
 
 }
 
-void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ){
+void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ) const {
     (void)to;
     (void)from;
     (void)W;
@@ -226,7 +360,7 @@ void Lut::to_short(U16* to, const float* from, int W, int bits , int delta ){
     (void)delta;
     cout << "Lut::to_short not implemented yet." << endl;
 }
-void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bits , int delta ){
+void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bits , int delta ) const {
     (void)to;
     (void)from;
     (void)W;
@@ -236,12 +370,12 @@ void Lut::to_short(U16* to, const float* from, const float* alpha, int W, int bi
     cout << "Lut::to_short not implemented yet." << endl;
 }
 
-void Lut::to_float(float* to, const float* from, int W, int delta ){
+void Lut::to_float(float* to, const float* from, int W, int delta ) const {
     for(int i=0;i< W;i+=delta){
         to[i]=toFloatFast(from[i]);
     }
 }
-void Lut::to_float(float* to, const float* from, const float* alpha, int W, int delta ){
+void Lut::to_float(float* to, const float* from, const float* alpha, int W, int delta ) const {
     for(int i=0;i< W;i+=delta){
         to[i]=toFloatFast(from[i])*alpha[i];
     }
@@ -350,40 +484,33 @@ void Linear::to_float(float* to, const float* from, int W, int delta ){
     memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
 }
 
-Lut* Lut::getLut(DataType type){
-    std::map<DataType,Lut*>::iterator found = Lut::_luts.find(type);
-    if(found != Lut::_luts.end()){
+const Lut* Lut::getLut(DataType type){
+    std::map<DataType,const Lut*>::iterator found = _luts.find(type);
+    if(found != _luts.end()){
         return found->second;
     }
     return NULL;
 }
 
-Lut* Lut::Linear(){
-    Lut* lut=new LinearLut();
-    lut->linear(true);
-    return lut;
-}
-
-
 void Lut::allocateLuts(){
     Lut* srgb = new sRGB;
     srgb->validate();
-    Lut* lin = Lut::Linear();
+    Lut* lin = new LinearLut();
     lin->validate();
     Lut* rec709 = new Rec709;
     rec709->validate();
-    Lut::_luts.insert(make_pair(VIEWER,srgb));
-    Lut::_luts.insert(make_pair(FLOAT,lin));
-    Lut::_luts.insert(make_pair(INT8,srgb));
-    Lut::_luts.insert(make_pair(INT16,srgb));
-    Lut::_luts.insert(make_pair(MONITOR,rec709));
+    _luts.insert(make_pair(VIEWER,srgb));
+    _luts.insert(make_pair(FLOAT,lin));
+    _luts.insert(make_pair(INT8,srgb));
+    _luts.insert(make_pair(INT16,srgb));
+    _luts.insert(make_pair(MONITOR,rec709));
 }
 
 void Lut::deallocateLuts(){
-    for(std::map<DataType,Lut*>::iterator it = _luts.begin(); it!=_luts.end(); ++it) {
+    for(std::map<DataType,const Lut*>::iterator it = _luts.begin(); it!=_luts.end(); ++it) {
         if(it->second){
             // now finding in map all other members that have the same pointer to avoid double free
-            for(std::map<DataType,Lut*>::iterator it2 = _luts.begin(); it2!=_luts.end(); ++it2) {
+            for(std::map<DataType,const Lut*>::iterator it2 = _luts.begin(); it2!=_luts.end(); ++it2) {
                 if(it2->second == it->second && it->first!=it2->first)
                     it2->second = 0;
             }

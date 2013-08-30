@@ -46,6 +46,7 @@
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
+#include "Global/MemoryInfo.h"
 
 // ofx
 #include "ofxCore.h"
