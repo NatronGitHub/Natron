@@ -44,7 +44,7 @@ void Write::to_byte(Channel z, uchar* to, const float* from, const float* alpha,
             _lut->to_byte(to, from, W,delta);
         }
     }else{
-        Linear::to_byte(to, from, W,delta);
+        Color::linear_to_byte(to, from, W,delta);
     }
 }
 void Write::to_short(Channel z, U16* to, const float* from, const float* alpha, int W, int , int delta){
@@ -55,7 +55,7 @@ void Write::to_short(Channel z, U16* to, const float* from, const float* alpha, 
             _lut->to_short(to, from, W,delta);
         }
     }else{
-        Linear::to_short(to, from, W,delta);
+        Color::linear_to_short(to, from, W,delta);
     }
 }
 void Write::to_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta ){
@@ -66,7 +66,7 @@ void Write::to_float(Channel z, float* to, const float* from, const float* alpha
             _lut->to_float(to, from, W,delta);
         }
     }else{
-        Linear::to_float(to, from, W,delta);
+        Color::linear_to_float(to, from, W,delta);
     }
 }
 

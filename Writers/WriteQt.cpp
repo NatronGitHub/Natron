@@ -48,9 +48,9 @@ bool WriteQt::supports_stereo(){
 
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
- function Lut::getLut(datatype) */
+ function getLut(datatype) */
 void WriteQt::initializeColorSpace(){
-     _lut = Lut::getLut(Lut::INT8);
+    _lut = Color::getLut(Color::LUT_DEFAULT_INT8);
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like

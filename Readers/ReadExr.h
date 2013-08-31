@@ -22,13 +22,15 @@
 #include <fstream>
 #include "Global/GlobalDefines.h"
 #ifdef __POWITER_WIN32__
-#include <ImfStdIO.h>
+#include <OpenEXR/ImfStdIO.h>
 #endif
 #include "Readers/Read.h"
+#include <OpenEXR/ImfInputFile.h>
 
-namespace Imf {
-    class InputFile;
-}
+//Doesn't work on linux somehow had to put the include here
+//namespace Imf {
+ //   class InputFile;
+//}
 
 class Row;
 class ReaderInfo;
@@ -73,7 +75,7 @@ public:
         std::vector<std::string> out;
         out.push_back("exr");
         return out;
-    };
+    }
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName(){return "OpenEXR";}

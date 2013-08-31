@@ -179,9 +179,9 @@ bool ExrWriteKnobs::allValid(){
 
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
- function Lut::getLut(datatype) */
+ function getLut(datatype) */
 void WriteExr::initializeColorSpace(){
-    _lut = Lut::getLut(Lut::FLOAT);
+    _lut = Color::getLut(Color::LUT_DEFAULT_FLOAT);
 }
 
 /*This must be implemented to do the output colorspace conversion*/

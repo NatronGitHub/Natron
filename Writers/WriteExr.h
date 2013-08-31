@@ -94,7 +94,7 @@ public:
     
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
-     function Lut::getLut(datatype) */
+     function Powiter::Color::getLut(datatype) */
     virtual void initializeColorSpace();
     
     /*This must be implemented to do the output colorspace conversion*/

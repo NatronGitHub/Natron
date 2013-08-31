@@ -49,6 +49,7 @@
 using namespace Imf;
 using namespace Imath;
 using namespace std;
+using namespace Powiter;
 
 static const double pi= 3.14159265358979323846264338327950288419717;
 
@@ -253,7 +254,7 @@ void ViewerGL::initConstructor(){
     shaderBlack=NULL;
     _overlay=true;
     frameData = NULL;
-    _colorSpace = Lut::getLut(Lut::VIEWER);
+    _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
     _defaultDisplayTexture = 0;
     _pBOmapped = false;
     _displayChannels = 0.f;
@@ -841,13 +842,14 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     assert(frameData);
     
     U32* output = reinterpret_cast<U32*>(frameData);
-    yOffset*=columnSpan.size();
-    output+=yOffset;
+    unsigned int row_width = columnSpan.size();
+    yOffset *= row_width;
+    output += yOffset;
     
     if(_colorSpace->linear()){
-        int start = (int)(rand()%columnSpan.size());
+        int start = (int)(rand() % row_width);
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size(); ++i) {
+        for(unsigned int i = start ; i < row_width; ++i) {
             float _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
@@ -877,7 +879,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             _g = (g != NULL) ? g[col] : 0.f;
             _b = (b != NULL) ? b[col] : 0.f;
             _a = (alpha != NULL) ? alpha[col] : 1.f;
-            if(!rgbMode()){
+            if(!rgbMode()){ // FIXME: what does !rgbMode() mean?
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
             }
@@ -893,30 +895,54 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         /*flaging that we're using the colorspace so it doesn't try to change it in the same time
          if the user requested it*/
         _usingColorSpace = true;
-        int start = (int)(rand()%columnSpan.size());
+        int start = (int)(rand() % row_width);
         unsigned error_r = 0x80;
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
-        for(unsigned int i = start ; i < columnSpan.size() ; ++i) {
-            float _r,_g,_b,_a;
-            U8 r_,g_,b_,a_;
+        //void to_float(float* to, const float* from, int W, int delta = 1) const;
+        float *row_r = new float[row_width];
+        float *row_g = new float[row_width];
+        float *row_b = new float[row_width];
+        float *row_a = new float[row_width];
+        for (unsigned int i = 0 ; i < row_width; ++i) {
             int col = columnSpan[i];
+            float _r,_g,_b,_a;
             _r = (r != NULL) ? r[col] : 0.f;
             _g = (g != NULL) ? g[col] : 0.f;
             _b = (b != NULL) ? b[col] : 0.f;
-            _a = (alpha != NULL) ? alpha[col] : 1.f;
-
-            if(!rgbMode()){
+            _a = ((alpha != NULL) ? alpha[col] : 1.f)  * exposure;
+            row_r[i] = _r;
+            row_g[i] = _g;
+            row_b[i] = _b;
+            row_a[i] = _a;
+        }
+        if (!rgbMode()) { // FIXME: what does !rgbMode() mean?
+            for(unsigned int i = 0 ; i < row_width; ++i) {
+                float _r,_g,_b;
+                _r = row_r[i];
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
+                row_r[i] = _r;
+                row_g[i] = _g;
+                row_b[i] = _b;
             }
-            _r*=_a;_g*=_a;_b*=_a;
-            _r*=exposure;_g*=exposure;_b*=exposure;
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
-            a_ = _a*255;
+        }
+
+        float *row_r_out = new float[row_width];
+        float *row_g_out = new float[row_width];
+        float *row_b_out = new float[row_width];
+        _colorSpace->to_float(row_r_out, row_r, row_a, row_width);
+        _colorSpace->to_float(row_g_out, row_g, row_a, row_width);
+        _colorSpace->to_float(row_b_out, row_b, row_a, row_width);
+
+        for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
+            U8 r_,g_,b_,a_;
+
+            error_r = (error_r&0xff) + row_r_out[i];
+            error_g = (error_g&0xff) + row_g_out[i];
+            error_b = (error_b&0xff) + row_b_out[i];
+            a_ = (row_a[i]/exposure)*255;
             r_ = error_r >> 8;
             g_ = error_g >> 8;
             b_ = error_b >> 8;
@@ -927,31 +953,25 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         error_g = 0x80;
         error_b = 0x80;
         
-        for(int i = start-1 ; i >= 0 ; --i) {
-            float _r,_g,_b,_a;
+        for (int i = start-1 ; i >= 0 ; --i) {
             U8 r_,g_,b_,a_;
-            int col = columnSpan[i];
-            _r = (r != NULL) ? r[col] : 0.f;
-            _g = (g != NULL) ? g[col] : 0.f;
-            _b = (b != NULL) ? b[col] : 0.f;
-            _a = (alpha != NULL) ? alpha[col] : 1.f;
-
-            if(!rgbMode()){
-                _r = (_r + 1.0)*_r;
-                _g = _r; _b = _r;
-            }
-            _r*=_a;_g*=_a;_b*=_a;
-            _r*=exposure;_g*=exposure;_b*=exposure;
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast(_r);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast(_g);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast(_b);
-            a_ = _a*255;
+            
+            error_r = (error_r&0xff) + row_r_out[i];
+            error_g = (error_g&0xff) + row_g_out[i];
+            error_b = (error_b&0xff) + row_b_out[i];
+            a_ = (row_a[i]/exposure)*255;
             r_ = error_r >> 8;
             g_ = error_g >> 8;
             b_ = error_b >> 8;
             output[i] = toBGRA(r_,g_,b_,a_);
-            
         }
+        delete [] row_r;
+        delete [] row_g;
+        delete [] row_b;
+        delete [] row_a;
+        delete [] row_r_out;
+        delete [] row_g_out;
+        delete [] row_b_out;
         _usingColorSpace = false;
     }
     
@@ -1207,18 +1227,18 @@ void ViewerGL::updateColorSpace(QString str){
     while(_usingColorSpace){}
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
-            _colorSpace = Lut::getLut(Lut::FLOAT);
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
         }
         _lut = 0;
     }else if(str == "sRGB"){
         if(_lut != 1){ // if it wasnt already this setting
-            _colorSpace = Lut::getLut(Lut::VIEWER);
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
         }
         
         _lut = 1;
     }else if(str == "Rec.709"){
         if(_lut != 2){ // if it wasnt already this setting
-            _colorSpace = Lut::getLut(Lut::MONITOR);
+            _colorSpace = Color::getLut(Color::LUT_DEFAULT_MONITOR);
         }
         _lut = 2;
     }

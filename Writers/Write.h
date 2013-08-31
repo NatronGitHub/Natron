@@ -24,7 +24,11 @@
 #include "Engine/ChannelSet.h"
 
 
-class Lut;
+namespace Powiter {
+    namespace Color {
+        class Lut;
+    }
+}
 class Writer;
 class Row;
 class Separator_Knob;
@@ -78,7 +82,7 @@ class Write {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
-    Lut* _lut; /// the lut used by the Write to apply colorspace conversion
+    const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* op; /// a pointer to the Writer
     WriteKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
 public:
@@ -134,7 +138,7 @@ public:
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
-    * function Lut::getLut(datatype)
+    * function Powiter::Color::getLut(datatype)
     **/
     virtual void initializeColorSpace()=0;
     
@@ -157,7 +161,7 @@ public:
     virtual void supportsChannelsForWriting(ChannelSet& channels)=0;
     
     /** @return Returns the reader colorspace*/
-    Lut* lut(){return _lut;}
+    const Powiter::Color::Lut* lut(){return _lut;}
     
     /** @brief Overload it if you need fileType specific knobs. See the
     * comment in WriteKnobs.

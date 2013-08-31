@@ -26,8 +26,14 @@
 #include "Engine/Format.h"
 #include <QtGui/QRgb>
 #include "Readers/Reader.h"
+
 class ViewerGL;
-class Lut;
+namespace Powiter {
+namespace Color {
+    class Lut;
+}
+}
+
 class Read{
     
 public:
@@ -106,11 +112,11 @@ public:
     
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
-     function Lut::getLut(datatype) */
+     function getLut(datatype) */
     virtual void initializeColorSpace()=0;
     
     /*Returns the reader colorspace*/
-    Lut* lut(){return _lut;}
+    const Powiter::Color::Lut* lut(){return _lut;}
     
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
@@ -136,7 +142,7 @@ protected:
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;
 	Reader* op;
-    Lut* _lut;
+    const Powiter::Color::Lut* _lut;
     ReaderInfo* _readInfo;
     
 };
@@ -146,6 +152,5 @@ typedef Read* (*ReadBuilder)(void*);
 /*Classes deriving Read should implement a function named BuildRead with the following signature:
 static Read* BuildRead(Reader*);
  */
-
 
 #endif // __READ__H__

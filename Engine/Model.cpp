@@ -46,6 +46,7 @@
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
+#include "Global/MemoryInfo.h"
 
 // ofx
 #include "ofxCore.h"
@@ -90,7 +91,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     
     
     /*allocating lookup tables*/
-    Lut::allocateLuts();
+    Powiter::Color::allocateLuts();
     
     _videoEngine = new VideoEngine(this);
     connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
@@ -196,7 +197,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
 Model::~Model(){
     
     _viewerCache->save();
-    Lut::deallocateLuts();
+    Powiter::Color::deallocateLuts();
     _videoEngine->abort();
     
     writeOFXCache();
