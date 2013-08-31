@@ -31,6 +31,7 @@
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
 #include "Writers/Writer.h"
+#include "Engine/Timer.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"

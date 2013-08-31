@@ -14,9 +14,9 @@
 #include <string>
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
-#include <OpenEXR/ImfPixelType.h>
-//#include <OpenEXR/ImfInputFile.h>
-#include <OpenEXR/ImfChannelList.h>
+#include <ImfPixelType.h>
+//#include <ImfInputFile.h>
+#include <ImfChannelList.h>
 
 #include "Readers/Reader.h"
 #include "Gui/Knob.h"

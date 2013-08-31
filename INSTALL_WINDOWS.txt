@@ -90,7 +90,7 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 openexr{
-    INCLUDEPATH += $$quote(C:\\OpenExr_win32\\include)
+    INCLUDEPATH += $$quote(C:\\OpenExr_win32\\OpenEXR)
     LIBS += -L$$quote(C:\\OpenExr_win32\\lib\\Debug) -lIlmimf -lIex -lImath -lHalf -lIlmThread
 }
 

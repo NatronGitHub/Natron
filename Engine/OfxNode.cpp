@@ -11,6 +11,8 @@
 
 #include "OfxNode.h"
 
+#include <locale>
+
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -237,7 +239,8 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
 {
     std::string name =  descriptor.getShortLabel();
     std::string prep = name.substr(0,1);
-    name[0] = std::toupper(prep.at(0));
+    std::locale loc;
+    name[0] = std::toupper(prep.at(0),loc);
     if(descriptor.getType()==kOfxParamTypeInteger){
         OfxIntegerInstance* ret = new OfxIntegerInstance(this,name,descriptor);
         if(ret){
