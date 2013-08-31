@@ -509,7 +509,9 @@ private:
      *@brief displays progress if the time to compute the current frame exeeded
      * 0.5 sec.
      **/
-    void checkAndDisplayProgress(int y,int zoomedY);
+    bool checkAndDisplayProgress(int y,int zoomedY);
+    
+    void onProgressUpdate(int i);
     
 signals:
     /**
@@ -624,26 +626,7 @@ private:
      */
     void readFrames(const std::vector<Reader*>& readers);
     
-    /**
-     *@brief The callback cycling through the DAG for one scan-line
-     *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
-     *@param output[in] The output node of the graph.
-     */
-    static void metaEnginePerRow(Row* row,Node* output);
     
-    /**
-     *@brief The callback reading the header of the current frame for a reader.
-     *@param reader[in] A pointer to the reader that will read the header.
-     *@param current_frame[in] The frame number in the sequence to decode.
-     */
-    static bool metaReadHeader(Reader* reader,int current_frame);
-    
-    /**
-     *@brief The callback reading the data of the current frame for a reader.
-     *@param reader[in] A pointer to the reader that will read the data.
-     *@param current_frame[in] The frame number in the sequence to decode.
-     */
-    static void metaReadData(Reader* reader,int current_frame);
     
     /**
      *@brief Calls QGLWidget::updateGL() and causes the viewer to refresh.
@@ -753,16 +736,36 @@ class Worker : public QObject{
     int _r;
     Node *_output;
     
-    QThreadPool *_threadPool;
-    
+    // QThreadPool *_threadPool;
+      QFutureWatcher<void>* _watcher;
+    QVector<Row*> _sequence;
 public:
+    // Worker(){}
     
-    Worker(VideoEngine* engine):_engine(engine){
-        _threadPool = new QThreadPool;
-        _threadPool->setMaxThreadCount(QThread::idealThreadCount());
+    Worker(VideoEngine* engine);
+    
+//    Worker(const Worker& other):
+//    _engine(other._engine),
+//    _rows(other._rows),
+//    _x(other._x),
+//    _r(other._r),
+//    _output(other._output),
+//    _watcher(other._watcher),
+//    _sequence(other._sequence)
+//    {}
+    /**
+     *@brief The callback cycling through the DAG for one scan-line
+     *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
+     *@param output[in] The output node of the graph.
+     */
+    //void metaEnginePerRow(Row* row, Node* output);
+    
+    bool metaReduceFunction(int i);
+    
+    virtual ~Worker(){
+        /*delete _threadPool;*/
+         delete _watcher;
     }
-    
-    virtual ~Worker(){ delete _threadPool; }
     
     void setArgsForNextRun(const std::vector<int>& rows,int x,int r,Node *output){
         _rows = rows;
@@ -789,6 +792,7 @@ public:
         emit finished();
     }
     
+    // void onProgressUpdate(int);
     
 signals:
     void finished();
@@ -801,7 +805,6 @@ private:
 
 class RowRunnable : public QObject, public QRunnable{
     Q_OBJECT
-    
     
     Row* _row;
     Node* _output;

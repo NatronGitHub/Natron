@@ -15,8 +15,8 @@
 #include <QtGui/QVector2D>
 #include <QAction>
 #include <QtCore/QThread>
-#include <QtConcurrentRun>
 #include <QtConcurrentMap>
+#include <QtConcurrentRun>
 #include <ImfThreading.h>
 
 #include "Gui/Button.h"
@@ -68,6 +68,31 @@ using namespace std;
 using namespace Powiter;
 
 #define gl_viewer currentViewer->getUiContext()->viewer
+
+
+
+/**
+ *@brief The callback reading the header of the current frame for a reader.
+ *@param reader[in] A pointer to the reader that will read the header.
+ *@param current_frame[in] The frame number in the sequence to decode.
+ */
+
+bool metaReadHeader(Reader* reader,int current_frame){
+    if(!reader->readCurrentHeader(current_frame)) // FIXME: return value may be false and reader->readHandle may be NULL
+        return false;
+    return true;
+}
+
+/**
+ *@brief The callback reading the data of the current frame for a reader.
+ *@param reader[in] A pointer to the reader that will read the data.
+ *@param current_frame[in] The frame number in the sequence to decode.
+ */
+void metaReadData(Reader* reader,int current_frame){
+    reader->readCurrentData(current_frame);
+}
+
+
 
 void VideoEngine::videoEngine(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
     if (_working) {
@@ -261,7 +286,7 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
     }
     
     
-    QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(&VideoEngine::metaReadHeader,_1,currentFrame));
+    QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(metaReadHeader,_1,currentFrame));
     for (int i = 0; i < readHeaderResults.size(); i++) {
         if (readHeaderResults.at(i) == false) {
             _engine->stopEngine();
@@ -356,7 +381,7 @@ void EngineMainEntry::computeFrameRequest(float zoomFactor,bool sameFrame,bool f
      If this is a recursive call, we explicitly fallback
      to the viewer cache storage as the texture cache is not
      meant for playback.*/
-    QtConcurrent::blockingMap(readers,boost::bind(&VideoEngine::metaReadData,_1,currentFrame));
+    QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
     returnCode = VideoEngine::EngineStatus::NORMAL_ENGINE;
     
 stop:
@@ -377,8 +402,8 @@ void VideoEngine::dispatchEngine(){
         }
         //   cout << "     _computeTreForFrame()" << endl;
         _worker->setArgsForNextRun(_lastEngineStatus._rows, _lastEngineStatus._x, _lastEngineStatus._r, _dag.getOutput());
-        _workerThreadsWatcher->setFuture(QtConcurrent::run(_worker,&Worker::computeTreeForFrame));
-        
+        // _workerThreadsWatcher->setFuture(QtConcurrent::run(_worker,&Worker::computeTreeForFrame));
+         _worker->computeTreeForFrame();
     }else if(_lastEngineStatus._returnCode == EngineStatus::CACHED_ENGINE){
         // cout << "    _cachedFrameEngine()" << endl;
         ViewerNode* viewer = _dag.outputAsViewer();
@@ -408,6 +433,39 @@ void VideoEngine::copyFrameToCache(const char* src){
 #endif
     }
 }
+Worker::Worker(VideoEngine* engine):_engine(engine),_watcher(0){
+    _watcher = new QFutureWatcher<void>;
+    // connect(_watcher, SIGNAL(progressValueChanged(int)), _engine, SLOT(onProgressUpdate(int)));
+    connect(_watcher, SIGNAL(finished()), _engine, SLOT(engineLoop()));
+    // _threadPool = new QThreadPool;
+    //_threadPool->setMaxThreadCount(QThread::idealThreadCount());
+}
+/**
+ *@brief The callback cycling through the DAG for one scan-line
+ *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
+ *@param output[in] The output node of the graph.
+ */
+//int metaEnginePerRow(Row* row, Node* output){
+//    int zoomedY = row->zoomedY();
+//    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
+//    delete row;
+//    return zoomedY;
+//}
+
+void metaEnginePerRow(Row* row, Node* output){
+    //int zoomedY = row->zoomedY();
+    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
+    delete row;
+    // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
+    //return true;
+}
+
+bool Worker::metaReduceFunction(int i ){
+     cout << " index = " << i << " y = "<< _rows[i] << endl;
+    _engine->checkAndDisplayProgress(_rows[i],i);
+    return true;
+}
+
 void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node *output){
     //  cout << "<<<COMPUTE FRAME>>>" << endl;
     /*If playback is on (i.e: not panning/zooming or changing the graph) we clear the cache
@@ -435,25 +493,43 @@ void Worker::_computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node 
     
     int counter = 0;
     gettimeofday(&_engine->_lastComputeFrameTime, 0);
+    _sequence.clear();
     for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
         Row* row = new Row(x,*it,r,outChannels);
         row->zoomedY(counter);
-        RowRunnable* worker = new RowRunnable(row,output);
-        if(counter%10 == 0){
-            /* UNCOMMENT to report progress.
-             QObject::connect(worker, SIGNAL(finished(int,int)), _engine ,SLOT(checkAndDisplayProgress(int,int)));
-             **/
-        }
-        _threadPool->start(worker);
+        // RowRunnable* worker = new RowRunnable(row,output);
+        //  if(counter%10 == 0){
+            // UNCOMMENT to report progress.
+            // QObject::connect(worker, SIGNAL(finished(int,int)), _engine ,SLOT(checkAndDisplayProgress(int,int)),Qt::QueuedConnection);
+            
+        //}
+        _sequence.push_back(row);
+        //  _threadPool->start(worker);
         ++counter;
     }
-    _threadPool->waitForDone();
+//    _watcher->setFuture(QtConcurrent::mappedReduced(_sequence,
+//                                                    boost::bind(metaEnginePerRow,_1,output),
+//                                                    &Worker::metaReduceFunction));
+//    if(_watcher)
+//        delete _watcher;
+//    _watcher = new QFutureWatcher<void>;
+//    connect(_watcher, SIGNAL(resultReadyAt(int)), _engine, SLOT(onProgressUpdate(int)));
+//    connect(_watcher, SIGNAL(finished()), _engine, SLOT(engineLoop()));
+    _watcher->setFuture(QtConcurrent::map(_sequence,boost::bind(metaEnginePerRow,_1,output)));
+    //_watcher->waitForFinished();
+    //_threadPool->waitForDone();
+}
+void VideoEngine::onProgressUpdate(int i){
+    cout << "progress: " ;
+    if(i < (int)_lastEngineStatus._rows.size()){
+         cout << " index = " << i << " y = "<< _lastEngineStatus._rows[i] << endl;
+        checkAndDisplayProgress(_lastEngineStatus._rows[i],i);
+    }
 }
 
 
-
 void VideoEngine::engineLoop(){
-    //  cout << "__ENGINE LOOP__" << endl;
+    // cout << "__ENGINE LOOP__" << endl;
     if(_frameRequestIndex == 0 && _frameRequestsCount == 1 && !_sameFrame){
         _frameRequestsCount = 0;
     }else if(_frameRequestsCount!=-1){ // if the frameRequestCount is defined (i.e: not indefinitely running)
@@ -502,18 +578,6 @@ void VideoEngine::engineLoop(){
 
 
 
-bool VideoEngine::metaReadHeader(Reader* reader,int current_frame){
-    if(!reader->readCurrentHeader(current_frame)) // FIXME: return value may be false and reader->readHandle may be NULL
-        return false;
-    return true;
-}
-
-void VideoEngine::metaReadData(Reader* reader,int current_frame){
-    reader->readCurrentData(current_frame);
-}
-
-
-
 void VideoEngine::drawOverlay() const{
     if(_dag.getOutput())
         _drawOverlay(_dag.getOutput());
@@ -527,10 +591,7 @@ void VideoEngine::_drawOverlay(Node *output) const{
     
 }
 
-void VideoEngine::metaEnginePerRow(Row* row, Node* output){
-    output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
-    delete row;
-}
+
 void RowRunnable::run() {
     _output->engine(_row->y(), _row->offset(), _row->right(), _row->channels(), _row);
     emit finished(_row->y(),_row->zoomedY());
@@ -584,7 +645,7 @@ _autoSaveOnNextRun(false)
 {
     _workerThreadsResults = new QFuture<void>;
     _workerThreadsWatcher = new QFutureWatcher<void>;
-    connect(_workerThreadsWatcher,SIGNAL(finished()),this,SLOT(engineLoop()));
+    //  connect(_workerThreadsWatcher,SIGNAL(finished()),this,SLOT(engineLoop()));
     _computeFrameWatcher = new QFutureWatcher<void>;
     connect(_computeFrameWatcher,SIGNAL(finished()),this,SLOT(dispatchEngine()));
     //  connect(_workerThreadsWatcher,SIGNAL(canceled()),this,SLOT(stopEngine()));
@@ -983,7 +1044,7 @@ bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
 
 
 
-void VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
+bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     timeval now;
     gettimeofday(&now, 0);
     double t =  now.tv_sec  - _lastComputeFrameTime.tv_sec +
@@ -991,5 +1052,8 @@ void VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     if(t >= 0.3){
         //   cout << zoomedY << endl;
         gl_viewer->updateProgressOnViewer(_viewerCacheArgs._textureRect, y,zoomedY);
+        return true;
+    }else{
+        return false;
     }
 }

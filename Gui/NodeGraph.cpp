@@ -62,7 +62,7 @@ _propertyBin(0)
     _root = new QGraphicsLineItem(0);
     scene->addItem(_root);
     oldZoom = QPointF(0,0);
-    _navigator = new NodeGraphNavigator();
+    // _navigator = new NodeGraphNavigator();
     //  _navigatorProxy = scene->addWidget(_navigator);
     //_navigatorProxy->hide();
     // autoResizeScene();
@@ -81,7 +81,7 @@ NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled=false;
     _nodes.clear();
     _nodesTrash.clear();
-    delete _navigator;
+    //delete _navigator;
 }
 
 QRectF NodeGraph::visibleRect() {
@@ -257,7 +257,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     
     /*Now update navigator*/
     //  autoResizeScene();
-    //  updateNavigator();
+    //     updateNavigator();
 }
 
 
@@ -408,11 +408,12 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 
 
 void NodeGraph::scaleView(qreal scaleFactor,QPointF){
+    
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if (factor < 0.07 || factor > 100)
         return;
     
-    scale(scaleFactor,scaleFactor);
+    _root->scale(scaleFactor,scaleFactor);
     
 }
 
@@ -574,7 +575,7 @@ void NodeGraph::updateNavigator(){
         QRectF rect = visibleRect();
         _navigatorProxy->setPos(rect.width()-_navigator->sizeHint().width(),
                                 rect.height()-_navigator->sizeHint().height());
-        // _navigator->show();
+         _navigator->show();
     }else{
         _navigator->hide();
     }
@@ -598,7 +599,7 @@ void NodeGraph::autoResizeScene(){
 }
 QImage NodeGraph::getFullSceneScreenShot(){
     QImage img(scene()->width(),scene()->height(), QImage::Format_ARGB32_Premultiplied);
-    img.fill(QColor(0,0,0,0));
+    img.fill(QColor(71,71,71,255));
     QRectF viewRect = visibleRect();
     QPainter painter(&img);
     painter.save();
@@ -608,7 +609,9 @@ QImage NodeGraph::getFullSceneScreenShot(){
     painter.setPen(p);
     painter.drawRect(viewRect);
     painter.restore();
+    scene()->removeItem(_navigatorProxy);
     scene()->render(&painter);
+    scene()->addItem(_navigatorProxy);
     p.setColor(QColor(200,200,200,255));
     p.setWidth(10);
     QRect border(0,0,img.width()-1,img.height()-1);

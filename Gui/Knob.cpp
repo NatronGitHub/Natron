@@ -437,6 +437,7 @@ Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask f
     box->setMinimum(INT_MIN);
     box->setValue(0);
     layout->addWidget(desc);
+    layout->addStretch();
     layout->addWidget(box);
     std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
     foreach(Knob_Flags flag,f){
@@ -536,9 +537,9 @@ Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Ma
     _box2->setMinimum(INT_MIN);
     _box2->setValue(0);
     layout->addWidget(desc);
+    layout->addStretch();
     layout->addWidget(_box1);
     layout->addWidget(_box2);
-    layout->addStretch();
     std::vector<Knob_Flags> f=Knob_Mask_to_Knobs_Flags(flags);
     foreach(Knob_Flags flag,f){
         if(flag==INVISIBLE){
