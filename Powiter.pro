@@ -77,7 +77,7 @@ SOURCES += \
     Engine/MemoryFile.cpp \
     Engine/Model.cpp \
     Engine/Node.cpp \
-    Engine/Nodecache.cpp \
+    Engine/NodeCache.cpp \
     Engine/OfxClipInstance.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
@@ -142,7 +142,7 @@ HEADERS += \
     Engine/MemoryFile.h \
     Engine/Model.h \
     Engine/Node.h \
-    Engine/Nodecache.h \
+    Engine/NodeCache.h \
     Engine/OfxClipInstance.h \
     Engine/OfxNode.h \
     Engine/OfxParamInstance.h \

@@ -15,6 +15,7 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <cstring>
 #include "Global/GlobalDefines.h"
 
 #ifndef FLT_MAX
