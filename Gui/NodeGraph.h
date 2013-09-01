@@ -12,13 +12,14 @@
 #ifndef POWITER_GUI_NODEGRAPH_H_
 #define POWITER_GUI_NODEGRAPH_H_
 
-#include <cmath>
-#include <iostream>
+//#include <cmath>
+//#include <iostream>
+#include <vector>
 #include <QGraphicsView>
 #include <QtCore/QRectF>
-#include <QtCore/QEvent>
-#include <QtGui/QKeyEvent>
-#include <QInputDialog>
+//#include <QtCore/QEvent>
+//#include <QtGui/QKeyEvent>
+//#include <QInputDialog>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
@@ -29,16 +30,19 @@
 #include "Global/GlobalDefines.h"
 
 class QVBoxLayout;
+class QScrollArea;
+class QGraphicsProxyWidget;
+class QUndoStack;
+class QComboBox;
+class QEvent;
+class QKeyEvent;
+
+class SettingsPanel;
 class Node;
 class NodeGui;
-class QScrollArea;
 class Controler;
 class Edge;
 class SmartInputDialog;
-class QGraphicsProxyWidget;
-class SettingsPanel;
-class QUndoStack;
-class QComboBox;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};

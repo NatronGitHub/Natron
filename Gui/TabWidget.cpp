@@ -18,6 +18,9 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+#include <QtGui/QDragEnterEvent>
+#include <QtGui/QDragLeaveEvent>
+#include <QtGui/QPaintEvent>
 #include <QScrollArea>
 
 #include "Global/GlobalDefines.h"

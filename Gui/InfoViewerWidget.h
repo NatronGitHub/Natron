@@ -12,15 +12,14 @@
 #ifndef POWITER_GUI_INFOVIEWERWIDGET_H_
 #define POWITER_GUI_INFOVIEWERWIDGET_H_
 
-#include <iostream>
 #include <QWidget>
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QtCore/QPoint>
 #include <QtGui/QVector4D>
 #include "Engine/Format.h"
 
 class ViewerGL;
+class QLabel;
+class QHBoxLayout;
 
 class InfoViewerWidget: public QWidget{
     Q_OBJECT

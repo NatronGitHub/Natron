@@ -12,9 +12,6 @@
 #ifndef POWITER_GUI_FEEDBACKSPINBOX_H_
 #define POWITER_GUI_FEEDBACKSPINBOX_H_
 
-#include <iostream>
-#include <QtCore/QEvent>
-
 #include "Gui/LineEdit.h"
 
 class FeedBackSpinBox : public LineEdit

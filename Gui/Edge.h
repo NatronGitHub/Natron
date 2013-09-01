@@ -13,11 +13,11 @@
 #define POWITER_GUI_EDGE_H_
 
 #include <QGraphicsLineItem>
-#include <QtCore/QPoint>
 
 class QGraphicsPolygonItem;
 class QGraphicsLineItem;
 class QRectF;
+class QPointF;
 class QPainterPath;
 class QGraphicsScene;
 class QGraphicsTextItem;

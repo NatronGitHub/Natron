@@ -23,21 +23,23 @@
 #include <QStyleFactory>
 
 
-#include "Engine/Node.h"
-#include "Gui/NodeGui.h"
-#include "Readers/Reader.h"
 #include "Global/Controler.h"
+#include "Engine/Node.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
-#include "Gui/SettingsPanel.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
+#include "Gui/SettingsPanel.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Gui/Gui.h"
-#include "Engine/ViewerNode.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
+#include "Gui/NodeGui.h"
+#include "Gui/FeedbackSpinBox.h"
+#include "Gui/ComboBox.h"
+#include "Readers/Reader.h"
 
 using namespace Powiter;
 using namespace std;

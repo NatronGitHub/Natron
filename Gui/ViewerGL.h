@@ -13,6 +13,8 @@
 #define POWITER_GUI_VIEWERGL_H_
 
 #include <cmath>
+#include <vector>
+#include <utility>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>

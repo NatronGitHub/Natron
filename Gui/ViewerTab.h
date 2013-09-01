@@ -9,17 +9,12 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_VIEWERTAB_H_
+#define POWITER_GUI_VIEWERTAB_H_ 
 
- 
-
-
-
-#ifndef __VIEWER_TAB_H_
-#define __VIEWER_TAB_H_ 
+#include <QWidget>
 
 #include "Engine/ChannelSet.h"
-#include <QWidget>
 
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
  a tab , and several ViewerTab should run in parallel seemlessly.*/
@@ -143,4 +138,4 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e);
 };
 
-#endif // __VIEWER_TAB_H_
+#endif // POWITER_GUI_VIEWERTAB_H_

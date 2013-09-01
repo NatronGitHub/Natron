@@ -16,19 +16,18 @@
 #include <map>
 #include <cassert>
 #include <QtCore/QString>
-#include <QUndoCommand>
-#include <QSpinBox>
-#include <QWidget>
 #include <QtCore/QStringList>
+#include <QUndoCommand>
+#include <QWidget>
 #include <QLineEdit>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/ChannelSet.h"
-#include "Engine/Model.h"
+#include "Engine/Model.h" // for PluginID
 #include "Engine/Singleton.h"
-#include "Gui/FeedbackSpinBox.h"
-#include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
+
+class FeedBackSpinBox;
+class ComboBox;
 
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with

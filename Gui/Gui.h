@@ -13,20 +13,19 @@
 #define POWITER_GUI_GUI_H_
 
 #include <map>
+#include <string>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-#include <QtCore/QVariant>
+#include <QtCore/QObject>
 #include <QToolButton>
 #include <QIcon>
 #include <QAction>
 #include <QMainWindow>
-#include <QDialog>
 
 #include "Global/GlobalDefines.h"
 
 class QString;
-class QAction;
 class TabWidget;
 class Controler;
 class QDockWidget;

@@ -10,7 +10,10 @@
 #include "InfoViewerWidget.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <QtGui/QImage>
+#include <QHBoxLayout>
+#include <QLabel>
 
 #include "Gui/ViewerGL.h"
 #include "Engine/Box.h"

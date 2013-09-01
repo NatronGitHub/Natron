@@ -11,6 +11,8 @@
 #include "Gui/Gui.h"
 
 #include <cassert>
+#include <QtCore/QEvent>
+#include <QtGui/QCloseEvent>
 #include <QApplication>
 #include <QMenu>
 #include <QLayout>

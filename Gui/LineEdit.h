@@ -9,15 +9,9 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_LINEEDIT_H_
+#define POWITER_GUI_LINEEDIT_H_
 
- 
-
-
-
-
-#ifndef PowiterOsX_lineEdit_h
-#define PowiterOsX_lineEdit_h
 #include <QLineEdit>
 
 class QPaintEvent;

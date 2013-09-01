@@ -10,6 +10,7 @@
 
 #include "Texture.h"
 
+#include <iostream>
 #include "Global/GLIncludes.h"
 #include "Gui/ViewerGL.h"
 

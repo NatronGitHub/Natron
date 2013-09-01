@@ -9,22 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TABWIDGET_H_
+#define POWITER_GUI_TABWIDGET_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__tabwidget__
-#define __PowiterOsX__tabwidget__
-
-#include <iostream>
 #include <vector>
-#include <QWidget>
 #include <QFrame>
-#include <QtCore/QPoint>
 #include <QTabBar>
+
+class QWidget;
 class QStyle;
 class QHBoxLayout;
 class QPushButton;
@@ -240,4 +232,4 @@ private:
 
 };
 
-#endif /* defined(__PowiterOsX__tabwidget__) */
+#endif /* defined(POWITER_GUI_TABWIDGET_H_) */

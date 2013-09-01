@@ -12,9 +12,8 @@
 #ifndef POWITER_GUI_COMBOBOX_H_
 #define POWITER_GUI_COMBOBOX_H_
 
-#include <QFrame>
-#include <QtCore/QStringList>
 #include <vector>
+#include <QFrame>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 
