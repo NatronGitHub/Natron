@@ -108,7 +108,9 @@ public:
 class NodeGraphTab{
 public:
 
-    QVBoxLayout *_graphEditorLayout;
+    // FIXME: these (public) data members are never deleted
+    // cppcheck message:
+    // "Class 'NodeGraphTab' is unsafe, 'NodeGraphTab::_graphScene' can leak by wrong usage."
     QGraphicsScene* _graphScene;
     NodeGraph *_nodeGraphArea;
     

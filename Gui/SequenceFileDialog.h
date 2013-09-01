@@ -439,8 +439,9 @@ public:
         QString n(path);
         n.replace(QLatin1Char('\\'),QLatin1Char('/'));
 #if defined(Q_OS_WINCE)
-        if((n.size() > 1) && n.startsWith(QLatin1String("//"))))
+        if((n.size() > 1) && n.startsWith(QLatin1String("//"))) {
             n = n.mid(1);
+        }
 #endif
         return n;
 #else

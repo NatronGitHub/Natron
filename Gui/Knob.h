@@ -725,6 +725,9 @@ public:
     
     virtual ~Separator_Knob(){}
 private:
+    // FIXME: when is this data member deleted?
+    // message from cppcheck:
+    // "Class 'Separator_Knob' is unsafe, 'Separator_Knob::line' can leak by wrong usage."
     QFrame* line;
 };
 /***************************/
@@ -753,6 +756,10 @@ public:
 
     
 private:
+    // FIXME: when are these data members deleted?
+    // message from cppcheck:
+    // "Class 'Group_Knob' is unsafe, 'Group_Knob::_box' can leak by wrong usage."
+    // "Class 'Group_Knob' is unsafe, 'Group_Knob::_boxLayout' can leak by wrong usage."
     QGroupBox* _box;
     QVBoxLayout* _boxLayout;
     std::vector<Knob*> _knobs;
