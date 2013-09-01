@@ -9,25 +9,17 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef __READ__H__
-#define __READ__H__
+#ifndef POWITER_READERS_READ_H_
+#define POWITER_READERS_READ_H_
 
 #include <QtCore/QString>
-#include <QtCore/QChar>
-#include <map>
-#include <QtCore/QStringList>
+#include <QtGui/QRgb>
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
-#include <QtGui/QRgb>
 #include "Readers/Reader.h"
 
 class ViewerGL;
+
 namespace Powiter {
 namespace Color {
     class Lut;
@@ -75,7 +67,7 @@ public:
     void readScanLineData(Reader::Buffer::ScanLineContext* slContext);
     
     /*Should open the file and call setReaderInfo with the infos from the file.*/
-    virtual void readHeader(const QString filename,bool openBothViews)=0;
+    virtual void readHeader(const QString& filename, bool openBothViews) = 0;
     
     /*Must be implemented to know whether this Read* supports reading only
      scanlines. In the case it does,the engine can be must faster by reading
@@ -153,4 +145,4 @@ typedef Read* (*ReadBuilder)(void*);
 static Read* BuildRead(Reader*);
  */
 
-#endif // __READ__H__
+#endif // POWITER_READERS_READ_H_

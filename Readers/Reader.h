@@ -9,15 +9,9 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef READER_H
-#define READER_H
-#include <QImage>
+#ifndef POWITER_READERS_READER_H_
+#define POWITER_READERS_READER_H_
+#include <QString>
 #include <QStringList>
 
 #include "Engine/Node.h"
@@ -30,6 +24,7 @@
 #endif
 #endif
 
+class QImage;
 class FrameEntry;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
@@ -55,7 +50,7 @@ public:
     /**
      *@brief Constructs a new ReaderInfo from string
     **/
-    static ReaderInfo* fromString(QString from);
+    static ReaderInfo* fromString(const QString& from);
     
     void operator=(const ReaderInfo& other){
         dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
@@ -531,4 +526,4 @@ private:
 
 
 
-#endif // READER_H
+#endif // POWITER_READERS_READER_H_

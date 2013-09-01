@@ -9,28 +9,20 @@
  *
  */
 
+#ifndef POWITER_READERS_READEXR_H_
+#define POWITER_READERS_READEXR_H_
 
-
-
-
-
-
-#ifndef __READ_EXR_H__
-#define __READ_EXR_H__
-#include <QtCore/QMutexLocker>
-#include <QtCore/QMutex>
-#include <fstream>
-#include "Global/GlobalDefines.h"
+#include <string>
+#include <vector>
 #ifdef __POWITER_WIN32__
-#include <ImfStdIO.h>
+#include <fstream>
 #endif
 #include "Readers/Read.h"
-#include <ImfInputFile.h>
 
-//Doesn't work on linux somehow had to put the include here
-//namespace Imf {
- //   class InputFile;
-//}
+namespace Imf {
+    class StdIFStream;
+    class InputFile;
+}
 
 class Row;
 class ReaderInfo;
@@ -82,7 +74,7 @@ public:
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     virtual bool supportsScanLine(){return true;}
     virtual int scanLinesCount(){return (int)_img.size();}
-    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readHeader(const QString& filename, bool openBothViews);
     virtual void readScanLine(int y);
     virtual bool supports_stereo(){return true;}
     virtual void make_preview();
@@ -97,11 +89,12 @@ private:
 	int dataOffset;
     std::map< int, Row* > _img;
 #ifdef __POWITER_WIN32__
-    std::ifstream *inputStr;
+    // FIXME: this kind of system-dependent members should really be put in a PIMPL
+    std::ifstream* inputStr;
     Imf::StdIFStream* inputStdStream;
 #endif
 	
     
 };
 
-#endif // __READ_EXR_H__
+#endif // POWITER_READERS_READEXR_H_

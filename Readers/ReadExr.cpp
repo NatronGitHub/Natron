@@ -11,12 +11,17 @@
 
 #include "ReadExr.h"
 
-#include <string>
+#ifdef __POWITER_WIN32__
+#include <fstream>
+#endif
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <ImfPixelType.h>
-//#include <ImfInputFile.h>
+#include <ImfInputFile.h>
 #include <ImfChannelList.h>
+#ifdef __POWITER_WIN32__
+#include <ImfStdIO.h>
+#endif
 
 #include "Readers/Reader.h"
 #include "Gui/Knob.h"
@@ -219,7 +224,7 @@ std::string ExrChannelExctractor::exrName() const
         return _layer + "." + _chan;
     return _chan;
 }
-void ReadExr::readHeader(const QString filename,bool){
+void ReadExr::readHeader(const QString& filename, bool){
     
     channel_map.clear();
     views.clear();

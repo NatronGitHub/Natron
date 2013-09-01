@@ -508,7 +508,7 @@ std::string ReaderInfo::printOut(){
     return oss.str();
 }
 
-ReaderInfo* ReaderInfo::fromString(QString from){
+ReaderInfo* ReaderInfo::fromString(const QString& from){
     ReaderInfo* out = new ReaderInfo;
     QString name;
     QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;

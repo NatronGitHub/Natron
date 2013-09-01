@@ -9,22 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_READERS_READQT_H_
+#define POWITER_READERS_READQT_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__ReadQt__
-#define __PowiterOsX__ReadQt__
+#include <vector>
+#include <string>
 #include "Readers/Read.h"
-#include <QtCore/QMutex>
-#include <iostream>
-#include <cstdio>
-#include <QtGui/QImage>
 
-
+class QImage;
 class Row;
 class ReadQt : public Read {
 
@@ -55,11 +47,11 @@ public:
     virtual std::string decoderName(){return "QImage (Qt)";}
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     virtual bool supports_stereo();
-    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readHeader(const QString& filename, bool openBothViews);
     virtual void readAllData(bool openBothViews);
     virtual bool supportsScanLine(){return false;}
     virtual void make_preview();
     virtual void initializeColorSpace();
 };
 
-#endif /* defined(__PowiterOsX__ReadQt__) */
+#endif /* defined(POWITER_READERS_READQT_H_) */
