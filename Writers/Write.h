@@ -9,18 +9,10 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITE_H_
+#define POWITER_WRITERS_WRITE_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__Write__
-#define __PowiterOsX__Write__
-
-#include <iostream>
+#include <string>
 #include "Engine/ChannelSet.h"
 
 
@@ -56,7 +48,7 @@ public:
     * at the end of the function,
     * so they are properly added to the settings panel.
     **/
-    virtual void initKnobs(KnobCallback* callback, std::string& fileType);
+    virtual void initKnobs(KnobCallback* callback, const std::string& fileType);
     
     
     /** @brief Must be overloaded to tell the callback to
@@ -193,4 +185,4 @@ typedef Write* (*WriteBuilder)(void*);
 
 
 
-#endif /* defined(__PowiterOsX__Write__) */
+#endif /* defined(POWITER_WRITERS_WRITE_H_) */

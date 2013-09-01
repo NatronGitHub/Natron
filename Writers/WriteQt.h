@@ -9,21 +9,11 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITEQT_H_
+#define POWITER_WRITERS_WRITEQT_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__writeQt__
-#define __PowiterOsX__writeQt__
-
-#include <iostream>
 #include "Global/GlobalDefines.h"
 #include "Writers/Write.h"
-#include <QtGui/QImage>
 
 class WriteQt :public Write{
     
@@ -67,4 +57,4 @@ public:
     virtual ~WriteQt();
 };
 
-#endif /* defined(__PowiterOsX__writeQt__) */
+#endif /* defined(POWITER_WRITERS_WRITEQT_H_) */

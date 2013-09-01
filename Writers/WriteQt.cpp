@@ -12,6 +12,10 @@
 
 #include "WriteQt.h"
 
+#include <string>
+#include <vector>
+#include <QtGui/QImage>
+
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
 #include "Writers/Writer.h"

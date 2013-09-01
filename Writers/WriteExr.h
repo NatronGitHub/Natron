@@ -9,21 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITEEXR_H_
+#define POWITER_WRITERS_WRITEEXR_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__writeExr__
-#define __PowiterOsX__writeExr__
-
-#include <iostream>
+#include <string>
 #include <map>
 #include <vector>
-#include <ImfOutputFile.h>
+#include <ImfOutputFile.h> // FIXME: should be PIMPL'ed
+
 #include "Writers/Write.h"
 
 class ComboBox_Knob;
@@ -51,7 +44,7 @@ public:
     ExrWriteKnobs(Writer* op):WriteKnobs(op){}
     virtual ~ExrWriteKnobs(){}
     
-    virtual void initKnobs(KnobCallback* callback,std::string& fileType);
+    virtual void initKnobs(KnobCallback* callback, const std::string& fileType);
     
     virtual void cleanUpKnobs();
     
@@ -118,4 +111,4 @@ public:
     
 };
 
-#endif /* defined(__PowiterOsX__writeExr__) */
+#endif /* defined(POWITER_WRITERS_WRITEEXR_H_) */
