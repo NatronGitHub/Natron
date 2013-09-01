@@ -26,7 +26,7 @@
 #include "Engine/Singleton.h"
 #include "Gui/LineEdit.h"
 
-class FeedBackSpinBox;
+class FeedbackSpinBox;
 class ComboBox;
 
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
@@ -348,7 +348,7 @@ signals:
     void valueChanged(int);
 private:
     int* integer;
-    FeedBackSpinBox* box;
+    FeedbackSpinBox* box;
 };
 
 class IntCommand : public QUndoCommand{
@@ -414,8 +414,8 @@ signals:
 private:
     int* _value1;
     int* _value2;
-    FeedBackSpinBox* _box1;
-    FeedBackSpinBox* _box2;
+    FeedbackSpinBox* _box1;
+    FeedbackSpinBox* _box2;
 };
 
 class Int2DCommand : public QUndoCommand{
@@ -445,7 +445,7 @@ class Double_Knob: public Knob
     Q_OBJECT
     
     double *_value;
-    FeedBackSpinBox* box;
+    FeedbackSpinBox* box;
 public:
     static Knob* BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(double* value){_value = value;}
@@ -503,8 +503,8 @@ class Double2D_Knob : public Knob{
     
     double *_value1;
     double *_value2;
-    FeedBackSpinBox* _box1;
-    FeedBackSpinBox* _box2;
+    FeedbackSpinBox* _box1;
+    FeedbackSpinBox* _box2;
 public:
     static Knob* BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags);
     void setPointers(double* value1,double* value2){_value1 = value1; _value2 = value2;}
@@ -807,10 +807,10 @@ private:
     QLabel* _bLabel;
     QLabel* _aLabel;
     
-    FeedBackSpinBox* _rBox;
-    FeedBackSpinBox* _gBox;
-    FeedBackSpinBox* _bBox;
-    FeedBackSpinBox* _aBox;
+    FeedbackSpinBox* _rBox;
+    FeedbackSpinBox* _gBox;
+    FeedbackSpinBox* _bBox;
+    FeedbackSpinBox* _aBox;
     
     QLabel* _colorLabel;
     Button* _colorDialogButton;

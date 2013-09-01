@@ -433,7 +433,7 @@ Knob* Int_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Knob
 
 Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),integer(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new FeedBackSpinBox(this,false);
+    box=new FeedbackSpinBox(this,false);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
@@ -527,8 +527,8 @@ Knob* Int2D_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Kn
 
 Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
-    _box1=new FeedBackSpinBox(this,false);
-    _box2=new FeedBackSpinBox(this,false);
+    _box1=new FeedbackSpinBox(this,false);
+    _box2=new FeedbackSpinBox(this,false);
     QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
     QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
     _box1->setMaximum(INT_MAX);
@@ -892,7 +892,7 @@ void Double_Knob::setValues(){
 }
 Double_Knob::Double_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new FeedBackSpinBox(this,true);
+    box=new FeedbackSpinBox(this,true);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
@@ -997,8 +997,8 @@ void Double2D_Knob::setValues(){
 }
 Double2D_Knob::Double2D_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
-    _box1=new FeedBackSpinBox(this,true);
-    _box2=new FeedBackSpinBox(this,true);
+    _box1=new FeedbackSpinBox(this,true);
+    _box2=new FeedbackSpinBox(this,true);
     QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
     QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
     _box1->setMaximum(INT_MAX);
@@ -1401,13 +1401,13 @@ std::string Group_Knob::serialize() const{
 /*****************************/
 RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),
 _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
-    _rBox = new FeedBackSpinBox(this,true);
+    _rBox = new FeedbackSpinBox(this,true);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onRedValueChanged(double)));
-    _gBox = new FeedBackSpinBox(this,true);
+    _gBox = new FeedbackSpinBox(this,true);
     QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onGreenValueChanged(double)));
-    _bBox = new FeedBackSpinBox(this,true);
+    _bBox = new FeedbackSpinBox(this,true);
     QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onBlueValueChanged(double)));
-    _aBox = new FeedBackSpinBox(this,true);
+    _aBox = new FeedbackSpinBox(this,true);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onAlphaValueChanged(double)));
     
     _rBox->setMaximum(1.);

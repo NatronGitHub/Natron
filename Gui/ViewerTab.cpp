@@ -107,7 +107,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
   //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_secondSettingsRow);
     
-    _gainBox = new FeedBackSpinBox(_secondSettingsRow,true);
+    _gainBox = new FeedbackSpinBox(_secondSettingsRow,true);
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
     _gainBox->setMinimum(-99.0);
@@ -155,7 +155,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
  //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
-	_currentFrameBox=new FeedBackSpinBox(_playerButtonsContainer,true);
+	_currentFrameBox=new FeedbackSpinBox(_playerButtonsContainer,true);
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);
@@ -279,7 +279,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
 	_playerLayout->addWidget(previousIncrement_Button);
     
     
-    incrementSpinBox=new FeedBackSpinBox(_playerButtonsContainer);
+    incrementSpinBox=new FeedbackSpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
     incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
                                  "The previous/next increment buttons step"
@@ -300,7 +300,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     
     fpsName = new QLabel("fps",_playerButtonsContainer);
     _playerLayout->addWidget(fpsName);
-    fpsBox = new FeedBackSpinBox(_playerButtonsContainer,true);
+    fpsBox = new FeedbackSpinBox(_playerButtonsContainer,true);
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
