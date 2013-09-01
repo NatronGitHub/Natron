@@ -278,7 +278,7 @@ void Model::initCounterAndGetDescription(Node*& node){
             str.append(nodeName.c_str());
             str.append("_");
             char c[50];
-            sprintf(c,"%d",counter->first);
+            sprintf(c,"%d",counter->first); // FIXME: never use sprintf
             str.append(c);
             node->setName(str);
         }
@@ -291,7 +291,7 @@ void Model::initCounterAndGetDescription(Node*& node){
         str.append(node->className().c_str());
         str.append("_");
         char c[50];
-        sprintf(c,"%d",count->first);
+        sprintf(c,"%d",count->first); // FIXME: never use sprintf
         str.append(c);
         node->setName(str);
     }
