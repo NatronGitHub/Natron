@@ -53,6 +53,7 @@ MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
 }
 bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
+    assert(path);
 #ifdef POWITER_DEBUG
     if(QFile::exists(path)){
         cout << "WARNING: A file with the same name already exists : " << path
@@ -74,8 +75,11 @@ bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
     _mappedFile->resize(byteCount);
     _size += _mappedFile->size();
     string newPath(path);
-    if(_path.empty()) _path.append(path);
-    else if(_path != newPath) _path = newPath;
+    if(_path.empty()) {
+        _path.append(path);
+    } else if(_path != newPath) {
+        _path = newPath;
+    }
     return true;
 }
 void MemoryMappedEntry::deallocate(){
