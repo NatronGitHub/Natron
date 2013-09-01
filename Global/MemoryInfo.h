@@ -183,16 +183,5 @@ inline size_t getCurrentRSS( )
 	return (size_t)0L;			/* Unsupported. */
 #endif
 }
-/*return the endianness of the CPU*/
-inline bool isBigEndian()
-{
-    union {
-        uint32_t i;
-        char c[4];
-    } b = {0x01020304};
-    
-    return b.c[0] == 1;
-}
-
 
 #endif
