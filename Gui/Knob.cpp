@@ -29,6 +29,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
+#include "Engine/PluginID.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"

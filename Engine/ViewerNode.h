@@ -1,7 +1,3 @@
-
-#ifndef VIEWERNODE_H
-#define VIEWERNODE_H
-
 //  Powiter
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,23 +9,21 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_VIEWERNODE_H_
+#define POWITER_ENGINE_VIEWERNODE_H_
 
- 
+#include <string>
+#include <QtCore/QFutureWatcher>
 
-
-
-#include <cmath>
 #include "Global/GlobalDefines.h"
 #include "Engine/Node.h"
-#include <QtCore/QFuture>
-#include "Gui/Texture.h"
-#include <QtCore/QFutureWatcher>
+
 class ViewerCache;
 class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
+
 class ViewerNode: public Node
 {
     
@@ -107,4 +101,4 @@ private:
  #endif*/
 
 
-#endif // VIEWERNODE_H
+#endif // POWITER_ENGINE_VIEWERNODE_H_

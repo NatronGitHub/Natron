@@ -9,66 +9,29 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_MODEL_H_
+#define POWITER_ENGINE_MODEL_H_
 
- 
-
-
-
-#ifndef MODEL_H
-#define MODEL_H
-#include <iostream>
-#include <fstream>
-#include <QtCore/QStringList>
-#include "Global/GlobalDefines.h"
-#ifdef __POWITER_UNIX__
-#include <dlfcn.h>
-#endif
-#include <map>
 #include <vector>
-#include <ImfStandardAttributes.h>
+#include <string>
+#include <utility>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-#include "ofxhPluginCache.h"
-#include "ofxhPropertySuite.h"
-#include "ofxhImageEffect.h"
-#include "ofxhImageEffectAPI.h"
+#include <QtCore/QString>
+#include <QtCore/QStringList>
+#include <ImfStandardAttributes.h> // FIXME: should be PIMPL'ed
+#include <ofxhPluginCache.h> // FIXME: all OpenFX stuff should be PIMPL'ed
+#include <ofxhPropertySuite.h>
+#include <ofxhImageEffect.h>
+#include <ofxhImageEffectAPI.h>
 
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
 
-#ifdef __POWITER_WIN32__
-class PluginID{
-public:
-    PluginID(HINSTANCE first, const std::string& second){
-        this->first=first;
-        this->second=second;
-    }
-    ~PluginID(){
-        
-        FreeLibrary(first);
-    
-    }
-    HINSTANCE first;
-    std::string second;
-};
-#elif defined(__POWITER_UNIX__)
-class PluginID{
-public:
-    PluginID(void* first, const std::string& second){
-        this->first=first;
-        this->second=second;
-    }
-    ~PluginID(){
-        
-        dlclose(first);
-    }
-    void* first;
-    std::string second;
-};
-#endif
+class PluginID;
+
 class CounterID{
 public:
     CounterID(int first, const std::string& second){
@@ -354,4 +317,4 @@ private:
 
 };
 
-#endif // MODEL_H
+#endif // POWITER_ENGINE_MODEL_H_

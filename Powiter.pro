@@ -81,6 +81,7 @@ SOURCES += \
     Engine/OfxClipInstance.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
+    Engine/PluginID.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/Timer.cpp \
@@ -146,6 +147,7 @@ HEADERS += \
     Engine/OfxClipInstance.h \
     Engine/OfxNode.h \
     Engine/OfxParamInstance.h \
+    Engine/PluginID.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \

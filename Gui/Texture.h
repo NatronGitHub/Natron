@@ -12,7 +12,6 @@
 #ifndef POWITER_GUI_TEXTURE_H_
 #define POWITER_GUI_TEXTURE_H_
 
-#include "Engine/Box.h"
 #include "Global/GlobalDefines.h"
 
 /** @class This class describes the rectangle (or portion) of an image that is contained

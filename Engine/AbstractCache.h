@@ -141,8 +141,8 @@ public:
     
 #ifdef USE_VARIADIC_TEMPLATES
     
-#ifdef CACHE_USE_BOOST
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
     typedef BoostLRUCacheContainer<U64, CacheEntry* , boost::bimaps::unordered_set_of> CacheContainer;
 #else
     typedef BoostLRUCacheContainer<U64, CacheEntry* , boost::bimaps::set_of> CacheContainer;
@@ -153,7 +153,7 @@ public:
     
 #else // cache use STL
     
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_HASH
     typedef StlLRUCache<U64,CacheEntry*, std::unordered_map> CacheContainer;
 #else
     typedef StlLRUCache<U64,CacheEntry*, std::map> CacheContainer;
@@ -161,12 +161,12 @@ public:
     typedef CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second;}
-#endif // CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_BOOST
     
 #else // USE_VARIADIC_TEMPLATES
     
-#ifdef CACHE_USE_BOOST
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
     typedef BoostLRUHashCache<U64, CacheEntry*> CacheContainer;
 #else
     typedef BoostLRUTreeCache<U64, CacheEntry* > CacheContainer;
@@ -181,7 +181,7 @@ public:
     typedef CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second.first;}
-#endif // CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_BOOST
     
 #endif // USE_VARIADIC_TEMPLATES
     

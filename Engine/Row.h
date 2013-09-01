@@ -9,24 +9,15 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_ROW_H_
+#define POWITER_ENGINE_ROW_H_
 
- 
+#include <string>
 
-
-
-#ifndef ROW_H
-#define ROW_H
-
-#include <cstdlib>
-#include <map>
 #include "Engine/ChannelSet.h"
-#include "Engine/AbstractCache.h"
+#include "Engine/AbstractCache.h" // for InMemoryEntry
 
-#define MAX_BUFFERS_PER_ROW 100
-
-
-
+#define POWITER_MAX_BUFFERS_PER_ROW 100
 
 /*This class represent one line in the image.
  *One line is a set of buffers (channels) defined
@@ -132,4 +123,4 @@ bool compareRows(const Row &a,const Row &b);
 
 
 
-#endif // ROW_H
+#endif // POWITER_ENGINE_ROW_H_

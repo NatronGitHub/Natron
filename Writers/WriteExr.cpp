@@ -15,6 +15,7 @@
 #include <QtCore/QMutex>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
+#include <half.h>
 
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"

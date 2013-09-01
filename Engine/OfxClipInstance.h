@@ -8,17 +8,17 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef OFXCLIPINSTANCE_H
-#define OFXCLIPINSTANCE_H
 
-#include "Engine/ChannelSet.h"
+#ifndef POWITER_ENGINE_OFXCLIPINSTANCE_H_
+#define POWITER_ENGINE_OFXCLIPINSTANCE_H_
+
 
 #include <cassert>
-
 //ofx
-#include "ofxhImageEffect.h"
-#include "ofxPixels.h"
+#include <ofxhImageEffect.h>
+#include <ofxPixels.h>
 
+#include "Engine/ChannelSet.h"
 
 class OfxImage;
 class OfxNode;
@@ -234,4 +234,4 @@ void ofxPackedBufferToRowPlane(Powiter::Channel channel,
     
 }
 
-#endif // OFXCLIPINSTANCE_H
+#endif // POWITER_ENGINE_OFXCLIPINSTANCE_H_

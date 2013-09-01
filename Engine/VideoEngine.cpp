@@ -30,8 +30,9 @@
 #include "Engine/NodeCache.h"
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
-#include "Writers/Writer.h"
 #include "Engine/Timer.h"
+#include "Writers/Writer.h"
+#include "Readers/Reader.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"

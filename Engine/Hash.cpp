@@ -11,6 +11,11 @@
 
 #include "Hash.h"
 
+#include <cstdlib>
+#ifndef Q_MOC_RUN
+#include <boost/crc.hpp>
+#endif
+
 #include "Engine/Node.h"
 #include "Gui/Knob.h"
 
@@ -46,7 +51,7 @@ void Hash::appendKnobToHash(Knob* knob){
     }
 }
 
-void Hash::appendQStringToHash(QString str){
+void Hash::appendQStringToHash(const QString& str){
     for(int i =0 ; i< str.size();++i) {
         node_values.push_back((U64)str.at(i).unicode());
     }

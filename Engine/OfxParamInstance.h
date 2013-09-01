@@ -8,9 +8,12 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef OFXPARAMINSTANCE_H
-#define OFXPARAMINSTANCE_H
+#ifndef POWITER_ENGINE_OFXPARAMINSTANCE_H_
+#define POWITER_ENGINE_OFXPARAMINSTANCE_H_
 
+#include <map>
+#include <string>
+#include <vector>
 #include <QtCore/QObject>
 #include <QStringList>
 //ofx
@@ -366,5 +369,5 @@ private:
 };
 
 
-#endif // OFXPARAMINSTANCE_H
+#endif // POWITER_ENGINE_OFXPARAMINSTANCE_H_
 

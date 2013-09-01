@@ -9,23 +9,18 @@
 *
 */
 
- 
-
- 
-
+#ifndef POWITER_ENGINE_HASH_H_
+#define POWITER_ENGINE_HASH_H_
 
 
-#ifndef HASH_H
-#define HASH_H
-
-
-#include <cstdlib>
+//#include <cstdlib>
 #ifndef Q_MOC_RUN
-#include <boost/crc.hpp>
+//#include <boost/crc.hpp>
 #endif
 #include <vector>
-#include <QtCore/qstring.h>
-#include <QtCore/QChar>
+#include <QtCore/QString>
+//#include <QtCore/QChar>
+
 #include "Global/GlobalDefines.h"
 
 
@@ -54,14 +49,14 @@ public:
     
     void appendValueToHash(U64 hashValue);
     
-    void appendQStringToHash(QString str);
+    void appendQStringToHash(const QString& str);
     
     void appendKnobToHash(Knob* knob);
     
-    bool 	operator== (const Hash &h) const {
+    bool 	operator== (const Hash& h) const {
         return this->hash==h.getHashValue();
     }
-    bool 	operator!= (const Hash &h) const {
+    bool 	operator!= (const Hash& h) const {
         return this->hash==h.getHashValue();
     }
     
@@ -69,4 +64,4 @@ private:
     U64 hash;
     std::vector<U64> node_values;
 };
-#endif // HASH_H
+#endif // POWITER_ENGINE_HASH_H_

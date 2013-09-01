@@ -22,7 +22,7 @@
 #include <QLineEdit>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/Model.h" // for PluginID
+//#include "Engine/Model.h" // for PluginID
 #include "Engine/Singleton.h"
 #include "Gui/LineEdit.h"
 
@@ -54,6 +54,8 @@ class QGroupBox;
 class SettingsPanel;
 class Node;
 class Knob;
+
+class PluginID;
 
 class KnobCallback
 {

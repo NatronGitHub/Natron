@@ -18,35 +18,36 @@
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
 
+#include "Global/MemoryInfo.h"
 #include "Global/Controler.h"
 #include "Engine/Hash.h"
 #include "Engine/Node.h"
 #include "Engine/ChannelSet.h"
-#include "Readers/Reader.h"
-#include "Writers/Writer.h"
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
-#include "Gui/Gui.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Format.h"
 #include "Engine/Settings.h"
-#include "Writers/Write.h"
+#include "Engine/Lut.h"
+#include "Engine/NodeCache.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/PluginID.h"
+#include "Readers/Reader.h"
 #include "Readers/Read.h"
 #include "Readers/ReadExr.h"
 #include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ReadQt.h"
-#include "Engine/Lut.h"
-#include "Engine/NodeCache.h"
-#include "Engine/ViewerCache.h"
-#include "Gui/Knob.h"
+#include "Writers/Writer.h"
+#include "Writers/Write.h"
 #include "Writers/WriteQt.h"
 #include "Writers/WriteExr.h"
 #include "Gui/Gui.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Knob.h"
+#include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
-#include "Global/MemoryInfo.h"
 
 // ofx
 #include "ofxCore.h"
@@ -67,6 +68,7 @@
 
 using namespace std;
 using namespace Powiter;
+
 Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPluginCache(*this)
 {
     

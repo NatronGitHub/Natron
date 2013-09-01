@@ -9,19 +9,13 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_VIEWERCACHE_H_
+#define POWITER_ENGINE_VIEWERCACHE_H_
 
- 
-
-
-
-
-#ifndef DISKCACHE_H
-#define DISKCACHE_H
-
-#include "Engine/AbstractCache.h"
-#include "Gui/Texture.h"
+#include "Engine/AbstractCache.h" // for MemoryMappedEntry
+#include "Gui/Texture.h" // for TextureRect
 #include "Engine/Singleton.h"
+
 class Format;
 class ChannelSet;
 class Box2D;
@@ -114,4 +108,4 @@ public:
 
 
 
-#endif // DISKCACHE_H
+#endif // POWITER_ENGINE_VIEWERCACHE_H_

@@ -9,14 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef __REFERENCE_COUNTED_OBJECT_H__
-#define __REFERENCE_COUNTED_OBJECT_H__
+#ifndef POWITER_ENGINE_REFERENCECOUNTEDOBJECT_H_
+#define POWITER_ENGINE_REFERENCECOUNTEDOBJECT_H_
 
 
 // Reference counted interface. Inherit this class and access it with ReferenceCountedPtr
@@ -179,4 +173,4 @@ template<class T> class RefCPtr
 
 
 
-#endif //__REFERENCE_COUNTED_OBJECT_H__
+#endif //POWITER_ENGINE_REFERENCECOUNTEDOBJECT_H_

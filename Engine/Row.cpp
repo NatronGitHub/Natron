@@ -48,8 +48,8 @@ Row::Row(int x,int y, int range, ChannelSet channels)
 	this->_y=y;
     this->r=range;
     _channels = channels;
-    buffers = (float**)malloc(MAX_BUFFERS_PER_ROW*sizeof(float*));
-    memset(buffers, 0, sizeof(float*)*MAX_BUFFERS_PER_ROW);
+    buffers = (float**)malloc(POWITER_MAX_BUFFERS_PER_ROW*sizeof(float*));
+    memset(buffers, 0, sizeof(float*)*POWITER_MAX_BUFFERS_PER_ROW);
     
 }
 bool Row::allocateRow(const char*){
