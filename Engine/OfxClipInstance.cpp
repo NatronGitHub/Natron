@@ -58,12 +58,12 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     static const string rgbaStr(kOfxImageComponentRGBA);
     static const string alphaStr(kOfxImageComponentAlpha);
     
-    bool rgb = false;
-    bool alpha = false;
+    //bool rgb = false;
+    //bool alpha = false;
     
     const ChannelSet& channels = _node->getInfo()->channels();
-    if(channels & alpha) alpha = true;
-    if(channels & Mask_RGB) rgb = true;
+    //if(channels & alpha) alpha = true;
+    //if(channels & Mask_RGB) rgb = true;
     
 //    if(!rgb && !alpha) return noneStr;
 //    else if(rgb && !alpha) return rgbStr;

@@ -164,13 +164,13 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     size_t dataSize = 0;
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
-    Texture::DataType type;
+    //Texture::DataType type;
     if(frame->_byteMode==1.0){
         dataSize  = w * h * sizeof(U32) ;
-        type = Texture::BYTE;
+        //type = Texture::BYTE;
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
-        type = Texture::FLOAT;
+        //type = Texture::FLOAT;
     }
     ViewerGL* gl_viewer = _uiContext->viewer;
     if(_viewerInfos){
