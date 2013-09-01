@@ -13,6 +13,7 @@
 #define POWITER_WRITERS_WRITE_H_
 
 #include <string>
+#include <vector>
 #include "Engine/ChannelSet.h"
 
 

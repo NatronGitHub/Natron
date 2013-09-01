@@ -9,23 +9,11 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#ifndef CHANNELS_H
-#define CHANNELS_H
+#ifndef POWITER_ENGINE_CHANNELSET_H_
+#define POWITER_ENGINE_CHANNELSET_H_
 
 #include <string>
-#include <cstring>
-#include <vector>
 #include "Global/GlobalDefines.h"
-
-
-
 
 class ChannelSet{
     U32 mask; // 1 bit per channel and LSB is for "all" channels
@@ -175,4 +163,4 @@ std::string getChannelName(Powiter::Channel c);
 bool hasAlpha(ChannelSet mask);
 
 
-#endif // CHANNELS_H
+#endif // POWITER_ENGINE_CHANNELSET_H_

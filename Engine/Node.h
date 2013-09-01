@@ -9,18 +9,13 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_NODE_H_
+#define POWITER_ENGINE_NODE_H_
 
- 
-
-
-
-#ifndef NODE_H
-#define NODE_H
-
-#include <iostream>
-#include <cstdio>
+#include <vector>
+#include <string>
 #include <map>
+
 #include "Engine/ChannelSet.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/Format.h"
@@ -232,4 +227,4 @@ typedef Node* (*NodeBuilder)();
 
 
 
-#endif // NODE_H
+#endif // POWITER_ENGINE_NODE_H_

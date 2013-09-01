@@ -9,22 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_ABSTRACTCACHE_H_
+#define POWITER_ENGINE_ABSTRACTCACHE_H_
 
- 
-
-
-
-//
-
-#ifndef __PowiterOsX__abstractCache__
-#define __PowiterOsX__abstractCache__
+#include <vector>
+#include <QtCore/QMutex>
 
 #include "Engine/LRUcache.h"
 #include "Global/GlobalDefines.h"
-#include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
-#include <vector>
 
 class MemoryFile;
 /*Base class for cache entries. This can be overloaded to fit parameters you'd
@@ -360,4 +352,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__abstractCache__) */
+#endif /* defined(POWITER_ENGINE_ABSTRACTCACHE_H_) */
