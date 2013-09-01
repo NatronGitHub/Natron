@@ -71,7 +71,7 @@ ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.
 ChannelSet::ChannelSet(ChannelMask v) {
     if(v == Mask_All){
         mask = Mask_All;
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         return;
     }
     mask = (v << 1);
@@ -96,7 +96,7 @@ const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
 const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     if(source == Mask_All){
         mask = Mask_All;
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         return *this;
     }
     mask = (source << 1);
@@ -177,7 +177,7 @@ void ChannelSet::operator+=(ChannelMask source) {
         return;
     }
     if((source & Mask_All) == Mask_All){// mask all
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         mask = 1;
         return;
     }
@@ -240,7 +240,7 @@ void ChannelSet::operator-=(Channel z){
 void ChannelSet::operator&=(const ChannelSet& source){
     mask &= source.value();
     if(source.value() & 1){
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
         for(unsigned int i = 1; i < 32 ; ++i) {
@@ -254,7 +254,7 @@ void ChannelSet::operator&=(const ChannelSet& source){
 void ChannelSet::operator&=(ChannelMask source) {
     mask &= (source << 1);
     if(source & 1){
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
         for(unsigned int i = 1; i < 32 ; ++i) {

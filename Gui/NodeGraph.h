@@ -12,14 +12,9 @@
 #ifndef POWITER_GUI_NODEGRAPH_H_
 #define POWITER_GUI_NODEGRAPH_H_
 
-//#include <cmath>
-//#include <iostream>
 #include <vector>
 #include <QGraphicsView>
 #include <QtCore/QRectF>
-//#include <QtCore/QEvent>
-//#include <QtGui/QKeyEvent>
-//#include <QInputDialog>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>

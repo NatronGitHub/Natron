@@ -409,7 +409,7 @@ Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
 
 
 void Model::loadReadPlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -436,7 +436,7 @@ void Model::loadReadPlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -467,7 +467,7 @@ void Model::loadReadPlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");
@@ -593,7 +593,7 @@ void Model::loadBuiltinPlugins(){
 
 /*loads extra writer plug-ins*/
 void Model::loadWritePlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -620,7 +620,7 @@ void Model::loadWritePlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -650,7 +650,7 @@ void Model::loadWritePlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");

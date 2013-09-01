@@ -8,15 +8,8 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#ifndef INCLUDED_OS_DEPENDENT_H
-#define INCLUDED_OS_DEPENDENT_H
+#ifndef POWITER_GLOBAL_GLINCLUDES_H_
+#define POWITER_GLOBAL_GLINCLUDES_H_
 
 #ifdef _WIN32
 

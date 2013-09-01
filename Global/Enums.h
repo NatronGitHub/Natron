@@ -8,17 +8,10 @@
 *
 */
 
- 
+#ifndef POWITER_GLOBAL_ENUMS_H_
+#define POWITER_GLOBAL_ENUMS_H_
 
- 
-
-
-
-
-#ifndef INCLUDED_ENUMS_H
-#define INCLUDED_ENUMS_H
-
-#define MAX_CHANNEL_COUNT 7
+#define POWITER_MAX_CHANNEL_COUNT 7
 
 namespace Powiter{
     
@@ -67,4 +60,4 @@ namespace Powiter{
 
 
 
-#endif // INCLUDED_ENUMS_H
+#endif // POWITER_GLOBAL_ENUMS_H_

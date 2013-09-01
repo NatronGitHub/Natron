@@ -682,7 +682,7 @@ private:
     void runTasks();
     
     
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
     /*
      *@brief Range-check to be sure buffers are allocated correctly
      *@param columns the indexes of the columns to compute.

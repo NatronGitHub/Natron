@@ -59,13 +59,13 @@ _drawDropRect(false){
     _headerLayout->setContentsMargins(0, 0, 0, 0);
     _headerLayout->setSpacing(0);
     _header->setLayout(_headerLayout);
-    QImage imgC(IMAGES_PATH"close.png");
+    QImage imgC(POWITER_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC.scaled(15,15);
-    QImage imgM(IMAGES_PATH"maximize.png");
+    QImage imgM(POWITER_IMAGES_PATH"maximize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(15,15);
-    QImage imgL(IMAGES_PATH"layout.png");
+    QImage imgL(POWITER_IMAGES_PATH"layout.png");
     QPixmap pixL=QPixmap::fromImage(imgL);
     pixL.scaled(15,15);
     
@@ -134,15 +134,15 @@ void TabWidget::destroyTab(QWidget* tab){
 
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_leftCornerButton);
-    QImage imgV(IMAGES_PATH"splitVertically.png");
+    QImage imgV(POWITER_IMAGES_PATH"splitVertically.png");
     QPixmap pixV=QPixmap::fromImage(imgV);
     pixV.scaled(12,12);
-    QImage imgH(IMAGES_PATH"splitHorizontally.png");
+    QImage imgH(POWITER_IMAGES_PATH"splitHorizontally.png");
     QPixmap pixH=QPixmap::fromImage(imgH);
-    QImage imgC(IMAGES_PATH"close.png");
+    QImage imgC(POWITER_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC.scaled(12,12);
-    QImage imgM(IMAGES_PATH"maximize.png");
+    QImage imgM(POWITER_IMAGES_PATH"maximize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(12,12);
     pixH.scaled(12,12);

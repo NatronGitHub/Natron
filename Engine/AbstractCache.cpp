@@ -53,7 +53,7 @@ MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
 }
 bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
     if(QFile::exists(path)){
         cout << "WARNING: A file with the same name already exists : " << path
         << " (If displayed on startup ignore it, this is a debug message "
@@ -250,7 +250,7 @@ CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
 }
 
 void AbstractDiskCache::initializeSubDirectories(){
-    QDir cache(CACHE_ROOT_PATH);
+    QDir cache(POWITER_CACHE_ROOT_PATH);
     QStringList entries = cache.entryList();
     bool foundDir = false;
     for(int i =0 ; i < entries.size();++i) {
@@ -262,7 +262,7 @@ void AbstractDiskCache::initializeSubDirectories(){
     if(!foundDir){
         cache.mkdir(CACHE_FOLDER_NAME);
     }
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     
@@ -332,7 +332,7 @@ void AbstractDiskCache::clearDiskCache(){
 }
 
 void AbstractDiskCache::save(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     
@@ -355,7 +355,7 @@ void AbstractDiskCache::save(){
 }
 
 void AbstractDiskCache::restore(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     QString newCachePath(cacheFolderName);
@@ -451,7 +451,7 @@ void AbstractDiskCache::restore(){
     }else{ // restore file doesn't exist
         /*re-create cache*/
         
-        QDir root(CACHE_ROOT_PATH);
+        QDir root(POWITER_CACHE_ROOT_PATH);
         QStringList rootEntries = root.entryList();
         bool foundCache = false;
         for (int i =0 ; i< rootEntries.size(); ++i) {
@@ -507,7 +507,7 @@ void AbstractDiskCache::cleanUpDiskAndReset(){
 }
 
 QString AbstractDiskCache::getCachePath(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     QString str(cacheFolderName);

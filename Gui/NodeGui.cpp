@@ -51,7 +51,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	
     rectangle->setParentItem(this);
     
-    QImage img(IMAGES_PATH"RGBAchannels.png");
+    QImage img(POWITER_IMAGES_PATH"RGBAchannels.png");
     
     
     QPixmap pixmap=QPixmap::fromImage(img);

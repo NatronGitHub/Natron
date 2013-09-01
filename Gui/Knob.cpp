@@ -117,7 +117,7 @@ KnobFactory::~KnobFactory(){
 }
 
 void KnobFactory::loadKnobPlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -143,7 +143,7 @@ void KnobFactory::loadKnobPlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -169,7 +169,7 @@ void KnobFactory::loadKnobPlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");
@@ -753,7 +753,7 @@ File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask
     _name->setPlaceholderText(QString("File path..."));
 	
     QPushButton* openFile=new Button(_name);
-    QImage img(IMAGES_PATH"open-file.png");
+    QImage img(POWITER_IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
@@ -1173,7 +1173,7 @@ OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& descriptio
     _name->setPlaceholderText(QString("File path..."));
 	
     QPushButton* openFile=new Button(_name);
-    QImage img(IMAGES_PATH"open-file.png");
+    QImage img(POWITER_IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
@@ -1447,7 +1447,7 @@ _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
     _colorLabel = new QLabel(this);
     layout->addWidget(_colorLabel);
     
-    QImage buttonImg(IMAGES_PATH"colorwheel.png");
+    QImage buttonImg(POWITER_IMAGES_PATH"colorwheel.png");
     QPixmap buttonPix = QPixmap::fromImage(buttonImg);
     buttonPix = buttonPix.scaled(25, 20);
     QIcon buttonIcon(buttonPix);

@@ -404,7 +404,7 @@ void VideoEngine::copyFrameToCache(const char* src){
         memcpy(entry->getMappedFile()->data(),src,_viewerCacheArgs._dataSize);
         entry->removeReference(); // removing reference as we're done with the entry.
     }else{
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
         cout << "WARNING: caching does not seem to work properly..failing to add the entry." << endl;
 #endif
     }
@@ -971,7 +971,7 @@ int VideoEngine::DAG::lastFrame() const{
 void VideoEngine::resetAndMakeNewDag(Node* output,bool isViewer){
     _dag.resetAndSort(output,isViewer);
 }
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
     for (unsigned int i = 0; i < columns.size(); ++i) {
         if(columns[i] < x || columns[i] > r){

@@ -38,7 +38,7 @@ class Controler;
 class ViewerNode;
 class ViewerTab;
 
-#ifndef PW_DEBUG
+#ifndef POWITER_DEBUG
 #define checkGLErrors() ((void)0)
 #else
 #define checkGLErrors() \

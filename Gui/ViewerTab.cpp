@@ -310,19 +310,19 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
         
     
 
-    QImage imgFirst(IMAGES_PATH"firstFrame.png");
-    QImage imgPrevKF(IMAGES_PATH"prevKF.png");
-    QImage imgRewind(IMAGES_PATH"rewind.png");
-    QImage imgBack1(IMAGES_PATH"back1.png");
-    QImage imgStop(IMAGES_PATH"stop.png");
-    QImage imgForward1(IMAGES_PATH"forward1.png");
-    QImage imgPlay(IMAGES_PATH"play.png");
-    QImage imgNextKF(IMAGES_PATH"nextKF.png");
-    QImage imgLast(IMAGES_PATH"lastFrame.png");
-    QImage imgPrevINCR(IMAGES_PATH"previousIncr.png");
-    QImage imgNextINCR(IMAGES_PATH"nextIncr.png");
-    QImage imgRefresh(IMAGES_PATH"refresh.png");
-    QImage imgCenterViewer(IMAGES_PATH"centerViewer.png");
+    QImage imgFirst(POWITER_IMAGES_PATH"firstFrame.png");
+    QImage imgPrevKF(POWITER_IMAGES_PATH"prevKF.png");
+    QImage imgRewind(POWITER_IMAGES_PATH"rewind.png");
+    QImage imgBack1(POWITER_IMAGES_PATH"back1.png");
+    QImage imgStop(POWITER_IMAGES_PATH"stop.png");
+    QImage imgForward1(POWITER_IMAGES_PATH"forward1.png");
+    QImage imgPlay(POWITER_IMAGES_PATH"play.png");
+    QImage imgNextKF(POWITER_IMAGES_PATH"nextKF.png");
+    QImage imgLast(POWITER_IMAGES_PATH"lastFrame.png");
+    QImage imgPrevINCR(POWITER_IMAGES_PATH"previousIncr.png");
+    QImage imgNextINCR(POWITER_IMAGES_PATH"nextIncr.png");
+    QImage imgRefresh(POWITER_IMAGES_PATH"refresh.png");
+    QImage imgCenterViewer(POWITER_IMAGES_PATH"centerViewer.png");
 
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);
