@@ -85,8 +85,8 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
         //        if (uiChannels & Channel_alpha)
             a = (*row)[Channel_alpha];
         _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
+        row->release();
     }
-    row->release();
 }
 
 void ViewerNode::makeCurrentViewer(){
