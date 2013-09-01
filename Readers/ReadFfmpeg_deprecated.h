@@ -17,13 +17,20 @@
 #ifndef POWITER_READERS_READFFMPEG_DEPRECATED_H_
 #define POWITER_READERS_READFFMPEG_DEPRECATED_H_
 
-#include <iostream>
-#include <cerrno>
+#include <vector>
+#include <string>
+#include <map>
 #ifdef _WIN32
 #include <io.h>
 #endif
 #include <QtCore/QMutex>
 
+#if (defined(_STDINT_H) || defined(_STDINT_H_)) && !defined(UINT64_C)
+#warning "__STDC_CONSTANT_MACROS has to be defined before including stdint.h, this file will probably not compile"
+#endif
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS // ...or stdint.h doesn't define UINT64_C, needed for libavutil
+#endif
 extern "C" {
 // FIXME: all this should be PIMPL'ed!
 #include <libavformat/avformat.h>
