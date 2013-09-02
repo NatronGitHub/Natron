@@ -28,7 +28,7 @@ using namespace Powiter;
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context):
-Node(),
+OutputNode(),
 OFX::Host::ImageEffect::Instance(plugin,other,context,false),
 _tabKnob(0),
 _lastKnobLayoutWithNoNewLine(0),
@@ -451,6 +451,8 @@ bool  OfxNode::progressUpdate(double t)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
+    if(!ctrlPTR->getModel()->getVideoEngine())
+        return -1.;
     const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return -1.;

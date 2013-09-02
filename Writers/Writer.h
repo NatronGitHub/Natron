@@ -35,7 +35,7 @@ class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
 class KnobCallback;
-class Writer: public QObject, public Node{
+class Writer: public QObject, public OutputNode{
     
     Q_OBJECT
     
@@ -128,7 +128,6 @@ public:
     
     const ChannelSet& requestedChannels() const {return _requestedChannels;} // FIXME: never return reference to internals!
     
-    virtual bool isOutputNode(){return true;}
     
     virtual int maximumInputs(){return 1;}
     

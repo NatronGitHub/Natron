@@ -98,9 +98,10 @@ bool Gui::exit(){
     }else if(ret == 2){
         return false;
     }
-    ctrlPTR->getModel()->getVideoEngine()->abort();
+
 	ctrlPTR->Destroy();
     delete this;
+
     qApp->exit(0);
     return true;
     

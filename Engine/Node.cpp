@@ -11,6 +11,9 @@
 
 #include "Node.h"
 
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+
 #include "Engine/Hash.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
@@ -355,3 +358,18 @@ Node::~Node(){
     delete _info;
     delete _knobsCB;
 }
+
+
+OutputNode::OutputNode():Node(){
+    _mutex = new QMutex;
+    _openGLCondition = new QWaitCondition;
+    
+    _videoEngine = new VideoEngine(_openGLCondition,_mutex);
+}
+
+OutputNode::~OutputNode(){
+    delete _videoEngine;
+    delete _mutex;
+    delete _openGLCondition;
+}
+

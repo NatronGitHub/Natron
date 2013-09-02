@@ -30,6 +30,8 @@
 /*macro to get the unique pointer to the controler*/
 #define ctrlPTR Controler::instance()
 
+#define currentOutput Controler::getCurrentOutput()
+
 #define currentViewer Controler::getCurrentViewer()
 
 #define currentWriter Controler::getCurrentWriter()
@@ -40,6 +42,7 @@ class Model;
 class ViewerNode;
 class Writer;
 class Gui;
+class OutputNode;
 class QLabel;
 
 
@@ -109,14 +112,10 @@ public:
      gui->createGUI() and build a viewer node.*/
     void initControler(Model* model,QLabel* loadingScreen,QString projectName = QString());
     
-    /*Returns a pointer to the Viewer currently used
-     by the VideoEngine. If the output is not a viewer,
-     it will return NULL.*/
+    static OutputNode* getCurrentOutput();
+    
     static ViewerNode* getCurrentViewer();
     
-    /*Returns a pointer to the Writer currently used
-     by the VideoEngine. If the output is not a writer,
-     it will return NULL.*/
     static Writer* getCurrentWriter();
     
     void stackPluginToolButtons(const std::vector<std::string>& groups,

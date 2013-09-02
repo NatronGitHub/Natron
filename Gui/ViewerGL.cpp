@@ -35,6 +35,8 @@
 #include "Engine/ViewerCache.h"
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
+#include "Engine/ViewerNode.h"
+#include "Gui/ViewerTab.h"
 #include "Global/GlobalDefines.h"
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
@@ -262,22 +264,24 @@ void ViewerGL::initConstructor(){
     _drawProgressBar = false;
 }
 
-ViewerGL::ViewerGL(QGLContext* context,QWidget* parent,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
 :QGLWidget(context,parent,shareWidget),
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
+_viewerTab(parent),
 _drawing(false)
 {
     
     initConstructor();
     
 }
-ViewerGL::ViewerGL(const QGLFormat& format,QWidget* parent ,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
 :QGLWidget(format,parent,shareWidget),
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
+_viewerTab(parent),
 _drawing(false)
 {
     
@@ -285,11 +289,12 @@ _drawing(false)
     
 }
 
-ViewerGL::ViewerGL(QWidget* parent,const QGLWidget* shareWidget)
+ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 :QGLWidget(parent,shareWidget),
 _textRenderer(this),
 _shaderLoaded(false),
 _lut(1),
+_viewerTab(parent),
 _drawing(false)
 {
     initConstructor();
@@ -466,7 +471,7 @@ void ViewerGL::drawOverlay(){
         
         
     }
-    VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
+    VideoEngine* vengine = _viewerTab->getInternalNode()->getVideoEngine();
     if(vengine)
         vengine->drawOverlay();
     //reseting color for next pass
@@ -831,6 +836,8 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     frameData = 0;
     _pBOmapped = false;
     checkGLErrors();
+    
+
 }
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
@@ -1034,7 +1041,8 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         _infoViewer->setColor(color);
         _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
-        if(!ctrlPTR->getModel()->getVideoEngine()->isWorking())
+        VideoEngine* videoEngine = ctrlPTR->getModel()->getVideoEngine();
+        if(videoEngine && !videoEngine->isWorking())
             emit infoColorUnderMouseChanged();
     }else{
         if(_infoViewer->colorAndMouseVisible()){
@@ -1152,7 +1160,8 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 }
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    if(ctrlPTR->getModel()->getVideoEngine()->isWorking()) return QVector4D(0,0,0,0);
+    VideoEngine* videoEngine = ctrlPTR->getModel()->getVideoEngine();
+    if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < displayWindow().x() || pos.x() >= displayWindow().w() || pos.y() < displayWindow().y() || pos.y() >=displayWindow().h())
         return QVector4D(0,0,0,0);
@@ -1625,7 +1634,7 @@ void ViewerGL::disconnectViewer(){
     ctrlPTR->getModel()->getVideoEngine()->abort(); // aborting current work
     blankInfoForViewer();
     fitToFormat(displayWindow());
-    ctrlPTR->getModel()->setVideoEngineRequirements(NULL,true);
+    ctrlPTR->getModel()->setCurrentGraph(NULL,true);
     clearViewer();
 }
 

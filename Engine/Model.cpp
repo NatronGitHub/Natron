@@ -67,7 +67,7 @@
 
 using namespace std;
 using namespace Powiter;
-Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPluginCache(*this)
+Model::Model():OFX::Host::ImageEffect::Host(),_currentOutput(0), _imageEffectPluginCache(*this)
 {
     
     /*node cache initialisation & restoration*/
@@ -91,10 +91,10 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     
     
     /*allocating lookup tables*/
-    Powiter::Color::allocateLuts();
+    // Powiter::Color::allocateLuts();
     
-    _videoEngine = new VideoEngine(this);
-    connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
+    //    _videoEngine = new VideoEngine(this);
+    //connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
     
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
@@ -197,8 +197,7 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
 Model::~Model(){
     
     _viewerCache->save();
-    Powiter::Color::deallocateLuts();
-    _videoEngine->abort();
+    //Powiter::Color::deallocateLuts();
     
     writeOFXCache();
     
@@ -217,8 +216,8 @@ Model::~Model(){
         }
     }
     _nodeCounters.clear();
-    delete _videoEngine;
-    _videoEngine = 0;
+    // delete _videoEngine;
+    //_videoEngine = 0;
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
@@ -242,24 +241,29 @@ void Model::loadAllPlugins(){
 
 
 
-std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
-    _videoEngine->resetAndMakeNewDag(output,isViewer);
-    
-    const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
-    bool hasFrames = false;
-    bool hasInputDifferentThanReader = false;
-    for (U32 i = 0; i< inputs.size(); ++i) {
-        assert(inputs[i]);
-        Reader* r = dynamic_cast<Reader*>(inputs[i]);
-        if (r) {
-            if (r->hasFrames()) {
-                hasFrames = true;
+std::pair<int,bool> Model::setCurrentGraph(OutputNode *output,bool isViewer){
+    _currentOutput = output;
+    if(output){
+        //_videoEngine->resetAndMakeNewDag(output,isViewer);
+        output->getVideoEngine()->resetAndMakeNewDag(output,isViewer);
+        const std::vector<Node*>& inputs = output->getVideoEngine()->getCurrentDAG().getInputs();
+        bool hasFrames = false;
+        bool hasInputDifferentThanReader = false;
+        for (U32 i = 0; i< inputs.size(); ++i) {
+            assert(inputs[i]);
+            Reader* r = dynamic_cast<Reader*>(inputs[i]);
+            if (r) {
+                if (r->hasFrames()) {
+                    hasFrames = true;
+                }
+            }else{
+                hasInputDifferentThanReader = true;
             }
-        }else{
-            hasInputDifferentThanReader = true;
         }
+        return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
+    }else{
+        return make_pair(0, false);
     }
-    return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
 }
 
 void Model::initCounterAndGetDescription(Node*& node){
@@ -770,13 +774,20 @@ void Model::removeNode(Node* n){
     }
 }
 
-void Model::resetInternalDAG(){
-    if(_videoEngine){
-        _videoEngine->resetDAG();
-    }
+
+/*starts the videoEngine for nbFrames. It will re-init the viewer so the
+ *frame fit in the viewer.*/
+void Model::startVideoEngine(int nbFrames){
+    assert(_currentOutput);
+    _currentOutput->getVideoEngine()->startEngine(nbFrames);
 }
 
-
+VideoEngine* Model::getVideoEngine() const{
+    if(_currentOutput)
+        return _currentOutput->getVideoEngine();
+    else
+        return NULL;
+}
 
 void Model::loadOFXPlugins(){
     assert(OFX::Host::PluginCache::getPluginCache());

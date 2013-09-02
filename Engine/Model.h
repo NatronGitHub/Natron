@@ -138,6 +138,7 @@ class Hash;
 class VideoEngine;
 class QMutex;
 class Node;
+class OutputNode;
 
 /// a host combines several things...
 ///    - a factory to create a new instance of your plugin
@@ -177,13 +178,16 @@ public:
     
     /*starts the videoEngine for nbFrames. It will re-init the viewer so the
      *frame fit in the viewer.*/
-    void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
+    void startVideoEngine(int nbFrames=-1);
+    
+    VideoEngine* getVideoEngine() const;
+
+    OutputNode* getCurrentOutput() const {return _currentOutput;}
 
 	/*Set the output of the graph used by the videoEngine.*/
-    std::pair<int,bool> setVideoEngineRequirements(Node* output,bool isViewer);
+    std::pair<int,bool> setCurrentGraph(OutputNode* output,bool isViewer);
 
 
-    VideoEngine* getVideoEngine(){return _videoEngine;}
     
     
 	/*add a new built-in format to the default ones*/
@@ -256,9 +260,6 @@ public:
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     void clearNodes();
-        
-signals:
-    void vengineNeeded(int nbFrames);
     
     
 public slots:
@@ -268,7 +269,6 @@ public slots:
     
     void clearNodeCache();
     
-    void resetInternalDAG();
     
 private:
     
@@ -317,8 +317,8 @@ private:
     void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
     
 
-    VideoEngine* _videoEngine; // Video Engine
-  
+    OutputNode* _currentOutput; /*The output of the currently active graph.*/
+    
     /*All nodes currently active in the node graph*/
     std::vector<Node*> _currentNodes;
     
@@ -351,6 +351,8 @@ private:
     typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
     
     OFXPluginsMap _ofxPlugins;
+    
+    
 
 };
 

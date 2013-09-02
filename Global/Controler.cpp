@@ -24,6 +24,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/NodeGraph.h"
 #include "Engine/Settings.h"
+#include "Writers/Writer.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Engine/ViewerNode.h"
 
@@ -122,15 +123,19 @@ Node* Controler::createNode(QString name){
     return node;
 }
 
+OutputNode* Controler::getCurrentOutput(){
+    return instance()->_model->getCurrentOutput();
+}
 ViewerNode* Controler::getCurrentViewer(){
-    Controler* ctrl = Controler::instance();
-    return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsViewer();
+    OutputNode* output = instance()->_model->getCurrentOutput();
+    return dynamic_cast<ViewerNode*>(output);
 }
 
 Writer* Controler::getCurrentWriter(){
-    Controler* ctrl = Controler::instance();
-    return ctrl->getModel()->getVideoEngine()->getCurrentDAG().outputAsWriter();
+    OutputNode* output = instance()->_model->getCurrentOutput();
+    return dynamic_cast<Writer*>(output);
 }
+
 void Controler::stackPluginToolButtons(const std::vector<std::string>& groups,
                                        const std::string& pluginName,
                                        const std::string& pluginIconPath,
@@ -186,11 +191,13 @@ void Controler::autoSave(){
     saveProject(_currentProject._projectPath, _currentProject._projectName, true);
 }
 void Controler::triggerAutoSaveOnNextEngineRun(){
-    _model->getVideoEngine()->triggerAutoSaveOnNextRun();
-    QString text("Powiter - ");
-    text.append(_currentProject._projectName);
-    text.append(" (*)");
-    _gui->setWindowTitle(text);
+    if(_model->getVideoEngine()){
+        _model->getVideoEngine()->triggerAutoSaveOnNextRun();
+        QString text("Powiter - ");
+        text.append(_currentProject._projectName);
+        text.append(" (*)");
+        _gui->setWindowTitle(text);
+    }
 }
 void Controler::removeAutoSaves() const{
     /*removing all previous autosave files*/

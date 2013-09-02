@@ -233,6 +233,8 @@ class ViewerTab;
             
             InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
             
+            ViewerTab* _viewerTab;/*!< Pointer to the viewer tab GUI*/
+            
             double exposure ;/*!< Current exposure setting, all pixels are multiplied
                              by pow(2,expousre) before they appear on the screen.*/
             
@@ -271,6 +273,8 @@ class ViewerTab;
             
             int _progressBarY;
             
+            
+            
         public:
             
             
@@ -278,9 +282,9 @@ class ViewerTab;
              When constructing a viewer for the 1st time in the app, you must pass a NULL shareWidget. Otherwise,you
              can pass a pointer to the 1st viewer you created. It allows the viewers to share the same OpenGL context.
              */
-            explicit ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-            explicit ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-            explicit ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(ViewerTab* parent, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(const QGLFormat& format,ViewerTab* parent, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(QGLContext* context,ViewerTab* parent, const QGLWidget* shareWidget=NULL);
             
             virtual ~ViewerGL();
             
@@ -493,6 +497,8 @@ class ViewerTab;
              *@returns Returns a pointer to the current viewer infos.
              **/
             ViewerInfos* getCurrentViewerInfos() const {return _currentViewerInfos;}
+            
+            ViewerTab* getViewerTab() const {return _viewerTab;}
             
             /**
              *@brief Turns on the overlays on the viewer.

@@ -497,7 +497,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
-            ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
+            ctrlPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
             const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
             const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
@@ -551,10 +551,10 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
     NodeGui* viewer = NodeGui::hasViewerConnected(n);
     if(viewer){
         //if(foundSrc){
+        std::pair<int,bool> ret = ctrlPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
         if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
             ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(viewer->getNode());
         }else{
-            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             if(ret.second){
                 ctrlPTR->getModel()->startVideoEngine(1);
             }
@@ -1010,8 +1010,9 @@ void ConnectCommand::redo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    ctrlPTR->triggerAutoSaveOnNextEngineRun();
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
+    ctrlPTR->triggerAutoSaveOnNextEngineRun();
+
     
 }
 

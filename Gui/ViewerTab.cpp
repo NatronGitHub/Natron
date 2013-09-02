@@ -393,7 +393,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), _currentFrameBox, SLOT(setValue(int)));
     QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
     
-    VideoEngine* vengine = ctrlPTR->getModel()->getVideoEngine();
+    VideoEngine* vengine = _viewerNode->getVideoEngine();
     
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
