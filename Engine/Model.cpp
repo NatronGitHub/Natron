@@ -274,26 +274,18 @@ void Model::initCounterAndGetDescription(Node*& node){
         if(tmp==nodeName){
             ++(counter->first);
             found=true;
-            string str;
-            str.append(nodeName.c_str());
-            str.append("_");
-            char c[50];
-            sprintf(c,"%d",counter->first); // FIXME: never use sprintf
-            str.append(c);
-            node->setName(str);
+            ostringstream oss;
+            oss << nodeName << '_' << counter->first;
+            node->setName(oss.str());
         }
     }
     if(!found){
         CounterID* count=new CounterID(1,node->className());
         assert(count);
         _nodeCounters.push_back(count);
-        string str;
-        str.append(node->className().c_str());
-        str.append("_");
-        char c[50];
-        sprintf(c,"%d",count->first); // FIXME: never use sprintf
-        str.append(c);
-        node->setName(str);
+        ostringstream oss;
+        oss << node->className() << '_' << count->first;
+        node->setName(oss.str());
     }
     
     /*adding nodes to the current nodes and
