@@ -15,14 +15,7 @@
 #include <QStringList>
 
 #include "Engine/Node.h"
-
-#ifndef WARN_UNUSED
-#ifdef __GNUC__
-#  define WARN_UNUSED  __attribute__((warn_unused_result))
-#else
-#  define WARN_UNUSED
-#endif
-#endif
+#include "Global/GlobalDefines.h"
 
 class QImage;
 class FrameEntry;
@@ -377,7 +370,7 @@ public:
      * @param current_frame The index of the frame to read.
      * @return True if it could decode the header.
      */
-    bool readCurrentHeader(int current_frame) WARN_UNUSED;
+    bool readCurrentHeader(int current_frame) WARN_UNUSED_RETURN;
     
     /**
      * @brief Reads the data of the file associated to the current frame.
