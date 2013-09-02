@@ -128,10 +128,10 @@ InMemoryEntry::~InMemoryEntry(){
 
 
 
-AbstractCache::AbstractCache():_maximumCacheSize(0),_size(0){
+AbstractCacheHelper::AbstractCacheHelper():_maximumCacheSize(0),_size(0){
     
 }
-AbstractCache::~AbstractCache(){
+AbstractCacheHelper::~AbstractCacheHelper(){
     QMutexLocker guard(&_lock);
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
@@ -142,7 +142,7 @@ AbstractCache::~AbstractCache(){
     
 }
 
-void AbstractCache::clear(){
+void AbstractCacheHelper::clear(){
     QMutexLocker guard(&_lock);
     std::vector<std::pair<U64,CacheEntry*> > backUp;
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
@@ -167,13 +167,13 @@ void AbstractCache::clear(){
         add(backUp[i].first, backUp[i].second);
     }
 }
-void AbstractCache::erase(CacheIterator it){
+void AbstractCacheHelper::erase(CacheIterator it){
     _cache.erase(it);
 }
 
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
-CacheEntry* AbstractCache::getCacheEntry(U64 key)  {
+CacheEntry* AbstractCacheHelper::getCacheEntry(U64 key)  {
     QMutexLocker g(&_lock);
     CacheEntry* ret = _cache(key);
     if(ret) ret->addReference();
@@ -181,7 +181,7 @@ CacheEntry* AbstractCache::getCacheEntry(U64 key)  {
 }
 
 
-bool AbstractCache::add(U64 key,CacheEntry* entry){
+bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
     QMutexLocker guard(&_lock);
     bool evict = false;
     {
@@ -217,7 +217,7 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
 
 bool AbstractMemoryCache::add(U64 key,CacheEntry* entry){
     assert(dynamic_cast<InMemoryEntry*>(entry));
-    return AbstractCache::add(key, entry);
+    return AbstractCacheHelper::add(key, entry);
 }
 
 AbstractDiskCache::AbstractDiskCache(double inMemoryUsage):_inMemorySize(0){
@@ -241,7 +241,7 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         mmEvictedEntry->deallocate();
         _inMemorySize -= mmEvictedEntry->size();
-        return AbstractCache::add(evicted.first, evicted.second);
+        return AbstractCacheHelper::add(evicted.first, evicted.second);
     }
     return false;
 }
@@ -324,7 +324,7 @@ void AbstractDiskCache::clearInMemoryCache(){
         MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         assert(mmEntry);
         mmEntry->deallocate();
-        AbstractCache::add(evicted.first, evicted.second);
+        AbstractCacheHelper::add(evicted.first, evicted.second);
     }
 }
 
