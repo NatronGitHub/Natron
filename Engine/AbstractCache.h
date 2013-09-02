@@ -204,18 +204,6 @@ public:
     
 #endif // USE_VARIADIC_TEMPLATES
     
-private:
-    
-    
-    U64 _maximumCacheSize; // maximum size allowed for the cache
-    
-protected:
-    //protected so derived class can modify it
-    U64 _size; // current size of the cache in bytes
-    
-    QMutex _lock;
-    CacheContainer _cache; // the actual cache 
-
 public:
     
     AbstractCache() {};
