@@ -15,6 +15,7 @@
 #include <cmath>
 #include <vector>
 #include <utility>
+#include <cassert>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
@@ -190,7 +191,7 @@ class ViewerTab;
                 double _zoomFactor; /// the zoom factor applied to the current image
                                                 
                 /*!< the level of zoom used to display the frame*/
-                void setZoomFactor(double f){_zoomFactor = f;}
+                void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
                 
                 double getZoomFactor() const {return _zoomFactor;}
             };
@@ -393,7 +394,7 @@ class ViewerTab;
             /**
              *@brief Set the zoom factor used to render.
              **/
-            void setZoomFactor(double f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
+            void setZoomFactor(double f){assert(f>0.); _zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.

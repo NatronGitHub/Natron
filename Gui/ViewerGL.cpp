@@ -1174,10 +1174,10 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
 }
 
 void ViewerGL::fitToFormat(Format displayWindow){
-    float h = (float)(displayWindow.h());
-    float w = (float)(displayWindow.w());
-    float zoomFactor = (float)height()/h;
-    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : zoomFactor );
+    double h = displayWindow.h();
+    double w = displayWindow.w();
+    double zoomFactor = height()/h;
+    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01) );
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));

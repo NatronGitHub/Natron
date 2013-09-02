@@ -62,12 +62,7 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
     
     
-#ifdef __POWITER_OSX__
-	_gui->show();
-    
-#else
-	_gui->showMaximized();
-#endif
+    _gui->show();
     
     delete loadingScreen;
     
