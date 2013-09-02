@@ -367,17 +367,24 @@ void ViewerGL::paintGL()
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
         //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-        if(rgbMode())
+        if(rgbMode()) {
             activateShaderRGB();
-        else if(!rgbMode())
+      checkGLErrors();
+      } else if(!rgbMode()) {
             activateShaderLC();
+    checkGLErrors();
+
+        }
     }else{
         glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
-        if(_hasHW && !shaderBlack->bind()){
+     checkGLErrors();
+       if(_hasHW && !shaderBlack->bind()){
             cout << qPrintable(shaderBlack->log()) << endl;
+    checkGLErrors();
         }
         if(_hasHW)
             shaderBlack->setUniformValue("Tex", 0);
+    checkGLErrors();
         
     }
     checkGLErrors();

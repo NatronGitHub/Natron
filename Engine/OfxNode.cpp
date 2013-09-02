@@ -423,7 +423,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
-OfxStatus OfxNode::editBegin(const std::string& name)
+OfxStatus OfxNode::editBegin(const std::string& /*name*/)
 {
     return kOfxStatErrMissingHostFeature;
 }
@@ -433,7 +433,7 @@ OfxStatus OfxNode::editEnd(){
 }
 
 /// Start doing progress.
-void  OfxNode::progressStart(const std::string &message)
+void  OfxNode::progressStart(const std::string& /*message*/)
 {
 }
 
@@ -444,7 +444,7 @@ void  OfxNode::progressEnd()
 
 /// set the progress to some level of completion, returns
 /// false if you should abandon processing, true to continue
-bool  OfxNode::progressUpdate(double t)
+bool  OfxNode::progressUpdate(double /*t*/)
 {
     return true;
 }

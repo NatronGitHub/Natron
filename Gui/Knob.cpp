@@ -1400,7 +1400,7 @@ std::string Group_Knob::serialize() const{
     return "";
 }
 /*****************************/
-RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),
+RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):Knob(cb,description),
 _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
     _rBox = new FeedbackSpinBox(this,true);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onRedValueChanged(double)));
@@ -1682,7 +1682,7 @@ void RGBA_Knob::restoreFromString(const std::string& str){
 }
 /*************/
 
-Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description){
+Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):Knob(cb,description){
     _tabWidget = new TabWidget(TabWidget::NONE,this);
     layout->addWidget(_tabWidget);
 }

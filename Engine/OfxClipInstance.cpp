@@ -61,7 +61,7 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     //bool rgb = false;
     //bool alpha = false;
     
-    const ChannelSet& channels = _node->getInfo()->channels();
+    //const ChannelSet& channels = _node->getInfo()->channels();
     //if(channels & alpha) alpha = true;
     //if(channels & Mask_RGB) rgb = true;
     
@@ -264,7 +264,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     return NULL;
 }
 
-OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t):
+OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime /*t*/):
 OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     size_t pixSize = 0;
     if(bitDepth == eBitDepthUByte){

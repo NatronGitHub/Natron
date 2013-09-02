@@ -24,7 +24,6 @@ using namespace Powiter;
 ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):
 _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
     for (int i = y; i <= t; ++i) {
-        Row* row = NULL;
         _sequence.push_back(i);
     }
 }

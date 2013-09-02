@@ -335,10 +335,10 @@ public:
     
     OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
-    virtual OfxStatus get(std::string &) ;
-    virtual OfxStatus get(OfxTime time, std::string &) ;
-    virtual OfxStatus set(const char*) ;
-    virtual OfxStatus set(OfxTime time, const char*) ;
+    virtual OfxStatus get(std::string&);
+    virtual OfxStatus get(OfxTime time, std::string&);
+    virtual OfxStatus set(const char*);
+    virtual OfxStatus set(OfxTime time, const char*);
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
