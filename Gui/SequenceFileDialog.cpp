@@ -234,7 +234,7 @@ _dialogMode(mode)
         _filterLineEdit = new LineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
         _filterLineEdit->setText(filter);
-        QImage dropDownImg(IMAGES_PATH"combobox.png");
+        QImage dropDownImg(POWITER_IMAGES_PATH"combobox.png");
         QPixmap pixDropDown = QPixmap::fromImage(dropDownImg);
         QSize buttonSize(15,_filterLineEdit->sizeHint().height());
         pixDropDown = pixDropDown.scaled(buttonSize);

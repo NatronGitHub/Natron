@@ -9,18 +9,9 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TEXTURE_H_
+#define POWITER_GUI_TEXTURE_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__texturecache__
-#define __PowiterOsX__texturecache__
-
-#include <iostream>
-#include "Engine/Box.h"
 #include "Global/GlobalDefines.h"
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
@@ -98,4 +89,4 @@ private:
 
 
 
-#endif /* defined(__PowiterOsX__texturecache__) */
+#endif /* defined(POWITER_GUI_TEXTURE_H_) */

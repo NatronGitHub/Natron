@@ -11,6 +11,8 @@
 
 #include "OfxNode.h"
 
+#include <locale>
+
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -237,7 +239,8 @@ OFX::Host::Param::Instance* OfxNode::newParam(const std::string& oldName, OFX::H
 {
     std::string name =  descriptor.getShortLabel();
     std::string prep = name.substr(0,1);
-    name[0] = std::toupper(prep.at(0));
+    std::locale loc;
+    name[0] = std::toupper(prep.at(0),loc);
     if(descriptor.getType()==kOfxParamTypeInteger){
         OfxIntegerInstance* ret = new OfxIntegerInstance(this,name,descriptor);
         if(ret){
@@ -420,7 +423,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
-OfxStatus OfxNode::editBegin(const std::string& name)
+OfxStatus OfxNode::editBegin(const std::string& /*name*/)
 {
     return kOfxStatErrMissingHostFeature;
 }
@@ -430,7 +433,7 @@ OfxStatus OfxNode::editEnd(){
 }
 
 /// Start doing progress.
-void  OfxNode::progressStart(const std::string &message)
+void  OfxNode::progressStart(const std::string& /*message*/)
 {
 }
 
@@ -441,7 +444,7 @@ void  OfxNode::progressEnd()
 
 /// set the progress to some level of completion, returns
 /// false if you should abandon processing, true to continue
-bool  OfxNode::progressUpdate(double t)
+bool  OfxNode::progressUpdate(double /*t*/)
 {
     return true;
 }

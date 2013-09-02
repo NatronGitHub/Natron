@@ -107,7 +107,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
   //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_secondSettingsRow);
     
-    _gainBox = new FeedBackSpinBox(_secondSettingsRow,true);
+    _gainBox = new FeedbackSpinBox(_secondSettingsRow,true);
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
     _gainBox->setMinimum(-99.0);
@@ -155,7 +155,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
  //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
-	_currentFrameBox=new FeedBackSpinBox(_playerButtonsContainer,true);
+	_currentFrameBox=new FeedbackSpinBox(_playerButtonsContainer,true);
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);
@@ -279,7 +279,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
 	_playerLayout->addWidget(previousIncrement_Button);
     
     
-    incrementSpinBox=new FeedBackSpinBox(_playerButtonsContainer);
+    incrementSpinBox=new FeedbackSpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
     incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
                                  "The previous/next increment buttons step"
@@ -300,7 +300,7 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
     
     fpsName = new QLabel("fps",_playerButtonsContainer);
     _playerLayout->addWidget(fpsName);
-    fpsBox = new FeedBackSpinBox(_playerButtonsContainer,true);
+    fpsBox = new FeedbackSpinBox(_playerButtonsContainer,true);
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
@@ -310,19 +310,19 @@ ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNo
         
     
 
-    QImage imgFirst(IMAGES_PATH"firstFrame.png");
-    QImage imgPrevKF(IMAGES_PATH"prevKF.png");
-    QImage imgRewind(IMAGES_PATH"rewind.png");
-    QImage imgBack1(IMAGES_PATH"back1.png");
-    QImage imgStop(IMAGES_PATH"stop.png");
-    QImage imgForward1(IMAGES_PATH"forward1.png");
-    QImage imgPlay(IMAGES_PATH"play.png");
-    QImage imgNextKF(IMAGES_PATH"nextKF.png");
-    QImage imgLast(IMAGES_PATH"lastFrame.png");
-    QImage imgPrevINCR(IMAGES_PATH"previousIncr.png");
-    QImage imgNextINCR(IMAGES_PATH"nextIncr.png");
-    QImage imgRefresh(IMAGES_PATH"refresh.png");
-    QImage imgCenterViewer(IMAGES_PATH"centerViewer.png");
+    QImage imgFirst(POWITER_IMAGES_PATH"firstFrame.png");
+    QImage imgPrevKF(POWITER_IMAGES_PATH"prevKF.png");
+    QImage imgRewind(POWITER_IMAGES_PATH"rewind.png");
+    QImage imgBack1(POWITER_IMAGES_PATH"back1.png");
+    QImage imgStop(POWITER_IMAGES_PATH"stop.png");
+    QImage imgForward1(POWITER_IMAGES_PATH"forward1.png");
+    QImage imgPlay(POWITER_IMAGES_PATH"play.png");
+    QImage imgNextKF(POWITER_IMAGES_PATH"nextKF.png");
+    QImage imgLast(POWITER_IMAGES_PATH"lastFrame.png");
+    QImage imgPrevINCR(POWITER_IMAGES_PATH"previousIncr.png");
+    QImage imgNextINCR(POWITER_IMAGES_PATH"nextIncr.png");
+    QImage imgRefresh(POWITER_IMAGES_PATH"refresh.png");
+    QImage imgCenterViewer(POWITER_IMAGES_PATH"centerViewer.png");
 
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);

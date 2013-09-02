@@ -15,13 +15,14 @@
 #include <QtCore/QMutexLocker>
 #include <QtConcurrentRun>
 
+#include "Global/Controler.h"
 #include "Engine/Row.h"
+#include "Engine/Settings.h"
+#include "Engine/Model.h"
+#include "Engine/PluginID.h"
+#include "Engine/Settings.h"
 #include "Writers/Write.h"
 #include "Gui/Knob.h"
-#include "Engine/Settings.h"
-#include "Global/Controler.h"
-#include "Engine/Model.h"
-#include "Engine/Settings.h"
 
 using namespace std;
 using namespace Powiter;

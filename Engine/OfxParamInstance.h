@@ -8,9 +8,12 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef OFXPARAMINSTANCE_H
-#define OFXPARAMINSTANCE_H
+#ifndef POWITER_ENGINE_OFXPARAMINSTANCE_H_
+#define POWITER_ENGINE_OFXPARAMINSTANCE_H_
 
+#include <map>
+#include <string>
+#include <vector>
 #include <QtCore/QObject>
 #include <QStringList>
 //ofx
@@ -332,10 +335,10 @@ public:
     
     OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
-    virtual OfxStatus get(std::string &) ;
-    virtual OfxStatus get(OfxTime time, std::string &) ;
-    virtual OfxStatus set(const char*) ;
-    virtual OfxStatus set(OfxTime time, const char*) ;
+    virtual OfxStatus get(std::string&);
+    virtual OfxStatus get(OfxTime time, std::string&);
+    virtual OfxStatus set(const char*);
+    virtual OfxStatus set(OfxTime time, const char*);
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
@@ -366,5 +369,5 @@ private:
 };
 
 
-#endif // OFXPARAMINSTANCE_H
+#endif // POWITER_ENGINE_OFXPARAMINSTANCE_H_
 

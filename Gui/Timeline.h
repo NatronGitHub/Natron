@@ -9,19 +9,16 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TIMELINE_H_
+#define POWITER_GUI_TIMELINE_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__timeline__
-#define __PowiterOsX__timeline__
-
-#include <iostream>
+#include <vector>
+#include <QtCore/QList>
+#include <QtCore/QPointF>
 #include <QWidget>
+
 #include "Global/GlobalDefines.h"
+
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10
 #define LINE_START 15
@@ -101,4 +98,4 @@ private:
 
 };
 
-#endif /* defined(__PowiterOsX__timeline__) */
+#endif /* defined(POWITER_GUI_TIMELINE_H_) */

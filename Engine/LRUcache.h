@@ -31,12 +31,12 @@
 //ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#ifndef PowiterOsX_LRUcache_h
-#define PowiterOsX_LRUcache_h
+#ifndef POWITER_ENGINE_LRUCACHE_H_
+#define POWITER_ENGINE_LRUCACHE_H_
 
 #include <map>
 #include <list>
-#include <iostream>
+#include <utility>
 #ifndef Q_MOC_RUN
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/set_of.hpp>
@@ -45,8 +45,8 @@
 #endif
 
 //#define USE_VARIADIC_TEMPLATES
-#define CACHE_USE_HASH
-#define CACHE_USE_BOOST
+#define POWITER_CACHE_USE_HASH
+#define POWITER_CACHE_USE_BOOST
 
 
 /**@brief 4 types of LRU caches are defined here:
@@ -64,15 +64,15 @@
  *reduce the line of codes necessary, and it will also make it possible
  *to use STL with hashing (std::unordered_map), as it is defined in c++11
  *
- *CACHE_USE_BOOST : define this to tell the compiler to use boost internally
+ *POWITER_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
  *for caches. Otherwise it will fallback on a STL version
  *
- *CACHE_USE_HASH : define this to tell the compiler to use hashing
+ *POWITER_CACHE_USE_HASH : define this to tell the compiler to use hashing
  *(std::unordered_map or boost::unordered_set_of) instead of a
  *tree-based version (std::map or boost::set_of).
  *
- *WARNING:  definining CACHE_USE_HASH and not defining
- *CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
+ *WARNING:  definining POWITER_CACHE_USE_HASH and not defining
+ *POWITER_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
  *defined otherwise it will not compile. (no std::unordered_map
  *support on c++98)
  *
@@ -80,7 +80,7 @@
 
 #ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
 
-#ifndef CACHE_USE_BOOST
+#ifndef POWITER_CACHE_USE_BOOST
 
 #include <unordered_map>
 
@@ -188,7 +188,7 @@ private:
     key_to_value_type _key_to_value;
 };
 
-#else // ! CACHE_USE_BOOST
+#else // ! POWITER_CACHE_USE_BOOST
 // Class providing fixed-size (by number of records)
 // LRU-replacement cache of a function with signature
 // V f(K).
@@ -269,11 +269,11 @@ public:
 private:
         container_type _container;
 };
-#endif // CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_BOOST
 
 #else // c++98 no support for stl unordered_map + no variadic templates
 
-#ifndef CACHE_USE_BOOST
+#ifndef POWITER_CACHE_USE_BOOST
 template <typename K,typename V>
 class StlLRUTreeCache{
 public:
@@ -366,7 +366,7 @@ private:
 };
 #else // boost
 
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_HASH
 template <typename K,typename V>
 class BoostLRUHashCache{
 public:
@@ -439,7 +439,7 @@ public:
 private:
         container_type _container;
 };
-#else // CACHE_USE_HASH
+#else // POWITER_CACHE_USE_HASH
 template <typename K,typename V>
 class BoostLRUTreeCache{
 public:
@@ -515,8 +515,8 @@ private:
     
     container_type _container;
 };
-#endif // CACHE_USE_HASH
-#endif // !CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_HASH
+#endif // !POWITER_CACHE_USE_BOOST
 
 #endif // !USE_VARIADIC_TEMPLATES
 

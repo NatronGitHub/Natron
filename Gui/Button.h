@@ -9,22 +9,12 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
-#ifndef PowiterOsX_button_h
-#define PowiterOsX_button_h
+#ifndef POWITER_GUI_BUTTON_H_
+#define POWITER_GUI_BUTTON_H_
 
 #include <QPushButton>
 
 class Button : public QPushButton {
-    
-    
 public:
     explicit Button(QWidget* parent = 0): QPushButton(parent){
         setAttribute(Qt::WA_LayoutUsesWidgetRect);

@@ -63,12 +63,7 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
     
     
-#ifdef __POWITER_OSX__
-	_gui->show();
-    
-#else
-	_gui->showMaximized();
-#endif
+    _gui->show();
     
     delete loadingScreen;
     
@@ -101,9 +96,9 @@ Controler::~Controler(){
 void Controler::addBuiltinPluginToolButtons(){
     vector<string> grouping;
     grouping.push_back("io");
-    _gui->addPluginToolButton("Reader", grouping, "Reader", "", IMAGES_PATH"ioGroupingIcon.png");
-    _gui->addPluginToolButton("Viewer", grouping, "Viewer", "", IMAGES_PATH"ioGroupingIcon.png");
-    _gui->addPluginToolButton("Writer", grouping, "Writer", "", IMAGES_PATH"ioGroupingIcon.png");
+    _gui->addPluginToolButton("Reader", grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+    _gui->addPluginToolButton("Viewer", grouping, "Viewer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+    _gui->addPluginToolButton("Writer", grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
 }
 
 const QStringList& Controler::getNodeNameList(){

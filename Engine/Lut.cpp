@@ -531,13 +531,17 @@ void deallocateLuts() {
 #else
 // 2nd solution: a singleton with a static member.
 namespace {
-    // a Singleton that holds precomputed LUTs
+    // a Singleton that holds precomputed LUTs for the whole application.
+    // The m_instance member is static and is thus built before the first call to Instance().
+    // After creation, is is always accessed read-only (no new LUTs should be added),
+    // thus it does not need to be protected by a mutex.
+    // To enforce this, the only public function (getLut()) is marked as const
     class LutSingleton
     {
     public:
-        static LutSingleton& Instance() { return m_instance; };
-        const Lut* getLut(LutType type) {
-            std::map<LutType,const Lut*>::iterator found = luts.find(type);
+        static const LutSingleton& Instance() { return m_instance; };
+        const Lut* getLut(LutType type) const {
+            std::map<LutType,const Lut*>::const_iterator found = luts.find(type);
             if(found != luts.end()){
                 return found->second;
             }
@@ -552,7 +556,7 @@ namespace {
         LutSingleton();
         ~LutSingleton();
 
-        std::map<LutType,const Lut*> luts; // FIXME: are we sure this doesn't need protection with a mutex?
+        std::map<LutType,const Lut*> luts;
     };
 
     LutSingleton::LutSingleton() {

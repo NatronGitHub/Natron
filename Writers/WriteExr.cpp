@@ -15,6 +15,7 @@
 #include <QtCore/QMutex>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
+#include <half.h>
 
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
@@ -139,7 +140,7 @@ std::vector<std::string> WriteExr::fileTypesEncoded(){
     return out;
 }
 
-void ExrWriteKnobs::initKnobs(KnobCallback* callback,std::string& fileType){
+void ExrWriteKnobs::initKnobs(KnobCallback* callback, const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
     sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, Knob::NONE));

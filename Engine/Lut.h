@@ -9,12 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
+#ifndef POWITER_ENGINE_LUT_H_
+#define POWITER_ENGINE_LUT_H_
 
 /*
  *
@@ -43,11 +39,9 @@
  */
 
 
-#ifndef __LUT_CLASS_H__
-#define __LUT_CLASS_H__
-
 #include <cmath>
 #include <QtGui/QRgb>
+
 #include "Global/GlobalDefines.h"
 
 namespace Powiter {
@@ -219,4 +213,4 @@ void linear_to_float(float* to, const float* from, int W, int delta = 1);
 } // namespace Powiter
 } // namespace Color
 
-#endif //__LUT_CLASS_H__
+#endif //POWITER_ENGINE_LUT_H_

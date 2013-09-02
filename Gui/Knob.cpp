@@ -23,21 +23,24 @@
 #include <QStyleFactory>
 
 
-#include "Engine/Node.h"
-#include "Gui/NodeGui.h"
-#include "Readers/Reader.h"
 #include "Global/Controler.h"
+#include "Engine/Node.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
-#include "Gui/SettingsPanel.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
+#include "Engine/PluginID.h"
+#include "Gui/SettingsPanel.h"
 #include "Gui/Button.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Gui/Gui.h"
-#include "Engine/ViewerNode.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
+#include "Gui/NodeGui.h"
+#include "Gui/FeedbackSpinBox.h"
+#include "Gui/ComboBox.h"
+#include "Readers/Reader.h"
 
 using namespace Powiter;
 using namespace std;
@@ -115,7 +118,7 @@ KnobFactory::~KnobFactory(){
 }
 
 void KnobFactory::loadKnobPlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -141,7 +144,7 @@ void KnobFactory::loadKnobPlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -167,7 +170,7 @@ void KnobFactory::loadKnobPlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");
@@ -431,7 +434,7 @@ Knob* Int_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Knob
 
 Int_Knob::Int_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),integer(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new FeedBackSpinBox(this,false);
+    box=new FeedbackSpinBox(this,false);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
@@ -526,8 +529,8 @@ Knob* Int2D_Knob::BuildKnob(KnobCallback *cb, const std::string &description, Kn
 
 Int2D_Knob::Int2D_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
-    _box1=new FeedBackSpinBox(this,false);
-    _box2=new FeedBackSpinBox(this,false);
+    _box1=new FeedbackSpinBox(this,false);
+    _box2=new FeedbackSpinBox(this,false);
     QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
     QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
     _box1->setMaximum(INT_MAX);
@@ -752,7 +755,7 @@ File_Knob::File_Knob(KnobCallback *cb, const std::string &description, Knob_Mask
     _name->setPlaceholderText(QString("File path..."));
 	
     QPushButton* openFile=new Button(_name);
-    QImage img(IMAGES_PATH"open-file.png");
+    QImage img(POWITER_IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
@@ -891,7 +894,7 @@ void Double_Knob::setValues(){
 }
 Double_Knob::Double_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value(0){
     QLabel* desc=new QLabel(description.c_str());
-    box=new FeedBackSpinBox(this,true);
+    box=new FeedbackSpinBox(this,true);
     QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onValueChanged(double)));
     box->setMaximum(INT_MAX);
     box->setMinimum(INT_MIN);
@@ -996,8 +999,8 @@ void Double2D_Knob::setValues(){
 }
 Double2D_Knob::Double2D_Knob(KnobCallback * cb, const std::string& description, Knob_Mask flags):Knob(cb,description),_value1(0),_value2(0){
     QLabel* desc=new QLabel(description.c_str());
-    _box1=new FeedBackSpinBox(this,true);
-    _box2=new FeedBackSpinBox(this,true);
+    _box1=new FeedbackSpinBox(this,true);
+    _box2=new FeedbackSpinBox(this,true);
     QObject::connect(_box1, SIGNAL(valueChanged(double)), this, SLOT(onValue1Changed(double)));
     QObject::connect(_box2, SIGNAL(valueChanged(double)), this, SLOT(onValue2Changed(double)));
     _box1->setMaximum(INT_MAX);
@@ -1172,7 +1175,7 @@ OutputFile_Knob::OutputFile_Knob(KnobCallback *cb, const std::string& descriptio
     _name->setPlaceholderText(QString("File path..."));
 	
     QPushButton* openFile=new Button(_name);
-    QImage img(IMAGES_PATH"open-file.png");
+    QImage img(POWITER_IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix.scaled(10,10);
     openFile->setIcon(QIcon(pix));
@@ -1398,15 +1401,15 @@ std::string Group_Knob::serialize() const{
     return "";
 }
 /*****************************/
-RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description),
+RGBA_Knob::RGBA_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):Knob(cb,description),
 _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
-    _rBox = new FeedBackSpinBox(this,true);
+    _rBox = new FeedbackSpinBox(this,true);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onRedValueChanged(double)));
-    _gBox = new FeedBackSpinBox(this,true);
+    _gBox = new FeedbackSpinBox(this,true);
     QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onGreenValueChanged(double)));
-    _bBox = new FeedBackSpinBox(this,true);
+    _bBox = new FeedbackSpinBox(this,true);
     QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onBlueValueChanged(double)));
-    _aBox = new FeedBackSpinBox(this,true);
+    _aBox = new FeedbackSpinBox(this,true);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onAlphaValueChanged(double)));
     
     _rBox->setMaximum(1.);
@@ -1446,7 +1449,7 @@ _r(0),_g(0),_b(0),_a(0),_alphaEnabled(true){
     _colorLabel = new QLabel(this);
     layout->addWidget(_colorLabel);
     
-    QImage buttonImg(IMAGES_PATH"colorwheel.png");
+    QImage buttonImg(POWITER_IMAGES_PATH"colorwheel.png");
     QPixmap buttonPix = QPixmap::fromImage(buttonImg);
     buttonPix = buttonPix.scaled(25, 20);
     QIcon buttonIcon(buttonPix);
@@ -1680,7 +1683,7 @@ void RGBA_Knob::restoreFromString(const std::string& str){
 }
 /*************/
 
-Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):Knob(cb,description){
+Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):Knob(cb,description){
     _tabWidget = new TabWidget(TabWidget::NONE,this);
     layout->addWidget(_tabWidget);
 }

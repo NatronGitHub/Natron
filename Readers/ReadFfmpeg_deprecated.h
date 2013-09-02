@@ -9,33 +9,30 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
 /**
  ALL THE CODE IN THAT FILE IS DEPRECATED AND NEED TO BE REVIEWED THOROUGHLY, DO NOT PAY HEED TO THE CODE WHILE THIS WARNING
  IS STILL PRESENT
 **/
 
-#ifndef __PowiterOsX__readffmpeg__
-#define __PowiterOsX__readffmpeg__
+#ifndef POWITER_READERS_READFFMPEG_DEPRECATED_H_
+#define POWITER_READERS_READFFMPEG_DEPRECATED_H_
 
-#include "Readers/Read.h"
-#include "Engine/ReferenceCountedObject.h"
-#include "Engine/DataBuffer.h"
-#include <iostream>
-#include <QtCore/QMutex>
+#include <vector>
+#include <string>
+#include <map>
 #ifdef _WIN32
 #include <io.h>
 #endif
+#include <QtCore/QMutex>
 
+#if (defined(_STDINT_H) || defined(_STDINT_H_)) && !defined(UINT64_C)
+#warning "__STDC_CONSTANT_MACROS has to be defined before including stdint.h, this file will probably not compile"
+#endif
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS // ...or stdint.h doesn't define UINT64_C, needed for libavutil
+#endif
 extern "C" {
-#include <errno.h>
+// FIXME: all this should be PIMPL'ed!
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
@@ -43,6 +40,12 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/error.h>
 }
+
+#include "Readers/Read.h"
+#include "Engine/ReferenceCountedObject.h"
+#include "Engine/DataBuffer.h"
+
+
 // Set non-zero to enable tracing of file information inspected while opening a file in FFmpegFile::FFmpegFile().
 // Make sure this is disabled before checking-in this file.
 #define TRACE_FILE_OPEN 0
@@ -318,7 +321,7 @@ public:
     virtual std::string decoderName(){return "FFmpeg";}
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     virtual bool supports_stereo(){return false;}
-    virtual void readHeader(const QString filename,bool openBothViews);
+    virtual void readHeader(const QString& filename, bool openBothViews);
     virtual void readAllData(bool openBothViews);
     virtual bool supportsScanLine(){return false;}
     virtual void make_preview();
@@ -336,4 +339,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__readffmpeg__) */
+#endif /* defined(POWITER_READERS_READFFMPEG_DEPRECATED_H_) */

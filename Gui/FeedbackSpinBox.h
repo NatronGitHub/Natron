@@ -12,12 +12,9 @@
 #ifndef POWITER_GUI_FEEDBACKSPINBOX_H_
 #define POWITER_GUI_FEEDBACKSPINBOX_H_
 
-#include <iostream>
-#include <QtCore/QEvent>
-
 #include "Gui/LineEdit.h"
 
-class FeedBackSpinBox : public LineEdit
+class FeedbackSpinBox : public LineEdit
 {
     Q_OBJECT
     
@@ -26,7 +23,7 @@ class FeedBackSpinBox : public LineEdit
     double _increment;
     double _mini,_maxi;
 public:
-    explicit FeedBackSpinBox(QWidget* parent=0, bool mode=false);
+    explicit FeedbackSpinBox(QWidget* parent=0, bool mode=false);
     void decimals(int d){
         _decimals=d;
         setMaxLength(_decimals+3);

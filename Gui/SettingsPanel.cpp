@@ -44,10 +44,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _headerWidget->setLayout(_headerLayout);
     
     
-    QImage imgM(IMAGES_PATH"minimize.png");
+    QImage imgM(POWITER_IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM = pixM.scaled(15,15);
-    QImage imgC(IMAGES_PATH"close.png");
+    QImage imgC(POWITER_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(15,15);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
@@ -58,10 +58,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
     
-    QImage imgUndo(IMAGES_PATH"undo.png");
+    QImage imgUndo(POWITER_IMAGES_PATH"undo.png");
     QPixmap pixUndo = QPixmap::fromImage(imgUndo);
     pixUndo = pixUndo.scaled(15, 15);
-    QImage imgUndo_gray(IMAGES_PATH"undo_grayscale.png");
+    QImage imgUndo_gray(POWITER_IMAGES_PATH"undo_grayscale.png");
     QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
     pixUndo_gray = pixUndo_gray.scaled(15, 15);
     QIcon icUndo;
@@ -71,10 +71,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _undoButton->setToolTip("Undo the last change made to this operator");
     _undoButton->setEnabled(false);
     
-    QImage imgRedo(IMAGES_PATH"redo.png");
+    QImage imgRedo(POWITER_IMAGES_PATH"redo.png");
     QPixmap pixRedo = QPixmap::fromImage(imgRedo);
     pixRedo = pixRedo.scaled(15, 15);
-    QImage imgRedo_gray(IMAGES_PATH"redo_grayscale.png");
+    QImage imgRedo_gray(POWITER_IMAGES_PATH"redo_grayscale.png");
     QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
     pixRedo_gray = pixRedo_gray.scaled(15, 15);
     QIcon icRedo;
@@ -172,7 +172,7 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
         
-        QImage imgM(IMAGES_PATH"maximize.png");
+        QImage imgM(POWITER_IMAGES_PATH"maximize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));
@@ -191,7 +191,7 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         }
     
     }else{
-        QImage imgM(IMAGES_PATH"minimize.png");
+        QImage imgM(POWITER_IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));

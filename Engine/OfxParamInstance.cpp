@@ -96,11 +96,11 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode* effect, const std::string& name,
     _knob->setMaximum(max);
     _knob->setValue(def);
 }
-OfxStatus OfxIntegerInstance::get(int& v){
+OfxStatus OfxIntegerInstance::get(int& v) {
     v = _value;
     return kOfxStatOK;
 }
-OfxStatus OfxIntegerInstance::get(OfxTime time, int& v){
+OfxStatus OfxIntegerInstance::get(OfxTime /*time*/, int& v) {
     v = _value;
     return kOfxStatOK;
 }
@@ -109,7 +109,7 @@ OfxStatus OfxIntegerInstance::set(int v){
     _knob->setValue(v);
     return kOfxStatOK;
 }
-OfxStatus OfxIntegerInstance::set(OfxTime time, int v){
+OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
@@ -169,24 +169,24 @@ OfxStatus OfxDoubleInstance::get(double& v){
     v = _value;
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::get(OfxTime time, double& v){
+OfxStatus OfxDoubleInstance::get(OfxTime /*time*/, double& v){
     v = _value;
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::set(double v ){
-    v = _value;
-    _knob->setValue(v);
-    return kOfxStatOK;
-}
-OfxStatus OfxDoubleInstance::set(OfxTime time, double v){
+OfxStatus OfxDoubleInstance::set(double v) {
     _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::derive(OfxTime time, double& v){
+OfxStatus OfxDoubleInstance::set(OfxTime /*time*/, double v){
+    _value = v;
+    _knob->setValue(v);
+    return kOfxStatOK;
+}
+OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& /*v*/){
     return kOfxStatErrMissingHostFeature;
 }
-OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v){
+OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, double& /*v*/){
     return kOfxStatErrMissingHostFeature;
 }
 void OfxDoubleInstance::onInstanceChanged(){
@@ -238,7 +238,7 @@ OfxStatus OfxBooleanInstance::get(bool& b){
     b = _value;
     return kOfxStatOK;
 }
-OfxStatus OfxBooleanInstance::get(OfxTime time, bool& b){
+OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
     b = _value;
     return kOfxStatOK;
 }
@@ -247,7 +247,8 @@ OfxStatus OfxBooleanInstance::set(bool b){
     _knob->setChecked(b);
     return kOfxStatOK;
 }
-OfxStatus OfxBooleanInstance::set(OfxTime time, bool b){
+
+OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     _value = b;
     _knob->setChecked(b);
     return kOfxStatOK;
@@ -312,7 +313,7 @@ OfxStatus OfxChoiceInstance::get(int& v){
     }
     return kOfxStatErrBadIndex;
 }
-OfxStatus OfxChoiceInstance::get(OfxTime time, int& v){
+OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
     for (unsigned int i = 0; i < _entries.size(); ++i) {
         if (_entries[i] == _currentEntry) {
             v = i;
@@ -329,7 +330,7 @@ OfxStatus OfxChoiceInstance::set(int v){
         return kOfxStatErrBadIndex;
     }
 }
-OfxStatus OfxChoiceInstance::set(OfxTime time, int v){
+OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
     if(v < (int)_entries.size()){
         _knob->setCurrentItem(v);
         return kOfxStatOK;
@@ -396,33 +397,33 @@ _paramName(name){
     
     _knob->setRGBA(defR, defG, defB, defA);
 }
-OfxStatus OfxRGBAInstance::get(double& r,double& g,double& b,double& a){
+OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
     r = _r;
-	g = _g;
-	b = _b;
-	a = _a;
+    g = _g;
+    b = _b;
+    a = _a;
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::get(OfxTime time, double&r ,double& g,double& b,double& a){
+OfxStatus OfxRGBAInstance::get(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
     r = _r;
-	g = _g;
-	b = _b;
-	a = _a;
+    g = _g;
+    b = _b;
+    a = _a;
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
     _r = r;
-	_g = g;
-	_b = b;
-	_a = a;
+    _g = g;
+    _b = b;
+    _a = a;
     _knob->setRGBA(r, g, b, a);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBAInstance::set(OfxTime time, double r ,double g,double b,double a){
-	_r = r;
-	_g = g;
-	_b = b;
-	_a = a;
+OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,double a){
+    _r = r;
+    _g = g;
+    _b = b;
+    _a = a;
     _knob->setRGBA(r, g, b, a);
     return kOfxStatOK;
 }
@@ -481,16 +482,16 @@ OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::H
     _knob->setRGBA(defR, defG, defB, 1.f);
     
 }
-OfxStatus OfxRGBInstance::get(double& r,double& g,double& b){
-	r = _r;
-	g = _g;
-	b = _b;
+OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
+    r = _r;
+    g = _g;
+    b = _b;
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::get(OfxTime time, double& r,double& g,double& b){
-	r = _r;
-	g = _g;
-	b = _b;
+OfxStatus OfxRGBInstance::get(OfxTime /*time*/, double& r, double& g, double& b) {
+    r = _r;
+    g = _g;
+    b = _b;
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(double r,double g,double b){
@@ -500,7 +501,7 @@ OfxStatus OfxRGBInstance::set(double r,double g,double b){
     _knob->setRGBA(r, g, b, 1.);
     return kOfxStatOK;
 }
-OfxStatus OfxRGBInstance::set(OfxTime time, double r,double g,double b){
+OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
 	_r = r;
 	_g = g;
 	_b = b;
@@ -574,15 +575,15 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& nam
     _knob->setValue2(def2);
     
 }
-OfxStatus OfxDouble2DInstance::get(double& x1,double& x2){
+OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
     x1 = _x1;
-	x2 = _x2;
+    x2 = _x2;
     return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::get(OfxTime time,double& x1,double& x2){
-	x1 = _x1;
-	x2 = _x2;
-	return kOfxStatOK;
+OfxStatus OfxDouble2DInstance::get(OfxTime /*time*/, double& x1, double& x2) {
+    x1 = _x1;
+    x2 = _x2;
+    return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::set(double x1,double x2){
 	_x1 = x1;
@@ -591,7 +592,7 @@ OfxStatus OfxDouble2DInstance::set(double x1,double x2){
     _knob->setValue2(_x2);
 	return kOfxStatOK;
 }
-OfxStatus OfxDouble2DInstance::set(OfxTime time,double x1,double x2){
+OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
 	_x1 = x1;
 	_x2 = x2;
     _knob->setValue1(_x1);
@@ -659,15 +660,15 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& 
     _knob->setMaximum2(max2);
     _knob->setValue2(def2);
 }
-OfxStatus OfxInteger2DInstance::get(int& x1,int& x2){
-	x1 = _x1;
-	x2 = _x2;
-	return kOfxStatOK;
+OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
+    x1 = _x1;
+    x2 = _x2;
+    return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::get(OfxTime time,int& x1,int& x2){
-	x1 = _x1;
-	x2 = _x2;
-	return kOfxStatOK;
+OfxStatus OfxInteger2DInstance::get(OfxTime /*time*/, int& x1, int& x2) {
+    x1 = _x1;
+    x2 = _x2;
+    return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::set(int x1,int x2){
 	_x1 = x1;
@@ -676,7 +677,7 @@ OfxStatus OfxInteger2DInstance::set(int x1,int x2){
     _knob->setValue2(x2);
 	return kOfxStatOK;
 }
-OfxStatus OfxInteger2DInstance::set(OfxTime time,int x1,int x2){
+OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
 	_x1 = x1;
 	_x2 = x2;
     _knob->setValue1(x1);
@@ -827,7 +828,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     }
     return kOfxStatOK;
 }
-OfxStatus OfxStringInstance::get(OfxTime time, std::string &str) {
+OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     if(_fileKnob){
         int currentFrame = clampToRange((int)_effect->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
@@ -844,7 +845,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string &str) {
         str = filenameFromPattern(_effect->timeLineGetTime());
     }else{
         str = _returnValue;
-    }    return kOfxStatOK;
+    }
+    return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(const char* str) {
     _returnValue = str;
@@ -859,7 +861,7 @@ OfxStatus OfxStringInstance::set(const char* str) {
     }
     return kOfxStatOK;
 }
-OfxStatus OfxStringInstance::set(OfxTime time, const char* str) {
+OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
     _returnValue = str;
     if(_fileKnob){
         _fileKnob->setLineEditText(_returnValue);

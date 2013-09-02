@@ -9,29 +9,24 @@
  *
  */
 
+#ifndef POWITER_ENGINE_VIDEOENGINE_H_
+#define POWITER_ENGINE_VIDEOENGINE_H_
 
-
-
-#ifndef __PowiterOsX__VideoEngine__
-#define __PowiterOsX__VideoEngine__
-
-#include <iostream>
+// FIXME: can the definitions of classes EngineMainEntry, Worker, and RowRunnable be moved to VideoEngine.cpp?
 #include <vector>
-#include <map>
 #include <QtCore/QObject>
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
+
 #include <QFutureWatcher>
-#include <QtCore/QRunnable>
-#include <QtCore/QCoreApplication>
+#include <QtCore/QRunnable> // for RowRunnable => to remove if class RowRunnable is moved to VideoEngine.cpp
 
 #ifndef Q_MOC_RUN
-#include <boost/bind.hpp>
+#include <boost/noncopyable.hpp>
 #endif
-#include "Engine/Hash.h"
-#include "Gui/Texture.h"
-#include "Engine/Timer.h"
+#include "Gui/Texture.h" // for TextureRect
+#include "Engine/Format.h"
 
 class FrameEntry;
 class InputNode;
@@ -657,7 +652,7 @@ private:
     void runTasks();
     
     
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
     /*
      *@brief Range-check to be sure buffers are allocated correctly
      *@param columns the indexes of the columns to compute.
@@ -694,4 +689,4 @@ signals:
 
 
 
-#endif /* defined(__PowiterOsX__VideoEngine__) */
+#endif /* defined(POWITER_ENGINE_VIDEOENGINE_H_) */

@@ -53,7 +53,8 @@ MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
     
 }
 bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
-#ifdef PW_DEBUG
+    assert(path);
+#ifdef POWITER_DEBUG
     if(QFile::exists(path)){
         cout << "WARNING: A file with the same name already exists : " << path
         << " (If displayed on startup ignore it, this is a debug message "
@@ -74,8 +75,11 @@ bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
     _mappedFile->resize(byteCount);
     _size += _mappedFile->size();
     string newPath(path);
-    if(_path.empty()) _path.append(path);
-    else if(_path != newPath) _path = newPath;
+    if(_path.empty()) {
+        _path.append(path);
+    } else if(_path != newPath) {
+        _path = newPath;
+    }
     return true;
 }
 void MemoryMappedEntry::deallocate(){
@@ -124,10 +128,10 @@ InMemoryEntry::~InMemoryEntry(){
 
 
 
-AbstractCache::AbstractCache():_maximumCacheSize(0),_size(0){
+AbstractCacheHelper::AbstractCacheHelper():_maximumCacheSize(0),_size(0){
     
 }
-AbstractCache::~AbstractCache(){
+AbstractCacheHelper::~AbstractCacheHelper(){
     QMutexLocker guard(&_lock);
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
@@ -138,7 +142,7 @@ AbstractCache::~AbstractCache(){
     
 }
 
-void AbstractCache::clear(){
+void AbstractCacheHelper::clear(){
     QMutexLocker guard(&_lock);
     std::vector<std::pair<U64,CacheEntry*> > backUp;
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
@@ -163,13 +167,13 @@ void AbstractCache::clear(){
         add(backUp[i].first, backUp[i].second);
     }
 }
-void AbstractCache::erase(CacheIterator it){
+void AbstractCacheHelper::erase(CacheIterator it){
     _cache.erase(it);
 }
 
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
-CacheEntry* AbstractCache::getCacheEntry(U64 key)  {
+CacheEntry* AbstractCacheHelper::getCacheEntry(U64 key)  {
     QMutexLocker g(&_lock);
     CacheEntry* ret = _cache(key);
     if(ret) ret->addReference();
@@ -177,7 +181,7 @@ CacheEntry* AbstractCache::getCacheEntry(U64 key)  {
 }
 
 
-bool AbstractCache::add(U64 key,CacheEntry* entry){
+bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
     QMutexLocker guard(&_lock);
     bool evict = false;
     {
@@ -213,7 +217,7 @@ bool AbstractCache::add(U64 key,CacheEntry* entry){
 
 bool AbstractMemoryCache::add(U64 key,CacheEntry* entry){
     assert(dynamic_cast<InMemoryEntry*>(entry));
-    return AbstractCache::add(key, entry);
+    return AbstractCacheHelper::add(key, entry);
 }
 
 AbstractDiskCache::AbstractDiskCache(double inMemoryUsage):_inMemorySize(0){
@@ -237,7 +241,7 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         mmEvictedEntry->deallocate();
         _inMemorySize -= mmEvictedEntry->size();
-        return AbstractCache::add(evicted.first, evicted.second);
+        return AbstractCacheHelper::add(evicted.first, evicted.second);
     }
     return false;
 }
@@ -250,7 +254,7 @@ CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
 }
 
 void AbstractDiskCache::initializeSubDirectories(){
-    QDir cache(CACHE_ROOT_PATH);
+    QDir cache(POWITER_CACHE_ROOT_PATH);
     QStringList entries = cache.entryList();
     bool foundDir = false;
     for(int i =0 ; i < entries.size();++i) {
@@ -262,7 +266,7 @@ void AbstractDiskCache::initializeSubDirectories(){
     if(!foundDir){
         cache.mkdir(CACHE_FOLDER_NAME);
     }
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     
@@ -320,7 +324,7 @@ void AbstractDiskCache::clearInMemoryCache(){
         MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         assert(mmEntry);
         mmEntry->deallocate();
-        AbstractCache::add(evicted.first, evicted.second);
+        AbstractCacheHelper::add(evicted.first, evicted.second);
     }
 }
 
@@ -332,7 +336,7 @@ void AbstractDiskCache::clearDiskCache(){
 }
 
 void AbstractDiskCache::save(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     
@@ -355,7 +359,7 @@ void AbstractDiskCache::save(){
 }
 
 void AbstractDiskCache::restore(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     QString newCachePath(cacheFolderName);
@@ -451,7 +455,7 @@ void AbstractDiskCache::restore(){
     }else{ // restore file doesn't exist
         /*re-create cache*/
         
-        QDir root(CACHE_ROOT_PATH);
+        QDir root(POWITER_CACHE_ROOT_PATH);
         QStringList rootEntries = root.entryList();
         bool foundCache = false;
         for (int i =0 ; i< rootEntries.size(); ++i) {
@@ -507,7 +511,7 @@ void AbstractDiskCache::cleanUpDiskAndReset(){
 }
 
 QString AbstractDiskCache::getCachePath(){
-    QString cacheFolderName(CACHE_ROOT_PATH);
+    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
     cacheFolderName.append(CACHE_FOLDER_NAME);
     cacheFolderName.append("/");
     QString str(cacheFolderName);

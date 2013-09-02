@@ -39,13 +39,13 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
-    filename.append(IMAGES_PATH"splashscreen.png");
+    filename.append(POWITER_IMAGES_PATH"splashscreen.png");
     QPixmap pixmap(filename);
     pixmap=pixmap.scaled(640, 400);
     QLabel* splashScreen = new QLabel;
     splashScreen->setWindowFlags(Qt::SplashScreen);
     splashScreen->setPixmap(pixmap);
-#ifndef PW_DEBUG
+#ifndef POWITER_DEBUG
     splashScreen->show();
 #endif
     QCoreApplication::processEvents();

@@ -30,6 +30,7 @@
 #include "Engine/NodeCache.h"
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
+#include "Engine/Timer.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
 
@@ -999,7 +1000,7 @@ int VideoEngine::DAG::lastFrame() const{
 void VideoEngine::resetAndMakeNewDag(Node* output,bool isViewer){
     _dag.resetAndSort(output,isViewer);
 }
-#ifdef PW_DEBUG
+#ifdef POWITER_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
     for (unsigned int i = 0; i < columns.size(); ++i) {
         if(columns[i] < x || columns[i] > r){

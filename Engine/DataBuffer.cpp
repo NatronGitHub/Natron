@@ -11,6 +11,8 @@
 
 #include "DataBuffer.h"
 
+#include <cstring> // for memset()
+
 #include "Global/GlobalDefines.h"
 
 DataBuffer::DataBuffer(){

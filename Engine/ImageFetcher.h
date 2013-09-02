@@ -9,22 +9,13 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_IMAGEFETCHER_H_
+#define POWITER_ENGINE_IMAGEFETCHER_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__interest__
-#define __PowiterOsX__interest__
-
-#include <iostream>
 #include <map>
-#include <vector>
+#include <string>
 #include <QtCore/QFutureWatcher>
-#include <QtCore/QFuture>
-#include <QtCore/QList>
+
 #include "Engine/Row.h"
 #include "Engine/ChannelSet.h"
 
@@ -106,4 +97,4 @@ private:
     Row* getInputRow(Node* node,int y, int x,int r);
 };
 
-#endif /* defined(__PowiterOsX__interest__) */
+#endif /* defined(POWITER_ENGINE_IMAGEFETCHER_H_) */

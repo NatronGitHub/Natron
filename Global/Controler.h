@@ -8,15 +8,8 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#ifndef CONTROLER_H
-#define CONTROLER_H
+#ifndef POWITER_GLOBAL_CONTROLER_H_
+#define POWITER_GLOBAL_CONTROLER_H_
 
 #include <vector>
 #include <string>
@@ -174,5 +167,5 @@ private:
 };
 
 
-#endif // CONTROLER_H
+#endif // POWITER_GLOBAL_CONTROLER_H_
 

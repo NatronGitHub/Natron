@@ -9,36 +9,29 @@
 *
 */
 
+#ifndef POWITER_GUI_SEQUENCEFILEDIALOG_H_
+#define POWITER_GUI_SEQUENCEFILEDIALOG_H_
 
-
-
-
-
-
-
-#ifndef __PowiterOsX__filedialog__
-#define __PowiterOsX__filedialog__
+#include <vector>
+#include <string>
+#include <map>
+#include <utility>
 
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
 #include <QSortFilterProxyModel>
 #include <QFileSystemModel>
-#include <QDialogButtonBox>
 #include <QtCore/QByteArray>
 #include <QtGui/QStandardItemModel>
+#include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
 #include <QtCore/QUrl>
-#include <QtCore/QString>
 #include <QtCore/QLatin1Char>
 #include <QComboBox>
 #include <QListView>
-#include <vector>
-#include <string>
-#include <iostream>
 
 class LineEdit;
 class Button;
@@ -446,8 +439,9 @@ public:
         QString n(path);
         n.replace(QLatin1Char('\\'),QLatin1Char('/'));
 #if defined(Q_OS_WINCE)
-        if((n.size() > 1) && n.startsWith(QLatin1String("//"))))
+        if((n.size() > 1) && n.startsWith(QLatin1String("//"))) {
             n = n.mid(1);
+        }
 #endif
         return n;
 #else
@@ -515,4 +509,4 @@ private:
 };
 
 
-#endif /* defined(__PowiterOsX__filedialog__) */
+#endif /* defined(POWITER_GUI_SEQUENCEFILEDIALOG_H_) */

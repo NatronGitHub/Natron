@@ -9,17 +9,18 @@
  *
  */
 
+#ifndef POWITER_ENGINE_OFXNODE_H_
+#define POWITER_ENGINE_OFXNODE_H_
 
-
-#ifndef OFXNODE_H
-#define OFXNODE_H
 #include <map>
-#include "Engine/Node.h"
+#include <string>
 #include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
+#include <QtCore/QString>
 #include <QtCore/QObject>
 //ofx
 #include "ofxhImageEffect.h"
+
+#include "Engine/Node.h"
 
 //ours
 class Tab_Knob;
@@ -245,4 +246,4 @@ public slots:
     
 };
 
-#endif // OFXNODE_H
+#endif // POWITER_ENGINE_OFXNODE_H_

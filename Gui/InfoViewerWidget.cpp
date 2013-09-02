@@ -10,7 +10,10 @@
 #include "InfoViewerWidget.h"
 
 #include <cstdlib>
+#include <iostream>
 #include <QtGui/QImage>
+#include <QHBoxLayout>
+#include <QLabel>
 
 #include "Gui/ViewerGL.h"
 #include "Engine/Box.h"
@@ -28,7 +31,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
 
     layout = new QHBoxLayout(this);
     QString reso("<font color=\"#DBE0E0\">");
-    char tmp[10];
+    //char tmp[10];
     reso.append(viewer->displayWindow().name().c_str());
     reso.append("\t");
     reso.append("</font>");
@@ -37,32 +40,22 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     resolution->setMaximumWidth(resolution->sizeHint().width());
 
     
-    QString bbox("<font color=\"#DBE0E0\">bbox: ");
-    sprintf(tmp, "%i",viewer->dataWindow().x());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().y());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().right());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().top());
-    bbox.append(tmp);
-    bbox.append("</font>");
+    QString bbox;
+    bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
+        .arg(viewer->dataWindow().x())
+        .arg(viewer->dataWindow().y())
+        .arg(viewer->dataWindow().right())
+        .arg(viewer->dataWindow().top());
     
     _fpsLabel = new QLabel(this);
     
     coordDispWindow = new QLabel(bbox,this);
     coordDispWindow->setContentsMargins(0, 0, 0, 0);
     
-    QString coord("<font color=\"#DBE0E0\">x= ");
-    sprintf(tmp, "%i",mousePos.x());
-    coord.append(tmp);
-    coord.append(" y= ");
-    sprintf(tmp, "%i",mousePos.y());
-    coord.append(tmp);
-    coord.append("</font>");
+    QString coord;
+    coord = QString("<font color=\"#DBE0E0\">x=%1 y=%2</font>")
+        .arg(mousePos.x())
+        .arg(mousePos.y());
     
     coordMouse = new QLabel(this);
     //coordMouse->setText(coord);
@@ -72,30 +65,11 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     rgbaValues->setContentsMargins(0, 0, 0, 0);
     
     QString values;
-    QString red;
-    sprintf(tmp, "%.2f",colorUnderMouse.x());
-    red.append(tmp);
-    values.append("<font color='red'>");
-    values.append(red);
-    values.append("</font> ");
-    QString green;
-    sprintf(tmp, "%.2f",colorUnderMouse.y());
-    green.append(tmp);
-    values.append("<font color='green'>");
-    values.append(green);
-    values.append("</font> ");
-    QString blue;
-    sprintf(tmp, "%.2f",colorUnderMouse.z());
-    blue.append(tmp);
-    values.append("<font color='blue'>");
-    values.append(blue);
-    values.append("</font> ");
-    QString alpha;
-    sprintf(tmp, "%.2f",colorUnderMouse.z());
-    alpha.append(tmp);
-    values.append("<font color=\"#DBE0E0\">");
-    values.append(alpha);
-    values.append("</font>");
+    values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
+        .arg(colorUnderMouse.x(),0,'f',2)
+        .arg(colorUnderMouse.y(),0,'f',2)
+        .arg(colorUnderMouse.z(),0,'f',2)
+        .arg(colorUnderMouse.w(),0,'f',2);
     
    // rgbaValues->setText(values);
     
@@ -111,19 +85,12 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     QColor hsv= c.toHsv();
     QColor hsl= c.toHsl();
     
-    QString hsvlValues("<font color=\"#DBE0E0\">H:");
-    sprintf(tmp, "%i",hsv.hslHue());
-    hsvlValues.append(tmp);
-    hsvlValues.append(" S:");
-    sprintf(tmp, "%.2f",hsv.hslSaturationF());
-    hsvlValues.append(tmp);
-    hsvlValues.append(" V:");
-    sprintf(tmp, "%.2f",hsv.valueF());
-    hsvlValues.append(tmp);
-    hsvlValues.append("   L:");
-    sprintf(tmp, "%.2f",hsl.lightnessF());
-    hsvlValues.append(tmp);
-    hsvlValues.append("</font>");
+    QString hsvlValues;
+    hsvlValues = QString("<font color=\"#DBE0E0\">H:%1 S:%2 V:%3  L:%4</font>")
+        .arg(hsv.hslHue())
+        .arg(hsv.hslSaturationF(),0,'f',2)
+        .arg(hsv.valueF(),0,'f',2)
+        .arg(hsl.lightnessF(),0,'f',2);
     
     hvl_lastOption = new QLabel(this);
   //  hvl_lastOption->setText(hsvlValues);
@@ -175,100 +142,52 @@ InfoViewerWidget::~InfoViewerWidget(){
 
 
 void InfoViewerWidget::updateColor(){
-    
-    
-    char tmp[10];
     QString values;
-    QString red;
-    sprintf(tmp, "%.2f",colorUnderMouse.x());
-    red.append(tmp);
-    values.append("<font color='red'>");
-    values.append(red);
-    values.append("</font> ");
-    QString green;
-    sprintf(tmp, "%.2f",colorUnderMouse.y());
-    green.append(tmp);
-    values.append("<font color='green'>");
-    values.append(green);
-    values.append("</font> ");
-    QString blue;
-    sprintf(tmp, "%.2f",colorUnderMouse.z());
-    blue.append(tmp);
-    values.append("<font color='blue'>");
-    values.append(blue);
-    values.append("</font> ");
-    QString alpha;
-    sprintf(tmp, "%.2f",colorUnderMouse.w());
-    alpha.append(tmp);
-    values.append("<font color=\"#DBE0E0\">");
-    values.append(alpha);
-    values.append("</font>");
-    
+    values = QString("<font color='red'>%1</font> <font color='green'>%2</font> <font color='blue'>%3</font> <font color=\"#DBE0E0\">%4</font>")
+    .arg(colorUnderMouse.x(),0,'f',2)
+    .arg(colorUnderMouse.y(),0,'f',2)
+    .arg(colorUnderMouse.z(),0,'f',2)
+    .arg(colorUnderMouse.w(),0,'f',2);
+
     rgbaValues->setText(values);
     
-    int r = colorUnderMouse.x()*255;
-    if(r>255) r = 255;
-    else if(r<0) r= 0;
-    int g = colorUnderMouse.y()*255;
-    if(g>255) g = 255;
-    else if(g<0) g= 0;
-    int b = colorUnderMouse.z()*255;
-    if(b>255) b = 255;
-    else if(b<0) b= 0;
-    int a = colorUnderMouse.w()*255;
-    if(a>255) a = 255;
-    else if(a<0) a= 0;
+    int r = std::max(std::min((int)(colorUnderMouse.x()*255.),255),0);
+    int g = std::max(std::min((int)(colorUnderMouse.y()*255.),255),0);
+    int b = std::max(std::min((int)(colorUnderMouse.z()*255.),255),0);
+    int a = std::max(std::min((int)(colorUnderMouse.w()*255.),255),0);
     QColor c(r,g,b,a);
-   
-    
     QImage img(20,20,QImage::Format_RGB32);
     img.fill(c.rgb());
 
     QPixmap pix=QPixmap::fromImage(img);
     color->setPixmap(pix);
-    
+
     QColor hsv= c.toHsv();
     QColor hsl= c.toHsl();
-    
-    QString hsvlValues("<font color=\"#DBE0E0\">    H:");
-    sprintf(tmp, "%.2f",hsv.hslHueF());
-    hsvlValues.append(tmp);
-    hsvlValues.append(" S:");
-    sprintf(tmp, "%.2f",hsv.hslSaturationF());
-    hsvlValues.append(tmp);
-    hsvlValues.append(" V:");
-    sprintf(tmp, "%.2f",hsv.valueF());
-    hsvlValues.append(tmp);
-    hsvlValues.append("   L:");
-    sprintf(tmp, "%.2f",hsl.lightnessF());
-    hsvlValues.append(tmp);
-    hsvlValues.append("</font>");
+
+    QString hsvlValues;
+    hsvlValues = QString("<font color=\"#DBE0E0\">H:%1 S:%2 V:%3  L:%4</font>")
+    .arg(hsv.hslHue())
+    .arg(hsv.hslSaturationF(),0,'f',2)
+    .arg(hsv.valueF(),0,'f',2)
+    .arg(hsl.lightnessF(),0,'f',2);
     hvl_lastOption->setText(hsvlValues);
 }
-void InfoViewerWidget::updateCoordMouse(){
-    char tmp[10];
-    QString coord("<font color=\"#DBE0E0\">x= ");
-    sprintf(tmp, "%i",mousePos.x());
-    coord.append(tmp);
-    coord.append(" y= ");
-    sprintf(tmp, "%i",mousePos.y());
-    coord.append(tmp);
-    coord.append("</font>");
-    coordMouse->setText(coord);
 
+void InfoViewerWidget::updateCoordMouse(){
+    QString coord;
+    coord = QString("<font color=\"#DBE0E0\">x=%1 y=%2</font>")
+    .arg(mousePos.x())
+    .arg(mousePos.y());
+    coordMouse->setText(coord);
 }
 void InfoViewerWidget::changeResolution(){
     format = viewer->displayWindow();
     if(format.name() == string("")){
-        QString reso("<font color=\"#DBE0E0\">");
-        char tmp[10];
-        sprintf(tmp, "%i",viewer->displayWindow().w());
-        reso.append(tmp);
-        reso.append("x");
-        sprintf(tmp, "%i",viewer->displayWindow().h());
-        reso.append(tmp);
-        reso.append("\t");
-        reso.append("</font>");
+        QString reso;
+        reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
+        .arg(viewer->displayWindow().w())
+        .arg(viewer->displayWindow().h());
         resolution->setText(reso);
         resolution->setMaximumWidth(resolution->sizeHint().width());
     }else{
@@ -282,20 +201,12 @@ void InfoViewerWidget::changeResolution(){
     }
 }
 void InfoViewerWidget::changeDataWindow(){
-    char tmp[10];
-    QString bbox("<font color=\"#DBE0E0\">bbox: ");
-    sprintf(tmp, "%i",viewer->dataWindow().x());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().y());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().w());
-    bbox.append(tmp);
-    bbox.append(" ");
-    sprintf(tmp, "%i",viewer->dataWindow().h());
-    bbox.append(tmp);
-    bbox.append("</font>");
+    QString bbox;
+    bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
+    .arg(viewer->dataWindow().x())
+    .arg(viewer->dataWindow().y())
+    .arg(viewer->dataWindow().w())
+    .arg(viewer->dataWindow().h());
 
     coordDispWindow->setText(bbox);
 }

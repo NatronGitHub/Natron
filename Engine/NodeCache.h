@@ -9,21 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_NODECACHE_H_
+#define POWITER_ENGINE_NODECACHE_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__nodecache__
-#define __PowiterOsX__nodecache__
 #include "Engine/AbstractCache.h"
 #include "Engine/Singleton.h"
 
 class ChannelSet;
 class Row;
-
 
 /*The node-cache stores the results of previously computed Rows by all
  the nodes across the DAG. Some nodes don't cache and will never put a new
@@ -71,4 +64,4 @@ public:
 /*special macro to get the unique pointer to the node cache*/
 #define nodeCache NodeCache::getNodeCache()
 
-#endif /* defined(__PowiterOsX__nodecache__) */
+#endif /* defined(POWITER_ENGINE_NODECACHE_H_) */

@@ -9,20 +9,16 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_SETTINGS_H_
+#define POWITER_ENGINE_SETTINGS_H_
 
- 
-
-
-
-#ifndef PROJECT_H
-#define PROJECT_H
-#include <vector>
-#include <QtCore/qglobal.h>
-#include "Global/GlobalDefines.h"
-#include "Engine/Singleton.h"
+#include <string>
 #include <map>
 #include <vector>
+
+#include "Global/GlobalDefines.h"
+#include "Engine/Singleton.h"
+
 class PluginID;
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
  that means the powiter settings are unique and there cannot be 2 instances living at the same time.
@@ -112,4 +108,4 @@ public:
     WritersSettings _writersSettings;
 };
 
-#endif // PROJECT_H
+#endif // POWITER_ENGINE_SETTINGS_H_

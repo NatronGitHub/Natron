@@ -16,7 +16,7 @@ win32{
     CONFIG += glew
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC
+    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC OPENEXR_DLL FTGL_LIBRARY_STATIC
     DEFINES -= _UNICODE UNICODE
 }
 
@@ -81,6 +81,7 @@ SOURCES += \
     Engine/OfxClipInstance.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
+    Engine/PluginID.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/Timer.cpp \
@@ -146,6 +147,7 @@ HEADERS += \
     Engine/OfxClipInstance.h \
     Engine/OfxNode.h \
     Engine/OfxParamInstance.h \
+    Engine/PluginID.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \

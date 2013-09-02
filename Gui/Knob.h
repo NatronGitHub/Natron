@@ -16,19 +16,18 @@
 #include <map>
 #include <cassert>
 #include <QtCore/QString>
-#include <QUndoCommand>
-#include <QSpinBox>
-#include <QWidget>
 #include <QtCore/QStringList>
+#include <QUndoCommand>
+#include <QWidget>
 #include <QLineEdit>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/ChannelSet.h"
-#include "Engine/Model.h"
+//#include "Engine/Model.h" // for PluginID
 #include "Engine/Singleton.h"
-#include "Gui/FeedbackSpinBox.h"
-#include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
+
+class FeedbackSpinBox;
+class ComboBox;
 
 /*Implementation of the usual settings knobs used by the nodes. For instance an int_knob might be useful to input a specific
  parameter for a given operation on the image, etc...This file provide utilities to build those knobs without worrying with
@@ -55,6 +54,8 @@ class QGroupBox;
 class SettingsPanel;
 class Node;
 class Knob;
+
+class PluginID;
 
 class KnobCallback
 {
@@ -349,7 +350,7 @@ signals:
     void valueChanged(int);
 private:
     int* integer;
-    FeedBackSpinBox* box;
+    FeedbackSpinBox* box;
 };
 
 class IntCommand : public QUndoCommand{
@@ -415,8 +416,8 @@ signals:
 private:
     int* _value1;
     int* _value2;
-    FeedBackSpinBox* _box1;
-    FeedBackSpinBox* _box2;
+    FeedbackSpinBox* _box1;
+    FeedbackSpinBox* _box2;
 };
 
 class Int2DCommand : public QUndoCommand{
@@ -446,7 +447,7 @@ class Double_Knob: public Knob
     Q_OBJECT
     
     double *_value;
-    FeedBackSpinBox* box;
+    FeedbackSpinBox* box;
 public:
     static Knob* BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags);
     void setPointer(double* value){_value = value;}
@@ -504,8 +505,8 @@ class Double2D_Knob : public Knob{
     
     double *_value1;
     double *_value2;
-    FeedBackSpinBox* _box1;
-    FeedBackSpinBox* _box2;
+    FeedbackSpinBox* _box1;
+    FeedbackSpinBox* _box2;
 public:
     static Knob* BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags);
     void setPointers(double* value1,double* value2){_value1 = value1; _value2 = value2;}
@@ -724,6 +725,9 @@ public:
     
     virtual ~Separator_Knob(){}
 private:
+    // FIXME: when is this data member deleted?
+    // message from cppcheck:
+    // "Class 'Separator_Knob' is unsafe, 'Separator_Knob::line' can leak by wrong usage."
     QFrame* line;
 };
 /***************************/
@@ -752,6 +756,10 @@ public:
 
     
 private:
+    // FIXME: when are these data members deleted?
+    // message from cppcheck:
+    // "Class 'Group_Knob' is unsafe, 'Group_Knob::_box' can leak by wrong usage."
+    // "Class 'Group_Knob' is unsafe, 'Group_Knob::_boxLayout' can leak by wrong usage."
     QGroupBox* _box;
     QVBoxLayout* _boxLayout;
     std::vector<Knob*> _knobs;
@@ -808,10 +816,10 @@ private:
     QLabel* _bLabel;
     QLabel* _aLabel;
     
-    FeedBackSpinBox* _rBox;
-    FeedBackSpinBox* _gBox;
-    FeedBackSpinBox* _bBox;
-    FeedBackSpinBox* _aBox;
+    FeedbackSpinBox* _rBox;
+    FeedbackSpinBox* _gBox;
+    FeedbackSpinBox* _bBox;
+    FeedbackSpinBox* _aBox;
     
     QLabel* _colorLabel;
     Button* _colorDialogButton;

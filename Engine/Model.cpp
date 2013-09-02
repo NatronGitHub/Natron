@@ -18,35 +18,36 @@
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
 
+#include "Global/MemoryInfo.h"
 #include "Global/Controler.h"
 #include "Engine/Hash.h"
 #include "Engine/Node.h"
 #include "Engine/ChannelSet.h"
-#include "Readers/Reader.h"
-#include "Writers/Writer.h"
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
-#include "Gui/Gui.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Format.h"
 #include "Engine/Settings.h"
-#include "Writers/Write.h"
+#include "Engine/Lut.h"
+#include "Engine/NodeCache.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/PluginID.h"
+#include "Readers/Reader.h"
 #include "Readers/Read.h"
 #include "Readers/ReadExr.h"
 #include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ReadQt.h"
-#include "Engine/Lut.h"
-#include "Engine/NodeCache.h"
-#include "Engine/ViewerCache.h"
-#include "Gui/Knob.h"
+#include "Writers/Writer.h"
+#include "Writers/Write.h"
 #include "Writers/WriteQt.h"
 #include "Writers/WriteExr.h"
 #include "Gui/Gui.h"
+#include "Gui/ViewerGL.h"
+#include "Gui/TabWidget.h"
+#include "Gui/Knob.h"
+#include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
-#include "Global/MemoryInfo.h"
 
 // ofx
 #include "ofxCore.h"
@@ -276,26 +277,18 @@ void Model::initCounterAndGetDescription(Node*& node){
         if(tmp==nodeName){
             ++(counter->first);
             found=true;
-            string str;
-            str.append(nodeName.c_str());
-            str.append("_");
-            char c[50];
-            sprintf(c,"%d",counter->first);
-            str.append(c);
-            node->setName(str);
+            ostringstream oss;
+            oss << nodeName << '_' << counter->first;
+            node->setName(oss.str());
         }
     }
     if(!found){
         CounterID* count=new CounterID(1,node->className());
         assert(count);
         _nodeCounters.push_back(count);
-        string str;
-        str.append(node->className().c_str());
-        str.append("_");
-        char c[50];
-        sprintf(c,"%d",count->first);
-        str.append(c);
-        node->setName(str);
+        ostringstream oss;
+        oss << node->className() << '_' << count->first;
+        node->setName(oss.str());
     }
     
     /*adding nodes to the current nodes and
@@ -413,7 +406,7 @@ Format* Model::findExistingFormat(int w, int h, double pixel_aspect){
 
 
 void Model::loadReadPlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -440,7 +433,7 @@ void Model::loadReadPlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -471,7 +464,7 @@ void Model::loadReadPlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");
@@ -597,7 +590,7 @@ void Model::loadBuiltinPlugins(){
 
 /*loads extra writer plug-ins*/
 void Model::loadWritePlugins(){
-    QDir d(PLUGINS_PATH);
+    QDir d(POWITER_PLUGINS_PATH);
     if (d.isReadable())
     {
         QStringList filters;
@@ -624,7 +617,7 @@ void Model::loadWritePlugins(){
 #ifdef __POWITER_WIN32__
                 HINSTANCE lib;
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
                 dll.append(".dll");
                 lib=LoadLibrary(dll.c_str());
@@ -654,7 +647,7 @@ void Model::loadWritePlugins(){
                 
 #elif defined(__POWITER_UNIX__)
                 string dll;
-                dll.append(PLUGINS_PATH);
+                dll.append(POWITER_PLUGINS_PATH);
                 dll.append(className.toStdString());
 #ifdef __POWITER_OSX__
                 dll.append(".dylib");

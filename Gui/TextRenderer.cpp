@@ -38,6 +38,7 @@
 #include <iostream>
 #include <QtGui/QPainter>
 #include <QtCore/QFile>
+#include <FTGL/ftgl.h>
 
 #include "Gui/ViewerGL.h"
 

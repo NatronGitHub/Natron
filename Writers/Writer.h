@@ -9,25 +9,16 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITER_H_
+#define POWITER_WRITERS_WRITER_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__Writer__
-#define __PowiterOsX__Writer__
-
-#include <map>
-#include <iostream>
-#include "Global/GlobalDefines.h"
-#include "Engine/Node.h"
-#include <QtCore/QStringList>
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QObject>
+
+#include "Global/GlobalDefines.h"
+#include "Engine/Node.h"
+
 class Write;
 class QMutex;
 class Row;
@@ -167,4 +158,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__Writer__) */
+#endif /* defined(POWITER_WRITERS_WRITER_H_) */

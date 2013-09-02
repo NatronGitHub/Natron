@@ -9,14 +9,12 @@
 *
 */
 
-#ifndef __PowiterOsX__DataBuffer__
-#define __PowiterOsX__DataBuffer__
+#ifndef POWITER_ENGINE_DATABUFFER_H_
+#define POWITER_ENGINE_DATABUFFER_H_
 
-#include <iostream>
 #include <map>
-#include <QtCore/QMutex>
 #include <string>
-#include <cstring>
+#include <QtCore/QMutex>
 
 #include "Engine/ReferenceCountedObject.h"
 
@@ -89,4 +87,4 @@ public:
 
 static DataBufferManager _dataBufferManager;
 
-#endif /* defined(__PowiterOsX__DataBuffer__) */
+#endif /* defined(POWITER_ENGINE_DATABUFFER_H_) */

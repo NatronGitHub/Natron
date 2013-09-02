@@ -16,27 +16,28 @@
 #include <QtGui/QImage>
 
 #include "Global/GlobalDefines.h"
-#include "Readers/ReadFfmpeg_deprecated.h"
-#include "Readers/ReadExr.h"
-#include "Readers/ReadQt.h"
-#include "Engine/Node.h"
-#include "Gui/NodeGui.h"
-#include "Gui/ViewerGL.h"
-#include "Engine/MemoryFile.h"
 #include "Global/Controler.h"
+#include "Engine/Node.h"
+#include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Model.h"
 #include "Engine/Settings.h"
+#include "Engine/Box.h"
+#include "Engine/Format.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/PluginID.h"
+#include "Engine/ViewerNode.h"
+#include "Readers/ReadFfmpeg_deprecated.h"
+#include "Readers/ReadExr.h"
+#include "Readers/ReadQt.h"
 #include "Readers/Read.h"
+#include "Writers/Writer.h"
+#include "Gui/NodeGui.h"
+#include "Gui/ViewerGL.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
-#include "Engine/ViewerCache.h"
 #include "Gui/Knob.h"
-#include "Engine/Box.h"
-#include "Engine/Format.h"
-#include "Writers/Writer.h"
-#include "Engine/ViewerNode.h"
 
 using namespace Powiter;
 using namespace std;
@@ -508,7 +509,7 @@ std::string ReaderInfo::printOut(){
     return oss.str();
 }
 
-ReaderInfo* ReaderInfo::fromString(QString from){
+ReaderInfo* ReaderInfo::fromString(const QString& from){
     ReaderInfo* out = new ReaderInfo;
     QString name;
     QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;

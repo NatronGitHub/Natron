@@ -372,17 +372,24 @@ void ViewerGL::paintGL()
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
         //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-        if(rgbMode())
+        if(rgbMode()) {
             activateShaderRGB();
-        else if(!rgbMode())
+      checkGLErrors();
+      } else if(!rgbMode()) {
             activateShaderLC();
+    checkGLErrors();
+
+        }
     }else{
         glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
-        if(_hasHW && !shaderBlack->bind()){
+     checkGLErrors();
+       if(_hasHW && !shaderBlack->bind()){
             cout << qPrintable(shaderBlack->log()) << endl;
+    checkGLErrors();
         }
         if(_hasHW)
             shaderBlack->setUniformValue("Tex", 0);
+    checkGLErrors();
         
     }
     checkGLErrors();
@@ -1183,10 +1190,10 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
 }
 
 void ViewerGL::fitToFormat(Format displayWindow){
-    float h = (float)(displayWindow.h());
-    float w = (float)(displayWindow.w());
-    float zoomFactor = (float)height()/h;
-    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : zoomFactor );
+    double h = displayWindow.h();
+    double w = displayWindow.w();
+    double zoomFactor = height()/h;
+    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01) );
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));

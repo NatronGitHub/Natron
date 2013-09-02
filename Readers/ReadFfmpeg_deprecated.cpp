@@ -896,7 +896,7 @@ ReadFFMPEG::~ReadFFMPEG(){
     _dataBufferManager.release(ba.constData());
     
 }
-void ReadFFMPEG::readHeader(const QString filename,bool){
+void ReadFFMPEG::readHeader(const QString& filename, bool) {
     this->_file = filename;
     const QByteArray ba = filename.toLatin1();
     _reader =_readerManager.get(ba.data());

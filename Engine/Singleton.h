@@ -9,17 +9,11 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_SINGLETON_H_
+#define POWITER_ENGINE_SINGLETON_H_
 
- 
-
-
-
-
-#ifndef PowiterOsX_singleton_h
-#define PowiterOsX_singleton_h
-#include <cstdlib>
-#include <QtCore/QMutex>
+#include <cstdlib> // for std::atexit()
+#include <QtCore/QMutexLocker>
 
 // Singleton pattern ( thread-safe) , to have 1 global ptr
 

@@ -9,24 +9,17 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_FORMAT_H_
+#define POWITER_ENGINE_FORMAT_H_
 
- 
-
-
-
-
-#ifndef __DISPLAY_FORMAT_H__
-#define __DISPLAY_FORMAT_H__
-
-#include <map>
 #include <string>
 #include "Engine/Box.h"
+
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the
  *frame accordingly*/
-class Format:public Box2D{
+class Format : public Box2D {
 	
 	
 public:
@@ -61,4 +54,4 @@ private:
 };
 
 
-#endif // __DISPLAY_FORMAT_H__
+#endif // POWITER_ENGINE_FORMAT_H_

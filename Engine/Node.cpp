@@ -329,24 +329,26 @@ Row* Node::get(int y,int x,int r){
     Row* out = 0;
     U64 key = _hashValue->getHashValue();
     pair<U64,Row*> entry = cache->get(key , filename,x,r,y,_info->channels());
-    if(entry.second && entry.first!=0) out = entry.second;
-    if(out){
-        /*checking that the entry matches what we asked for*/
-        assert(out->offset() == x && out->right() ==  r);
-        return out;
-    }else{
-        if(cacheData()){
+    if (entry.second && entry.first != 0) {
+        out = entry.second;
+    }
+    // Shit happens: there may be a completely different cache entry with the same hash
+    // FIXME: we should check for more things (frame number...)
+    if (!out || out->y() != y || out->offset() != x || out->right() !=  r) {
+        if (cacheData()) {
             out = cache->addRow(entry.first,x,r,y, _info->channels(), filename);
-            if(!out)
+            if (!out) {
                 return NULL;
-        }else{
+            }
+        } else {
             out = new Row(x,y,r,_info->channels());
             out->allocateRow();
         }
         assert(out->offset() == x && out->right() == r);
         engine(y,x,r, _info->channels(), out);
-        return out;
     }
+    assert(out);
+    return out;
 }
 
 Node::~Node(){

@@ -9,14 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef __INTEGER_BOX_H__
-#define __INTEGER_BOX_H__
+#ifndef POWITER_ENGINE_BOX_H_
+#define POWITER_ENGINE_BOX_H_
 
 class Box2D{
 private:

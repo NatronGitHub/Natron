@@ -11,8 +11,9 @@
 #include "ScaleSlider.h"
 
 #include <qlayout.h>
-#include <QtGui/qevent.h>
-#include <QtGui/qpainter.h>
+#include <QtGui/QPaintEvent>
+#include <QtGui/QMouseEvent>
+#include <QtGui/QPainter>
 
 using namespace std;
 

@@ -9,22 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_SCALESLIDER_H_
+#define POWITER_GUI_SCALESLIDER_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__ScaleSlider__
-#define __PowiterOsX__ScaleSlider__
-
-#include <iostream>
+#include <vector>
+#include <cmath> // for std::pow()
 #include <QtCore/QObject>
 #include <QWidget>
-#include <cmath>
-#include <QtGui/QImage>
-#include <QLabel>
+
 #include "Global/GlobalDefines.h"
 
 #define BORDER_HEIGHT 10
@@ -87,14 +79,14 @@ private:
     static std::vector<double> logScale(int N,float inf,float sup){
         std::vector<double> out;
         for(int i =0;i < N;++i) {
-           out.push_back(powf(i,3)*(sup-inf)/(powf(N-1,3)) + inf);
+            out.push_back(std::pow((double)i,3)*(sup-inf)/(std::pow((double)(N-1),3)) + inf);
         }
         return out;
     }
     static std::vector<double> expScale(int N,float inf,float sup){
         std::vector<double> out;
         for(int i =0;i < N;++i) {
-            out.push_back(powf(i,1.f/2.2f)*(sup-inf)/(powf(N-1,1.f/2.2f)) + inf);
+            out.push_back(std::pow((double)(i),1./2.2)*(sup-inf)/(std::pow((double)(N-1),1./2.2)) + inf);
         }
         return out;
     }
@@ -113,4 +105,4 @@ private:
 };
 
 
-#endif /* defined(__PowiterOsX__ScaleSlider__) */
+#endif /* defined(POWITER_GUI_SCALESLIDER_H_) */

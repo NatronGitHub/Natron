@@ -11,6 +11,8 @@
 #include "Gui/Gui.h"
 
 #include <cassert>
+#include <QtCore/QEvent>
+#include <QtGui/QCloseEvent>
 #include <QApplication>
 #include <QMenu>
 #include <QLayout>
@@ -37,7 +39,7 @@
 #include "Gui/SequenceFileDialog.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH IMAGES_PATH"openeffects.png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
  
 using namespace std;
 using namespace Powiter;
@@ -187,19 +189,19 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     
 }
 void Gui::setupUi()
-{
-	
-	QDesktopWidget* desktop=QApplication::desktop();
-	QRect screen=desktop->screenGeometry(-1);
-	resize(screen.width(),screen.height());
-	setDockNestingEnabled(false);
+{	
+    QDesktopWidget* desktop=QApplication::desktop();
+    QRect screen=desktop->screenGeometry();
+    assert(!isFullScreen());
+    resize(0.93*screen.width(),0.93*screen.height()); // leave some space
+    assert(!isDockNestingEnabled()); // should be false by default
     
     loadStyleSheet();
     
     /*TOOL BAR menus*/
 	//======================
 	menubar = new QMenuBar(this);
-	menubar->setGeometry(QRect(0, 0, 1159, 21));
+	//menubar->setGeometry(QRect(0, 0, 1159, 21)); // why set the geometry of a menubar?
 	menuFile = new QMenu(menubar);
 	menuEdit = new QMenu(menubar);
 	menuDisplay = new QMenu(menubar);
@@ -291,7 +293,7 @@ void Gui::setupUi()
     
 	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
-    _viewersPane->resize(_viewersPane->width(), screen.height()/5);
+    _viewersPane->resize(_viewersPane->width(), this->height()/5);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
     //  _viewerWorkshopSplitter->setSizes(sizesViewerSplitter);
     

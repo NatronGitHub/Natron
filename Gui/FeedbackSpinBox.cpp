@@ -12,7 +12,7 @@
 
 #include <QtGui/QWheelEvent>
 
-FeedBackSpinBox::FeedBackSpinBox(QWidget* parent,bool mode):LineEdit(parent),_mode(mode),_decimals(1),_increment(1.0),_mini(0),_maxi(99)
+FeedbackSpinBox::FeedbackSpinBox(QWidget* parent,bool mode):LineEdit(parent),_mode(mode),_decimals(1),_increment(1.0),_mini(0),_maxi(99)
 {
 
     QObject::connect(this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()));
@@ -23,7 +23,7 @@ FeedBackSpinBox::FeedBackSpinBox(QWidget* parent,bool mode):LineEdit(parent),_mo
     decimals(_decimals);
 }
 
-void FeedBackSpinBox::setValue(double d){
+void FeedbackSpinBox::setValue(double d){
     clear();
     QString str;
     if(_mode)
@@ -32,12 +32,12 @@ void FeedBackSpinBox::setValue(double d){
         str.setNum((int)d);
     insert(str);
 }
-void FeedBackSpinBox::interpretReturn(){
+void FeedbackSpinBox::interpretReturn(){
     bool ok;
     emit valueChanged(text().toDouble(&ok));
 }
 
-void FeedBackSpinBox::wheelEvent(QWheelEvent *e){
+void FeedbackSpinBox::wheelEvent(QWheelEvent *e){
     bool ok;
     double cur= text().toDouble(&ok);
     clear();
@@ -58,7 +58,7 @@ void FeedBackSpinBox::wheelEvent(QWheelEvent *e){
     emit valueChanged(cur);
 }
 
-void FeedBackSpinBox::keyPressEvent(QKeyEvent *e){
+void FeedbackSpinBox::keyPressEvent(QKeyEvent *e){
     bool ok;
     double cur= text().toDouble(&ok);
     if(e->key() == Qt::Key_Up){

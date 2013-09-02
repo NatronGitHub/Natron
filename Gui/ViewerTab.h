@@ -9,17 +9,12 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_VIEWERTAB_H_
+#define POWITER_GUI_VIEWERTAB_H_ 
 
- 
-
-
-
-#ifndef __VIEWER_TAB_H_
-#define __VIEWER_TAB_H_ 
+#include <QWidget>
 
 #include "Engine/ChannelSet.h"
-#include <QWidget>
 
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
  a tab , and several ViewerTab should run in parallel seemlessly.*/
@@ -37,7 +32,7 @@ class QGroupBox;
 class ViewerGL;
 class InfoViewerWidget;
 class Controler;
-class FeedBackSpinBox;
+class FeedbackSpinBox;
 class ScaleSlider;
 class TimeLine;
 class ViewerNode;
@@ -75,7 +70,7 @@ public:
     Button* _centerViewerButton;
 
     /*2nd row*/
-    FeedBackSpinBox* _gainBox;
+    FeedbackSpinBox* _gainBox;
     ScaleSlider* _gainSlider;
     Button* _refreshButton;
     ComboBox* _viewerColorSpace;
@@ -89,7 +84,7 @@ public:
 	/*TimeLine buttons*/
     QWidget* _playerButtonsContainer;
 	QHBoxLayout* _playerLayout;
-	FeedBackSpinBox* _currentFrameBox;
+	FeedbackSpinBox* _currentFrameBox;
 	Button* firstFrame_Button;
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
@@ -100,10 +95,10 @@ public:
     Button* nextKeyFrame_Button;
 	Button* lastFrame_Button;
     Button* previousIncrement_Button;
-    FeedBackSpinBox* incrementSpinBox;
+    FeedbackSpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     QLabel* fpsName;
-    FeedBackSpinBox* fpsBox;
+    FeedbackSpinBox* fpsBox;
     
 	/*frame seeker*/
 	TimeLine* frameSeeker;
@@ -143,4 +138,4 @@ protected:
     virtual void keyPressEvent(QKeyEvent* e);
 };
 
-#endif // __VIEWER_TAB_H_
+#endif // POWITER_GUI_VIEWERTAB_H_
