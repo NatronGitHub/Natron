@@ -24,7 +24,7 @@
 #include <QLabel>
 #include <QtGui/QPixmap>
 #include "Global/Macros.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Model.h"
 
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	/*instanciating the core*/
     Model* coreEngine=new Model();
 	/*instancating the controler, that will in turn create the GUI*/
-    Controler* ctrl= Controler::instance();
+    AppInstance* ctrl= AppInstance::instance();
 	/*we create the GUI in the initControler function*/
     
     QString projectFile;

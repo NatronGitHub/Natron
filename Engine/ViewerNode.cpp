@@ -13,7 +13,7 @@
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Row.h"
@@ -23,7 +23,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 
 using namespace Powiter;
 
@@ -36,12 +36,12 @@ _pboIndex(0)
 }
 
 void ViewerNode::initializeViewerTab(TabWidget* where){
-   _uiContext = ctrlPTR->getGui()->addNewViewerTab(this,where);
+   _uiContext = appPTR->getGui()->addNewViewerTab(this,where);
 }
 
 ViewerNode::~ViewerNode(){
-    if(ctrlPTR->getGui())
-        ctrlPTR->getGui()->removeViewerTab(_uiContext,true);
+    if(appPTR->getGui())
+        appPTR->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
 }

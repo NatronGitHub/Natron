@@ -23,7 +23,7 @@
 #include "Engine/Format.h"
 #include "Engine/NodeCache.h"
 #include "Readers/Reader.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 #include "Engine/Row.h"
@@ -314,7 +314,7 @@ Row* Node::get(int y,int x,int r){
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
         int current_frame;
-        const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+        const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
         if(dag.isOutputAnOpenFXNode()){
             current_frame = dag.outputAsOpenFXNode()->currentFrame();
         }else{

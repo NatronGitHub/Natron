@@ -19,7 +19,7 @@
 #include <QtCore/QXmlStreamWriter>
 
 #include "Global/MemoryInfo.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Hash.h"
 #include "Engine/Node.h"
 #include "Engine/ChannelSet.h"
@@ -309,11 +309,11 @@ bool Model::createNode(Node *&node,const std::string name){
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
-        TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
+        TabWidget* where = appPTR->getGui()->_nextViewerTabPlace;
         if(!where){
-            where = ctrlPTR->getGui()->_viewersPane;
+            where = appPTR->getGui()->_viewersPane;
         }else{
-            ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
+            appPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
         return true;
@@ -845,7 +845,7 @@ void Model::loadOFXPlugins(){
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
+        appPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
     }
@@ -938,7 +938,7 @@ OfxStatus Model::vmessage(const char* type,
 }
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = appPTR->getAllActiveNodes();
     QString ret;
     
     QXmlStreamWriter writer(&ret);
@@ -1025,7 +1025,7 @@ void Model::restoreGraphFromString(const QString& str){
                 /* Let's check that we're really getting a Node. */
                 if(reader.tokenType() != QXmlStreamReader::StartElement &&
                    reader.name() == "Node") {
-                    ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    appPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
                     return;
                 }
                 QString className,label;
@@ -1037,18 +1037,18 @@ void Model::restoreGraphFromString(const QString& str){
                     label = nodeAttributes.value("Label").toString();
                 }
                 
-                assert(ctrlPTR);
-                ctrlPTR->deselectAllNodes();
-                Node* n = ctrlPTR->createNode(className);
+                assert(appPTR);
+                appPTR->deselectAllNodes();
+                Node* n = appPTR->createNode(className);
                 if(!n){
                     QString text("Failed to restore the graph! \n The node ");
                     text.append(className);
                     text.append(" was found in the auto-save script but doesn't seem \n"
                                 "to exist in the currently loaded plug-ins.");
-                    ctrlPTR->showErrorDialog("Autosave", text );
-                    ctrlPTR->clearInternalNodes();
-                    ctrlPTR->clearNodeGuis();
-                    ctrlPTR->createNode("Viewer");
+                    appPTR->showErrorDialog("Autosave", text );
+                    appPTR->clearInternalNodes();
+                    appPTR->clearNodeGuis();
+                    appPTR->createNode("Viewer");
                     return;
                 }
                 n->getNodeUi()->setName(label);
@@ -1125,7 +1125,7 @@ void Model::restoreGraphFromString(const QString& str){
         }
     }
     if(reader.hasError()){
-        ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        appPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
         return;
     }
     //adjusting knobs & connecting nodes now
@@ -1205,7 +1205,7 @@ void Model::loadProject(const QString& filename,bool autoSave){
 }
 void Model::saveProject(const QString& path,const QString& filename,bool autoSave){
     if(autoSave){
-        QFile file(Controler::autoSavesDir()+filename);
+        QFile file(AppInstance::autoSavesDir()+filename);
         if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
             cout <<  file.errorString().toStdString() << endl;
             return;

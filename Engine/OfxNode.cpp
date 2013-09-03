@@ -18,7 +18,7 @@
 #include "Engine/OfxClipInstance.h"
 #include "Engine/Model.h"
 #include "Writers/Writer.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/Timeline.h"
@@ -429,7 +429,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     endInstanceChangedAction(kOfxChangeUserEdited);
     
-    ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
+    appPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
 OfxStatus OfxNode::editBegin(const std::string& /*name*/)
@@ -463,9 +463,9 @@ bool  OfxNode::progressUpdate(double /*t*/)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    if(!ctrlPTR->getModel()->getVideoEngine())
+    if(!appPTR->getModel()->getVideoEngine())
         return -1.;
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return -1.;
     }
@@ -484,7 +484,7 @@ double  OfxNode::timeLineGetTime()
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return;
     }
@@ -506,7 +506,7 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
    
 
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;
@@ -531,7 +531,7 @@ OfxStatus OfxNode::vmessage(const char* type,
                             const char* id,
                             const char* format,
                             va_list args) {
-    return ctrlPTR->getModel()->vmessage(type, id, format, args);
+    return appPTR->getModel()->vmessage(type, id, format, args);
 }
 void OfxNode::computePreviewImage(){
     if(getContext() != kOfxImageEffectContextGenerator){

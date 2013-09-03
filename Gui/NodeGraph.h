@@ -35,7 +35,7 @@ class QKeyEvent;
 class SettingsPanel;
 class Node;
 class NodeGui;
-class Controler;
+class AppInstance;
 class Edge;
 class SmartInputDialog;
 

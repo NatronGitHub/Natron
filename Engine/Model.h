@@ -94,7 +94,7 @@ class Format;
 class InputNode;
 class NodeCache;
 class ViewerCache;
-class Controler;
+class AppInstance;
 class OutputNode;
 class ViewerNodeNode;
 class Hash;

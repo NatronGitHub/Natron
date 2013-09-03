@@ -8,7 +8,7 @@
  *
  */
 
-#include "Controler.h"
+#include "AppManager.h"
 
 #include <cassert>
 #include <QLabel>
@@ -32,10 +32,10 @@
 using namespace Powiter;
 using namespace std;
 
-Controler::Controler():_model(0),_gui(0){
+AppInstance::AppInstance():_model(0),_gui(0){
 }
 
-void Controler::initControler(Model *model,QLabel* loadingScreen,QString projectName){
+void AppInstance::initControler(Model *model,QLabel* loadingScreen,QString projectName){
     this->_model=model;
     _gui=new Gui();
     
@@ -88,12 +88,12 @@ void Controler::initControler(Model *model,QLabel* loadingScreen,QString project
     
 }
 
-Controler::~Controler(){
+AppInstance::~AppInstance(){
     removeAutoSaves();
     delete _model;
 }
 
-void Controler::addBuiltinPluginToolButtons(){
+void AppInstance::addBuiltinPluginToolButtons(){
     vector<string> grouping;
     grouping.push_back("io");
     _gui->addPluginToolButton("Reader", grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
@@ -101,12 +101,12 @@ void Controler::addBuiltinPluginToolButtons(){
     _gui->addPluginToolButton("Writer", grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
 }
 
-const QStringList& Controler::getNodeNameList(){
+const QStringList& AppInstance::getNodeNameList(){
     return _model->getNodeNameList();
 }
 
 
-Node* Controler::createNode(QString name){
+Node* AppInstance::createNode(QString name){
     
     Node* node = 0;
     if(_model->createNode(node,name.toStdString())){
@@ -118,30 +118,30 @@ Node* Controler::createNode(QString name){
     return node;
 }
 
-OutputNode* Controler::getCurrentOutput(){
+OutputNode* AppInstance::getCurrentOutput(){
     return instance()->_model->getCurrentOutput();
 }
-ViewerNode* Controler::getCurrentViewer(){
+ViewerNode* AppInstance::getCurrentViewer(){
     OutputNode* output = instance()->_model->getCurrentOutput();
     return dynamic_cast<ViewerNode*>(output);
 }
 
-Writer* Controler::getCurrentWriter(){
+Writer* AppInstance::getCurrentWriter(){
     OutputNode* output = instance()->_model->getCurrentOutput();
     return dynamic_cast<Writer*>(output);
 }
 
-void Controler::stackPluginToolButtons(const std::vector<std::string>& groups,
+void AppInstance::stackPluginToolButtons(const std::vector<std::string>& groups,
                                        const std::string& pluginName,
                                        const std::string& pluginIconPath,
                                        const std::string& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
-const std::vector<NodeGui*>& Controler::getAllActiveNodes() const{
+const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
     return _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
 }
-void Controler::loadProject(const QString& path,const QString& name){
+void AppInstance::loadProject(const QString& path,const QString& name){
     _model->loadProject(path+name);
     QDateTime time = QDateTime::currentDateTime();
     _currentProject._hasProjectBeenSavedByUser = true;
@@ -153,7 +153,7 @@ void Controler::loadProject(const QString& path,const QString& name){
     text.append(_currentProject._projectName);
     _gui->setWindowTitle(text);
 }
-void Controler::saveProject(const QString& path,const QString& name,bool autoSave){
+void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
     QDateTime time = QDateTime::currentDateTime();
     if(!autoSave) {
         
@@ -182,10 +182,10 @@ void Controler::saveProject(const QString& path,const QString& name,bool autoSav
     }
 }
 
-void Controler::autoSave(){
+void AppInstance::autoSave(){
     saveProject(_currentProject._projectPath, _currentProject._projectName, true);
 }
-void Controler::triggerAutoSaveOnNextEngineRun(){
+void AppInstance::triggerAutoSaveOnNextEngineRun(){
     if(_model->getVideoEngine()){
         _model->getVideoEngine()->triggerAutoSaveOnNextRun();
         QString text("Powiter - ");
@@ -194,7 +194,7 @@ void Controler::triggerAutoSaveOnNextEngineRun(){
         _gui->setWindowTitle(text);
     }
 }
-void Controler::removeAutoSaves() const{
+void AppInstance::removeAutoSaves() const{
     /*removing all previous autosave files*/
     QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
@@ -207,16 +207,16 @@ void Controler::removeAutoSaves() const{
     }
 }
 
-void Controler::clearInternalNodes(){
+void AppInstance::clearInternalNodes(){
     _model->clearNodes();
 }
-void Controler::clearNodeGuis(){
+void AppInstance::clearNodeGuis(){
     _gui->_nodeGraphTab->_nodeGraphArea->clear();
 }
-bool Controler::isSaveUpToDate() const{
+bool AppInstance::isSaveUpToDate() const{
     return _currentProject._age == _currentProject._lastAutoSave;
 }
-void Controler::resetCurrentProject(){
+void AppInstance::resetCurrentProject(){
     _currentProject._hasProjectBeenSavedByUser = false;
     _currentProject._projectName = "Untitled.rs";
     _currentProject._projectPath = "";
@@ -224,7 +224,7 @@ void Controler::resetCurrentProject(){
     text.append(_currentProject._projectName);
     _gui->setWindowTitle(text);
 }
-bool Controler::findAutoSave(){
+bool AppInstance::findAutoSave(){
     QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
     for(int i = 0; i < entries.size();++i) {
@@ -304,13 +304,13 @@ bool Controler::findAutoSave(){
     removeAutoSaves();
     return false;
 }
-const QString Controler::autoSavesDir() {return QString(QDir::tempPath() + QDir::separator() + "Powiter" + QDir::separator());}
+const QString AppInstance::autoSavesDir() {return QString(QDir::tempPath() + QDir::separator() + "Powiter" + QDir::separator());}
 
-void Controler::deselectAllNodes() const{
+void AppInstance::deselectAllNodes() const{
     _gui->_nodeGraphTab->_nodeGraphArea->deselect();
 }
 
-void Controler::showErrorDialog(const QString& title,const QString& message) const{
+void AppInstance::showErrorDialog(const QString& title,const QString& message) const{
     _gui->errorDialog(title, message);
 
 }

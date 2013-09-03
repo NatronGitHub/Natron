@@ -15,7 +15,7 @@
 #include <QtCore/QMutexLocker>
 #include <QtConcurrentRun>
 
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Row.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
@@ -237,8 +237,8 @@ bool Writer::validInfosForRendering(){
 
 void Writer::startRendering(){
     if(validInfosForRendering()){
-        ctrlPTR->getModel()->setCurrentGraph(this,false);
-        ctrlPTR->getModel()->startVideoEngine();
+        appPTR->getModel()->setCurrentGraph(this,false);
+        appPTR->getModel()->startVideoEngine();
     }
 }
 

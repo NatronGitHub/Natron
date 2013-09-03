@@ -17,7 +17,7 @@
 #include "Readers/ReadExr.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Row.h"

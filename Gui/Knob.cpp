@@ -26,7 +26,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QStyleFactory>
 
 
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
@@ -408,18 +408,18 @@ void Knob::validateEvent(bool initViewer){
     NodeGui* nodeUI = node->getNodeUi();
     NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
     if(viewer){
-        ctrlPTR->getModel()->clearPlaybackCache();
-        ctrlPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
-        int currentFrameCount = ctrlPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
+        appPTR->getModel()->clearPlaybackCache();
+        appPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+        int currentFrameCount = appPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
-            ctrlPTR->triggerAutoSaveOnNextEngineRun();
+            appPTR->triggerAutoSaveOnNextEngineRun();
             if (currentFrameCount > 1 || currentFrameCount == -1) {
-                ctrlPTR->getModel()->startVideoEngine(-1);
+                appPTR->getModel()->startVideoEngine(-1);
             }else{
-                ctrlPTR->getModel()->startVideoEngine(1);
+                appPTR->getModel()->startVideoEngine(1);
             }
         }else{
-            ctrlPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
+            appPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
         }
     }
 }
@@ -716,7 +716,7 @@ void FileCommand::undo(){
     std::string className= _knob->getCallBack()->getNode()->className();
     if(className == string("Reader")){
         Node* node= _knob->getCallBack()->getNode();
-        ctrlPTR->getModel()->setCurrentGraph(NULL,false);
+        appPTR->getModel()->setCurrentGraph(NULL,false);
         static_cast<Reader*>(node)->showFilePreview();
     }
     _knob->validateEvent(true);
@@ -732,7 +732,7 @@ void FileCommand::redo(){
     std::string className= _knob->getCallBack()->getNode()->className();
     if(className == string("Reader")){
         Node* node= _knob->getCallBack()->getNode();
-        ctrlPTR->getModel()->setCurrentGraph(NULL,false);
+        appPTR->getModel()->setCurrentGraph(NULL,false);
         static_cast<Reader*>(node)->showFilePreview();
     }
     _knob->validateEvent(true);    
@@ -805,7 +805,7 @@ void File_Knob::restoreFromString(const std::string& str){
         std::string className=getCallBack()->getNode()->className();
         if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
-            ctrlPTR->getModel()->setCurrentGraph(NULL,false);
+            appPTR->getModel()->setCurrentGraph(NULL,false);
             static_cast<Reader*>(node)->showFilePreview();
         }
         validateEvent(true);

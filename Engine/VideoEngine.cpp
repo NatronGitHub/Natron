@@ -41,7 +41,7 @@
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ViewerGL.h"
 
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
 
 
@@ -490,7 +490,7 @@ void VideoEngine::engineLoop(){
     _lastRunArgs._recursiveCall = true;
     if(_autoSaveOnNextRun){
         _autoSaveOnNextRun = false;
-        ctrlPTR->autoSave();
+        appPTR->autoSave();
     }
 
 }

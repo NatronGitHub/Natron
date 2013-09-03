@@ -28,7 +28,7 @@ CLANG_DIAG_ON(unused-private-field);
  
 
 #include "Gui/Texture.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
@@ -104,7 +104,7 @@ bool Gui::exit(){
         return false;
     }
 
-	ctrlPTR->Destroy();
+	appPTR->Destroy();
     delete this;
 
     qApp->exit(0);
@@ -151,11 +151,11 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Right) {
-            ctrlPTR->getModel()->getVideoEngine()->nextFrame();
+            appPTR->getModel()->getVideoEngine()->nextFrame();
             focusNextChild();
             return true;
         }else if(keyEvent->key() == Qt::Key_Left){
-            ctrlPTR->getModel()->getVideoEngine()->previousFrame();
+            appPTR->getModel()->getVideoEngine()->previousFrame();
             focusNextChild();
             return true;
         }
@@ -382,7 +382,7 @@ void Gui::setupUi()
     
     
     
-    Model* model = ctrlPTR->getModel();
+    Model* model = appPTR->getModel();
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
@@ -459,7 +459,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
             assert(_nodeGraphTab);
             assert(_nodeGraphTab->_nodeGraphArea);
             _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
-            ctrlPTR->getModel()->removeNode(tab->getInternalNode());
+            appPTR->getModel()->removeNode(tab->getInternalNode());
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
@@ -790,7 +790,7 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
     _actions.push_back(actionRef);
 }
 void ActionRef::onTriggered(){
-    ctrlPTR->createNode(_nodeName.c_str());
+    appPTR->createNode(_nodeName.c_str());
 }
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
@@ -805,9 +805,9 @@ void Gui::newProject(){
     }
     currentViewer->getUiContext()->viewer->disconnectViewer();
     _nodeGraphTab->_nodeGraphArea->clear();
-    ctrlPTR->clearInternalNodes();
-    ctrlPTR->resetCurrentProject();
-    ctrlPTR->createNode("Viewer");
+    appPTR->clearInternalNodes();
+    appPTR->resetCurrentProject();
+    appPTR->createNode("Viewer");
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
@@ -819,17 +819,17 @@ void Gui::openProject(){
         if (selectedFiles.size() > 0) {
             //clearing current graph
             _nodeGraphTab->_nodeGraphArea->clear();
-            ctrlPTR->clearInternalNodes();
+            appPTR->clearInternalNodes();
             QString file = selectedFiles.at(0);
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));
-            ctrlPTR->loadProject(path,name);
+            appPTR->loadProject(path,name);
         }
     }
 }
 void Gui::saveProject(){
-    if(ctrlPTR->hasProjectBeenSavedByUser()){
-        ctrlPTR->saveProject(ctrlPTR->getCurrentProjectPath(),ctrlPTR->getCurrentProjectName(),false);
+    if(appPTR->hasProjectBeenSavedByUser()){
+        appPTR->saveProject(appPTR->getCurrentProjectPath(),appPTR->getCurrentProjectName(),false);
     }else{
         saveProjectAs();
     }
@@ -848,12 +848,12 @@ void Gui::saveProjectAs(){
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
-        ctrlPTR->saveProject(path,file,false);
+        appPTR->saveProject(path,file,false);
     }
 }
 
 void Gui::autoSave(){
-    ctrlPTR->autoSave();
+    appPTR->autoSave();
 }
 
 bool Gui::isGraphWorthless() const{
@@ -862,9 +862,9 @@ bool Gui::isGraphWorthless() const{
 
 int Gui::saveWarning(){
     
-    if(!isGraphWorthless() && !ctrlPTR->isSaveUpToDate()){
+    if(!isGraphWorthless() && !appPTR->isSaveUpToDate()){
         QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                     QString("Save changes to " + ctrlPTR->getCurrentProjectName() + " ?"),
+                                     QString("Save changes to " + appPTR->getCurrentProjectName() + " ?"),
                                      QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
         if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
             return 2;

@@ -35,7 +35,7 @@ namespace Powiter {
     }
 }
 class InfoViewerWidget;
-class Controler;
+class AppInstance;
 class ViewerNode;
 class ViewerTab;
 

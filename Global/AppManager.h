@@ -21,13 +21,13 @@
 #include "Engine/Singleton.h"
 
 /*macro to get the unique pointer to the controler*/
-#define ctrlPTR Controler::instance()
+#define appPTR AppInstance::instance()
 
-#define currentOutput Controler::getCurrentOutput()
+#define currentOutput AppInstance::getCurrentOutput()
 
-#define currentViewer Controler::getCurrentViewer()
+#define currentViewer AppInstance::getCurrentViewer()
 
-#define currentWriter Controler::getCurrentWriter()
+#define currentWriter AppInstance::getCurrentWriter()
 
 class NodeGui;
 class Node;
@@ -56,8 +56,8 @@ public:
 /*Controler (see Model-view-controler pattern on wikipedia). This class
  implements the singleton pattern to ensure there's only 1 single
  instance of the object living. Also you can access the controler
- by the handy macro ctrlPTR*/
-class Controler : public QObject,public Singleton<Controler>
+ by the handy macro appPTR*/
+class AppInstance : public QObject,public Singleton<AppInstance>
 {
     class PluginToolButton{
     public:
@@ -82,8 +82,8 @@ class Controler : public QObject,public Singleton<Controler>
     std::vector<PluginToolButton*> _toolButtons;
     
 public:
-    Controler();
-    ~Controler();
+    AppInstance();
+    ~AppInstance();
 
     /*Create a new node  in the node graph.
      The name passed in parameter must match a valid node name,

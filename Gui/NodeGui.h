@@ -23,7 +23,7 @@ class QScrollArea;
 class SettingsPanel;
 class QVBoxLayout;
 class Node;
-class Controler;
+class AppInstance;
 class NodeGraph;
 class QAction;
 class QUndoCommand;
