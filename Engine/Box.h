@@ -19,12 +19,9 @@ private:
 	int _r; // right
 	int _t; // top
     
-protected:
-    //protected so Node::Info can modify it
-    bool _modified; // true when some functions are called
+
 public:
     
-    bool hasBeenModified() const { return _modified; }
     
     /*iterator : bottom-top, left-right */
     class  iterator {
@@ -74,11 +71,11 @@ public:
         return iterator(_t, _x, _x, _r);
     }
     
-    Box2D() : _x(0), _y(0), _r(1), _t(1) ,_modified(false){}
+    Box2D() : _x(0), _y(0), _r(1), _t(1) {}
     
-    Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) , _modified(false){}
+    Box2D(int x, int y, int r, int t) : _x(x), _y(y), _r(r), _t(t) {}
     
-    explicit Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t) , _modified(false){}
+    explicit Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t){}
     
     int x() const { return _x; }
     void set_x(int v) { _x = v; }
@@ -107,7 +104,6 @@ public:
         _y = y;
         _r = r;
         _t = t;
-        _modified = true;
     }
     
    
@@ -123,7 +119,6 @@ public:
         _r += dx;
         _y += dy;
         _t += dy;
-        _modified = true;
     }
     
     /*Pad the edges of the box by the input values.
@@ -139,7 +134,6 @@ public:
             _y += dy;
             _t += dt;
         }
-        _modified = true;
     }
     
     /*add the same amount left/right and bottom/top. */
