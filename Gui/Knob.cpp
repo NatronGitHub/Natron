@@ -10,6 +10,9 @@
 
 #include "Gui/Knob.h"
 
+#ifdef __POWITER_UNIX__
+#include <dlfcn.h>
+#endif
 #include <climits>
 #include <QtCore/QString>
 #include <QHBoxLayout>

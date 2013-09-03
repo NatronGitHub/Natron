@@ -17,18 +17,18 @@
 #include <utility>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
-#include <ofxhPluginCache.h> // FIXME: all OpenFX stuff should be PIMPL'ed
-#include <ofxhPropertySuite.h>
-#include <ofxhImageEffect.h>
-#include <ofxhImageEffectAPI.h>
-
 /*This is the core class of Powiter. It is where the plugins get loaded.
  *This class is the front-end of the core (processing part) of the software.
  **/
+
+namespace Powiter {
+    class OfxHost; // defined in Engine/OfxHost.h
+}
 
 class PluginID;
 
@@ -109,7 +109,7 @@ class Node;
 ///        operations (eg: add extra properties).
 ///    - it provides a description of the host application
 ///      which is passed back to the plugin.
-class Model: public QObject,public boost::noncopyable,public OFX::Host::ImageEffect::Host
+class Model: public QObject,public boost::noncopyable
 {
     Q_OBJECT
     
@@ -124,17 +124,13 @@ public:
 	
   
 	/*Create a new node internally*/
-    bool createNode(Node *&node,const std::string name);
+    Node* createNode(const std::string& name);
     
     void removeNode(Node* n);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     const QStringList& getNodeNameList(){return _nodeNames;}
 
-    
-	/*output to the console the name of the loaded plugins*/
-    void displayLoadedPlugins();
-    
     /*output to the console the readPlugins multimap content*/
     void displayLoadedReads();
     
@@ -160,59 +156,6 @@ public:
     
     typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
     typedef ReadPluginsIterator WritePluginsIterator;
-    
-    
-    /// Create a new instance of an image effect plug-in.
-    ///
-    /// It is called by ImageEffectPlugin::createInstance which the
-    /// client code calls when it wants to make a new instance.
-    ///
-    ///   \arg clientData - the clientData passed into the ImageEffectPlugin::createInstance
-    ///   \arg plugin - the plugin being created
-    ///   \arg desc - the descriptor for that plugin
-    ///   \arg context - the context to be created in
-    virtual OFX::Host::ImageEffect::Instance* newInstance(void* clientData,
-                                                          OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                          OFX::Host::ImageEffect::Descriptor& desc,
-                                                          const std::string& context);
-    
-    /// Override this to create a descriptor, this makes the 'root' descriptor
-    virtual OFX::Host::ImageEffect::Descriptor *makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin);
-    
-    /// used to construct a context description, rootContext is the main context
-    virtual OFX::Host::ImageEffect::Descriptor *makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
-                                                               OFX::Host::ImageEffect::ImageEffectPlugin *plug);
-    
-    /// used to construct populate the cache
-    virtual OFX::Host::ImageEffect::Descriptor *makeDescriptor(const std::string &bundlePath,
-                                                               OFX::Host::ImageEffect::ImageEffectPlugin *plug);
-    
-    /// vmessage
-    virtual OfxStatus vmessage(const char* type,
-                               const char* id,
-                               const char* format,
-                               va_list args);
-    
-    
-    /*group is a string as such:
-     Toto/Superplugins/blabla
-     This functions extracts the all parts of such a grouping, e.g in this case
-     it would return [Toto,Superplugins,blabla].*/
-    static std::vector<std::string> extractAllPartsOfGrouping(const std::string& group){
-        std::vector<std::string> out;
-        QString str(group.c_str());
-        int pos = 0;
-        while(pos < str.size()){
-            std::string newPart;
-            while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
-                newPart.append(1,str.at(pos).toLatin1());
-                ++pos;
-            }
-            ++pos;
-            out.push_back(newPart);
-        }
-        return out;
-    }
     
     void loadProject(const QString& filename,bool autoSave = false);
     
@@ -252,10 +195,6 @@ private:
     
     /*loads writes that are built-ins*/
     void loadBuiltinWrites();
-    
-    /*Reads OFX plugin cache and scan plugins directories
-     to load them all.*/
-    void loadOFXPlugins();
     
     /*Writes all plugins loaded and their descriptors to
      the OFX plugin cache.*/
@@ -300,21 +239,8 @@ private:
     NodeCache* _nodeCache;
     
     ViewerCache* _viewerCache;
-    
-    OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
-    
-    
-    /*plugin name -> pair< plugin id , plugin grouping >
-     The name of the plugin is followed by the first part of the grouping in brackets
-     to help identify two distinct plugins with the same name. e.g :
-     1)Invert [OFX]  with plugin id net.sourceforge.openfx.invert and grouping OFX/
-     2)Invert [Toto] with plugin id com.toto.invert and grouping Toto/SuperPlugins/OFX/
-     */
-    typedef std::map<std::string,std::pair<std::string,std::string> > OFXPluginsMap;
-    typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
-    
-    OFXPluginsMap _ofxPlugins;
 
+    boost::scoped_ptr<Powiter::OfxHost> ofxHost;
 };
 
 #endif // POWITER_ENGINE_MODEL_H_

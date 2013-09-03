@@ -13,6 +13,7 @@
 
 #include <locale>
 
+//#include "Engine/OfxHost.h" // for OfxHost::vmessage
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -82,7 +83,8 @@ bool OfxNode::isInputNode(){
         return true;
     return false;
 }
-const std::string OfxNode::className(){
+
+std::string OfxNode::className(){
     std::string label = getShortLabel();
     if(label.empty()){
         label = getLabel();
@@ -91,7 +93,7 @@ const std::string OfxNode::className(){
         return label;
     }else{
         std::string grouping = getDescriptor().getPluginGrouping();
-        std::vector<std::string> groups = Model::extractAllPartsOfGrouping(grouping);
+        std::vector<std::string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
         return groups[0]+getLongLabel();
     }
 }
@@ -517,11 +519,40 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 }
 
 OfxStatus OfxNode::vmessage(const char* type,
-                            const char* id,
+                            const char* /*id*/,
                             const char* format,
                             va_list args) {
-    return ctrlPTR->getModel()->vmessage(type, id, format, args);
+    assert(type);
+    assert(format);
+    bool isQuestion = false;
+    const char *prefix = "Message : ";
+    if (strcmp(type, kOfxMessageLog) == 0) {
+        prefix = "Log : ";
+    }
+    else if(strcmp(type, kOfxMessageFatal) == 0 ||
+            strcmp(type, kOfxMessageError) == 0) {
+        prefix = "Error : ";
+    }
+    else if(strcmp(type, kOfxMessageQuestion) == 0)  {
+        prefix = "Question : ";
+        isQuestion = true;
+    }
+
+    // Just dump our message to stdout, should be done with a proper
+    // UI in a full ap, and post a dialogue for yes/no questions.
+    fputs(prefix, stdout);
+    vprintf(format, args);
+    printf("\n");
+
+    if(isQuestion) {
+        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
+        return kOfxStatReplyYes;
+    }
+    else {
+        return kOfxStatOK;
+    }
 }
+
 void OfxNode::computePreviewImage(){
     if(getContext() != kOfxImageEffectContextGenerator){
         return;
@@ -586,6 +617,26 @@ void OfxNode::computePreviewImage(){
     
     _preview = ret;
     _nodeGUI->updatePreviewImageForReader();
+}
+
+/*group is a string as such:
+ Toto/Superplugins/blabla
+ This functions extracts the all parts of such a grouping, e.g in this case
+ it would return [Toto,Superplugins,blabla].*/
+std::vector<std::string> OfxNode::extractAllPartsOfGrouping(const std::string& group) {
+    std::vector<std::string> out;
+    QString str(group.c_str());
+    int pos = 0;
+    while(pos < str.size()){
+        std::string newPart;
+        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+            newPart.append(1,str.at(pos).toLatin1());
+            ++pos;
+        }
+        ++pos;
+        out.push_back(newPart);
+    }
+    return out;
 }
 
 

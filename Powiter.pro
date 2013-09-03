@@ -79,6 +79,7 @@ SOURCES += \
     Engine/Node.cpp \
     Engine/NodeCache.cpp \
     Engine/OfxClipInstance.cpp \
+    Engine/OfxHost.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
     Engine/PluginID.cpp \
@@ -145,6 +146,7 @@ HEADERS += \
     Engine/Node.h \
     Engine/NodeCache.h \
     Engine/OfxClipInstance.h \
+    Engine/OfxHost.h \
     Engine/OfxNode.h \
     Engine/OfxParamInstance.h \
     Engine/PluginID.h \

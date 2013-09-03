@@ -86,7 +86,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(QString name);
+    Node* createNode(const QString& name);
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/

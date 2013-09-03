@@ -57,7 +57,7 @@ bool ViewerNode::_validate(bool){
     return true;
 }
 
-const std::string ViewerNode::description(){
+std::string ViewerNode::description(){
     return "OutputNode";
 }
 

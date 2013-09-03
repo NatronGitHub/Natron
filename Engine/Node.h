@@ -158,8 +158,8 @@ public:
     /*============================*/
 
     /*Node utility functions*/
-    virtual const std::string className() =0;
-    virtual const std::string description() =0;
+    virtual std::string className() = 0;
+    virtual std::string description() = 0;
     /*============================*/
     
     /*Calculations related functions*/

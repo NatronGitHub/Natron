@@ -30,6 +30,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Lut.h"
 #include "Engine/NodeCache.h"
+#include "Engine/OfxHost.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/PluginID.h"
 #include "Readers/Reader.h"
@@ -49,27 +50,12 @@
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
 
-// ofx
-#include "ofxCore.h"
-#include "ofxImageEffect.h"
-#include "ofxPixels.h"
-
-// ofx host
-#include "ofxhBinary.h"
-#include "ofxhClip.h"
-#include "ofxhParam.h"
-#include "ofxhMemory.h"
-#include "ofxhPluginAPICache.h"
-#include "ofxhImageEffectAPI.h"
-#include "ofxhHost.h"
-
-
-
-
 using namespace std;
 using namespace Powiter;
 
-Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPluginCache(*this)
+Model::Model()
+: _videoEngine(0)
+, ofxHost(new Powiter::OfxHost)
 {
     
     /*node cache initialisation & restoration*/
@@ -162,36 +148,6 @@ Model::Model():OFX::Host::ImageEffect::Host(), _videoEngine(0), _imageEffectPlug
     }
     
     
-    _properties.setStringProperty(kOfxPropName, "PowiterHost");
-    _properties.setStringProperty(kOfxPropLabel, "Powiter");
-    _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, 1);
-    _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 1);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGBA, 0);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentAlpha, 1);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
-    _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
-    
-    _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
-    _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsStringAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsChoiceAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsBooleanAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropSupportsCustomAnimation, 0 );
-    _properties.setIntProperty(kOfxParamHostPropMaxParameters, -1);
-    _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
-    _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
-    _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
-    
-    
 }
 
 
@@ -238,7 +194,9 @@ void Model::loadAllPlugins(){
     loadWritePlugins();
     
     /*loading ofx plugins*/
-    loadOFXPlugins();
+    QStringList ofxPluginNames = ofxHost->loadOFXPlugins();
+    _nodeNames.append(ofxPluginNames);
+    
 }
 
 
@@ -294,13 +252,14 @@ void Model::initCounterAndGetDescription(Node*& node){
     
 }
 
-bool Model::createNode(Node *&node,const std::string name){
-	if(name=="Reader"){
+Node* Model::createNode(const std::string& name) {
+	Node* node;
+    if(name=="Reader"){
 		node=new Reader();
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
-        return true;
+        return node;
 	}else if(name =="Viewer"){
         node=new ViewerNode(_viewerCache);
         assert(node);
@@ -313,77 +272,22 @@ bool Model::createNode(Node *&node,const std::string name){
             ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
-        return true;
+        return node;
 	}else if(name == "Writer"){
 		node=new Writer();
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
-        return true;
-    }else{
-        
-        OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
-        if(ofxPlugin != _ofxPlugins.end()){
-            OFX::Host::ImageEffect::ImageEffectPlugin* plugin = _imageEffectPluginCache.getPluginById(ofxPlugin->second.first);
-            if(plugin){
-                const std::set<std::string>& contexts = plugin->getContexts();
-                set<string>::iterator found = contexts.find(kOfxImageEffectContextGenerator);
-                string context;
-                if(found != contexts.end()){
-                    context = *found;
-                }else{
-                    found = contexts.find(kOfxImageEffectContextFilter);
-                    if(found != contexts.end()){
-                        context = *found;
-                    }else{
-                        found = contexts.find(kOfxImageEffectContextTransition);
-                        if(found != contexts.end()){
-                            context = *found;
-                        }else{
-                            found = contexts.find(kOfxImageEffectContextPaint);
-                            if(found != contexts.end()){
-                                context = *found;
-                            }else{
-                                context = kOfxImageEffectContextGeneral;
-                            }
-                        }
-                    }
-                }
-                bool rval ;
-                try{
-                    rval = plugin->getPluginHandle();
-                }
-                catch(const char* str){
-                    cout << str << endl;
-                }
-                if(!rval)
-                    return false;
-                node = dynamic_cast<Node*>(plugin->createInstance(context, NULL));
-                if(node){
-                    node->initializeInputs();
-                    initCounterAndGetDescription(node);
-                    OFX::Host::ImageEffect::Instance* ofxInstance = dynamic_cast<OFX::Host::ImageEffect::Instance*>(node);
-                    assert(ofxInstance);
-                    ofxInstance->createInstanceAction();
-                    ofxInstance->getClipPreferences();//not sure we should do this here
-                    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> clips = ofxInstance->getDescriptor().getClipsByOrder();
-                    
-                    
-                    return true;
-                }
-            }
+        return node;
+    } else {
+        node = ofxHost->createOfxNode(name);
+        if (!node) {
+            return NULL;
         }
-        return false;
-	}
-    
-}
-// in the future, display the plugins loaded on the loading wallpaper
-void Model::displayLoadedPlugins(){
-    int i=0;
-    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; ++it) {
-        cout << it->first << endl;
+        node->initializeInputs();
+        initCounterAndGetDescription(node);
+        return node;
     }
-    cout  << i << " plugin(s) loaded." << endl;
 }
 
 
@@ -772,74 +676,7 @@ void Model::resetInternalDAG(){
 
 
 
-void Model::loadOFXPlugins(){
-    assert(OFX::Host::PluginCache::getPluginCache());
-    /// set the version label in the global cache
-    OFX::Host::PluginCache::getPluginCache()->setCacheVersion("PowiterOFXCachev1");
-    
-    /// make an image effect plugin cache
-    
-    /// register the image effect cache with the global plugin cache
-    _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
-    
-    
-#if defined(WINDOWS)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
-#endif
-#if defined(__linux__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/usr/OFX/Nuke");
-#endif
-#if defined(__APPLE__)
-    OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
-#endif
-    
-    /// now read an old cache cache
-    std::ifstream ifs("PowiterOFXCache.xml");
-    OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
-    OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
-    ifs.close();
-    
-    //  _imageEffectPluginCache.dumpToStdOut();
-    
-    /*Filling node name list and plugin grouping*/
-    const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
-    for (unsigned int i = 0 ; i < plugins.size(); ++i) {
-        OFX::Host::ImageEffect::ImageEffectPlugin* p = plugins[i];
-        assert(p);
-        if(p->getContexts().size() == 0)
-            continue;
-        std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
-        if(name.empty()){
-            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
-        }
-        std::string rawName = name;
-        std::string id = p->getIdentifier();
-        std::string grouping = p->getDescriptor().getPluginGrouping();
-        
-        
-        vector<string> groups = extractAllPartsOfGrouping(grouping);
-        if (groups.size() >= 1) {
-            name.append("  [");
-            name.append(groups[0]);
-            name.append("]");
-        }
-        assert(p->getBinary());
-        std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-        iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
-        iconFilename.append(id);
-        iconFilename.append(".png");
-        std::string groupIconFilename;
-        if (groups.size() >= 1) {
-            groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-            groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
-            groupIconFilename.append(groups[0]);
-            groupIconFilename.append(".png");
-        }
-        ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
-        _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
-        _nodeNames.append(name.c_str());
-    }
-}
+
 void Model::writeOFXCache(){
     /// and write a new cache, long version with everything in there
     std::ofstream of("PowiterOFXCache.xml");
@@ -850,82 +687,6 @@ void Model::writeOFXCache(){
     OFX::Host::PluginCache::clearPluginCache();
 }
 
-OFX::Host::ImageEffect::Instance* Model::newInstance(void* ,
-                                                     OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                     OFX::Host::ImageEffect::Descriptor& desc,
-                                                     const std::string& context)
-{
-    assert(plugin);
-    
-    OfxNode* ret =  new OfxNode(plugin, desc, context);
-    if(context == kOfxImageEffectContextGenerator){
-        ret->setCanHavePreviewImage();
-    }
-    return ret;
-}
-
-/// Override this to create a descriptor, this makes the 'root' descriptor
-OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
-{
-    assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
-    return desc;
-}
-
-/// used to construct a context description, rootContext is the main context
-OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
-                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
-{
-    assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
-    return desc;
-}
-
-/// used to construct populate the cache
-OFX::Host::ImageEffect::Descriptor *Model::makeDescriptor(const std::string &bundlePath,
-                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
-{
-    assert(plugin);
-    OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
-    return desc;
-}
-
-/// message
-OfxStatus Model::vmessage(const char* type,
-                          const char* ,
-                          const char* format,
-                          va_list args)
-{
-    assert(type);
-    assert(format);
-    bool isQuestion = false;
-    const char *prefix = "Message : ";
-    if (strcmp(type, kOfxMessageLog) == 0) {
-        prefix = "Log : ";
-    }
-    else if(strcmp(type, kOfxMessageFatal) == 0 ||
-            strcmp(type, kOfxMessageError) == 0) {
-        prefix = "Error : ";
-    }
-    else if(strcmp(type, kOfxMessageQuestion) == 0)  {
-        prefix = "Question : ";
-        isQuestion = true;
-    }
-    
-    // Just dump our message to stdout, should be done with a proper
-    // UI in a full ap, and post a dialogue for yes/no questions.
-    fputs(prefix, stdout);
-    vprintf(format, args);
-    printf("\n");
-    
-    if(isQuestion) {
-        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
-        return kOfxStatReplyYes;
-    }
-    else {
-        return kOfxStatOK;
-    }
-}
 
 QString Model::serializeNodeGraph() const{
     const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
@@ -947,7 +708,7 @@ QString Model::serializeNodeGraph() const{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
-            vector<string> groups = extractAllPartsOfGrouping(grouping);
+            vector<string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
             if (groups.size() >= 1) {
                 name.append("  [");
                 name.append(groups[0]);

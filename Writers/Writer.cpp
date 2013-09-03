@@ -48,11 +48,11 @@ Writer::~Writer(){
     delete _lock;
 }
 
-const std::string Writer::className(){
+std::string Writer::className() {
     return "Writer";
 }
 
-const std::string Writer::description(){
+std::string Writer::description() {
     return "OutputNode";
 }
 

@@ -28,6 +28,7 @@ class QHBoxLayout;
 
 class QImage;
 
+// FIXME: OFX::Host::ImageEffect::Instance should be a member
 class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instance
 {
     Q_OBJECT
@@ -51,64 +52,48 @@ public:
     
     virtual ~OfxNode(){}
     
-    virtual bool isInputNode();
+
+
+    ///////////////////////////
+    // Powiter::Node methods //
+    ///////////////////////////
+
+    virtual bool isInputNode() OVERRIDE;
     
-    virtual bool isOutputNode();
-    
-    void setAsOutputNode() {_isOutput = true;}
-    
-    bool hasPreviewImage() const {return _preview!=NULL;}
-    
-    bool canHavePreviewImage() const {return _canHavePreview;}
-    
-    void setCanHavePreviewImage() {_canHavePreview = true;}
-    
-    QImage* getPreview() const {return _preview;}
-    
-    int firstFrame(){return _frameRange.first;}
-    
-    int lastFrame(){return _frameRange.second;}
-    
-    void incrementCurrentFrame() {++_currentFrame;}
-    
-    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
-    
-    void setCurrentFrame(int f){
-        if(f >= _frameRange.first && f <= _frameRange.second)
-            _currentFrame = f;
-    }
-    
-    /*Useful only when _isOutput is true*/
-    int currentFrame() const {return _currentFrame;}
+    virtual bool isOutputNode() OVERRIDE;
     
     /*Returns the clips count minus the output clip*/
-    virtual int maximumInputs();
+    virtual int maximumInputs() OVERRIDE;
     
-    virtual int minimumInputs();
+    virtual int minimumInputs() OVERRIDE;
     
-    bool isInputOptional(int inpubNb);
+    virtual bool cacheData() OVERRIDE {return false;}
     
-    virtual bool cacheData(){return false;}
+    virtual std::string className() OVERRIDE;
     
-    virtual const std::string className();
+    virtual std::string description() OVERRIDE {return "";}
     
-    virtual const std::string description(){return "";}
+    virtual std::string setInputLabel (int inputNb) OVERRIDE;
     
-    virtual std::string setInputLabel(int inputNb);
-    
-    virtual bool isOpenFXNode() const {return true;}
+    virtual bool isOpenFXNode() const OVERRIDE {return true;}
     
     static ChannelSet ofxComponentsToPowiterChannels(const std::string& comp);
     
-    virtual ChannelSet supportedComponents();
+    virtual ChannelSet supportedComponents() OVERRIDE;
     
-    virtual bool _validate(bool);
+    virtual bool _validate(bool) OVERRIDE;
     
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+
+
     
+    //////////////////////////////////////////////
+    // OFX::Host::ImageEffect::Instance methods //
+    //////////////////////////////////////////////
+
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
-    virtual const std::string &getDefaultOutputFielding() const {
+    virtual const std::string &getDefaultOutputFielding() const OVERRIDE {
         static const std::string v(kOfxImageFieldNone);
         return v;
     }
@@ -116,12 +101,13 @@ public:
     /// make a clip
     virtual OFX::Host::ImageEffect::ClipInstance* newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
                                           OFX::Host::ImageEffect::ClipDescriptor* descriptor,
-                                                                  int index);
+                                                                  int index) OVERRIDE;
+
     virtual OfxStatus vmessage(const char* type,
                                const char* id,
                                const char* format,
-                               va_list args)  ;
-
+                               va_list args) OVERRIDE;
+    
     //
     // live parameters
     //
@@ -224,8 +210,43 @@ public:
     
     /// get the first and last times available on the effect's timeline
     virtual void timeLineGetBounds(double &t1, double &t2);
+
+    //
+    // END of OFX::Host::ImageEffect::Instance methods
+    //
+
+
+
     
-    
+
+    bool isInputOptional(int inpubNb);
+
+    void setAsOutputNode() {_isOutput = true;}
+
+    bool hasPreviewImage() const {return _preview!=NULL;}
+
+    bool canHavePreviewImage() const {return _canHavePreview;}
+
+    void setCanHavePreviewImage() {_canHavePreview = true;}
+
+    QImage* getPreview() const {return _preview;}
+
+    int firstFrame(){return _frameRange.first;}
+
+    int lastFrame(){return _frameRange.second;}
+
+    void incrementCurrentFrame() {++_currentFrame;}
+
+    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
+
+    void setCurrentFrame(int f){
+        if(f >= _frameRange.first && f <= _frameRange.second)
+            _currentFrame = f;
+    }
+
+    /*Useful only when _isOutput is true*/
+    int currentFrame() const {return _currentFrame;}
+
     void setTabKnob(Tab_Knob* k){_tabKnob = k;}
     
     Tab_Knob* getTabKnob() const {return _tabKnob;}
@@ -240,6 +261,13 @@ public:
     MappedInputV inputClipsCopyWithoutOutput();
 
     void computePreviewImage();
+
+    /*group is a string as such:
+     Toto/Superplugins/blabla
+     This functions extracts the all parts of such a grouping, e.g in this case
+     it would return [Toto,Superplugins,blabla].*/
+    static std::vector<std::string> extractAllPartsOfGrouping(const std::string& group);
+
 
 public slots:
     void onInstanceChangedAction(const QString&);

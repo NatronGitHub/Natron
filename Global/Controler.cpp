@@ -105,12 +105,12 @@ const QStringList& Controler::getNodeNameList(){
 }
 
 
-Node* Controler::createNode(QString name){
+Node* Controler::createNode(const QString& name){
     
-    Node* node = 0;
-    if(_model->createNode(node,name.toStdString())){
+    Node* node = _model->createNode(name.toStdString());
+    if (node) {
         _gui->createNodeGUI(node);
-    }else{
+    } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;
     }

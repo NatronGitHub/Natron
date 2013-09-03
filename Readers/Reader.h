@@ -435,13 +435,13 @@ public:
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual const std::string className();
+    virtual std::string className();
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual const std::string description();
+    virtual std::string description();
 
     /**
      * @brief Not documented yet as it will be revisited soon.

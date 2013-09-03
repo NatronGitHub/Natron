@@ -66,9 +66,9 @@ public:
         
     virtual ~Writer();
     
-    virtual const std::string className();
+    virtual std::string className();
     
-    virtual const std::string description();
+    virtual std::string description();
     
     /*If forReal is true, it creates a new Write and set _writeHandle
      to this newly created Write. It also calls Write::setupFile with 

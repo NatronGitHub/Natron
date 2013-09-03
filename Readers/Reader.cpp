@@ -58,11 +58,15 @@ Reader::~Reader(){
     _buffer.clear();
 	delete preview;
 }
-const std::string Reader::className(){return "Reader";}
 
-const std::string Reader::description(){
+std::string Reader::className() {
+    return "Reader";
+}
+
+std::string Reader::description() {
     return "InputNode";
 }
+
 void Reader::initKnobs(KnobCallback *cb){
     std::string desc("File");
     Knob* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
