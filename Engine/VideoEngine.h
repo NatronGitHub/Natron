@@ -358,6 +358,7 @@ private:
                                                 results of the function and calls
                                                 VideoEngine::dispatchComputeFrameRequestThread()
                                                 when finished.*/
+    // QThreadPool* _threadPool;
     
     QWaitCondition* _openGLCondition;
     
@@ -664,7 +665,9 @@ private:
 };
 
 
-
+/*Not used but leave it here if we need to use QThreadPool instead of
+ QtConcurrent::map.
+ */
 class RowRunnable : public QObject, public QRunnable{
     Q_OBJECT
     

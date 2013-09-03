@@ -45,27 +45,7 @@
 #include "Global/MemoryInfo.h"
 
 
-/* Here's a drawing that represents how the video Engine works:
- 
- 1) Without caching
- 
- [main thread]                    [OtherThread]
- |                                  |
- - videoEngine
- |------QtConcurrent::Run()>-computeFrameRequest_<
- |< -------------------------**finished()**      |
- -computeTreeForFrame()                  |           |
- |------QtConcurrent::map()--->metaEnginePerRow  |
- |<---------------------------**finished()**     |
- -engineLoop()                           |           |
- |-----------------------QtConcurrent::Run()------
- -updateDisplay()
- 
- 
- Whenever waiting for a **finished()** signal, the main thread is still executing
- the event loop. All OpenGL code is kept into the main thread and everything is done
- to avoid complications related to OpenGL.
- */
+
 
 using namespace std;
 using namespace Powiter;
@@ -177,6 +157,7 @@ void VideoEngine::stopEngine(){
 //    _mutex->lock();
 //    _startCondition.wait(_mutex);
 //    _mutex->unlock();
+    _startCondition.wakeOne();
 }
 
 void VideoEngine::run(){
@@ -438,17 +419,18 @@ void VideoEngine::run(){
         for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
             Row* row = new Row(x,*it,r,outChannels);
             row->zoomedY(counter);
-            // RowRunnable* worker = new RowRunnable(row,output);
-            //  if(counter%10 == 0){
-            // UNCOMMENT to report progress.
-            // QObject::connect(worker, SIGNAL(finished(int,int)), _engine ,SLOT(checkAndDisplayProgress(int,int)),Qt::QueuedConnection);
-            //}
+            // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
+//            if(counter%10 == 0){
+//            // UNCOMMENT to report progress.
+//                QObject::connect(worker, SIGNAL(finished(int,int)), this ,SLOT(checkAndDisplayProgress(int,int)),Qt::QueuedConnection);
+//            }
             _sequence.push_back(row);
             //  _threadPool->start(worker);
             ++counter;
         }
         _workerThreadsWatcher->setFuture(QtConcurrent::map(_sequence,boost::bind(metaEnginePerRow,_1,_dag.getOutput())));
         _workerThreadsWatcher->waitForFinished();
+        //_threadPool->waitForDone();
         
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
@@ -619,6 +601,7 @@ _mutex(mutex)
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
     _timer=new Timer();
+    //_threadPool = new QThreadPool;
     
     
     
@@ -626,12 +609,14 @@ _mutex(mutex)
 
 VideoEngine::~VideoEngine(){
     _workerThreadsWatcher->waitForFinished();
+    //  _threadPool->waitForDone();
     _mutex->lock();
     _aborted = true;
     _startCondition.wakeOne();
     _mutex->unlock();
     wait();
     delete _workerThreadsWatcher;
+    //  delete _threadPool;
     delete _timer;
     
 }
@@ -761,6 +746,12 @@ void VideoEngine::nextIncrement(){
 
 void VideoEngine::seekRandomFrame(int f){
     if(!_dag.getOutput() || _dag.getInputs().size()==0) return;
+    
+//            if(_lastRunArgs._frameRequestsCount == -1){
+//                _startEngine(f, -1, false,_lastRunArgs._forward,false);
+//            }else{
+//                _startEngine(f, 1, false,_lastRunArgs._forward,false);
+//            }
     if(_working){
         pause();
     }
