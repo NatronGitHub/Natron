@@ -245,7 +245,7 @@ protected:
 	KnobCallback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children
 	NodeGui* _nodeGUI;
-    QUndoStack* _undoStack;
+
 private:
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     void merge_info(bool forReal);
