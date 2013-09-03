@@ -38,21 +38,21 @@ using namespace Powiter;
 
 void Node::copy_info(Node* parent){
     clear_info();
-	_info->firstFrame(parent->getInfo()->firstFrame());
-	_info->lastFrame(parent->getInfo()->lastFrame());
-	_info->setYdirection(parent->getInfo()->getYdirection());
-	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
-	_info->setChannels(parent->getInfo()->channels());
-    if(_info->hasBeenModified()){
-        _info->mergeDataWindow(parent->getInfo()->getDataWindow());
+	_info.set_firstFrame(parent->info().firstFrame());
+	_info.set_lastFrame(parent->info().lastFrame());
+	_info.set_ydirection(parent->info().ydirection());
+	_info.set_displayWindow(parent->info().displayWindow());
+	_info.set_channels(parent->info().channels());
+    if(info().hasBeenModified()){
+        _info.merge_dataWindow(parent->info().dataWindow());
     }else{
-        _info->setDataWindow(parent->getInfo()->getDataWindow());
+        _info.set_dataWindow(parent->info().dataWindow());
     }
-    _info->rgbMode(parent->getInfo()->rgbMode());
-    _info->blackOutside(parent->getInfo()->blackOutside());
+    _info.set_rgbMode(parent->info().rgbMode());
+    _info.set_blackOutside(parent->info().blackOutside());
 }
 void Node::clear_info(){
-	_info->reset();
+	_info.reset();
    
     
 }
@@ -71,7 +71,7 @@ int Node::inputCount() const {
     return _parents.size();
 }
 
-void Node::Info::mergeDisplayWindow(const Format& other){
+void Node::Info::merge_displayWindow(const Format& other){
     _displayWindow.merge(other);
     _displayWindow.pixel_aspect(other.pixel_aspect());
     if(_displayWindow.name().empty()){
@@ -83,80 +83,82 @@ void Node::merge_info(bool forReal){
     clear_info();
 	int final_direction=0;
 	ChannelSet chans;
-    bool displayMode = _info->rgbMode();
+    bool displayMode = info().rgbMode();
 	for (int i =0 ; i < inputCount(); ++i) {
         Node* parent = _parents[i];
-        merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
+        merge_frameRange(parent->info().firstFrame(),parent->info().lastFrame());
         if(forReal){
-            final_direction+=parent->getInfo()->getYdirection();
-            chans += parent->getInfo()->channels();
+            final_direction+=parent->info().ydirection();
+            chans += parent->info().channels();
             ChannelSet supportedComp = supportedComponents();
             if ((supportedComp & chans) != chans) {
                 cout <<"WARNING:( " << getName() << ") does not support one or more of the following channels:\n " ;
                 chans.printOut();
                 cout << "Coming from node " << parent->getName() << endl;
             }
-            if(parent->getInfo()->rgbMode()){
+            if(parent->info().rgbMode()){
                 displayMode = true;
             }
-            if(parent->getInfo()->blackOutside()){
-                _info->blackOutside(true);
+            if(parent->info().blackOutside()){
+                _info.set_blackOutside(true);
             }
            
         }
-        _info->merge(*parent->getInfo());
-        _info->mergeDisplayWindow(parent->getInfo()->getDisplayWindow());
+        _info.merge_dataWindow(parent->info().dataWindow());
+        _info.merge_displayWindow(parent->info().displayWindow());
     }
     if(_parents.size() > 0)
         final_direction = final_direction / _parents.size();
-	_info->setChannels(chans);
-    _info->rgbMode(displayMode);
-    _info->setYdirection(final_direction);
+	_info.set_channels(chans);
+    _info.set_rgbMode(displayMode);
+    _info.set_ydirection(final_direction);
 }
 void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
-	if (_info->firstFrame() == -1) { // if not initialized
-        _info->firstFrame(otherFirstFrame);
-    }else if(otherFirstFrame < _info->firstFrame()){
-         _info->firstFrame(otherFirstFrame);
+	if (info().firstFrame() == -1) { // if not initialized
+        _info.set_firstFrame(otherFirstFrame);
+    } else if (otherFirstFrame < info().firstFrame()) {
+         _info.set_firstFrame(otherFirstFrame);
     }
     
-    if (_info->lastFrame() == -1)
+    if (info().lastFrame() == -1)
     {
-        _info->lastFrame(otherLastFrame);
+        _info.set_lastFrame(otherLastFrame);
     }
-    else if(otherLastFrame > _info->lastFrame()){
-        _info->lastFrame(otherLastFrame);
+    else if (otherLastFrame > info().lastFrame()) {
+        _info.set_lastFrame(otherLastFrame);
     }
 	
 }
 bool Node::Info::operator==( Node::Info &other){
-	if(other.channels()==this->channels() &&
-       other.firstFrame()==this->_firstFrame &&
-       other.lastFrame()==this->_lastFrame &&
-       other.getYdirection()==this->_ydirection &&
-       other.getDisplayWindow()==this->_displayWindow
-       ){
+	if(other.channels()      == this->channels() &&
+       other.firstFrame()    == this->_firstFrame &&
+       other.lastFrame()     == this->_lastFrame &&
+       other.ydirection()    == this->_ydirection &&
+       other.dataWindow()    == this->_dataWindow && // FIXME: [FD] added this line, is it OK?
+       other.displayWindow() == this->_displayWindow
+       ) {
         return true;
-	}else{
+	} else {
 		return false;
 	}
     
 }
 void Node::Info::operator=(const Node::Info &other){
-    _channels = other._channels;
-    _firstFrame = other._firstFrame;
-    _lastFrame = other._lastFrame;
-    _displayWindow = other._displayWindow;
-    setYdirection(other._ydirection);
-    set(other);
-    rgbMode(other._rgbMode);
-    _blackOutside = other._blackOutside;
+    set_channels(other.channels());
+    set_firstFrame(other.firstFrame());
+    set_lastFrame(other.lastFrame());
+    set_displayWindow(other.displayWindow());
+    set_ydirection(other.ydirection());
+    set_dataWindow(other.dataWindow());
+    set_rgbMode(other.rgbMode());
+    set_blackOutside(other.blackOutside());
 }
 
 
-Node::Node(){
+Node::Node()
+: _info()
+{
     _marked = false;
-    _info = new Info;
     _hashValue=new Hash;
     _knobsCB = new KnobCallback(NULL,this);
 	
@@ -324,7 +326,7 @@ Row* Node::get(int y,int x,int r){
     }
     Row* out = 0;
     U64 key = _hashValue->getHashValue();
-    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,_info->channels());
+    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,info().channels());
     if (entry.second && entry.first != 0) {
         out = entry.second;
     }
@@ -332,16 +334,16 @@ Row* Node::get(int y,int x,int r){
     // FIXME: we should check for more things (frame number...)
     if (!out || out->y() != y || out->offset() != x || out->right() !=  r) {
         if (cacheData()) {
-            out = cache->addRow(entry.first,x,r,y, _info->channels(), filename);
+            out = cache->addRow(entry.first,x,r,y, info().channels(), filename);
             if (!out) {
                 return NULL;
             }
         } else {
-            out = new Row(x,y,r,_info->channels());
+            out = new Row(x,y,r,info().channels());
             out->allocateRow();
         }
         assert(out->offset() == x && out->right() == r);
-        engine(y,x,r, _info->channels(), out);
+        engine(y,x,r, info().channels(), out);
     }
     assert(out);
     return out;
@@ -353,7 +355,6 @@ Node::~Node(){
     _knobsVector.clear();
     _inputLabelsMap.clear();
     delete _hashValue;
-    delete _info;
     delete _knobsCB;
 }
 

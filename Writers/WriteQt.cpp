@@ -62,7 +62,7 @@ void WriteQt::initializeColorSpace(){
  otherwise it would stall the GUI.*/
 void WriteQt::setupFile(const std::string& filename){
     _filename = filename;
-    const Format& frmt = op->getInfo()->getDisplayWindow();
+    const Format& frmt = op->info().displayWindow();
     size_t dataSize = 4* frmt.w() * frmt.h();
     _buf = (uchar*)malloc(dataSize);
 }
@@ -71,7 +71,7 @@ void WriteQt::setupFile(const std::string& filename){
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
 void WriteQt::writeAllData(){
-    const Format& frmt = op->getInfo()->getDisplayWindow();
+    const Format& frmt = op->info().displayWindow();
     const ChannelSet& channels = op->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -100,7 +100,7 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
 
 void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
     Row* row = op->input(0)->get(y,offset,range);
-    const Format& frmt = op->getInfo()->getDisplayWindow();
+    const Format& frmt = op->info().displayWindow();
     
     /*invert y to be in top-to-bottom increasing order*/
     y = frmt.top()-y-1;

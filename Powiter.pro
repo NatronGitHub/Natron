@@ -80,6 +80,7 @@ SOURCES += \
     Engine/NodeCache.cpp \
     Engine/OfxClipInstance.cpp \
     Engine/OfxHost.cpp \
+    Engine/OfxImageEffectInstance.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
     Engine/PluginID.cpp \
@@ -148,6 +149,7 @@ HEADERS += \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
     Engine/OfxNode.h \
+    Engine/OfxImageEffectInstance.h \
     Engine/OfxParamInstance.h \
     Engine/PluginID.h \
     Engine/ReferenceCountedObject.h \

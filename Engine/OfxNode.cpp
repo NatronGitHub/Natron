@@ -146,8 +146,8 @@ bool OfxNode::isInputOptional(int inpubNb){
 }
 bool OfxNode::_validate(bool forReal){
     _firstTime = true;
-    _frameRange.first = _info->firstFrame();
-    _frameRange.second = _info->lastFrame();
+    _frameRange.first = info().firstFrame();
+    _frameRange.second = info().lastFrame();
     
     /*Checking if all mandatory inputs are connected!*/
     MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
@@ -170,12 +170,12 @@ bool OfxNode::_validate(bool forReal){
             double pa = clip->getAspectRatio();
             //  cout << "pa : " << pa << endl;
             //we just set the displayWindow/dataWindow rather than merge it
-            _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
-            _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
-            _info->rgbMode(true);
-            _info->setYdirection(1);
+            _info.set_displayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
+            _info.set(rod.x1, rod.y1, rod.x2, rod.y2);
+            _info.set_rgbMode(true);
+            _info.set_ydirection(1);
             string comp = clip->getUnmappedComponents();
-            _info->setChannels(ofxComponentsToPowiterChannels(comp));
+            _info.set_channels(ofxComponentsToPowiterChannels(comp));
             
         }
         
@@ -196,7 +196,7 @@ bool OfxNode::_validate(bool forReal){
 }
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
-    const Format& dispW = _info->getDisplayWindow();
+    const Format& dispW = info().displayWindow();
     renderW.x1 = dispW.x();
     renderW.x2 = dispW.right();
     renderW.y1 = dispW.y();
@@ -597,8 +597,8 @@ void OfxNode::computePreviewImage(){
     renderW.x2 = rod.x2;
     renderW.y1 = rod.y1;
     renderW.y2 = rod.y2;
-    Box2D oldBox(_info->getDataWindow());
-    _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
+    Box2D oldBox(info().dataWindow());
+    _info.set_dataWindow(Box2D(rod.x1, rod.y1, rod.x2, rod.y2));
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.;
     beginRenderAction(0, 25, 1, true, renderScale);
@@ -623,7 +623,7 @@ void OfxNode::computePreviewImage(){
             dst_pixels[j] = qRgba(p.r*255, p.g*255, p.b*255,p.a ? p.a*255 : 255);
         }
     }
-    _info->set(oldBox);
+    _info.set_dataWindow(oldBox);
     endRenderAction(0, 25, 1, true, renderScale);
 
     

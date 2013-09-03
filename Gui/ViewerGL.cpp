@@ -247,13 +247,13 @@ void ViewerGL::initConstructor(){
     
     _hasHW=true;
     _blankViewerInfos = new ViewerInfos;
-    _blankViewerInfos->setChannels(Powiter::Mask_RGBA);
-    _blankViewerInfos->rgbMode(true);
+    _blankViewerInfos->set_channels(Powiter::Mask_RGBA);
+    _blankViewerInfos->set_rgbMode(true);
     Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
-    _blankViewerInfos->set(0, 0, 2048, 1556);
-    _blankViewerInfos->setDisplayWindow(frmt);
-    _blankViewerInfos->firstFrame(0);
-    _blankViewerInfos->lastFrame(0);
+    _blankViewerInfos->set_dataWindow(Box2D(0, 0, 2048, 1556));
+    _blankViewerInfos->set_displayWindow(frmt);
+    _blankViewerInfos->set_firstFrame(0);
+    _blankViewerInfos->set_lastFrame(0);
     blankInfoForViewer(true);
 	_drawing=false;
 	exposure = 1;
@@ -1224,7 +1224,7 @@ void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
     _currentViewerInfos = viewerInfos;
     Format* df=appPTR->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
-        _currentViewerInfos->getDisplayWindow().name(df->name());
+        _currentViewerInfos->displayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
 }
 
@@ -1658,10 +1658,10 @@ void ViewerGL::disconnectViewer(){
 bool ViewerGL::rgbMode(){return getCurrentViewerInfos()->rgbMode();}
 
 /*The dataWindow of the currentFrame(BBOX)*/
-const Box2D& ViewerGL::dataWindow(){return getCurrentViewerInfos()->getDataWindow();}
+const Box2D& ViewerGL::dataWindow(){return getCurrentViewerInfos()->dataWindow();}
 
 /*The displayWindow of the currentFrame(Resolution)*/
-const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->getDisplayWindow();}
+const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->displayWindow();}
 
 /*display black in the viewer*/
 void ViewerGL::clearViewer(){

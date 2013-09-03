@@ -920,7 +920,7 @@ void ReadFFMPEG::readHeader(const QString& filename, bool) {
         // ui_context->regionOfInterest(dynamic_cast<IntegerBox&>(op->getInfo()));
         _numFrames = frames;
         _memNeeded = width * height * 3;
-        setReaderInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
+        set_readerInfo(imageFormat, bbox, filename, Mask_RGBA, -1, true);
     }
 }
 void ReadFFMPEG::readAllData(bool){
@@ -941,8 +941,8 @@ bool ReadFFMPEG::fillBuffer(){
 }
 
 void ReadFFMPEG::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    int w = op->getInfo()->getDisplayWindow().w();
-    int h = op->getInfo()->getDisplayWindow().h();
+    int w = op->info().displayWindow().w();
+    int h = op->info().displayWindow().h();
 	
 	
 	unsigned char* FROM = _data->buffer();
@@ -964,7 +964,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelSet channels,Row* out)
  
 
 void ReadFFMPEG::make_preview(){
-    Format frmt = op->getInfo()->getDisplayWindow();
+    Format frmt = op->info().displayWindow();
     QImage *preview = new QImage(_data->buffer(), frmt.w(),frmt.h(),QImage::Format_RGB888);
     op->setPreview(preview);
 }

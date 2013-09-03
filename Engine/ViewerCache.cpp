@@ -54,8 +54,8 @@ _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
     _frameInfo->set(bbox);
-    _frameInfo->setDisplayWindow(dispW);
-    _frameInfo->setChannels(channels);
+    _frameInfo->set_displayWindow(dispW);
+    _frameInfo->set_channels(channels);
     
 }
 

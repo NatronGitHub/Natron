@@ -25,9 +25,8 @@
 using namespace std;
 using namespace Powiter;
 
-Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0)
+Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0),_readerInfo()
 {
-	_readInfo = new ReaderInfo; // deleted by the reader which manages this read handle
 }
 
 Read::~Read(){
@@ -77,24 +76,24 @@ void Read::createKnobDynamically(){
     op->createKnobDynamically();
 }
 
-void Read::setReaderInfo(Format dispW,
+void Read::set_readerInfo(Format dispW,
 	const Box2D& dataW,
 	const QString& file,
 	ChannelSet channels,
 	int Ydirection,
 	bool rgb) {
-    _readInfo->setDisplayWindow(dispW);
-    _readInfo->set(dataW);
-    _readInfo->setChannels(channels);
-    _readInfo->setYdirection(Ydirection);
-    _readInfo->rgbMode(rgb);
-    _readInfo->setCurrentFrameName(file.toStdString());
+    _readerInfo.set_displayWindow(dispW);
+    _readerInfo.set_dataWindow(dataW);
+    _readerInfo.set_channels(channels);
+    _readerInfo.set_ydirection(Ydirection);
+    _readerInfo.set_rgbMode(rgb);
+    _readerInfo.setCurrentFrameName(file.toStdString());
 }
 
 void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
     if(slContext->getRowsToRead().size() == 0){
         const std::vector<int>& rows = slContext->getRows();
-        if(_readInfo->getYdirection() < 0){
+        if(_readerInfo.ydirection() < 0){
             //top to bottom
             vector<int>::const_reverse_iterator it  = rows.rbegin();
             for(; it!=rows.rend() ; ++it) {

@@ -57,47 +57,50 @@ class ViewerTab;
          *@brief Holds info necessary to render like channels,display window...See the documentation of
          *Node::Info for a more complete documentation.
          **/
-        class ViewerInfos : public Box2D{
+        class ViewerInfos {
             
             int _firstFrame; /*!< first frame in the sequence*/
             int _lastFrame; /*!< last frame in the sequence*/
             bool _rgbMode; /*!< true if displaying RGB image, otherwise it assumes YCbCr*/
+            Box2D _dataWindow;
             Format _displayWindow; /*!< display window of the data, for the data window see x,y,range,offset parameters*/
             ChannelSet _channels; /*!< all channels defined by the current Node ( that are allocated)*/
             
         public:
             
-            ViewerInfos():Box2D(),_firstFrame(-1),_lastFrame(-1),_rgbMode(true),_displayWindow(),_channels(){}
+            ViewerInfos():_firstFrame(-1),_lastFrame(-1),_rgbMode(true),_dataWindow(),_displayWindow(),_channels(){}
             
             virtual ~ViewerInfos(){}
             
-            void setDisplayWindow(Format format){_displayWindow=format;}
+            void set_displayWindow(const Format& format) { _displayWindow=format; }
             
-            const Format& getDisplayWindow() const {return _displayWindow;}
+            const Format& displayWindow() const { return _displayWindow; }
             
-            void mergeDisplayWindow(const Format& other);
+            void merge_displayWindow(const Format& other);
             
-            const Box2D& getDataWindow() const {return dynamic_cast<const Box2D&>(*this);}
+            void set_dataWindow(const Box2D& win) { _dataWindow = win; }
+
+            const Box2D& dataWindow() const { return _dataWindow; }
             
             bool operator==(const ViewerInfos& other);
             
             void operator=(const ViewerInfos &other);
             
-            void firstFrame(int nb){_firstFrame=nb;}
+            void set_firstFrame(int nb) { _firstFrame=nb; }
             
-            void lastFrame(int nb){_lastFrame=nb;}
+            void set_lastFrame(int nb) { _lastFrame=nb; }
             
-            int firstFrame() const {return _firstFrame;}
+            int firstFrame() const { return _firstFrame; }
             
-            int lastFrame() const {return _lastFrame;}
+            int lastFrame() const { return _lastFrame; }
             
-            void setChannels(ChannelSet mask){_channels=mask;}
+            void set_channels(ChannelSet mask) { _channels=mask; }
             
-            const ChannelSet& channels() const {return _channels;}
+            const ChannelSet& channels() const { return _channels; }
             
-            void rgbMode(bool m){_rgbMode=m;}
+            void set_rgbMode(bool m) { _rgbMode=m; }
             
-            bool rgbMode() const {return _rgbMode;}
+            bool rgbMode() const { return _rgbMode; }
             
             void reset();
         };

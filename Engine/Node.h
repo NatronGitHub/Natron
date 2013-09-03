@@ -59,30 +59,35 @@ public:
         , _channels()
         {}
 
-		void setYdirection(int direction){_ydirection=direction;}
-		int getYdirection() const {return _ydirection;}
+		void set_ydirection(int direction){_ydirection=direction;}
+		int ydirection() const {return _ydirection;}
 
-		void setDisplayWindow(const Format& format) { _displayWindow = format; }
-        void mergeDisplayWindow(const Format& other);
-		const Format& getDisplayWindow() const { return _displayWindow; }
+		void set_displayWindow(const Format& format) { _displayWindow = format; }
+        void merge_displayWindow(const Format& other);
+		const Format& displayWindow() const { return _displayWindow; }
         
-		void setDataWindow(const Box2D& win) { _dataWindow = win; }
-        void mergeDataWindow(const Box2D& other) { _dataWindow.merge(other); }
-		const Box2D& getDataWindow() const { return _dataWindow; }
+		void set_dataWindow(const Box2D& win) { _dataWindow = win; }
+        void merge_dataWindow(const Box2D& other) { _dataWindow.merge(other); }
+		const Box2D& dataWindow() const { return _dataWindow; }
 
-		bool operator==( Node::Info &other);
+        void set_firstFrame(int nb) { _firstFrame = nb; }
+		int firstFrame() const { return _firstFrame; }
+        
+		void set_lastFrame(int nb) { _lastFrame = nb; }
+		int lastFrame() const { return _lastFrame; }
+        
+		void set_channels(const ChannelSet& mask) { _channels = mask; }
+		const ChannelSet& channels() const { return _channels; }
+
+		bool blackOutside() const { return _blackOutside; }
+		void set_blackOutside(bool bo) { _blackOutside = bo; }
+
+        void set_rgbMode(bool m) { _rgbMode = m; }
+        bool rgbMode() const { return _rgbMode; }
+
+        bool operator==( Node::Info &other);
         void operator=(const Node::Info &other);
-		void firstFrame(int nb){_firstFrame=nb;}
-		void lastFrame(int nb){_lastFrame=nb;}
-		int firstFrame() const {return _firstFrame;}
-		int lastFrame() const {return _lastFrame;}
-		void setChannels(ChannelSet mask){_channels=mask;}
-		const ChannelSet& channels() const {return _channels;}
-		bool blackOutside() const {return _blackOutside;}
-		void blackOutside(bool bo){_blackOutside=bo;}
-        void rgbMode(bool m){_rgbMode=m;}
-        bool rgbMode() const {return _rgbMode;}
-        
+
         void reset();
         
 	private:
@@ -140,13 +145,13 @@ public:
     /*============================*/
     
 	/*Node infos*/
-	Info* getInfo(){return _info;}
+	const Info& info() const { return _info; }
     void clear_info();
 
 
 	Box2D& getRequestedBox(){return _requestedBox;}
-    int width(){return _info->getDisplayWindow().w();}
-    int height(){return _info->getDisplayWindow().h();}
+    int width(){return info().displayWindow().w();}
+    int height(){return info().displayWindow().h();}
        
     /*============================*/
     
@@ -217,7 +222,11 @@ public:
     
 
     virtual bool isOpenFXNode() const {return false;}
-        
+
+    void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
+
+    void set_lastFrame(int nb) { _info.set_lastFrame(nb); }
+
 protected:
     
     virtual ChannelSet supportedComponents() =0;
@@ -225,7 +234,7 @@ protected:
 
 	virtual bool _validate(bool /*forReal*/) = 0;
     
-	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
+	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
     bool _marked;
