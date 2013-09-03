@@ -22,7 +22,7 @@
 #include <boost/noncopyable.hpp>
 #endif
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 class QVBoxLayout;
 class QScrollArea;

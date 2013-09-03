@@ -22,7 +22,8 @@
 
 #include <string>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
+#include "Global/Enums.h"
 
 /*re-writing of the portable mapped-file implementation, as the boost::iostreams::mapped_file does not have the behaviour
 // desired in this case.*/

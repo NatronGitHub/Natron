@@ -14,8 +14,8 @@
 #include <QString>
 #include <QStringList>
 
+#include "Global/Macros.h"
 #include "Engine/Node.h"
-#include "Global/GlobalDefines.h"
 
 class QImage;
 class FrameEntry;

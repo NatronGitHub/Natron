@@ -20,7 +20,7 @@
 #endif
 #include <QtCore/QString>
 #include <QtCore/QStringList>
-#include <ImfStandardAttributes.h> // FIXME: should be PIMPL'ed
+
 #include <ofxhPluginCache.h> // FIXME: all OpenFX stuff should be PIMPL'ed
 #include <ofxhPropertySuite.h>
 #include <ofxhImageEffect.h>

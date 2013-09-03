@@ -15,7 +15,7 @@
 #include <string>
 #include <QtCore/QFutureWatcher>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Engine/Node.h"
 
 

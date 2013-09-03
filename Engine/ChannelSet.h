@@ -13,6 +13,7 @@
 #define POWITER_ENGINE_CHANNELSET_H_
 
 #include <string>
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 class ChannelSet{

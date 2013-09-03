@@ -21,6 +21,9 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
+CLANG_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QKeySequence>
 

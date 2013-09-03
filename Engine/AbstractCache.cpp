@@ -16,7 +16,7 @@
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Engine/MemoryFile.h"
 
 using namespace std;

@@ -10,6 +10,10 @@
 
 #include "FeedbackSpinBox.h"
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QWheelEvent>
 
 FeedbackSpinBox::FeedbackSpinBox(QWidget* parent,bool mode):LineEdit(parent),_mode(mode),_decimals(1),_increment(1.0),_mini(0),_maxi(99)

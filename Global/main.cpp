@@ -23,7 +23,7 @@
 #include <QtCore/QString>
 #include <QLabel>
 #include <QtGui/QPixmap>
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Global/Controler.h"
 #include "Engine/Model.h"
 

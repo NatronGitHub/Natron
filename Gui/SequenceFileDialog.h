@@ -33,6 +33,8 @@
 #include <QComboBox>
 #include <QListView>
 
+#include "Global/Macros.h"
+
 class LineEdit;
 class Button;
 class QCheckBox;

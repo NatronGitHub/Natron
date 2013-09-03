@@ -42,6 +42,7 @@
 #include <cmath>
 #include <QtGui/QRgb>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 namespace Powiter {

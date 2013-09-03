@@ -11,6 +11,9 @@
 #include "NodeGraph.h"
 
 #include <cstdlib>
+CLANG_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+CLANG_DIAG_ON(unused-private-field);
 #include <QGraphicsProxyWidget>
 #include <QScrollArea>
 #include <QScrollBar>

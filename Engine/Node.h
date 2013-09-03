@@ -16,8 +16,8 @@
 #include <string>
 #include <map>
 
+#include "Global/Macros.h"
 #include "Engine/ChannelSet.h"
-#include "Global/GlobalDefines.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
 

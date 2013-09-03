@@ -23,7 +23,7 @@
 #include <QAction>
 #include <QMainWindow>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 class QString;
 class TabWidget;

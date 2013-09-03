@@ -21,7 +21,15 @@
 #include <QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtCore/QEvent>
+CLANG_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
+
+#include "Global/Macros.h"
+GCC_DIAG_OFF(unused-parameter);
+#include <ImfAttribute.h> // FIXME: should be PIMPL'ed
+GCC_DIAG_ON(unused-parameter);
 
 #include "Gui/TabWidget.h"
 #include "Engine/VideoEngine.h"
@@ -37,7 +45,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
-#include "Global/GlobalDefines.h"
+
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */

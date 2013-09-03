@@ -18,12 +18,14 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
+CLANG_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QDragEnterEvent>
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>
 #include <QScrollArea>
 
-#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
 #include "Global/Controler.h"
 #include "Gui/Gui.h"
