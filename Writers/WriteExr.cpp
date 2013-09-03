@@ -214,18 +214,18 @@ void WriteExr::setupFile(const std::string& filename){
     ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
-    const Format& dispW = op->getInfo()->getDisplayWindow();
-    const Box2D& dataW = op->getInfo()->getDataWindow();
+    const Format& dispW = op->info().displayWindow();
+    const Box2D& dataW = op->info().dataWindow();
     const ChannelSet& channels = op->requestedChannels();
     _dataW = new Box2D;
-    if(op->getInfo()->blackOutside()){
+    if(op->info().blackOutside()){
         if(dataW.x() +2 < dataW.right()){
-            _dataW->x(dataW.x()+1);
-            _dataW->right(dataW.right()-1);
+            _dataW->set_x(dataW.x()+1);
+            _dataW->set_right(dataW.right()-1);
         }
         if(dataW.y() +2 < dataW.top()){
-            _dataW->y(dataW.y()+1);
-            _dataW->top(dataW.top()-1);
+            _dataW->set_y(dataW.y()+1);
+            _dataW->set_top(dataW.top()-1);
         }
     }else{
         _dataW->set(dataW);

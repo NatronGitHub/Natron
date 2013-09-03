@@ -229,7 +229,7 @@ void NodeGui::remove(){
 
 void NodeGui::updateChannelsTooltip(){
     QString tooltip;
-    ChannelSet chans= node->getInfo()->channels();
+    ChannelSet chans= node->info().channels();
     tooltip.append("Channels in input: ");
     foreachChannels( z,chans){
         tooltip.append("\n");

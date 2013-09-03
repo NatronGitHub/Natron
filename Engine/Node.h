@@ -20,11 +20,11 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/Hash64.h"
 
 class Row;
 class Model;
 class SettingsPanel;
-class Hash;
 class Knob;
 class KnobCallback;
 class NodeGui;
@@ -38,35 +38,56 @@ public:
 	 *and to know what we can request from a node.*/
 	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels):Box2D(),
-        _firstFrame(first_frame),
-        _lastFrame(last_frame),
-        _ydirection(ydirection),
-        _blackOutside(false),
-        _rgbMode(true),
-        _displayWindow(displayWindow),
-        _channels(channels)
+		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels)
+        : _firstFrame(first_frame)
+        , _lastFrame(last_frame)
+        , _ydirection(ydirection)
+        , _blackOutside(false)
+        , _rgbMode(true)
+        , _dataWindow()
+        , _displayWindow(displayWindow)
+        , _channels(channels)
         {}
-	    Info():Box2D(),_firstFrame(-1),_lastFrame(-1),_ydirection(0),_blackOutside(false),_rgbMode(true),_displayWindow(),_channels(){}
-		void setYdirection(int direction){_ydirection=direction;}
-		int getYdirection() const {return _ydirection;}
-		void setDisplayWindow(Format format){_displayWindow=format;}
-		const Format& getDisplayWindow() const {return _displayWindow;}
-		const Box2D& getDataWindow() const {return dynamic_cast<const Box2D&>(*this);}
-		bool operator==( Node::Info &other);
-        void operator=(const Node::Info &other);
-		void firstFrame(int nb){_firstFrame=nb;}
-		void lastFrame(int nb){_lastFrame=nb;}
-		int firstFrame() const {return _firstFrame;}
-		int lastFrame() const {return _lastFrame;}
-		void setChannels(ChannelSet mask){_channels=mask;}
-		const ChannelSet& channels() const {return _channels;}
-		bool blackOutside() const {return _blackOutside;}
-		void blackOutside(bool bo){_blackOutside=bo;}
-        void rgbMode(bool m){_rgbMode=m;}
-        bool rgbMode() const {return _rgbMode;}
-        void mergeDisplayWindow(const Format& other);
+	    Info()
+        : _firstFrame(-1)
+        , _lastFrame(-1)
+        , _ydirection(0)
+        , _blackOutside(false)
+        , _rgbMode(true)
+        , _dataWindow()
+        , _displayWindow()
+        , _channels()
+        {}
+
+		void set_ydirection(int direction){_ydirection=direction;}
+		int ydirection() const {return _ydirection;}
+
+		void set_displayWindow(const Format& format) { _displayWindow = format; }
+        void merge_displayWindow(const Format& other);
+		const Format& displayWindow() const { return _displayWindow; }
         
+		void set_dataWindow(const Box2D& win) { _dataWindow = win; }
+        void merge_dataWindow(const Box2D& other) { _dataWindow.merge(other); }
+		const Box2D& dataWindow() const { return _dataWindow; }
+
+        void set_firstFrame(int nb) { _firstFrame = nb; }
+		int firstFrame() const { return _firstFrame; }
+        
+		void set_lastFrame(int nb) { _lastFrame = nb; }
+		int lastFrame() const { return _lastFrame; }
+        
+		void set_channels(const ChannelSet& mask) { _channels = mask; }
+		const ChannelSet& channels() const { return _channels; }
+
+		bool blackOutside() const { return _blackOutside; }
+		void set_blackOutside(bool bo) { _blackOutside = bo; }
+
+        void set_rgbMode(bool m) { _rgbMode = m; }
+        bool rgbMode() const { return _rgbMode; }
+
+        bool operator==( Node::Info &other);
+        void operator=(const Node::Info &other);
+
         void reset();
         
 	private:
@@ -75,6 +96,7 @@ public:
 		int _ydirection;
 		bool _blackOutside;
         bool _rgbMode;
+        Box2D _dataWindow;
 		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 	};
@@ -87,7 +109,7 @@ public:
     /*============================*/
     
     /*Hash related functions*/
-    const Hash* getHash() const{return _hashValue;}
+    const Hash64& hash() const { return _hashValue; }
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
@@ -123,13 +145,13 @@ public:
     /*============================*/
     
 	/*Node infos*/
-	Info* getInfo(){return _info;}
+	const Info& info() const { return _info; }
     void clear_info();
 
 
 	Box2D& getRequestedBox(){return _requestedBox;}
-    int width(){return _info->getDisplayWindow().w();}
-    int height(){return _info->getDisplayWindow().h();}
+    int width(){return info().displayWindow().w();}
+    int height(){return info().displayWindow().h();}
        
     /*============================*/
     
@@ -161,8 +183,8 @@ public:
     /*============================*/
 
     /*Node utility functions*/
-    virtual const std::string className() =0;
-    virtual const std::string description() =0;
+    virtual std::string className() = 0;
+    virtual std::string description() = 0;
     /*============================*/
     
     /*Calculations related functions*/
@@ -204,6 +226,11 @@ public:
     
     Model* getModel() const {return _model;}
     
+
+    void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
+
+    void set_lastFrame(int nb) { _info.set_lastFrame(nb); }
+
 protected:
     
     virtual ChannelSet supportedComponents() =0;
@@ -213,18 +240,18 @@ protected:
     
     
     Model* _model;
-	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
+	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
     bool _marked;
 	std::map<int, std::string> _inputLabelsMap;
     std::string _name;
-	Hash* _hashValue;
+	Hash64 _hashValue;
 	std::vector<Knob*> _knobsVector;
 	KnobCallback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children
 	NodeGui* _nodeGUI;
-    QUndoStack* _undoStack;
+
 private:
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     void merge_info(bool forReal);
@@ -244,8 +271,8 @@ public:
 
     
     /*Node utility functions*/
-    virtual const std::string className() =0;
-    virtual const std::string description() =0;
+    virtual std::string className() = 0;
+    virtual std::string description() = 0;
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
     virtual bool cacheData()=0;

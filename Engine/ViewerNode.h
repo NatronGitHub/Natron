@@ -38,12 +38,12 @@ public:
     ViewerNode(ViewerCache* cache,Model* model);
     
     virtual ~ViewerNode();
-        
-    virtual int maximumInputs(){return 1;}
     
-    virtual int minimumInputs(){return 1;}
+    virtual int maximumInputs() OVERRIDE { return 1; }
     
-    virtual bool cacheData(){return false;}
+    virtual int minimumInputs() OVERRIDE { return 1; }
+    
+    virtual bool cacheData() OVERRIDE { return false; }
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
@@ -55,9 +55,9 @@ public:
     
     ViewerTab* getUiContext(){return _uiContext;}
     
-    virtual const std::string className(){return "Viewer";}
+    virtual std::string className() OVERRIDE { return "Viewer"; }
     
-    virtual const std::string description();
+    virtual std::string description() OVERRIDE;
     
     void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     

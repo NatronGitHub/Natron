@@ -66,7 +66,7 @@ public:
      of slContext. Otherwise, it will compute the rows contained in the _rows of slContext.*/
     void readScanLineData(Reader::Buffer::ScanLineContext* slContext);
     
-    /*Should open the file and call setReaderInfo with the infos from the file.*/
+    /*Should open the file and call set_readerInfo with the infos from the file.*/
     virtual void readHeader(const QString& filename, bool openBothViews) = 0;
     
     /*Must be implemented to know whether this Read* supports reading only
@@ -112,7 +112,7 @@ public:
     
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
-	void setReaderInfo(Format dispW,
+	void set_readerInfo(Format dispW,
                        const Box2D& dataW,
                        const QString& file,
                        ChannelSet channels,
@@ -120,7 +120,7 @@ public:
                        bool rgb );
     
     /*Returns all the infos necessary for the current frame*/
-    ReaderInfo* getReaderInfo(){return _readInfo;}
+    const ReaderInfo& readerInfo() const { return _readerInfo; }
     
 protected:
     
@@ -135,7 +135,7 @@ protected:
     bool _autoCreateAlpha;
 	Reader* op;
     const Powiter::Color::Lut* _lut;
-    ReaderInfo* _readInfo;
+    ReaderInfo _readerInfo;
     
 };
 

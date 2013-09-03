@@ -655,12 +655,12 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
             vector< pair<int,int> > chunks;
             int k = frameRanges._frameIndexes.firstFrame();
             
-            while(k <= frameRanges._frameIndexes.lastFrame()){
+            while (k <= frameRanges._frameIndexes.lastFrame()) {
                 chunks.push_back(make_pair(k,-1));
                 int j = k+1;
                 int prev = k;
                 int count = 1;
-                while(j <= frameRanges._frameIndexes.lastFrame() && j == prev+1) {
+                while ((j <= frameRanges._frameIndexes.lastFrame()) && (j == prev+1)) {
                     prev = j;
                     ++j;
                     ++count;

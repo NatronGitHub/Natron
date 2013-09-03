@@ -352,7 +352,7 @@ void ReadExr::readHeader(const QString& filename, bool){
             by--;
             br++;
             bt++;
-            _readInfo->blackOutside(true);
+            _readerInfo.set_blackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
         
@@ -360,7 +360,7 @@ void ReadExr::readHeader(const QString& filename, bool){
         if (inputfile->header().lineOrder() != Imf::INCREASING_Y){
             ydirection=1;
         }
-        setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+        set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
@@ -375,13 +375,13 @@ void ReadExr::readScanLine(int y){
     
     // Invert to EXR y coordinate:
     int exrY = dispwin.max.y - y;
-    const Box2D& bbox = _readInfo->getDataWindow();
-    // const Format& dispW = _readInfo->getDisplayWindow();
+    const Box2D& bbox = readerInfo().dataWindow();
+    // const Format& dispW = readerInfo().displayWindow();
     int r = bbox.right();
     //bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
     int x= bbox.x();
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
-    const ChannelSet& channels = _readInfo->channels();
+    const ChannelSet& channels = readerInfo().channels();
     Row* out = new Row(x,y,r,channels);
     out->allocateRow();
     _img.insert(make_pair(exrY,out));

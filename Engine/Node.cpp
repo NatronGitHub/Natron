@@ -14,7 +14,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
 #include "Gui/NodeGui.h"
@@ -36,27 +36,32 @@
 using namespace std;
 using namespace Powiter;
 
+namespace {
+    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
+        const std::vector<U64>& values= knob->getValues();
+        for(U32 i=0;i<values.size();++i) {
+            hash->append(values[i]);
+        }
+    }
+}
+
 void Node::copy_info(Node* parent){
     clear_info();
-    const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());
-	_info->firstFrame(parent->getInfo()->firstFrame());
-	_info->lastFrame(parent->getInfo()->lastFrame());
-	_info->setYdirection(parent->getInfo()->getYdirection());
-	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
-	_info->setChannels(parent->getInfo()->channels());
-    if(_info->hasBeenModified()){
-        _info->merge(*(parent->getInfo()));
+	_info.set_firstFrame(parent->info().firstFrame());
+	_info.set_lastFrame(parent->info().lastFrame());
+	_info.set_ydirection(parent->info().ydirection());
+	_info.set_displayWindow(parent->info().displayWindow());
+	_info.set_channels(parent->info().channels());
+    if(info().hasBeenModified()){
+        _info.merge_dataWindow(parent->info().dataWindow());
     }else{
-        _info->x(bboxParent->x());
-        _info->y(bboxParent->y());
-        _info->top(bboxParent->top());
-        _info->right(bboxParent->right());
+        _info.set_dataWindow(parent->info().dataWindow());
     }
-    _info->rgbMode(parent->getInfo()->rgbMode());
-    _info->blackOutside(parent->getInfo()->blackOutside());
+    _info.set_rgbMode(parent->info().rgbMode());
+    _info.set_blackOutside(parent->info().blackOutside());
 }
 void Node::clear_info(){
-	_info->reset();
+	_info.reset();
    
     
 }
@@ -75,7 +80,7 @@ int Node::inputCount() const {
     return _parents.size();
 }
 
-void Node::Info::mergeDisplayWindow(const Format& other){
+void Node::Info::merge_displayWindow(const Format& other){
     _displayWindow.merge(other);
     _displayWindow.pixel_aspect(other.pixel_aspect());
     if(_displayWindow.name().empty()){
@@ -87,81 +92,83 @@ void Node::merge_info(bool forReal){
     clear_info();
 	int final_direction=0;
 	ChannelSet chans;
-    bool displayMode = _info->rgbMode();
+    bool displayMode = info().rgbMode();
 	for (int i =0 ; i < inputCount(); ++i) {
         Node* parent = _parents[i];
-        merge_frameRange(parent->getInfo()->firstFrame(),parent->getInfo()->lastFrame());
+        merge_frameRange(parent->info().firstFrame(),parent->info().lastFrame());
         if(forReal){
-            final_direction+=parent->getInfo()->getYdirection();
-            chans += parent->getInfo()->channels();
+            final_direction+=parent->info().ydirection();
+            chans += parent->info().channels();
             ChannelSet supportedComp = supportedComponents();
             if ((supportedComp & chans) != chans) {
                 cout <<"WARNING:( " << getName() << ") does not support one or more of the following channels:\n " ;
                 chans.printOut();
                 cout << "Coming from node " << parent->getName() << endl;
             }
-            if(parent->getInfo()->rgbMode()){
+            if(parent->info().rgbMode()){
                 displayMode = true;
             }
-            if(parent->getInfo()->blackOutside()){
-                _info->blackOutside(true);
+            if(parent->info().blackOutside()){
+                _info.set_blackOutside(true);
             }
            
         }
-        _info->merge(*parent->getInfo());
-        _info->mergeDisplayWindow(parent->getInfo()->getDisplayWindow());
+        _info.merge_dataWindow(parent->info().dataWindow());
+        _info.merge_displayWindow(parent->info().displayWindow());
     }
     if(_parents.size() > 0)
         final_direction = final_direction / _parents.size();
-	_info->setChannels(chans);
-    _info->rgbMode(displayMode);
-    _info->setYdirection(final_direction);
+	_info.set_channels(chans);
+    _info.set_rgbMode(displayMode);
+    _info.set_ydirection(final_direction);
 }
 void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
-	if (_info->firstFrame() == -1) { // if not initialized
-        _info->firstFrame(otherFirstFrame);
-    }else if(otherFirstFrame < _info->firstFrame()){
-         _info->firstFrame(otherFirstFrame);
+	if (info().firstFrame() == -1) { // if not initialized
+        _info.set_firstFrame(otherFirstFrame);
+    } else if (otherFirstFrame < info().firstFrame()) {
+         _info.set_firstFrame(otherFirstFrame);
     }
     
-    if (_info->lastFrame() == -1)
+    if (info().lastFrame() == -1)
     {
-        _info->lastFrame(otherLastFrame);
+        _info.set_lastFrame(otherLastFrame);
     }
-    else if(otherLastFrame > _info->lastFrame()){
-        _info->lastFrame(otherLastFrame);
+    else if (otherLastFrame > info().lastFrame()) {
+        _info.set_lastFrame(otherLastFrame);
     }
 	
 }
 bool Node::Info::operator==( Node::Info &other){
-	if(other.channels()==this->channels() &&
-       other.firstFrame()==this->_firstFrame &&
-       other.lastFrame()==this->_lastFrame &&
-       other.getYdirection()==this->_ydirection &&
-       other.getDisplayWindow()==this->_displayWindow
-       ){
+	if(other.channels()      == this->channels() &&
+       other.firstFrame()    == this->_firstFrame &&
+       other.lastFrame()     == this->_lastFrame &&
+       other.ydirection()    == this->_ydirection &&
+       other.dataWindow()    == this->_dataWindow && // FIXME: [FD] added this line, is it OK?
+       other.displayWindow() == this->_displayWindow
+       ) {
         return true;
-	}else{
+	} else {
 		return false;
 	}
     
 }
 void Node::Info::operator=(const Node::Info &other){
-    _channels = other._channels;
-    _firstFrame = other._firstFrame;
-    _lastFrame = other._lastFrame;
-    _displayWindow = other._displayWindow;
-    setYdirection(other._ydirection);
-    set(other);
-    rgbMode(other._rgbMode);
-    _blackOutside = other._blackOutside;
+    set_channels(other.channels());
+    set_firstFrame(other.firstFrame());
+    set_lastFrame(other.lastFrame());
+    set_displayWindow(other.displayWindow());
+    set_ydirection(other.ydirection());
+    set_dataWindow(other.dataWindow());
+    set_rgbMode(other.rgbMode());
+    set_blackOutside(other.blackOutside());
 }
 
 
-Node::Node(Model* model):_model(model){
+Node::Node(Model* model):
+_model(model),_info()
+{
+
     _marked = false;
-    _info = new Info;
-    _hashValue=new Hash;
     _knobsCB = new KnobCallback(NULL,this);
 	
 }
@@ -275,29 +282,29 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
             return;
     }
     /*Clear the values left to compute the hash key*/
-    _hashValue->reset();
+    _hashValue.reset();
     /*append all values stored in knobs*/
     for(U32 i=0;i<_knobsVector.size();++i) {
-        _hashValue->appendKnobToHash(_knobsVector[i]);
+        Hash64_appendKnob(&_hashValue,_knobsVector[i]);
     }
     /*append the node name*/
-    _hashValue->appendQStringToHash(QString(className().c_str()));
+    Hash64_appendQString(&_hashValue, QString(className().c_str()));
     /*mark this node as already been computed*/
     alreadyComputedHash.push_back(_name);
     
     /*Recursive call to parents and add their hash key*/
     foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
-        _hashValue->appendValueToHash(parent->getHash()->getHashValue());
+        _hashValue.append(parent->hash().value());
     }
     /*Compute the hash key*/
-    _hashValue->computeHash();
+    _hashValue.computeHash();
 }
 bool Node::hashChanged(){
-    U64 oldHash=_hashValue->getHashValue();
+    U64 oldHash=_hashValue.value();
     vector<std::string> v;
     computeTreeHash(v);
-    return oldHash!=_hashValue->getHashValue();
+    return oldHash!=_hashValue.value();
 }
 void Node::initKnobs(KnobCallback *cb){
     cb->initNodeKnobsVector();
@@ -327,8 +334,8 @@ Row* Node::get(int y,int x,int r){
         filename = reader->getRandomFrameName(current_frame);
     }
     Row* out = 0;
-    U64 key = _hashValue->getHashValue();
-    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,_info->channels());
+    U64 key = _hashValue.value();
+    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,info().channels());
     if (entry.second && entry.first != 0) {
         out = entry.second;
     }
@@ -336,16 +343,16 @@ Row* Node::get(int y,int x,int r){
     // FIXME: we should check for more things (frame number...)
     if (!out || out->y() != y || out->offset() != x || out->right() !=  r) {
         if (cacheData()) {
-            out = cache->addRow(entry.first,x,r,y, _info->channels(), filename);
+            out = cache->addRow(entry.first,x,r,y, info().channels(), filename);
             if (!out) {
                 return NULL;
             }
         } else {
-            out = new Row(x,y,r,_info->channels());
+            out = new Row(x,y,r,info().channels());
             out->allocateRow();
         }
         assert(out->offset() == x && out->right() == r);
-        engine(y,x,r, _info->channels(), out);
+        engine(y,x,r, info().channels(), out);
     }
     assert(out);
     return out;
@@ -356,8 +363,6 @@ Node::~Node(){
     _children.clear();
     _knobsVector.clear();
     _inputLabelsMap.clear();
-    delete _hashValue;
-    delete _info;
     delete _knobsCB;
 }
 

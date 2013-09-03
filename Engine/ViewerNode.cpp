@@ -53,7 +53,7 @@ bool ViewerNode::_validate(bool){
     return true;
 }
 
-const std::string ViewerNode::description(){
+std::string ViewerNode::description(){
     return "OutputNode";
 }
 
@@ -90,11 +90,11 @@ void ViewerNode::makeCurrentViewer(){
         delete _viewerInfos;
     }
     _viewerInfos = new ViewerInfos;
-    _viewerInfos->set(dynamic_cast<const Box2D&>(*_info));
-    _viewerInfos->setChannels(_info->channels());
-    _viewerInfos->setDisplayWindow(_info->getDisplayWindow());
-    _viewerInfos->firstFrame(_info->firstFrame());
-    _viewerInfos->lastFrame(_info->lastFrame());
+    _viewerInfos->set_channels(info().channels());
+    _viewerInfos->set_dataWindow(info().dataWindow());
+    _viewerInfos->set_displayWindow(info().displayWindow());
+    _viewerInfos->set_firstFrame(info().firstFrame());
+    _viewerInfos->set_lastFrame(info().lastFrame());
     
     _uiContext->setCurrentViewerInfos(_viewerInfos,false);
 }
@@ -113,14 +113,14 @@ int ViewerNode::currentFrame() const{
 
 
 void ViewerInfos::reset(){
-    _firstFrame = -1;
-    _lastFrame = -1;
-    _channels = Mask_None;
-    set(0, 0, 0, 0);
+    set_firstFrame(-1);
+    set_lastFrame(-1);
+    set_channels(Mask_None);
+    _dataWindow.set(0, 0, 0, 0);
     _displayWindow.set(0,0,0,0);
 }
 
-void ViewerInfos::mergeDisplayWindow(const Format& other){
+void ViewerInfos::merge_displayWindow(const Format& other){
     _displayWindow.merge(other);
     _displayWindow.pixel_aspect(other.pixel_aspect());
     if(_displayWindow.name().empty()){
@@ -130,9 +130,9 @@ void ViewerInfos::mergeDisplayWindow(const Format& other){
 
 bool ViewerInfos::operator==( const ViewerInfos& other){
 	if(other.channels()==this->channels() &&
-       other.firstFrame()==this->_firstFrame &&
-       other.lastFrame()==this->_lastFrame &&
-       other.getDisplayWindow()==this->_displayWindow
+       other.firstFrame()==this->firstFrame() &&
+       other.lastFrame()==this->lastFrame() &&
+       other.displayWindow()==this->displayWindow()
        ){
         return true;
 	}else{
@@ -141,12 +141,12 @@ bool ViewerInfos::operator==( const ViewerInfos& other){
     
 }
 void ViewerInfos::operator=(const ViewerInfos &other){
-    _channels = other._channels;
-    _firstFrame = other._firstFrame;
-    _lastFrame = other._lastFrame;
-    _displayWindow = other._displayWindow;
-    set(other);
-    rgbMode(other._rgbMode);
+    set_channels(other.channels());
+    set_firstFrame(other.firstFrame());
+    set_lastFrame(other.lastFrame());
+    set_displayWindow(other.displayWindow());
+    set_dataWindow(other.dataWindow());
+    set_rgbMode(other.rgbMode());
 }
 
 FrameEntry* ViewerNode::get(U64 key){
@@ -173,11 +173,11 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
         delete _viewerInfos;
     }
     _viewerInfos = new ViewerInfos;
-    _viewerInfos->set(dynamic_cast<const Box2D&>(*frame->_frameInfo));
-    _viewerInfos->setChannels(frame->_frameInfo->channels());
-    _viewerInfos->setDisplayWindow(frame->_frameInfo->getDisplayWindow());
-    _viewerInfos->firstFrame(_info->firstFrame());
-    _viewerInfos->lastFrame(_info->lastFrame());
+    _viewerInfos->set_dataWindow(frame->_frameInfo->dataWindow());
+    _viewerInfos->set_channels(frame->_frameInfo->channels());
+    _viewerInfos->set_displayWindow(frame->_frameInfo->displayWindow());
+    _viewerInfos->set_firstFrame(_info.firstFrame());
+    _viewerInfos->set_lastFrame(_info.lastFrame());
     _uiContext->setCurrentViewerInfos(_viewerInfos,false);
     
     

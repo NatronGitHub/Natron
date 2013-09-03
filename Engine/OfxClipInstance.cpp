@@ -65,7 +65,7 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     //bool rgb = false;
     //bool alpha = false;
     
-    //const ChannelSet& channels = _node->getInfo()->channels();
+    //const ChannelSet& channels = _node->info().channels();
     //if(channels & alpha) alpha = true;
     //if(channels & Mask_RGB) rgb = true;
     
@@ -111,8 +111,8 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
         startFrame = 0;
         endFrame = 0;
     }else{
-        startFrame = _node->getInfo()->firstFrame();
-        endFrame = _node->getInfo()->lastFrame();
+        startFrame = _node->info().firstFrame();
+        endFrame = _node->info().lastFrame();
     }
 }
 
@@ -167,7 +167,7 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
-    const Box2D& bbox = _node->getInfo()->getDataWindow();
+    const Box2D& bbox = _node->info().dataWindow();
     v.x1 = bbox.x();
     v.y1 = bbox.y();
     v.x2 = bbox.right();

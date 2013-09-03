@@ -9,11 +9,10 @@
 *
 */
 
-#ifndef POWITER_ENGINE_HASH_H_
-#define POWITER_ENGINE_HASH_H_
+#ifndef POWITER_ENGINE_HASH64_H_
+#define POWITER_ENGINE_HASH64_H_
 
 #include <vector>
-#include <QtCore/QString>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -21,42 +20,43 @@
 
 
 class Node;
-class Knob;
+class QString;
 
 /*The hash of a Node is the checksum of the vector of data containing:
     - the values of the current knob for this node + the name of the node
     - the hash values for the  tree upstream
 */
 
-class Hash{
+class Hash64 {
     
 public:
-    Hash(){hash=0;}
-    ~Hash(){
+    Hash64(){hash=0;}
+    ~Hash64(){
         node_values.clear();
     }
     
-    U64 getHashValue() const {return hash;}
+    U64 value() const {return hash;}
     
     void computeHash();
     
     void reset();
     
-    void appendValueToHash(U64 hashValue);
-    
-    void appendQStringToHash(const QString& str);
-    
-    void appendKnobToHash(Knob* knob);
-    
-    bool 	operator== (const Hash& h) const {
-        return this->hash==h.getHashValue();
+    void append(U64 hashValue) {
+        node_values.push_back(hashValue);
     }
-    bool 	operator!= (const Hash& h) const {
-        return this->hash==h.getHashValue();
+    
+    bool 	operator== (const Hash64& h) const {
+        return this->hash==h.value();
+    }
+    bool 	operator!= (const Hash64& h) const {
+        return this->hash==h.value();
     }
     
 private:
     U64 hash;
     std::vector<U64> node_values;
 };
-#endif // POWITER_ENGINE_HASH_H_
+
+void Hash64_appendQString(Hash64* hash, const QString& str);
+
+#endif // POWITER_ENGINE_Hash64_H_

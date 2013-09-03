@@ -18,7 +18,7 @@
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/ChannelSet.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 
 using namespace std;
 

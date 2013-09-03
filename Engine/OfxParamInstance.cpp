@@ -973,8 +973,8 @@ void OfxStringInstance::getVideoSequenceFromFilesList(){
             }
         }
     }
-    _effect->getInfo()->firstFrame(firstFrame());
-    _effect->getInfo()->lastFrame(lastFrame());
+    _effect->set_firstFrame(firstFrame());
+    _effect->set_lastFrame(lastFrame());
     
 }
 

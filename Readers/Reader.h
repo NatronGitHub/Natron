@@ -169,16 +169,19 @@ public:
         **/
         class Descriptor{
         public:
-            Descriptor(Read* readHandle,ReaderInfo* readInfo, const std::string& filename):
-            _readHandle(readHandle),_readInfo(readInfo),
-            _filename(filename){}
+            Descriptor(Read* readHandle, const std::string& filename)
+            : _readHandle(readHandle)
+            , _filename(filename){}
             
-            Descriptor():_readHandle(0),_readInfo(0)
-            ,_filename(""){}
+            Descriptor()
+            : _readHandle(0)
+            , _filename("")
+            {}
             
-            Descriptor(const Descriptor& other):
-           _readHandle(other._readHandle),_readInfo(other._readInfo),
-            _filename(other._filename){}
+            Descriptor(const Descriptor& other)
+            : _readHandle(other._readHandle)
+            , _filename(other._filename)
+            {}
             
             virtual ~Descriptor(){}
             
@@ -195,9 +198,6 @@ public:
              Read handle that operated/is operating the decoding.*/
             Read* _readHandle;
             
-            /*!< info read from the Read. This is redundant and could be accessed with _readHandle->getReaderInfo(). */
-            ReaderInfo* _readInfo;
-            
             /*!< The name of the frame in the buffer.*/
             std::string _filename;
             
@@ -208,9 +208,9 @@ public:
          */
         class ScanLineDescriptor : public Reader::Buffer::Descriptor{
         public:
-            ScanLineDescriptor(Read* readHandle,ReaderInfo* readInfo,
+            ScanLineDescriptor(Read* readHandle,
                        std::string filename,ScanLineContext *slContext):
-            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_slContext(slContext),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle, filename),_slContext(slContext),_hasRead(false){}
             
             ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0),_hasRead(false){}
             
@@ -231,9 +231,9 @@ public:
         
         class FullFrameDescriptor : public Reader::Buffer::Descriptor{
         public:
-            FullFrameDescriptor(Read* readHandle,ReaderInfo* readInfo,
+            FullFrameDescriptor(Read* readHandle,
                                std::string filename):
-            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle, filename),_hasRead(false){}
             
             FullFrameDescriptor(): Reader::Buffer::Descriptor(),_hasRead(false){}
             
@@ -393,7 +393,7 @@ public:
     
     /**
      * @brief clampToRange
-     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame() ].
+     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
      * @param f The index of the frame to clamp.
      */
     int clampToRange(int f);
@@ -435,13 +435,13 @@ public:
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual const std::string className();
+    virtual std::string className();
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual const std::string description();
+    virtual std::string description();
 
     /**
      * @brief Not documented yet as it will be revisited soon.

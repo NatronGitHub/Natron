@@ -48,19 +48,19 @@ Writer::~Writer(){
     delete _lock;
 }
 
-const std::string Writer::className(){
+std::string Writer::className() {
     return "Writer";
 }
 
-const std::string Writer::description(){
+std::string Writer::description() {
     return "OutputNode";
 }
 
 bool Writer::_validate(bool forReal){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
-    _frameRange.first = _info->firstFrame();
-    _frameRange.second = _info->lastFrame();
+    _frameRange.first = info().firstFrame();
+    _frameRange.second = info().lastFrame();
     
     if (forReal) {
         

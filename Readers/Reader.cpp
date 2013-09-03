@@ -58,11 +58,15 @@ Reader::~Reader(){
     _buffer.clear();
 	delete preview;
 }
-const std::string Reader::className(){return "Reader";}
 
-const std::string Reader::description(){
+std::string Reader::className() {
+    return "Reader";
+}
+
+std::string Reader::description() {
     return "InputNode";
 }
+
 void Reader::initKnobs(KnobCallback *cb){
     std::string desc("File");
     Knob* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
@@ -114,14 +118,13 @@ bool Reader::readCurrentHeader(int current_frame){
         /*TEMPORARY FIX while OpenFX nodes still require the full RoD. This would let the Reads work
          not properly since they need more rows than just what the viewer wants to display. */
 //        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
-//            const Format &dispW = _read->getReaderInfo()->getDisplayWindow();
+//            const Format &dispW = _read->getReaderInfo()->displayWindow();
 //            if(_fitFrameToViewer){
 //                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
 //            }
 //            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
 //        }else{
-            assert(_read->getReaderInfo());
-            const Box2D& dataW = _read->getReaderInfo()->getDataWindow();
+            const Box2D& dataW = _read->readerInfo().dataWindow();
             for (int i = dataW.y() ; i < dataW.top(); ++i) {
                 rows.push_back(i);
             }            
@@ -144,17 +147,17 @@ bool Reader::readCurrentHeader(int current_frame){
             delete _read;
         }
         assert((*found)->_readHandle);
-        *_info = static_cast<Node::Info&>(*((*found)->_readHandle->getReaderInfo()));
+        _info = (*found)->_readHandle->readerInfo();
         readHandle = (*found)->_readHandle;
     }else{
         _read->initializeColorSpace();
         if(_read->supportsScanLine()){
-            _buffer.insert(new Reader::Buffer::ScanLineDescriptor(_read,_read->getReaderInfo(),filenameStr,slContext));
+            _buffer.insert(new Reader::Buffer::ScanLineDescriptor(_read,filenameStr,slContext));
         }else{
             _read->readHeader(filename, false);
-            _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,_read->getReaderInfo(),filenameStr));
+            _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,filenameStr));
         }
-        *_info = static_cast<Node::Info&>(*(_read->getReaderInfo()));
+        _info = _read->readerInfo();
         readHandle = _read;
     }
     return true;
@@ -223,19 +226,14 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
                                                                     Buffer::ALL_FRAMES);
     if(frame == _buffer.end()) return false;
     
-    Node::Info* infos = 0;
     assert(*frame);
-    if((*frame)->_readInfo && !(*frame)->_readHandle){ // cached frame
-        infos = dynamic_cast<Node::Info*>((*frame)->_readInfo);
+    if(!(*frame)->_readHandle) { // cached frame
+        _info = (*frame)->_readHandle->readerInfo();
     }else{
         readHandle = (*frame)->_readHandle;
         assert(readHandle);
-        infos = dynamic_cast<Node::Info*>(readHandle->getReaderInfo());
-        assert(infos);
-        *_info = *infos;
+        _info = readHandle->readerInfo();
     }
-    assert(infos);
-    *_info = *infos;
     
     return true;
 }
@@ -245,9 +243,8 @@ bool Reader::_validate(bool){
     //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
     //    return;
     //}
-    assert(_info);
-    _info->firstFrame(firstFrame());
-    _info->lastFrame(lastFrame());
+    _info.set_firstFrame(firstFrame());
+    _info.set_lastFrame(lastFrame());
     return true;
 }
 
@@ -290,8 +287,6 @@ void Reader::Buffer::remove(const std::string& filename){
     DecodedFrameIterator it = find(filename);
     if (it!=_buffer.end()) {
         assert(*it);
-        if((*it)->_readInfo)
-            delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
             delete (*it)->_readHandle; // delete readHandle
         delete (*it);
@@ -347,8 +342,6 @@ void Reader::Buffer::clear(){
     DecodedFrameIterator it = _buffer.begin();
     for (; it!=_buffer.end(); ++it) {
         assert(*it);
-        if((*it)->_readInfo)
-            delete (*it)->_readInfo; // delete readerInfo
         if((*it)->_readHandle)
             delete (*it)->_readHandle; // delete readHandle
     }
@@ -357,8 +350,6 @@ void Reader::Buffer::clear(){
 
 void Reader::Buffer::erase(DecodedFrameIterator it) {
     assert(*it);
-    if((*it)->_readInfo)
-        delete (*it)->_readInfo; // delete readerInfo
     if((*it)->_readHandle)
         delete (*it)->_readHandle; // delete readHandle
     delete (*it);
@@ -415,9 +406,8 @@ void Reader::getVideoSequenceFromFilesList(){
             }
         }
     }
-    assert(_info);
-    _info->firstFrame(firstFrame());
-    _info->lastFrame(lastFrame());
+    _info.set_firstFrame(firstFrame());
+    _info.set_lastFrame(lastFrame());
     
 }
 int Reader::firstFrame(){
@@ -487,20 +477,19 @@ void Reader::Buffer::ScanLineContext::merge(){
 //bool _rgbMode;
 //Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 std::string ReaderInfo::printOut(){
-    const Format &dispW = getDisplayWindow();
     const ChannelSet& chan = channels();
     ostringstream oss;
     oss << _currentFrameName <<  "<" << firstFrame() << "."
     << lastFrame() << "."
     << rgbMode() << "."
-    << dispW.x() << "."
-    << dispW.y() << "."
-    << dispW.right() << "."
-    << dispW.top() << "."
-    << x() << "."
-    << y() << "."
-    << right() << "."
-    << top() << ".";
+    << displayWindow().x() << "."
+    << displayWindow().y() << "."
+    << displayWindow().right() << "."
+    << displayWindow().top() << "."
+    << dataWindow().x() << "."
+    << dataWindow().y() << "."
+    << dataWindow().right() << "."
+    << dataWindow().top() << ".";
     foreachChannels(z, chan){
         oss << getChannelName(z) << "|";
     }
@@ -554,12 +543,12 @@ ReaderInfo* ReaderInfo::fromString(const QString& from){
         channels += getChannelByName(chan.toStdString());
     }
     Format dispW(frmtXStr.toInt(),frmtYStr.toInt(),frmtRStr.toInt(),frmtTStr.toInt(),"");
-    out->set(bboxXStr.toInt(),bboxYStr.toInt(),bboxRStr.toInt(),bboxTStr.toInt());
-    out->setChannels(channels);
-    out->rgbMode((bool)rgbStr.toInt());
-    out->setDisplayWindow(dispW);
-    out->firstFrame(firstFrameStr.toInt());
-    out->lastFrame(lastFrameStr.toInt());
+    out->set_dataWindow(Box2D(bboxXStr.toInt(),bboxYStr.toInt(),bboxRStr.toInt(),bboxTStr.toInt()));
+    out->set_channels(channels);
+    out->set_rgbMode((bool)rgbStr.toInt());
+    out->set_displayWindow(dispW);
+    out->set_firstFrame(firstFrameStr.toInt());
+    out->set_lastFrame(lastFrameStr.toInt());
     out->setCurrentFrameName(name.toStdString());
     return out;
     

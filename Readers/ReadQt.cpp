@@ -34,11 +34,10 @@ ReadQt::~ReadQt(){
         delete _img;
 }
 
-void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    uchar* buffer;
-    int h = op->getInfo()->getDisplayWindow().h();
+void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
+    int h = op->info().displayWindow().h();
     int Y = h - y - 1;
-    buffer = _img->scanLine(Y);
+    const uchar* buffer = _img->scanLine(Y);
     if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
     }
@@ -100,7 +99,7 @@ void ReadQt::readHeader(const QString& filename, bool) {
     
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
-    setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+    set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
 }
 void ReadQt::readAllData(bool){
 // does nothing

@@ -533,7 +533,7 @@ void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
         _currentFrameBox->setMinimum(viewerInfos->firstFrame());
         int curFirstFrame = frameSeeker->firstFrame();
         int curLastFrame =  frameSeeker->lastFrame();
-        if(viewerInfos->firstFrame() != curFirstFrame || viewerInfos->lastFrame() != curLastFrame){
+        if ((viewerInfos->firstFrame() != curFirstFrame) || (viewerInfos->lastFrame() != curLastFrame)) {
             frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
             frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
         }

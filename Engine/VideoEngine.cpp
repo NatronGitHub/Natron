@@ -24,7 +24,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Engine/Lut.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/NodeCache.h"
@@ -295,7 +295,7 @@ void VideoEngine::run(){
         
         _dag.validate(true);
         
-        const Format &_dispW = _dag.getOutput()->getInfo()->getDisplayWindow();
+        const Format &_dispW = _dag.getOutput()->info().displayWindow();
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && _lastRunArgs._fitToViewer){
             viewer->getUiContext()->viewer->fitToFormat(_dispW);
             _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
@@ -305,7 +305,7 @@ void VideoEngine::run(){
         vector<int> rows;
         vector<int> columns;
         int x=0,r=0;
-        const Box2D& dataW = _dag.getOutput()->getInfo()->getDataWindow();
+        const Box2D& dataW = _dag.getOutput()->info().dataWindow();
         FrameEntry* iscached= 0;
         U64 key = 0;
         float lut = 0.f;
@@ -357,8 +357,8 @@ void VideoEngine::run(){
                 assert(iscached->_lut == lut);
                 assert(iscached->_exposure == exposure);
                 assert(iscached->_byteMode == byteMode);
-                assert(iscached->_frameInfo->getDisplayWindow() == _dispW);
-                assert(iscached->_frameInfo->getDataWindow() == dataW);
+                assert(iscached->_frameInfo->displayWindow() == _dispW);
+                assert(iscached->_frameInfo->dataWindow() == dataW);
                 
                 _lastFrameInfos._textureRect = iscached->_textureRect;
                 
@@ -838,6 +838,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
         if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
             return;
         _dag.outputAsViewer()->getUiContext()->frameSeeker->seek_notSlot(frameNB);
+
         render(frameCount,initViewer,forward,sameFrame);
         
     }
@@ -879,7 +880,7 @@ void VideoEngine::changeTreeVersion(){
     Node* output = _dag.getOutput();
     std::vector<std::string> v;
     output->computeTreeHash(v);
-    _treeVersion = output->getHash()->getHashValue();
+    _treeVersion = output->hash().value();
     
 }
 
@@ -982,10 +983,10 @@ bool VideoEngine::DAG::validate(bool forReal){
 
 
 int VideoEngine::DAG::firstFrame() const {
-    return _output->getInfo()->firstFrame();
+    return _output->info().firstFrame();
 }
-int VideoEngine::DAG::lastFrame() const{
-    return _output->getInfo()->lastFrame();
+int VideoEngine::DAG::lastFrame() const {
+    return _output->info().lastFrame();
 }
 
 

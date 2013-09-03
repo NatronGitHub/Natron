@@ -24,7 +24,7 @@ protected:
     bool _modified; // true when some functions are called
 public:
     
-    bool hasBeenModified(){return _modified;}
+    bool hasBeenModified() const { return _modified; }
     
     /*iterator : bottom-top, left-right */
     class  iterator {
@@ -81,22 +81,22 @@ public:
     explicit Box2D(const Box2D &b):_x(b._x),_y(b._y),_r(b._r),_t(b._t) , _modified(false){}
     
     int x() const { return _x; }
-    void x(int v) { _x = v; }
+    void set_x(int v) { _x = v; }
     
     int y() const { return _y; } 
-    void y(int v) { _y = v; }
+    void set_y(int v) { _y = v; }
     
     int right() const { return _r; } 
-    void right(int v) { _r = v; } 
+    void set_right(int v) { _r = v; }
     
     int top() const { return _t; } 
-    void top(int v) { _t = v; } 
+    void set_top(int v) { _t = v; }
     
     int w() const { return _r - _x; }
-    void w(int v) { _r = _x + v; } 
+    void set_w(int v) { _r = _x + v; }
     
     int h() const { return _t - _y; } 
-    void h(int v) { _t = _y + v; }
+    void set_h(int v) { _t = _y + v; }
 
     float middle_row() const { return (_x + _r) / 2.0f; }
     

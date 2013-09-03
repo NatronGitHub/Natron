@@ -17,7 +17,7 @@
 #include <QtCore/QFile>
 
 #include "Engine/Node.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Engine/MemoryFile.h"
 
 using namespace std;
@@ -130,14 +130,14 @@ bool compareRows(const Row &a,const Row &b){
 }
 
 U64 Row::computeHashKey(U64 nodeKey, const std::string& filename, int x , int r, int y){
-    Hash _hash;
-    _hash.appendQStringToHash(QString(filename.c_str()));
-    _hash.appendValueToHash(nodeKey);
-    _hash.appendValueToHash(x);
-    _hash.appendValueToHash(r);
-    _hash.appendValueToHash(y);
+    Hash64 _hash;
+    Hash64_appendQString(&_hash,QString(filename.c_str()));
+    _hash.append(nodeKey);
+    _hash.append(x);
+    _hash.append(r);
+    _hash.append(y);
     _hash.computeHash();
-    return _hash.getHashValue();
+    return _hash.value();
 }
 
 void Row::release(){

@@ -13,6 +13,7 @@
 
 #include <locale>
 
+//#include "Engine/OfxHost.h" // for OfxHost::vmessage
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
@@ -83,7 +84,8 @@ bool OfxNode::isInputNode(){
         return true;
     return false;
 }
-const std::string OfxNode::className(){
+
+std::string OfxNode::className(){
     std::string label = getShortLabel();
     if(label.empty()){
         label = getLabel();
@@ -92,7 +94,7 @@ const std::string OfxNode::className(){
         return label;
     }else{
         std::string grouping = getDescriptor().getPluginGrouping();
-        std::vector<std::string> groups = Model::extractAllPartsOfGrouping(grouping);
+        std::vector<std::string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
         return groups[0]+getLongLabel();
     }
 }
@@ -145,8 +147,8 @@ bool OfxNode::isInputOptional(int inpubNb){
 }
 bool OfxNode::_validate(bool forReal){
     _firstTime = true;
-    _frameRange.first = _info->firstFrame();
-    _frameRange.second = _info->lastFrame();
+    _frameRange.first = info().firstFrame();
+    _frameRange.second = info().lastFrame();
     
     /*Checking if all mandatory inputs are connected!*/
     MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
@@ -169,12 +171,12 @@ bool OfxNode::_validate(bool forReal){
             double pa = clip->getAspectRatio();
             //  cout << "pa : " << pa << endl;
             //we just set the displayWindow/dataWindow rather than merge it
-            _info->setDisplayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
-            _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
-            _info->rgbMode(true);
-            _info->setYdirection(1);
+            _info.set_displayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
+            _info.set(rod.x1, rod.y1, rod.x2, rod.y2);
+            _info.set_rgbMode(true);
+            _info.set_ydirection(1);
             string comp = clip->getUnmappedComponents();
-            _info->setChannels(ofxComponentsToPowiterChannels(comp));
+            _info.set_channels(ofxComponentsToPowiterChannels(comp));
             
         }
         
@@ -195,7 +197,7 @@ bool OfxNode::_validate(bool forReal){
 }
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
-    const Format& dispW = _info->getDisplayWindow();
+    const Format& dispW = info().displayWindow();
     renderW.x1 = dispW.x();
     renderW.x2 = dispW.right();
     renderW.y1 = dispW.y();
@@ -529,11 +531,42 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 }
 
 OfxStatus OfxNode::vmessage(const char* type,
-                            const char* id,
+                            const char* /*id*/,
                             const char* format,
                             va_list args) {
-    return _model->vmessage(type, id, format, args);
+
+  // FIXME: this is really GUI stuff, and should be handled by signal/slot
+    assert(type);
+    assert(format);
+    bool isQuestion = false;
+    const char *prefix = "Message : ";
+    if (strcmp(type, kOfxMessageLog) == 0) {
+        prefix = "Log : ";
+    }
+    else if(strcmp(type, kOfxMessageFatal) == 0 ||
+            strcmp(type, kOfxMessageError) == 0) {
+        prefix = "Error : ";
+    }
+    else if(strcmp(type, kOfxMessageQuestion) == 0)  {
+        prefix = "Question : ";
+        isQuestion = true;
+    }
+
+    // Just dump our message to stdout, should be done with a proper
+    // UI in a full ap, and post a dialogue for yes/no questions.
+    fputs(prefix, stdout);
+    vprintf(format, args);
+    printf("\n");
+
+    if(isQuestion) {
+        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
+        return kOfxStatReplyYes;
+    }
+    else {
+        return kOfxStatOK;
+    }
 }
+
 void OfxNode::computePreviewImage(){
     if(getContext() != kOfxImageEffectContextGenerator){
         return;
@@ -566,8 +599,8 @@ void OfxNode::computePreviewImage(){
     renderW.x2 = rod.x2;
     renderW.y1 = rod.y1;
     renderW.y2 = rod.y2;
-    Box2D oldBox(_info->getDataWindow());
-    _info->set(rod.x1, rod.y1, rod.x2, rod.y2);
+    Box2D oldBox(info().dataWindow());
+    _info.set_dataWindow(Box2D(rod.x1, rod.y1, rod.x2, rod.y2));
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.;
     beginRenderAction(0, 25, 1, true, renderScale);
@@ -592,12 +625,32 @@ void OfxNode::computePreviewImage(){
             dst_pixels[j] = qRgba(p.r*255, p.g*255, p.b*255,p.a ? p.a*255 : 255);
         }
     }
-    _info->set(oldBox);
+    _info.set_dataWindow(oldBox);
     endRenderAction(0, 25, 1, true, renderScale);
 
     
     _preview = ret;
     _nodeGUI->updatePreviewImageForReader();
+}
+
+/*group is a string as such:
+ Toto/Superplugins/blabla
+ This functions extracts the all parts of such a grouping, e.g in this case
+ it would return [Toto,Superplugins,blabla].*/
+std::vector<std::string> OfxNode::extractAllPartsOfGrouping(const std::string& group) {
+    std::vector<std::string> out;
+    QString str(group.c_str());
+    int pos = 0;
+    while(pos < str.size()){
+        std::string newPart;
+        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+            newPart.append(1,str.at(pos).toLatin1());
+            ++pos;
+        }
+        ++pos;
+        out.push_back(newPart);
+    }
+    return out;
 }
 
 

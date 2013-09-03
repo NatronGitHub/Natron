@@ -28,7 +28,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Readers/Reader.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Engine/Row.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerNode.h"
@@ -55,8 +55,8 @@ _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
     _frameInfo->set(bbox);
-    _frameInfo->setDisplayWindow(dispW);
-    _frameInfo->setChannels(channels);
+    _frameInfo->set_displayWindow(dispW);
+    _frameInfo->set_channels(channels);
     
 }
 
@@ -288,28 +288,28 @@ U64 FrameEntry::computeHashKey(int frameNB,
                                const Box2D& bbox,
                                const Format& dispW,
                                const TextureRect& frameRect){
-    Hash _hash;
-    _hash.appendValueToHash(frameNB);
-    _hash.appendValueToHash(treeVersion);
-    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
-    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&exposure)));
-    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&lut)));
-    _hash.appendValueToHash((U64)*(reinterpret_cast<U32*>(&byteMode)));
-    _hash.appendValueToHash(bbox.x());
-    _hash.appendValueToHash(bbox.y());
-    _hash.appendValueToHash(bbox.top());
-    _hash.appendValueToHash(bbox.right());
-    _hash.appendValueToHash(dispW.x());
-    _hash.appendValueToHash(dispW.y());
-    _hash.appendValueToHash(dispW.top());
-    _hash.appendValueToHash(dispW.right());
-    _hash.appendValueToHash(frameRect.x);
-    _hash.appendValueToHash(frameRect.y);
-    _hash.appendValueToHash(frameRect.t);
-    _hash.appendValueToHash(frameRect.r);
-    _hash.appendValueToHash(frameRect.w);
-    _hash.appendValueToHash(frameRect.h);
+    Hash64 _hash;
+    _hash.append(frameNB);
+    _hash.append(treeVersion);
+    _hash.append((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
+    _hash.append((U64)*(reinterpret_cast<U32*>(&exposure)));
+    _hash.append((U64)*(reinterpret_cast<U32*>(&lut)));
+    _hash.append((U64)*(reinterpret_cast<U32*>(&byteMode)));
+    _hash.append(bbox.x());
+    _hash.append(bbox.y());
+    _hash.append(bbox.top());
+    _hash.append(bbox.right());
+    _hash.append(dispW.x());
+    _hash.append(dispW.y());
+    _hash.append(dispW.top());
+    _hash.append(dispW.right());
+    _hash.append(frameRect.x);
+    _hash.append(frameRect.y);
+    _hash.append(frameRect.t);
+    _hash.append(frameRect.r);
+    _hash.append(frameRect.w);
+    _hash.append(frameRect.h);
     _hash.computeHash();
-    return _hash.getHashValue();
+    return _hash.value();
 }
 
