@@ -38,21 +38,38 @@ public:
 	 *and to know what we can request from a node.*/
 	class Info:public Box2D{
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels):Box2D(),
-        _firstFrame(first_frame),
-        _lastFrame(last_frame),
-        _ydirection(ydirection),
-        _blackOutside(false),
-        _rgbMode(true),
-        _displayWindow(displayWindow),
-        _channels(channels)
+		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels)
+        : _firstFrame(first_frame)
+        , _lastFrame(last_frame)
+        , _ydirection(ydirection)
+        , _blackOutside(false)
+        , _rgbMode(true)
+        , _dataWindow()
+        , _displayWindow(displayWindow)
+        , _channels(channels)
         {}
-	    Info():Box2D(),_firstFrame(-1),_lastFrame(-1),_ydirection(0),_blackOutside(false),_rgbMode(true),_displayWindow(),_channels(){}
+	    Info()
+        : _firstFrame(-1)
+        , _lastFrame(-1)
+        , _ydirection(0)
+        , _blackOutside(false)
+        , _rgbMode(true)
+        , _dataWindow()
+        , _displayWindow()
+        , _channels()
+        {}
+
 		void setYdirection(int direction){_ydirection=direction;}
 		int getYdirection() const {return _ydirection;}
-		void setDisplayWindow(Format format){_displayWindow=format;}
-		const Format& getDisplayWindow() const {return _displayWindow;}
-		const Box2D& getDataWindow() const {return dynamic_cast<const Box2D&>(*this);}
+
+		void setDisplayWindow(const Format& format) { _displayWindow = format; }
+        void mergeDisplayWindow(const Format& other);
+		const Format& getDisplayWindow() const { return _displayWindow; }
+        
+		void setDataWindow(const Box2D& win) { _dataWindow = win; }
+        void mergeDataWindow(const Box2D& other) { _dataWindow.merge(other); }
+		const Box2D& getDataWindow() const { return _dataWindow; }
+
 		bool operator==( Node::Info &other);
         void operator=(const Node::Info &other);
 		void firstFrame(int nb){_firstFrame=nb;}
@@ -65,7 +82,6 @@ public:
 		void blackOutside(bool bo){_blackOutside=bo;}
         void rgbMode(bool m){_rgbMode=m;}
         bool rgbMode() const {return _rgbMode;}
-        void mergeDisplayWindow(const Format& other);
         
         void reset();
         
@@ -75,6 +91,7 @@ public:
 		int _ydirection;
 		bool _blackOutside;
         bool _rgbMode;
+        Box2D _dataWindow;
 		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 	};

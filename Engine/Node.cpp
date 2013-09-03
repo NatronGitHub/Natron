@@ -38,19 +38,15 @@ using namespace Powiter;
 
 void Node::copy_info(Node* parent){
     clear_info();
-    const Box2D* bboxParent = dynamic_cast<const Box2D*>(parent->getInfo());
 	_info->firstFrame(parent->getInfo()->firstFrame());
 	_info->lastFrame(parent->getInfo()->lastFrame());
 	_info->setYdirection(parent->getInfo()->getYdirection());
 	_info->setDisplayWindow(parent->getInfo()->getDisplayWindow());
 	_info->setChannels(parent->getInfo()->channels());
     if(_info->hasBeenModified()){
-        _info->merge(*(parent->getInfo()));
+        _info->mergeDataWindow(parent->getInfo()->getDataWindow());
     }else{
-        _info->x(bboxParent->x());
-        _info->y(bboxParent->y());
-        _info->top(bboxParent->top());
-        _info->right(bboxParent->right());
+        _info->setDataWindow(parent->getInfo()->getDataWindow());
     }
     _info->rgbMode(parent->getInfo()->rgbMode());
     _info->blackOutside(parent->getInfo()->blackOutside());
