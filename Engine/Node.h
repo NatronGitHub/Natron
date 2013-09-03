@@ -36,7 +36,8 @@ class Node
 public:
 	/*Per-node infos. This class is used to pass infos along the graph
 	 *and to know what we can request from a node.*/
-	class Info:public Box2D{
+	class Info{
+        
 	public:
 		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels)
         : _firstFrame(first_frame)

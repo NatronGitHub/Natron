@@ -52,11 +52,7 @@ void Node::copy_info(Node* parent){
 	_info.set_ydirection(parent->info().ydirection());
 	_info.set_displayWindow(parent->info().displayWindow());
 	_info.set_channels(parent->info().channels());
-    if(info().hasBeenModified()){
-        _info.merge_dataWindow(parent->info().dataWindow());
-    }else{
-        _info.set_dataWindow(parent->info().dataWindow());
-    }
+    _info.set_dataWindow(parent->info().dataWindow());
     _info.set_rgbMode(parent->info().rgbMode());
     _info.set_blackOutside(parent->info().blackOutside());
 }
@@ -70,9 +66,8 @@ void Node::Info::reset(){
     _lastFrame = 0;
     _ydirection = 0;
     _channels = Mask_None;
-    set(0, 0, 0, 0);
+    _dataWindow.set(0, 0, 0, 0);
     _displayWindow.set(0,0,0,0);
-    _modified = false;
     _blackOutside = false;
 }
 

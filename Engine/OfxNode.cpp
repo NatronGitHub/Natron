@@ -172,7 +172,7 @@ bool OfxNode::_validate(bool forReal){
             //  cout << "pa : " << pa << endl;
             //we just set the displayWindow/dataWindow rather than merge it
             _info.set_displayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
-            _info.set(rod.x1, rod.y1, rod.x2, rod.y2);
+            _info.set_dataWindow(Box2D(rod.x1, rod.y1, rod.x2, rod.y2));
             _info.set_rgbMode(true);
             _info.set_ydirection(1);
             string comp = clip->getUnmappedComponents();

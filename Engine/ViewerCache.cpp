@@ -54,7 +54,7 @@ FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
 _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
 _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo = new ReaderInfo;
-    _frameInfo->set(bbox);
+    _frameInfo->set_dataWindow(bbox);
     _frameInfo->set_displayWindow(dispW);
     _frameInfo->set_channels(channels);
     
@@ -247,6 +247,8 @@ FrameEntry* ViewerCache::addFrame(U64 key,
 }
 
 void ViewerCache::clearInMemoryPortion(){
+    if(!_model->getVideoEngine())
+        return;
     ViewerNode* viewer = _model->getVideoEngine()->getCurrentDAG().outputAsViewer();
     if(viewer)
         viewer->getUiContext()->frameSeeker->clearCachedFrames();
