@@ -53,9 +53,12 @@ public:
     
 
 
-    ///////////////////////////
-    // Powiter::Node methods //
-    ///////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    // overridden for Powiter::Node
 
     virtual bool isInputNode() OVERRIDE;
     
@@ -85,10 +88,12 @@ public:
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
 
 
-    
-    //////////////////////////////////////////////
-    // OFX::Host::ImageEffect::Instance methods //
-    //////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    // overridden for ImageEffect::Instance
 
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
@@ -115,7 +120,7 @@ public:
     // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
     // project may be a PAL SD project, but only be a letter-box within that. The project size is
     // the size of this sub window.
-    virtual void getProjectSize(double& xSize, double& ySize) const{
+    virtual void getProjectSize(double& xSize, double& ySize) const OVERRIDE {
         xSize = _info->getDisplayWindow().w();
         ySize = _info->getDisplayWindow().h();
     }
@@ -125,7 +130,7 @@ public:
     // of the project 'subwindow'. For example for a PAL SD project that is in letterbox form, the
     // project offset is the offset to the bottom left hand corner of the letter box. The project
     // offset is in canonical coordinates.
-    virtual void getProjectOffset(double& xOffset, double& yOffset) const{
+    virtual void getProjectOffset(double& xOffset, double& yOffset) const OVERRIDE {
         xOffset = _info->x();
         yOffset = _info->y();
     }
@@ -135,46 +140,56 @@ public:
     // for more infomation on the project extent. The extent is in canonical coordinates and only
     // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
     // project would have an extent of 768, 576.
-    virtual void getProjectExtent(double& xSize, double& ySize) const {
+    virtual void getProjectExtent(double& xSize, double& ySize) const OVERRIDE {
         xSize = _info->w();
         ySize = _info->h();
     }
     
     // The pixel aspect ratio of the current project
-    virtual double getProjectPixelAspectRatio() const {
+    virtual double getProjectPixelAspectRatio() const OVERRIDE {
         return _info->getDisplayWindow().pixel_aspect();
     }
     
     // The duration of the effect
     // This contains the duration of the plug-in effect, in frames.
-    virtual double getEffectDuration() const {return 1.0;}
+    virtual double getEffectDuration() const OVERRIDE {return 1.0;}
     
     // For an instance, this is the frame rate of the project the effect is in.
-    virtual double getFrameRate() const {return 25.0;}
+    virtual double getFrameRate() const OVERRIDE {return 25.0;}
     
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct frame
-    virtual double getFrameRecursive() const {return 0.0;}
+    virtual double getFrameRecursive() const OVERRIDE {return 0.0;}
     
     /// This is called whenever a param is changed by the plugin so that
     /// the recursive instanceChangedAction will be fed the correct
     /// renderScale
-    virtual void getRenderScaleRecursive(double &x, double &y) const{
+    virtual void getRenderScaleRecursive(double &x, double &y) const OVERRIDE {
         x = y = 1.0;
     }
 
-    virtual OFX::Host::Param::Instance* newParam(const std::string& name, OFX::Host::Param::Descriptor& Descriptor);
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+    // overridden for Param::SetInstance
+
+    /// make a parameter instance
+    ///
+    /// Client host code needs to implement this
+    virtual OFX::Host::Param::Instance* newParam(const std::string& name, OFX::Host::Param::Descriptor& Descriptor) OVERRIDE;
     
     
     /// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditBegin
     ///
     /// Client host code needs to implement this
-    virtual OfxStatus editBegin(const std::string& name);
+    virtual OfxStatus editBegin(const std::string& name) OVERRIDE;
     
     /// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditEnd
     ///
     /// Client host code needs to implement this
-    virtual OfxStatus editEnd();
+    virtual OfxStatus editEnd() OVERRIDE;
     
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -184,14 +199,14 @@ public:
     // overridden for Progress::ProgressI
     
     /// Start doing progress.
-    virtual void progressStart(const std::string &message);
+    virtual void progressStart(const std::string &message) OVERRIDE;
     
     /// finish yer progress
-    virtual void progressEnd();
+    virtual void progressEnd() OVERRIDE;
     
     /// set the progress to some level of completion, returns
     /// false if you should abandon processing, true to continue
-    virtual bool progressUpdate(double t);
+    virtual bool progressUpdate(double t) OVERRIDE;
     
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -202,13 +217,13 @@ public:
     
     /// get the current time on the timeline. This is not necessarily the same
     /// time as being passed to an action (eg render)
-    virtual double timeLineGetTime();
+    virtual double timeLineGetTime() OVERRIDE;
     
     /// set the timeline to a specific time
-    virtual void timeLineGotoTime(double t);
+    virtual void timeLineGotoTime(double t) OVERRIDE;
     
     /// get the first and last times available on the effect's timeline
-    virtual void timeLineGetBounds(double &t1, double &t2);
+    virtual void timeLineGetBounds(double &t1, double &t2) OVERRIDE;
 
     //
     // END of OFX::Host::ImageEffect::Instance methods
