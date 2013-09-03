@@ -27,9 +27,9 @@
 #include <QSplitter>
 #include <QtGui/QIcon>
 #include <QtCore/QRegExp>
-GCC_DIAG_OFF(unused-private-field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-GCC_DIAG_ON(unused-private-field);
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QColor>
 #if QT_VERSION < 0x050000

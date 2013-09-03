@@ -18,9 +18,9 @@
 #include <QtGui/QIcon>
 #include <QtCore/QMimeData>
 #include <QtGui/QDrag>
-GCC_DIAG_OFF(unused-private-field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-GCC_DIAG_ON(unused-private-field);
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QDragEnterEvent>
 #include <QtGui/QDragLeaveEvent>
 #include <QtGui/QPaintEvent>

@@ -17,9 +17,9 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QFileDialog>
-GCC_DIAG_OFF(unused-private-field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-GCC_DIAG_ON(unused-private-field);
+CLANG_DIAG_ON(unused-private-field);
 #include <QKeyEvent>
 #include <QColorDialog>
 #include <QGroupBox>

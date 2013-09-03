@@ -11,9 +11,9 @@
 #include "Timeline.h"
 
 #include <QtGui/QPainter>
-GCC_DIAG_OFF(unused-private-field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-GCC_DIAG_ON(unused-private-field);
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QMouseEvent>
 
 #include "Global/Macros.h"

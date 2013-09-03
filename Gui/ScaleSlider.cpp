@@ -11,9 +11,9 @@
 #include "ScaleSlider.h"
 
 #include <qlayout.h>
-GCC_DIAG_OFF(unused-private-field);
+CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
-GCC_DIAG_ON(unused-private-field);
+CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
