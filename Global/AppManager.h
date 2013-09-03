@@ -8,8 +8,8 @@
 *
 */
 
-#ifndef POWITER_GLOBAL_CONTROLER_H_
-#define POWITER_GLOBAL_CONTROLER_H_
+#ifndef POWITER_GLOBAL_APPMANAGER_H_
+#define POWITER_GLOBAL_APPMANAGER_H_
 
 #include <vector>
 #include <string>
