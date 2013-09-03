@@ -20,11 +20,11 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/Hash64.h"
 
 class Row;
 class Model;
 class SettingsPanel;
-class Hash;
 class Knob;
 class KnobCallback;
 class NodeGui;
@@ -109,7 +109,7 @@ public:
     /*============================*/
     
     /*Hash related functions*/
-    const Hash* getHash() const{return _hashValue;}
+    const Hash64& hash() const { return _hashValue; }
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
@@ -240,7 +240,7 @@ protected:
     bool _marked;
 	std::map<int, std::string> _inputLabelsMap;
     std::string _name;
-	Hash* _hashValue;
+	Hash64 _hashValue;
 	std::vector<Knob*> _knobsVector;
 	KnobCallback* _knobsCB;
 	Box2D _requestedBox; // composition of all the area requested by children

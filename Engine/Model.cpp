@@ -20,7 +20,7 @@
 
 #include "Global/MemoryInfo.h"
 #include "Global/AppManager.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Engine/Node.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/OfxNode.h"

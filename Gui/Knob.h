@@ -97,9 +97,9 @@ public:
     
     virtual ~Knob();
 
-    std::vector<U64> getValues(){return values;}
+    const std::vector<U64>& getValues() const {return values;}
     
-    KnobCallback* getCallBack(){return cb;}
+    KnobCallback* getCallBack() {return cb;}
     
     QHBoxLayout* getHorizontalLayout() const {return layout;}
     

@@ -9,7 +9,7 @@
 *
 */
 
-#include "Hash.h"
+#include "Hash64.h"
 
 #if 0
 #include <cstdlib> // for malloc(), free()
@@ -19,13 +19,13 @@
 #ifndef Q_MOC_RUN
 #include <boost/crc.hpp>
 #endif
+#include <QtCore/QString>
 
 #include "Engine/Node.h"
-#include "Gui/Knob.h"
 
 using namespace Powiter;
 
-void Hash::computeHash() {
+void Hash64::computeHash() {
 #if 0
     // previous version
     boost::crc_optimal<64,0x42F0E1EBA9EA3693,0,0,false,false> result;
@@ -45,26 +45,15 @@ void Hash::computeHash() {
 #endif
 }
 
-void Hash::reset(){
+void Hash64::reset(){
     node_values.clear();
     hash=0;
 }
 
 
-void Hash::appendValueToHash(U64 hashValue){
-        node_values.push_back(hashValue);
-}
-
-void Hash::appendKnobToHash(Knob* knob){
-    std::vector<U64> values= knob->getValues();
-    for(U32 i=0;i<values.size();++i) {
-        node_values.push_back(values[i]);
-    }
-}
-
-void Hash::appendQStringToHash(const QString& str){
+void Hash64_appendQString(Hash64* hash, const QString& str) {
     for(int i =0 ; i< str.size();++i) {
-        node_values.push_back((U64)str.at(i).unicode());
+        hash->append((U64)str.at(i).unicode());
     }
 }
 

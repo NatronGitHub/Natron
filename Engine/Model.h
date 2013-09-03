@@ -97,7 +97,7 @@ class ViewerCache;
 class AppInstance;
 class OutputNode;
 class ViewerNodeNode;
-class Hash;
+//class Hash64;
 class VideoEngine;
 class QMutex;
 class Node;

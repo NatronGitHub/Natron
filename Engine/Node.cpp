@@ -14,7 +14,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
 #include "Gui/NodeGui.h"
@@ -35,6 +35,15 @@
 
 using namespace std;
 using namespace Powiter;
+
+namespace {
+    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
+        const std::vector<U64>& values= knob->getValues();
+        for(U32 i=0;i<values.size();++i) {
+            hash->append(values[i]);
+        }
+    }
+}
 
 void Node::copy_info(Node* parent){
     clear_info();
@@ -159,7 +168,6 @@ Node::Node()
 : _info()
 {
     _marked = false;
-    _hashValue=new Hash;
     _knobsCB = new KnobCallback(NULL,this);
 	
 }
@@ -273,29 +281,29 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
             return;
     }
     /*Clear the values left to compute the hash key*/
-    _hashValue->reset();
+    _hashValue.reset();
     /*append all values stored in knobs*/
     for(U32 i=0;i<_knobsVector.size();++i) {
-        _hashValue->appendKnobToHash(_knobsVector[i]);
+        Hash64_appendKnob(&_hashValue,_knobsVector[i]);
     }
     /*append the node name*/
-    _hashValue->appendQStringToHash(QString(className().c_str()));
+    Hash64_appendQString(&_hashValue, QString(className().c_str()));
     /*mark this node as already been computed*/
     alreadyComputedHash.push_back(_name);
     
     /*Recursive call to parents and add their hash key*/
     foreach(Node* parent,_parents){
         parent->computeTreeHash(alreadyComputedHash);
-        _hashValue->appendValueToHash(parent->getHash()->getHashValue());
+        _hashValue.append(parent->hash().value());
     }
     /*Compute the hash key*/
-    _hashValue->computeHash();
+    _hashValue.computeHash();
 }
 bool Node::hashChanged(){
-    U64 oldHash=_hashValue->getHashValue();
+    U64 oldHash=_hashValue.value();
     vector<std::string> v;
     computeTreeHash(v);
-    return oldHash!=_hashValue->getHashValue();
+    return oldHash!=_hashValue.value();
 }
 void Node::initKnobs(KnobCallback *cb){
     cb->initNodeKnobsVector();
@@ -325,7 +333,7 @@ Row* Node::get(int y,int x,int r){
         filename = reader->getRandomFrameName(current_frame);
     }
     Row* out = 0;
-    U64 key = _hashValue->getHashValue();
+    U64 key = _hashValue.value();
     pair<U64,Row*> entry = cache->get(key , filename,x,r,y,info().channels());
     if (entry.second && entry.first != 0) {
         out = entry.second;
@@ -354,7 +362,6 @@ Node::~Node(){
     _children.clear();
     _knobsVector.clear();
     _inputLabelsMap.clear();
-    delete _hashValue;
     delete _knobsCB;
 }
 

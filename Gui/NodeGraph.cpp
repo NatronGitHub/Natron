@@ -26,7 +26,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/TabWidget.h"
 #include "Global/AppManager.h"
 #include "Gui/Edge.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Gui/Gui.h"
 #include "Gui/SettingsPanel.h"
 #include "Engine/Model.h"

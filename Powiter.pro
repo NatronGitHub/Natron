@@ -71,7 +71,7 @@ SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/DataBuffer.cpp \
     Engine/Format.cpp \
-    Engine/Hash.cpp \
+    Engine/Hash64.cpp \
     Engine/ImageFetcher.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
@@ -138,7 +138,7 @@ HEADERS += \
     Engine/ChannelSet.h \
     Engine/DataBuffer.h \
     Engine/Format.h \
-    Engine/Hash.h \
+    Engine/Hash64.h \
     Engine/ImageFetcher.h \
     Engine/LRUcache.h \
     Engine/Lut.h \

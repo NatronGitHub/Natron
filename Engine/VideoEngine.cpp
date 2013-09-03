@@ -24,7 +24,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
-#include "Engine/Hash.h"
+#include "Engine/Hash64.h"
 #include "Engine/Lut.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/NodeCache.h"
@@ -878,7 +878,7 @@ void VideoEngine::changeTreeVersion(){
     Node* output = _dag.getOutput();
     std::vector<std::string> v;
     output->computeTreeHash(v);
-    _treeVersion = output->getHash()->getHashValue();
+    _treeVersion = output->hash().value();
     
 }
 
