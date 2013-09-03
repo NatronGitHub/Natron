@@ -13,6 +13,7 @@
 
 #include <cstring> // for memset()
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 DataBuffer::DataBuffer(){

@@ -14,11 +14,12 @@
 #include <QAction>
 #include <QTabWidget>
 #include <QStyle>
+
+#include "Global/Macros.h"
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
 #include "Gui/Knob.h"
 #include "Gui/LineEdit.h"
-#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
 

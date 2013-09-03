@@ -15,15 +15,19 @@
 #include "Engine/OfxNode.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 using namespace Powiter;
 using namespace std;
 
 
-OfxClipInstance::OfxClipInstance(int index,OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc):
-OFX::Host::ImageEffect::ClipInstance(effect, *desc),
-_node(effect),_clipIndex(index),_outputImage(NULL)
+OfxClipInstance::OfxClipInstance(int /*index*/,
+                                 OfxNode* effect,
+                                 OFX::Host::ImageEffect::ClipDescriptor* desc)
+: OFX::Host::ImageEffect::ClipInstance(effect, *desc)
+, _node(effect)
+//, _clipIndex(index)
+, _outputImage(NULL)
 {
 }
 Node* OfxClipInstance::getAssociatedNode() const{

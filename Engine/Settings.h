@@ -16,6 +16,7 @@
 #include <map>
 #include <vector>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/Singleton.h"
 

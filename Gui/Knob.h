@@ -21,8 +21,8 @@
 #include <QWidget>
 #include <QLineEdit>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-//#include "Engine/Model.h" // for PluginID
 #include "Engine/Singleton.h"
 #include "Gui/LineEdit.h"
 

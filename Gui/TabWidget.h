@@ -16,6 +16,8 @@
 #include <QFrame>
 #include <QTabBar>
 
+#include "Global/Macros.h"
+
 class QWidget;
 class QStyle;
 class QHBoxLayout;

@@ -11,7 +11,13 @@
 #include "Timeline.h"
 
 #include <QtGui/QPainter>
+GCC_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+GCC_DIAG_ON(unused-private-field);
 #include <QtGui/QMouseEvent>
+
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 using namespace std;
 using namespace Powiter;

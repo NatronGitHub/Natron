@@ -17,7 +17,8 @@
 #include <QtCore/QPointF>
 #include <QWidget>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
+#include "Global/Enums.h"
 
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10

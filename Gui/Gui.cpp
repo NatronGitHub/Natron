@@ -12,6 +12,9 @@
 
 #include <cassert>
 #include <QtCore/QEvent>
+GCC_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+GCC_DIAG_ON(unused-private-field);
 #include <QtGui/QCloseEvent>
 #include <QApplication>
 #include <QMenu>

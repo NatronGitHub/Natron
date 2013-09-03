@@ -12,7 +12,7 @@
 #ifndef POWITER_WRITERS_WRITEQT_H_
 #define POWITER_WRITERS_WRITEQT_H_
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Writers/Write.h"
 
 class WriteQt :public Write{

@@ -16,7 +16,7 @@
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QObject>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Engine/Node.h"
 
 class Write;

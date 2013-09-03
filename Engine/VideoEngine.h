@@ -22,6 +22,9 @@
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
+
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 #include "Gui/Texture.h" // for TextureRect
 #include "Engine/Format.h"
 

@@ -145,14 +145,6 @@ static std::string removeNonAlphaCharacters(const std::string& str)
     
     return ret;
 }
-static std::string tolower(const std::string& s)
-{
-    std::string r = s;
-    for (size_t i = 0; i < r.size(); ++i) {
-        r[i] = tolower(r[i]);
-    }
-    return r;
-}
 
 bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const std::vector<std::string>& views)
 {

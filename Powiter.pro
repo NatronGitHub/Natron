@@ -5,7 +5,7 @@
 
 TARGET = Powiter
 TEMPLATE = app
-CONFIG += app
+CONFIG += app warn_on
 CONFIG += moc rcc
 CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
 QT += gui core opengl
@@ -161,6 +161,7 @@ HEADERS += \
     Global/Enums.h \
     Global/GLIncludes.h \
     Global/GlobalDefines.h \
+    Global/Macros.h \
     Global/MemoryInfo.h \
     Gui/Button.h \
     Gui/ComboBox.h \

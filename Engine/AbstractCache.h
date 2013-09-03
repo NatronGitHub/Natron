@@ -15,8 +15,9 @@
 #include <vector>
 #include <QtCore/QMutex>
 
-#include "Engine/LRUcache.h"
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+#include "Engine/LRUcache.h"
 
 class MemoryFile;
 /* Abstract class/interface for cache entries. This can be overloaded to fit parameters you'd

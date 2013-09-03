@@ -17,7 +17,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Engine/Singleton.h"
 
 /*macro to get the unique pointer to the controler*/

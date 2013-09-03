@@ -21,6 +21,9 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QAbstractItemView>
+GCC_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+GCC_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QKeySequence>
 

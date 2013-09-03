@@ -10,7 +10,8 @@
 #define POWITER_ENGINE_PLUGINID_H_
 
 #include <string>
-#include "Global/GlobalDefines.h"
+
+#include "Global/Macros.h"
 
 #ifdef __POWITER_WIN32__
 class PluginID{

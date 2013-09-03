@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QStyle>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 using namespace std;

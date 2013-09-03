@@ -15,7 +15,7 @@
 #include <sstream>
 #include <QtGui/QImage>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Global/Controler.h"
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"

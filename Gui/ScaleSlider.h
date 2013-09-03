@@ -17,6 +17,8 @@
 #include <QtCore/QObject>
 #include <QWidget>
 
+#include "Global/Macros.h"
+#include "Global/Enums.h"
 #include "Global/GlobalDefines.h"
 
 #define BORDER_HEIGHT 10

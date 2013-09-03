@@ -26,7 +26,7 @@ class Node;
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
     OfxNode* _node;
-    int _clipIndex;
+    //int _clipIndex;
     OfxImage* _outputImage;
 public:
     OfxClipInstance(int index,OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc);

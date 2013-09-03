@@ -12,15 +12,10 @@
 #ifndef POWITER_ENGINE_HASH_H_
 #define POWITER_ENGINE_HASH_H_
 
-
-//#include <cstdlib>
-#ifndef Q_MOC_RUN
-//#include <boost/crc.hpp>
-#endif
 #include <vector>
 #include <QtCore/QString>
-//#include <QtCore/QChar>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 

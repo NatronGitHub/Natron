@@ -26,7 +26,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 
 using namespace std;
 

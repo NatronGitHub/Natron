@@ -16,6 +16,7 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #ifndef FLT_MAX

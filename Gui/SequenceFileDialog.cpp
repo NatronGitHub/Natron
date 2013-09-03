@@ -27,6 +27,9 @@
 #include <QSplitter>
 #include <QtGui/QIcon>
 #include <QtCore/QRegExp>
+GCC_DIAG_OFF(unused-private-field);
+#include <QtGui/qmime.h>
+GCC_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QColor>
 #if QT_VERSION < 0x050000
@@ -48,10 +51,10 @@
 
 #include <QtCore/QSettings>
 
+#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
 #include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
-#include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
 
 using namespace std;
