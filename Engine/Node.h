@@ -82,7 +82,7 @@ public:
     
     
     /*CONSTRUCTOR AND DESTRUCTORS*/
-    Node();
+    Node(Model* model);
     virtual ~Node();
     /*============================*/
     
@@ -200,7 +200,10 @@ public:
     
 
     virtual bool isOpenFXNode() const {return false;}
-        
+    
+    
+    Model* getModel() const {return _model;}
+    
 protected:
     
     virtual ChannelSet supportedComponents() =0;
@@ -208,6 +211,8 @@ protected:
 
 	virtual bool _validate(bool /*forReal*/) = 0;
     
+    
+    Model* _model;
 	Info* _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 	std::vector<Node*> _parents;
 	std::vector<Node*> _children;
@@ -231,7 +236,7 @@ typedef Node* (*NodeBuilder)();
 class OutputNode : public Node{
 public:
     
-    OutputNode();
+    OutputNode(Model* model);
     
     virtual ~OutputNode();
     

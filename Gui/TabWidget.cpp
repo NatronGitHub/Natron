@@ -33,8 +33,9 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerTab.h"
 #include "Engine/ViewerNode.h"
 
-TabWidget::TabWidget(TabWidget::Decorations decorations,QWidget* parent):
+TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
 QFrame(parent),
+_gui(gui),
 _header(0),
 _headerLayout(0),
 _tabBar(0),
@@ -124,7 +125,7 @@ void TabWidget::destroyTab(QWidget* tab){
      need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     if (isViewer) {
-        appPTR->getGui()->removeViewerTab(isViewer,false);
+        _gui->removeViewerTab(isViewer,false);
     }else if(tab->objectName() != "DAG_GUI" && tab->objectName() != "Properties_GUI"){
         /*Otherwise delete it normally*/
         delete tab;
@@ -174,22 +175,22 @@ void TabWidget::closeFloatingPane(){
 }
 
 void TabWidget::closePane(){
-    appPTR->getGui()->closePane(this);
+    _gui->closePane(this);
 }
 
 void TabWidget::floatPane(){
     _isFloating = true;
-    appPTR->getGui()->floatWidget(this);
+    _gui->floatWidget(this);
 }
 
 void TabWidget::addNewViewer(){
-    appPTR->getGui()->setNewViewerAnchor(this);
-    appPTR->createNode("Viewer");
+    _gui->setNewViewerAnchor(this);
+    _gui->_appInstance->createNode("Viewer");
 }
 
 void TabWidget::moveNodeGraphHere(){
-    QWidget* what = dynamic_cast<QWidget*>(appPTR->getGui()->_nodeGraphTab->_nodeGraphArea);
-    appPTR->getGui()->moveTab(what,this);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphTab->_nodeGraphArea);
+    _gui->moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
 QString TabWidget::getTabName(int index) const {
@@ -208,7 +209,7 @@ QString TabWidget::getTabName(QWidget* tab) const{
 
 void TabWidget::floatCurrentWidget(){
     if(!_currentWidget) return;
-    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE);
+    TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
     newTab->appendTab(getTabName(_currentWidget), _currentWidget);
     newTab->floatPane();
     removeTab(_currentWidget);
@@ -220,16 +221,16 @@ void TabWidget::closeCurrentWidget(){
     removeTab(_currentWidget);
 }
 void TabWidget::movePropertiesBinHere(){
-    QWidget* what = dynamic_cast<QWidget*>(appPTR->getGui()->_propertiesScrollArea);
-    appPTR->getGui()->moveTab(what, this);
+    QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
+    _gui->moveTab(what, this);
 }
 
 void TabWidget::splitHorizontally(){
-    appPTR->getGui()->splitPaneHorizontally(this);
+    _gui->splitPaneHorizontally(this);
 }
 
 void TabWidget::splitVertically(){
-    appPTR->getGui()->splitPaneVertically(this);
+    _gui->splitPaneVertically(this);
 }
 
 
@@ -237,7 +238,7 @@ bool TabWidget::appendTab(const QString& title,QWidget* widget){
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
-    appPTR->getGui()->registerTab(title.toStdString(), widget);
+    _gui->registerTab(title.toStdString(), widget);
     
     _tabs.push_back(widget);
     _tabBar->addTab(title);
@@ -256,7 +257,7 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
     if(_decorations!=NONE && title.isEmpty()) return false;
     
     /*registering this tab for drag&drop*/
-    appPTR->getGui()->registerTab(title.toStdString(), widget);
+    _gui->registerTab(title.toStdString(), widget);
     
     _tabs.push_back(widget);
     _tabBar->addTab(icon,title);
@@ -275,7 +276,7 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
 void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidget* widget){
     if ((U32)index < _tabs.size()) {
         /*registering this tab for drag&drop*/
-        appPTR->getGui()->registerTab(title.toStdString(), widget);
+        _gui->registerTab(title.toStdString(), widget);
         
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,icon ,title);
@@ -288,7 +289,7 @@ void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidg
 void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
     if (index < (int)_tabs.size()) {
         /*registering this tab for drag&drop*/
-        appPTR->getGui()->registerTab(title.toStdString(), widget);
+        _gui->registerTab(title.toStdString(), widget);
         
         _tabs.insert(_tabs.begin()+index, widget);
         _tabBar->insertTab(index,title);
@@ -384,9 +385,9 @@ void TabWidget::paintEvent(QPaintEvent* event){
 void TabWidget::dropEvent(QDropEvent* event){
     event->accept();
     QString name(event->mimeData()->data("Tab"));
-    QWidget* w = appPTR->getGui()->findExistingTab(name.toStdString());
+    QWidget* w = _gui->findExistingTab(name.toStdString());
     if(w){
-        appPTR->getGui()->moveTab(w, this);
+        _gui->moveTab(w, this);
     }
     _drawDropRect = false;
     setFrameShape(QFrame::NoFrame);

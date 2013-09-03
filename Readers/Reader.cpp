@@ -43,7 +43,7 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader():Node(),
+Reader::Reader(Model* model):Node(model),
 preview(0),
 has_preview(false),
 video_sequence(0),
@@ -210,10 +210,9 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     if(!forReal)
         current_frame = firstFrame();
     else{
-        Writer* writer = dynamic_cast<Writer*>(appPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
+        Writer* writer = dynamic_cast<Writer*>(_model->getVideoEngine()->getCurrentDAG().getOutput());
         if(!writer) {
-            assert(currentViewer);
-            current_frame = clampToRange(currentViewer->currentFrame());
+            current_frame = clampToRange(dynamic_cast<ViewerNode*>(_model->getVideoEngine()->getCurrentDAG().getOutput())->currentFrame());
         } else {
             current_frame = writer->currentFrame();
         }

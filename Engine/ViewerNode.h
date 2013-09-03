@@ -35,7 +35,7 @@ class ViewerNode: public OutputNode
 public:
     
         
-    ViewerNode(ViewerCache* cache);
+    ViewerNode(ViewerCache* cache,Model* model);
     
     virtual ~ViewerNode();
         

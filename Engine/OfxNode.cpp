@@ -29,8 +29,9 @@ using namespace Powiter;
 
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
-                 const std::string  &context):
-OutputNode(),
+                 const std::string  &context,
+                 Model* model):
+OutputNode(model),
 OFX::Host::ImageEffect::Instance(plugin,other,context,false),
 _tabKnob(0),
 _lastKnobLayoutWithNoNewLine(0),
@@ -429,7 +430,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     endInstanceChangedAction(kOfxChangeUserEdited);
     
-    appPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
+    _model->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
 OfxStatus OfxNode::editBegin(const std::string& /*name*/)
@@ -463,9 +464,9 @@ bool  OfxNode::progressUpdate(double /*t*/)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    if(!appPTR->getModel()->getVideoEngine())
+    if(!_model->getVideoEngine())
         return -1.;
-    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return -1.;
     }
@@ -473,7 +474,7 @@ double  OfxNode::timeLineGetTime()
         return dag.outputAsOpenFXNode()->currentFrame();
     }else{
         if(dag.isOutputAViewer()){
-            return currentViewer->getUiContext()->frameSeeker->currentFrame();
+            return dag.outputAsViewer()->getUiContext()->frameSeeker->currentFrame();
             
         }else{
             return dag.outputAsWriter()->currentFrame();
@@ -484,7 +485,7 @@ double  OfxNode::timeLineGetTime()
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
-    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return;
     }
@@ -493,7 +494,7 @@ void  OfxNode::timeLineGotoTime(double t)
         return dag.outputAsOpenFXNode()->setCurrentFrame(t);
     }else{
         if(dag.isOutputAViewer()){
-            currentViewer->getUiContext()->frameSeeker->seek_notSlot(t);
+            dag.outputAsViewer()->getUiContext()->frameSeeker->seek_notSlot(t);
         }else{
             return dag.outputAsWriter()->setCurrentFrame(t);
         }
@@ -506,7 +507,7 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
    
 
-    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;
@@ -518,8 +519,8 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 
     }else{
         if(dag.isOutputAViewer()){
-            t1 = currentViewer->getUiContext()->frameSeeker->firstFrame();
-            t2 = currentViewer->getUiContext()->frameSeeker->lastFrame();
+            t1 = dag.outputAsViewer()->getUiContext()->frameSeeker->firstFrame();
+            t2 = dag.outputAsViewer()->getUiContext()->frameSeeker->lastFrame();
         }else{
             t1 = dag.outputAsWriter()->firstFrame();
             t2 = dag.outputAsWriter()->lastFrame();
@@ -531,7 +532,7 @@ OfxStatus OfxNode::vmessage(const char* type,
                             const char* id,
                             const char* format,
                             va_list args) {
-    return appPTR->getModel()->vmessage(type, id, format, args);
+    return _model->vmessage(type, id, format, args);
 }
 void OfxNode::computePreviewImage(){
     if(getContext() != kOfxImageEffectContextGenerator){

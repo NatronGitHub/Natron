@@ -54,6 +54,7 @@ class QGroupBox;
 class SettingsPanel;
 class Node;
 class Knob;
+class Model;
 
 class PluginID;
 
@@ -76,10 +77,10 @@ public:
 
     SettingsPanel* getSettingsPanel() const {return panel;}
 
-
     void setSettingsPanel(SettingsPanel* p) {panel = p;}
 
 private:
+    
     Node* node;
     std::vector<Knob*> knobs;
     SettingsPanel* panel;

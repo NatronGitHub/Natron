@@ -45,6 +45,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/MemoryFile.h"
 #include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
+#include "Gui/Gui.h"
 
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
@@ -1056,7 +1057,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         _infoViewer->setColor(color);
         _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
-        VideoEngine* videoEngine = appPTR->getModel()->getVideoEngine();
+        VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
         if(videoEngine && !videoEngine->isWorking())
             emit infoColorUnderMouseChanged();
     }else{
@@ -1105,7 +1106,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_drawing){
-        appPTR->getModel()->clearPlaybackCache();
+        _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
         emit engineNeeded();
     }
     //  else
@@ -1123,7 +1124,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 
 void ViewerGL::zoomSlot(int v){
     assert(v > 0);
-    if(!appPTR->getModel()->getVideoEngine()->isWorking()){
+    if(!_viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->isWorking()){
         double value = v/100.f;
         if(value < 0.01) {
             value = 0.01;
@@ -1132,7 +1133,7 @@ void ViewerGL::zoomSlot(int v){
         }
         _zoomCtx._zoomFactor = value;
         if(_drawing){
-            appPTR->getModel()->clearPlaybackCache();
+            _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
             emit engineNeeded();
         }else{
             updateGL();
@@ -1175,7 +1176,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 }
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    VideoEngine* videoEngine = appPTR->getModel()->getVideoEngine();
+    VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
     if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < displayWindow().x() || pos.x() >= displayWindow().w() || pos.y() < displayWindow().y() || pos.y() >=displayWindow().h())
@@ -1222,7 +1223,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 }
 void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
     _currentViewerInfos = viewerInfos;
-    Format* df=appPTR->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
+    Format* df=_viewerTab->getGui()->_appInstance->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
         _currentViewerInfos->getDisplayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
@@ -1646,10 +1647,10 @@ void glLoadIdentity(M44f& matrix){
 #endif // WITH_EIGEN
 
 void ViewerGL::disconnectViewer(){
-    appPTR->getModel()->getVideoEngine()->abort(); // aborting current work
+    _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->abort(); // aborting current work
     blankInfoForViewer();
     fitToFormat(displayWindow());
-    appPTR->getModel()->setCurrentGraph(NULL,true);
+    _viewerTab->getGui()->_appInstance->getModel()->setCurrentGraph(NULL,true);
     clearViewer();
 }
 

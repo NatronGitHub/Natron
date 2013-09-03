@@ -55,7 +55,8 @@ static QIcon get_icon(const QString &name)
     return QIcon::fromTheme(name, QIcon(QString(":icons/") + name));
 }
 
-Gui::Gui(QWidget* parent):QMainWindow(parent),
+Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
+_appInstance(app),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
@@ -89,13 +90,14 @@ menuDisplay(0),
 menuOptions(0),
 viewersMenu(0),
 cacheMenu(0)
-
 {
 }
+
 Gui::~Gui(){
     
     
 }
+
 bool Gui::exit(){
     int ret = saveWarning();
     if(ret == 0){
@@ -103,12 +105,15 @@ bool Gui::exit(){
     }else if(ret == 2){
         return false;
     }
-
-	appPTR->Destroy();
+    delete _appInstance;
     delete this;
 
-    qApp->exit(0);
-    return true;
+    if(_appInstance->getAppID() != 0){
+        return false;
+    }else{
+        qApp->exit(0);
+        return true;
+    }
     
 }
 
@@ -151,11 +156,11 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Right) {
-            appPTR->getModel()->getVideoEngine()->nextFrame();
+            _appInstance->getModel()->getVideoEngine()->nextFrame();
             focusNextChild();
             return true;
         }else if(keyEvent->key() == Qt::Key_Left){
-            appPTR->getModel()->getVideoEngine()->previousFrame();
+            _appInstance->getModel()->getVideoEngine()->previousFrame();
             focusNextChild();
             return true;
         }
@@ -294,7 +299,7 @@ void Gui::setupUi()
     
     /*VIEWERS related*/
     
-	_viewersPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+	_viewersPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_viewersPane);
     _viewersPane->resize(_viewersPane->width(), this->height()/5);
 	_viewerWorkshopSplitter->addWidget(_viewersPane);
@@ -303,7 +308,7 @@ void Gui::setupUi()
     
 	/*WORKSHOP PANE*/
 	//======================
-	_workshopPane = new TabWidget(TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
+	_workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_workshopPane);
     /*creating DAG gui*/
     addNodeGraph();
@@ -319,7 +324,7 @@ void Gui::setupUi()
     
 	/*PROPERTIES DOCK*/
 	//======================
-	_propertiesPane = new TabWidget(TabWidget::NOT_CLOSABLE,this);
+	_propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
     _panes.push_back(_propertiesPane);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
     _nodeGraphTab->_nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
@@ -382,7 +387,7 @@ void Gui::setupUi()
     
     
     
-    Model* model = appPTR->getModel();
+    Model* model = _appInstance->getModel();
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
@@ -426,7 +431,7 @@ void Gui::minimize(){
 
 
 ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
-    ViewerTab* tab = new ViewerTab(node,_viewersPane);
+    ViewerTab* tab = new ViewerTab(this,node,_viewersPane);
     _viewerTabs.push_back(tab);
     where->appendTab(node->getName().c_str(),tab);
     return tab;
@@ -459,7 +464,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
             assert(_nodeGraphTab);
             assert(_nodeGraphTab->_nodeGraphArea);
             _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
-            appPTR->getModel()->removeNode(tab->getInternalNode());
+            _appInstance->getModel()->removeNode(tab->getInternalNode());
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
@@ -475,7 +480,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     
 }
 void Gui::addNodeGraph(){
-    NodeGraphTab* tab = new NodeGraphTab(_workshopPane);
+    NodeGraphTab* tab = new NodeGraphTab(this,_workshopPane);
     _nodeGraphTab = tab;
     assert(_workshopPane);
     _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
@@ -517,10 +522,10 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
 
 
 
-NodeGraphTab::NodeGraphTab(QWidget* parent){
+NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent){
     _graphScene=new QGraphicsScene(parent);
 	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_graphScene,parent);
+    _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
     _nodeGraphArea->grabKeyboard();
     _nodeGraphArea->releaseKeyboard();
     _nodeGraphArea->setFocus();
@@ -544,7 +549,7 @@ void Gui::splitPaneHorizontally(TabWidget* what){
     
     
     /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    TabWidget* newTab = new TabWidget(this,TabWidget::CLOSABLE,newSplitter);
     _panes.push_back(newTab);
     newSplitter->addWidget(newTab);
     
@@ -574,7 +579,7 @@ void Gui::splitPaneVertically(TabWidget* what){
     what->setVisible(true);
     
     /*Adding now a new tab*/
-    TabWidget* newTab = new TabWidget(TabWidget::CLOSABLE,newSplitter);
+    TabWidget* newTab = new TabWidget(this,TabWidget::CLOSABLE,newSplitter);
     _panes.push_back(newTab);
     newSplitter->addWidget(newTab);
     
@@ -717,19 +722,21 @@ void Gui::addPluginToolButton(const std::string& actionName,
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);
     }else{
-        ToolButton* tb = new ToolButton(actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
+        ToolButton* tb = new ToolButton(_appInstance,actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
         _toolBox->addWidget(tb);
         tb->setToolTip(mainGroup.c_str());
         _toolGroups.insert(make_pair(mainGroup,tb));
     }
     
 }
-ToolButton::ToolButton(const std::string& actionName,
+ToolButton::ToolButton(AppInstance* app,
+                       const std::string& actionName,
                        const std::vector<std::string>& firstElement,
                        const std::string& pluginName,
                        QIcon pluginIcon , QIcon groupIcon ,
                        QWidget* parent)
-:QToolButton(parent){
+:QToolButton(parent),
+_app(app){
     setPopupMode(QToolButton::InstantPopup);
     _menu = new QMenu(this);
     if(!groupIcon.isNull())
@@ -748,7 +755,7 @@ ToolButton::ToolButton(const std::string& actionName,
     }else{
         action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
     }
-    ActionRef* actionRef = new ActionRef(action,actionName);
+    ActionRef* actionRef = new ActionRef(_app,action,actionName);
     _actions.push_back(actionRef);
     
 }
@@ -786,28 +793,24 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
     }else{
         action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
     }
-    ActionRef* actionRef = new ActionRef(action,actionName);
+    ActionRef* actionRef = new ActionRef(_app,action,actionName);
     _actions.push_back(actionRef);
 }
 void ActionRef::onTriggered(){
-    appPTR->createNode(_nodeName.c_str());
+    _app->createNode(_nodeName.c_str());
 }
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
 	menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
-    int ret = saveWarning();
-    if(ret == 0){
-        saveProject();
-    }else if(ret == 2){
-        return;
-    }
-    currentViewer->getUiContext()->viewer->disconnectViewer();
-    _nodeGraphTab->_nodeGraphArea->clear();
-    appPTR->clearInternalNodes();
-    appPTR->resetCurrentProject();
-    appPTR->createNode("Viewer");
+//    int ret = saveWarning();
+//    if(ret == 0){
+//        saveProject();
+//    }else if(ret == 2){
+//        return;
+//    }
+    appPTR->newAppInstance();
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
@@ -819,17 +822,17 @@ void Gui::openProject(){
         if (selectedFiles.size() > 0) {
             //clearing current graph
             _nodeGraphTab->_nodeGraphArea->clear();
-            appPTR->clearInternalNodes();
+            _appInstance->clearInternalNodes();
             QString file = selectedFiles.at(0);
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));
-            appPTR->loadProject(path,name);
+            _appInstance->loadProject(path,name);
         }
     }
 }
 void Gui::saveProject(){
-    if(appPTR->hasProjectBeenSavedByUser()){
-        appPTR->saveProject(appPTR->getCurrentProjectPath(),appPTR->getCurrentProjectName(),false);
+    if(_appInstance->hasProjectBeenSavedByUser()){
+        _appInstance->saveProject(_appInstance->getCurrentProjectPath(),_appInstance->getCurrentProjectName(),false);
     }else{
         saveProjectAs();
     }
@@ -848,12 +851,12 @@ void Gui::saveProjectAs(){
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
-        appPTR->saveProject(path,file,false);
+        _appInstance->saveProject(path,file,false);
     }
 }
 
 void Gui::autoSave(){
-    appPTR->autoSave();
+    _appInstance->autoSave();
 }
 
 bool Gui::isGraphWorthless() const{
@@ -862,9 +865,9 @@ bool Gui::isGraphWorthless() const{
 
 int Gui::saveWarning(){
     
-    if(!isGraphWorthless() && !appPTR->isSaveUpToDate()){
+    if(!isGraphWorthless() && !_appInstance->isSaveUpToDate()){
         QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                     QString("Save changes to " + appPTR->getCurrentProjectName() + " ?"),
+                                     QString("Save changes to " + _appInstance->getCurrentProjectName() + " ?"),
                                      QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
         if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
             return 2;

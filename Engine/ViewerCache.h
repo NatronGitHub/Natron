@@ -19,6 +19,7 @@
 class Format;
 class ChannelSet;
 class Box2D;
+class Model;
 class ReaderInfo;
 
 /*The class associated to a Frame in cache.
@@ -68,22 +69,22 @@ public:
 
 class ReaderInfo;
 class MemoryMappedEntry;
-class ViewerCache : public AbstractDiskCache , public Singleton<ViewerCache>
+class ViewerCache : public AbstractDiskCache 
 {
+    
+    Model* _model;
     
 public:
     
     
-	ViewerCache();
+	ViewerCache(Model* model);
     
 	virtual ~ViewerCache();
     
 	virtual std::string cacheName(){std::string str("ViewerCache");return str;}
     
 	virtual std::string cacheVersion(){std::string str("v1.0.0");return str;}
-    
-	static ViewerCache* getViewerCache();
-    
+        
     virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/

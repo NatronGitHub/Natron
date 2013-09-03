@@ -27,8 +27,8 @@
 using namespace std;
 using namespace Powiter;
 
-Writer::Writer():
-OutputNode(),
+Writer::Writer(Model* model):
+OutputNode(model),
 _requestedChannels(Mask_RGB), // temporary
 _currentFrame(0),
 _premult(false),
@@ -237,8 +237,8 @@ bool Writer::validInfosForRendering(){
 
 void Writer::startRendering(){
     if(validInfosForRendering()){
-        appPTR->getModel()->setCurrentGraph(this,false);
-        appPTR->getModel()->startVideoEngine();
+        _model->setCurrentGraph(this,false);
+        _model->startVideoEngine();
     }
 }
 

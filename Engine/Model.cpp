@@ -68,7 +68,7 @@
 
 using namespace std;
 using namespace Powiter;
-Model::Model():OFX::Host::ImageEffect::Host(),_currentOutput(0), _imageEffectPluginCache(*this)
+Model::Model(AppInstance* appInstance):OFX::Host::ImageEffect::Host(),_appInstance(appInstance),_currentOutput(0), _imageEffectPluginCache(*this)
 {
     
     /*node cache initialisation & restoration*/
@@ -80,7 +80,7 @@ Model::Model():OFX::Host::ImageEffect::Host(),_currentOutput(0), _imageEffectPlu
     
     
     /*viewer cache initialisation & restoration*/
-    _viewerCache = ViewerCache::getViewerCache();
+    _viewerCache = new ViewerCache(this);
     _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
     _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
     _viewerCache->restore();
@@ -198,6 +198,8 @@ Model::Model():OFX::Host::ImageEffect::Host(),_currentOutput(0), _imageEffectPlu
 Model::~Model(){
     
     _viewerCache->save();
+    delete _viewerCache;
+
     //Powiter::Color::deallocateLuts();
     
     writeOFXCache();
@@ -299,26 +301,26 @@ void Model::initCounterAndGetDescription(Node*& node){
 
 bool Model::createNode(Node *&node,const std::string name){
 	if(name=="Reader"){
-		node=new Reader();
+		node=new Reader(this);
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
         return true;
 	}else if(name =="Viewer"){
-        node=new ViewerNode(_viewerCache);
+        node=new ViewerNode(_viewerCache,this);
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
-        TabWidget* where = appPTR->getGui()->_nextViewerTabPlace;
+        TabWidget* where = _appInstance->getGui()->_nextViewerTabPlace;
         if(!where){
-            where = appPTR->getGui()->_viewersPane;
+            where = _appInstance->getGui()->_viewersPane;
         }else{
-            appPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
+            _appInstance->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
         return true;
 	}else if(name == "Writer"){
-		node=new Writer();
+		node=new Writer(this);
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
@@ -742,6 +744,9 @@ void Model::loadBuiltinWrites(){
 }
 
 void Model::clearPlaybackCache(){
+    if (!_currentOutput) {
+        return;
+    }
     _viewerCache->clearInMemoryPortion();
 }
 
@@ -845,7 +850,7 @@ void Model::loadOFXPlugins(){
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        appPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
+        _appInstance->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename);
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         _nodeNames.append(name.c_str());
     }
@@ -867,7 +872,7 @@ OFX::Host::ImageEffect::Instance* Model::newInstance(void* ,
 {
     assert(plugin);
     
-    OfxNode* ret =  new OfxNode(plugin, desc, context);
+    OfxNode* ret =  new OfxNode(plugin, desc, context,this);
     if(context == kOfxImageEffectContextGenerator){
         ret->setCanHavePreviewImage();
     }
@@ -938,7 +943,7 @@ OfxStatus Model::vmessage(const char* type,
 }
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeGui*>& activeNodes = appPTR->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = _appInstance->getAllActiveNodes();
     QString ret;
     
     QXmlStreamWriter writer(&ret);
@@ -1025,7 +1030,7 @@ void Model::restoreGraphFromString(const QString& str){
                 /* Let's check that we're really getting a Node. */
                 if(reader.tokenType() != QXmlStreamReader::StartElement &&
                    reader.name() == "Node") {
-                    appPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    _appInstance->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
                     return;
                 }
                 QString className,label;
@@ -1037,18 +1042,18 @@ void Model::restoreGraphFromString(const QString& str){
                     label = nodeAttributes.value("Label").toString();
                 }
                 
-                assert(appPTR);
-                appPTR->deselectAllNodes();
-                Node* n = appPTR->createNode(className);
+                assert(_appInstance);
+                _appInstance->deselectAllNodes();
+                Node* n = _appInstance->createNode(className);
                 if(!n){
                     QString text("Failed to restore the graph! \n The node ");
                     text.append(className);
                     text.append(" was found in the auto-save script but doesn't seem \n"
                                 "to exist in the currently loaded plug-ins.");
-                    appPTR->showErrorDialog("Autosave", text );
-                    appPTR->clearInternalNodes();
-                    appPTR->clearNodeGuis();
-                    appPTR->createNode("Viewer");
+                    _appInstance->showErrorDialog("Autosave", text );
+                    _appInstance->clearInternalNodes();
+                    _appInstance->clearNodeGuis();
+                    _appInstance->createNode("Viewer");
                     return;
                 }
                 n->getNodeUi()->setName(label);
@@ -1125,7 +1130,7 @@ void Model::restoreGraphFromString(const QString& str){
         }
     }
     if(reader.hasError()){
-        appPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        _appInstance->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
         return;
     }
     //adjusting knobs & connecting nodes now

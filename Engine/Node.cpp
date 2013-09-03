@@ -158,7 +158,7 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node(){
+Node::Node(Model* model):_model(model){
     _marked = false;
     _info = new Info;
     _hashValue=new Hash;
@@ -314,12 +314,12 @@ Row* Node::get(int y,int x,int r){
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
         int current_frame;
-        const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
+        const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
         if(dag.isOutputAnOpenFXNode()){
             current_frame = dag.outputAsOpenFXNode()->currentFrame();
         }else{
             if(dag.isOutputAViewer()){
-                current_frame = reader->clampToRange(currentViewer->currentFrame());
+                current_frame = reader->clampToRange(dag.outputAsViewer()->currentFrame());
             }else{
                 current_frame = dag.outputAsWriter()->currentFrame();
             }
@@ -362,11 +362,11 @@ Node::~Node(){
 }
 
 
-OutputNode::OutputNode():Node(){
+OutputNode::OutputNode(Model* model):Node(model){
     _mutex = new QMutex;
     _openGLCondition = new QWaitCondition;
     
-    _videoEngine = new VideoEngine(_openGLCondition,_mutex);
+    _videoEngine = new VideoEngine(model,_openGLCondition,_mutex);
 }
 
 OutputNode::~OutputNode(){

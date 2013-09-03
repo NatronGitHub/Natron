@@ -47,6 +47,7 @@ class OfxNode;
 class EngineMainEntry;
 class Worker;
 
+
 /**
  *@class VideoEngine
  *@brief This is the engine that runs the playback. It handles all graph computations for the time range given by
@@ -333,6 +334,8 @@ private:
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
     };
     
+    Model* _model;
+    
     std::vector<Task> _waitingTasks; /*!< The queue of the user's waiting tasks.*/
         
 	bool _working; /*!< True if the engine is working.*/
@@ -568,7 +571,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent = NULL);
+    VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent = NULL);
     
     
     virtual ~VideoEngine();

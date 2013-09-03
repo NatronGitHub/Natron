@@ -49,11 +49,8 @@ int main(int argc, char *argv[])
     splashScreen->show();
 #endif
     QCoreApplication::processEvents();
-	/*instanciating the core*/
-    Model* coreEngine=new Model();
-	/*instancating the controler, that will in turn create the GUI*/
-    AppInstance* ctrl= AppInstance::instance();
-	/*we create the GUI in the initControler function*/
+    
+    AppManager* manager = AppManager::instance();
     
     QString projectFile;
     QStringList args = QCoreApplication::arguments();
@@ -62,8 +59,11 @@ int main(int argc, char *argv[])
             projectFile = args.at(i);
         }
     }
-    ctrl->initControler(coreEngine,splashScreen,projectFile);
 
+    manager->newAppInstance(projectFile);
+	    
+    splashScreen->hide();
+    delete splashScreen;
     
     
     return app.exec();

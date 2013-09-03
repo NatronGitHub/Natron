@@ -27,7 +27,7 @@
 
 using namespace Powiter;
 
-ViewerNode::ViewerNode(ViewerCache* cache):OutputNode(),
+ViewerNode::ViewerNode(ViewerCache* cache,Model* model):OutputNode(model),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
@@ -36,12 +36,12 @@ _pboIndex(0)
 }
 
 void ViewerNode::initializeViewerTab(TabWidget* where){
-   _uiContext = appPTR->getGui()->addNewViewerTab(this,where);
+   _uiContext = _model->getApp()->addNewViewerTab(this,where);
 }
 
 ViewerNode::~ViewerNode(){
-    if(appPTR->getGui())
-        appPTR->getGui()->removeViewerTab(_uiContext,true);
+    if(_uiContext->getGui())
+        _uiContext->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
 }

@@ -408,18 +408,19 @@ void Knob::validateEvent(bool initViewer){
     NodeGui* nodeUI = node->getNodeUi();
     NodeGui* viewer = NodeGui::hasViewerConnected(nodeUI);
     if(viewer){
-        appPTR->getModel()->clearPlaybackCache();
-        appPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
-        int currentFrameCount = appPTR->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
+        cb->getNode()->getModel()->clearPlaybackCache();
+        cb->getNode()->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+        int currentFrameCount = cb->getNode()->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
         if(initViewer){
-            appPTR->triggerAutoSaveOnNextEngineRun();
+            cb->getNode()->getModel()->getApp()->triggerAutoSaveOnNextEngineRun();
             if (currentFrameCount > 1 || currentFrameCount == -1) {
-                appPTR->getModel()->startVideoEngine(-1);
+                cb->getNode()->getModel()->startVideoEngine(-1);
             }else{
-                appPTR->getModel()->startVideoEngine(1);
+                cb->getNode()->getModel()->startVideoEngine(1);
             }
         }else{
-            appPTR->getModel()->getVideoEngine()->seekRandomFrame(currentViewer->getUiContext()->frameSeeker->currentFrame());
+            VideoEngine* videoEngine = cb->getNode()->getModel()->getVideoEngine();
+            videoEngine->seekRandomFrame(videoEngine->getCurrentDAG().outputAsViewer()->getUiContext()->frameSeeker->currentFrame());
         }
     }
 }
@@ -716,7 +717,7 @@ void FileCommand::undo(){
     std::string className= _knob->getCallBack()->getNode()->className();
     if(className == string("Reader")){
         Node* node= _knob->getCallBack()->getNode();
-        appPTR->getModel()->setCurrentGraph(NULL,false);
+        _knob->getCallBack()->getNode()->getModel()->setCurrentGraph(NULL,false);
         static_cast<Reader*>(node)->showFilePreview();
     }
     _knob->validateEvent(true);
@@ -732,7 +733,7 @@ void FileCommand::redo(){
     std::string className= _knob->getCallBack()->getNode()->className();
     if(className == string("Reader")){
         Node* node= _knob->getCallBack()->getNode();
-        appPTR->getModel()->setCurrentGraph(NULL,false);
+        _knob->getCallBack()->getNode()->getModel()->setCurrentGraph(NULL,false);
         static_cast<Reader*>(node)->showFilePreview();
     }
     _knob->validateEvent(true);    
@@ -805,7 +806,7 @@ void File_Knob::restoreFromString(const std::string& str){
         std::string className=getCallBack()->getNode()->className();
         if(className == string("Reader")){
             Node* node=getCallBack()->getNode();
-            appPTR->getModel()->setCurrentGraph(NULL,false);
+            cb->getNode()->getModel()->setCurrentGraph(NULL,false);
             static_cast<Reader*>(node)->showFilePreview();
         }
         validateEvent(true);
@@ -1687,8 +1688,10 @@ void RGBA_Knob::restoreFromString(const std::string& str){
 /*************/
 
 Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):Knob(cb,description){
-    _tabWidget = new TabWidget(TabWidget::NONE,this);
-    layout->addWidget(_tabWidget);
+    if(cb){
+        _tabWidget = new TabWidget(cb->getNode()->getModel()->getApp()->getGui(),TabWidget::NONE,this);
+        layout->addWidget(_tabWidget);
+    }
 }
 
 

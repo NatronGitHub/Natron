@@ -346,7 +346,7 @@ public:
         int _bufferSize; /// maximum size of the buffer
     };
     
-    Reader();
+    Reader(Model* model);
 
     /**
      * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.

@@ -46,7 +46,8 @@ class OfxNode : public QObject,public OutputNode,public OFX::Host::ImageEffect::
 public:
     OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             OFX::Host::ImageEffect::Descriptor         &other,
-            const std::string  &context);
+            const std::string  &context,
+            Model* model);
     
     virtual ~OfxNode(){}
     

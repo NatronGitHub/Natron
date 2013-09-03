@@ -37,10 +37,12 @@ class ScaleSlider;
 class TimeLine;
 class ViewerNode;
 class ViewerInfos;
+class Gui;
 class ViewerTab: public QWidget 
 {
     Q_OBJECT
     
+    Gui* _gui;
     
     ViewerNode* _viewerNode;// < pointer to the internal node
     
@@ -50,7 +52,7 @@ class ViewerTab: public QWidget
 	bool _maximized;
     
 public:
-    explicit ViewerTab(ViewerNode* node,QWidget* parent=0);
+    explicit ViewerTab(Gui* gui,ViewerNode* node,QWidget* parent=0);
     
 	virtual ~ViewerTab();
     
@@ -109,6 +111,7 @@ public:
     /*viewerInfo related functions)*/
     void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);
     
+    Gui* getGui() const {return _gui;}
     
 public slots:
     

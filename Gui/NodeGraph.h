@@ -31,7 +31,7 @@ class QUndoStack;
 class QComboBox;
 class QEvent;
 class QKeyEvent;
-
+class Gui;
 class SettingsPanel;
 class Node;
 class NodeGui;
@@ -58,7 +58,7 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
 
 public:
 
-    explicit NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
+    explicit NodeGraph(Gui* gui,QGraphicsScene* scene=0,QWidget *parent=0);
 
     virtual ~NodeGraph();
  
@@ -113,6 +113,8 @@ public:
     
     void connectCurrentViewerToSelection();
     
+    Gui* getGui() const {return _gui;}
+    
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -134,6 +136,8 @@ private:
     void autoResizeScene();
     
     bool smartNodeCreationEnabled;
+    
+    Gui* _gui;
     QPointF old_pos;
     QPointF oldp;
     QPointF _lastNodeDragStartPoint;

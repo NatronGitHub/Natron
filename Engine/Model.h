@@ -116,7 +116,7 @@ class Model: public QObject,public boost::noncopyable,public OFX::Host::ImageEff
     
 
 public:
-    Model();
+    Model(AppInstance* appInstance);
     ~Model();
     
     /*Loads all kind of plugins*/
@@ -224,6 +224,9 @@ public:
     
     void clearNodes();
     
+    AppInstance* getApp() const {return _appInstance;}
+    
+    ViewerCache* getViewerCache() const {return _viewerCache;}
     
 public slots:
     void clearPlaybackCache();
@@ -279,6 +282,8 @@ private:
      of the node graph.*/
     void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
     
+    
+    AppInstance* _appInstance;
 
     OutputNode* _currentOutput; /*The output of the currently active graph.*/
     

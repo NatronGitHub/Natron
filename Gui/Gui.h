@@ -47,14 +47,16 @@ class Node;
 class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
-
+class AppInstance;
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
+    
+    AppInstance* _app;
 public:
     
-    ActionRef(QAction* action,const std::string& nodeName):_action(action),_nodeName(nodeName){
+    ActionRef(AppInstance* app,QAction* action,const std::string& nodeName):_app(app),_action(action),_nodeName(nodeName){
         QObject::connect(action, SIGNAL(triggered()), this, SLOT(onTriggered()));
     }
     virtual ~ActionRef(){QObject::disconnect(_action, SIGNAL(triggered()), this, SLOT(onTriggered()));}
@@ -68,12 +70,14 @@ public:
 };
 
 class ToolButton : public QToolButton{
+    AppInstance* _app;
     QMenu* _menu;
     std::vector<QMenu*> _subMenus;
     std::vector<ActionRef*> _actions;
 public:
     
-    ToolButton(const std::string& actionName,
+    ToolButton(AppInstance* app,
+               const std::string& actionName,
                const std::vector<std::string>& firstElement,
                const std::string& pluginName,
                QIcon pluginIcon = QIcon(),
@@ -104,6 +108,7 @@ public:
     void setWidget(const QSize& widgetSize,QWidget* w);
 };
 
+class Gui;
 /*This class encapsulate a nodegraph GUI*/
 class NodeGraphTab{
 public:
@@ -114,7 +119,7 @@ public:
     QGraphicsScene* _graphScene;
     NodeGraph *_nodeGraphArea;
     
-    NodeGraphTab(QWidget* parent);
+    NodeGraphTab(Gui* gui,QWidget* parent);
     virtual ~NodeGraphTab(){}
 };
 
@@ -122,7 +127,7 @@ class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
 public:
-    explicit Gui(QWidget* parent=0);
+    explicit Gui(AppInstance* app,QWidget* parent=0);
     
     virtual ~Gui();
     
@@ -206,6 +211,7 @@ public slots:
     int saveWarning();
     
 public:
+    AppInstance* _appInstance;
     /*TOOL BAR ACTIONS*/
     //======================
     QAction *actionNew_project;

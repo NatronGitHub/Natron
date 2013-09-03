@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
@@ -21,19 +22,16 @@
 #include "Engine/Singleton.h"
 
 /*macro to get the unique pointer to the controler*/
-#define appPTR AppInstance::instance()
+#define appPTR AppManager::instance()
 
-#define currentOutput AppInstance::getCurrentOutput()
-
-#define currentViewer AppInstance::getCurrentViewer()
-
-#define currentWriter AppInstance::getCurrentWriter()
 
 class NodeGui;
 class Node;
 class Model;
 class ViewerNode;
 class Writer;
+class ViewerTab;
+class TabWidget;
 class Gui;
 class OutputNode;
 class QLabel;
@@ -57,7 +55,7 @@ public:
  implements the singleton pattern to ensure there's only 1 single
  instance of the object living. Also you can access the controler
  by the handy macro appPTR*/
-class AppInstance : public QObject,public Singleton<AppInstance>
+class AppInstance : public QObject
 {
     class PluginToolButton{
     public:
@@ -82,8 +80,10 @@ class AppInstance : public QObject,public Singleton<AppInstance>
     std::vector<PluginToolButton*> _toolButtons;
     
 public:
-    AppInstance();
+    AppInstance(int appID,const QString& projectName = QString());
     ~AppInstance();
+    
+    int getAppID() const {return _appID;}
 
     /*Create a new node  in the node graph.
      The name passed in parameter must match a valid node name,
@@ -101,15 +101,19 @@ public:
     /*Pointer to the model*/
 	Model* getModel(){return _model;}
     
-    /*initialize the pointers to the model and the view. It also call 
-     gui->createGUI() and build a viewer node.*/
-    void initControler(Model* model,QLabel* loadingScreen,QString projectName = QString());
+    std::pair<int,bool> setCurrentGraph(OutputNode *output,bool isViewer);
     
-    static OutputNode* getCurrentOutput();
+    bool isRendering() const;
     
-    static ViewerNode* getCurrentViewer();
+    void changeDAGAndStartRendering(Node* output);
     
-    static Writer* getCurrentWriter();
+    void startRendering(int nbFrames = -1);
+    
+    OutputNode* getCurrentOutput();
+    
+    ViewerNode* getCurrentViewer();
+    
+    Writer* getCurrentWriter();
     
     void stackPluginToolButtons(const std::vector<std::string>& groups,
                              const std::string& pluginName,
@@ -148,7 +152,7 @@ public:
     
     static const QString autoSavesDir();
     
-    
+    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
     
 private:
 	void removeAutoSaves() const;
@@ -164,6 +168,26 @@ private:
     Gui* _gui; // the view of the MVC pattern
     
     Project _currentProject;
+    
+    int _appID;
+};
+
+class AppManager : public Singleton<AppManager>{
+    
+    std::map<int,AppInstance*> _appInstances;
+    int _availableID;
+    
+public:
+    
+    AppManager():_availableID(0){}
+    
+    virtual ~AppManager() {}
+    
+    AppInstance* newAppInstance(const QString& projectName = QString());
+    
+    AppInstance* getAppInstance(int appID) const;
+    
+    void removeInstance(int appID);
 };
 
 

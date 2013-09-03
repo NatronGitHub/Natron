@@ -32,7 +32,7 @@ class QDragEnterEvent;
 class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
-
+class Gui;
 //class Tab : public QFrame{
 //    
 //    Q_OBJECT
@@ -130,6 +130,7 @@ public:
         CLOSABLE=2 // the pane can be removed as well as tabs.
     };
 private:
+    Gui* _gui;
     
     QVBoxLayout* _mainLayout;
     
@@ -153,7 +154,7 @@ private:
 public:
     
         
-    explicit TabWidget(TabWidget::Decorations decorations,QWidget* parent = 0);
+    explicit TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent = 0);
     
     virtual ~TabWidget();
     

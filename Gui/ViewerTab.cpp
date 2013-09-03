@@ -44,7 +44,11 @@ CLANG_DIAG_ON(unused-private-field);
 
 using namespace Powiter;
 
-ViewerTab::ViewerTab(ViewerNode* node,QWidget* parent):QWidget(parent),_viewerNode(node),_channelsToDraw(Mask_RGBA),_maximized(false)
+ViewerTab::ViewerTab(Gui* gui,ViewerNode* node,QWidget* parent):QWidget(parent),
+_gui(gui),
+_viewerNode(node),
+_channelsToDraw(Mask_RGBA),
+_maximized(false)
 {
     
     setObjectName(node->getName().c_str());
@@ -429,57 +433,57 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->startPause(b);
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->startPause(b);
     else
         play_Forward_Button->setChecked(false);
 }
 void ViewerTab::abort(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    appPTR->getModel()->getVideoEngine()->abort();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    _gui->_appInstance->getModel()->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->startBackward(b);
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->startBackward(b);
     else
         play_Backward_Button->setChecked(false);
 }
 void ViewerTab::previousFrame(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->previousFrame();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->previousFrame();
 }
 void ViewerTab::nextFrame(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->nextFrame();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->nextFrame();
 }
 void ViewerTab::previousIncrement(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->previousIncrement();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->previousIncrement();
 }
 void ViewerTab::nextIncrement(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->nextIncrement();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->nextIncrement();
 }
 void ViewerTab::firstFrame(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->firstFrame();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->firstFrame();
 }
 void ViewerTab::lastFrame(){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->lastFrame();
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->lastFrame();
 }
 void ViewerTab::seekRandomFrame(int f){
-    appPTR->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(appPTR->getModel()->getVideoEngine()->dagHasInputs())
-        appPTR->getModel()->getVideoEngine()->seekRandomFrame(f);
+    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
+    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
+        _gui->_appInstance->getModel()->getVideoEngine()->seekRandomFrame(f);
 }
 
 void ViewerTab::centerViewer(){
@@ -501,10 +505,10 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
         releaseKeyboard();
         if(_maximized){
             _maximized=false;
-            appPTR->getGui()->minimize();
+            _gui->minimize();
         }else{
             _maximized=true;
-            appPTR->getGui()->maximize(dynamic_cast<TabWidget*>(parentWidget()));
+            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()));
         }
     }else if(event->key() == Qt::Key_Y){
         _viewerChannels->setCurrentIndex(0);

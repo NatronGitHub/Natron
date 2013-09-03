@@ -32,12 +32,11 @@
 using namespace Powiter;
 using namespace std;
 
-AppInstance::AppInstance():_model(0),_gui(0){
-}
-
-void AppInstance::initControler(Model *model,QLabel* loadingScreen,QString projectName){
-    this->_model=model;
-    _gui=new Gui();
+AppInstance::AppInstance(int appID,const QString& projectName):
+_model(0),_gui(0),_appID(appID)
+{
+    _model = new Model(this);
+    _gui=new Gui(this);
     
     _gui->createGui();
     
@@ -58,22 +57,30 @@ void AppInstance::initControler(Model *model,QLabel* loadingScreen,QString proje
         delete _toolButtons[i];
     }
     _toolButtons.clear();
-    
-    loadingScreen->hide();
-    
-    
-    
+        
     _gui->show();
-    
-    delete loadingScreen;
-    
+        
     /*Check if auto-save dir already exists*/
     QDir dir(QDir::tempPath()+QDir::separator()+"Powiter");
     if(!dir.exists()){
         QDir::temp().mkdir("Powiter");
     }
     
-    if(!findAutoSave()){
+    /*If this is the first instance of the software*/
+    if(_appID == 0){
+        if(!findAutoSave()){
+            if(projectName.isEmpty()){
+                QString text("Powiter - ");
+                text.append(_currentProject._projectName);
+                _gui->setWindowTitle(text);
+                createNode("Viewer");
+            }else{
+                QString name = SequenceFileDialog::removePath(projectName);
+                QString path = projectName.left(projectName.indexOf(name));
+                loadProject(path,name);
+            }
+        }
+    }else{
         if(projectName.isEmpty()){
             QString text("Powiter - ");
             text.append(_currentProject._projectName);
@@ -88,9 +95,15 @@ void AppInstance::initControler(Model *model,QLabel* loadingScreen,QString proje
     
 }
 
+
 AppInstance::~AppInstance(){
     removeAutoSaves();
     delete _model;
+    appPTR->removeInstance(_appID);
+}
+
+std::pair<int,bool> AppInstance::setCurrentGraph(OutputNode *output,bool isViewer){
+    return _model->setCurrentGraph(output, isViewer);
 }
 
 void AppInstance::addBuiltinPluginToolButtons(){
@@ -119,15 +132,25 @@ Node* AppInstance::createNode(QString name){
 }
 
 OutputNode* AppInstance::getCurrentOutput(){
-    return instance()->_model->getCurrentOutput();
+    return _model->getCurrentOutput();
 }
 ViewerNode* AppInstance::getCurrentViewer(){
-    OutputNode* output = instance()->_model->getCurrentOutput();
+    OutputNode* output = _model->getCurrentOutput();
     return dynamic_cast<ViewerNode*>(output);
 }
 
+bool AppInstance::isRendering() const{
+    return _model->getVideoEngine()->isWorking();
+}
+void AppInstance::changeDAGAndStartRendering(Node* output){
+    _model->getVideoEngine()->changeDAGAndStartEngine(output);
+}
+void AppInstance::startRendering(int nbFrames){
+    _model->startVideoEngine(nbFrames);
+}
+
 Writer* AppInstance::getCurrentWriter(){
-    OutputNode* output = instance()->_model->getCurrentOutput();
+    OutputNode* output = _model->getCurrentOutput();
     return dynamic_cast<Writer*>(output);
 }
 
@@ -280,8 +303,8 @@ bool AppInstance::findAutoSave(){
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
             if(ret == QMessageBox::No || ret == QMessageBox::Escape){
                 removeAutoSaves();
-                if(currentViewer)
-                    currentViewer->getUiContext()->viewer->disconnectViewer();
+                if(getCurrentViewer())
+                    getCurrentViewer()->getUiContext()->viewer->disconnectViewer();
                 clearNodeGuis();
                 clearInternalNodes();
                 resetCurrentProject();
@@ -314,3 +337,28 @@ void AppInstance::showErrorDialog(const QString& title,const QString& message) c
     _gui->errorDialog(title, message);
 
 }
+
+ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
+   return  _gui->addNewViewerTab(node, where);
+}
+
+AppInstance* AppManager::newAppInstance(const QString& projectName){
+    AppInstance* instance = new AppInstance(_availableID,projectName);
+    _appInstances.insert(make_pair(_availableID, instance));
+    ++_availableID;
+    return instance;
+}
+
+AppInstance* AppManager::getAppInstance(int appID) const{
+    map<int,AppInstance*>::const_iterator it;
+    it = _appInstances.find(appID);
+    if(it != _appInstances.end()){
+        return it->second;
+    }else{
+        return NULL;
+    }
+}
+void AppManager::removeInstance(int appID){
+    _appInstances.erase(appID);
+}
+

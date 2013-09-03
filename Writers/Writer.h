@@ -62,7 +62,7 @@ public:
     };
     
     
-    Writer();
+    Writer(Model* model);
         
     virtual ~Writer();
     
