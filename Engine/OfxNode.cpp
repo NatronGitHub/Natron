@@ -19,7 +19,7 @@
 #include "Engine/OfxClipInstance.h"
 #include "Engine/Model.h"
 #include "Writers/Writer.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Gui/Timeline.h"
@@ -31,7 +31,7 @@ using namespace Powiter;
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context):
-Node(),
+OutputNode(),
 OFX::Host::ImageEffect::Instance(plugin,other,context,false),
 _tabKnob(0),
 _lastKnobLayoutWithNoNewLine(0),
@@ -148,6 +148,15 @@ bool OfxNode::_validate(bool forReal){
     _firstTime = true;
     _frameRange.first = _info->firstFrame();
     _frameRange.second = _info->lastFrame();
+    
+    /*Checking if all mandatory inputs are connected!*/
+    MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
+    for (U32 i = 0; i < ofxInputs.size(); ++i) {
+        if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
+            return false;
+        }
+    }
+    
     if (isInputNode()) {
         OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
         /*if forReal is true we need to pass down the tree all the infos generated
@@ -422,7 +431,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     endInstanceChangedAction(kOfxChangeUserEdited);
     
-    ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
+    appPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(this);
 }
 
 OfxStatus OfxNode::editBegin(const std::string& /*name*/)
@@ -456,7 +465,9 @@ bool  OfxNode::progressUpdate(double /*t*/)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!appPTR->getModel()->getVideoEngine())
+        return -1.;
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return -1.;
     }
@@ -475,7 +486,7 @@ double  OfxNode::timeLineGetTime()
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return;
     }
@@ -497,7 +508,7 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
    
 
-    const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;
@@ -522,6 +533,7 @@ OfxStatus OfxNode::vmessage(const char* type,
                             const char* /*id*/,
                             const char* format,
                             va_list args) {
+  // FIXME: this is really GUI stuff, and should be handled by signal/slot
     assert(type);
     assert(format);
     bool isQuestion = false;

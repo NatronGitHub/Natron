@@ -19,7 +19,7 @@
 #include <QtGui/QVector2D>
 #include <QtCore/QFile>
 
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Model.h"
 #include "Engine/Settings.h"
 #include "Gui/ViewerGL.h"

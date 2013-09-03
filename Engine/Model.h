@@ -94,13 +94,14 @@ class Format;
 class InputNode;
 class NodeCache;
 class ViewerCache;
-class Controler;
+class AppInstance;
 class OutputNode;
 class ViewerNodeNode;
 class Hash;
 class VideoEngine;
 class QMutex;
 class Node;
+class OutputNode;
 
 /// a host combines several things...
 ///    - a factory to create a new instance of your plugin
@@ -136,13 +137,16 @@ public:
     
     /*starts the videoEngine for nbFrames. It will re-init the viewer so the
      *frame fit in the viewer.*/
-    void startVideoEngine(int nbFrames=-1){emit vengineNeeded(nbFrames);}
+    void startVideoEngine(int nbFrames=-1);
+    
+    VideoEngine* getVideoEngine() const;
+
+    OutputNode* getCurrentOutput() const {return _currentOutput;}
 
 	/*Set the output of the graph used by the videoEngine.*/
-    std::pair<int,bool> setVideoEngineRequirements(Node* output,bool isViewer);
+    std::pair<int,bool> setCurrentGraph(OutputNode* output,bool isViewer);
 
 
-    VideoEngine* getVideoEngine(){return _videoEngine;}
     
     
 	/*add a new built-in format to the default ones*/
@@ -162,9 +166,6 @@ public:
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     void clearNodes();
-        
-signals:
-    void vengineNeeded(int nbFrames);
     
     
 public slots:
@@ -174,7 +175,6 @@ public slots:
     
     void clearNodeCache();
     
-    void resetInternalDAG();
     
 private:
     
@@ -196,10 +196,6 @@ private:
     /*loads writes that are built-ins*/
     void loadBuiltinWrites();
     
-    /*Writes all plugins loaded and their descriptors to
-     the OFX plugin cache.*/
-    void writeOFXCache();
-    
 	/*used internally to set an appropriate name to the Node.
 	 *It also read the string returned by Node::description()
 	 *to know whether it is an outputNode,InputNode or an operator.*/
@@ -219,8 +215,8 @@ private:
     void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
     
 
-    VideoEngine* _videoEngine; // Video Engine
-  
+    OutputNode* _currentOutput; /*The output of the currently active graph.*/
+    
     /*All nodes currently active in the node graph*/
     std::vector<Node*> _currentNodes;
     

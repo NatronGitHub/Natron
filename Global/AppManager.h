@@ -21,11 +21,13 @@
 #include "Engine/Singleton.h"
 
 /*macro to get the unique pointer to the controler*/
-#define ctrlPTR Controler::instance()
+#define appPTR AppInstance::instance()
 
-#define currentViewer Controler::getCurrentViewer()
+#define currentOutput AppInstance::getCurrentOutput()
 
-#define currentWriter Controler::getCurrentWriter()
+#define currentViewer AppInstance::getCurrentViewer()
+
+#define currentWriter AppInstance::getCurrentWriter()
 
 class NodeGui;
 class Node;
@@ -33,6 +35,7 @@ class Model;
 class ViewerNode;
 class Writer;
 class Gui;
+class OutputNode;
 class QLabel;
 
 
@@ -53,8 +56,8 @@ public:
 /*Controler (see Model-view-controler pattern on wikipedia). This class
  implements the singleton pattern to ensure there's only 1 single
  instance of the object living. Also you can access the controler
- by the handy macro ctrlPTR*/
-class Controler : public QObject,public Singleton<Controler>
+ by the handy macro appPTR*/
+class AppInstance : public QObject,public Singleton<AppInstance>
 {
     class PluginToolButton{
     public:
@@ -79,8 +82,8 @@ class Controler : public QObject,public Singleton<Controler>
     std::vector<PluginToolButton*> _toolButtons;
     
 public:
-    Controler();
-    ~Controler();
+    AppInstance();
+    ~AppInstance();
 
     /*Create a new node  in the node graph.
      The name passed in parameter must match a valid node name,
@@ -102,14 +105,10 @@ public:
      gui->createGUI() and build a viewer node.*/
     void initControler(Model* model,QLabel* loadingScreen,QString projectName = QString());
     
-    /*Returns a pointer to the Viewer currently used
-     by the VideoEngine. If the output is not a viewer,
-     it will return NULL.*/
+    static OutputNode* getCurrentOutput();
+    
     static ViewerNode* getCurrentViewer();
     
-    /*Returns a pointer to the Writer currently used
-     by the VideoEngine. If the output is not a writer,
-     it will return NULL.*/
     static Writer* getCurrentWriter();
     
     void stackPluginToolButtons(const std::vector<std::string>& groups,

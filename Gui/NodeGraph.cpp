@@ -24,7 +24,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QUndoStack>
 
 #include "Gui/TabWidget.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/Edge.h"
 #include "Engine/Hash.h"
 #include "Gui/Gui.h"
@@ -65,7 +65,7 @@ _propertyBin(0)
     _root = new QGraphicsLineItem(0);
     scene->addItem(_root);
     oldZoom = QPointF(0,0);
-    _navigator = new NodeGraphNavigator();
+    // _navigator = new NodeGraphNavigator();
     //  _navigatorProxy = scene->addWidget(_navigator);
     //_navigatorProxy->hide();
     // autoResizeScene();
@@ -77,14 +77,14 @@ _propertyBin(0)
     _redoAction = _undoStack->createRedoAction(this,tr("&Redo"));
     _redoAction->setShortcuts(QKeySequence::Redo);
     
-    ctrlPTR->getGui()->addUndoRedoActions(_undoAction, _redoAction);
+    appPTR->getGui()->addUndoRedoActions(_undoAction, _redoAction);
 }
 
 NodeGraph::~NodeGraph(){
     _nodeCreationShortcutEnabled=false;
     _nodes.clear();
     _nodesTrash.clear();
-    delete _navigator;
+    //delete _navigator;
 }
 
 QRectF NodeGraph::visibleRect() {
@@ -216,7 +216,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         _arrowSelected->initLine();
         scene()->update();
-        ctrlPTR->getModel()->clearPlaybackCache();
+        appPTR->getModel()->clearPlaybackCache();
         
         checkIfViewerConnectedAndRefresh(_arrowSelected->getDest());
         
@@ -260,7 +260,7 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     
     /*Now update navigator*/
     //  autoResizeScene();
-    //  updateNavigator();
+    //     updateNavigator();
 }
 
 
@@ -295,8 +295,8 @@ bool NodeGraph::event(QEvent* event){
                 QPoint global = mapToGlobal(oldp.toPoint());
                 SmartInputDialog* nodeCreation=new SmartInputDialog(this);
                 nodeCreation->move(global.x(), global.y());
-                QPoint position=ctrlPTR->getGui()->_workshopPane->pos();
-                position+=QPoint(ctrlPTR->getGui()->width()/2,0);
+                QPoint position=appPTR->getGui()->_workshopPane->pos();
+                position+=QPoint(appPTR->getGui()->width()/2,0);
                 nodeCreation->move(position);
                 setMouseTracking(false);
                 
@@ -317,7 +317,7 @@ bool NodeGraph::event(QEvent* event){
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
     if(e->key() == Qt::Key_R){
-        ctrlPTR->createNode("Reader");
+        appPTR->createNode("Reader");
         Node* reader = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = reader->getKnobs();
         foreach(Knob* k,knobs){
@@ -329,7 +329,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
         
     }else if(e->key() == Qt::Key_W){
-        ctrlPTR->createNode("Writer");
+        appPTR->createNode("Writer");
         Node* writer = _nodes[_nodes.size()-1]->getNode();
         std::vector<Knob*> knobs = writer->getKnobs();
         foreach(Knob* k,knobs){
@@ -343,10 +343,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_maximized){
             _maximized = true;
-            ctrlPTR->getGui()->maximize(dynamic_cast<TabWidget*>(parentWidget()));
+            appPTR->getGui()->maximize(dynamic_cast<TabWidget*>(parentWidget()));
         }else{
             _maximized = false;
-            ctrlPTR->getGui()->minimize();
+            appPTR->getGui()->minimize();
         }
         
     }else if(e->key() == Qt::Key_Backspace){
@@ -411,11 +411,12 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 
 
 void NodeGraph::scaleView(qreal scaleFactor,QPointF){
+    
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if (factor < 0.07 || factor > 100)
         return;
     
-    scale(scaleFactor,scaleFactor);
+    _root->scale(scaleFactor,scaleFactor);
     
 }
 
@@ -499,8 +500,8 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(cont){
         NodeGui* viewer = NodeGui::hasViewerConnected(first->getDest());
         if(viewer){
-            ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
-            const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+            appPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+            const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
             const vector<Node*>& inputs = dag.getInputs();
             bool start = false;
             for (U32 i = 0 ; i < inputs.size(); ++i) {
@@ -518,7 +519,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 }
             }
             if(start)
-                ctrlPTR->getModel()->startVideoEngine(1);
+                appPTR->getModel()->startVideoEngine(1);
         }
     }
 }
@@ -553,12 +554,12 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
     NodeGui* viewer = NodeGui::hasViewerConnected(n);
     if(viewer){
         //if(foundSrc){
-        if(ctrlPTR->getModel()->getVideoEngine()->isWorking()){
-            ctrlPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(viewer->getNode());
+        std::pair<int,bool> ret = appPTR->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+        if(appPTR->getModel()->getVideoEngine()->isWorking()){
+            appPTR->getModel()->getVideoEngine()->changeDAGAndStartEngine(viewer->getNode());
         }else{
-            std::pair<int,bool> ret = ctrlPTR->getModel()->setVideoEngineRequirements(viewer->getNode(),true);
             if(ret.second){
-                ctrlPTR->getModel()->startVideoEngine(1);
+                appPTR->getModel()->startVideoEngine(1);
             }
             else if(ret.first == 0){ // no inputs, disconnect viewer
                 ViewerNode* v = static_cast<ViewerNode*>(viewer->getNode());
@@ -577,7 +578,7 @@ void NodeGraph::updateNavigator(){
         QRectF rect = visibleRect();
         _navigatorProxy->setPos(rect.width()-_navigator->sizeHint().width(),
                                 rect.height()-_navigator->sizeHint().height());
-        // _navigator->show();
+         _navigator->show();
     }else{
         _navigator->hide();
     }
@@ -601,7 +602,7 @@ void NodeGraph::autoResizeScene(){
 }
 QImage NodeGraph::getFullSceneScreenShot(){
     QImage img(scene()->width(),scene()->height(), QImage::Format_ARGB32_Premultiplied);
-    img.fill(QColor(0,0,0,0));
+    img.fill(QColor(71,71,71,255));
     QRectF viewRect = visibleRect();
     QPainter painter(&img);
     painter.save();
@@ -611,7 +612,9 @@ QImage NodeGraph::getFullSceneScreenShot(){
     painter.setPen(p);
     painter.drawRect(viewRect);
     painter.restore();
+    scene()->removeItem(_navigatorProxy);
     scene()->render(&painter);
+    scene()->addItem(_navigatorProxy);
     p.setColor(QColor(200,200,200,255));
     p.setWidth(10);
     QRect border(0,0,img.width()-1,img.height()-1);
@@ -771,11 +774,11 @@ void AddCommand::undo(){
         
     }else{
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
-        ctrlPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
+        appPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
     if(firstChild){
-        ctrlPTR->triggerAutoSaveOnNextEngineRun();
+        appPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     _graph->scene()->update();
@@ -821,11 +824,11 @@ void AddCommand::redo(){
             }
         }else{
             ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
-            ctrlPTR->getGui()->addViewerTab(viewer->getUiContext(), ctrlPTR->getGui()->_viewersPane);
+            appPTR->getGui()->addViewerTab(viewer->getUiContext(), appPTR->getGui()->_viewersPane);
             viewer->getUiContext()->show();
         }
         if(firstChild){
-            ctrlPTR->triggerAutoSaveOnNextEngineRun();
+            appPTR->triggerAutoSaveOnNextEngineRun();
             _graph->checkIfViewerConnectedAndRefresh(firstChild);
         }
         
@@ -877,11 +880,11 @@ void RemoveCommand::undo(){
         }
     }else{
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
-        ctrlPTR->getGui()->addViewerTab(viewer->getUiContext(), ctrlPTR->getGui()->_viewersPane);
+        appPTR->getGui()->addViewerTab(viewer->getUiContext(), appPTR->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
     if(firstChild){
-        ctrlPTR->triggerAutoSaveOnNextEngineRun();
+        appPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     _graph->scene()->update();
@@ -931,11 +934,11 @@ void RemoveCommand::redo(){
         
     }else{
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(_node->getNode());
-        ctrlPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
+        appPTR->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
     if(firstChild){
-        ctrlPTR->triggerAutoSaveOnNextEngineRun();
+        appPTR->triggerAutoSaveOnNextEngineRun();
         _graph->checkIfViewerConnectedAndRefresh(firstChild);
     }
     
@@ -979,7 +982,7 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    ctrlPTR->triggerAutoSaveOnNextEngineRun();
+    appPTR->triggerAutoSaveOnNextEngineRun();
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
     
     
@@ -1010,8 +1013,9 @@ void ConnectCommand::redo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    ctrlPTR->triggerAutoSaveOnNextEngineRun();
     _graph->checkIfViewerConnectedAndRefresh(_edge->getDest());
+    appPTR->triggerAutoSaveOnNextEngineRun();
+
     
 }
 
@@ -1029,7 +1033,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
     textEdit=new QComboBox(this);
     textEdit->setEditable(true);
 
-    textEdit->addItems(ctrlPTR->getNodeNameList());
+    textEdit->addItems(appPTR->getNodeNameList());
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
     textEdit->lineEdit()->selectAll();
@@ -1044,8 +1048,8 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
-        if(ctrlPTR->getNodeNameList().contains(res)){
-            ctrlPTR->createNode(res);
+        if(appPTR->getNodeNameList().contains(res)){
+            appPTR->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             textEdit->releaseKeyboard();

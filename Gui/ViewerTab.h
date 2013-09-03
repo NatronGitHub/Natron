@@ -31,7 +31,7 @@ class QLabel;
 class QGroupBox;
 class ViewerGL;
 class InfoViewerWidget;
-class Controler;
+class AppInstance;
 class FeedbackSpinBox;
 class ScaleSlider;
 class TimeLine;

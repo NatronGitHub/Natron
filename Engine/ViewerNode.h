@@ -18,20 +18,19 @@
 #include "Global/Macros.h"
 #include "Engine/Node.h"
 
+
 class ViewerCache;
 class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-
-class ViewerNode: public Node
+class ViewerNode: public OutputNode
 {
     
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
     ViewerCache* _viewerCache;
     int _pboIndex;
-    QFutureWatcher<void> *_cacheWatcher;
     
 public:
     
@@ -39,8 +38,6 @@ public:
     ViewerNode(ViewerCache* cache);
     
     virtual ~ViewerNode();
-    
-    virtual bool isOutputNode() OVERRIDE { return true; }
     
     virtual int maximumInputs() OVERRIDE { return 1; }
     
@@ -82,7 +79,6 @@ protected:
 	
 private:
     
-    void retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize);
     virtual bool _validate(bool forReal);
     
     

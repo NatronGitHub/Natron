@@ -19,7 +19,7 @@
 #include <QtCore/QXmlStreamWriter>
 
 #include "Global/MemoryInfo.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Hash.h"
 #include "Engine/Node.h"
 #include "Engine/ChannelSet.h"
@@ -54,7 +54,7 @@ using namespace std;
 using namespace Powiter;
 
 Model::Model()
-: _videoEngine(0)
+: _currentOutput(0)
 , ofxHost(new Powiter::OfxHost)
 {
     
@@ -79,10 +79,10 @@ Model::Model()
     
     
     /*allocating lookup tables*/
-    Powiter::Color::allocateLuts();
+    // Powiter::Color::allocateLuts();
     
-    _videoEngine = new VideoEngine(this);
-    connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
+    //    _videoEngine = new VideoEngine(this);
+    //connect(this,SIGNAL(vengineNeeded(int)),_videoEngine,SLOT(startEngine(int)));
     
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
@@ -152,14 +152,11 @@ Model::Model()
 
 
 
-Model::~Model(){
+Model::~Model() {
     
     _viewerCache->save();
-    Powiter::Color::deallocateLuts();
-    _videoEngine->abort();
-    
-    writeOFXCache();
-    
+    //Powiter::Color::deallocateLuts();
+
     // foreach(PluginID* p,_pluginsLoaded) delete p;
     foreach(CounterID* c,_nodeCounters) delete c;
     foreach(Format* f,_formats) delete f;
@@ -175,8 +172,8 @@ Model::~Model(){
         }
     }
     _nodeCounters.clear();
-    delete _videoEngine;
-    _videoEngine = 0;
+    // delete _videoEngine;
+    //_videoEngine = 0;
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
@@ -202,24 +199,29 @@ void Model::loadAllPlugins(){
 
 
 
-std::pair<int,bool> Model::setVideoEngineRequirements(Node *output,bool isViewer){
-    _videoEngine->resetAndMakeNewDag(output,isViewer);
-    
-    const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
-    bool hasFrames = false;
-    bool hasInputDifferentThanReader = false;
-    for (U32 i = 0; i< inputs.size(); ++i) {
-        assert(inputs[i]);
-        Reader* r = dynamic_cast<Reader*>(inputs[i]);
-        if (r) {
-            if (r->hasFrames()) {
-                hasFrames = true;
+std::pair<int,bool> Model::setCurrentGraph(OutputNode *output,bool isViewer){
+    _currentOutput = output;
+    if(output){
+        //_videoEngine->resetAndMakeNewDag(output,isViewer);
+        output->getVideoEngine()->resetAndMakeNewDag(output,isViewer);
+        const std::vector<Node*>& inputs = output->getVideoEngine()->getCurrentDAG().getInputs();
+        bool hasFrames = false;
+        bool hasInputDifferentThanReader = false;
+        for (U32 i = 0; i< inputs.size(); ++i) {
+            assert(inputs[i]);
+            Reader* r = dynamic_cast<Reader*>(inputs[i]);
+            if (r) {
+                if (r->hasFrames()) {
+                    hasFrames = true;
+                }
+            }else{
+                hasInputDifferentThanReader = true;
             }
-        }else{
-            hasInputDifferentThanReader = true;
         }
+        return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
+    }else{
+        return make_pair(0, false);
     }
-    return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
 }
 
 void Model::initCounterAndGetDescription(Node*& node){
@@ -265,11 +267,11 @@ Node* Model::createNode(const std::string& name) {
         assert(node);
         node->initializeInputs();
 		initCounterAndGetDescription(node);
-        TabWidget* where = ctrlPTR->getGui()->_nextViewerTabPlace;
+        TabWidget* where = appPTR->getGui()->_nextViewerTabPlace;
         if(!where){
-            where = ctrlPTR->getGui()->_viewersPane;
+            where = appPTR->getGui()->_viewersPane;
         }else{
-            ctrlPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
+            appPTR->getGui()->setNewViewerAnchor(NULL); // < reseting anchor to default
         }
         dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
         return node;
@@ -668,28 +670,24 @@ void Model::removeNode(Node* n){
     }
 }
 
-void Model::resetInternalDAG(){
-    if(_videoEngine){
-        _videoEngine->resetDAG();
-    }
+
+/*starts the videoEngine for nbFrames. It will re-init the viewer so the
+ *frame fit in the viewer.*/
+void Model::startVideoEngine(int nbFrames){
+    assert(_currentOutput);
+    _currentOutput->getVideoEngine()->startEngine(nbFrames);
 }
 
-
-
-
-void Model::writeOFXCache(){
-    /// and write a new cache, long version with everything in there
-    std::ofstream of("PowiterOFXCache.xml");
-    assert(OFX::Host::PluginCache::getPluginCache());
-    OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
-    of.close();
-    //Clean up, to be polite.
-    OFX::Host::PluginCache::clearPluginCache();
+VideoEngine* Model::getVideoEngine() const{
+    if(_currentOutput)
+        return _currentOutput->getVideoEngine();
+    else
+        return NULL;
 }
 
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeGui*>& activeNodes = ctrlPTR->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = appPTR->getAllActiveNodes();
     QString ret;
     
     QXmlStreamWriter writer(&ret);
@@ -776,7 +774,7 @@ void Model::restoreGraphFromString(const QString& str){
                 /* Let's check that we're really getting a Node. */
                 if(reader.tokenType() != QXmlStreamReader::StartElement &&
                    reader.name() == "Node") {
-                    ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    appPTR->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
                     return;
                 }
                 QString className,label;
@@ -788,18 +786,18 @@ void Model::restoreGraphFromString(const QString& str){
                     label = nodeAttributes.value("Label").toString();
                 }
                 
-                assert(ctrlPTR);
-                ctrlPTR->deselectAllNodes();
-                Node* n = ctrlPTR->createNode(className);
+                assert(appPTR);
+                appPTR->deselectAllNodes();
+                Node* n = appPTR->createNode(className);
                 if(!n){
                     QString text("Failed to restore the graph! \n The node ");
                     text.append(className);
                     text.append(" was found in the auto-save script but doesn't seem \n"
                                 "to exist in the currently loaded plug-ins.");
-                    ctrlPTR->showErrorDialog("Autosave", text );
-                    ctrlPTR->clearInternalNodes();
-                    ctrlPTR->clearNodeGuis();
-                    ctrlPTR->createNode("Viewer");
+                    appPTR->showErrorDialog("Autosave", text );
+                    appPTR->clearInternalNodes();
+                    appPTR->clearNodeGuis();
+                    appPTR->createNode("Viewer");
                     return;
                 }
                 n->getNodeUi()->setName(label);
@@ -876,7 +874,7 @@ void Model::restoreGraphFromString(const QString& str){
         }
     }
     if(reader.hasError()){
-        ctrlPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        appPTR->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
         return;
     }
     //adjusting knobs & connecting nodes now
@@ -956,7 +954,7 @@ void Model::loadProject(const QString& filename,bool autoSave){
 }
 void Model::saveProject(const QString& path,const QString& filename,bool autoSave){
     if(autoSave){
-        QFile file(Controler::autoSavesDir()+filename);
+        QFile file(AppInstance::autoSavesDir()+filename);
         if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
             cout <<  file.errorString().toStdString() << endl;
             return;

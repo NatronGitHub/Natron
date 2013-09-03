@@ -25,11 +25,10 @@
 //ours
 class Tab_Knob;
 class QHBoxLayout;
-
 class QImage;
 
 // FIXME: OFX::Host::ImageEffect::Instance should be a member
-class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instance
+class OfxNode : public QObject, public OutputNode, public OFX::Host::ImageEffect::Instance
 {
     Q_OBJECT
     
@@ -44,7 +43,7 @@ class OfxNode : public QObject,public Node,public OFX::Host::ImageEffect::Instan
     std::pair<int,int> _frameRange; // valid only when _isOutput is true
     QImage* _preview;
     bool _canHavePreview;
-    
+        
 public:
     OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             OFX::Host::ImageEffect::Descriptor         &other,

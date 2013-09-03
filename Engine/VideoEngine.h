@@ -15,7 +15,10 @@
 // FIXME: can the definitions of classes EngineMainEntry, Worker, and RowRunnable be moved to VideoEngine.cpp?
 #include <vector>
 #include <QtCore/QObject>
-#include <QtCore/QThreadPool> // for Worker => to remove if class Worker is moved to VideoEngine.cpp
+#include <QtCore/QThreadPool>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+
 #include <QFutureWatcher>
 #include <QtCore/QRunnable> // for RowRunnable => to remove if class RowRunnable is moved to VideoEngine.cpp
 
@@ -53,7 +56,7 @@ class Worker;
  *That means that you cannot have 2 computations running at the same time. A future version will most likely introduce
  *multi-engine processing but this is not a priority.
  **/
-class VideoEngine :public QObject,public boost::noncopyable{
+class VideoEngine : public QThread{
     Q_OBJECT
     
     friend class EngineMainEntry;
@@ -301,29 +304,37 @@ private:
      * This saves the burden of re-calling all the arguments separatly into
      * member variables or even re-compute some of them.
      */
-    struct ViewerCacheArgs{
-        ViewerCacheArgs():_hashKey(0),
-        _zoomFactor(0),_exposure(0),_lut(0),
-        _byteMode(0),_dataSize(0){}
+    struct LastFrameInfos{
+        LastFrameInfos():_cachedEntry(0),_dataSize(0){}
         
-        U64 _hashKey;
-        double _zoomFactor;
-        double _exposure;
-        float _lut;// FIXME why use a float as an enum?
-        float _byteMode;// FIXME why use a float as an enum?
-        int _texW,_texH;
+        FrameEntry* _cachedEntry;
+        std::vector<int> _rows;
         TextureRect _textureRect;
         size_t _dataSize;
-        Format _displayWindow;
-        Box2D _dataWindow;
+        
     };
     
-    
+    struct RunArgs{
+        RunArgs():_zoomFactor(1.f),
+        _sameFrame(false),
+        _fitToViewer(false),
+        _recursiveCall(false),
+        _forward(true),
+        _frameRequestsCount(0),
+        _frameRequestIndex(0){}
+        
+        float _zoomFactor;
+        bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
+        bool _fitToViewer;
+        bool _recursiveCall;
+        bool _forward;/*!< forwards/backwards video engine*/
+        int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
+                                 is forward (-1 otherwise). This value is -1 if we're looping.*/
+        int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
+    };
     
     std::vector<Task> _waitingTasks; /*!< The queue of the user's waiting tasks.*/
-    
-    Model* _coreEngine; /*!< A pointer to the model.*/
-    
+        
 	bool _working; /*!< True if the engine is working.*/
     
     DAG _dag; /*!< The internal DAG instance.*/
@@ -333,44 +344,39 @@ private:
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
     bool _paused; /*!< true when the user pressed pause*/
-    
+        
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
     
-    int _frameRequestsCount; /*!< The index of the last frame +1 if the engine
-                              is forward (-1 otherwise). This value is -1 if we're looping.*/
-    
-    int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
-    
-    bool _forward; /*!< forwards/backwards video engine*/
-    
     bool _loopMode; /*!< on if the player will loop*/
-    
-    bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
-    
+        
     bool _autoSaveOnNextRun; /*!< on if we need to to an autosave at the end of the next compute frame.*/
     
     QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
-                                                 Worker::finishComputeFrameRequest()*/
-    QFuture<void>* _workerThreadsResults;/*!< The future stored in _workerThreadsWatcher*/
+                                                 Worker::finishComputeFrameRequest()*/    
+    QVector<Row*> _sequence;
     
     QFutureWatcher<void>* _computeFrameWatcher;/*!< watcher of the thread running the function
                                                 EngineMainEntry::computeFrameRequest. It stores the
                                                 results of the function and calls
                                                 VideoEngine::dispatchComputeFrameRequestThread()
                                                 when finished.*/
-        
-    ViewerCacheArgs _viewerCacheArgs; /*!< The last arguments passed to the viewer cache.*/
+    // QThreadPool* _threadPool;
     
-    EngineStatus _lastEngineStatus; /*!< The last engine return status. This can be used to query whether it used the
-                                     viewer cache/texture cache or not and to query other infos.*/
+    QWaitCondition* _openGLCondition;
+    
+    QWaitCondition _startCondition;
+    
+    QMutex* _mutex;
+    
+    RunArgs _lastRunArgs;
+        
+    LastFrameInfos _lastFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
+    
     timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
-    EngineMainEntry* _mainEntry; /*!< The object  starting the engine*/
-    
-        
-    Worker* _worker; /*!< The object calling the function to compute a frame*/
-        
+protected:
+    virtual void run();
     
     public slots:
 	/**
@@ -471,30 +477,6 @@ private:
     void recenterViewer();
     
     /**
-     *@brief This slot is called internally by the video engine. Do not call this directly. This function actually determines
-     *whether the engine needs to stop or not, updates the viewport display if the output is a viewer and then calls
-     *VideoEngine::computeFrameRequest(bool,bool,bool) if there're remaining frames to compute.
-     *@warning This is MANDATORY that this function gets called by the main thread as it directly commands OpenGL.
-     **/
-    void engineLoop();
-    
-    /**
-     *@brief Called internally by VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,Node *).
-     *It will fill the ViewerGL's current PBO with the frame that's just been computed in a separate thread.
-     *When finished, it will call VideoEngine::engineLoop(). Do not call this directly.
-     **/
-    void copyFrameToCache(const char* src);
-    
-    /**
-     *@brief Called by the thread returning from VideoEngine::computeFrameRequest(bool,bool,bool).
-     *According to the return status of the engine it calls the appropriate function,that is either
-     *VideoEngine::computeTreeForFrame(const std::map<int,int>& ,size_t,Node *) or
-     *Viewer::cachedFrameEngine(FrameEntry*). If the return code stored in the EngineStatus is
-     *EngineStatus::TEXTURE_CACHED_ENGINE the it calls directly VideoEngine::engineLoop().
-     **/
-    void dispatchEngine();
-    
-    /**
      *@brief Resets the video engine state and ensures that all worker threads are stopped.
      **/
     void stopEngine();
@@ -503,13 +485,27 @@ private:
      *@brief displays progress if the time to compute the current frame exeeded
      * 0.5 sec.
      **/
-    void checkAndDisplayProgress(int y,int zoomedY);
+    bool checkAndDisplayProgress(int y,int zoomedY);
+    
+    void onProgressUpdate(int i);
+        
+    void updateViewer();
+    
+    void cachedEngine();
+    
+    void allocateFrameStorage();
     
 signals:
     /**
      *@brief Signal emitted when the function waits the time due to display the frame.
      **/
     void fpsChanged(double d);
+    
+    void doUpdateViewer();
+    
+    void doCachedEngine();
+    
+    void doFrameStorageAllocation();
     
 public:
     /**
@@ -563,7 +559,7 @@ public:
      *@returns Returns the number of frame the engine is being executed for.
      *If it runs indefinately it will return -1. If it is stopped, it will return 0.
      **/
-    int getFrameCountForCurrentPlayback() const {return _working ?  _frameRequestsCount :  0;}
+    int getFrameCountForCurrentPlayback() const {return _working ?  _lastRunArgs._frameRequestsCount :  0;}
     
     /**
      *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
@@ -572,7 +568,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(Model* engine);
+    VideoEngine(QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent = NULL);
     
     
     virtual ~VideoEngine();
@@ -596,7 +592,7 @@ public:
      *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
      *for the same frame than the last frame  computed. This is used exclusively when zooming/panning.
      **/
-    void videoEngine(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    void render(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /**
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
@@ -606,6 +602,9 @@ public:
     
 private:
 
+    void engineLoop();
+
+    
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.
      *@param readers[in] A vector of all the readers in the current graph.
@@ -618,26 +617,7 @@ private:
      */
     void readFrames(const std::vector<Reader*>& readers);
     
-    /**
-     *@brief The callback cycling through the DAG for one scan-line
-     *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
-     *@param output[in] The output node of the graph.
-     */
-    static void metaEnginePerRow(Row* row,Node* output);
     
-    /**
-     *@brief The callback reading the header of the current frame for a reader.
-     *@param reader[in] A pointer to the reader that will read the header.
-     *@param current_frame[in] The frame number in the sequence to decode.
-     */
-    static bool metaReadHeader(Reader* reader,int current_frame);
-    
-    /**
-     *@brief The callback reading the data of the current frame for a reader.
-     *@param reader[in] A pointer to the reader that will read the data.
-     *@param current_frame[in] The frame number in the sequence to decode.
-     */
-    static void metaReadData(Reader* reader,int current_frame);
     
     /**
      *@brief Calls QGLWidget::updateGL() and causes the viewer to refresh.
@@ -688,114 +668,11 @@ private:
 };
 
 
-class EngineMainEntry : public QObject{
-    Q_OBJECT
-    
-    VideoEngine* _engine;
-    
-    float _zoomFactor;
-    bool _sameFrame;
-    bool _fitFrameToViewer;
-    bool _recursiveCall;
-public:
-    
-    EngineMainEntry(VideoEngine* engine): _engine(engine){}
-
-    virtual ~EngineMainEntry(){}
-    
-    void setArgsForNextRun(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall){
-        _zoomFactor = zoomFactor;
-        _sameFrame = sameFrame;
-        _fitFrameToViewer = fitFrameToViewer;
-        _recursiveCall = recursiveCall;
-    }
-    
-public slots:
-    
-    /**
-     *@brief Called by VideoEngine::videoEngine(int,bool,bool,bool) the first time or by VideoEngine::engineLoop().
-     *This function computes the frame range of the graph and does cache look-ups to determine if the current frame
-     *as already been computed or not. If not, then it tells the reader to read their current frame before retuning.
-     *The algorithm used to check whether a frame is cached or not is quite complex, and depends (only if the output
-     *node is a viewer) on the viewport's current configuration.
-     *@param sameFrame[in] This param is filled directly with the parameter given to VideoEngine::videoEngine(int,bool,bool,bool).
-     *@param fitFrameToViewer[in] This param is filled directly with the parameter given to VideoEngine::videoEngine(int,bool,bool,bool).
-     *@param recursiveCall[in] True if the function was called by VideoEngine::engineLoop().
-     *@returns This function returns a status code. Since the status holds several informations, it is packed into the class
-     *VideoEngine::EngineStatus. It holds a return code indicating if the current frame has been found in the cache or not
-     *as well as a list of the rows indexes the engine should compute if the frame is not cached.
-     */
-    void computeFrame(){
-        computeFrameRequest(_zoomFactor,_sameFrame,_fitFrameToViewer,_recursiveCall);
-        emit finished();
-    }
-signals:
-    void finished();
-    
-private:
-    void computeFrameRequest(float zoomFactor,bool sameFrame,bool fitFrameToViewer,bool recursiveCall);
-};
-
-
-class Worker : public QObject{
-    Q_OBJECT
-    
-    VideoEngine* _engine;
-    
-    std::vector<int> _rows;
-    int _x;
-    int _r;
-    Node *_output;
-    
-    QThreadPool *_threadPool;
-    
-public:
-    
-    Worker(VideoEngine* engine):_engine(engine){
-        _threadPool = new QThreadPool;
-        _threadPool->setMaxThreadCount(QThread::idealThreadCount());
-    }
-    
-    virtual ~Worker(){ delete _threadPool; }
-    
-    void setArgsForNextRun(const std::vector<int>& rows,int x,int r,Node *output){
-        _rows = rows;
-        _x = x;
-        _r = r;
-        _output = output;
-    }
-    
-    public slots:
-    
-    /**
-     *@brief This function executes the graph for 1 frame. This function launches several threads
-     *from the global thread-pool to render all the scan-lines of the frame concurrently.
-     *It is used internally by the video engine.
-     *@param rows[in] This is a map indicating what rows the engine should compute in the current frame.
-     *The map stores rows indexes where the key is the index in the full-res frame and the value is the index
-     *in the frame as requested on the viewport. Note that if the parameter output is not a viewer, the indexes
-     *in the viewport will be exactly the same as the indexes in the full-res frame.
-     *@param output[in] This is the output node of the graph.
-     **/
-    void computeTreeForFrame(){
-        _computeTreeForFrame(_rows, _x, _r, _output);
-        // std::cout << "finished" << endl;
-        emit finished();
-    }
-    
-    
-signals:
-    void finished();
-    
-private:
-    void _computeTreeForFrame(const std::vector<int>& rows,int x,int r,Node *output);
-    
-};
-
-
+/*Not used but leave it here if we need to use QThreadPool instead of
+ QtConcurrent::map.
+ */
 class RowRunnable : public QObject, public QRunnable{
     Q_OBJECT
-    
     
     Row* _row;
     Node* _output;

@@ -42,7 +42,7 @@ Node* OfxClipInstance::getAssociatedNode() const{
                 break;
             }
         }
-        return _node->input(index);
+        return _node->input(inputs.size()-1-index);
     }
 }
 
@@ -214,6 +214,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         return _outputImage;
     }else{
         Node* input = getAssociatedNode();
+        assert(input);
         if(input->isOpenFXNode()){
             OfxRectI roiInput;
             roiInput.x1 = roi.x1;

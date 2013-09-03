@@ -11,11 +11,9 @@
 
 #include "ViewerNode.h"
 
-#include <QtConcurrentRun>
-
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Row.h"
@@ -25,27 +23,25 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 
 using namespace Powiter;
 
-ViewerNode::ViewerNode(ViewerCache* cache):Node(),
+ViewerNode::ViewerNode(ViewerCache* cache):OutputNode(),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),
 _pboIndex(0)
 {
-    _cacheWatcher = new QFutureWatcher<void>;
-   QObject::connect(_cacheWatcher, SIGNAL(finished()),ctrlPTR->getModel()->getVideoEngine(), SLOT(engineLoop()));
 }
 
 void ViewerNode::initializeViewerTab(TabWidget* where){
-   _uiContext = ctrlPTR->getGui()->addNewViewerTab(this,where);
+   _uiContext = appPTR->getGui()->addNewViewerTab(this,where);
 }
 
 ViewerNode::~ViewerNode(){
-    if(ctrlPTR->getGui())
-        ctrlPTR->getGui()->removeViewerTab(_uiContext,true);
+    if(appPTR->getGui())
+        appPTR->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
 }
@@ -192,13 +188,7 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
     assert(cachedFrame);
-    QFuture<void> future = QtConcurrent::run(this,&ViewerNode::retrieveCachedFrame,cachedFrame,output,dataSize);
-    _cacheWatcher->setFuture(future);
-   
+    _uiContext->viewer->fillPBO(cachedFrame, output, dataSize);
+
     
-}
-void ViewerNode::retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize){
-    assert(dst);
-    assert(cachedFrame);
-    _uiContext->viewer->fillPBO(cachedFrame, dst, dataSize);
 }

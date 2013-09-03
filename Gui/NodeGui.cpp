@@ -22,7 +22,7 @@
 #include "Engine/Node.h"
 #include "Gui/NodeGraph.h"
 #include "Engine/OfxNode.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 
 using namespace std;
 

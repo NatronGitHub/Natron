@@ -23,6 +23,7 @@ namespace Powiter {
 class OfxHost : public OFX::Host::ImageEffect::Host {
 public:
     OfxHost();
+    virtual ~OfxHost();
 
     /// Create a new instance of an image effect plug-in.
     ///
@@ -62,6 +63,10 @@ public:
     QStringList loadOFXPlugins();
 
 private:
+    /*Writes all plugins loaded and their descriptors to
+     the OFX plugin cache. (called by the destructor) */
+    void writeOFXCache();
+
     OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
 
 
@@ -75,7 +80,6 @@ private:
     typedef OFXPluginsMap::const_iterator OFXPluginsIterator;
 
     OFXPluginsMap _ofxPlugins;
-    
 };
 
 } // namespace Powiter

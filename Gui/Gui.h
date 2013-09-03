@@ -27,7 +27,7 @@
 
 class QString;
 class TabWidget;
-class Controler;
+class AppInstance;
 class QDockWidget;
 class QScrollArea;
 class QWidget;
@@ -40,7 +40,7 @@ class QMenuBar;
 class QProgressBar;
 class QStatusBar;
 class QTreeView;
-class Controler;
+class AppInstance;
 class NodeGraph;
 class ViewerTab;
 class Node;

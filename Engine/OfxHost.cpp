@@ -19,7 +19,7 @@
 #include <ofxhHost.h>
 
 #include "Engine/OfxNode.h"
-#include "Global/Controler.h" // for ctrlPTR, but FIXME: this global variable shouldn't be used here, and in fact it is used to update the GUI, which is wrong!
+#include "Global/AppManager.h" // for ctrlPTR, but FIXME: this global variable shouldn't be used here, and in fact it is used to update the GUI, which is wrong!
 
 using namespace Powiter;
 
@@ -56,6 +56,11 @@ Powiter::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
 
 
+}
+
+Powiter::OfxHost::~OfxHost()
+{
+    writeOFXCache();
 }
 
 OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
@@ -249,7 +254,8 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        ctrlPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename); // FIXME: this really belongs to the GUI
+        // FIXME: maybe use signal/slot for the following to disconnect core functionality from GUI
+        appPTR->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename); // FIXME: this really belongs to the GUI
         _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
         pluginNames.append(name.c_str());
     }
@@ -266,3 +272,15 @@ void Powiter::OfxHost::displayLoadedPlugins() {
     std::cout  << i << " plugin(s) loaded." << std::endl;
 }
 #endif
+
+
+void Powiter::OfxHost::writeOFXCache(){
+    /// and write a new cache, long version with everything in there
+    std::ofstream of("PowiterOFXCache.xml");
+    assert(OFX::Host::PluginCache::getPluginCache());
+    OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
+    of.close();
+    //Clean up, to be polite.
+    OFX::Host::PluginCache::clearPluginCache();
+}
+

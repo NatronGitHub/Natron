@@ -11,6 +11,9 @@
 
 #include "Node.h"
 
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+
 #include "Engine/Hash.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/Knob.h"
@@ -20,7 +23,7 @@
 #include "Engine/Format.h"
 #include "Engine/NodeCache.h"
 #include "Readers/Reader.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 #include "Engine/Row.h"
@@ -311,7 +314,7 @@ Row* Node::get(int y,int x,int r){
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
         int current_frame;
-        const VideoEngine::DAG& dag = ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG();
+        const VideoEngine::DAG& dag = appPTR->getModel()->getVideoEngine()->getCurrentDAG();
         if(dag.isOutputAnOpenFXNode()){
             current_frame = dag.outputAsOpenFXNode()->currentFrame();
         }else{
@@ -357,3 +360,18 @@ Node::~Node(){
     delete _info;
     delete _knobsCB;
 }
+
+
+OutputNode::OutputNode():Node(){
+    _mutex = new QMutex;
+    _openGLCondition = new QWaitCondition;
+    
+    _videoEngine = new VideoEngine(_openGLCondition,_mutex);
+}
+
+OutputNode::~OutputNode(){
+    delete _videoEngine;
+    delete _mutex;
+    delete _openGLCondition;
+}
+

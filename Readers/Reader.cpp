@@ -16,7 +16,7 @@
 #include <QtGui/QImage>
 
 #include "Global/Macros.h"
-#include "Global/Controler.h"
+#include "Global/AppManager.h"
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
@@ -214,7 +214,7 @@ bool Reader::makeCurrentDecodedFrame(bool forReal){
     if(!forReal)
         current_frame = firstFrame();
     else{
-        Writer* writer = dynamic_cast<Writer*>(ctrlPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
+        Writer* writer = dynamic_cast<Writer*>(appPTR->getModel()->getVideoEngine()->getCurrentDAG().getOutput());
         if(!writer) {
             assert(currentViewer);
             current_frame = clampToRange(currentViewer->currentFrame());

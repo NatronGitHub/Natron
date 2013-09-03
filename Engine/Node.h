@@ -19,6 +19,7 @@
 #include "Global/Macros.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
+#include "Engine/VideoEngine.h"
 
 class Row;
 class Model;
@@ -27,6 +28,8 @@ class Hash;
 class Knob;
 class KnobCallback;
 class NodeGui;
+class QMutex;
+class QWaitCondition;
 class QUndoStack;
 class Node
 {
@@ -225,6 +228,38 @@ private:
 };
 typedef Node* (*NodeBuilder)();
 
+class OutputNode : public Node{
+public:
+    
+    OutputNode();
+    
+    virtual ~OutputNode();
+    
+    virtual bool isOutputNode(){return true;}
+
+    
+    /*Node utility functions*/
+    virtual std::string className() = 0;
+    virtual std::string description() = 0;
+    /*Returns true if the node will cache rows in the node cache.
+     Otherwise results will not be cached.*/
+    virtual bool cacheData()=0;
+   
+    VideoEngine* getVideoEngine() const {return _videoEngine;}
+    
+    QMutex* getEngineMutex() const {return _mutex;}
+    
+    QWaitCondition* getOpenGLCondition() const {return _openGLCondition;}
+    
+protected:
+    virtual ChannelSet supportedComponents() =0;
+    virtual bool _validate(bool /*forReal*/) = 0;
+    
+private:
+    QMutex* _mutex;
+    QWaitCondition* _openGLCondition;
+    VideoEngine* _videoEngine;
+};
 
 
 #endif // POWITER_ENGINE_NODE_H_

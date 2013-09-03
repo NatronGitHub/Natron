@@ -89,7 +89,7 @@ SOURCES += \
     Engine/VideoEngine.cpp \
     Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
-    Global/Controler.cpp \
+    Global/AppManager.cpp \
     Global/main.cpp \
     Gui/ComboBox.cpp \
     Gui/Edge.cpp \
@@ -159,7 +159,7 @@ HEADERS += \
     Engine/VideoEngine.h \
     Engine/ViewerCache.h \
     Engine/ViewerNode.h \
-    Global/Controler.h \
+    Global/AppManager.h \
     Global/Enums.h \
     Global/GLIncludes.h \
     Global/GlobalDefines.h \
