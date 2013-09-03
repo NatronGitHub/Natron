@@ -146,6 +146,15 @@ bool OfxNode::_validate(bool forReal){
     _firstTime = true;
     _frameRange.first = _info->firstFrame();
     _frameRange.second = _info->lastFrame();
+    
+    /*Checking if all mandatory inputs are connected!*/
+    MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
+    for (U32 i = 0; i < ofxInputs.size(); ++i) {
+        if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
+            return false;
+        }
+    }
+    
     if (isInputNode()) {
         OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
         /*if forReal is true we need to pass down the tree all the infos generated
