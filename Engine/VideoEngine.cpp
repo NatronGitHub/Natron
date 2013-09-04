@@ -22,6 +22,7 @@
 #include "Gui/Button.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
 #include "Engine/Hash64.h"
@@ -104,6 +105,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         zoomFactor = 1.f;
     }
     
+
     changeTreeVersion();
     
     _lastRunArgs._zoomFactor = zoomFactor;
@@ -133,6 +135,7 @@ void VideoEngine::stopEngine(){
     _working = false;
     _timer->playState=PAUSE;
     
+
 }
 
 void VideoEngine::run(){
@@ -160,7 +163,7 @@ void VideoEngine::run(){
             if(n){
                 OfxPointD renderScale;
                 renderScale.x = renderScale.y = 1.0;
-                n->beginRenderAction(0, 25, 1, true,renderScale);
+                n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
             }
         }
         
@@ -482,7 +485,7 @@ void VideoEngine::run(){
             if(n){
                 OfxPointD renderScale;
                 renderScale.x = renderScale.y = 1.0;
-                n->endRenderAction(0, 25, 1, true, renderScale);
+                n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
             }
         }
 

@@ -215,10 +215,10 @@ bool Writer::validInfosForRendering(){
     /*checking if channels are supported*/
     WriteBuilder builder = (WriteBuilder)isValid->first;
     Write* write = builder(NULL);
-    try{
+    try {
         write->supportsChannelsForWriting(_requestedChannels);
-    }catch(const char* str){
-        cout << "ERROR: " << str << endl;
+    } catch (const std::exception &e) {
+        cout << "ERROR: " << e.what() << endl;
     }
     delete write;
     

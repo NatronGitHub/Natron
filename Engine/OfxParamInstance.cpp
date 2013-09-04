@@ -20,34 +20,37 @@
 #include "Gui/Knob.h"
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
+#include "Engine/OfxImageEffectInstance.h"
 
 using namespace std;
+using namespace Powiter;
 
-
-OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* effect,
+OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
                                              const std::string& name,
                                              OFX::Host::Param::Descriptor& descriptor)
-:  OFX::Host::Param::PushbuttonInstance(descriptor,effect),_effect(effect), _descriptor(descriptor)
+: OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
 {
-    KnobCallback* cb = _effect->getKnobCallBack();
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
     
     _knob->connectButtonToSlot(this, SLOT(emitInstanceChanged()));
-    QObject::connect(this, SIGNAL(buttonPressed(QString)), _effect, SLOT(onInstanceChangedAction(QString)));
+    QObject::connect(this, SIGNAL(buttonPressed(QString)), _node, SLOT(onInstanceChangedAction(QString)));
 }
 
 void OfxPushButtonInstance::emitInstanceChanged(){
@@ -68,21 +71,25 @@ Knob* OfxPushButtonInstance::getKnob() const{
     return _knob;
 }
 
-OfxIntegerInstance::OfxIntegerInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-: OFX::Host::Param::IntegerInstance(descriptor,effect),_effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+, _paramName(name)
+{
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -115,11 +122,11 @@ OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     return kOfxStatOK;
 }
 void OfxIntegerInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
@@ -134,21 +141,21 @@ Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
-OfxDoubleInstance::OfxDoubleInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::DoubleInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -190,11 +197,11 @@ OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, dou
     return kOfxStatErrMissingHostFeature;
 }
 void OfxDoubleInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
@@ -209,21 +216,21 @@ Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
-OfxBooleanInstance::OfxBooleanInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::BooleanInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -254,11 +261,11 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     return kOfxStatOK;
 }
 void OfxBooleanInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 // callback which should set enabled state as appropriate
 void OfxBooleanInstance::setEnabled(){
@@ -274,21 +281,21 @@ Knob* OfxBooleanInstance::getKnob() const{
 }
 
 
-OfxChoiceInstance::OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::ChoiceInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name) {
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name) {
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -339,11 +346,11 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
     }
 }
 void OfxChoiceInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 
 
@@ -362,25 +369,25 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 
-OfxRGBAInstance::OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBAInstance(descriptor,effect),
-_effect(effect),
+OfxRGBAInstance::OfxRGBAInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
+_node(node),
 _descriptor(descriptor),
 _r(0),_g(0),_b(0),_a(1.0),
 _paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -429,11 +436,11 @@ OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,dou
 }
 
 void OfxRGBAInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 
 // callback which should set enabled state as appropriate
@@ -450,21 +457,21 @@ void OfxRGBAInstance::setSecret(){
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
-OfxRGBInstance::OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -510,11 +517,11 @@ OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
 }
 
 void OfxRGBInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
@@ -530,21 +537,21 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Double2DInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Double2D_Knob*>(KnobFactory::createKnob("Double2D", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -600,11 +607,11 @@ OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
 	return kOfxStatOK;
 }
 void OfxDouble2DInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 // callback which should set enabled state as appropriate
 void OfxDouble2DInstance::setEnabled(){
@@ -620,21 +627,21 @@ Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
-OfxInteger2DInstance::OfxInteger2DInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Integer2DInstance(descriptor,effect), _effect(effect), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
     if(previousKnobLayout){
         _knob->changeLayout(previousKnobLayout);
-        _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
     }
     if(layoutHint == 2){
-        _effect->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
     }
     int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
     _knob->setLayoutMargin(paramSpacing);
@@ -685,11 +692,11 @@ OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
 	return kOfxStatOK;
 }
 void OfxInteger2DInstance::onInstanceChanged(){
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 }
 
 // callback which should set enabled state as appropriate
@@ -707,15 +714,15 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::GroupInstance(descriptor,effect),_effect(effect),_descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _effect->getKnobCallBack();
+OfxGroupInstance::OfxGroupInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name){
+    KnobCallback* cb = _node->getKnobCallBack();
     int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
-        Tab_Knob* _tabKnob = _effect->getTabKnob();
+        Tab_Knob* _tabKnob = _node->getTabKnob();
         if(!_tabKnob){
             _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", cb, name, Knob::NONE));
-            _effect->setTabKnob(_tabKnob);
+            _node->setTabKnob(_tabKnob);
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
@@ -734,7 +741,7 @@ void OfxGroupInstance::addKnob(Knob *k) {
     if(_groupKnob){
         _groupKnob->addKnob(k);
     }else{
-        _effect->getTabKnob()->addKnob(_paramName, k);
+        _node->getTabKnob()->addKnob(_paramName, k);
     }
 }
 
@@ -742,46 +749,46 @@ Knob* OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
-        return _effect->getTabKnob();
+        return _node->getTabKnob();
     }
 }
 
-OfxStringInstance::OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::StringInstance(descriptor,effect),_effect(effect),_descriptor(descriptor),_paramName(name),
+OfxStringInstance::OfxStringInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name),
 _fileKnob(0),_outputFileKnob(0){
-    KnobCallback* cb = _effect->getKnobCallBack();
+    KnobCallback* cb = _node->getKnobCallBack();
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
-        if(effect->isInputNode()){
+        if(_node->isInputNode()){
             _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, Knob::NONE));
             _fileKnob->setPointer(&_filesList);
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
-            QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+            QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
             if(previousKnobLayout){
                 _fileKnob->changeLayout(previousKnobLayout);
-                _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+                _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
             }
             if(layoutHint == 2){
-                _effect->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
+                _node->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
             }
             int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
             _fileKnob->setLayoutMargin(paramSpacing);
         }else{
-            _effect->setAsOutputNode(); // IMPORTANT ! 
+            _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, name, Knob::NONE));
             _outputFileKnob->setPointer(&_outputFilePattern);
             QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
-            QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+            QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
             if(previousKnobLayout){
                 _outputFileKnob->changeLayout(previousKnobLayout);
-                _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+                _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
             }
             if(layoutHint == 2){
-                _effect->setLastKnobLayoutWithNoNewLine(_outputFileKnob->getHorizontalLayout());
+                _node->setLastKnobLayoutWithNoNewLine(_outputFileKnob->getHorizontalLayout());
             }
             int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
             _outputFileKnob->setLayoutMargin(paramSpacing);
@@ -795,13 +802,13 @@ _fileKnob(0),_outputFileKnob(0){
         _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", cb, name, flags));
         QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
         _stringKnob->setPointer(&_returnValue);
-        QHBoxLayout* previousKnobLayout = _effect->getLastKnobLayoutWithNoNewLine();
+        QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
         if(previousKnobLayout){
             _stringKnob->changeLayout(previousKnobLayout);
-            _effect->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
+            _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
         }
         if(layoutHint == 2){
-            _effect->setLastKnobLayoutWithNoNewLine(_stringKnob->getHorizontalLayout());
+            _node->setLastKnobLayoutWithNoNewLine(_stringKnob->getHorizontalLayout());
         }
         int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
         _stringKnob->setLayoutMargin(paramSpacing);
@@ -810,7 +817,7 @@ _fileKnob(0),_outputFileKnob(0){
 }
 OfxStatus OfxStringInstance::get(std::string &str) {
     if(_fileKnob){
-        int currentFrame = clampToRange((int)_effect->timeLineGetTime());
+        int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
             map<int,QString>::iterator it = _files.find(currentFrame);
             if(it!=_files.end()){
@@ -822,7 +829,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
             str = "";
         }
     }else if(_outputFileKnob){
-        str = filenameFromPattern(_effect->timeLineGetTime());
+        str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
     }else{
         str = _returnValue;
     }
@@ -830,7 +837,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 }
 OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     if(_fileKnob){
-        int currentFrame = clampToRange((int)_effect->timeLineGetTime());
+        int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
             map<int,QString>::iterator it = _files.find(currentFrame);
             if(it!=_files.end()){
@@ -842,7 +849,7 @@ OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
             str = "";
         }
     }else if(_outputFileKnob){
-        str = filenameFromPattern(_effect->timeLineGetTime());
+        str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
     }else{
         str = _returnValue;
     }
@@ -918,14 +925,14 @@ void OfxStringInstance::onInstanceChanged(){
     if(_fileKnob){
         getVideoSequenceFromFilesList();
         _returnValue = _fileKnob->getLineEditText();
-         _effect->computePreviewImage();
+         _node->computePreviewImage();
 
     }
-    _effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _effect->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
 
 }
 void OfxStringInstance::getVideoSequenceFromFilesList(){
@@ -973,8 +980,8 @@ void OfxStringInstance::getVideoSequenceFromFilesList(){
             }
         }
     }
-    _effect->set_firstFrame(firstFrame());
-    _effect->set_lastFrame(lastFrame());
+    _node->set_firstFrame(firstFrame());
+    _node->set_lastFrame(lastFrame());
     
 }
 

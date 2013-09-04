@@ -28,7 +28,7 @@ public:
     ReadQt(Reader* op);
     virtual ~ReadQt();
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesDecoded(){
+    virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE {
         std::vector<std::string> out;
         out.push_back("jpg");
         out.push_back("bmp");
@@ -44,14 +44,14 @@ public:
     };
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
-    virtual std::string decoderName(){return "QImage (Qt)";}
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
-    virtual bool supports_stereo();
-    virtual void readHeader(const QString& filename, bool openBothViews);
-    virtual void readAllData(bool openBothViews);
-    virtual bool supportsScanLine(){return false;}
-    virtual void make_preview();
-    virtual void initializeColorSpace();
+    virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+    virtual bool supports_stereo() const OVERRIDE;
+    virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
+    virtual void readAllData(bool openBothViews) OVERRIDE;
+    virtual bool supportsScanLine() const OVERRIDE {return false;}
+    virtual void make_preview() OVERRIDE;
+    virtual void initializeColorSpace() OVERRIDE;
 };
 
 #endif /* defined(POWITER_READERS_READQT_H_) */

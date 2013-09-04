@@ -48,8 +48,8 @@ Row* NodeCache::addRow(U64 key,int x, int r, int y, const ChannelSet &channels,c
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);
-    }catch(const char* str){
-        cout << "Failed to create row: " << str << endl;
+    } catch (const std::exception &e) {
+        cout << "Failed to create row: " << e.what() << endl;
         delete out;
         return NULL;
     }

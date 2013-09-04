@@ -117,14 +117,13 @@ public:
             _currentFrame = f;
     }
     
-    const ChannelSet& requestedChannels() const {return _requestedChannels;} // FIXME: never return reference to internals!
+    const ChannelSet& requestedChannels() const {return _requestedChannels;}    
     
+    virtual int maximumInputs() const OVERRIDE {return 1;}
     
-    virtual int maximumInputs(){return 1;}
+    virtual int minimumInputs() const OVERRIDE {return 1;}
     
-    virtual int minimumInputs(){return 1;}
-    
-    virtual bool cacheData(){return false;}
+    virtual bool cacheData() const OVERRIDE {return false;}
     
 public slots:
     void notifyWriterForCompletion();
@@ -133,9 +132,9 @@ public slots:
     void onFilesSelected();
     
 protected:
-	virtual void initKnobs(KnobCallback *cb);
+	virtual void initKnobs(KnobCallback *cb) OVERRIDE;
     
-    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
+    virtual ChannelSet supportedComponents() OVERRIDE {return Powiter::Mask_All;}
     
 private:
     
