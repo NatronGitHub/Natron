@@ -432,7 +432,7 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     endInstanceChangedAction(kOfxChangeUserEdited);
     
-    _model->getVideoEngine()->changeDAGAndStartEngine(this);
+    getExecutingEngine()->changeDAGAndStartEngine(this);
 }
 
 OfxStatus OfxNode::editBegin(const std::string& /*name*/)
@@ -466,9 +466,9 @@ bool  OfxNode::progressUpdate(double /*t*/)
 /// time as being passed to an action (eg render)
 double  OfxNode::timeLineGetTime()
 {
-    if(!_model->getVideoEngine())
+    if(!getExecutingEngine())
         return -1.;
-    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return -1.;
     }
@@ -487,7 +487,7 @@ double  OfxNode::timeLineGetTime()
 /// set the timeline to a specific time
 void  OfxNode::timeLineGotoTime(double t)
 {
-    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return;
     }
@@ -509,7 +509,7 @@ void  OfxNode::timeLineGetBounds(double &t1, double &t2)
 {
    
 
-    const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;

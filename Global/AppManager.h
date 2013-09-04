@@ -105,7 +105,7 @@ public:
     
     bool isRendering() const;
     
-    void changeDAGAndStartRendering(Node* output);
+    void changeDAGAndStartRendering(OutputNode* output);
     
     void startRendering(int nbFrames = -1);
     

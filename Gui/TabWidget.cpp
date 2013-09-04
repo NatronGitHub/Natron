@@ -111,7 +111,6 @@ _drawDropRect(false){
 }
 
 TabWidget::~TabWidget(){
-    
 }
 
 void TabWidget::destroyTabs(){

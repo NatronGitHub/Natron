@@ -171,6 +171,8 @@ public:
     
     ViewerCache* getViewerCache() const {return _viewerCache;}
     
+    QMutex* getGeneralMutex() const {return _generalMutex;}
+    
 public slots:
     void clearPlaybackCache();
     
@@ -242,6 +244,8 @@ private:
     ViewerCache* _viewerCache;
 
     boost::scoped_ptr<Powiter::OfxHost> ofxHost;
+    
+    QMutex* _generalMutex;//mutex to synchronize all VideoEngine's
 };
 
 #endif // POWITER_ENGINE_MODEL_H_

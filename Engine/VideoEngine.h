@@ -104,7 +104,7 @@ public:
          *@TODO Throw some exception to detect cycles in the graph
          */
         
-        void resetAndSort(Node* out, bool isViewer);
+        void resetAndSort(OutputNode* out, bool isViewer);
         
         /**
          *@brief Clears out the structure. As a result the graph will do nothing.
@@ -139,7 +139,7 @@ public:
          *@brief Returns a pointer to the output node of the graph.
          *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
          */
-        Node* getOutput() const {return _output;}
+        OutputNode* getOutput() const {return _output;}
         
         
         /**
@@ -225,7 +225,7 @@ public:
         /*clears out the structure*/
         void clearGraph();
         
-        Node* _output; /*!<the output of the DAG*/
+        OutputNode* _output; /*!<the output of the DAG*/
         std::vector<Node*> _graph;/*!<the un-sorted DAG*/
         std::vector<Node*> _sorted; /*!<the sorted DAG*/
         std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
@@ -277,7 +277,7 @@ private:
     /**
      *@brief A typedef used to represent a generic signature of a function that represent a user action like Play, Pause, Seek...etc
      */
-    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,Node*);
+    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,OutputNode*);
     
     /**
      *@struct VideoEngine::Task
@@ -291,9 +291,9 @@ private:
         bool _initViewer;
         bool _forward;
         bool _sameFrame;
-        Node* _output;
+        OutputNode* _output;
         VengineFunction _func;
-        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output,VengineFunction func):
+        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func):
         _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),_sameFrame(sameFrame),
         _output(output),_func(func){}
         
@@ -346,8 +346,8 @@ private:
     
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
-    bool _paused; /*!< true when the user pressed pause*/
-        
+    bool _mustQuit;/*!< true when we quit the engine*/
+    
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
     
     bool _loopMode; /*!< on if the player will loop*/
@@ -409,11 +409,6 @@ protected:
      **/
     void abort();
     
-    /**
-     @brief Aborts all computations. This turns on the flag _aborted and will inform the engine that it needs to stop.
-     This is slightly different than abort() because the engine will run the waiting tasks queued when it stops.
-     **/
-    void pause();
     
     /**
      *@brief Starts or stops the video engine. This is the slot called when the user toggle on/off the play button.
@@ -479,10 +474,7 @@ protected:
      **/
     void recenterViewer();
     
-    /**
-     *@brief Resets the video engine state and ensures that all worker threads are stopped.
-     **/
-    void stopEngine();
+    
     
     /**
      *@brief displays progress if the time to compute the current frame exeeded
@@ -497,6 +489,10 @@ protected:
     void cachedEngine();
     
     void allocateFrameStorage();
+    
+    void quitEngineThread();
+    
+    void toggleLoopMode(bool b);
     
 signals:
     /**
@@ -529,7 +525,7 @@ public:
     /**
      *@brief Do not call this. This is called internally by the DAG GUI when the user changes the graph.
      **/
-    void changeDAGAndStartEngine(Node* output);
+    void changeDAGAndStartEngine(OutputNode* output);
     
     /**
      *@brief Convenience function. It resets the graph, emptying all nodes stored in the DAG.
@@ -539,7 +535,7 @@ public:
     /**
      *@brief Convenience function. It calls DAG::resetAndSort(OutputNode*,bool).
      **/
-    void resetAndMakeNewDag(Node* output,bool isViewer);
+    void resetAndMakeNewDag(OutputNode* output,bool isViewer);
     
     /**
      *@returns Return a const reference to the DAG used by the video engine.
@@ -607,6 +603,10 @@ private:
 
     void engineLoop();
 
+    /**
+     *@brief Resets the video engine state and ensures that all worker threads are stopped.
+     **/
+    void stopEngine();
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.
@@ -639,19 +639,19 @@ private:
      *All the parameters are given to the function VideoEngine::videoEngine(int,bool,bool,bool). See the
      *documentation for that function.
      **/
-    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output = NULL);
+    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
     
     /**
      *@brief Called by VideoEngine::changeDAGAndStartEngine(OutputNode*); This function is slightly different
      *than _startEngine(...) because it resets the graph and calls VideoEngine::changeTreeVersion()
      *before actually starting the engine.
      **/
-    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output = NULL);
+    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
     
     /**
      *@brief Appends a new VideoEngine::Task to the the queue.
      **/
-    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* output,VengineFunction func);
+    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func);
     
     /**
      *@brief Runs the queued tasks. It is called when the video engine stops the current computations.

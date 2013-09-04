@@ -57,6 +57,7 @@ Model::Model(AppInstance* appInstance)
 : _appInstance(appInstance),
 _currentOutput(0)
 , ofxHost(new Powiter::OfxHost(this))
+,_generalMutex(new QMutex)
 {
     
     /*node cache initialisation & restoration*/
@@ -154,6 +155,13 @@ _currentOutput(0)
 
 
 Model::~Model() {
+
+    foreach(Node* n,_currentNodes){
+        if (n->isOutputNode()) {
+            VideoEngine* engine = dynamic_cast<OutputNode*>(n)->getVideoEngine();
+            engine->quitEngineThread();
+        }
+    }
     
     _viewerCache->save();
     delete _viewerCache;
@@ -180,6 +188,7 @@ Model::~Model() {
     _currentNodes.clear();
     _formats.clear();
     _nodeNames.clear();
+    delete _generalMutex;
 }
 
 void Model::loadAllPlugins(){
@@ -205,7 +214,6 @@ void Model::loadAllPlugins(){
 std::pair<int,bool> Model::setCurrentGraph(OutputNode *output,bool isViewer){
     _currentOutput = output;
     if(output){
-        //_videoEngine->resetAndMakeNewDag(output,isViewer);
         output->getVideoEngine()->resetAndMakeNewDag(output,isViewer);
         const std::vector<Node*>& inputs = output->getVideoEngine()->getCurrentDAG().getInputs();
         bool hasFrames = false;

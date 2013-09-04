@@ -69,6 +69,7 @@ void Node::Info::reset(){
     _dataWindow.set(0, 0, 0, 0);
     _displayWindow.set(0,0,0,0);
     _blackOutside = false;
+    _executingEngine = 0;
 }
 
 int Node::inputCount() const {
@@ -160,7 +161,8 @@ void Node::Info::operator=(const Node::Info &other){
 
 
 Node::Node(Model* model):
-_model(model),_info()
+_model(model),
+_info()
 {
 
     _marked = false;
@@ -316,7 +318,7 @@ Row* Node::get(int y,int x,int r){
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){
         int current_frame;
-        const VideoEngine::DAG& dag = _model->getVideoEngine()->getCurrentDAG();
+        const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
         if(dag.isOutputAnOpenFXNode()){
             current_frame = dag.outputAsOpenFXNode()->currentFrame();
         }else{

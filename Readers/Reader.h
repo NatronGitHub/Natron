@@ -484,11 +484,6 @@ public:
         _buffer.setSize(size);
     }
     
-    /**
-     *@returns Returns false if it couldn't find the current frame in the buffer or if
-     * the frame is not finished
-     **/
-    bool makeCurrentDecodedFrame(bool forReal);
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     

@@ -39,7 +39,7 @@ public:
 	class Info{
         
 	public:
-		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels)
+		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels,VideoEngine* engine)
         : _firstFrame(first_frame)
         , _lastFrame(last_frame)
         , _ydirection(ydirection)
@@ -47,7 +47,8 @@ public:
         , _rgbMode(true)
         , _dataWindow()
         , _displayWindow(displayWindow)
-        , _channels(channels)
+        , _channels(channels),
+        _executingEngine(engine)
         {}
 	    Info()
         : _firstFrame(-1)
@@ -58,6 +59,7 @@ public:
         , _dataWindow()
         , _displayWindow()
         , _channels()
+        ,_executingEngine(NULL)
         {}
 
 		void set_ydirection(int direction){_ydirection=direction;}
@@ -88,6 +90,10 @@ public:
 
         bool operator==( Node::Info &other);
         void operator=(const Node::Info &other);
+        
+        VideoEngine* executingEngine() const {return _executingEngine;}
+        
+        void setExecutingEngine(VideoEngine* engine){_executingEngine = engine;}
 
         void reset();
         
@@ -100,6 +106,7 @@ public:
         Box2D _dataWindow;
 		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
 		ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
+        VideoEngine* _executingEngine;// the engine owning the node currently. This is protected by a mutex and is thread-safe.
 	};
     
     
@@ -143,6 +150,8 @@ public:
     /*DAG related (topological sorting)*/
     void setMarked(bool mark){_marked = mark;}
     bool isMarked(){return _marked;}
+    
+    
     /*============================*/
     
 	/*Node infos*/
@@ -225,8 +234,11 @@ public:
     virtual bool isOpenFXNode() const {return false;}
     
     
+    VideoEngine* getExecutingEngine() const {return _info.executingEngine();}
+    
     Model* getModel() const {return _model;}
     
+    void setExecutingEngine(VideoEngine* engine){_info.setExecutingEngine(engine);}
 
     void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
 
@@ -238,7 +250,6 @@ protected:
     virtual void preProcess(){}
 
 	virtual bool _validate(bool /*forReal*/) = 0;
-    
     
     Model* _model;
 	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate

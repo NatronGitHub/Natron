@@ -141,7 +141,7 @@ ViewerNode* AppInstance::getCurrentViewer(){
 bool AppInstance::isRendering() const{
     return _model->getVideoEngine()->isWorking();
 }
-void AppInstance::changeDAGAndStartRendering(Node* output){
+void AppInstance::changeDAGAndStartRendering(OutputNode* output){
     _model->getVideoEngine()->changeDAGAndStartEngine(output);
 }
 void AppInstance::startRendering(int nbFrames){

@@ -99,6 +99,8 @@ public:
     Button* previousIncrement_Button;
     FeedbackSpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
+    Button* loopMode_Button;
+    
     QLabel* fpsName;
     FeedbackSpinBox* fpsBox;
     
@@ -127,6 +129,7 @@ public slots:
     void seekRandomFrame(int);
     void seekRandomFrame(double value){seekRandomFrame((int)value);}
     void centerViewer();
+    void toggleLoopMode(bool);
     
     void onViewerChannelsChanged(int);
     

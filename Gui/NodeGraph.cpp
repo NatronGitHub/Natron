@@ -555,9 +555,10 @@ void NodeGraph::checkIfViewerConnectedAndRefresh(NodeGui* n){
     NodeGui* viewer = NodeGui::hasViewerConnected(n);
     if(viewer){
         //if(foundSrc){
-        std::pair<int,bool> ret = _gui->_appInstance->setCurrentGraph(dynamic_cast<OutputNode*>(viewer->getNode()),true);
+        OutputNode* output = dynamic_cast<OutputNode*>(viewer->getNode());
+        std::pair<int,bool> ret = _gui->_appInstance->setCurrentGraph(output,true);
         if(_gui->_appInstance->isRendering()){
-            _gui->_appInstance->changeDAGAndStartRendering(viewer->getNode());
+            _gui->_appInstance->changeDAGAndStartRendering(output);
         }else{
             if(ret.second){
                 _gui->_appInstance->startRendering(1);

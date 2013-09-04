@@ -237,10 +237,13 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         return NULL;
     }
     ViewerNode* viewer = _model->getVideoEngine()->getCurrentDAG().outputAsViewer();
-    viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
+    if(viewer){
+        viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
+    }
     out->addReference(); //increase refcount BEFORE adding it to the cache and exposing it to the other threads
     if(AbstractDiskCache::add(key, out)){
-        viewer->getUiContext()->frameSeeker->removeCachedFrame();
+        if(viewer)
+            viewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
     
     return out;
@@ -274,7 +277,8 @@ FrameEntry* ViewerCache::get(U64 key){
     }else{ // found in memory
         FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
-        viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
+        if(viewer)
+            viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
         return frameEntry;
     }
     return NULL;

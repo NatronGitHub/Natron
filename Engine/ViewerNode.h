@@ -55,6 +55,8 @@ public:
     
     ViewerTab* getUiContext(){return _uiContext;}
     
+    void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
+    
     virtual std::string className() OVERRIDE { return "Viewer"; }
     
     virtual std::string description() OVERRIDE;

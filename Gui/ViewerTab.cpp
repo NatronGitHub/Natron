@@ -304,6 +304,15 @@ _maximized(false)
     nextIncrement_Button->setToolTip(tooltip);
 	_playerLayout->addWidget(nextIncrement_Button);
     
+    loopMode_Button = new Button(_playerButtonsContainer);
+    loopMode_Button->setCheckable(true);
+    loopMode_Button->setChecked(true);
+    loopMode_Button->setDown(true);
+    loopMode_Button->setToolTip("Behaviour to adopt when the playback\n hit the end of the range: loop or stop.");
+	_playerLayout->addWidget(loopMode_Button);
+    
+    
+    _playerLayout->addStretch();
     
     fpsName = new QLabel("fps",_playerButtonsContainer);
     _playerLayout->addWidget(fpsName);
@@ -330,7 +339,8 @@ _maximized(false)
     QImage imgNextINCR(POWITER_IMAGES_PATH"nextIncr.png");
     QImage imgRefresh(POWITER_IMAGES_PATH"refresh.png");
     QImage imgCenterViewer(POWITER_IMAGES_PATH"centerViewer.png");
-
+    QImage imgLoopMode(POWITER_IMAGES_PATH"loopmode.png");
+    
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);
     QPixmap pixRewind=QPixmap::fromImage(imgRewind);
@@ -344,6 +354,7 @@ _maximized(false)
     QPixmap pixNextIncr=QPixmap::fromImage(imgNextINCR);
     QPixmap pixRefresh = QPixmap::fromImage(imgRefresh);
     QPixmap pixCenterViewer = QPixmap::fromImage(imgCenterViewer);
+    QPixmap pixLoopMode = QPixmap::fromImage(imgLoopMode);
     
     int iW=20,iH=20;
     pixFirst = pixFirst.scaled(iW,iH);
@@ -359,6 +370,7 @@ _maximized(false)
     pixNextIncr = pixNextIncr.scaled(iW,iH);
     pixRefresh = pixRefresh.scaled(iW, iH);
     pixCenterViewer = pixCenterViewer.scaled(50, 50);
+    pixLoopMode = pixLoopMode.scaled(iW, iH);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -373,6 +385,8 @@ _maximized(false)
     nextIncrement_Button->setIcon(QIcon(pixNextIncr));
     _refreshButton->setIcon(QIcon(pixRefresh));
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
+    loopMode_Button->setIcon(QIcon(pixLoopMode));
+    
     
     _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it."
                                     "<p></br><b>Keyboard shortcut: F</b></p>");
@@ -414,11 +428,16 @@ _maximized(false)
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
     QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
+    QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(viewer,SIGNAL(engineNeeded()),vengine,SLOT(repeatSameFrame()));
         
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
+}
+void ViewerTab::toggleLoopMode(bool b){
+    loopMode_Button->setDown(b);
+    _viewerNode->getVideoEngine()->toggleLoopMode(b);
 }
 
 void ViewerTab::updateZoomComboBox(int value){
@@ -433,57 +452,57 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->startPause(b);
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->startPause(b);
     else
         play_Forward_Button->setChecked(false);
 }
 void ViewerTab::abort(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    _gui->_appInstance->getModel()->getVideoEngine()->abort();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->startBackward(b);
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->startBackward(b);
     else
         play_Backward_Button->setChecked(false);
 }
 void ViewerTab::previousFrame(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->previousFrame();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->previousFrame();
 }
 void ViewerTab::nextFrame(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->nextFrame();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->nextFrame();
 }
 void ViewerTab::previousIncrement(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->previousIncrement();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->previousIncrement();
 }
 void ViewerTab::nextIncrement(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->nextIncrement();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->nextIncrement();
 }
 void ViewerTab::firstFrame(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->firstFrame();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->firstFrame();
 }
 void ViewerTab::lastFrame(){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->lastFrame();
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->lastFrame();
 }
 void ViewerTab::seekRandomFrame(int f){
-    _gui->_appInstance->getModel()->getVideoEngine()->resetAndMakeNewDag(_viewerNode,true);
-    if(_gui->_appInstance->getModel()->getVideoEngine()->dagHasInputs())
-        _gui->_appInstance->getModel()->getVideoEngine()->seekRandomFrame(f);
+    _gui->_appInstance->setCurrentGraph(_viewerNode, true);
+    if(_viewerNode->getVideoEngine()->dagHasInputs())
+        _viewerNode->getVideoEngine()->seekRandomFrame(f);
 }
 
 void ViewerTab::centerViewer(){
@@ -497,6 +516,7 @@ void ViewerTab::centerViewer(){
 
 ViewerTab::~ViewerTab()
 {
+    _viewerNode->setUiContext(NULL);
 }
 
 

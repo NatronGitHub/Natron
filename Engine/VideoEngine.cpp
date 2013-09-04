@@ -90,31 +90,20 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     // cout << "+ STARTING ENGINE " << endl;
     _timer->playState=RUNNING;
    
-    _paused = false;
     _aborted = false;
-    if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
-        stopEngine();
-        return;
-    }
+    
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         ViewerNode* viewer = _dag.outputAsViewer();
         zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
         viewer->getUiContext()->play_Forward_Button->setChecked(forward);
+        viewer->getUiContext()->play_Forward_Button->setDown(forward);
         viewer->getUiContext()->play_Backward_Button->setChecked(!forward);
+        viewer->getUiContext()->play_Backward_Button->setDown(!forward);
     }else{
         zoomFactor = 1.f;
     }
     
-    /*beginRenderAction for all openFX nodes*/
-    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-        OfxNode* n = dynamic_cast<OfxNode*>(*it);
-        if(n){
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.0;
-            n->beginRenderAction(0, 25, 1, true,renderScale);
-        }
-    }
     changeTreeVersion();
     
     _lastRunArgs._zoomFactor = zoomFactor;
@@ -134,34 +123,47 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
 void VideoEngine::stopEngine(){
     if(_dag.isOutputAViewer()){
         _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setChecked(false);
+        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setDown(false);
         _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setChecked(false);
+        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setDown(false);
     }
     // cout << "- STOPPING ENGINE"<<endl;
     //  _lastRunArgs._frameRequestsCount = 0;
     _aborted = false;
-    _paused = false;
     _working = false;
     _timer->playState=PAUSE;
     
-    /*endRenderAction for all openFX nodes*/
-    for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
-        OfxNode* n = dynamic_cast<OfxNode*>(*it);
-        if(n){
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.0;
-            n->endRenderAction(0, 25, 1, true, renderScale);
-        }
-    }
-//    _mutex->lock();
-//    _startCondition.wait(_mutex);
-//    _mutex->unlock();
-    _startCondition.wakeOne();
 }
 
 void VideoEngine::run(){
     
     for(;;){ // infinite loop
-        _working = true;
+        
+        if(_mustQuit)
+            return;
+        
+        /*Locking out other rendering tasks so 1 VideoEngine gets access to all
+         nodes.*/
+        QMutexLocker(_model->getGeneralMutex());
+        cout << "Graph " << _dag.getOutput()->getName() << " aquired the engine." << endl;
+        if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
+            stopEngine();
+            return;
+        }
+
+        
+        _working = true; 
+        
+        /*beginRenderAction for all openFX nodes*/
+        for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            OfxNode* n = dynamic_cast<OfxNode*>(*it);
+            if(n){
+                OfxPointD renderScale;
+                renderScale.x = renderScale.y = 1.0;
+                n->beginRenderAction(0, 25, 1, true,renderScale);
+            }
+        }
+        
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
         TimeLine* frameSeeker = 0;
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
@@ -209,16 +211,24 @@ void VideoEngine::run(){
             && _dag.lastFrame() == _dag.firstFrame()
             && _lastRunArgs._frameRequestsCount == -1
             && _lastRunArgs._frameRequestIndex == 1)
-           || _lastRunArgs._frameRequestsCount == 0
-           || _paused){
+           || _lastRunArgs._frameRequestsCount == 0){
             /*1 frame in the sequence and we already computed it*/
             stopEngine();
+//            _mutex->lock();
+//            _startCondition.wait(_mutex);
+//            _mutex->unlock();
             runTasks();
-            return;
+            _mutex->lock();
+            _startCondition.wait(_mutex);
+            _mutex->unlock();
+            continue;
         }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
             /*stoping the engine for writers*/
             stopEngine();
-            return;
+            _mutex->lock();
+            _startCondition.wait(_mutex);
+            _mutex->unlock();
+            continue;
         }
         
         
@@ -271,6 +281,8 @@ void VideoEngine::run(){
                 frameSeeker->seek_notSlot(currentFrame);
             }
         }
+        cout << "Rendering frame " << currentFrame << " for graph " << _dag.getOutput()->getName() << endl;
+
         
         QList<Reader*> readers;
         
@@ -288,8 +300,10 @@ void VideoEngine::run(){
         QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(metaReadHeader,_1,currentFrame));
         for (int i = 0; i < readHeaderResults.size(); i++) {
             if (readHeaderResults.at(i) == false) {
-                stopEngine();
-                return;
+                _mutex->lock();
+                _startCondition.wait(_mutex);
+                _mutex->unlock();
+                continue;
             }
         }
         
@@ -458,14 +472,26 @@ void VideoEngine::run(){
         }
         engineLoop();
         
-    }
+        /*endRenderAction for all openFX nodes*/
+        for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            OfxNode* n = dynamic_cast<OfxNode*>(*it);
+            if(n){
+                OfxPointD renderScale;
+                renderScale.x = renderScale.y = 1.0;
+                n->endRenderAction(0, 25, 1, true, renderScale);
+            }
+        }
+
+        
+    } // end for(;;)
     
 }
 void VideoEngine::onProgressUpdate(int i){
     // cout << "progress: index = " << i ;
     if(i < (int)_lastFrameInfos._rows.size()){
         //   cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
-        checkAndDisplayProgress(_lastFrameInfos._rows[i],i);
+        if(_dag.outputAsViewer())
+            checkAndDisplayProgress(_lastFrameInfos._rows[i],i);
     }
 }
 
@@ -586,7 +612,7 @@ VideoEngine::VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mu
 _model(model),
 _working(false),
 _aborted(false),
-_paused(true),
+_mustQuit(false),
 _loopMode(true),
 _autoSaveOnNextRun(false),
 _openGLCondition(openGLCondition),
@@ -641,21 +667,18 @@ void VideoEngine::abort(){
     _workerThreadsWatcher->cancel();
     _mutex->lock();
     _aborted=true;
-    quit();
-    // _startCondition.wakeOne();
     _mutex->unlock();
     if(_dag.outputAsViewer()){
         _dag.outputAsViewer()->getUiContext()->viewer->forceUnmapPBO();
         _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setChecked(false);
+        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setDown(false);
         _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setChecked(false);
+        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setDown(false);
     }
 }
-void VideoEngine::pause(){
-    _paused=true;
-    
-}
+
 void VideoEngine::startPause(bool c){
-    if(_dag.outputAsViewer()->getUiContext()->play_Backward_Button->isChecked()){
+    if(_working){
         abort();
         return;
     }
@@ -664,24 +687,24 @@ void VideoEngine::startPause(bool c){
     if(c && _dag.getOutput()){
         render(-1,false,true);
     }else{
-        pause();
+        abort();
     }
 }
 void VideoEngine::startBackward(bool c){
     
     if(_dag.outputAsViewer()->getUiContext()->play_Forward_Button->isChecked()){
-        pause();
+        abort();
         return;
     }
     if(c && _dag.getOutput()){
         render(-1,false,false);
     }else{
-        pause();
+        abort();
     }
 }
 void VideoEngine::previousFrame(){
     if( _working){
-        pause();
+        abort();
     }
     if(!_working)
         _startEngine(_dag.outputAsViewer()->currentFrame()-1, 1, false,false,false);
@@ -691,7 +714,7 @@ void VideoEngine::previousFrame(){
 
 void VideoEngine::nextFrame(){
     if(_working){
-        pause();
+        abort();
     }
     
     if(!_working)
@@ -702,7 +725,7 @@ void VideoEngine::nextFrame(){
 
 void VideoEngine::firstFrame(){
     if( _working){
-        pause();
+        abort();
     }
     
     if(!_working)
@@ -713,7 +736,7 @@ void VideoEngine::firstFrame(){
 
 void VideoEngine::lastFrame(){
     if(_working){
-        pause();
+        abort();
     }
     if(!_working)
         _startEngine(_dag.outputAsViewer()->lastFrame(), 1, false,true,false);
@@ -723,7 +746,7 @@ void VideoEngine::lastFrame(){
 
 void VideoEngine::previousIncrement(){
     if(_working){
-        pause();
+        abort();
     }
     int frame = _dag.outputAsViewer()->currentFrame()- _dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
     if(!_working)
@@ -737,7 +760,7 @@ void VideoEngine::previousIncrement(){
 
 void VideoEngine::nextIncrement(){
     if(_working){
-        pause();
+        abort();
     }
     int frame = _dag.outputAsViewer()->currentFrame()+_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
     if(!_working)
@@ -749,13 +772,8 @@ void VideoEngine::nextIncrement(){
 void VideoEngine::seekRandomFrame(int f){
     if(!_dag.getOutput() || _dag.getInputs().size()==0) return;
     
-//            if(_lastRunArgs._frameRequestsCount == -1){
-//                _startEngine(f, -1, false,_lastRunArgs._forward,false);
-//            }else{
-//                _startEngine(f, 1, false,_lastRunArgs._forward,false);
-//            }
     if(_working){
-        pause();
+        abort();
     }
     
     if(!_working){
@@ -775,7 +793,7 @@ void VideoEngine::seekRandomFrame(int f){
 }
 void VideoEngine::recenterViewer(){
     if(_working){
-        pause();
+        abort();
     }
     if(!_working){
         if(_lastRunArgs._frameRequestsCount == -1)
@@ -789,8 +807,8 @@ void VideoEngine::recenterViewer(){
 
 
 
-void VideoEngine::changeDAGAndStartEngine(Node* output){
-    pause();
+void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
+    abort();
     if(!_working){
         if(_dag.getOutput()){
             if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
@@ -818,7 +836,7 @@ void VideoEngine::changeDAGAndStartEngine(Node* output){
     }
 }
 
-void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,Node* output, VengineFunction func){
+void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,OutputNode* output, VengineFunction func){
     _waitingTasks.push_back(Task(frameNB,frameCount,initViewer,forward,sameFrame,output,func));
 }
 
@@ -833,7 +851,7 @@ void VideoEngine::runTasks(){
     
 }
 
-void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,Node* ){
+void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
             return;
@@ -844,7 +862,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     }
 }
 
-void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,Node* output){
+void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,OutputNode* output){
     bool isViewer = false;
     if(dynamic_cast<ViewerNode*>(output)){
         isViewer = true;
@@ -948,7 +966,7 @@ OfxNode* VideoEngine::DAG::outputAsOpenFXNode() const{
     }
 }
 
-void VideoEngine::DAG::resetAndSort(Node* out,bool isViewer){
+void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
     _output = out;
     _isViewer = isViewer;
     if(out && out->isOpenFXNode()){
@@ -975,8 +993,11 @@ void VideoEngine::DAG::debug(){
 bool VideoEngine::DAG::validate(bool forReal){
     /*Validating the DAG in topological order*/
     for (DAGIterator it = begin(); it!=end(); ++it) {
-        if(!(*it)->validate(forReal))
+        if(!(*it)->validate(forReal)){
             return false;
+        }else{
+            (*it)->setExecutingEngine(_output->getVideoEngine());
+        }
     }
     return true;
 }
@@ -991,7 +1012,7 @@ int VideoEngine::DAG::lastFrame() const {
 
 
 
-void VideoEngine::resetAndMakeNewDag(Node* output,bool isViewer){
+void VideoEngine::resetAndMakeNewDag(OutputNode* output,bool isViewer){
     _dag.resetAndSort(output,isViewer);
 }
 #ifdef POWITER_DEBUG
@@ -1019,4 +1040,14 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     }else{
         return false;
     }
+}
+void VideoEngine::quitEngineThread(){
+    _mutex->lock();
+    _mustQuit = true;
+    _startCondition.wakeOne();
+    _mutex->unlock();
+}
+
+void VideoEngine::toggleLoopMode(bool b){
+    _loopMode = b;
 }

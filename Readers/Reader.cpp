@@ -82,6 +82,12 @@ void Reader::initKnobs(KnobCallback *cb){
 bool Reader::readCurrentHeader(int current_frame){
     current_frame = clampToRange(current_frame);
     QString filename = files[current_frame];
+    
+    if(filename.isEmpty()){
+        cout << "ERROR: Failed to find a frame for frame number " << current_frame << endl;
+        return false;
+    }
+    
     /*the read handle used to decode the frame*/
     Read* _read = 0;
     
@@ -96,14 +102,14 @@ bool Reader::readCurrentHeader(int current_frame){
     
     PluginID* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if(!decoder){
-        cout << "ERROR : Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
+        cout << "ERROR: Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return false;
     }
     ReadBuilder builder = (ReadBuilder)(decoder->first);
     _read = builder(this);
     
     if(!_read){
-        cout << "ERROR : failed to create the decoder " << _read->decoderName() << endl;
+        cout << "ERROR: Failed to create the decoder " << _read->decoderName() << endl;
         return false;
     }
     /*In case the read handle supports scanlines, we read the header to determine
@@ -170,7 +176,8 @@ void Reader::readCurrentData(int current_frame){
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
     if(found == _buffer.end()){
-        cout << "ERROR: Buffer does not contains the header for this frame. Something is wrong (" << getName() << ")" << endl;
+        cout << "ERROR: Buffer does not contains the header for frame " << filename.toStdString()
+        <<". Something is wrong (" << getName() << ")" << endl;
         return;
     }
     assert(*found);
@@ -208,41 +215,9 @@ void Reader::showFilePreview(){
 
 
 
-bool Reader::makeCurrentDecodedFrame(bool forReal){
-    int current_frame;
-    if(!forReal)
-        current_frame = firstFrame();
-    else{
-        Writer* writer = dynamic_cast<Writer*>(_model->getVideoEngine()->getCurrentDAG().getOutput());
-        if(!writer) {
-            current_frame = clampToRange(dynamic_cast<ViewerNode*>(_model->getVideoEngine()->getCurrentDAG().getOutput())->currentFrame());
-        } else {
-            current_frame = writer->currentFrame();
-        }
-    }
-
-    QString currentFile = files[current_frame];
-    Reader::Buffer::DecodedFrameIterator frame = _buffer.isEnqueued(currentFile.toStdString(),
-                                                                    Buffer::ALL_FRAMES);
-    if(frame == _buffer.end()) return false;
-    
-    assert(*frame);
-    if(!(*frame)->_readHandle) { // cached frame
-        _info = (*frame)->_readHandle->readerInfo();
-    }else{
-        readHandle = (*frame)->_readHandle;
-        assert(readHandle);
-        _info = readHandle->readerInfo();
-    }
-    
-    return true;
-}
 
 bool Reader::_validate(bool){
-   // if(forReal && !makeCurrentDecodedFrame(true)){
-    //    cout << "ERROR: Couldn't make current read handle ( " << _name.toStdString() << " )" << endl;
-    //    return;
-    //}
+   
     _info.set_firstFrame(firstFrame());
     _info.set_lastFrame(lastFrame());
     return true;

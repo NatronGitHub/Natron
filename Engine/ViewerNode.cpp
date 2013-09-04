@@ -40,7 +40,7 @@ void ViewerNode::initializeViewerTab(TabWidget* where){
 }
 
 ViewerNode::~ViewerNode(){
-    if(_uiContext->getGui())
+    if(_uiContext && _uiContext->getGui())
         _uiContext->getGui()->removeViewerTab(_uiContext,true);
     if(_viewerInfos)
         delete _viewerInfos;
