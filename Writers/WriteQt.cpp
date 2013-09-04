@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include <QtGui/QImage>
 
 #include "Engine/Lut.h"
@@ -25,7 +26,7 @@ using namespace std;
 using namespace Powiter;
 
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-std::vector<std::string> WriteQt::fileTypesEncoded(){
+std::vector<std::string> WriteQt::fileTypesEncoded() const {
     std::vector<std::string> out;
     out.push_back("jpg");
     out.push_back("bmp");
@@ -40,12 +41,12 @@ std::vector<std::string> WriteQt::fileTypesEncoded(){
 }
 
 /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
-std::string WriteQt::encoderName(){
+std::string WriteQt::encoderName() const {
     return "QImage (Qt)";
 }
 
 /*Must be implemented to tell whether this file type supports stereovision*/
-bool WriteQt::supports_stereo(){
+bool WriteQt::supports_stereo() const {
     return false;
 }
 
@@ -86,13 +87,13 @@ void WriteQt::writeAllData(){
     free(_buf);
 }
 
-void WriteQt::supportsChannelsForWriting(ChannelSet& channels){
+void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
     foreachChannels(z, channels){
         if(z!= Channel_red &&
            z!= Channel_green &&
            z!= Channel_blue &&
            z!= Channel_alpha){
-            throw "Qt only supports writing image files with red/green/blue/alpha channels.";
+            throw std::runtime_error("Qt only supports writing image files with red/green/blue/alpha channels.");
             return;
         }
     }

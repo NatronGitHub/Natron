@@ -178,9 +178,8 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name) {
     bool rval ;
     try{
         rval = plugin->getPluginHandle();
-    }
-    catch(const char* str){
-        std::cout << str << std::endl;
+    } catch (const std::exception &e) {
+        std::cout << "Could not get plugin handle:" << e.what() << std::endl;
     }
     if(!rval) {
         return NULL;

@@ -11,6 +11,7 @@
 
 #include "WriteExr.h"
 
+#include <stdexcept>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <ImfChannelList.h>
@@ -134,7 +135,7 @@ WriteExr::~WriteExr(){
 
 }
 
-std::vector<std::string> WriteExr::fileTypesEncoded(){
+std::vector<std::string> WriteExr::fileTypesEncoded() const {
     vector<string> out;
     out.push_back("exr");
     return out;

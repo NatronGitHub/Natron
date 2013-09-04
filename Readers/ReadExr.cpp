@@ -190,8 +190,8 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
      Channel chan;
      try{
          chan = EXR::fromExrChannel(_chan);
-     }catch(const char* e){
-         std::cout << e << endl;
+     } catch (const std::exception &e) {
+         std::cout << e.what() << endl;
          return false;
      }
      _mappedChannel = chan;
@@ -261,7 +261,7 @@ void ReadExr::readHeader(const QString& filename, bool){
             
             stringMultiView = inputfile->header().findTypedAttribute<Imf::StringAttribute>("multiView");
         }
-        catch (...) {
+        catch (...) { // FIXME: wow wow wow why ignore all exceptions and continue?
         }
         
         if (vectorMultiView) {

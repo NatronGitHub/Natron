@@ -49,7 +49,7 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
         }
     }     
 }
-bool ReadQt::supports_stereo(){
+bool ReadQt::supports_stereo() const {
     return false;
 }
 
