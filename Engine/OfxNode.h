@@ -232,7 +232,7 @@ public:
 
     
 
-    bool isInputOptional(int inpubNb);
+    bool isInputOptional(int inpubNb) const;
 
     void setAsOutputNode() {_isOutput = true;}
 
@@ -242,11 +242,11 @@ public:
 
     void setCanHavePreviewImage() {_canHavePreview = true;}
 
-    QImage* getPreview() const {return _preview;}
+    QImage* getPreview() const { return _preview; }
 
-    int firstFrame(){return _frameRange.first;}
+    int firstFrame() const { return _frameRange.first; }
 
-    int lastFrame(){return _frameRange.second;}
+    int lastFrame() const { return _frameRange.second; }
 
     void incrementCurrentFrame() {++_currentFrame;}
 
@@ -271,7 +271,7 @@ public:
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
 
     
-    MappedInputV inputClipsCopyWithoutOutput();
+    MappedInputV inputClipsCopyWithoutOutput() const;
 
     void computePreviewImage();
 
@@ -286,6 +286,6 @@ public slots:
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-static std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group);
+std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group);
 
 #endif // POWITER_ENGINE_OFXNODE_H_

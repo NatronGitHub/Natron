@@ -111,7 +111,7 @@ std::string OfxNode::setInputLabel(int inputNb){
         return Node::setInputLabel(inputNb);
     }
 }
-OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput(){
+OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = getDescriptor().getClipsByOrder();
     MappedInputV copy;
     for (U32 i = 0; i < clips.size(); ++i) {
@@ -144,7 +144,7 @@ int OfxNode::minimumInputs(){
     }
     return minimalCount-1;// -1 because we counted the "output" clip
 }
-bool OfxNode::isInputOptional(int inpubNb){
+bool OfxNode::isInputOptional(int inpubNb) const {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
