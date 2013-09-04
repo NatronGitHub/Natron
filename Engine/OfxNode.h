@@ -79,9 +79,7 @@ public:
     virtual std::string setInputLabel (int inputNb) OVERRIDE;
     
     virtual bool isOpenFXNode() const OVERRIDE {return true;}
-    
-    static ChannelSet ofxComponentsToPowiterChannels(const std::string& comp);
-    
+        
     virtual ChannelSet supportedComponents() OVERRIDE;
     
     virtual bool _validate(bool) OVERRIDE;
@@ -277,17 +275,17 @@ public:
 
     void computePreviewImage();
 
-    /*group is a string as such:
-     Toto/Superplugins/blabla
-     This functions extracts the all parts of such a grouping, e.g in this case
-     it would return [Toto,Superplugins,blabla].*/
-    static std::vector<std::string> extractAllPartsOfGrouping(const std::string& group);
-
-
 public slots:
     void onInstanceChangedAction(const QString&);
     
     
 };
+
+
+/*group is a string as such:
+ Toto/Superplugins/blabla
+ This functions extracts the all parts of such a grouping, e.g in this case
+ it would return [Toto,Superplugins,blabla].*/
+static std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group);
 
 #endif // POWITER_ENGINE_OFXNODE_H_

@@ -28,6 +28,22 @@
 using namespace std;
 using namespace Powiter;
 
+namespace {
+    ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
+        ChannelSet out;
+        if(comp == kOfxImageComponentAlpha){
+            out += Channel_alpha;
+        }else if(comp == kOfxImageComponentRGB){
+            out += Mask_RGB;
+        }else if(comp == kOfxImageComponentRGBA){
+            out += Mask_RGBA;
+        }else if(comp == kOfxImageComponentYUVA){
+            out += Mask_RGBA;
+        }
+        return out;
+    }
+}
+
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
                  const std::string  &context,
@@ -51,26 +67,13 @@ OFX::Host::ImageEffect::ClipInstance* OfxNode::newClipInstance(OFX::Host::ImageE
                                                                int index){
     return new OfxClipInstance(index,this,descriptor);
 }
-ChannelSet OfxNode::ofxComponentsToPowiterChannels(const std::string& comp){
-    ChannelSet out;
-    if(comp == kOfxImageComponentAlpha){
-        out += Channel_alpha;
-    }else if(comp == kOfxImageComponentRGB){
-        out += Mask_RGB;
-    }else if(comp == kOfxImageComponentRGBA){
-        out += Mask_RGBA;
-    }else if(comp == kOfxImageComponentYUVA){
-        out += Mask_RGBA;
-    }
-    return out;
-}
 
 ChannelSet OfxNode::supportedComponents(){
     OFX::Host::ImageEffect::ClipInstance* clip = getClip("Output");
     const vector<string>& suppComponents = clip->getSupportedComponents();
     ChannelSet supportedComp;
     for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
-        supportedComp += OfxNode::ofxComponentsToPowiterChannels(*it);
+        supportedComp += ofxComponentsToPowiterChannels(*it);
     }
     return supportedComp;
 }
@@ -94,7 +97,7 @@ std::string OfxNode::className(){
         return label;
     }else{
         std::string grouping = getDescriptor().getPluginGrouping();
-        std::vector<std::string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
+        std::vector<std::string> groups = ofxExtractAllPartsOfGrouping(grouping);
         return groups[0]+getLongLabel();
     }
 }
@@ -637,7 +640,7 @@ void OfxNode::computePreviewImage(){
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-std::vector<std::string> OfxNode::extractAllPartsOfGrouping(const std::string& group) {
+std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group) {
     std::vector<std::string> out;
     QString str(group.c_str());
     int pos = 0;

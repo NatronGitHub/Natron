@@ -713,7 +713,7 @@ QString Model::serializeNodeGraph() const{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
-            vector<string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
+            vector<string> groups = ofxExtractAllPartsOfGrouping(grouping);
             if (groups.size() >= 1) {
                 name.append("  [");
                 name.append(groups[0]);

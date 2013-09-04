@@ -238,7 +238,7 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
         std::string grouping = p->getDescriptor().getPluginGrouping();
 
 
-        std::vector<std::string> groups = OfxNode::extractAllPartsOfGrouping(grouping);
+        std::vector<std::string> groups = ofxExtractAllPartsOfGrouping(grouping);
         if (groups.size() >= 1) {
             name.append("  [");
             name.append(groups[0]);
