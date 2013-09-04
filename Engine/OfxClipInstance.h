@@ -23,23 +23,17 @@
 class OfxImage;
 class OfxNode;
 class Node;
+namespace Powiter {
+    class OfxImageEffectInstance;
+}
+
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
-    OfxNode* _node;
-    //int _clipIndex;
-    OfxImage* _outputImage;
 public:
-    OfxClipInstance(int index,OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc);
+    OfxClipInstance(OfxNode* node, int index, OFX::Host::ImageEffect::ClipDescriptor* desc);
     
     virtual ~OfxClipInstance(){}
     
-    /*Returns the node associated to this clip.
-     For an input clip this is the input node
-     corresponding to the clipIndex.
-     For an output clip this is the _node member.*/
-    Node* getAssociatedNode() const;
-    
-
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
@@ -47,7 +41,7 @@ public:
     ///    - kOfxBitDepthByte
     ///    - kOfxBitDepthShort
     ///    - kOfxBitDepthFloat
-    const std::string &getUnmappedBitDepth() const;
+    const std::string &getUnmappedBitDepth() const OVERRIDE;
     
     /// Get the Raw Unmapped Components from the host
     ///
@@ -55,57 +49,57 @@ public:
     ///     - kOfxImageComponentNone (implying a clip is unconnected, not valid for an image)
     ///     - kOfxImageComponentRGBA
     ///     - kOfxImageComponentAlpha
-    virtual const std::string &getUnmappedComponents() const;
+    virtual const std::string &getUnmappedComponents() const OVERRIDE;
     
     // PreMultiplication -
     //
     //  kOfxImageOpaque - the image is opaque and so has no premultiplication state
     //  kOfxImagePreMultiplied - the image is premultiplied by it's alpha
     //  kOfxImageUnPreMultiplied - the image is unpremultiplied
-    virtual const std::string &getPremult() const;
+    virtual const std::string &getPremult() const OVERRIDE;
     
     // Pixel Aspect Ratio -
     //
     //  The pixel aspect ratio of a clip or image.
-    virtual double getAspectRatio() const;
+    virtual double getAspectRatio() const OVERRIDE;
     
     // Frame Rate -
     //
     //  The frame rate of a clip or instance's project.
-    virtual double getFrameRate() const;
+    virtual double getFrameRate() const OVERRIDE;
     
     // Frame Range (startFrame, endFrame) -
     //
     //  The frame range over which a clip has images.
-    virtual void getFrameRange(double &startFrame, double &endFrame) const ;
+    virtual void getFrameRange(double &startFrame, double &endFrame) const OVERRIDE;
     
     /// Field Order - Which spatial field occurs temporally first in a frame.
     /// \returns
     ///  - kOfxImageFieldNone - the clip material is unfielded
     ///  - kOfxImageFieldLower - the clip material is fielded, with image rows 0,2,4.... occuring first in a frame
     ///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
-    virtual const std::string &getFieldOrder() const;
+    virtual const std::string &getFieldOrder() const OVERRIDE;
     
     // Connected -
     //
     //  Says whether the clip is actually connected at the moment.
-    virtual bool getConnected() const;
+    virtual bool getConnected() const OVERRIDE;
     
     // Unmapped Frame Rate -
     //
     //  The unmaped frame range over which an output clip has images.
-    virtual double getUnmappedFrameRate() const;
+    virtual double getUnmappedFrameRate() const OVERRIDE;
     
     // Unmapped Frame Range -
     //
     //  The unmaped frame range over which an output clip has images.
-    virtual void getUnmappedFrameRange(double &unmappedStartFrame, double &unmappedEndFrame) const;
+    virtual void getUnmappedFrameRange(double &unmappedStartFrame, double &unmappedEndFrame) const OVERRIDE;
     
     // Continuous Samples -
     //
     //  0 if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
     //  1 if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
-    virtual bool getContinuousSamples() const;
+    virtual bool getContinuousSamples() const OVERRIDE;
     
     /// override this to fill in the image at the given time.
     /// The bounds of the image on the image plane should be
@@ -113,12 +107,19 @@ public:
     /// on the effect instance. Outside a render call, the optionalBounds should
     /// be 'appropriate' for the.
     /// If bounds is not null, fetch the indicated section of the canonical image plane.
-    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, OfxRectD *optionalBounds);
+    virtual OFX::Host::ImageEffect::Image* getImage(OfxTime time, OfxRectD *optionalBounds) OVERRIDE;
     
     /// override this to return the rod on the clip
-    virtual OfxRectD getRegionOfDefinition(OfxTime time) const;
-    
-    
+    virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE;
+
+private:
+    Node* getAssociatedNode() const;
+
+private:
+    OfxNode* _node;
+    Powiter::OfxImageEffectInstance* _effect;
+    //int _clipIndex;
+    OfxImage* _outputImage;
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image

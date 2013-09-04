@@ -10,29 +10,98 @@
 
 #include "OfxImageEffectInstance.h"
 
-#include "Engine/OfxNode.h"
+#include <cassert>
+#include <string>
+#include <map>
 
+#include "Engine/OfxNode.h"
+#include "Engine/OfxClipInstance.h"
+#include "Engine/OfxParamInstance.h"
+// FIXME: disconnect timeline handling from GUI
+#include "Engine/Model.h" // for timeline handling
+#include "Engine/ViewerNode.h" // for timeline handling
+#include "Gui/ViewerTab.h" // for timeline handling
+#include "Gui/Timeline.h" // for timeline handling
+#include "Writers/Writer.h" // for timeline handling (?)
+
+using namespace std;
 using namespace Powiter;
 
-#if 0
 OfxImageEffectInstance::OfxImageEffectInstance(OfxNode* parent,
                                                OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor& desc,
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-, node(parent)
+, _canHavePreview(false)
+, _node(parent)
+{
+    assert(_node);
+}
+
+OfxImageEffectInstance::~OfxImageEffectInstance()
 {
 }
+
+const std::string& OfxImageEffectInstance::getDefaultOutputFielding() const {
+    static const std::string v(kOfxImageFieldNone);
+    return v;
+}
+
+/// make a clip
+OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
+                                                                              OFX::Host::ImageEffect::ClipDescriptor* descriptor,
+                                                                              int index) {
+    (void)plugin;
+    assert(plugin == this);
+    return new OfxClipInstance(node(), index, descriptor);
+}
+
+OfxStatus OfxImageEffectInstance::vmessage(const char* type,
+                                           const char* /*id*/,
+                                           const char* format,
+                                           va_list args) {
+    // FIXME: this is really GUI stuff, and should be handled by signal/slot
+    assert(type);
+    assert(format);
+    bool isQuestion = false;
+    const char *prefix = "Message : ";
+    if (strcmp(type, kOfxMessageLog) == 0) {
+        prefix = "Log : ";
+    }
+    else if(strcmp(type, kOfxMessageFatal) == 0 ||
+            strcmp(type, kOfxMessageError) == 0) {
+        prefix = "Error : ";
+    }
+    else if(strcmp(type, kOfxMessageQuestion) == 0) {
+        prefix = "Question : ";
+        isQuestion = true;
+    }
+
+    // Just dump our message to stdout, should be done with a proper
+    // UI in a full ap, and post a dialogue for yes/no questions.
+    fputs(prefix, stdout);
+    vprintf(format, args);
+    printf("\n");
+
+    if(isQuestion) {
+        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
+        return kOfxStatReplyYes;
+    }
+    else {
+        return kOfxStatOK;
+    }
+}
+
 
 // The size of the current project in canonical coordinates.
 // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
 void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
-    assert(node);
-    xSize = node->width();
-    ySize = node->height();
+    assert(node());
+    xSize = node()->width();
+    ySize = node()->height();
 }
 
 // The offset of the current project in canonical coordinates.
@@ -41,9 +110,9 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
-    assert(node);
-    xOffset = _info->x();
-    yOffset = _info->y();
+    assert(node());
+    xOffset = node()->info().dataWindow().x();
+    yOffset = node()->info().dataWindow().y();
 }
 
 // The extent of the current project in canonical coordinates.
@@ -52,34 +121,34 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
-    assert(node);
-    xSize = _info->w();
-    ySize = _info->h();
+    assert(node());
+    xSize = node()->info().dataWindow().w();
+    ySize = node()->info().dataWindow().h();
 }
 
 // The pixel aspect ratio of the current project
 double OfxImageEffectInstance::getProjectPixelAspectRatio() const {
-    assert(node);
-    return info().displayWindow().pixel_aspect();
+    assert(node());
+    return node()->info().displayWindow().pixel_aspect();
 }
 
 // The duration of the effect
 // This contains the duration of the plug-in effect, in frames.
 double OfxImageEffectInstance::getEffectDuration() const {
-    assert(node);
+    assert(node());
     return 1.0;
 }
 
 // For an instance, this is the frame rate of the project the effect is in.
 double OfxImageEffectInstance::getFrameRate() const {
-    assert(node);
+    assert(node());
     return 25.0;
 }
 
 /// This is called whenever a param is changed by the plugin so that
 /// the recursive instanceChangedAction will be fed the correct frame
 double OfxImageEffectInstance::getFrameRecursive() const {
-    assert(node);
+    assert(node());
     return 0.0;
 }
 
@@ -87,7 +156,294 @@ double OfxImageEffectInstance::getFrameRecursive() const {
 /// the recursive instanceChangedAction will be fed the correct
 /// renderScale
 void OfxImageEffectInstance::getRenderScaleRecursive(double &x, double &y) const {
-    assert(node);
+    assert(node());
     x = y = 1.0;
 }
-#endif
+
+// make a parameter instance
+OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& oldName, OFX::Host::Param::Descriptor& descriptor)
+{
+    std::string name =  descriptor.getShortLabel();
+    std::string prep = name.substr(0,1);
+    std::locale loc;
+    name[0] = std::toupper(prep.at(0),loc);
+    if(descriptor.getType()==kOfxParamTypeInteger){
+        OfxIntegerInstance* ret = new OfxIntegerInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeDouble){
+        OfxDoubleInstance*  ret = new OfxDoubleInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeBoolean){
+        OfxBooleanInstance* ret = new OfxBooleanInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeChoice){
+        OfxChoiceInstance* ret = new OfxChoiceInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeRGBA){
+        OfxRGBAInstance* ret = new OfxRGBAInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeRGB){
+        OfxRGBInstance* ret = new OfxRGBInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeDouble2D){
+        OfxDouble2DInstance* ret = new OfxDouble2DInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeInteger2D){
+        OfxInteger2DInstance* ret = new OfxInteger2DInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypePushButton){
+        OfxPushButtonInstance* ret = new OfxPushButtonInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypeGroup){
+        OfxGroupInstance* ret = new OfxGroupInstance(node(),name,descriptor);
+        if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+
+    }else if(descriptor.getType()==kOfxParamTypePage){
+        OFX::Host::Param::PageInstance* ret = new OFX::Host::Param::PageInstance(descriptor,this);
+        return ret;
+    }else if(descriptor.getType()==kOfxParamTypeString){
+        OfxStringInstance* ret = new OfxStringInstance(node(),name,descriptor);if(ret){
+            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            map<string,OFX::Host::Param::Instance*>::const_iterator it = _params.find(parent);
+            if(it != _params.end()){
+                if(it->second->getType() == kOfxParamTypeGroup){
+                    OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
+                    group->addKnob(ret->getKnob());
+                }
+            }
+            _params.insert(make_pair(oldName,ret));
+        }
+        return ret;
+    }else{
+        return 0;
+    }
+}
+
+
+/// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditBegin
+///
+/// Client host code needs to implement this
+OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/) {
+    return kOfxStatErrMissingHostFeature;
+}
+
+/// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditEnd
+///
+/// Client host code needs to implement this
+OfxStatus OfxImageEffectInstance::editEnd(){
+    return kOfxStatErrMissingHostFeature;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// overridden for Progress::ProgressI
+
+/// Start doing progress.
+void OfxImageEffectInstance::progressStart(const std::string& /*message*/) {
+}
+
+/// finish yer progress
+void OfxImageEffectInstance::progressEnd() {
+}
+
+/// set the progress to some level of completion, returns
+/// false if you should abandon processing, true to continue
+bool OfxImageEffectInstance::progressUpdate(double /*t*/) {
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// overridden for TimeLine::TimeLineI
+
+/// get the current time on the timeline. This is not necessarily the same
+/// time as being passed to an action (eg render)
+double OfxImageEffectInstance::timeLineGetTime() {
+    // FIXME-seeabove: disconnect timeline handling from GUI
+    if(!node()->getModel()->getVideoEngine())
+        return -1.;
+    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
+        return -1.;
+    }
+    if(dag.isOutputAnOpenFXNode()){
+        return dag.outputAsOpenFXNode()->currentFrame();
+    }else{
+        if(dag.isOutputAViewer()){
+            return dag.outputAsViewer()->getUiContext()->frameSeeker->currentFrame();
+
+        }else{
+            return dag.outputAsWriter()->currentFrame();
+        }
+    }
+}
+
+
+/// set the timeline to a specific time
+void OfxImageEffectInstance::timeLineGotoTime(double t) {
+    // FIXME-seeabove: disconnect timeline handling from GUI
+    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
+        return;
+    }
+
+    if(dag.isOutputAnOpenFXNode()){
+        return dag.outputAsOpenFXNode()->setCurrentFrame(t);
+    }else{
+        if(dag.isOutputAViewer()){
+            dag.outputAsViewer()->getUiContext()->frameSeeker->seek_notSlot(t);
+        }else{
+            return dag.outputAsWriter()->setCurrentFrame(t);
+        }
+    }
+}
+
+
+/// get the first and last times available on the effect's timeline
+void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
+    // FIXME-seeabove: disconnect timeline handling from GUI
+    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
+    if(!dag.getOutput()){
+        t1 = -1.;
+        t2 = -1.;
+        return;
+    }
+    if(dag.isOutputAnOpenFXNode()){
+        t1 = dag.outputAsOpenFXNode()->firstFrame();
+        t2 = dag.outputAsOpenFXNode()->lastFrame();
+
+    }else{
+        if(dag.isOutputAViewer()){
+            t1 = dag.outputAsViewer()->getUiContext()->frameSeeker->firstFrame();
+            t2 = dag.outputAsViewer()->getUiContext()->frameSeeker->lastFrame();
+        }else{
+            t1 = dag.outputAsWriter()->firstFrame();
+            t2 = dag.outputAsWriter()->lastFrame();
+        }
+    }
+}

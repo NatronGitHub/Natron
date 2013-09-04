@@ -42,11 +42,7 @@ public:
 
     /// get default output fielding. This is passed into the clip prefs action
     /// and  might be mapped (if the host allows such a thing)
-    virtual const std::string &getDefaultOutputFielding() const OVERRIDE {
-        static const std::string v(kOfxImageFieldNone);
-        return v;
-    }
-
+    virtual const std::string &getDefaultOutputFielding() const OVERRIDE;
     /// make a clip
     virtual OFX::Host::ImageEffect::ClipInstance* newClipInstance(OFX::Host::ImageEffect::Instance* plugin,
                                                                   OFX::Host::ImageEffect::ClipDescriptor* descriptor,
@@ -161,12 +157,17 @@ public:
     // END of OFX::Host::ImageEffect::Instance methods
     //
 
-    bool canHavePreviewImage() const {return _canHavePreview;}
+    bool canHavePreviewImage() const { return _canHavePreview; }
 
-    void setCanHavePreviewImage() {_canHavePreview = true;}
+    void setCanHavePreviewImage() { _canHavePreview = true; }
+
+private:
+    OfxNode* node() { return _node; }
+    const OfxNode* node() const { return _node; }
+
 private:
     bool _canHavePreview;
-    OfxNode* node;
+    OfxNode* _node; // FIXME: OfxImageEffectInstance should be able to work without the node_
 };
 
 } // namespace Powiter

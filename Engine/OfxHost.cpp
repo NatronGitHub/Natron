@@ -19,6 +19,7 @@
 #include <ofxhHost.h>
 
 #include "Engine/OfxNode.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Model.h"
 #include "Global/AppManager.h" // for ctrlPTR, but FIXME: this global variable shouldn't be used here, and in fact it is used to update the GUI, which is wrong!
 
@@ -72,11 +73,11 @@ OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
 {
     assert(plugin);
 
-    OfxNode* ret =  new OfxNode(plugin, desc, context,_model);
+    OfxNode* node =  new OfxNode(plugin, desc, context,_model);
     if(context == kOfxImageEffectContextGenerator){
-        ret->setCanHavePreviewImage();
+        node->setCanHavePreviewImage();
     }
-    return ret;
+    return node->effectInstance();
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor

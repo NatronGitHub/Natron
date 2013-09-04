@@ -44,11 +44,11 @@ public:
     ExrWriteKnobs(Writer* op):WriteKnobs(op){}
     virtual ~ExrWriteKnobs(){}
     
-    virtual void initKnobs(KnobCallback* callback, const std::string& fileType);
+    virtual void initKnobs(KnobCallback* callback, const std::string& fileType) OVERRIDE;
     
-    virtual void cleanUpKnobs();
+    virtual void cleanUpKnobs() OVERRIDE;
     
-    virtual bool allValid();
+    virtual bool allValid() OVERRIDE;
 };
 
 

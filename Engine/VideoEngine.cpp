@@ -22,6 +22,7 @@
 #include "Gui/Button.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
 #include "Engine/Hash64.h"
@@ -112,7 +113,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         if(n){
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
-            n->beginRenderAction(0, 25, 1, true,renderScale);
+            n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
         }
     }
     changeTreeVersion();
@@ -149,7 +150,7 @@ void VideoEngine::stopEngine(){
         if(n){
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
-            n->endRenderAction(0, 25, 1, true, renderScale);
+            n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
         }
     }
 //    _mutex->lock();

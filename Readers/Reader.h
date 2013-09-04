@@ -435,34 +435,34 @@ public:
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual std::string className();
+    virtual std::string className() OVERRIDE;
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual std::string description();
+    virtual std::string description() OVERRIDE;
 
     /**
      * @brief Not documented yet as it will be revisited soon.
      */
-    virtual bool _validate(bool forReal);
+    virtual bool _validate(bool forReal) OVERRIDE;
 	
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)
      */
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
     
     /**
      * @brief cacheData
      * @return true, indicating that the reader caches data.
      */
-    virtual bool cacheData(){return true;}
+    virtual bool cacheData() const OVERRIDE {return true;}
     
     /**
      * @brief Calls the base class version.
      */
-	virtual void createKnobDynamically();
+	virtual void createKnobDynamically() OVERRIDE;
     
     /**
      * @brief isVideoSequence
@@ -492,17 +492,17 @@ public:
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
-    virtual int maximumInputs(){return 0;}
+    virtual int maximumInputs() const OVERRIDE {return 0;}
+
+    virtual int minimumInputs() const OVERRIDE {return 0;}
     
-    virtual int minimumInputs(){return 0;}
-    
-    bool isInputNode() {return true;}
+    virtual bool isInputNode() const OVERRIDE {return true;}
 
 protected:
 
-	virtual void initKnobs(KnobCallback *cb);
+	virtual void initKnobs(KnobCallback *cb) OVERRIDE;
     
-    virtual ChannelSet supportedComponents() { return ChannelSet(Powiter::Mask_All); }
+    virtual ChannelSet supportedComponents() OVERRIDE { return ChannelSet(Powiter::Mask_All); }
 private:
 	QImage *preview;
 	bool has_preview;

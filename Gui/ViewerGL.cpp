@@ -700,7 +700,7 @@ void ViewerGL::activateShaderLC(){
     shaderLC->setUniformValue("expMult",  (GLfloat)exposure);
     // FIXME: why a float to really represent an enum????
     shaderLC->setUniformValue("lut", (GLfloat)_lut);
-    // FIXME: why a float to really represent an enum????
+    // FIXME-seeabove: why a float to really represent an enum????
     shaderLC->setUniformValue("byteMode", (GLfloat)byteMode());
     
 }
@@ -711,12 +711,12 @@ void ViewerGL::activateShaderRGB(){
 	}
     
     shaderRGB->setUniformValue("Tex", 0);
-    // FIXME: why a float to really represent an enum????
+    // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
 	shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
-    // FIXME: why a float to really represent an enum????
+    // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("lut", (GLfloat)_lut);
-    // FIXME: why a float to really represent an enum????
+    // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("channels", (GLfloat)_displayChannels);
     
     
@@ -940,7 +940,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             row_b[i] = _b;
             row_a[i] = _a;
         }
-        if (!rgbMode()) { // FIXME: what does !rgbMode() mean?
+        if (!rgbMode()) { // FIXME-seeabove: what does !rgbMode() mean?
             for(unsigned int i = 0 ; i < row_width; ++i) {
                 float _r,_g,_b;
                 _r = row_r[i];

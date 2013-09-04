@@ -25,8 +25,8 @@
 class Row;
 class Model;
 class SettingsPanel;
-class Knob;
-class KnobCallback;
+class Knob; // from Gui/Knob.h (shouldn't be used here?)
+class KnobCallback; // from Gui/Knob.h (shouldn't be used here?)
 class NodeGui;
 class QMutex;
 class QWaitCondition;
@@ -151,21 +151,21 @@ public:
 
 
 	Box2D& getRequestedBox(){return _requestedBox;}
-    int width(){return info().displayWindow().w();}
-    int height(){return info().displayWindow().h();}
+    int width() const {return info().displayWindow().w();}
+    int height() const {return info().displayWindow().h();}
        
     /*============================*/
     
     /*Node type related functions*/
-    virtual bool isInputNode()  {return false;}
-    virtual bool isOutputNode()  {return false;}
+    virtual bool isInputNode() const {return false;}
+    virtual bool isOutputNode() const {return false;}
     /*============================*/
     
     /*Node Input related functions*/
     void initializeInputs();
-    virtual int maximumInputs() {return 1;}
-    virtual int minimumInputs() {return 1;}
-    int inputCount() const ;
+    virtual int maximumInputs() const {return 1;}
+    virtual int minimumInputs() const {return 1;}
+    int inputCount() const;
     Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     virtual std::string setInputLabel(int inputNb);
@@ -219,7 +219,7 @@ public:
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
-    virtual bool cacheData()=0;
+    virtual bool cacheData() const = 0;
     
 
     virtual bool isOpenFXNode() const {return false;}
@@ -234,7 +234,7 @@ public:
 
 protected:
     
-    virtual ChannelSet supportedComponents() =0;
+    virtual ChannelSet supportedComponents() = 0; 
     virtual void preProcess(){}
 
 	virtual bool _validate(bool /*forReal*/) = 0;
@@ -268,15 +268,15 @@ public:
     
     virtual ~OutputNode();
     
-    virtual bool isOutputNode(){return true;}
+    virtual bool isOutputNode() const OVERRIDE {return true;}
 
     
     /*Node utility functions*/
-    virtual std::string className() = 0;
-    virtual std::string description() = 0;
+    virtual std::string className() OVERRIDE = 0; // should be const
+    virtual std::string description() OVERRIDE = 0; // should be const
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
-    virtual bool cacheData()=0;
+    virtual bool cacheData() const OVERRIDE = 0;
    
     VideoEngine* getVideoEngine() const {return _videoEngine;}
     
@@ -285,8 +285,8 @@ public:
     QWaitCondition* getOpenGLCondition() const {return _openGLCondition;}
     
 protected:
-    virtual ChannelSet supportedComponents() =0;
-    virtual bool _validate(bool /*forReal*/) = 0;
+    virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
+    virtual bool _validate(bool /*forReal*/) OVERRIDE = 0;
     
 private:
     QMutex* _mutex;

@@ -13,6 +13,7 @@
 #include <cfloat>
 
 #include "Engine/OfxNode.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
 #include "Global/Macros.h"
@@ -20,30 +21,15 @@
 using namespace Powiter;
 using namespace std;
 
-
-OfxClipInstance::OfxClipInstance(int /*index*/,
-                                 OfxNode* effect,
+OfxClipInstance::OfxClipInstance(OfxNode* node,
+                                 int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
-: OFX::Host::ImageEffect::ClipInstance(effect, *desc)
-, _node(effect)
+: OFX::Host::ImageEffect::ClipInstance(node->effectInstance(), *desc)
+, _node(node)
+, _effect(node->effectInstance())
 //, _clipIndex(index)
 , _outputImage(NULL)
 {
-}
-Node* OfxClipInstance::getAssociatedNode() const{
-    if(isOutput())
-        return _node;
-    else{
-        int index = 0;
-        OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i]->getName() == getName()) {
-                index = i;
-                break;
-            }
-        }
-        return _node->input(inputs.size()-1-index);
-    }
 }
 
 /// Get the Raw Unmapped Pixel Depth from the host. We are always 8 bits in our example
@@ -65,7 +51,7 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     //bool rgb = false;
     //bool alpha = false;
     
-    //const ChannelSet& channels = _node->info().channels();
+    //const ChannelSet& channels = _effect->info().channels();
     //if(channels & alpha) alpha = true;
     //if(channels & Mask_RGB) rgb = true;
     
@@ -93,13 +79,13 @@ const std::string &OfxClipInstance::getPremult() const
 //  The pixel aspect ratio of a clip or image.
 double OfxClipInstance::getAspectRatio() const
 {
-    return _node->getProjectPixelAspectRatio();
+    return _effect->getProjectPixelAspectRatio();
 }
 
 // Frame Rate -
 double OfxClipInstance::getFrameRate() const
 {
-    return _node->getFrameRate();
+    return _effect->getFrameRate();
 }
 
 // Frame Range (startFrame, endFrame) -
@@ -107,7 +93,7 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
-    if (_node->getContext() == kOfxImageEffectContextGenerator) {
+    if (_effect->getContext() == kOfxImageEffectContextGenerator) {
         startFrame = 0;
         endFrame = 0;
     }else{
@@ -123,7 +109,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 ///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
 const std::string &OfxClipInstance::getFieldOrder() const
 {
-    return _node->getDefaultOutputFielding();
+    return _effect->getDefaultOutputFielding();
 }
 
 // Connected -
@@ -189,8 +175,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         roi = *optionalBounds;
     }else{
         double w,h,x,y;
-        _node->getProjectExtent(w, h);
-        _node->getProjectOffset(x, y);
+        _effect->getProjectExtent(w, h);
+        _effect->getProjectOffset(x, y);
         roi.x1 = x;
         roi.x2 = x+w;
         roi.y1 = y;
@@ -203,7 +189,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     }
     
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
-     _node->isPixelDepthSupported(...)
+     _effect->isPixelDepthSupported(...)
      */
 
     if(isOutput()){
@@ -224,8 +210,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
             OfxNode* ofxInputNode = dynamic_cast<OfxNode*>(input);
-            ofxInputNode->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
-            OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->getClip("Output");
+            ofxInputNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
+            OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->effectInstance()->getClip("Output");
             return clip->getImage(time, optionalBounds);
         }else{
             ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
@@ -299,7 +285,6 @@ OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
 
-
 OfxRGBAColourB* OfxImage::pixelB(int x, int y) const{
     assert(_bitDepth == eBitDepthUByte);
     OfxRectI bounds = getBounds();
@@ -331,20 +316,19 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     return 0;
 }
 
-//void OfxImage::writeToQImage_debug(const std::string& filename){
-//    OfxRectI bounds = getBounds();
-//    int w = (bounds.x2-bounds.x1);
-//    int h = (bounds.y2-bounds.y1);
-//    QImage* out = new QImage(w,h,QImage::Format_ARGB32_Premultiplied);
-//    for (int i = 0 ; i < h ; ++i) {
-//        QRgb* row = (QRgb*)out->scanLine(i);
-//        for (int j = 0; j < w; ++j) {
-//            OfxRGBAColourF pix = _data[i*w+j];
-//            row[j] = qRgba(pix.r*255, pix.g*255, pix.b*255, pix.a*255);
-//        }
-//    }
-//    out->save(filename.c_str());
-//    delete out;
-//}
-
+Node* OfxClipInstance::getAssociatedNode() const {
+    if(isOutput())
+        return _node;
+    else{
+        int index = 0;
+        OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
+        for (U32 i = 0; i < inputs.size(); ++i) {
+            if (inputs[i]->getName() == getName()) {
+                index = i;
+                break;
+            }
+        }
+        return _node->input(inputs.size()-1-index);
+    }
+}
 

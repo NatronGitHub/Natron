@@ -39,11 +39,11 @@ public:
     
     virtual ~ViewerNode();
     
-    virtual int maximumInputs() OVERRIDE { return 1; }
+    virtual int maximumInputs() const OVERRIDE { return 1; }
     
-    virtual int minimumInputs() OVERRIDE { return 1; }
+    virtual int minimumInputs() const OVERRIDE { return 1; }
     
-    virtual bool cacheData() OVERRIDE { return false; }
+    virtual bool cacheData() const OVERRIDE { return false; }
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);

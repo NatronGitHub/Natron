@@ -272,7 +272,7 @@ class ViewerTab;
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float _displayChannels;
                         
             bool _drawProgressBar;
@@ -366,7 +366,7 @@ class ViewerTab;
              *0 = NONE , 1 = sRGB , 2 = Rec 709.
              *Not that this will probably change in the future,allowing the user to add custom a viewer process.
              **/
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float lutType() const {return _lut;}
             
             /**
@@ -379,7 +379,7 @@ class ViewerTab;
              *@returns Returns 1.f if the viewer is using 8bit textures.
              *Returns 0.f if the viewer is using 32bit f.p textures.
              **/
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float byteMode() const;
             
             /**
