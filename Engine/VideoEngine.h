@@ -494,6 +494,11 @@ protected:
     
     void toggleLoopMode(bool b);
     
+    /**
+     *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
+     **/
+    void runTasks();
+    
 signals:
     /**
      *@brief Signal emitted when the function waits the time due to display the frame.
@@ -505,6 +510,8 @@ signals:
     void doCachedEngine();
     
     void doFrameStorageAllocation();
+    
+    void doRunTasks();
     
 public:
     /**
@@ -653,10 +660,7 @@ private:
      **/
     void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func);
     
-    /**
-     *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
-     **/
-    void runTasks();
+   
     
     
 #ifdef POWITER_DEBUG

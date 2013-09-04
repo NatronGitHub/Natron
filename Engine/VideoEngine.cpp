@@ -128,7 +128,7 @@ void VideoEngine::stopEngine(){
         _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setDown(false);
     }
     // cout << "- STOPPING ENGINE"<<endl;
-    //  _lastRunArgs._frameRequestsCount = 0;
+    _lastRunArgs._frameRequestsCount = 0;
     _aborted = false;
     _working = false;
     _timer->playState=PAUSE;
@@ -204,6 +204,10 @@ void VideoEngine::run(){
         if(_aborted){
             /*aborted by the user*/
             stopEngine();
+            emit doRunTasks();
+//            _mutex->lock();
+//            _startCondition.wait(_mutex);
+//            _mutex->unlock();
             return;
         }
         if((_dag.isOutputAViewer()
@@ -622,7 +626,7 @@ _mutex(mutex)
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
-    
+    connect(this, SIGNAL(doRunTasks()), this, SLOT(runTasks()));
     _workerThreadsWatcher = new QFutureWatcher<void>;
     connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)),Qt::QueuedConnection);
     /*Adjusting multi-threading for OpenEXR library.*/
