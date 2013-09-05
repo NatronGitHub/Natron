@@ -133,6 +133,7 @@ void VideoEngine::stopEngine(){
     _aborted = false;
     _working = false;
     _timer->playState=PAUSE;
+    _model->getGeneralMutex()->unlock();
     
 
 }
@@ -146,8 +147,7 @@ void VideoEngine::run(){
         
         /*Locking out other rendering tasks so 1 VideoEngine gets access to all
          nodes.*/
-        QMutexLocker(_model->getGeneralMutex());
-        cout << "Graph " << _dag.getOutput()->getName() << " aquired the engine." << endl;
+        _model->getGeneralMutex()->lock();
         if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
             stopEngine();
             return;
@@ -279,8 +279,6 @@ void VideoEngine::run(){
                 viewer->getTimeLine().seek(currentFrame);
             }
         }
-        cout << "Rendering frame " << currentFrame << " for graph " << _dag.getOutput()->getName() << endl;
-
         
         QList<Reader*> readers;
         
@@ -383,6 +381,7 @@ void VideoEngine::run(){
                 _mutex->unlock();
                 _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
                 engineLoop();
+                _model->getGeneralMutex()->unlock();
                 continue;
             }
             
@@ -481,6 +480,7 @@ void VideoEngine::run(){
                 n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
             }
         }
+        _model->getGeneralMutex()->unlock();
 
         
     } // end for(;;)

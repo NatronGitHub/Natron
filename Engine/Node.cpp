@@ -62,8 +62,8 @@ void Node::clear_info(){
     
 }
 void Node::Info::reset(){
-    _firstFrame = 0;
-    _lastFrame = 0;
+    _firstFrame = -1;
+    _lastFrame = -1;
     _ydirection = 0;
     _channels = Mask_None;
     _dataWindow.set(0, 0, 0, 0);
