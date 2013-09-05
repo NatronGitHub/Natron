@@ -33,6 +33,7 @@ unix {
 } #unix
 
 linux-g++ {
+     QMAKE_CXXFLAGS_WARN_ON += -Wextra
      LIBS += -lGLU -ldl
 }
 
