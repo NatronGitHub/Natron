@@ -395,8 +395,8 @@ _maximized(false)
 	/*=================================================*/
     
 	/*frame seeker*/
-	frameSeeker = new TimeLine(this);
-  //  frameSeeker->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+	frameSeeker = new TimeLineGui(_viewerNode->getTimeLine(),this);
+    frameSeeker->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
 	_mainLayout->addWidget(frameSeeker);
 	/*================================================*/
     

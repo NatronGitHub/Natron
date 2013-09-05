@@ -141,7 +141,6 @@ protected:
     
     KnobCallback *cb;
     QHBoxLayout* layout;
-    std::vector<QWidget*> elements;
     std::vector<U64> values;
     std::string _description;
 };

@@ -19,13 +19,17 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Node.h"
+
 using namespace std;
 using namespace Powiter;
 
-TimeLine::TimeLine(QWidget* parent):QWidget(parent),
-_first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_state(IDLE)
+TimeLineGui::TimeLineGui(TimeLine& timeline,QWidget* parent):
+QWidget(parent),
+_first(0),_last(100),_alphaCursor(false),_state(IDLE),_timeLine(timeline)
 {
     
+    QObject::connect(&timeline, SIGNAL(frameChanged(int)), this, SLOT(seek(int)));
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
    // setMinimumSize(500,40);
     for(int i =0;i <=100;++i) _values.push_back(i);
@@ -35,32 +39,30 @@ _first(0),_last(100),_minimum(0),_maximum(100),_current(0),_alphaCursor(false),_
         
 }
 
-QSize TimeLine::minimumSizeHint() const{
+QSize TimeLineGui::minimumSizeHint() const{
     return QSize(500,40);
 }
-QSize TimeLine::sizeHint() const{
+QSize TimeLineGui::sizeHint() const{
     return QSize(500,40);
 }
 
-void TimeLine::updateScale(){
+void TimeLineGui::updateScale(){
     _values.clear();
     _displayedValues.clear();
-//    int _maximum = _first;
-//    int _minimum = _last;
     
-    if((_maximum - _minimum)==0){
+    if((_timeLine.lastFrame() - _timeLine.firstFrame())==0){
         for(int i =0;i <=100;++i) _values.push_back(i);
         _displayedValues << 0 << 10 <<  20 << 30 << 40 << 50 << 60 << 70 << 80 << 90 << 100;
         _increment=10;
         
     }
-    else if((_maximum- _minimum) <=50){ // display every multiple of 5
-        int c = _minimum;
+    else if((_timeLine.lastFrame() - _timeLine.firstFrame()) <=50){ // display every multiple of 5
+        int c = _timeLine.firstFrame();
         while(c%5!=0 && c>=0){
             --c;
         }
         int realMin = c;
-        c = _maximum;
+        c = _timeLine.lastFrame();
         while(c%5!=0){
             ++c;
         }
@@ -70,10 +72,10 @@ void TimeLine::updateScale(){
 
 
         _increment=5;
-        while(c%5!=0 && c<=_maximum){
+        while(c%5!=0 && c<=_timeLine.lastFrame()){
             ++c;
         }
-        if( c != _maximum){
+        if( c != _timeLine.lastFrame()){
             while(c <realMax){
                 _displayedValues << c;
                 c+=5;
@@ -82,12 +84,12 @@ void TimeLine::updateScale(){
         _displayedValues << realMax;
 
     }else{ // display only multiple of 10
-        int c = _minimum;
+        int c = _timeLine.firstFrame();
         while(c%10!=0 && c>=0){
             --c;
         }
         int realMin = c;
-        c = _maximum;
+        c = _timeLine.lastFrame();
         while(c%10!=0){
             ++c;
         }
@@ -97,10 +99,10 @@ void TimeLine::updateScale(){
 
 
         _increment=10;
-        while(c%10!=0 && c<=_maximum){
+        while(c%10!=0 && c<=_timeLine.lastFrame()){
             ++c;
         }
-        if( c != _maximum){
+        if( c != _timeLine.lastFrame()){
             while(c <realMax){
                 _displayedValues << c;
                 c+=10;
@@ -111,7 +113,7 @@ void TimeLine::updateScale(){
     }
 }
 
-void TimeLine::paintEvent(QPaintEvent *e){
+void TimeLineGui::paintEvent(QPaintEvent *e){
     Q_UNUSED(e);
     
     QColor bg(50,50,50,255);
@@ -134,7 +136,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
     QPolygonF cursorPoly;
     QColor cursorColor(243,149,0);
     p.setPen(cursorColor);
-    double cursorX = getCoordPosition(_current);
+    double cursorX = getCoordPosition(_timeLine.currentFrame());
     double lastX = getCoordPosition(_last);
     double firstX = getCoordPosition(_first);
     
@@ -175,7 +177,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
     cursorPoly.push_back(QPointF(cursorX ,BORDER_HEIGHT_+LINE_START - 2));
     cursorPoly.push_back(QPointF(cursorX - CURSOR_WIDTH/2 ,BORDER_HEIGHT_+LINE_START - 2 - CURSOR_HEIGHT));
     cursorPoly.push_back(QPointF(cursorX + CURSOR_WIDTH/2,BORDER_HEIGHT_+LINE_START -2 -CURSOR_HEIGHT));
-    QString curNumber(QString::number(_current));
+    QString curNumber(QString::number(_timeLine.currentFrame()));
     QPointF textPos(cursorX,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
     if(curNumber.size()==1){
         p.drawText(QPointF(textPos.x()-2,textPos.y()), curNumber,'g',3);
@@ -265,7 +267,7 @@ void TimeLine::paintEvent(QPaintEvent *e){
 
     
 }
-void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
+void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
     int w = size().width();
     double scaleW = (w-BORDER_OFFSET_) - BORDER_OFFSET_ ;
     double incr=1;
@@ -304,7 +306,7 @@ void TimeLine::drawTicks(QPainter *p,QColor& scaleColor){
     
 }
 
-double TimeLine::getScalePosition(double pos){
+double TimeLineGui::getScalePosition(double pos){
     if(pos <= _XValues [0])
         return _values[0];
     if(pos >= _XValues[_XValues.size()-1])
@@ -321,7 +323,7 @@ double TimeLine::getScalePosition(double pos){
     return -1;
 
 }
-double TimeLine::getCoordPosition(double pos){
+double TimeLineGui::getCoordPosition(double pos){
     if(pos < _values[0]){
         return _XValues[0];
     }
@@ -338,16 +340,16 @@ double TimeLine::getCoordPosition(double pos){
     }
     return -1;
 }
-void TimeLine::changeFirst(int v){
+void TimeLineGui::changeFirst(int v){
     _first = v;
     repaint();
 }
-void TimeLine::changeLast(int v){
+void TimeLineGui::changeLast(int v){
     _last = v;
     repaint();
 }
 
-void TimeLine::fillCoordLut(){
+void TimeLineGui::fillCoordLut(){
     _XValues.clear();
     double c = BORDER_OFFSET_;
     double scaleW = (size().width()-BORDER_OFFSET_) - BORDER_OFFSET_ ;
@@ -358,23 +360,23 @@ void TimeLine::fillCoordLut(){
     }
 
 }
-void TimeLine::seek(int v){
+void TimeLineGui::seek(int v){
     if(v >=_first && v<=_last)
-        _current = v;
+        _timeLine.seek_noEmit(v);
     repaint();
 }
 
-void TimeLine::seek_notSlot(int v){
+void TimeLineGui::seek_notSlot(int v){
     if(v >=_first && v<=_last)
-        _current = v;
+        _timeLine.seek_noEmit(v);
     QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
 
-void TimeLine::changeFirstAndLast(QString str){
+void TimeLineGui::changeFirstAndLast(QString str){
     Q_UNUSED(str);
 }
 
-void TimeLine::mousePressEvent(QMouseEvent* e){
+void TimeLineGui::mousePressEvent(QMouseEvent* e){
     
     int c = getScalePosition(e->x());
     if(e->modifiers().testFlag(Qt::ControlModifier)){
@@ -383,11 +385,11 @@ void TimeLine::mousePressEvent(QMouseEvent* e){
         firstPos = getCoordPosition(_first);
         lastPos = getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
-            if( c >= _minimum && c<=_maximum){
+            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame()){
                 _last = c;
             }
         }else{ // moving first frame anchor
-            if( c >= _minimum && c<=_maximum){
+            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame()){
                 _first = c;
             }
         }
@@ -395,8 +397,8 @@ void TimeLine::mousePressEvent(QMouseEvent* e){
     }else{
         _state = DRAGGING_CURSOR;
         if(c >= _first && c <=_last){
-            _current = c;
-            emit positionChanged(_current);
+            _timeLine.seek_noEmit(c);
+            emit positionChanged(_timeLine.currentFrame());
         }
     }
     
@@ -404,14 +406,14 @@ void TimeLine::mousePressEvent(QMouseEvent* e){
     QWidget::mousePressEvent(e);
 
 }
-void TimeLine::mouseMoveEvent(QMouseEvent* e){
+void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
     _alphaCursor=true;
     _Mouse = e->pos();
     if(_state==DRAGGING_CURSOR){
         int c = getScalePosition(e->x());
         if(c >= _first && c <=_last){
-            _current = c;
-            emit positionChanged(_current);
+            _timeLine.seek_noEmit(c);
+            emit positionChanged(_timeLine.currentFrame());
         }
     }else if(_state == DRAGGING_BOUNDARY){
         int c = getScalePosition(e->x());
@@ -419,11 +421,11 @@ void TimeLine::mouseMoveEvent(QMouseEvent* e){
         firstPos = getCoordPosition(_first);
         lastPos = getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
-            if( c >= _minimum && c<=_maximum && c >= _first){
+            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame() && c >= _first){
                 _last = c;
             }
         }else{ // moving first frame anchor
-            if( c >= _minimum && c<=_maximum && c<=_last){
+            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame() && c<=_last){
                 _first = c;
             }
         }
@@ -433,12 +435,12 @@ void TimeLine::mouseMoveEvent(QMouseEvent* e){
     repaint();
 
 }
-void TimeLine::enterEvent(QEvent* e){
+void TimeLineGui::enterEvent(QEvent* e){
     _alphaCursor = true;
    // grabMouse();
     QWidget::enterEvent(e);
 };
-void TimeLine::leaveEvent(QEvent* e){
+void TimeLineGui::leaveEvent(QEvent* e){
     _alphaCursor = false;
     repaint();
    // releaseMouse();
@@ -446,30 +448,30 @@ void TimeLine::leaveEvent(QEvent* e){
 }
 
 
-void TimeLine::mouseReleaseEvent(QMouseEvent* e){
+void TimeLineGui::mouseReleaseEvent(QMouseEvent* e){
     _state = IDLE;
     QWidget::mouseReleaseEvent(e);
 }
 
 
-void TimeLine::addCachedFrame(int f){
+void TimeLineGui::addCachedFrame(int f){
     _cached.push_back(f);
  //  repaint();
 }
-void TimeLine::removeCachedFrame(){
+void TimeLineGui::removeCachedFrame(){
     _cached.erase(_cached.begin());
    // repaint();
 }
 
-void TimeLine::setFrameRange(int min,int max){
-    _minimum=min;
-    _maximum=max;
+void TimeLineGui::setFrameRange(int min,int max){
+    _timeLine.setFirstFrame(min);
+    _timeLine.setLastFrame(max);
     updateScale();
 }
 /*initialises the boundaries on the timeline*/
-void TimeLine::setBoundaries(int first,int last){
+void TimeLineGui::setBoundaries(int first,int last){
     _first = first;
     _last = last;
     repaint();
 }
-
+int TimeLineGui::currentFrame() const{return _timeLine.currentFrame();}

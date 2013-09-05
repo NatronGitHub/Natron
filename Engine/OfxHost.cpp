@@ -188,7 +188,7 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name) {
     ofxInstance->createInstanceAction();
     ofxInstance->getClipPreferences();//not sure we should do this here
     //const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> clips = ofxInstance->getDescriptor().getClipsByOrder();
-    return dynamic_cast<OfxNode*>(ofxInstance);
+    return dynamic_cast<Powiter::OfxImageEffectInstance*>(ofxInstance)->node();
 }
 
 QStringList Powiter::OfxHost::loadOFXPlugins() {

@@ -160,9 +160,10 @@ public:
     bool canHavePreviewImage() const { return _canHavePreview; }
 
     void setCanHavePreviewImage() { _canHavePreview = true; }
+    
+    OfxNode* node() { return _node; }
 
 private:
-    OfxNode* node() { return _node; }
     const OfxNode* node() const { return _node; }
 
 private:

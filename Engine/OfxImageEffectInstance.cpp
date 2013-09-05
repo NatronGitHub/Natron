@@ -17,12 +17,6 @@
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
-// FIXME: disconnect timeline handling from GUI
-#include "Engine/Model.h" // for timeline handling
-#include "Engine/ViewerNode.h" // for timeline handling
-#include "Gui/ViewerTab.h" // for timeline handling
-#include "Gui/Timeline.h" // for timeline handling
-#include "Writers/Writer.h" // for timeline handling (?)
 
 using namespace std;
 using namespace Powiter;
@@ -384,66 +378,37 @@ bool OfxImageEffectInstance::progressUpdate(double /*t*/) {
 /// get the current time on the timeline. This is not necessarily the same
 /// time as being passed to an action (eg render)
 double OfxImageEffectInstance::timeLineGetTime() {
-    // FIXME-seeabove: disconnect timeline handling from GUI
-    if(!node()->getModel()->getVideoEngine())
+    VideoEngine* engine = node()->getExecutingEngine();
+    if(!engine)
         return -1.;
-    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
-    if(!dag.getOutput()){
-        return -1.;
-    }
-    if(dag.isOutputAnOpenFXNode()){
-        return dag.outputAsOpenFXNode()->currentFrame();
-    }else{
-        if(dag.isOutputAViewer()){
-            return dag.outputAsViewer()->getUiContext()->frameSeeker->currentFrame();
-
-        }else{
-            return dag.outputAsWriter()->currentFrame();
-        }
-    }
+    const VideoEngine::DAG& dag = engine->getCurrentDAG();
+    return dag.getOutput()->getTimeLine().currentFrame();
 }
 
 
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         return;
     }
 
-    if(dag.isOutputAnOpenFXNode()){
-        return dag.outputAsOpenFXNode()->setCurrentFrame(t);
-    }else{
-        if(dag.isOutputAViewer()){
-            dag.outputAsViewer()->getUiContext()->frameSeeker->seek_notSlot(t);
-        }else{
-            return dag.outputAsWriter()->setCurrentFrame(t);
-        }
-    }
+    return dag.getOutput()->getTimeLine().seek(t);
+    
 }
 
 
 /// get the first and last times available on the effect's timeline
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::DAG& dag = node()->getModel()->getVideoEngine()->getCurrentDAG();
+    const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;
         return;
     }
-    if(dag.isOutputAnOpenFXNode()){
-        t1 = dag.outputAsOpenFXNode()->firstFrame();
-        t2 = dag.outputAsOpenFXNode()->lastFrame();
+    t1 = dag.getOutput()->getTimeLine().firstFrame();
+    t2 = dag.getOutput()->getTimeLine().lastFrame();
 
-    }else{
-        if(dag.isOutputAViewer()){
-            t1 = dag.outputAsViewer()->getUiContext()->frameSeeker->firstFrame();
-            t2 = dag.outputAsViewer()->getUiContext()->frameSeeker->lastFrame();
-        }else{
-            t1 = dag.outputAsWriter()->firstFrame();
-            t2 = dag.outputAsWriter()->lastFrame();
-        }
-    }
 }

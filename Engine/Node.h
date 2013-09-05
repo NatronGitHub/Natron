@@ -272,6 +272,47 @@ private:
 };
 typedef Node* (*NodeBuilder)();
 
+class TimeLine: public QObject{
+    Q_OBJECT
+    
+    int _firstFrame;
+    int _lastFrame;
+    int _currentFrame;
+    
+
+public:
+    
+    TimeLine():
+    _firstFrame(0),
+    _lastFrame(100),
+    _currentFrame(0)
+    {}
+    
+    virtual ~TimeLine(){}
+    
+    int firstFrame() const {return _firstFrame;}
+    
+    void setFirstFrame(int f) {_firstFrame = f;}
+    
+    int lastFrame() const {return _lastFrame;}
+    
+    void setLastFrame(int f){_lastFrame = f;}
+    
+    int currentFrame() const {return _currentFrame;}
+    
+    void incrementCurrentFrame(){++_currentFrame; emit frameChanged(_currentFrame);}
+    
+    void decrementCurrentFrame(){--_currentFrame; emit frameChanged(_currentFrame);}
+
+public slots:
+    void seek(int frame);
+    void seek_noEmit(int frame);
+    
+signals:
+    void frameChanged(int);
+    
+};
+
 class OutputNode : public Node{
 public:
     
@@ -295,9 +336,16 @@ public:
     
     QWaitCondition* getOpenGLCondition() const {return _openGLCondition;}
     
+    const TimeLine& getTimeLine() const {return _timeline;}
+    
+    TimeLine& getTimeLine(){return _timeline;}
+    
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
     virtual bool _validate(bool /*forReal*/) OVERRIDE = 0;
+    
+    TimeLine _timeline;
+
     
 private:
     QMutex* _mutex;

@@ -319,15 +319,7 @@ Row* Node::get(int y,int x,int r){
     if(reader){
         int current_frame;
         const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
-        if(dag.isOutputAnOpenFXNode()){
-            current_frame = dag.outputAsOpenFXNode()->currentFrame();
-        }else{
-            if(dag.isOutputAViewer()){
-                current_frame = reader->clampToRange(dag.outputAsViewer()->currentFrame());
-            }else{
-                current_frame = dag.outputAsWriter()->currentFrame();
-            }
-        }
+        current_frame = reader->clampToRange(dag.getOutput()->getTimeLine().currentFrame());
         filename = reader->getRandomFrameName(current_frame);
     }
     Row* out = 0;
@@ -377,3 +369,13 @@ OutputNode::~OutputNode(){
     delete _openGLCondition;
 }
 
+void TimeLine::seek(int frame){
+    assert(frame <= _lastFrame && frame >= _firstFrame);
+    _currentFrame = frame;
+    emit frameChanged(_currentFrame);
+}
+
+void TimeLine::seek_noEmit(int frame){
+    assert(frame <= _lastFrame && frame >= _firstFrame);
+    _currentFrame = frame;
+}

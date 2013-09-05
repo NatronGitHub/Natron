@@ -34,7 +34,7 @@ class InfoViewerWidget;
 class AppInstance;
 class FeedbackSpinBox;
 class ScaleSlider;
-class TimeLine;
+class TimeLineGui;
 class ViewerNode;
 class ViewerInfos;
 class Gui;
@@ -105,7 +105,7 @@ public:
     FeedbackSpinBox* fpsBox;
     
 	/*frame seeker*/
-	TimeLine* frameSeeker;
+	TimeLineGui* frameSeeker;
     
     /*these are the channels the viewer wants to display*/
 	const ChannelSet& displayChannels(){return _channelsToDraw;}

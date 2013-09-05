@@ -102,21 +102,6 @@ public:
      This is used to know whether it should start the engine or not.*/
     bool validInfosForRendering();
     
-    int currentFrame(){return _currentFrame;}
-    
-    int firstFrame(){return _frameRange.first;}
-    
-    int lastFrame(){return _frameRange.second;}
-    
-    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
-    
-    void incrementCurrentFrame(){++_currentFrame;}
-    
-    void setCurrentFrame(int f){
-        if(f >= _frameRange.first && f <= _frameRange.second)
-            _currentFrame = f;
-    }
-    
     const ChannelSet& requestedChannels() const {return _requestedChannels;}    
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
@@ -139,8 +124,6 @@ protected:
 private:
     
     ChannelSet _requestedChannels;
-    int _currentFrame; // the current frame being rendered
-    std::pair<int,int> _frameRange; // the range to render
     QMutex* _lock;
     bool _premult;
     Buffer _buffer;

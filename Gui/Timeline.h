@@ -28,12 +28,11 @@
 #define CURSOR_HEIGHT 8
 
 class QMouseEvent;
-class TimeLine : public QWidget{
+class TimeLine;
+class TimeLineGui : public QWidget{
     Q_OBJECT
     
     int _first,_last; // the first and last frames, bounded by the user
-    int _minimum,_maximum; // the extremas displayed on the timeline
-    int _current; // the current frame
     
     std::vector<int> _values;
     QList<int> _displayedValues;
@@ -45,6 +44,8 @@ class TimeLine : public QWidget{
     
     std::vector<int> _cached;
     
+    TimeLine& _timeLine;
+    
 signals:
     void positionChanged(int);
 public slots:
@@ -54,8 +55,8 @@ public slots:
         
 public:
     
-    explicit TimeLine(QWidget* parent=0);
-    virtual ~TimeLine(){}
+    explicit TimeLineGui(TimeLine& timeLine,QWidget* parent=0);
+    virtual ~TimeLineGui(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/
     void addCachedFrame(int f);
@@ -74,7 +75,7 @@ public:
     
     int firstFrame() const{return _first;}
     int lastFrame() const{return _last;}
-    int currentFrame() const{return _current;}
+    int currentFrame() const;
 
 
     void seek_notSlot(int);

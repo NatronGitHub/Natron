@@ -170,7 +170,6 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     _knob->setMaximum(max);
     _knob->setIncrement(incr);
     _knob->setValue(def);
-    
 }
 OfxStatus OfxDoubleInstance::get(double& v){
     v = _value;

@@ -38,7 +38,6 @@
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
-#include "Gui/Timeline.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ViewerGL.h"
 
@@ -168,10 +167,7 @@ void VideoEngine::run(){
         }
         
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
-        TimeLine* frameSeeker = 0;
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-            frameSeeker = _dag.outputAsViewer()->getUiContext()->frameSeeker;
-        }
+        
         Writer* writer = dynamic_cast<Writer*>(_dag.getOutput());
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(_dag.getOutput());
         OfxNode* ofxOutput = dynamic_cast<OfxNode*>(_dag.getOutput());
@@ -179,26 +175,26 @@ void VideoEngine::run(){
             if(!_dag.isOutputAnOpenFXNode()){
                 assert(writer);
                 if(!_lastRunArgs._recursiveCall){
-                    lastFrame = writer->lastFrame();
-                    currentFrame = writer->firstFrame();
-                    writer->setCurrentFrameToStart();
+                    lastFrame = writer->getTimeLine().lastFrame();
+                    currentFrame = writer->getTimeLine().firstFrame();
+                    writer->getTimeLine().seek(writer->getTimeLine().firstFrame());
                     
                 }else{
-                    lastFrame = writer->lastFrame();
-                    writer->incrementCurrentFrame();
-                    currentFrame = writer->currentFrame();
+                    lastFrame = writer->getTimeLine().lastFrame();
+                    writer->getTimeLine().incrementCurrentFrame();
+                    currentFrame = writer->getTimeLine().currentFrame();
                 }
             }else{
                 assert(ofxOutput);
                 if(!_lastRunArgs._recursiveCall){
-                    lastFrame = ofxOutput->lastFrame();
-                    currentFrame = ofxOutput->firstFrame();
-                    ofxOutput->setCurrentFrameToStart();
+                    lastFrame = ofxOutput->getTimeLine().lastFrame();
+                    currentFrame = ofxOutput->getTimeLine().firstFrame();
+                    ofxOutput->getTimeLine().seek(ofxOutput->getTimeLine().firstFrame());
                     
                 }else{
-                    lastFrame = ofxOutput->lastFrame();
-                    ofxOutput->incrementCurrentFrame();
-                    currentFrame = ofxOutput->currentFrame();
+                    lastFrame = ofxOutput->getTimeLine().lastFrame();
+                    ofxOutput->getTimeLine().incrementCurrentFrame();
+                    currentFrame = ofxOutput->getTimeLine().currentFrame();
                 }
             }
         }
@@ -208,9 +204,6 @@ void VideoEngine::run(){
             /*aborted by the user*/
             stopEngine();
             emit doRunTasks();
-//            _mutex->lock();
-//            _startCondition.wait(_mutex);
-//            _mutex->unlock();
             return;
         }
         if((_dag.isOutputAViewer()
@@ -221,9 +214,7 @@ void VideoEngine::run(){
            || _lastRunArgs._frameRequestsCount == 0){
             /*1 frame in the sequence and we already computed it*/
             stopEngine();
-//            _mutex->lock();
-//            _startCondition.wait(_mutex);
-//            _mutex->unlock();
+
             runTasks();
             _mutex->lock();
             _startCondition.wait(_mutex);
@@ -244,7 +235,7 @@ void VideoEngine::run(){
             /*Determine what is the current frame when output is a viewer*/
             /*!recursiveCall means this is the first time it's called for the sequence.*/
             if(!_lastRunArgs._recursiveCall){
-                currentFrame = frameSeeker->currentFrame();
+                currentFrame = viewer->getTimeLine().currentFrame();
                 if(!_lastRunArgs._sameFrame){
                     firstFrame = _dag.firstFrame();
                     lastFrame = _dag.lastFrame();
@@ -256,7 +247,7 @@ void VideoEngine::run(){
                     else if(currentFrame > lastFrame){
                         currentFrame = lastFrame;
                     }
-                    frameSeeker->seek_notSlot(currentFrame);
+                    viewer->getTimeLine().seek(currentFrame);
                 }
             }else{ // if the call is recursive, i.e: the next frame in the sequence
                 /*clear the node cache, as it is very unlikely the user will re-use
@@ -285,7 +276,7 @@ void VideoEngine::run(){
                         }
                     }
                 }
-                frameSeeker->seek_notSlot(currentFrame);
+                viewer->getTimeLine().seek(currentFrame);
             }
         }
         cout << "Rendering frame " << currentFrame << " for graph " << _dag.getOutput()->getName() << endl;
@@ -818,25 +809,13 @@ void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
     abort();
     if(!_working){
         if(_dag.getOutput()){
-            if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-                _changeDAGAndStartEngine(_dag.outputAsViewer()->currentFrame(), -1, false,true,false,output);
-            }else if(!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-                _changeDAGAndStartEngine(_dag.outputAsWriter()->currentFrame(), -1, false,true,false,output);
-            }else if(_dag.isOutputAnOpenFXNode()){
-                _changeDAGAndStartEngine(_dag.outputAsOpenFXNode()->currentFrame(), -1, false,true,false,output);
-            }
+            _changeDAGAndStartEngine(_dag.getOutput()->getTimeLine().currentFrame(), -1, false,true,false,output);
         }else{
             _changeDAGAndStartEngine(0, -1, false,true,false,output);
         }
     }else{
         if(_dag.getOutput()){
-            if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-                appendTask(_dag.outputAsViewer()->currentFrame(), 1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
-            }else if(!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-                appendTask(_dag.outputAsWriter()->currentFrame(),1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
-            }else if(_dag.isOutputAnOpenFXNode()){
-                appendTask(_dag.outputAsOpenFXNode()->currentFrame(),1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
-            }
+            appendTask(_dag.getOutput()->getTimeLine().currentFrame(), 1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }else{
             appendTask(0,1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }
@@ -862,7 +841,7 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
             return;
-        _dag.outputAsViewer()->getUiContext()->frameSeeker->seek_notSlot(frameNB);
+        _dag.outputAsViewer()->getTimeLine().seek(frameNB);
 
         render(frameCount,initViewer,forward,sameFrame);
         

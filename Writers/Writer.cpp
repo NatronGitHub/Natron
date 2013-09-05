@@ -30,7 +30,6 @@ using namespace Powiter;
 Writer::Writer(Model* model):
 OutputNode(model),
 _requestedChannels(Mask_RGB), // temporary
-_currentFrame(0),
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
 _writeHandle(0),
@@ -59,8 +58,8 @@ std::string Writer::description() {
 bool Writer::_validate(bool forReal){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
-    _frameRange.first = info().firstFrame();
-    _frameRange.second = info().lastFrame();
+    _timeline.setFirstFrame(info().firstFrame());
+    _timeline.setLastFrame(info().lastFrame());
     
     if (forReal) {
         
@@ -87,7 +86,7 @@ bool Writer::_validate(bool forReal){
                 }
                 
                 i = filename.lastIndexOf(QChar('#'));
-                QString n = QString::number(_currentFrame);
+                QString n = QString::number(_timeline.currentFrame());
                 if(i != -1){
                     filename = filename.replace(i,1,n);
                 }else{
@@ -223,7 +222,7 @@ bool Writer::validInfosForRendering(){
     delete write;
     
     /*check if frame range makes sense*/
-    if(_frameRange.first > _frameRange.second) return false;
+    if(_timeline.firstFrame() > _timeline.lastFrame()) return false;
     
     /*check if write specific knobs have valid values*/
     if (_writeOptions) {

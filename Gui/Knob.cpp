@@ -369,11 +369,8 @@ Knob::Knob( KnobCallback *cb,const std::string& description):QWidget(),cb(cb),_d
 {
     layout=new QHBoxLayout(this);
     layout->setContentsMargins(0,0,0,0);
-    foreach(QWidget* ele,elements){
-        layout->addWidget(ele);
-    }
     setLayout(layout);
-    //cb->addKnob(this);
+    //        cb->addKnob(this);
     setVisible(true);
 }
 void Knob::changeLayout(QHBoxLayout* newLayout){
@@ -392,10 +389,7 @@ void Knob::setLayoutMargin(int pix){
     layout->setContentsMargins(0, 0, pix, 0);
 }
 Knob::~Knob(){
-    foreach(QWidget* el,elements){
-        delete el;
-    }
-    elements.clear();
+    
     delete layout;
     values.clear();
 }

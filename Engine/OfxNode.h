@@ -95,22 +95,6 @@ public:
 
     QImage* getPreview() const { return _preview; }
 
-    int firstFrame() const { return _frameRange.first; }
-
-    int lastFrame() const { return _frameRange.second; }
-
-    void incrementCurrentFrame() {++_currentFrame;}
-
-    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
-
-    void setCurrentFrame(int f){
-        if(f >= _frameRange.first && f <= _frameRange.second)
-            _currentFrame = f;
-    }
-
-    /*Useful only when _isOutput is true*/
-    int currentFrame() const {return _currentFrame;}
-
     void setTabKnob(Tab_Knob* k){_tabKnob = k;}
     
     Tab_Knob* getTabKnob() const {return _tabKnob;}
@@ -129,7 +113,7 @@ public:
     Powiter::OfxImageEffectInstance* effectInstance() { return effect_; }
 
     const Powiter::OfxImageEffectInstance* effectInstance() const { return effect_; }
-
+    
     const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
     const std::string& getPluginGrouping() const; // forwarded to OfxImageEffectInstance
 
@@ -144,8 +128,6 @@ private:
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _firstTime; //used in engine(...) to operate once per frame
     bool _isOutput;
-    int _currentFrame; // valid only when _isOutput is true
-    std::pair<int,int> _frameRange; // valid only when _isOutput is true
     QImage* _preview;
     bool _canHavePreview;
     Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)

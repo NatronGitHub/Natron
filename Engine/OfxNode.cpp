@@ -23,8 +23,6 @@
 #include "Global/AppManager.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
-#include "Gui/Timeline.h"
-#include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
 using namespace std;
 using namespace Powiter;
@@ -53,7 +51,6 @@ OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
 , _isOutput(false)
-, _currentFrame(-1)
 , _preview(NULL)
 , _canHavePreview(false)
 , effect_(new OfxImageEffectInstance(this,plugin,other,context,false))
@@ -148,8 +145,8 @@ bool OfxNode::isInputOptional(int inpubNb) const {
 }
 bool OfxNode::_validate(bool forReal){
     _firstTime = true;
-    _frameRange.first = info().firstFrame();
-    _frameRange.second = info().lastFrame();
+    _timeline.setFirstFrame(info().firstFrame());
+    _timeline.setLastFrame(info().lastFrame());
     
     /*Checking if all mandatory inputs are connected!*/
     MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
