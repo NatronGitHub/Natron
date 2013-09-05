@@ -386,10 +386,10 @@ void VideoEngine::run(){
             }
             
         }else{
-            for (int i = dataW.y(); i < dataW.top(); ++i) {
+            for (int i = dataW.bottom(); i < dataW.top(); ++i) {
                 rows.push_back(i);
             }
-            x = dataW.x();
+            x = dataW.left();
             r = dataW.right();
         }
         /*If it reaches here, it means the frame neither belong

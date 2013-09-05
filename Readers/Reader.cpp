@@ -131,7 +131,7 @@ bool Reader::readCurrentHeader(int current_frame){
 //            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
 //        }else{
             const Box2D& dataW = _read->readerInfo().dataWindow();
-            for (int i = dataW.y() ; i < dataW.top(); ++i) {
+            for (int i = dataW.bottom() ; i < dataW.top(); ++i) {
                 rows.push_back(i);
             }            
         // }
@@ -457,12 +457,12 @@ std::string ReaderInfo::printOut(){
     oss << _currentFrameName <<  "<" << firstFrame() << "."
     << lastFrame() << "."
     << rgbMode() << "."
-    << displayWindow().x() << "."
-    << displayWindow().y() << "."
+    << displayWindow().left() << "."
+    << displayWindow().bottom() << "."
     << displayWindow().right() << "."
     << displayWindow().top() << "."
-    << dataWindow().x() << "."
-    << dataWindow().y() << "."
+    << dataWindow().left() << "."
+    << dataWindow().bottom() << "."
     << dataWindow().right() << "."
     << dataWindow().top() << ".";
     foreachChannels(z, chan){

@@ -197,9 +197,9 @@ bool OfxNode::_validate(bool forReal){
 void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     OfxRectI renderW;
     const Format& dispW = info().displayWindow();
-    renderW.x1 = dispW.x();
+    renderW.x1 = dispW.left();
     renderW.x2 = dispW.right();
-    renderW.y1 = dispW.y();
+    renderW.y1 = dispW.bottom();
     renderW.y2 = dispW.top();
     OfxPointD renderScale;
     effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);

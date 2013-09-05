@@ -64,7 +64,7 @@ void WriteQt::initializeColorSpace(){
 void WriteQt::setupFile(const std::string& filename){
     _filename = filename;
     const Format& frmt = op->info().displayWindow();
-    size_t dataSize = 4* frmt.w() * frmt.h();
+    size_t dataSize = 4* frmt.width() * frmt.height();
     _buf = (uchar*)malloc(dataSize);
 }
 
@@ -82,7 +82,7 @@ void WriteQt::writeAllData(){
     }else{
         type = QImage::Format_RGB32;
     }
-    QImage img(_buf,frmt.w(),frmt.h(),type);
+    QImage img(_buf,frmt.width(),frmt.height(),type);
     img.save(QString(_filename.c_str()));
     free(_buf);
 }
@@ -110,17 +110,17 @@ void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
     uchar* toB=0;
     uchar* toA=0;
     if (channels & Channel_alpha && _premult) {
-        toA = _buf + y*4*frmt.w();
+        toA = _buf + y*4*frmt.width();
         toR = toA+1;
         toG = toR+1;
         toB = toG+1;
     }else if(channels & Channel_alpha && !_premult){
-        toA = _buf + y*4*frmt.w();
+        toA = _buf + y*4*frmt.width();
         toR = toA+1;
         toG = toR+1;
         toB = toG+1;
     }else{
-        toB  = _buf + y*4*frmt.w();
+        toB  = _buf + y*4*frmt.width();
         toG = toB+1;
         toR = toG+1;
         toA = toR+1;

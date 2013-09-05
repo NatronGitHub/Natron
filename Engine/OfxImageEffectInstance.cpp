@@ -105,8 +105,8 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
     assert(node());
-    xOffset = node()->info().dataWindow().x();
-    yOffset = node()->info().dataWindow().y();
+    xOffset = node()->info().dataWindow().left();
+    yOffset = node()->info().dataWindow().bottom();
 }
 
 // The extent of the current project in canonical coordinates.
@@ -116,8 +116,8 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
     assert(node());
-    xSize = node()->info().dataWindow().w();
-    ySize = node()->info().dataWindow().h();
+    xSize = node()->info().dataWindow().width();
+    ySize = node()->info().dataWindow().height();
 }
 
 // The pixel aspect ratio of the current project

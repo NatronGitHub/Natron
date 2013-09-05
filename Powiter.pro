@@ -68,7 +68,6 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
     Engine/AbstractCache.cpp \
-    Engine/Box.cpp \
     Engine/ChannelSet.cpp \
     Engine/DataBuffer.cpp \
     Engine/Format.cpp \

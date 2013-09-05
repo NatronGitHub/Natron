@@ -391,12 +391,12 @@ class ViewerTab;
             /**
              *@returns Returns the height of the frame with the scale factor applied to it.
              **/
-            double zoomedHeight(){return std::floor(displayWindow().h()*_zoomCtx._zoomFactor);}
+            double zoomedHeight(){return std::floor(displayWindow().height()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
-            double zoomedWidth(){return std::floor(displayWindow().w()*_zoomCtx._zoomFactor);}
+            double zoomedWidth(){return std::floor(displayWindow().width()*_zoomCtx._zoomFactor);}
             
             /**
              *@brief Set the zoom factor used to render.
