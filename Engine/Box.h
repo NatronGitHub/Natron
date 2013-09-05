@@ -112,7 +112,7 @@ public:
     
     bool is1x1() const { return _r <= _x + 1 && _t <= _y + 1; }
     
-    bool isNull() const { return _r == _x == _t == _y; }
+    bool isNull() const { return (_r == _x) && (_t == _y); }
     
     void clear() { _x = _y = 0;
         _r = _t = 1; }      
