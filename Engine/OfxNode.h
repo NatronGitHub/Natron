@@ -123,7 +123,6 @@ public slots:
 private:
 
     QMutex _lock; // lock used in engine(...) function
-    std::map<std::string,OFX::Host::Param::Instance*> _params; // used to re-create parenting between params
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     bool _firstTime; //used in engine(...) to operate once per frame

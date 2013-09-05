@@ -797,7 +797,7 @@ std::string File_Knob::serialize() const{
 void File_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
-    
+    emit filesSelected();
     setValues();
     if(filesList->size() > 0){
         std::string className=getCallBack()->getNode()->className();
@@ -1258,6 +1258,7 @@ std::string OutputFile_Knob::serialize() const{
 void OutputFile_Knob::restoreFromString(const std::string& str){
     _name->setText(str.c_str());
     *(this->str) = str;
+    emit filesSelected();
     validateEvent(false);
 }
 /*===============================*/

@@ -181,7 +181,8 @@ bool OfxNode::_validate(bool forReal){
     }
     //iterate over param and find if there's an unvalid param
     // e.g: an empty filename
-    for (map<string,OFX::Host::Param::Instance*>::iterator it = _params.begin(); it!=_params.end(); ++it) {
+    const map<string,OFX::Host::Param::Instance*>& params = effect_->getParams();
+    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
         if(it->second->getType() == kOfxParamTypeString){
             OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
             assert(param);
@@ -253,7 +254,11 @@ void OfxNode::onInstanceChangedAction(const QString& str){
     effectInstance()->paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
     effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
     
-    getExecutingEngine()->changeDAGAndStartEngine(this);
+    if(isOutputNode())
+        getExecutingEngine()->changeDAGAndStartEngine(this);
+    else{
+        getExecutingEngine()->seekRandomFrame(getExecutingEngine()->getCurrentDAG().getOutput()->getTimeLine().currentFrame());
+    }
 }
 
 
@@ -263,7 +268,8 @@ void OfxNode::computePreviewImage(){
     }
     //iterate over param and find if there's an unvalid param
     // e.g: an empty filename
-    for (map<string,OFX::Host::Param::Instance*>::iterator it = _params.begin(); it!=_params.end(); ++it) {
+    const map<string,OFX::Host::Param::Instance*>& params = effect_->getParams();
+    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
         if(it->second->getType() == kOfxParamTypeString){
             OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
             assert(param);

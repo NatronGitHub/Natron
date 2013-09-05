@@ -214,8 +214,8 @@ void VideoEngine::run(){
            || _lastRunArgs._frameRequestsCount == 0){
             /*1 frame in the sequence and we already computed it*/
             stopEngine();
-
-            runTasks();
+            emit doRunTasks();
+            //runTasks();
             _mutex->lock();
             _startCondition.wait(_mutex);
             _mutex->unlock();
@@ -308,11 +308,14 @@ void VideoEngine::run(){
         _dag.validate(true);
         
         const Format &_dispW = _dag.getOutput()->info().displayWindow();
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && _lastRunArgs._fitToViewer){
-            viewer->getUiContext()->viewer->fitToFormat(_dispW);
-            _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
-        }
-        /*Now that we called validate we can check if the frame is in the cache
+        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+            viewer->makeCurrentViewer();
+            if(_lastRunArgs._fitToViewer){
+                viewer->getUiContext()->viewer->fitToFormat(_dispW);
+                _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
+            }
+            
+        }        /*Now that we called validate we can check if the frame is in the cache
          and return the appropriate EngineStatus code.*/
         vector<int> rows;
         vector<int> columns;
@@ -400,7 +403,6 @@ void VideoEngine::run(){
         
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
-            viewer->makeCurrentViewer();
             _mutex->lock();
             emit doFrameStorageAllocation();
             _openGLCondition->wait(_mutex);

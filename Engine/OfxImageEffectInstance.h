@@ -162,13 +162,20 @@ public:
     void setCanHavePreviewImage() { _canHavePreview = true; }
     
     OfxNode* node() { return _node; }
-
+    
+    const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const {return _parentingMap;}
+    
 private:
     const OfxNode* node() const { return _node; }
 
 private:
     bool _canHavePreview;
     OfxNode* _node; // FIXME: OfxImageEffectInstance should be able to work without the node_
+    
+    /*Use this to re-create parenting between effect's params.
+     The key is the name of a param and the Instance a pointer to the associated effect.
+     This has nothing to do with the base class _params member! */
+    std::map<std::string,OFX::Host::Param::Instance*> _parentingMap; 
 };
 
 } // namespace Powiter

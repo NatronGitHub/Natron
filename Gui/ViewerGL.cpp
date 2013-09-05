@@ -1121,6 +1121,11 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     assert(zoomValue > 0);
     emit zoomChanged(zoomValue);
 }
+void ViewerGL::setZoomFactor(double f){
+    assert(f>0. && f <= 1024);
+    _zoomCtx.setZoomFactor(f);
+    emit zoomChanged(f*100);
+}
 
 void ViewerGL::zoomSlot(int v){
     assert(v > 0);

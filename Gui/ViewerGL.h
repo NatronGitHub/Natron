@@ -401,7 +401,7 @@ class ViewerTab;
             /**
              *@brief Set the zoom factor used to render.
              **/
-            void setZoomFactor(double f){assert(f>0.); _zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
+            void setZoomFactor(double f);
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
