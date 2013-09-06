@@ -37,7 +37,7 @@
 #include "Gui/Timeline.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 
 using namespace Powiter;
 using namespace std;
@@ -69,7 +69,7 @@ std::string Reader::description() {
 
 void Reader::initKnobs(KnobCallback *cb){
     std::string desc("File");
-    Knob* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
+    KnobGui* knob = KnobFactory::createKnob("InputFile", cb, desc, KnobGui::NONE);
     File_Knob* file = static_cast<File_Knob*>(knob);
     assert(file);
 	file->setPointer(&fileNameList);

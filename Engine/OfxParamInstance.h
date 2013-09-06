@@ -25,7 +25,7 @@
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
-class Knob;
+class KnobGui;
 class String_Knob;
 class File_Knob;
 class OutputFile_Knob;
@@ -55,7 +55,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void emitInstanceChanged();
@@ -91,7 +91,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -122,7 +122,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -152,7 +152,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -181,7 +181,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -209,7 +209,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -238,7 +238,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -266,7 +266,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     
     public slots:
@@ -295,7 +295,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -311,9 +311,9 @@ public:
     
     OfxGroupInstance(OfxNode* node,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
-    void addKnob(Knob* k);
+    void addKnob(KnobGui* k);
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     virtual ~OfxGroupInstance(){}
 };
@@ -354,7 +354,7 @@ public:
      for the frame frameIndex.*/
     std::string filenameFromPattern(int frameIndex) const;
     
-    Knob* getKnob() const;
+    KnobGui* getKnob() const;
     
     virtual ~OfxStringInstance(){}
     

@@ -25,9 +25,10 @@
 class Row;
 class Model;
 class SettingsPanel;
-class Knob; // from Gui/Knob.h (shouldn't be used here?)
-class KnobCallback; // from Gui/Knob.h (shouldn't be used here?)
+class KnobGui; // from Gui/KnobGui.h (shouldn't be used here?)
+class KnobCallback; // from Gui/KnobGui.h (shouldn't be used here?)
 class NodeGui;
+class Knob;
 class QMutex;
 class QWaitCondition;
 class QUndoStack;
@@ -128,7 +129,7 @@ public:
     
     /*Do not call this function. It is used
      internally by the Knob_Callback.*/
-    void removeKnob(Knob* knob);
+    void removeKnob(KnobGui* knob);
     virtual void initKnobs(KnobCallback *cb);
 	virtual void createKnobDynamically();
 	KnobCallback* getKnobCallBack(){return _knobsCB;}
@@ -145,6 +146,10 @@ public:
     void removeParent(Node* parent);
     void removeThisFromParents();
     void removeThisFromChildren();
+    
+    /*Returns a pointer to the Viewer nodeGUI ptr is this node has a viewer connected,
+     otherwise, returns NULL.*/
+    static Node* hasViewerConnected(Node* node);
     /*============================*/
     
     /*DAG related (topological sorting)*/
@@ -268,6 +273,7 @@ private:
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     void merge_info(bool forReal);
     void copy_info(Node* parent);
+    static void _hasViewerConnected(Node* node,bool* ok,Node*& out);
     
 };
 typedef Node* (*NodeBuilder)();

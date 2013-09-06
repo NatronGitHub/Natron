@@ -97,7 +97,7 @@ SOURCES += \
     Gui/FeedbackSpinBox.cpp \
     Gui/Gui.cpp \
     Gui/InfoViewerWidget.cpp \
-    Gui/Knob.cpp \
+    Gui/KnobGui.cpp \
     Gui/NodeGraph.cpp \
     Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
@@ -129,7 +129,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    Engine/Knob.cpp
 
 
 HEADERS += \
@@ -173,7 +174,7 @@ HEADERS += \
     Gui/FeedbackSpinBox.h \
     Gui/Gui.h \
     Gui/InfoViewerWidget.h \
-    Gui/Knob.h \
+    Gui/KnobGui.h \
     Gui/LineEdit.h \
     Gui/NodeGraph.h \
     Gui/NodeGui.h \
@@ -231,7 +232,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
+    Engine/Knob.h
 
 
 INSTALLS += target

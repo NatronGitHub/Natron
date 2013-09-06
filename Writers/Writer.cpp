@@ -22,7 +22,7 @@
 #include "Engine/PluginID.h"
 #include "Engine/Settings.h"
 #include "Writers/Write.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 
 using namespace std;
 using namespace Powiter;
@@ -113,22 +113,22 @@ void Writer::createKnobDynamically(){
 }
 void Writer::initKnobs(KnobCallback *cb){
     std::string fileDesc("File");
-    _fileKnob = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, Knob::NONE));
+    _fileKnob = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, KnobGui::NONE));
     assert(_fileKnob);
 	_fileKnob->setPointer(&_filename);
     QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onFilesSelected()));
     
     std::string renderDesc("Render");
-    Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, renderDesc, Knob::NONE));
+    Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, renderDesc, KnobGui::NONE));
     assert(renderButton);
     renderButton->connectButtonToSlot(dynamic_cast<QObject*>(this),SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, premultString, Knob::NONE));
+    Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, premultString, KnobGui::NONE));
     premult->setPointer(&_premult);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
+    _filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, KnobGui::NONE));
     QObject::connect(_filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
     const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();

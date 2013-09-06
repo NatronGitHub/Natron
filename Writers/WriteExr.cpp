@@ -20,7 +20,7 @@
 
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Engine/Row.h"
 
 using namespace std;
@@ -144,11 +144,11 @@ std::vector<std::string> WriteExr::fileTypesEncoded() const {
 void ExrWriteKnobs::initKnobs(KnobCallback* callback, const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, Knob::NONE));
+    sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, KnobGui::NONE));
     
     std::string compressionCBDesc("Compression");
     compressionCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                            compressionCBDesc, Knob::NONE));
+                                                                            compressionCBDesc, KnobGui::NONE));
     vector<string> compressionEntries;
     for (int i =0; i < 6; ++i) {
         compressionEntries.push_back(EXR::compressionNames[i]);
@@ -158,7 +158,7 @@ void ExrWriteKnobs::initKnobs(KnobCallback* callback, const std::string& fileTyp
     
     std::string depthCBDesc("Data type");
     depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                      depthCBDesc, Knob::NONE));
+                                                                      depthCBDesc, KnobGui::NONE));
     vector<string> depthEntries;
     for(int i = 0 ; i < 2 ; ++i) {
         depthEntries.push_back(EXR::depthNames[i]);

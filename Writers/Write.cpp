@@ -14,7 +14,7 @@
 #include "Engine/Row.h"
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 
 using namespace Powiter;
 

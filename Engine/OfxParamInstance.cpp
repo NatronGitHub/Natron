@@ -17,7 +17,7 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -35,19 +35,13 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     _knob->connectButtonToSlot(this, SLOT(emitInstanceChanged()));
     QObject::connect(this, SIGNAL(buttonPressed(QString)), _node, SLOT(onInstanceChangedAction(QString)));
@@ -67,7 +61,7 @@ void OfxPushButtonInstance::setEnabled(){
 void OfxPushButtonInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxPushButtonInstance::getKnob() const{
+KnobGui* OfxPushButtonInstance::getKnob() const{
     return _knob;
 }
 
@@ -80,19 +74,13 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(valueChanged(int)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
@@ -137,7 +125,7 @@ void OfxIntegerInstance::setEnabled(){
 void OfxIntegerInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxIntegerInstance::getKnob() const{
+KnobGui* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
@@ -146,19 +134,13 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(valueChanged(double)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
@@ -211,7 +193,7 @@ void OfxDoubleInstance::setEnabled(){
 void OfxDoubleInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxDoubleInstance::getKnob() const{
+KnobGui* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
@@ -220,19 +202,13 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
     _knob->setPointer(&_value);
@@ -275,7 +251,7 @@ void OfxBooleanInstance::setEnabled(){
 void OfxBooleanInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxBooleanInstance::getKnob() const{
+KnobGui* OfxBooleanInstance::getKnob() const{
     return _knob;
 }
 
@@ -285,19 +261,14 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+    
     
     QObject::connect(_knob, SIGNAL(entryChanged(int)), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
@@ -362,7 +333,7 @@ void OfxChoiceInstance::setEnabled(){
 void OfxChoiceInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxChoiceInstance::getKnob() const{
+KnobGui* OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
@@ -377,20 +348,13 @@ _paramName(name){
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
-    
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     _knob->setPointers(&_r, &_g,&_b,&_a);
     
     QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
@@ -453,7 +417,7 @@ void OfxRGBAInstance::setSecret(){
 }
 
 
-Knob* OfxRGBAInstance::getKnob() const{
+KnobGui* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
 OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
@@ -461,19 +425,13 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     _knob->disablePermantlyAlpha();
     _knob->setPointers(&_r, &_g,&_b,NULL);
@@ -532,7 +490,7 @@ void OfxRGBInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
 
-Knob* OfxRGBInstance::getKnob() const{
+KnobGui* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
@@ -541,19 +499,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Double2D_Knob*>(KnobFactory::createKnob("Double2D", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Double2D_Knob*>(KnobFactory::createKnob("Double2D", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     _knob->setPointers(&_x1, &_x2);
     
@@ -622,7 +574,7 @@ void OfxDouble2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
 
-Knob* OfxDouble2DInstance::getKnob() const{
+KnobGui* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
@@ -631,19 +583,13 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
-    _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", cb, name, Knob::NONE));
-    QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-    if(previousKnobLayout){
-        _knob->changeLayout(previousKnobLayout);
-        _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-    }
+    _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", cb, name, KnobGui::NONE));
     if(layoutHint == 2){
-        _node->setLastKnobLayoutWithNoNewLine(_knob->getHorizontalLayout());
+        _knob->turnOffNewLine();
     }
-    int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-    _knob->setLayoutMargin(paramSpacing);
+    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     _knob->setPointers(&_x1, &_x2);
     
@@ -707,7 +653,7 @@ void OfxInteger2DInstance::setEnabled(){
 void OfxInteger2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxInteger2DInstance::getKnob() const{
+KnobGui* OfxInteger2DInstance::getKnob() const{
     return _knob;
 }
 
@@ -720,13 +666,13 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
         if(!_tabKnob){
-            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", cb, name, Knob::NONE));
+            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", cb, name, KnobGui::NONE));
             _node->setTabKnob(_tabKnob);
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
     }else{
-        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, Knob::NONE));
+        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, KnobGui::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
         if (opened) {
             _groupKnob->setChecked(true);
@@ -736,7 +682,7 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
     }
     
 }
-void OfxGroupInstance::addKnob(Knob *k) {
+void OfxGroupInstance::addKnob(KnobGui *k) {
     if(_groupKnob){
         _groupKnob->addKnob(k);
     }else{
@@ -744,7 +690,7 @@ void OfxGroupInstance::addKnob(Knob *k) {
     }
 }
 
-Knob* OfxGroupInstance::getKnob() const{
+KnobGui* OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
@@ -759,58 +705,39 @@ _fileKnob(0),_outputFileKnob(0){
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, Knob::NONE);
+        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
-            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, Knob::NONE));
+            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, KnobGui::NONE));
             _fileKnob->setPointer(&_filesList);
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
-            QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-            if(previousKnobLayout){
-                _fileKnob->changeLayout(previousKnobLayout);
-                _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-            }
             if(layoutHint == 2){
-                _node->setLastKnobLayoutWithNoNewLine(_fileKnob->getHorizontalLayout());
+                _fileKnob->turnOffNewLine();
             }
-            int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-            _fileKnob->setLayoutMargin(paramSpacing);
+            _fileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, name, Knob::NONE));
+            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, name, KnobGui::NONE));
             _outputFileKnob->setPointer(&_outputFilePattern);
             QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
-            QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-            if(previousKnobLayout){
-                _outputFileKnob->changeLayout(previousKnobLayout);
-                _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-            }
             if(layoutHint == 2){
-                _node->setLastKnobLayoutWithNoNewLine(_outputFileKnob->getHorizontalLayout());
+                _outputFileKnob->turnOffNewLine();
             }
-            int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-            _outputFileKnob->setLayoutMargin(paramSpacing);
-
+            _outputFileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
-        Knob::Knob_Flags flags = Knob::NONE;
+        KnobGui::Knob_Flags flags = KnobGui::NONE;
         if(mode == kOfxParamStringIsLabel){
-            flags = Knob::READ_ONLY;
+            flags = KnobGui::READ_ONLY;
         }
         _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", cb, name, flags));
         QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
         _stringKnob->setPointer(&_returnValue);
-        QHBoxLayout* previousKnobLayout = _node->getLastKnobLayoutWithNoNewLine();
-        if(previousKnobLayout){
-            _stringKnob->changeLayout(previousKnobLayout);
-            _node->setLastKnobLayoutWithNoNewLine(NULL); // reset back the new line flag
-        }
         if(layoutHint == 2){
-            _node->setLastKnobLayoutWithNoNewLine(_stringKnob->getHorizontalLayout());
+            _stringKnob->turnOffNewLine();
         }
-        int paramSpacing = getProperties().getIntProperty(kOfxParamPropLayoutPadWidth);
-        _stringKnob->setLayoutMargin(paramSpacing);
+        _stringKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     }
     
 }
@@ -881,7 +808,7 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
     return kOfxStatOK;
 }
 
-Knob* OfxStringInstance::getKnob() const{
+KnobGui* OfxStringInstance::getKnob() const{
     
     if(_fileKnob){
         return _fileKnob;

@@ -359,31 +359,6 @@ void  NodeGui::removeParent(NodeGui* p){
 }
 
 
-NodeGui* NodeGui::hasViewerConnected(NodeGui* node){
-    NodeGui* out;
-    bool ok=false;
-    _hasViewerConnected(node,&ok,out);
-    if (ok) {
-        return out;
-    }else{
-        return NULL;
-    }
-    
-}
-void NodeGui::_hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out){
-    if (*ok == true) {
-        return;
-    }
-    if(node->getNode()->className() == string("Viewer")){
-        out = node;
-        *ok = true;
-    }else{
-        foreach(NodeGui* c,node->getChildren()){
-            _hasViewerConnected(c,ok,out);
-        }
-    }
-}
-
 void NodeGui::setName(QString s){
     name->setText(s);
     node->setName(s.toStdString());

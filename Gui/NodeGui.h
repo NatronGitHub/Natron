@@ -114,10 +114,7 @@ public:
      i.e, when the channel requested for the node change.*/
     void updateChannelsTooltip();
     
-    /*Returns a pointer to the Viewer nodeGUI ptr is this node has a viewer connected,
-     otherwise, returns NULL.*/
-    static NodeGui* hasViewerConnected(NodeGui* node);
-    
+       
     /*toggles selected on/off*/
     void setSelected(bool b);
     
@@ -143,10 +140,6 @@ public:
     static const int NODE_HEIGHT = 30;
     static const int PREVIEW_LENGTH = 40;
     static const int PREVIEW_HEIGHT = 40;
-    
-private:
-    /*used internally by hasViewerConnected.*/
-    static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);
     
     
 public slots:

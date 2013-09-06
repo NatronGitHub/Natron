@@ -16,10 +16,11 @@
 
 class LineEdit;
 class Node;
-class Knob;
+class KnobGui;
 class NodeGui;
 class KnobCallback;
 class QVBoxLayout;
+class QGridLayout;
 class QTabWidget;
 class Button;
 class QHBoxLayout;
@@ -61,7 +62,7 @@ class SettingsPanel:public QFrame
     
     /*settings related*/
     QWidget* _settingsTab;
-    QVBoxLayout* _layoutSettings;
+    QGridLayout* _layoutSettings;
     
     /*labels related*/
     QVBoxLayout* _layoutLabel;
@@ -85,9 +86,9 @@ public:
     
     bool isSelected() const {return _selected;}
     
-	void addKnobDynamically(Knob* knob);
+	void addKnobDynamically(KnobGui* knob);
     
-    void removeAndDeleteKnob(Knob* knob);
+    void removeAndDeleteKnob(KnobGui* knob);
     
     bool isMinimized() const {return _minimized;}
     

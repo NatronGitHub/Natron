@@ -24,7 +24,7 @@
 #endif
 
 #include "Readers/Reader.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Engine/Node.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerGL.h"

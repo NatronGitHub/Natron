@@ -45,7 +45,7 @@
 #include "Gui/Gui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
@@ -741,7 +741,7 @@ QString Model::serializeNodeGraph() const{
         }
         writer.writeEndElement(); // end inputs
                                   //serialize knobs
-        const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
+        const std::vector<KnobGui*>& knobs = n->getNode()->getKnobs();
         writer.writeStartElement("Knobs");
         for (U32 i = 0; i < knobs.size(); ++i) {
             writer.writeStartElement("Knob");
@@ -927,7 +927,7 @@ void Model::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedEleme
     }else if(v->_element == "Knob"){
         XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
         assert(inputEl);
-        const std::vector<Knob*>& knobs = n->getKnobs();
+        const std::vector<KnobGui*>& knobs = n->getKnobs();
         for (U32 j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
                 knobs[j]->restoreFromString(inputEl->_param.toStdString());

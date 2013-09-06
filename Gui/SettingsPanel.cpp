@@ -18,7 +18,7 @@
 #include "Global/Macros.h"
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
@@ -108,7 +108,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _settingsTab = new QWidget(_tabWidget);
    // _settingsTab->setStyleSheet("background-color : rgb(50,50,50); color:(200,200,200);");
-    _layoutSettings=new QVBoxLayout(_settingsTab);
+    _layoutSettings=new QGridLayout(_settingsTab);
     _layoutSettings->setSpacing(0);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");
@@ -134,19 +134,33 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 
 void SettingsPanel::initialize_knobs(){
     
-    _cb=_nodeGUI->getNode()->getKnobCallBack();
-    _cb->setSettingsPanel(this);
-    _nodeGUI->getNode()->initKnobs(_cb);
-    const std::vector<Knob*>& knobs=_nodeGUI->getNode()->getKnobs();
-    foreach(Knob* k,knobs){
-        _layoutSettings->addWidget(k);
-    }
+    /*All OFX params handled by Knobs have been created already and added
+     to the callback.*/
     
+    _cb = _nodeGUI->getNode()->getKnobCallBack();
+    _cb->setSettingsPanel(this);
+    
+    /*Initializing Powiter Nodes Knobs and adding all knobs
+     to the node knobs vector*/
+    _nodeGUI->getNode()->initKnobs(_cb);
+    
+    /*We now have all knobs in a vector, just add them to the layout.*/
+    const std::vector<KnobGui*>& knobs = _nodeGUI->getNode()->getKnobs();
+    int maxSpacing = 0;
+    for(U32 i = 0 ; i < knobs.size(); ++i){
+        KnobGui* k = knobs[i];
+        if(!k->triggerNewLine() && i!=0){
+            k->createWidget(_layoutSettings,i-1);
+            int knobSpacing  = k->getSpacingBetweenItems();
+            if(knobSpacing > maxSpacing) maxSpacing = knobSpacing;
+        }
+    }
+    _layoutSettings->setHorizontalSpacing(maxSpacing);
 }
-void SettingsPanel::addKnobDynamically(Knob* knob){
+void SettingsPanel::addKnobDynamically(KnobGui* knob){
 	_layoutSettings->addWidget(knob);
 }
-void SettingsPanel::removeAndDeleteKnob(Knob* knob){
+void SettingsPanel::removeAndDeleteKnob(KnobGui* knob){
     _layoutSettings->removeWidget(knob);
     delete knob;
 }

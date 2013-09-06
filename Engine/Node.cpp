@@ -15,29 +15,29 @@
 #include <QtCore/QWaitCondition>
 
 #include "Engine/Hash64.h"
-#include "Gui/SettingsPanel.h"
-#include "Gui/Knob.h"
-#include "Gui/NodeGui.h"
+#include "Gui/KnobGui.h" // "because" knobs gui and internal are not separated entities
+#include "Gui/NodeGui.h" // for updateChannelsTooltip()
 #include "Engine/ChannelSet.h"
 #include "Engine/Model.h"
 #include "Engine/Format.h"
 #include "Engine/NodeCache.h"
-#include "Readers/Reader.h"
-#include "Global/AppManager.h"
-#include "Gui/Timeline.h"
-#include "Gui/ViewerTab.h"
-#include "Engine/Row.h"
-#include "Gui/Gui.h"
-#include "Writers/Writer.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+#include "Engine/Row.h"
+
+#include "Readers/Reader.h"
+#include "Writers/Writer.h"
+
+#include "Global/AppManager.h"
+
+
 
 using namespace std;
 using namespace Powiter;
 
 namespace {
-    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
+    void Hash64_appendKnob(Hash64* hash, const KnobGui* knob){
         const std::vector<U64>& values= knob->getValues();
         for(U32 i=0;i<values.size();++i) {
             hash->append(values[i]);
@@ -170,7 +170,7 @@ _info()
 	
 }
 
-void Node::removeKnob(Knob* knob){
+void Node::removeKnob(KnobGui* knob){
     for(U32 i = 0 ; i < _knobsVector.size() ; ++i) {
         if (knob == _knobsVector[i]) {
             _knobsVector.erase(_knobsVector.begin()+i);
@@ -345,6 +345,31 @@ Row* Node::get(int y,int x,int r){
     }
     assert(out);
     return out;
+}
+
+Node* Node::hasViewerConnected(Node* node){
+    Node* out;
+    bool ok=false;
+    _hasViewerConnected(node,&ok,out);
+    if (ok) {
+        return out;
+    }else{
+        return NULL;
+    }
+    
+}
+void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
+    if (*ok == true) {
+        return;
+    }
+    if(node->getNode()->className() == string("Viewer")){
+        out = node;
+        *ok = true;
+    }else{
+        foreach(Node* c,node->getChildren()){
+            _hasViewerConnected(c,ok,out);
+        }
+    }
 }
 
 Node::~Node(){

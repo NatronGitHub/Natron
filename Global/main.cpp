@@ -26,7 +26,7 @@
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
 #include "Engine/Model.h"
-
+#include "Engine/Knob.h"
 
 using namespace std;
 
@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
 	//VLDReportLeaks();
 #endif
     QApplication app(argc, argv);
+    
+    qRegisterMetaType<Variant>();
+    
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
     filename.append(POWITER_IMAGES_PATH"splashscreen.png");

@@ -32,7 +32,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/Model.h"
 #include "Engine/ViewerNode.h"
 #include "Readers/Reader.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
@@ -320,8 +320,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_R){
         _gui->_appInstance->createNode("Reader");
         Node* reader = _nodes[_nodes.size()-1]->getNode();
-        std::vector<Knob*> knobs = reader->getKnobs();
-        foreach(Knob* k,knobs){
+        std::vector<KnobGui*> knobs = reader->getKnobs();
+        foreach(KnobGui* k,knobs){
             if(k->name() == "InputFile"){
                 File_Knob* fk = static_cast<File_Knob*>(k);
                 fk->open_file();
@@ -332,8 +332,8 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     }else if(e->key() == Qt::Key_W){
         _gui->_appInstance->createNode("Writer");
         Node* writer = _nodes[_nodes.size()-1]->getNode();
-        std::vector<Knob*> knobs = writer->getKnobs();
-        foreach(Knob* k,knobs){
+        std::vector<KnobGui*> knobs = writer->getKnobs();
+        foreach(KnobGui* k,knobs){
             if(k->name() == "OutputFile"){
                 OutputFile_Knob* fk = static_cast<OutputFile_Knob*>(k);
                 fk->open_file();

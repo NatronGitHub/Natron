@@ -131,6 +131,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
 
 void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key){
     QAction* action =  new QAction(this);
+    
     action->setText(item);
     if (!icon.isNull()) {
         action->setIcon(icon);
