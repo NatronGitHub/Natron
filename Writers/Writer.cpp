@@ -27,8 +27,8 @@
 using namespace std;
 using namespace Powiter;
 
-Writer::Writer(Model* model):
-OutputNode(model),
+Writer::Writer():
+OutputNode(),
 _requestedChannels(Mask_RGB), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
@@ -111,7 +111,7 @@ void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
 void Writer::createKnobDynamically(){
     Node::createKnobDynamically();
 }
-void Writer::initKnobs(KnobCallback *cb){
+void Writer::initKnobs(){
     std::string fileDesc("File");
     _fileKnob = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, KnobGui::NONE));
     assert(_fileKnob);
@@ -262,7 +262,7 @@ void Writer::fileTypeChanged(int fileTypeIndex){
     Write* write = builder(this);
     _writeOptions = write->initSpecificKnobs();
     if(_writeOptions)
-        _writeOptions->initKnobs(getKnobCallBack(),fileType);
+        _writeOptions->initKnobs(fileType);
     delete write;
 }
 void Writer::onFilesSelected(){

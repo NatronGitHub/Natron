@@ -13,6 +13,7 @@
 #define POWITER_GUI_NODEGRAPH_H_
 
 #include <vector>
+#include <map>
 #include <QGraphicsView>
 #include <QtCore/QRectF>
 #include <QDialog>
@@ -33,8 +34,8 @@ class QEvent;
 class QKeyEvent;
 class Gui;
 class SettingsPanel;
-class Node;
 class NodeGui;
+class NodeInstance;
 class AppInstance;
 class Edge;
 class SmartInputDialog;
@@ -64,7 +65,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    void createNodeGUI(QVBoxLayout *dockContainer,Node *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,NodeInstance *node);
     
     void removeNode(NodeGui* n);
 
@@ -79,8 +80,6 @@ public:
     void autoConnect(NodeGui* selected,NodeGui* created);
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
-
-    void checkIfViewerConnectedAndRefresh(NodeGui* n);
     
     void selectNode(NodeGui* n);
     
@@ -185,8 +184,8 @@ public:
     virtual void redo();
     
 private:
-    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
-    std::vector<NodeGui*> _parents;
+    std::map<int,NodeInstance*> _outputs; 
+    std::map<int,NodeInstance*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -200,8 +199,8 @@ public:
     virtual void redo();
     
 private:
-    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
-    std::vector<NodeGui*> _parents;
+    std::map<int,NodeInstance*> _outputs;
+    std::map<int,NodeInstance*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };

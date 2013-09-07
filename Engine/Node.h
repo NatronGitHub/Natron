@@ -25,13 +25,10 @@
 class Row;
 class Model;
 class SettingsPanel;
-class KnobGui; // from Gui/KnobGui.h (shouldn't be used here?)
-class KnobCallback; // from Gui/KnobGui.h (shouldn't be used here?)
-class NodeGui;
 class Knob;
 class QMutex;
 class QWaitCondition;
-class QUndoStack;
+class NodeInstance;
 class Node
 {
 public:
@@ -113,7 +110,7 @@ public:
     
     
     /*CONSTRUCTOR AND DESTRUCTORS*/
-    Node(Model* model);
+    Node(Model* model,NodeInstance* instance);
     virtual ~Node();
     /*============================*/
     
@@ -129,26 +126,16 @@ public:
     
     /*Do not call this function. It is used
      internally by the Knob_Callback.*/
-    void removeKnob(KnobGui* knob);
-    virtual void initKnobs(KnobCallback *cb);
+    void removeKnob(Knob* knob);
+    
+    /*overload this to init any knobs*/
+    virtual void initKnobs(){}
+    
 	virtual void createKnobDynamically();
-	KnobCallback* getKnobCallBack(){return _knobsCB;}
-	void setNodeUi(NodeGui* ui){_nodeGUI=ui;}
-	NodeGui* getNodeUi(){return _nodeGUI;}
+        
     /*============================*/
-    
-    /*Parents & children nodes related functions*/
-   const std::vector<Node*>& getParents() const {return _parents;}
-    const std::vector<Node*>& getChildren() const {return _children;}
-    void addChild(Node* child){ _children.push_back(child); }
-    void addParent(Node* parent){ _parents.push_back(parent); }
-    void removeChild(Node* child);
-    void removeParent(Node* parent);
-    void removeThisFromParents();
-    void removeThisFromChildren();
-    
-    /*Returns a pointer to the Viewer nodeGUI ptr is this node has a viewer connected,
-     otherwise, returns NULL.*/
+    /*Returns a pointer to the Viewer node ptr if this node has a viewer connected,
+     otherwise returns NULL.*/
     static Node* hasViewerConnected(Node* node);
     /*============================*/
     
@@ -179,19 +166,16 @@ public:
     void initializeInputs();
     virtual int maximumInputs() const {return 1;}
     virtual int minimumInputs() const {return 1;}
-    int inputCount() const;
     Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     virtual std::string setInputLabel(int inputNb);
-    std::string getInputLabel(int inputNb) {  return _inputLabelsMap[inputNb]; }
-    void applyLabelsToInputs();
-    void initInputLabelsMap();
+    const std::string& getInputLabel(int inputNb) const;
     /*============================*/
     
     
     
     /*node name related functions*/
-    const std::string getName() const { return _name ; }
+    const std::string& getName() const { return _name ; }
 
     void setName(const std::string& name) { _name = name; }
 
@@ -204,6 +188,7 @@ public:
     
     /*Calculations related functions*/
     bool validate(bool forReal);
+    
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
         Q_UNUSED(y);
         Q_UNUSED(offset);
@@ -238,11 +223,16 @@ public:
 
     virtual bool isOpenFXNode() const {return false;}
     
+    Model* getModel() const {return _model;}
+
+    void setModel(Model* model){_model = model;}
+    
+    void setNodeInstance(NodeInstance* instance){_instance = instance;}
+    
+    NodeInstance* getNodeInstance() const {return _instance;}
     
     VideoEngine* getExecutingEngine() const {return _info.executingEngine();}
-    
-    Model* getModel() const {return _model;}
-    
+        
     void setExecutingEngine(VideoEngine* engine){_info.setExecutingEngine(engine);}
 
     void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
@@ -256,18 +246,16 @@ protected:
 
 	virtual bool _validate(bool /*forReal*/) = 0;
     
-    Model* _model;
+    Model* _model; // pointer to the model
 	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-	std::vector<Node*> _parents;
-	std::vector<Node*> _children;
-    bool _marked;
-	std::map<int, std::string> _inputLabelsMap;
-    std::string _name;
-	Hash64 _hashValue;
-	std::vector<Knob*> _knobsVector;
-	KnobCallback* _knobsCB;
+
+    bool _marked; //used by the topological sort algorithm
+	std::map<int, std::string> _inputLabelsMap; // inputs name
+    std::string _name; //node name set by the user
+	Hash64 _hashValue; // hash value
+	std::vector<Knob*> _knobsVector; // knobs (params)
 	Box2D _requestedBox; // composition of all the area requested by children
-	NodeGui* _nodeGUI;
+	NodeInstance* _instance; // ptr to the instance
 
 private:
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
@@ -322,7 +310,7 @@ signals:
 class OutputNode : public Node{
 public:
     
-    OutputNode(Model* model);
+    OutputNode();
     
     virtual ~OutputNode();
     

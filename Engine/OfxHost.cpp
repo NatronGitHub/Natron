@@ -73,7 +73,7 @@ OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
 {
     assert(plugin);
 
-    OfxNode* node =  new OfxNode(plugin, desc, context,_model);
+    OfxNode* node =  new OfxNode(plugin, desc, context);
     if(context == kOfxImageEffectContextGenerator){
         node->setCanHavePreviewImage();
     }

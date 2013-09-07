@@ -25,7 +25,6 @@ namespace Powiter {
 class Writer;
 class Row;
 class Separator_Knob;
-class KnobCallback;
 
 /** @class This class is used by Writer to load the filetype-specific knobs.
 * Due to the lifetime of Write objects, it's not possible to use the
@@ -49,7 +48,7 @@ public:
     * at the end of the function,
     * so they are properly added to the settings panel.
     **/
-    virtual void initKnobs(KnobCallback* callback, const std::string& fileType);
+    virtual void initKnobs(const std::string& fileType);
     
     
     /** @brief Must be overloaded to tell the callback to

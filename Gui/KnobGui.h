@@ -334,7 +334,7 @@ class RGBA_KnobGui : public KnobGui{
     Q_OBJECT
 public:
     
-    RGBA_KnobGui(Knob* knob):KnobGui(knob){}
+    RGBA_KnobGui(Knob* knob):KnobGui(knob),_alphaEnabled(true){}
     
     virtual ~RGBA_KnobGui(){}
     
@@ -373,6 +373,30 @@ private:
     
     bool _alphaEnabled;
 };
+
+/*****************************/
+class String_KnobGui : public KnobGui{
+    Q_OBJECT
+public:
+    
+    String_KnobGui(Knob* knob):KnobGui(knob) {}
+	
+    virtual ~String_KnobGui(){}
+    
+    virtual void createWidget(QGridLayout* layout,int row);
+    
+    public slots:
+    void onStringChanged(const QString& str);
+    
+protected:
+    
+    virtual void updateGUI(const Variant& variant);
+    
+private:
+	LineEdit* _lineEdit;
+};
+
+
 /***************************/
 class Group_KnobGui : public KnobGui{
     Q_OBJECT
@@ -429,28 +453,6 @@ private:
     TabWidget* _tabWidget;
     KnobsTabMap _knobs;
 };
-/*****************************/
-class String_KnobGui : public KnobGui{
-    Q_OBJECT
-public:
-    
-    String_KnobGui(Knob* knob):KnobGui(knob) {}
-	
-    virtual ~String_KnobGui(){}
-    
-    virtual void createWidget(QGridLayout* layout,int row);
-    
-public slots:
-    void onStringChanged(const QString& str);
-
-protected:
-    
-    virtual void updateGUI(const Variant& variant);
-    
-private:
-	LineEdit* _lineEdit;
-};
-
 
 
 

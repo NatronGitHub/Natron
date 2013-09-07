@@ -18,25 +18,38 @@
 
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
-#include "Readers/Reader.h"
-#include "Engine/Node.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/Gui.h"
+
+#include "Readers/Reader.h"
+
 #include "Engine/OfxNode.h"
+#include "Engine/ViewerNode.h"
+
 #include "Global/AppManager.h"
+#include "Global/NodeInstance.h"
+
 
 using namespace std;
 
 static const qreal pi=3.14159265358979323846264338327950288419717;
 
-NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, qreal y, QGraphicsItem *parent,QGraphicsScene* scene,QObject* parentObj) :QObject(parentObj), QGraphicsItem(parent),settings(0)
+NodeGui::NodeGui(NodeGraph* dag,
+                 QVBoxLayout *dockContainer,
+                 NodeInstance *node,
+                 qreal x, qreal y,
+                 QGraphicsItem *parent,
+                 QGraphicsScene* scene,
+                 QObject* parentObj):
+QObject(parentObj),
+QGraphicsItem(parent),
+_dag(dag),
+node(node),
+_selected(false),
+sc(scene),
+settings(0)
 {
-    
-    _selected = false;
-    this->_dag = dag;
-    this->node=node;
-	this->node->setNodeUi(this);
-    this->sc=scene;
-    
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
     
@@ -60,9 +73,6 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
     channels->setX(itemPos.x()+1);
     channels->setY(itemPos.y()+1);
     channels->setParentItem(this);
-    
-    updateChannelsTooltip();
-    
 	
     name=scene->addSimpleText(node->getName().c_str());
 	
@@ -119,7 +129,6 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 	}
     
     name->setParentItem(this);
-    initInputArrows();
     
     /*building settings panel*/
 	if(node->className() != "Viewer"){
@@ -138,7 +147,7 @@ NodeGui::NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x, q
 }
 
 NodeGui::~NodeGui(){
-    
+    _dag->removeNode(this);
     foreach(Edge* e,inputs){
         if(e){
             QGraphicsScene* scene = e->getScene();
@@ -149,10 +158,6 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
-    
-    foreach(NodeGui* p,parents){
-        p->removeChild(this);
-    }
     std::vector<NodeGui*> tmpChildrenCopy;
     foreach(NodeGui* c,children){
         tmpChildrenCopy.push_back(c);
@@ -162,17 +167,9 @@ NodeGui::~NodeGui(){
         }
         c->removeParent(this);
     }
-    node->removeThisFromChildren();
-    node->removeThisFromParents();
-    //    foreach(NodeGui*c,tmpChildrenCopy){
-    //        _dag->checkIfViewerConnectedAndRefresh(c);
-    //    }
     if(!node->isOpenFXNode())
         delete node;
-    //    if(settings){
-    //        delete settings;
-    //        settings = 0;
-    //    }
+   
     delete _undoStack;
 
 }
@@ -227,11 +224,10 @@ void NodeGui::remove(){
     delete this;
 }
 
-void NodeGui::updateChannelsTooltip(){
+void NodeGui::updateChannelsTooltip(const ChannelSet& channels){
     QString tooltip;
-    ChannelSet chans= node->info().channels();
     tooltip.append("Channels in input: ");
-    foreachChannels( z,chans){
+    foreachChannels( z,channels){
         tooltip.append("\n");
         tooltip.append(getChannelName(z).c_str());
         
@@ -259,16 +255,14 @@ void NodeGui::updatePreviewImageForReader(){
         }
     }
 }
-void NodeGui::initInputArrows(){
-    int i=0;
-    int inputnb=node->maximumInputs();
-    double piDividedbyX=(qreal)(pi/(qreal)(inputnb+1));
-    double angle=pi-piDividedbyX;
-    while(i<inputnb){
-        Edge* edge=new Edge(i,angle,this,parentItem(),sc);
-        inputs.push_back(edge);
-        angle-=piDividedbyX;
-        ++i;
+void NodeGui::initializeInputs(){
+    int inputnb = node->getNode()->maximumInputs();
+    double piDividedbyX = (double)(pi/(double)(inputnb+1));
+    double angle = pi-piDividedbyX;
+    for(int i = 0; i < inputnb;++i){
+        Edge* edge = new Edge(i,angle,this,parentItem(),sc);
+        inputs.insert(make_pair(i,edge));
+        angle -= piDividedbyX;
     }
 }
 bool NodeGui::contains(const QPointF &point) const{
@@ -361,7 +355,6 @@ void  NodeGui::removeParent(NodeGui* p){
 
 void NodeGui::setName(QString s){
     name->setText(s);
-    node->setName(s.toStdString());
     if(settings)
         settings->setNodeName(s);
     sc->update();
@@ -406,4 +399,71 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
         }
     }
     return NULL;
+}
+
+bool NodeGui::connectEdge(int edgeNumber,NodeGui* src){
+    assert(src);
+    InputEdgesMap::const_iterator it = inputs.find(edgeNumber);
+    if(it == inputs.end()){
+        return false;
+    }else{
+        it->second->setSource(src);
+        it->second->initLine();
+    }
+}
+
+
+void NodeGui::refreshEdges(){
+    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
+        i->second->initLine();
+    }
+}
+Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
+    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
+        if(i->second->contains(i->second->mapFromScene(pt))){
+            return i->second;
+        }
+    }
+    return NULL;
+}
+
+void NodeGui::activate(){
+    sc->addItem(this);
+    setActive(true);
+    _dag->restoreFromTrash(this);
+    for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        _dag->scene()->addItem(it->second);
+        it->second->setActive(true);
+    }
+    if(node->className() != "Viewer"){
+        if(isThisPanelEnabled()){
+            setSettingsPanelEnabled(false);
+            getSettingPanel()->setVisible(true);
+        }
+    }else{
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node->getNode());
+        _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
+        viewer->getUiContext()->show();
+    }
+}
+
+void NodeGui::deactivate(){
+    sc->removeItem(this);
+    setActive(false);
+    _dag->moveToTrash(this);
+    for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        _dag->scene()->removeItem(it->second);
+        it->second->setActive(false);
+    }
+    if(node->className() != "Viewer"){
+        if(isThisPanelEnabled()){
+            setSettingsPanelEnabled(false);
+            getSettingPanel()->close();
+        }
+        
+    }else{
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node->getNode());
+        _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
+        viewer->getUiContext()->hide();
+    }
 }

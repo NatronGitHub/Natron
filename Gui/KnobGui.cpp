@@ -514,7 +514,15 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     
     layout->addWidget(boxContainers,row,1);
 }
-
+void RGBA_KnobGui::updateGUI(const Variant& variant){
+    QVector4D v = variant.getQVariant().value<QVector4D>();
+    _rBox->setValue(v.x());
+    _gBox->setValue(v.y());
+    _bBox->setValue(v.z());
+    _aBox->setValue(v.w());
+    QColor color(v.x()*255,v.y()*255,v.z()*255,v.w()*255);
+    updateLabel(color);
+}
 void RGBA_KnobGui::showColorDialog(){
     QColorDialog dialog(this);
     if(dialog.exec()){
@@ -563,6 +571,32 @@ void RGBA_KnobGui::disablePermantlyAlpha(){
     _aBox->setVisible(false);
     _aBox->setEnabled(false);
 }
+
+//=============================STRING_KNOB_GUI===================================
+void String_KnobGui::createWidget(QGridLayout *layout, int row){
+    QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
+    layout->addWidget(name,row,0);
+    _lineEdit = new LineEdit(this);
+    layout->addWidget(_lineEdit,row,1);
+    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
+    Knob_Mask flags = _knob->getFlags();
+    if(flags & Knob::READ_ONLY){
+        _lineEdit->setReadOnly(true);
+    }
+    if(flags & Knob::INVISIBLE){
+        _lineEdit->setVisible(false);
+    }
+
+}
+
+void String_KnobGui::onStringChanged(const QString& str){
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant().getQVariant(),Variant(str)));
+    emit valueChanged(Variant(str));
+}
+void String_KnobGui::updateGUI(const Variant& variant){
+    _lineEdit->setText(variant.getQVariant().toString());
+}
+
 
 //=============================GROUP_KNOB_GUI===================================
 
@@ -628,69 +662,4 @@ void Tab_Knob::addKnob(const std::string& tabName,KnobGui* k){
     }
 }
 
-//=============================STRING_KNOB_GUI===================================
-KnobGui* String_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
-    String_Knob* knob=new String_Knob(cb,description,flags);
-    if(cb)
-        cb->addKnob(knob);
-    return knob;
-}
-String_Knob::String_Knob(KnobCallback *cb, const std::string& description, Knob_Mask flags):KnobGui(cb,description){
-    QLabel* name = new QLabel(description.c_str(),this);
-    layout->addWidget(name);
-    _lineEdit = new LineEdit(this);
-    layout->addWidget(_lineEdit);
-    QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
-    if(flags == READ_ONLY){
-        _lineEdit->setReadOnly(true);
-    }
-}
-void String_Knob::onStringChanged(const QString& str){
-    pushUndoCommand(new StringCommand(this,*_string,str.toStdString()));
-    emit stringChanged(str);
-}
-void String_Knob::setValues(){
-    values.clear();
-    QString str(_string->c_str());
-    for (int i = 0; i < str.size(); ++i) {
-        values.push_back(str.at(i).unicode());
-    }
-}
-void String_Knob::setString(QString str){
-    _lineEdit->setText(str);
-    setValues();
-}
-void StringCommand::undo(){
-    _knob->setString(_old.c_str());
-    _knob->validateEvent(false);
-    setText(QObject::tr("Change %1")
-            .arg(_knob->getDescription().c_str()));
-}
-void StringCommand::redo(){
-    _knob->setString(_new.c_str());
-    _knob->validateEvent(false);
-    setText(QObject::tr("Change %1")
-            .arg(_knob->getDescription().c_str()));
-}
-bool StringCommand::mergeWith(const QUndoCommand *command){
-    const StringCommand *_command = static_cast<const StringCommand *>(command);
-    String_Knob* knob = _command->_knob;
-    if(_knob != knob)
-        return false;
-    
-    _new = knob->getString();
-    
-    setText(QObject::tr("Change %1")
-            .arg(_knob->getDescription().c_str()));
-    return true;
-}
-std::string String_Knob::serialize() const{
-    return _string ?  *_string : "";
-}
 
-void String_Knob::restoreFromString(const std::string& str){
-    assert(_string);
-    *_string = str;
-    setString(str.c_str());
-    validateEvent(false);
-}

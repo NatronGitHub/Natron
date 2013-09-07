@@ -45,9 +45,8 @@ namespace {
 
 OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  OFX::Host::ImageEffect::Descriptor         &other,
-                 const std::string  &context,
-                 Model* model)
-: OutputNode(model)
+                 const std::string  &context)
+: OutputNode()
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
 , _isOutput(false)

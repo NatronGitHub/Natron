@@ -26,6 +26,7 @@
 
 
 class NodeGui;
+class NodeInstance;
 class Node;
 class Model;
 class ViewerNode;
@@ -89,7 +90,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(const QString& name);
+    NodeInstance* createNode(const QString& name);
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/
@@ -120,7 +121,7 @@ public:
                              const std::string& pluginIconPath,
                              const std::string& groupIconPath);
     
-    const std::vector<NodeGui*>& getAllActiveNodes() const;
+    const std::vector<NodeInstance*> getAllActiveNodes() const;
     
     const QString& getCurrentProjectName() const {return _currentProject._projectName;}
     
@@ -140,10 +141,8 @@ public:
     
     void resetCurrentProject();
     
-    void clearInternalNodes();
-    
-    void clearNodeGuis();
-    
+    void clearNodes();
+        
     bool isSaveUpToDate() const;
     
     void deselectAllNodes() const;
@@ -154,7 +153,16 @@ public:
     
     ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
     
+    bool connect(int inputNumber,const std::string& inputName,NodeInstance* output);
+    
+    bool connect(int inputNumber,NodeInstance* intput,NodeInstance* output);
+    
+    bool disconnect(NodeInstance* input,NodeInstance* output);
+    
 private:
+    
+    void initNodeCountersAndSetName(NodeInstance* n);
+    
 	void removeAutoSaves() const;
     
     /*Attemps to find an autosave. If found one,prompts the user
@@ -166,6 +174,10 @@ private:
     
     Model* _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
+    
+    std::vector<NodeInstance*> _currentNodes;
+    
+    std::map<std::string,int> _nodeCounters;
     
     Project _currentProject;
     

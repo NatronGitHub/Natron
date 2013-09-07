@@ -33,17 +33,13 @@
 #include "Readers/Read.h"
 #include "Writers/Writer.h"
 #include "Gui/NodeGui.h"
-#include "Gui/ViewerGL.h"
-#include "Gui/Timeline.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/Gui.h"
-#include "Gui/KnobGui.h"
+#include "Engine/Knob.h"
 
 using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader(Model* model):Node(model),
+Reader::Reader():Node(),
 preview(0),
 has_preview(false),
 video_sequence(0),
@@ -67,10 +63,10 @@ std::string Reader::description() {
     return "InputNode";
 }
 
-void Reader::initKnobs(KnobCallback *cb){
+void Reader::initKnobs(){
     std::string desc("File");
-    KnobGui* knob = KnobFactory::createKnob("InputFile", cb, desc, KnobGui::NONE);
-    File_Knob* file = static_cast<File_Knob*>(knob);
+    KnobGui* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
+    File_KnobGui* file = dynamic_cast<File_KnobGui*>(knob);
     assert(file);
 	file->setPointer(&fileNameList);
 	Node::initKnobs(cb);

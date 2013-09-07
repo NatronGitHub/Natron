@@ -27,20 +27,23 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QKeySequence>
 
+#include "Engine/ViewerNode.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Settings.h"
+#include "Engine/Model.h"
+
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Global/AppManager.h"
-#include "Engine/VideoEngine.h"
 #include "Gui/FeedbackSpinBox.h"
-#include "Engine/Model.h"
 #include "Gui/Timeline.h"
-#include "Engine/Settings.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/ComboBox.h"
-#include "Engine/ViewerNode.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
+
+#include "Global/AppManager.h"
+#include "Global/NodeInstance.h"
 
 using namespace Powiter;
 
@@ -50,7 +53,8 @@ _viewerNode(node),
 _channelsToDraw(Mask_RGBA),
 _maximized(false)
 {
-    
+
+    installEventFilter(this);
     setObjectName(node->getName().c_str());
     _mainLayout=new QVBoxLayout(this);
     setLayout(_mainLayout);
@@ -584,4 +588,14 @@ void ViewerTab::onViewerChannelsChanged(int i){
     }
     viewer->setDisplayChannel(_channelsToDraw, !i ? true : false);
 }
+bool ViewerTab::eventFilter(QObject *target, QEvent *event){
+    if (event->type() == QEvent::MouseButtonPress) {
+        _gui->selectNode(_viewerNode->getNodeInstance()->getNodeGui());
+        
+    }
+    return QWidget::eventFilter(target, event);
+}
  
+void ViewerTab::disconnectViewer(){
+    viewer->disconnectViewer();
+}

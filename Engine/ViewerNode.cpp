@@ -27,7 +27,7 @@
 
 using namespace Powiter;
 
-ViewerNode::ViewerNode(ViewerCache* cache,Model* model):OutputNode(model),
+ViewerNode::ViewerNode(ViewerCache* cache):OutputNode(),
 _viewerInfos(0),
 _uiContext(0),
 _viewerCache(cache),

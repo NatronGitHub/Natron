@@ -130,7 +130,9 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    Engine/Knob.cpp
+    Engine/Knob.cpp \
+    Global/NodeInstance.cpp \
+    Global/KnobInstance.cpp
 
 
 HEADERS += \
@@ -233,7 +235,9 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/Knob.h
+    Engine/Knob.h \
+    Global/NodeInstance.h \
+    Global/KnobInstance.h
 
 
 INSTALLS += target

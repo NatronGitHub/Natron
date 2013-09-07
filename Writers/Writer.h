@@ -25,7 +25,6 @@ class Row;
 class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
-class KnobCallback;
 class Writer: public QObject, public OutputNode{
     
     Q_OBJECT
@@ -62,7 +61,7 @@ public:
     };
     
     
-    Writer(Model* model);
+    Writer();
         
     virtual ~Writer();
     
@@ -117,7 +116,7 @@ public slots:
     void onFilesSelected();
     
 protected:
-	virtual void initKnobs(KnobCallback *cb) OVERRIDE;
+	virtual void initKnobs() OVERRIDE;
     
     virtual ChannelSet supportedComponents() OVERRIDE {return Powiter::Mask_All;}
     

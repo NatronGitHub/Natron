@@ -115,6 +115,9 @@ public:
     
     Gui* getGui() const {return _gui;}
     
+    /*makes the viewer black*/
+    void disconnectViewer();
+    
 public slots:
     
     void startPause(bool);
@@ -141,6 +144,7 @@ signals:
     
 protected:
     
+    bool eventFilter(QObject *target, QEvent *event);
     virtual void keyPressEvent(QKeyEvent* e);
 };
 

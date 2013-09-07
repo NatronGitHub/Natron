@@ -31,20 +31,6 @@ namespace Powiter {
 }
 
 class PluginID;
-
-class CounterID{
-public:
-    CounterID(int first, const std::string& second){
-        this->first=first;
-        this->second=second;
-        
-    }
-    ~CounterID(){}
-    
-    int first;
-    std::string second;
-};
-
 namespace XMLProjectLoader {
     
 
@@ -97,19 +83,13 @@ class ViewerCache;
 class AppInstance;
 class OutputNode;
 class ViewerNodeNode;
-//class Hash64;
 class VideoEngine;
 class QMutex;
 class Node;
+class NodeInstance;
 class OutputNode;
 
-/// a host combines several things...
-///    - a factory to create a new instance of your plugin
-///      - it also gets to filter some calls during in the
-///        API to check for validity and perform custom
-///        operations (eg: add extra properties).
-///    - it provides a description of the host application
-///      which is passed back to the plugin.
+
 class Model: public QObject,public boost::noncopyable
 {
     Q_OBJECT
@@ -126,8 +106,6 @@ public:
   
 	/*Create a new node internally*/
     Node* createNode(const std::string& name);
-    
-    void removeNode(Node* n);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     const QStringList& getNodeNameList(){return _nodeNames;}
@@ -165,8 +143,6 @@ public:
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
-    void clearNodes();
-    
     AppInstance* getApp() const {return _appInstance;}
     
     ViewerCache* getViewerCache() const {return _viewerCache;}
@@ -201,12 +177,6 @@ private:
     /*loads writes that are built-ins*/
     void loadBuiltinWrites();
     
-	/*used internally to set an appropriate name to the Node.
-	 *It also read the string returned by Node::description()
-	 *to know whether it is an outputNode,InputNode or an operator.*/
-    void initCounterAndGetDescription(Node*& node);
-
-    
     /*Serializes the active nodes in the editor*/
     QString serializeNodeGraph() const;
     
@@ -217,18 +187,14 @@ private:
         
     /*Analyses and takes action for 1 node ,given 1 attribute from the serialized version
      of the node graph.*/
-    void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
+    void analyseSerializedNodeString(NodeInstance* n,XMLProjectLoader::XMLParsedElement* v);
     
     
     AppInstance* _appInstance;
 
     OutputNode* _currentOutput; /*The output of the currently active graph.*/
-    
-    /*All nodes currently active in the node graph*/
-    std::vector<Node*> _currentNodes;
-    
+        
     std::vector<Format*> _formats;
-    std::vector<CounterID*> _nodeCounters;
     // std::vector<PluginID*> _pluginsLoaded;
     
     

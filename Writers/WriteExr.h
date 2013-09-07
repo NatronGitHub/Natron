@@ -22,7 +22,6 @@
 
 class ComboBox_Knob;
 class Separator_Knob;
-class KnobCallback;
 class Row;
 class QMutex;
 class Box2D;
@@ -45,7 +44,7 @@ public:
     ExrWriteKnobs(Writer* op):WriteKnobs(op){}
     virtual ~ExrWriteKnobs(){}
     
-    virtual void initKnobs(KnobCallback* callback, const std::string& fileType) OVERRIDE;
+    virtual void initKnobs(const std::string& fileType) OVERRIDE;
     
     virtual void cleanUpKnobs() OVERRIDE;
     

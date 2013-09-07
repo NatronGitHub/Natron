@@ -27,17 +27,20 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QMessageBox>
  
 
-#include "Gui/Texture.h"
 #include "Global/AppManager.h"
-#include "Gui/ViewerGL.h"
+#include "Global/NodeInstance.h"
+
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewerNode.h"
+
+#include "Gui/Texture.h"
+#include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/Timeline.h"
 #include "Gui/NodeGraph.h"
-#include "Engine/ViewerNode.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
 
@@ -56,6 +59,7 @@ static QIcon get_icon(const QString &name)
 }
 
 Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
+_lastSelectedViewer(NULL),
 _appInstance(app),
 actionNew_project(0),
 actionOpen_project(0),
@@ -135,8 +139,18 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-void Gui::createNodeGUI( Node* node){
-    _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
+NodeGui* Gui::createNodeGUI( NodeInstance* node){
+    if(node->className() == "Viewer"){
+        TabWidget* where = _nextViewerTabPlace;
+        if(!where){
+            where = _viewersPane;
+        }else{
+            _nextViewerTabPlace = NULL; // < reseting anchor to default
+        }
+        dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
+        _lastSelectedViewer = dynamic_cast<ViewerNode*>(node->getNode())->getUiContext();
+    }
+    return _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
 }
 
 
@@ -165,7 +179,7 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
             return true;
         }
     }
-    return QMainWindow::eventFilter(target, event);;
+    return QMainWindow::eventFilter(target, event);
 }
 void Gui::retranslateUi(QMainWindow *MainWindow)
 {
@@ -883,4 +897,8 @@ int Gui::saveWarning(){
 
 void Gui::errorDialog(const QString& title,const QString& text){
     QMessageBox::critical(this, title, text);
+}
+
+void Gui::selectNode(NodeGui* node){
+    _nodeGraphTab->_nodeGraphArea->selectNode(node);
 }

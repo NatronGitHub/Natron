@@ -12,6 +12,8 @@
 #ifndef POWITER_GUI_NODEGUI_H_
 #define POWITER_GUI_NODEGUI_H_
 
+#include <map>
+
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
@@ -22,12 +24,13 @@ class QPainterPath;
 class QScrollArea;
 class SettingsPanel;
 class QVBoxLayout;
-class Node;
 class AppInstance;
 class NodeGraph;
 class QAction;
 class QUndoCommand;
 class QUndoStack;
+class ChannelSet;
+class NodeInstance;
 
 class NodeGui : public QObject,public QGraphicsItem
 {
@@ -35,12 +38,20 @@ class NodeGui : public QObject,public QGraphicsItem
     Q_INTERFACES(QGraphicsItem)
 public:
 
-    NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
+    typedef std::map<int,Edge*> InputEdgesMap;
+    
+    NodeGui(NodeGraph* dag,
+            QVBoxLayout *dockContainer,
+            NodeInstance *node,
+            qreal x,qreal y ,
+            QGraphicsItem *parent=0,
+            QGraphicsScene *sc=0,
+            QObject* parentObj=0);
 
     ~NodeGui();
     
     /*returns a ptr to the internal node*/
-    Node* getNode(){return node;}
+    NodeInstance* getNodeInstance(){return node;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
@@ -64,12 +75,15 @@ public:
      the node.*/
     virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent);
     
-    /*initialises the input arrows*/
-    void initInputArrows();
+    /*initialises the input edges*/
+    void initializeInputs();
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
-    const std::vector<Edge*>& getInputsArrows() const {return inputs;}
+    const std::map<int,Edge*>& getInputsArrows() const {return inputs;}
+    
+    /*Use NULL for src to disconnect.*/
+    bool connectEdge(int edgeNumber,NodeGui* src);
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -81,24 +95,6 @@ public:
     
     /*Set the boolean to true if the settings panel for this node will be displayed.*/
     void setSettingsPanelEnabled(bool enabled){settingsPanel_displayed=enabled;}
-    
-    /*Adds a children to the node*/
-    void addChild(NodeGui* c){children.push_back(c);}
-    
-    /*Adds a parent to the node*/
-    void addParent(NodeGui* p){parents.push_back(p);}
-    
-    /*Removes the child c from the children of this node*/
-    void removeChild(NodeGui* c);
-    
-    /*Removes the parent p from the parents of this node*/
-	void removeParent(NodeGui* p);
-    
-    /*Returns a ref to the vector of the parents of this nodes.*/
-    const std::vector<NodeGui*>& getParents(){return parents;}
-    
-    /*Returns a ref to the vector of children of this node.*/
-    const std::vector<NodeGui*>& getChildren(){return children;}
     
     /*Returns a pointer to the settings panel of this node.*/
     SettingsPanel* getSettingPanel(){return settings;}
@@ -112,7 +108,7 @@ public:
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip();
+    void updateChannelsTooltip(const ChannelSet& channels);
     
        
     /*toggles selected on/off*/
@@ -141,25 +137,33 @@ public:
     static const int PREVIEW_LENGTH = 40;
     static const int PREVIEW_HEIGHT = 40;
     
+    void setName(QString);
+    
+    void refreshEdges();
+    
+    /*Returns an edge if the node has an edge close to the
+     point pt. pt is in scene coord.*/
+    Edge* hasEdgeNearbyPoint(const QPointF& pt);
+    
+    void activate();
+    
+    void deactivate();
+    
     
 public slots:
-    void setName(QString);
     void undoCommand();
     void redoCommand();
     
-protected:
-
-    /*children of the node*/
-    std::vector<NodeGui*> children;
+signals:
+    void nameChanged(QString);
     
-    /*parents of the node*/
-    std::vector<NodeGui*> parents;
+protected:
     
     /*pointer to the dag*/
     NodeGraph* _dag;
     
     /*pointer to the internal node*/
-    Node* node;
+    NodeInstance* node;
     
     /*true if the node is selected by the user*/
     bool _selected;
@@ -183,7 +187,11 @@ protected:
 	QGraphicsPixmapItem* prev_pix;
     
     /*the graphical input arrows*/
-    std::vector<Edge*> inputs;
+    std::map<int,Edge*> inputs;
+    
+    /*the graphical output arrows
+     NOT YET USED*/
+    //    std::map<int,Edge*> outputs;
     
     /*settings panel related*/
     bool settingsPanel_displayed;

@@ -70,7 +70,7 @@ void Write::to_float(Channel z, float* to, const float* from, const float* alpha
     }
 }
 
-void WriteKnobs::initKnobs(KnobCallback*,const std::string&){
+void WriteKnobs::initKnobs(const std::string&){
     
     _op->createKnobDynamically();
 }

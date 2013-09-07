@@ -48,6 +48,8 @@ class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
 class AppInstance;
+class NodeGui;
+class NodeInstance;
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
@@ -126,6 +128,9 @@ public:
 class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
+    
+    ViewerTab* _lastSelectedViewer;
+    
 public:
     explicit Gui(AppInstance* app,QWidget* parent=0);
     
@@ -133,7 +138,11 @@ public:
     
     void createGui();
     
-    void createNodeGUI(Node *node);
+    NodeGui* createNodeGUI(NodeInstance *node);
+    
+    void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
+    
+    ViewerTab* getLastSelectedViewer() const {return _lastSelectedViewer;}
     
     bool eventFilter(QObject *target, QEvent *event);
 
@@ -186,6 +195,8 @@ public:
     bool isGraphWorthless() const;
     
     void errorDialog(const QString& title,const QString& text);
+    
+    void selectNode(NodeGui* node);
     
 private:
 

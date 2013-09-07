@@ -583,7 +583,22 @@ void RGBA_Knob::_restoreFromString(const std::string& str){
     _value.setValue(QVariant(v));
 
 }
+/***********************************STRING_KNOB*****************************************/
+void String_Knob::fillHashVector(){
+    _hashVector.clear();
+    QString str(_value.getQVariant().toString());
+    for (int i = 0; i < str.size(); ++i) {
+        _hashVector.push_back(str.at(i).unicode());
+    }
+}
 
+std::string String_Knob::serialize() const{
+    return _value.getQVariant().toString().toStdString();
+}
+
+void String_Knob::_restoreFromString(const std::string& str){
+    _value.setValue(QVariant(str.c_str()));
+}
 /***********************************GROUP_KNOB*****************************************/
 Group_Knob::Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags):
 Knob(node,description,dimension,flags){

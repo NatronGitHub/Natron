@@ -558,6 +558,39 @@ protected:
 private:
     QStringList _entries;
 };
+
+/******************************STRING_KNOB**************************************/
+class String_Knob:public Knob
+{
+public:
+    
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
+        return new String_Knob(node,description,dimension,flags);
+    }
+    
+    String_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
+    Knob(node,description,dimension,flags){
+        
+    }
+    
+    virtual void fillHashVector();
+    
+    virtual const std::string name(){return "String";}
+    
+    virtual std::string serialize() const;
+    
+protected:
+    
+    virtual void tryStartRendering(){
+        startRendering(true);
+    }
+    
+    virtual void _restoreFromString(const std::string& str);
+    
+    
+private:
+    QStringList _entries;
+};
 /******************************GROUP_KNOB**************************************/
 class Group_Knob:public Knob
 {

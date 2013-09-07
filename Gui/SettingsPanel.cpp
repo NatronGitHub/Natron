@@ -90,7 +90,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
-    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(setName(QString)));
+    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(nameChanged(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_undoButton);
@@ -133,22 +133,16 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 }
 
 void SettingsPanel::initialize_knobs(){
+    /*ALl OFX params have been created by now*/
     
-    /*All OFX params handled by Knobs have been created already and added
-     to the callback.*/
-    
-    _cb = _nodeGUI->getNode()->getKnobCallBack();
-    _cb->setSettingsPanel(this);
-    
-    /*Initializing Powiter Nodes Knobs and adding all knobs
-     to the node knobs vector*/
-    _nodeGUI->getNode()->initKnobs(_cb);
+    /*Initializing Powiter Nodes Knobs*/
+    _nodeGUI->getNode()->initKnobs();
     
     /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<KnobGui*>& knobs = _nodeGUI->getNode()->getKnobs();
+    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
     int maxSpacing = 0;
     for(U32 i = 0 ; i < knobs.size(); ++i){
-        KnobGui* k = knobs[i];
+        Knob* k = knobs[i];
         if(!k->triggerNewLine() && i!=0){
             k->createWidget(_layoutSettings,i-1);
             int knobSpacing  = k->getSpacingBetweenItems();

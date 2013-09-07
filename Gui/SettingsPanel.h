@@ -18,7 +18,6 @@ class LineEdit;
 class Node;
 class KnobGui;
 class NodeGui;
-class KnobCallback;
 class QVBoxLayout;
 class QGridLayout;
 class QTabWidget;
@@ -44,9 +43,6 @@ class SettingsPanel:public QFrame
     /*Pointer to the node GUI*/
     NodeGui* _nodeGUI;
     
-    /*Pointer to the knob_callback*/
-    KnobCallback *_cb;
-
     /*Header related*/
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;

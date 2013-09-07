@@ -15,18 +15,23 @@
 #include <QMessageBox>
 #include <QtCore/QDir>
 
+#include "Global/NodeInstance.h"
+
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
-#include "Engine/Model.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
-#include "Engine/VideoEngine.h"
 #include "Gui/TabWidget.h"
 #include "Gui/NodeGraph.h"
-#include "Engine/Settings.h"
-#include "Writers/Writer.h"
 #include "Gui/SequenceFileDialog.h"
+
+#include "Engine/Model.h"
+#include "Engine/VideoEngine.h"
+#include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
+
+#include "Writers/Writer.h"
+
 
 
 using namespace Powiter;
@@ -119,15 +124,21 @@ const QStringList& AppInstance::getNodeNameList(){
 }
 
 
-Node* AppInstance::createNode(const QString& name) {    
+NodeInstance* AppInstance::createNode(const QString& name) {
     Node* node = _model->createNode(name.toStdString());
+    NodeGui* nodegui = 0;
+    NodeInstance* instance = 0;
     if (node) {
-        _gui->createNodeGUI(node);
+        instance = new NodeInstance(node,this);
+        nodegui = _gui->createNodeGUI(instance);
+        instance->setNodeGuiPTR(nodegui);
+        instance->initializeInputs();
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;
     }
-    return node;
+    initNodeCountersAndSetName(instance);
+    return instance;
 }
 
 OutputNode* AppInstance::getCurrentOutput(){
@@ -154,14 +165,19 @@ Writer* AppInstance::getCurrentWriter(){
 }
 
 void AppInstance::stackPluginToolButtons(const std::vector<std::string>& groups,
-                                       const std::string& pluginName,
-                                       const std::string& pluginIconPath,
-                                       const std::string& groupIconPath){
+                                         const std::string& pluginName,
+                                         const std::string& pluginIconPath,
+                                         const std::string& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
-const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
+const std::vector<NodeInstance*> AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
-    return _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
+    const std::vector<NodeGui*>&  actives= _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
+    vector<NodeInstance*> ret;
+    for (U32 j = 0; j < actives.size(); ++j) {
+        ret.push_back(actives[j]->getNodeInstance());
+    }
+    return ret;
 }
 void AppInstance::loadProject(const QString& path,const QString& name){
     _model->loadProject(path+name);
@@ -228,13 +244,13 @@ void AppInstance::removeAutoSaves() const{
         }
     }
 }
+void AppInstance::clearNodes(){
+    foreach(NodeInstance* n,_currentNodes){
+        delete n;
+    }
+    _currentNodes.clear();
+}
 
-void AppInstance::clearInternalNodes(){
-    _model->clearNodes();
-}
-void AppInstance::clearNodeGuis(){
-    _gui->_nodeGraphTab->_nodeGraphArea->clear();
-}
 bool AppInstance::isSaveUpToDate() const{
     return _currentProject._age == _currentProject._lastAutoSave;
 }
@@ -304,8 +320,7 @@ bool AppInstance::findAutoSave(){
                 removeAutoSaves();
                 if(getCurrentViewer())
                     getCurrentViewer()->getUiContext()->viewer->disconnectViewer();
-                clearNodeGuis();
-                clearInternalNodes();
+                clearNodes();
                 resetCurrentProject();
                 return false;
             }else{
@@ -361,3 +376,46 @@ void AppManager::removeInstance(int appID){
     _appInstances.erase(appID);
 }
 
+bool AppInstance::connect(int inputNumber,const std::string& parentName,NodeInstance* output){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        if (_currentNodes[i]->getName() == parentName) {
+            connect(inputNumber,_currentNodes[i], output);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AppInstance::connect(int inputNumber,NodeInstance* input,NodeInstance* output){
+
+    if(!output->connectInput(input, inputNumber)){
+        return false;
+    }
+    input->connectOutput(output);
+    input->refreshEdgesGui();
+    output->refreshEdgesGui();
+    return true;
+}
+bool AppInstance::disconnect(NodeInstance* input,NodeInstance* output){
+    if(!output->disconnectInput(input)){
+        return false;
+    }
+    if(!input->disconnectOutput(output)){
+        return false;
+    }
+    input->refreshEdgesGui();
+    output->refreshEdgesGui();
+    return true;
+}
+
+void AppInstance::initNodeCountersAndSetName(NodeInstance* n){
+    assert(n);
+    map<string,int>::iterator it = _nodeCounters.find(n->className());
+    if(it == _nodeCounters.end()){
+        it->second++;
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)));
+    }else{
+        _nodeCounters.insert(make_pair(n->className(), 1));
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)));
+    }
+}

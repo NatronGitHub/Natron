@@ -141,7 +141,7 @@ std::vector<std::string> WriteExr::fileTypesEncoded() const {
     return out;
 }
 
-void ExrWriteKnobs::initKnobs(KnobCallback* callback, const std::string& fileType) {
+void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
     sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, KnobGui::NONE));

@@ -15,8 +15,6 @@
 #include <QtCore/QWaitCondition>
 
 #include "Engine/Hash64.h"
-#include "Gui/KnobGui.h" // "because" knobs gui and internal are not separated entities
-#include "Gui/NodeGui.h" // for updateChannelsTooltip()
 #include "Engine/ChannelSet.h"
 #include "Engine/Model.h"
 #include "Engine/Format.h"
@@ -25,11 +23,13 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
 #include "Engine/Row.h"
+#include "Engine/Knob.h"
 
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
 
 #include "Global/AppManager.h"
+#include "Global/NodeInstance.h"
 
 
 
@@ -37,8 +37,8 @@ using namespace std;
 using namespace Powiter;
 
 namespace {
-    void Hash64_appendKnob(Hash64* hash, const KnobGui* knob){
-        const std::vector<U64>& values= knob->getValues();
+    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
+        const std::vector<U64>& values= knob->getHashVector();
         for(U32 i=0;i<values.size();++i) {
             hash->append(values[i]);
         }
@@ -72,9 +72,7 @@ void Node::Info::reset(){
     _executingEngine = 0;
 }
 
-int Node::inputCount() const {
-    return _parents.size();
-}
+
 
 void Node::Info::merge_displayWindow(const Format& other){
     _displayWindow.merge(other);
@@ -89,31 +87,34 @@ void Node::merge_info(bool forReal){
 	int final_direction=0;
 	ChannelSet chans;
     bool displayMode = info().rgbMode();
-	for (int i =0 ; i < inputCount(); ++i) {
-        Node* parent = _parents[i];
-        merge_frameRange(parent->info().firstFrame(),parent->info().lastFrame());
+	for (NodeInstance::InputMap::const_iterator it = _instance->getInputs().begin();
+         it!=_instance->getInputs().end();++it) {
+        
+        Node* input = it->second->getNode();
+        merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
         if(forReal){
-            final_direction+=parent->info().ydirection();
-            chans += parent->info().channels();
+            final_direction+=input->info().ydirection();
+            chans += input->info().channels();
             ChannelSet supportedComp = supportedComponents();
             if ((supportedComp & chans) != chans) {
                 cout <<"WARNING:( " << getName() << ") does not support one or more of the following channels:\n " ;
                 chans.printOut();
-                cout << "Coming from node " << parent->getName() << endl;
+                cout << "Coming from node " << input->getName() << endl;
             }
-            if(parent->info().rgbMode()){
+            if(input->info().rgbMode()){
                 displayMode = true;
             }
-            if(parent->info().blackOutside()){
+            if(input->info().blackOutside()){
                 _info.set_blackOutside(true);
             }
            
         }
-        _info.merge_dataWindow(parent->info().dataWindow());
-        _info.merge_displayWindow(parent->info().displayWindow());
+        _info.merge_dataWindow(input->info().dataWindow());
+        _info.merge_displayWindow(input->info().displayWindow());
     }
-    if(_parents.size() > 0)
-        final_direction = final_direction / _parents.size();
+    U32 size = _instance->getInputs().size();
+    if(size > 0)
+        final_direction = final_direction / size;
 	_info.set_channels(chans);
     _info.set_rgbMode(displayMode);
     _info.set_ydirection(final_direction);
@@ -160,17 +161,16 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node(Model* model):
-_model(model),
-_info()
+Node::Node():
+_model(NULL),
+_info(),
+_marked(false),
+_instance(NULL)
 {
-
-    _marked = false;
-    _knobsCB = new KnobCallback(NULL,this);
 	
 }
 
-void Node::removeKnob(KnobGui* knob){
+void Node::removeKnob(Knob* knob){
     for(U32 i = 0 ; i < _knobsVector.size() ; ++i) {
         if (knob == _knobsVector[i]) {
             _knobsVector.erase(_knobsVector.begin()+i);
@@ -180,53 +180,26 @@ void Node::removeKnob(KnobGui* knob){
 }
 
 
-void Node::removeChild(Node* child){
-    
-    U32 i=0;
-    while(i<_children.size()){
-        if(_children[i]==child){
-            _children.erase(_children.begin()+i);
-            break;
-        }
-        ++i;
-    }
-}
-void Node::removeParent(Node* parent){
-    
-    U32 i=0;
-    while(i<_parents.size()){
-        if(_parents[i]==parent){
-            _parents.erase(_parents.begin()+i);
-            break;
-        }
-        ++i;
-    }
-}
-
-void Node::removeThisFromParents(){
-    for(U32 i = 0 ; i < _parents.size() ; ++i) {
-        _parents[i]->removeChild(this);
-    }
-}
-
-void Node::removeThisFromChildren(){
-    for(U32 i = 0 ; i < _children.size() ; ++i) {
-        _children[i]->removeParent(this);
-    }
-
-}
-
 void Node::initializeInputs(){
-    initInputLabelsMap();
-    applyLabelsToInputs();
+    for(int i = 0;i < maximumInputs();++i){
+        _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
+    }
 }
-
+const std::string& Node::getInputLabel(int inputNb) const{
+    map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
+    if(it == _inputLabelsMap.end()){
+        return "";
+    }else{
+        return it->second;
+    }
+}
 
 Node* Node::input(int index){
-    if((U32)index < _parents.size()){
-        return _parents[index];
-    }else{
+    NodeInstance* n = _instance->input(index);
+    if(!n){
         return NULL;
+    }else{
+        return n->getNode();
     }
 }
 
@@ -237,23 +210,6 @@ std::string Node::setInputLabel(int inputNb){
     out.append(1,(char)(inputNb+65));
     return out;
 }
-void Node::applyLabelsToInputs(){
-    for (std::map<int, std::string>::iterator it = _inputLabelsMap.begin(); it!=_inputLabelsMap.end(); ++it) {
-        _inputLabelsMap[it->first] = setInputLabel(it->first);
-    }
-}
-void Node::initInputLabelsMap(){
-    int i=0;
-    while(i<maximumInputs()){
-        char str[2];
-        str[0] =i+65;
-        str[1]='\0';
-        _inputLabelsMap[i]=str;
-        ++i;
-    }
-    
-}
-
 
 bool Node::validate(bool forReal){
     if(isOpenFXNode()){
@@ -267,7 +223,7 @@ bool Node::validate(bool forReal){
     if(!_validate(forReal))
         return false;
     preProcess();
-    _nodeGUI->updateChannelsTooltip();
+    _instance->updateNodeChannelsGui(_info.channels());
     return true;
 }
 
@@ -303,12 +259,9 @@ bool Node::hashChanged(){
     computeTreeHash(v);
     return oldHash!=_hashValue.value();
 }
-void Node::initKnobs(KnobCallback *cb){
-    cb->initNodeKnobsVector();
-}
+
 void Node::createKnobDynamically(){
     
-	_knobsCB->createKnobDynamically();
 }
 
 
@@ -362,7 +315,7 @@ void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
     if (*ok == true) {
         return;
     }
-    if(node->getNode()->className() == string("Viewer")){
+    if(node->className() == "Viewer"){
         out = node;
         *ok = true;
     }else{
@@ -377,11 +330,10 @@ Node::~Node(){
     _children.clear();
     _knobsVector.clear();
     _inputLabelsMap.clear();
-    delete _knobsCB;
 }
 
 
-OutputNode::OutputNode(Model* model):Node(model){
+OutputNode::OutputNode():Node(){
     _mutex = new QMutex;
     _openGLCondition = new QWaitCondition;
     
@@ -389,6 +341,7 @@ OutputNode::OutputNode(Model* model):Node(model){
 }
 
 OutputNode::~OutputNode(){
+    _videoEngine->quitEngineThread();
     delete _videoEngine;
     delete _mutex;
     delete _openGLCondition;

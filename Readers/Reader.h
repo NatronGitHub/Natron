@@ -18,6 +18,7 @@
 #include "Engine/Node.h"
 
 class QImage;
+class NodeInstance;
 class FrameEntry;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
@@ -346,7 +347,7 @@ public:
         int _bufferSize; /// maximum size of the buffer
     };
     
-    Reader(Model* model);
+    Reader();
 
     /**
      * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
@@ -495,7 +496,7 @@ public:
 
 protected:
 
-	virtual void initKnobs(KnobCallback *cb) OVERRIDE;
+	virtual void initKnobs() OVERRIDE;
     
     virtual ChannelSet supportedComponents() OVERRIDE { return ChannelSet(Powiter::Mask_All); }
 private:

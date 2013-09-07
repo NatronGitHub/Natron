@@ -34,24 +34,32 @@ public:
     virtual ~Edge();
     
     QPainterPath shape() const;
+    
     bool contains(const QPointF &point) const;
+    
     void setSource(NodeGui* src){
         this->source=src;
         src ? has_source=true : has_source=false;
 
     }
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,
-               QWidget *parent = 0);
+    
+    int getInputNumber() const {return inputNb;}
+    
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *options,QWidget *parent = 0);
+    
     void removeSource(){has_source=false; source = NULL; initLine();}
-    NodeGui* getDest(){return dest;}
-    NodeGui* getSource(){return source;}
-    bool hasSource(){return has_source;}
+    
+    NodeGui* getDest() const {return dest;}
+    
+    NodeGui* getSource() const {return source;}
+    
+    bool hasSource() const {return has_source;}
+    
     void updatePosition(const QPointF& src);
+    
     void initLine();
+    
     QGraphicsScene* getScene() const {return scene;}
-protected:
-
-
 
 private:
 
