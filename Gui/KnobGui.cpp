@@ -31,15 +31,19 @@ CLANG_DIAG_ON(unused-private-field);
 
 
 #include "Global/AppManager.h"
+#include "Global/NodeInstance.h"
+#include "Global/KnobInstance.h"
+
 #include "Engine/Node.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
 #include "Engine/PluginID.h"
-#include "Gui/SettingsPanel.h"
 #include "Engine/Knob.h"
+
 #include "Gui/Button.h"
+#include "Gui/SettingsPanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Timeline.h"
 #include "Gui/Gui.h"
@@ -60,7 +64,8 @@ KnobGui::KnobGui(Knob* knob):
 QWidget(),
 _knob(knob),
 _triggerNewLine(true),
-_spacingBetweenItems(0)
+_spacingBetweenItems(0),
+_widgetCreated(false)
 {
     QObject::connect(knob,SIGNAL(valueChanged(const Variant&)),this,SLOT(onInternalValueChanged(const Variant&)));
     QObject::connect(this,SIGNAL(valueChanged(const Variant&)),knob,SLOT(onValueChanged(const Variant&)));
@@ -72,7 +77,7 @@ KnobGui::~KnobGui(){
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
-    _knob->getNode()->getNodeUi()->pushUndoCommand(cmd);
+    _knob->getNode()->getNodeInstance()->pushUndoCommand(cmd);
 }
 
 
@@ -513,6 +518,12 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     boxLayout->addWidget(_colorDialogButton);
     
     layout->addWidget(boxContainers,row,1);
+    
+    
+    Knob_Mask flags = _knob->getFlags();
+    if (flags  & Knob::NO_ALPHA) {
+        disablePermantlyAlpha();
+    }
 }
 void RGBA_KnobGui::updateGUI(const Variant& variant){
     QVector4D v = variant.getQVariant().value<QVector4D>();
@@ -531,7 +542,11 @@ void RGBA_KnobGui::showColorDialog(){
         _rBox->setValue(color.redF());
         _gBox->setValue(color.greenF());
         _bBox->setValue(color.blueF());
-        _aBox->setValue(color.alphaF());
+        if(_alphaEnabled)
+            _aBox->setValue(color.alphaF());
+        else
+            _aBox->setValue(1.0);
+
         onColorChanged();
     }
 }
@@ -599,54 +614,40 @@ void String_KnobGui::updateGUI(const Variant& variant){
 
 
 //=============================GROUP_KNOB_GUI===================================
-
-
-Group_Knob::Group_Knob(KnobCallback *cb, const std::string& description, Knob_Mask):KnobGui(cb,description){
-    _box = new QGroupBox(description.c_str(),this);
+void Group_KnobGui::createWidget(QGridLayout* layout,int row){
+    _box = new QGroupBox(QString(QString(_knob->getDescription().c_str())+":"),this);
     _boxLayout = new QVBoxLayout(_box);
     QObject::connect(_box, SIGNAL(clicked(bool)), this, SLOT(setChecked(bool)));
     _box->setLayout(_boxLayout);
     _box->setCheckable(true);
-    layout->addWidget(_box);
+    layout->addWidget(_box,row,0);
 }
 
 
-void Group_Knob::addKnob(KnobGui* k){
+void Group_KnobGui::addKnob(KnobGui* k){
     k->setParent(this);
     _boxLayout->addWidget(k);
     k->setVisible(_box->isChecked());
     _knobs.push_back(k);
 }
-void Group_Knob::setChecked(bool b){
+void Group_KnobGui::setChecked(bool b){
     _box->setChecked(b);
     for(U32 i = 0 ; i < _knobs.size() ;++i) {
         _knobs[i]->setVisible(b);
     }
 }
 
-std::string Group_Knob::serialize() const{
-    return "";
-}
-
 //=============================TAB_KNOB_GUI===================================
-
-Tab_Knob::Tab_Knob(KnobCallback *cb, const std::string& description, Knob_Mask /*flags*/):KnobGui(cb,description){
-    if(cb){
-        _tabWidget = new TabWidget(cb->getNode()->getModel()->getApp()->getGui(),TabWidget::NONE,this);
-        layout->addWidget(_tabWidget);
-    }
+void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
+    /*not a pretty call...*/
+    _tabWidget = new TabWidget(_knob->getKnobInstance()->getNode()->getNode()->getModel()->getApp()->getGui(),
+                               TabWidget::NONE,this);
+    layout->addWidget(_tabWidget,row,0);
 }
 
 
-KnobGui* Tab_Knob::BuildKnob(KnobCallback* cb, const std::string& description, Knob_Mask flags){
-    Tab_Knob* knob=new Tab_Knob(cb,description,flags);
-    if(cb)
-        cb->addKnob(knob);
-    return knob;
-}
 
-
-void Tab_Knob::addTab(const std::string& name){
+void Tab_KnobGui::addTab(const std::string& name){
     QWidget* newTab = new QWidget(_tabWidget);
     _tabWidget->appendTab(name.c_str(), newTab);
     QVBoxLayout* newLayout = new QVBoxLayout(newTab);
@@ -654,7 +655,7 @@ void Tab_Knob::addTab(const std::string& name){
     vector<KnobGui*> knobs;
     _knobs.insert(make_pair(name, make_pair(newLayout, knobs)));
 }
-void Tab_Knob::addKnob(const std::string& tabName,KnobGui* k){
+void Tab_KnobGui::addKnob(const std::string& tabName,KnobGui* k){
     KnobsTabMap::iterator it = _knobs.find(tabName);
     if(it!=_knobs.end()){
         it->second.first->addWidget(k);

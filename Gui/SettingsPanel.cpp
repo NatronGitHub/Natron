@@ -16,8 +16,13 @@
 #include <QStyle>
 
 #include "Global/Macros.h"
-#include "Gui/NodeGui.h"
+#include "Global/NodeInstance.h"
+#include "Global/KnobInstance.h"
+
 #include "Engine/Node.h"
+
+
+#include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Button.h"
@@ -30,7 +35,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(_mainLayout);
-    setObjectName(_nodeGUI->getNode()->getName().c_str());
+    setObjectName(_nodeGUI->getNodeInstance()->getName().c_str());
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     
@@ -89,7 +94,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QObject::connect(_redoButton, SIGNAL(pressed()),_nodeGUI, SLOT(redoCommand()));
     
     _nodeName = new LineEdit(_headerWidget);
-    _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
+    _nodeName->setText(_nodeGUI->getNodeInstance()->getName().c_str());
     QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(nameChanged(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
@@ -133,20 +138,21 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 }
 
 void SettingsPanel::initialize_knobs(){
-    /*ALl OFX params have been created by now*/
-    
-    /*Initializing Powiter Nodes Knobs*/
-    _nodeGUI->getNode()->initKnobs();
     
     /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
+    const std::vector<KnobInstance*>& knobs = _nodeGUI->getNodeInstance()->getKnobs();
     int maxSpacing = 0;
     for(U32 i = 0 ; i < knobs.size(); ++i){
-        Knob* k = knobs[i];
-        if(!k->triggerNewLine() && i!=0){
-            k->createWidget(_layoutSettings,i-1);
-            int knobSpacing  = k->getSpacingBetweenItems();
-            if(knobSpacing > maxSpacing) maxSpacing = knobSpacing;
+        KnobInstance* k = knobs[i];
+        /*If the GUI doesn't already exist, we create it.*/
+        if(!k->getKnobGui()->hasWidgetBeenCreated()){
+            KnobGui* gui = k->getKnobGui();
+            if(!gui->triggerNewLine() && i!=0){
+                gui->createGUI(_layoutSettings,i-1);
+                int knobSpacing  =  gui->getSpacingBetweenItems();
+                if(knobSpacing > maxSpacing)
+                    maxSpacing = knobSpacing;
+            }
         }
     }
     _layoutSettings->setHorizontalSpacing(maxSpacing);

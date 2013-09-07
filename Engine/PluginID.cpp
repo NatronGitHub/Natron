@@ -15,6 +15,8 @@
 #ifdef __POWITER_WIN32__
 #elif defined(__POWITER_UNIX__)
 PluginID::~PluginID() {
-    dlclose(first);
+    for(std::map<std::string,void*>::iterator it = _functions.begin() ; it != _functions.end() ;++it){
+        dlclose(it->second);
+    }
 }
 #endif

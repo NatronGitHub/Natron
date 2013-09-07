@@ -110,7 +110,7 @@ public:
     
     
     /*CONSTRUCTOR AND DESTRUCTORS*/
-    Node(Model* model,NodeInstance* instance);
+    Node();
     virtual ~Node();
     /*============================*/
     
@@ -119,14 +119,6 @@ public:
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
     bool hashChanged();
     /*============================*/
-    
-    /*Knobs related functions*/
-    const std::vector<Knob*>& getKnobs() const { return _knobsVector; }
-    void addToKnobVector(Knob* knob){ _knobsVector.push_back(knob); }
-    
-    /*Do not call this function. It is used
-     internally by the Knob_Callback.*/
-    void removeKnob(Knob* knob);
     
     /*overload this to init any knobs*/
     virtual void initKnobs(){}
@@ -169,7 +161,9 @@ public:
     Node* input(int index);
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     virtual std::string setInputLabel(int inputNb);
-    const std::string& getInputLabel(int inputNb) const;
+    const std::string getInputLabel(int inputNb) const;
+    bool hasOutputConnected() const;
+    bool isInputConnected(int inputNb) const;
     /*============================*/
     
     
@@ -225,7 +219,7 @@ public:
     
     Model* getModel() const {return _model;}
 
-    void setModel(Model* model){_model = model;}
+    void setModel(Model* model);
     
     void setNodeInstance(NodeInstance* instance){_instance = instance;}
     
@@ -238,7 +232,9 @@ public:
     void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
 
     void set_lastFrame(int nb) { _info.set_lastFrame(nb); }
-
+    
+    
+    
 protected:
     
     virtual ChannelSet supportedComponents() = 0; 
@@ -253,11 +249,12 @@ protected:
 	std::map<int, std::string> _inputLabelsMap; // inputs name
     std::string _name; //node name set by the user
 	Hash64 _hashValue; // hash value
-	std::vector<Knob*> _knobsVector; // knobs (params)
 	Box2D _requestedBox; // composition of all the area requested by children
 	NodeInstance* _instance; // ptr to the instance
 
 private:
+    
+    
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     void merge_info(bool forReal);
     void copy_info(Node* parent);
@@ -334,6 +331,8 @@ public:
     
     TimeLine& getTimeLine(){return _timeline;}
     
+    void initVideoEngine();
+
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
     virtual bool _validate(bool /*forReal*/) OVERRIDE = 0;
@@ -342,6 +341,8 @@ protected:
 
     
 private:
+
+    
     QMutex* _mutex;
     QWaitCondition* _openGLCondition;
     VideoEngine* _videoEngine;

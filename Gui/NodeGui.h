@@ -78,6 +78,8 @@ public:
     /*initialises the input edges*/
     void initializeInputs();
     
+    void initializeKnobs();
+    
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
     const std::map<int,Edge*>& getInputsArrows() const {return inputs;}

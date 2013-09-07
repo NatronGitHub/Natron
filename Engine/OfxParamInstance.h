@@ -16,6 +16,8 @@
 #include <vector>
 #include <QtCore/QObject>
 #include <QStringList>
+#include <QVector4D>
+
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -25,7 +27,6 @@
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
-class KnobGui;
 class String_Knob;
 class File_Knob;
 class OutputFile_Knob;
@@ -40,7 +41,7 @@ class Bool_Knob;
 class ComboBox_Knob;
 class Group_Knob;
 class OfxNode;
-
+class Knob;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
     
@@ -55,7 +56,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void emitInstanceChanged();
@@ -91,7 +92,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -122,7 +123,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -152,7 +153,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -181,7 +182,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -193,7 +194,7 @@ class OfxRGBAInstance :public QObject, public OFX::Host::Param::RGBAInstance {
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _r,_g,_b,_a;
+    QVector4D _color;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
@@ -209,7 +210,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -222,7 +223,7 @@ class OfxRGBInstance :public QObject, public OFX::Host::Param::RGBInstance {
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _r,_g,_b;
+    QVector4D _color;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
@@ -238,7 +239,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -250,8 +251,8 @@ class OfxDouble2DInstance : public QObject,public OFX::Host::Param::Double2DInst
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _x1,_x2;
-    Double2D_Knob* _knob;
+	double _values[2];
+    Double_Knob* _knob;
     std::string _paramName;
 public:
     OfxDouble2DInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
@@ -266,7 +267,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     
     public slots:
@@ -295,7 +296,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     public slots:
     void onInstanceChanged();
@@ -311,9 +312,9 @@ public:
     
     OfxGroupInstance(OfxNode* node,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
-    void addKnob(KnobGui* k);
+    void addKnob(Knob* k);
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     virtual ~OfxGroupInstance(){}
 };
@@ -354,7 +355,7 @@ public:
      for the frame frameIndex.*/
     std::string filenameFromPattern(int frameIndex) const;
     
-    KnobGui* getKnob() const;
+    Knob* getKnob() const;
     
     virtual ~OfxStringInstance(){}
     

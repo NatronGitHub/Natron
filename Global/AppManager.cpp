@@ -102,6 +102,9 @@ _model(0),_gui(0),_appID(appID)
 
 
 AppInstance::~AppInstance(){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        delete _currentNodes[i];
+    }
     removeAutoSaves();
     delete _model;
     appPTR->removeInstance(_appID);
@@ -133,6 +136,7 @@ NodeInstance* AppInstance::createNode(const QString& name) {
         nodegui = _gui->createNodeGUI(instance);
         instance->setNodeGuiPTR(nodegui);
         instance->initializeInputs();
+        instance->initializeKnobs();
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;

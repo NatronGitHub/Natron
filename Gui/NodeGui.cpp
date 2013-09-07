@@ -148,7 +148,8 @@ settings(0)
 
 NodeGui::~NodeGui(){
     _dag->removeNode(this);
-    foreach(Edge* e,inputs){
+    for(InputEdgesMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        Edge* e = it->second;
         if(e){
             QGraphicsScene* scene = e->getScene();
             if(scene){
@@ -158,18 +159,6 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
-    std::vector<NodeGui*> tmpChildrenCopy;
-    foreach(NodeGui* c,children){
-        tmpChildrenCopy.push_back(c);
-        Edge* e = c->findConnectedEdge(this);
-        if(e){
-            e->removeSource();
-        }
-        c->removeParent(this);
-    }
-    if(!node->isOpenFXNode())
-        delete node;
-   
     delete _undoStack;
 
 }
@@ -465,5 +454,11 @@ void NodeGui::deactivate(){
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(node->getNode());
         _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
+    }
+}
+
+void NodeGui::initializeKnobs(){
+    if(settings){
+        settings->initialize_knobs();
     }
 }

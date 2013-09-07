@@ -30,6 +30,7 @@
 
 #include "Global/AppManager.h"
 #include "Global/NodeInstance.h"
+#include "Global/KnobInstance.h"
 
 
 
@@ -170,22 +171,13 @@ _instance(NULL)
 	
 }
 
-void Node::removeKnob(Knob* knob){
-    for(U32 i = 0 ; i < _knobsVector.size() ; ++i) {
-        if (knob == _knobsVector[i]) {
-            _knobsVector.erase(_knobsVector.begin()+i);
-            break;
-        }
-    }
-}
-
 
 void Node::initializeInputs(){
     for(int i = 0;i < maximumInputs();++i){
         _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
     }
 }
-const std::string& Node::getInputLabel(int inputNb) const{
+const std::string Node::getInputLabel(int inputNb) const{
     map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
     if(it == _inputLabelsMap.end()){
         return "";
@@ -212,11 +204,6 @@ std::string Node::setInputLabel(int inputNb){
 }
 
 bool Node::validate(bool forReal){
-    if(isOpenFXNode()){
-        if (_parents.size() < (unsigned int)minimumInputs()) {
-            return false;
-        }
-    }
     if(!isInputNode()){
         merge_info(forReal);
     }
@@ -237,8 +224,9 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     /*Clear the values left to compute the hash key*/
     _hashValue.reset();
     /*append all values stored in knobs*/
-    for(U32 i=0;i<_knobsVector.size();++i) {
-        Hash64_appendKnob(&_hashValue,_knobsVector[i]);
+    const vector<KnobInstance*>& knobs = _instance->getKnobs();
+    for(U32 i=0;i<knobs.size();++i) {
+        Hash64_appendKnob(&_hashValue,knobs[i]->getKnob());
     }
     /*append the node name*/
     Hash64_appendQString(&_hashValue, QString(className().c_str()));
@@ -246,22 +234,23 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     alreadyComputedHash.push_back(_name);
     
     /*Recursive call to parents and add their hash key*/
-    foreach(Node* parent,_parents){
-        parent->computeTreeHash(alreadyComputedHash);
-        _hashValue.append(parent->hash().value());
+    const NodeInstance::InputMap& inputs = _instance->getInputs();
+    for (NodeInstance::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        it->second->getNode()->computeTreeHash(alreadyComputedHash);
+        _hashValue.append(it->second->getNode()->hash().value());
     }
     /*Compute the hash key*/
     _hashValue.computeHash();
 }
 bool Node::hashChanged(){
     U64 oldHash=_hashValue.value();
-    vector<std::string> v;
+    std::vector<std::string> v;
     computeTreeHash(v);
     return oldHash!=_hashValue.value();
 }
 
 void Node::createKnobDynamically(){
-    
+    _instance->createKnobGuiDynamically();
 }
 
 
@@ -319,25 +308,35 @@ void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
         out = node;
         *ok = true;
     }else{
-        foreach(Node* c,node->getChildren()){
-            _hasViewerConnected(c,ok,out);
+        const NodeInstance::OutputMap& outputs = node->getNodeInstance()->getOutputs();
+        for (NodeInstance::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            _hasViewerConnected(it->second->getNode(),ok,out);
         }
     }
 }
+bool Node::hasOutputConnected() const{
+    return _instance->hasOutputConnected();
+}
+bool Node::isInputConnected(int inputNb) const{
+    return _instance->isInputConnected(inputNb);
+}
 
 Node::~Node(){
-    _parents.clear();
-    _children.clear();
-    _knobsVector.clear();
     _inputLabelsMap.clear();
 }
 
+void Node::setModel(Model* model){
+    _model = model;
+    if(isOutputNode()){
+        dynamic_cast<OutputNode*>(this)->initVideoEngine();
+    }
+}
 
-OutputNode::OutputNode():Node(){
+OutputNode::OutputNode():Node(),_videoEngine(0){
     _mutex = new QMutex;
     _openGLCondition = new QWaitCondition;
     
-    _videoEngine = new VideoEngine(model,_openGLCondition,_mutex);
+    
 }
 
 OutputNode::~OutputNode(){
@@ -345,6 +344,9 @@ OutputNode::~OutputNode(){
     delete _videoEngine;
     delete _mutex;
     delete _openGLCondition;
+}
+void OutputNode::initVideoEngine(){
+    _videoEngine = new VideoEngine(_model,_openGLCondition,_mutex);
 }
 
 void TimeLine::seek(int frame){

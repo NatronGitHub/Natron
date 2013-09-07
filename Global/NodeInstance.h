@@ -12,6 +12,7 @@
 #define NODEINSTANCE_H
 
 #include <map>
+#include <vector>
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
@@ -21,6 +22,8 @@ class Node;
 class NodeGui;
 class ChannelSet;
 class AppInstance;
+class QUndoCommand;
+class KnobInstance;
 /*This class manages the interaction between
 a NodeGui object and a Node object.
 */
@@ -35,6 +38,8 @@ class NodeInstance : public QObject
     
     std::map<int,NodeInstance*> _outputs;
     std::map<int,NodeInstance*> _inputs;
+    
+    std::vector<KnobInstance*> _knobs;
     
 public:
     
@@ -64,6 +69,8 @@ public:
     const InputMap& getInputs() const {return _inputs;}
     
     const OutputMap& getOutputs() const {return _outputs;}
+    
+    const std::vector<KnobInstance*>& getKnobs() const {return _knobs;}
     
     NodeInstance* input(int inputNb) const;
     
@@ -133,7 +140,32 @@ public:
     void checkIfViewerConnectedAndRefresh() const;
     
     void initializeInputs();
+    
+    /*Called by AppInstance::createNode.
+     You should never call this yourself.
+     */
+    void initializeKnobs();
+    
+    /*You can call this if you created a knob
+     outside of Node::initKnobs and
+     OfxParamInstance's derived classes constructor*/
+    void createKnobGuiDynamically();
 
+    /*Called by KnobFactory::createKnob. You
+     should never call this yourself.*/
+    void addKnobInstance(KnobInstance* knob){
+        _knobs.push_back(knob);
+    }
+    
+    /*Called by the desctructor of KnobInstance.
+     You should never call this yourself.*/
+    void removeKnobInstance(KnobInstance* knob);
+    
+    void pushUndoCommand(QUndoCommand* cmd);
+    
+    bool isInputConnected(int inputNb) const;
+    
+    bool hasOutputConnected() const;
     
 public slots:
     

@@ -21,6 +21,7 @@
 #include "Global/MemoryInfo.h"
 #include "Global/AppManager.h"
 #include "Global/NodeInstance.h"
+#include "Global/KnobInstance.h"
 
 #include "Engine/Hash64.h"
 #include "Engine/Node.h"
@@ -232,6 +233,7 @@ Node* Model::createNode(const std::string& name) {
     } else {
         node = ofxHost->createOfxNode(name);
     }
+    node->setModel(this);
     return node;
 }
 
@@ -294,7 +296,9 @@ void Model::loadReadPlugins(){
                         assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
-                        plugin = new PluginID((HINSTANCE)builder,decoderName.c_str());
+                        std::map<std::string,HINSTANCE> functions;
+                        functions.insert(make_pair("builder", (HINSTANCE*)builder));
+                        plugin = new PluginID(functions,decoderName.c_str());
                         assert(plugin);
                         for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
@@ -330,7 +334,9 @@ void Model::loadReadPlugins(){
                         assert(read);
                         std::vector<std::string> extensions = read->fileTypesDecoded();
                         std::string decoderName = read->decoderName();
-                        plugin = new PluginID((void*)builder,decoderName.c_str());
+                        std::map<std::string,void*> functions;
+                        functions.insert(make_pair("builder", (void*)builder));
+                        plugin = new PluginID(functions,decoderName.c_str());
                         assert(plugin);
                         for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
@@ -352,9 +358,9 @@ void Model::loadReadPlugins(){
     
     std::map<std::string, PluginID*> defaultMapping;
     for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
-        if(it->first == "exr" && it->second->second == "OpenEXR"){
+        if(it->first == "exr" && it->second->_pluginName == "OpenEXR"){
             defaultMapping.insert(*it);
-        }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
+        }else if (it->first == "dpx" && it->second->_pluginName == "FFmpeg"){
             defaultMapping.insert(*it);
         }else if((it->first == "jpg" ||
                   it->first == "bmp" ||
@@ -365,7 +371,7 @@ void Model::loadReadPlugins(){
                   it->first == "pgm" ||
                   it->first == "ppm" ||
                   it->first == "xbm" ||
-                  it->first == "xpm") && it->second->second == "QImage (Qt)"){
+                  it->first == "xpm") && it->second->_pluginName == "QImage (Qt)"){
             defaultMapping.insert(*it);
             
         }
@@ -376,7 +382,7 @@ void Model::loadReadPlugins(){
 void Model::displayLoadedReads(){
     ReadPluginsIterator it = _readPluginsLoaded.begin();
     for (; it!=_readPluginsLoaded.end(); ++it) {
-        cout << it->second->second << " : " << it->first << endl;
+        cout << it->second->_pluginName << " : " << it->first << endl;
     }
 }
 
@@ -386,9 +392,13 @@ void Model::loadBuiltinReads(){
     std::vector<std::string> extensions = readExr->fileTypesDecoded();
     std::string decoderName = readExr->decoderName();
 #ifdef __POWITER_WIN32__
-    PluginID *EXRplugin = new PluginID((HINSTANCE)&ReadExr::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("builder", (HINSTANCE)&ReadExr::BuildRead));
+    PluginID *EXRplugin = new PluginID(EXRfunctions,decoderName.c_str());
 #else
-    PluginID *EXRplugin = new PluginID((void*)&ReadExr::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("builder", (void*)&ReadExr::BuildRead));
+    PluginID *EXRplugin = new PluginID(EXRfunctions,decoderName.c_str());
 #endif
     assert(EXRplugin);
     for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -401,9 +411,13 @@ void Model::loadBuiltinReads(){
     extensions = readQt->fileTypesDecoded();
     decoderName = readQt->decoderName();
 #ifdef __POWITER_WIN32__
-	PluginID *Qtplugin = new PluginID((HINSTANCE)&ReadQt::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("builder", (HINSTANCE)&ReadQt::BuildRead));
+    PluginID *Qtplugin = new PluginID(Qtfunctions,decoderName.c_str());
 #else
-	PluginID *Qtplugin = new PluginID((void*)&ReadQt::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("builder", (void*)&ReadQt::BuildRead));
+    PluginID *Qtplugin = new PluginID(Qtfunctions,decoderName.c_str());
 #endif
     assert(Qtplugin);
     for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -416,9 +430,13 @@ void Model::loadBuiltinReads(){
     extensions = readFfmpeg->fileTypesDecoded();
     decoderName = readFfmpeg->decoderName();
 #ifdef __POWITER_WIN32__
-	PluginID *FFMPEGplugin = new PluginID((HINSTANCE)&ReadFFMPEG::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> FFfunctions;
+    FFfunctions.insert(make_pair("builder", (HINSTANCE)&ReadFFMPEG::BuildRead));
+    PluginID *FFMPEGplugin = new PluginID(FFfunctions,decoderName.c_str());
 #else
-	PluginID *FFMPEGplugin = new PluginID((void*)&ReadFFMPEG::BuildRead,decoderName.c_str());
+    std::map<std::string,void*> FFfunctions;
+    FFfunctions.insert(make_pair("builder", (void*)&ReadFFMPEG::BuildRead));
+    PluginID *FFMPEGplugin = new PluginID(FFfunctions,decoderName.c_str());
 #endif
     assert(FFMPEGplugin);
     for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -429,8 +447,8 @@ void Model::loadBuiltinReads(){
 }
 void Model::loadBuiltinPlugins(){
     // these  are built-in nodes
-	_nodeNames.append("Reader");
-	_nodeNames.append("Viewer");
+    _nodeNames.append("Reader");
+    _nodeNames.append("Viewer");
     _nodeNames.append("Writer");
 }
 
@@ -448,7 +466,7 @@ void Model::loadWritePlugins(){
         filters << "*.so";
 #endif
         d.setNameFilters(filters);
-		QStringList fileList = d.entryList();
+        QStringList fileList = d.entryList();
         for(int i = 0 ; i < fileList.size() ; ++i)
         {
             QString filename = fileList.at(i);
@@ -472,13 +490,15 @@ void Model::loadWritePlugins(){
                 }else{
                     // successfully loaded the library, we create now an instance of the class
                     //to find out the extensions it can decode and the name of the decoder
-                    WriteBuilder builder=(WriteBuilder)GetProcAddress(lib,"BuildRead");
+                    WriteBuilder builder=(WriteBuilder)GetProcAddress(lib,"BuildWrite");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
                         assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
-                        plugin = new PluginID((HINSTANCE)builder,encoderName.c_str());
+                        std::map<std::string,HINSTANCE> functions;
+                        functions.insert(make_pair("builder",(HINSTANCE)builder));
+                        plugin = new PluginID(functions,encoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _writePluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
@@ -507,13 +527,15 @@ void Model::loadWritePlugins(){
                 else{
                     // successfully loaded the library, we create now an instance of the class
                     //to find out the extensions it can decode and the name of the decoder
-                    WriteBuilder builder=(WriteBuilder)dlsym(lib,"BuildRead");
+                    WriteBuilder builder=(WriteBuilder)dlsym(lib,"BuildWrite");
                     if(builder!=NULL){
                         Write* write=builder(NULL);
                         assert(write);
                         std::vector<std::string> extensions = write->fileTypesEncoded();
                         std::string encoderName = write->encoderName();
-                        plugin = new PluginID((void*)builder,encoderName.c_str());
+                        std::map<std::string,void*> functions;
+                        functions.insert(make_pair("builder",(void*)builder));
+                        plugin = new PluginID(functions,encoderName.c_str());
                         for (U32 i = 0 ; i < extensions.size(); ++i) {
                             _readPluginsLoaded.push_back(make_pair(extensions[i],plugin));
                         }
@@ -534,9 +556,9 @@ void Model::loadWritePlugins(){
     
     std::map<std::string, PluginID*> defaultMapping;
     for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
-        if(it->first == "exr" && it->second->second == "OpenEXR"){
+        if(it->first == "exr" && it->second->_pluginName == "OpenEXR"){
             defaultMapping.insert(*it);
-        }else if (it->first == "dpx" && it->second->second == "FFmpeg"){
+        }else if (it->first == "dpx" && it->second->_pluginName == "FFmpeg"){
             defaultMapping.insert(*it);
         }else if((it->first == "jpg" ||
                   it->first == "bmp" ||
@@ -547,7 +569,7 @@ void Model::loadWritePlugins(){
                   it->first == "pgm" ||
                   it->first == "ppm" ||
                   it->first == "xbm" ||
-                  it->first == "xpm") && it->second->second == "QImage (Qt)"){
+                  it->first == "xpm") && it->second->_pluginName == "QImage (Qt)"){
             defaultMapping.insert(*it);
             
         }
@@ -562,9 +584,13 @@ void Model::loadBuiltinWrites(){
     std::vector<std::string> extensions = writeQt->fileTypesEncoded();
     string encoderName = writeQt->encoderName();
 #ifdef __POWITER_WIN32__
-	PluginID *QtWritePlugin = new PluginID((HINSTANCE)&WriteQt::BuildWrite,encoderName.c_str());
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("builder",(HINSTANCE)&WriteQt::BuildWrite));
+    PluginID *QtWritePlugin = new PluginID(Qtfunctions,encoderName.c_str());
 #else
-	PluginID *QtWritePlugin = new PluginID((void*)&WriteQt::BuildWrite,encoderName.c_str());
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("builder",(void*)&WriteQt::BuildWrite));
+    PluginID *QtWritePlugin = new PluginID(Qtfunctions,encoderName.c_str());
 #endif
     assert(QtWritePlugin);
     for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -576,9 +602,13 @@ void Model::loadBuiltinWrites(){
     std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
     string encoderNameExr = writeEXR->encoderName();
 #ifdef __POWITER_WIN32__
-	PluginID *ExrWritePlugin = new PluginID((HINSTANCE)&WriteExr::BuildWrite,encoderNameExr.c_str());
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("builder",(HINSTANCE)&WriteExr::BuildWrite));
+    PluginID *ExrWritePlugin = new PluginID(EXRfunctions,encoderNameExr.c_str());
 #else
-	PluginID *ExrWritePlugin = new PluginID((void*)&WriteExr::BuildWrite,encoderNameExr.c_str());
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("builder",(void*)&WriteExr::BuildWrite));
+    PluginID *ExrWritePlugin = new PluginID(EXRfunctions,encoderNameExr.c_str());
 #endif
     assert(ExrWritePlugin);
     for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
@@ -655,27 +685,27 @@ QString Model::serializeNodeGraph() const{
         writer.writeAttribute("Label", n->getNode()->getName().c_str());
         
         writer.writeStartElement("Inputs");
-        const std::vector<Node*>& parents = n->getNode()->getParents();
-        for (U32 i = 0; i < parents.size(); ++i) {
+        const NodeInstance::InputMap& inputs = n->getInputs();
+        for (NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
             writer.writeStartElement("Input");
-            writer.writeAttribute("Number", QString::number(i));
-            writer.writeAttribute("Name", parents[i]->getName().c_str());
+            writer.writeAttribute("Number", QString::number(it->first));
+            writer.writeAttribute("Name", it->second->getName().c_str());
             writer.writeEndElement();// end input
         }
         writer.writeEndElement(); // end inputs
                                   //serialize knobs
-        const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
+        const std::vector<KnobInstance*>& knobs = n->getKnobs();
         writer.writeStartElement("Knobs");
         for (U32 i = 0; i < knobs.size(); ++i) {
             writer.writeStartElement("Knob");
-            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
-            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
+            writer.writeAttribute("Description", knobs[i]->getKnob()->getDescription().c_str());
+            writer.writeAttribute("Param", knobs[i]->getKnob()->serialize().c_str());
             writer.writeEndElement();//end knob
         }
         writer.writeEndElement(); // end knobs
         
         //serialize gui infos
-      
+        
         writer.writeStartElement("Gui");
         
         writer.writeAttribute("X", QString::number(n->getPosGui().x()));

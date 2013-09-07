@@ -13,6 +13,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
+#include "Global/KnobInstance.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/Edge.h"
@@ -36,8 +37,19 @@ _gui(NULL)
 }
 
 NodeInstance::~NodeInstance(){
+    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        _app->disconnect(this, it->second);
+    }
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        _app->disconnect(it->second, this);
+    }
     delete _gui;
-    delete _node;
+    if(!_node->isOpenFXNode())
+        delete _node;
+    
+    for (U32 i = 0; i < _knobs.size(); ++i) {
+        delete _knobs[i];
+    }
 }
 
 bool NodeInstance::isOpenFXNode() const{
@@ -253,4 +265,49 @@ void NodeInstance::initializeInputs(){
     }
 }
 
+void NodeInstance::initializeKnobs(){
+    /*All OFX knobs have been created so far.
+     The next call will create Knobs for Powiter-only
+     nodes.*/
+    _node->initKnobs();
+    
 
+    /*All KnobInstance are now created. The member
+     _knobs is filled with the knobs.
+     We can just create their gui.*/
+    _gui->initializeKnobs();
+}
+void NodeInstance::removeKnobInstance(KnobInstance* knob){
+    for (U32 i = 0; i < _knobs.size(); ++i) {
+        if (_knobs[i] == knob) {
+            _knobs.erase(_knobs.begin()+i);
+            break;
+        }
+    }
+    // should also remove the knob from gui
+}
+void NodeInstance::pushUndoCommand(QUndoCommand* cmd){
+    _gui->pushUndoCommand(cmd);
+}
+void NodeInstance::createKnobGuiDynamically(){
+    _gui->initializeKnobs();
+}
+
+bool NodeInstance::isInputConnected(int inputNb) const{
+    InputMap::iterator it = _inputs.find(inputNb);
+    if(it != _inputs.end()){
+        return it->second != NULL;
+    }else{
+        return false;
+    }
+        
+}
+
+bool NodeInstance::hasOutputConnected() const{
+    for(OutputMap::iterator it = _outputs.begin();it!=_outputs.end();++it){
+        if(it->second){
+            return true;
+        }
+    }
+    return false;
+}

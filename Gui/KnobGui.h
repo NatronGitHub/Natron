@@ -23,14 +23,14 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/Singleton.h"
 
+#include "Engine/Singleton.h"
+#include "Engine/Knob.h"
 
 class TabWidget;
 class QCheckBox;
 class QGroupBox;
 class Node;
-class Variant;
 class LineEdit;
 class Button;
 class FeedbackSpinBox;
@@ -65,19 +65,24 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    /*Must create the GUI and insert it in the grid layout at the index "row".*/
-    virtual void createWidget(QGridLayout* layout,int row)=0;
+    void createGUI(QGridLayout* layout,int row){
+        createWidget(layout, row);
+        _widgetCreated = true;
+        updateGUI(_lastInteralValueTracked);
+    }
     
     void pushUndoCommand(QUndoCommand* cmd);
     
-    
+    bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
 public slots:
     /*Called when the value held by the knob is changed internally.
      This should in turn update the GUI but not emit the valueChanged()
      signal.*/
     void onInternalValueChanged(const Variant& variant){
-        updateGUI(variant);
+        _lastInteralValueTracked = variant;
+        if(_widgetCreated)
+            updateGUI(variant);
     }
     
 signals:
@@ -87,12 +92,15 @@ signals:
     void valueChanged(const Variant& variant);
     
 protected:
+    /*Must create the GUI and insert it in the grid layout at the index "row".*/
+    virtual void createWidget(QGridLayout* layout,int row)=0;
+    
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
     virtual void updateGUI(const Variant& variant)=0;
     
     Knob* _knob;
-
+    
     
 
     
@@ -107,6 +115,8 @@ private:
     
     bool _triggerNewLine;
     int _spacingBetweenItems;
+    bool _widgetCreated;
+    Variant _lastInteralValueTracked;
 };
 
 //================================
@@ -116,6 +126,7 @@ class File_KnobGui:public KnobGui
     
 public:
     
+    static KnobGui* BuildKnobGui(Knob* knob){ return new File_KnobGui(knob); }
     
     File_KnobGui(Knob* knob):KnobGui(knob){}
 
@@ -147,6 +158,8 @@ class OutputFile_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
+    
+    static KnobGui* BuildKnobGui(Knob* knob){ return new OutputFile_KnobGui(knob); }
     
     OutputFile_KnobGui(Knob* knob):KnobGui(knob){}
     
@@ -183,7 +196,8 @@ class Int_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Int_KnobGui(knob); }
+
     
     Int_KnobGui(Knob* knob):KnobGui(knob){}
     
@@ -211,6 +225,9 @@ class Bool_KnobGui :public KnobGui
 	Q_OBJECT
 public:
     
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Bool_KnobGui(knob); }
+
+    
     Bool_KnobGui(Knob* knob):KnobGui(knob){}
 
     virtual ~Bool_KnobGui(){}
@@ -237,7 +254,8 @@ class Double_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Double_KnobGui(knob); }
+
     
     Double_KnobGui(Knob* knob):KnobGui(knob){}
     
@@ -265,6 +283,8 @@ class Button_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Button_KnobGui(knob); }
+
     
     Button_KnobGui(Knob* knob):KnobGui(knob){}
     
@@ -290,6 +310,9 @@ class ComboBox_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new ComboBox_KnobGui(knob); }
+
+    
     ComboBox_KnobGui(Knob* knob);
     
     virtual ~ComboBox_KnobGui(){}
@@ -316,6 +339,8 @@ private:
 class Separator_KnobGui : public KnobGui
 {
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Separator_KnobGui(knob); }
+
     Separator_KnobGui(Knob* knob):KnobGui(knob){}
     
     virtual ~Separator_KnobGui(){}
@@ -333,6 +358,8 @@ private:
 class RGBA_KnobGui : public KnobGui{
     Q_OBJECT
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new RGBA_KnobGui(knob); }
+
     
     RGBA_KnobGui(Knob* knob):KnobGui(knob),_alphaEnabled(true){}
     
@@ -378,6 +405,8 @@ private:
 class String_KnobGui : public KnobGui{
     Q_OBJECT
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new String_KnobGui(knob); }
+
     
     String_KnobGui(Knob* knob):KnobGui(knob) {}
 	
@@ -401,6 +430,8 @@ private:
 class Group_KnobGui : public KnobGui{
     Q_OBJECT
 public:
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Group_KnobGui(knob); }
+
     
     Group_KnobGui(Knob* knob):KnobGui(knob){}
     
@@ -434,6 +465,9 @@ class Tab_KnobGui : public KnobGui{
   
 public:
     typedef std::map<std::string, std::pair<QVBoxLayout*, std::vector<KnobGui*> > > KnobsTabMap;
+    
+    static KnobGui* BuildKnobGui(Knob* knob){ return new Tab_KnobGui(knob); }
+
     
     Tab_KnobGui(Knob* knob):KnobGui(knob){}
     

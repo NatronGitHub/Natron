@@ -17,7 +17,9 @@
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 
-#include "Gui/KnobGui.h"
+#include "Global/KnobInstance.h"
+
+#include "Engine/Knob.h"
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -32,18 +34,17 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
 , _node(node)
 , _descriptor(descriptor)
 {
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
-    _knob->connectButtonToSlot(this, SLOT(emitInstanceChanged()));
+    _knob->setValue(QString(SLOT(emitInstanceChanged())));
     QObject::connect(this, SIGNAL(buttonPressed(QString)), _node, SLOT(onInstanceChangedAction(QString)));
 }
 
@@ -61,7 +62,7 @@ void OfxPushButtonInstance::setEnabled(){
 void OfxPushButtonInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxPushButtonInstance::getKnob() const{
+Knob* OfxPushButtonInstance::getKnob() const{
     return _knob;
 }
 
@@ -71,25 +72,24 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
 , _descriptor(descriptor)
 , _paramName(name)
 {
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(valueChanged(int)), this, SLOT(onInstanceChanged()));
-    _knob->setPointer(&_value);
     int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
     int max = getProperties().getIntProperty(kOfxParamPropDisplayMax);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
     _knob->setValue(def);
+
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
     v = _value;
@@ -125,25 +125,23 @@ void OfxIntegerInstance::setEnabled(){
 void OfxIntegerInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxIntegerInstance::getKnob() const{
+Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
 OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(valueChanged(double)), this, SLOT(onInstanceChanged()));
-    _knob->setPointer(&_value);
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
     double incr = getProperties().getDoubleProperty(kOfxParamPropIncrement);
@@ -193,27 +191,25 @@ void OfxDoubleInstance::setEnabled(){
 void OfxDoubleInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxDoubleInstance::getKnob() const{
+Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
 OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", node, name, 1,Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     QObject::connect(_knob, SIGNAL(triggered(bool)), this, SLOT(onInstanceChanged()));
-    _knob->setPointer(&_value);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
-    _knob->setChecked(def);
+    _knob->setValue(def);
     
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
@@ -226,13 +222,13 @@ OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
 }
 OfxStatus OfxBooleanInstance::set(bool b){
     _value = b;
-    _knob->setChecked(b);
+    _knob->setValue(b);
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     _value = b;
-    _knob->setChecked(b);
+    _knob->setValue(b);
     return kOfxStatOK;
 }
 void OfxBooleanInstance::onInstanceChanged(){
@@ -251,19 +247,18 @@ void OfxBooleanInstance::setEnabled(){
 void OfxBooleanInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxBooleanInstance::getKnob() const{
+Knob* OfxBooleanInstance::getKnob() const{
     return _knob;
 }
 
 
 OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name) {
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -272,11 +267,13 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     
     QObject::connect(_knob, SIGNAL(entryChanged(int)), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
+    QStringList list;
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
-        _entries.push_back(pSet.getStringProperty(kOfxParamPropChoiceOption,i));
+        std::string str = pSet.getStringProperty(kOfxParamPropChoiceOption,i);
+        _entries.push_back(str);
+        list << str.c_str();
     }
-    _knob->setPointer(&_currentEntry);
-    _knob->populate(_entries);
+    _knob->populate(list);
     int def = pSet.getIntProperty(kOfxParamPropDefault);
     
     set(def);
@@ -301,7 +298,7 @@ OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
 }
 OfxStatus OfxChoiceInstance::set(int v){
     if(v < (int)_entries.size()){
-        _knob->setCurrentItem(v);
+        _knob->setValue(v);
         return kOfxStatOK;
     }else{
         return kOfxStatErrBadIndex;
@@ -309,7 +306,7 @@ OfxStatus OfxChoiceInstance::set(int v){
 }
 OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
     if(v < (int)_entries.size()){
-        _knob->setCurrentItem(v);
+        _knob->setValue(v);
         return kOfxStatOK;
     }else{
         return kOfxStatErrBadIndex;
@@ -333,7 +330,7 @@ void OfxChoiceInstance::setEnabled(){
 void OfxChoiceInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxChoiceInstance::getKnob() const{
+Knob* OfxChoiceInstance::getKnob() const{
     return _knob;
 }
 
@@ -343,19 +340,16 @@ OfxRGBAInstance::OfxRGBAInstance(OfxNode *node, const std::string& name, OFX::Ho
 :OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor),
-_r(0),_g(0),_b(0),_a(1.0),
 _paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", node, name, 1,Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    _knob->setPointers(&_r, &_g,&_b,&_a);
     
     QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
     
@@ -364,37 +358,40 @@ _paramName(name){
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
     double defA = getProperties().getDoubleProperty(kOfxParamPropDefault,3);
-    
-    _knob->setRGBA(defR, defG, defB, defA);
+    _color.setX(defR);
+    _color.setY(defG);
+    _color.setZ(defB);
+    _color.setW(defA);
+    _knob->setValue(_color);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
-    r = _r;
-    g = _g;
-    b = _b;
-    a = _a;
+    r = _color.x();
+    g = _color.y();
+    b = _color.z();
+    a = _color.w();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::get(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
-    r = _r;
-    g = _g;
-    b = _b;
-    a = _a;
+    r = _color.x();
+    g = _color.y();
+    b = _color.z();
+    a = _color.w();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
-    _r = r;
-    _g = g;
-    _b = b;
-    _a = a;
-    _knob->setRGBA(r, g, b, a);
+    _color.setX(r);
+    _color.setY(g);
+    _color.setZ(b);
+    _color.setW(a);
+    _knob->setValue(_color);
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,double a){
-    _r = r;
-    _g = g;
-    _b = b;
-    _a = a;
-    _knob->setRGBA(r, g, b, a);
+    _color.setX(r);
+    _color.setY(g);
+    _color.setZ(b);
+    _color.setW(a);
+    _knob->setValue(_color);
     return kOfxStatOK;
 }
 
@@ -417,59 +414,58 @@ void OfxRGBAInstance::setSecret(){
 }
 
 
-KnobGui* OfxRGBAInstance::getKnob() const{
+Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
 OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", node, name,1, Knob::NO_ALPHA));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
-    _knob->disablePermantlyAlpha();
-    _knob->setPointers(&_r, &_g,&_b,NULL);
-    
-    QObject::connect(_knob, SIGNAL(colorChanged(QColor)), this, SLOT(onInstanceChanged()));
-    
-    
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
     
-    _knob->setRGBA(defR, defG, defB, 1.f);
+    _color.setX(defR);
+    _color.setY(defG);
+    _color.setZ(defB);
+    _color.setW(1.0);
+    _knob->setValue(_color);
     
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
-    r = _r;
-    g = _g;
-    b = _b;
+    r = _color.x();
+    g = _color.y();
+    b = _color.z();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::get(OfxTime /*time*/, double& r, double& g, double& b) {
-    r = _r;
-    g = _g;
-    b = _b;
+    r = _color.x();
+    g = _color.y();
+    b = _color.z();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(double r,double g,double b){
-	_r = r;
-	_g = g;
-	_b = b;
-    _knob->setRGBA(r, g, b, 1.);
+	_color.setX(r);
+    _color.setY(g);
+    _color.setZ(b);
+    _color.setW(1.0);
+    _knob->setValue(_color);
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
-	_r = r;
-	_g = g;
-	_b = b;
-    _knob->setRGBA(r, g, b, 1.);
+	_color.setX(r);
+    _color.setY(g);
+    _color.setZ(b);
+    _color.setW(1.0);
+    _knob->setValue(_color);
     return kOfxStatOK;
 }
 
@@ -490,27 +486,21 @@ void OfxRGBInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
 
-KnobGui* OfxRGBInstance::getKnob() const{
+Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
 OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<Double2D_Knob*>(KnobFactory::createKnob("Double2D", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", node, name,2, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
-    _knob->setPointers(&_x1, &_x2);
-    
-    QObject::connect(_knob, SIGNAL(value1Changed(double)), this, SLOT(onInstanceChanged()));
-    QObject::connect(_knob, SIGNAL(value2Changed(double)), this, SLOT(onInstanceChanged()));
     
     double min1 = getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0);
     double max1 = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0);
@@ -525,12 +515,11 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     _knob->setMinimum1(min1);
     _knob->setMaximum1(max1);
     _knob->setIncrement1(incr1);
-    _knob->setValue1(def1);
+    _knob->setValue<double>(_values,2);
     
     _knob->setMinimum2(min2);
     _knob->setMaximum2(max2);
     _knob->setIncrement2(incr2);
-    _knob->setValue2(def2);
     
 }
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
@@ -574,18 +563,17 @@ void OfxDouble2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
 
-KnobGui* OfxDouble2DInstance::getKnob() const{
+Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
 OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", cb, name, KnobGui::NONE));
+    _knob = dynamic_cast<Int2D_Knob*>(KnobFactory::createKnob("Int2D", node, name, 2,Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -653,7 +641,7 @@ void OfxInteger2DInstance::setEnabled(){
 void OfxInteger2DInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-KnobGui* OfxInteger2DInstance::getKnob() const{
+Knob* OfxInteger2DInstance::getKnob() const{
     return _knob;
 }
 
@@ -661,18 +649,17 @@ KnobGui* OfxInteger2DInstance::getKnob() const{
 /***********/
 OfxGroupInstance::OfxGroupInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name){
-    KnobCallback* cb = _node->getKnobCallBack();
     int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
         if(!_tabKnob){
-            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", cb, name, KnobGui::NONE));
+            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", node, name,1, Knob::NONE));
             _node->setTabKnob(_tabKnob);
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
     }else{
-        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", cb, name, KnobGui::NONE));
+        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", node, name,1, Knob::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
         if (opened) {
             _groupKnob->setChecked(true);
@@ -682,7 +669,7 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
     }
     
 }
-void OfxGroupInstance::addKnob(KnobGui *k) {
+void OfxGroupInstance::addKnob(Knob *k) {
     if(_groupKnob){
         _groupKnob->addKnob(k);
     }else{
@@ -690,7 +677,7 @@ void OfxGroupInstance::addKnob(KnobGui *k) {
     }
 }
 
-KnobGui* OfxGroupInstance::getKnob() const{
+Knob* OfxGroupInstance::getKnob() const{
     if(_groupKnob){
         return _groupKnob;
     }else{
@@ -701,15 +688,14 @@ KnobGui* OfxGroupInstance::getKnob() const{
 OfxStringInstance::OfxStringInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name),
 _fileKnob(0),_outputFileKnob(0){
-    KnobCallback* cb = _node->getKnobCallBack();
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", cb, name, KnobGui::NONE);
+        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
-            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", cb, name, KnobGui::NONE));
+            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", node, name, 1,Knob::NONE));
             _fileKnob->setPointer(&_filesList);
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
@@ -718,7 +704,7 @@ _fileKnob(0),_outputFileKnob(0){
             _fileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, name, KnobGui::NONE));
+            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", node, name,1, Knob::NONE));
             _outputFileKnob->setPointer(&_outputFilePattern);
             QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
@@ -727,11 +713,11 @@ _fileKnob(0),_outputFileKnob(0){
             _outputFileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
-        KnobGui::Knob_Flags flags = KnobGui::NONE;
+        KnobGui::Knob_Flags flags = Knob::NONE;
         if(mode == kOfxParamStringIsLabel){
-            flags = KnobGui::READ_ONLY;
+            flags = Knob::READ_ONLY;
         }
-        _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", cb, name, flags));
+        _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", node, name,1, flags));
         QObject::connect(_stringKnob, SIGNAL(stringChanged(QString)), this, SLOT(onInstanceChanged()));
         _stringKnob->setPointer(&_returnValue);
         if(layoutHint == 2){
@@ -808,7 +794,7 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
     return kOfxStatOK;
 }
 
-KnobGui* OfxStringInstance::getKnob() const{
+Knob* OfxStringInstance::getKnob() const{
     
     if(_fileKnob){
         return _fileKnob;

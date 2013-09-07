@@ -25,42 +25,10 @@
 class PluginID;
 class Knob;
 class Node;
-
+class KnobInstance;
 
 typedef unsigned int Knob_Mask;
-/*Class inheriting Knob, must have a function named BuildKnob with the following signature:
- Knob* BuildKnob(Knob_Callback* cb,QString& description,Knob_Mask flags); This function
- should in turn call a specific class-based static function with the appropriate param.
- E.G : static Knob* int_Knob(int* integer,Knob_Callback* cb,QString& description,Knob_Mask flags=0);
- and return a pointer to the knob. */
-typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension,Knob_Mask flags);
 
-/******************************KNOB_FACTORY**************************************/
-
-
-class KnobFactory : public Singleton<KnobFactory>{
-    
-    std::map<std::string,PluginID*> _loadedKnobs;
-    
-    void loadKnobPlugins();
-    
-    void loadBultinKnobs();
-    
-public:
-    
-    
-    KnobFactory();
-    
-    virtual ~KnobFactory();
-    
-    const std::map<std::string,PluginID*>& getLoadedKnobs(){return _loadedKnobs;}
-    
-    /*Calls the unique instance of the KnobFactory and
-     calls the appropriate pointer to function to create a knob.*/
-    
-    static Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
-    
-};
 /******************************VARIANT**************************************/
 
 /*Variant type used by knob storage type.
@@ -78,6 +46,12 @@ public:
     _variant(new QVariant)
     {
         
+    }
+    
+    Variant(const Variant& other)
+    :_variant(other._variant)
+    {
+
     }
     
     Variant(const QVariant& qtVariant):
@@ -113,6 +87,14 @@ public:
         return *_variant;
     }
     
+    void setValue(const Variant& variant){
+        _variant->setValue(variant.getQVariant());
+    }
+    
+    void setValue(QVariant qtVariant){
+        _variant->setValue(qtVariant);
+    }
+    
     void setValue(const QVariant& qtVariant){
         _variant->setValue(qtVariant);
     }
@@ -138,7 +120,7 @@ class Knob : public QObject
     Q_OBJECT
     
 public:
-    enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2,RGBA_STYLE_SCALAR=0x4};
+    enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2,RGBA_STYLE_SCALAR=0x4,NO_ALPHA=0x8};
 
     
     Knob(Node* node,const std::string& description,int dimension = 1,Knob_Mask flags = 0);
@@ -152,6 +134,10 @@ public:
     Node* getNode() const { return _node; }
     
     int getDimension() const {return _dimension;}
+    
+    KnobInstance* getKnobInstance() const {return _instance;}
+    
+    void setKnobInstancePTR(KnobInstance* instance){_instance = instance;}
     
     Knob_Mask getFlags() const;
     
@@ -168,6 +154,21 @@ public:
         tryStartRendering();
     }
 
+    template<typename T>
+    void setValue(T variant[],int count){
+        _value = Variant(variant,count);
+        emit valueChanged(_value);
+        tryStartRendering();
+    }
+    
+    /*to allow implicit cast*/
+    void setValue(const QVariant& variant){
+        _value = variant;
+        emit valueChanged(_value);
+        tryStartRendering();
+    }
+    
+   
     /*Set the value of the knob and emits the valueChanged signal*/
     void setValue(const Variant& variant){
         _value = variant;
@@ -185,7 +186,17 @@ public:
 
     const Variant& getValueAsVariant() const { return _value; }
     
+    /*You can call this when you want to remove this Knob
+     at anytime.*/
+    void deleteKnob();
     
+    void turnOffNewLine();
+    
+    void setSpacingBetweenItems(int spacing);
+    
+    void setEnabled(bool b);
+    
+    void setVisible(bool b);
     
 public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
@@ -208,10 +219,6 @@ signals:
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
     
-    /*Emitted when the destructor is called.
-     Allows the gui to remove any widget associated
-     to this knob.*/
-    void aboutToBeDeleted();
 
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
@@ -231,6 +238,7 @@ protected:
     Node *_node;
     Variant _value;
     std::vector<U64> _hashVector;
+    KnobInstance* _instance;
 
 private:
     
@@ -609,6 +617,8 @@ public:
     
     virtual std::string serialize() const{return "";}
     
+    void addKnob(Knob* k);
+    
 protected:
     
     virtual void tryStartRendering(){}
@@ -616,4 +626,38 @@ protected:
     virtual void _restoreFromString(const std::string& str){(void)str;}
     
 };
+/******************************TAB_KNOB**************************************/
+
+class Tab_Knob:public Knob
+{
+    Q_OBJECT
+public:
+    
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
+        return new Tab_Knob(node,description,dimension,flags);
+    }
+    
+    Tab_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
+    Knob(node,description,dimension,flags){
+        
+    }
+    
+    virtual void fillHashVector(){}
+    
+    virtual const std::string name(){return "Tab";}
+    
+    virtual std::string serialize() const{return "";}
+    
+    void addTab(const std::string& name);
+    
+    void addKnob(const std::string& tabName,Knob* k);
+    
+protected:
+    
+    virtual void tryStartRendering(){}
+    
+    virtual void _restoreFromString(const std::string& str){(void)str;}
+    
+};
+
 #endif // KNOB_H
