@@ -140,12 +140,17 @@ public:
     
     NodeGui* createNodeGUI(NodeInstance *node);
     
+    void autoConnect(NodeInstance* target,NodeInstance* created);
+    
+    NodeGui* getSelectedNode() const;
+    
     void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
     
     ViewerTab* getLastSelectedViewer() const {return _lastSelectedViewer;}
     
     bool eventFilter(QObject *target, QEvent *event);
 
+    void createViewerGui(NodeInstance* viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/

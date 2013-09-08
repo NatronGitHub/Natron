@@ -13,6 +13,7 @@
 #define POWITER_ENGINE_MODEL_H_
 
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #ifndef Q_MOC_RUN
@@ -30,7 +31,6 @@ namespace Powiter {
     class OfxHost; // defined in Engine/OfxHost.h
 }
 
-class PluginID;
 namespace XMLProjectLoader {
     
 
@@ -89,6 +89,10 @@ class Node;
 class NodeInstance;
 class OutputNode;
 
+namespace Powiter{
+    class LibraryBinary;
+}
+
 
 class Model: public QObject,public boost::noncopyable
 {
@@ -105,7 +109,7 @@ public:
 	
   
 	/*Create a new node internally*/
-    Node* createNode(const std::string& name);
+    Node* createNode(const std::string& name,NodeInstance* instance);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     const QStringList& getNodeNameList(){return _nodeNames;}
@@ -136,7 +140,7 @@ public:
     ViewerCache* getViewerCache(){return _viewerCache;}
     
     
-    typedef std::vector< std::pair <std::string, PluginID*> >::iterator ReadPluginsIterator;
+    typedef std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> >::iterator ReadPluginsIterator;
     typedef ReadPluginsIterator WritePluginsIterator;
     
     void loadProject(const QString& filename,bool autoSave = false);
@@ -194,12 +198,10 @@ private:
 
     OutputNode* _currentOutput; /*The output of the currently active graph.*/
         
-    std::vector<Format*> _formats;
-    // std::vector<PluginID*> _pluginsLoaded;
+    std::vector<Format*> _formats;    
     
-    
-    std::vector< std::pair< std::string,PluginID*> > _readPluginsLoaded;
-    std::vector< std::pair< std::string,PluginID*> > _writePluginsLoaded;
+    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _readPluginsLoaded;
+    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _writePluginsLoaded;
     
     QStringList _nodeNames;
 

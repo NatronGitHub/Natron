@@ -34,6 +34,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/OfxNode.h"
 
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
@@ -43,6 +44,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
+#include "Gui/NodeGui.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
@@ -140,17 +142,33 @@ void Gui::closeEvent(QCloseEvent *e){
 
 
 NodeGui* Gui::createNodeGUI( NodeInstance* node){
-    if(node->className() == "Viewer"){
-        TabWidget* where = _nextViewerTabPlace;
-        if(!where){
-            where = _viewersPane;
-        }else{
-            _nextViewerTabPlace = NULL; // < reseting anchor to default
+    NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
+    node->setNodeGuiPTR(gui);
+    if(int ret = gui->hasPreviewImage()){
+        if(ret == 2){
+            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
+            n->computePreviewImage();
         }
-        dynamic_cast<ViewerNode*>(node)->initializeViewerTab(where);
-        _lastSelectedViewer = dynamic_cast<ViewerNode*>(node->getNode())->getUiContext();
     }
-    return _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
+    return gui;
+}
+void Gui::createViewerGui(NodeInstance* viewer){
+    TabWidget* where = _nextViewerTabPlace;
+    if(!where){
+        where = _viewersPane;
+    }else{
+        _nextViewerTabPlace = NULL; // < reseting anchor to default
+    }
+    dynamic_cast<ViewerNode*>(viewer->getNode())->initializeViewerTab(where);
+    _lastSelectedViewer = dynamic_cast<ViewerNode*>(viewer->getNode())->getUiContext();
+}
+void Gui::autoConnect(NodeInstance* target,NodeInstance* created){
+    if(target)
+        _nodeGraphTab->_nodeGraphArea->autoConnect(target->getNodeGui(), created->getNodeGui());
+    _nodeGraphTab->_nodeGraphArea->selectNode(created->getNodeGui());
+}
+NodeGui* Gui::getSelectedNode() const{
+    return _nodeGraphTab->_nodeGraphArea->getSelectedNode();
 }
 
 

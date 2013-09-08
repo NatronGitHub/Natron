@@ -37,13 +37,11 @@ class OfxNode : public QObject, public OutputNode
     Q_OBJECT
 
 public:
-    OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-            OFX::Host::ImageEffect::Descriptor         &other,
-            const std::string  &context);
+    OfxNode(NodeInstance* instance,
+             OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+             const std::string& context);
     
     virtual ~OfxNode();
-    
-
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

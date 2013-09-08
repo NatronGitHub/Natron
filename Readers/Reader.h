@@ -20,6 +20,8 @@
 class QImage;
 class NodeInstance;
 class FrameEntry;
+class File_Knob;
+class QMutex;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
@@ -64,8 +66,9 @@ class ViewerCache;
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public Node
+class Reader : public QObject,public Node
 {
+    Q_OBJECT
     
 public:
         
@@ -347,13 +350,9 @@ public:
         int _bufferSize; /// maximum size of the buffer
     };
     
-    Reader();
+    Reader(NodeInstance* instance);
 
-    /**
-     * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
-     *The preview will appear on the Reader's node GUI.
-     */
-    void showFilePreview();
+    virtual ~Reader();
 
     /**
      * @brief Extracts the video sequence from the files list returned by the file dialog.
@@ -430,7 +429,6 @@ public:
      */
 	QImage* getPreview(){return preview;}
 
-    virtual ~Reader();
 
     /**
      * @brief className
@@ -493,6 +491,13 @@ public:
     virtual int minimumInputs() const OVERRIDE {return 0;}
     
     virtual bool isInputNode() const OVERRIDE {return true;}
+    
+public slots:
+    /**
+     * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
+     *The preview will appear on the Reader's node GUI.
+     */
+    void showFilePreview();
 
 protected:
 
@@ -510,6 +515,8 @@ private:
 	Read* readHandle;
     std::map<int,QString> files; // frames
     Buffer _buffer;
+    File_Knob* _fileKnob;
+    QMutex* _readMutex;
 };
 
 

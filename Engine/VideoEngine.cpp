@@ -565,7 +565,8 @@ void VideoEngine::_drawOverlay(Node *output) const{
     output->drawOverlay();
     const NodeInstance::InputMap& inputs = output->getNodeInstance()->getInputs();
     for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        _drawOverlay(it->second->getNode());
+        if(it->second)
+            _drawOverlay(it->second->getNode());
     }
 }
 
@@ -895,7 +896,8 @@ void VideoEngine::DAG::fillGraph(Node* n){
     
     const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
     for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        fillGraph(it->second->getNode());
+        if(it->second)
+            fillGraph(it->second->getNode());
     }
 }
 void VideoEngine::DAG::clearGraph(){
@@ -916,7 +918,7 @@ void VideoEngine::DAG::_depthCycle(Node* n){
     n->setMarked(true);
     const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
     for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(!it->second->getNode()->isMarked()){
+        if(it->second && !it->second->getNode()->isMarked()){
             _depthCycle(it->second->getNode());
         }
     }

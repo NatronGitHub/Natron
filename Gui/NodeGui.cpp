@@ -85,7 +85,7 @@ settings(0)
 	}
     if(int ret = hasPreviewImage()){
         if(ret == 1){
-            Reader* n = dynamic_cast<Reader*>(node);
+            Reader* n = dynamic_cast<Reader*>(node->getNode());
             if(n->hasPreview()){
                 QImage *prev=n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -105,7 +105,7 @@ settings(0)
             }
             
         }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node);
+            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
             if(n->hasPreviewImage()){
                 QImage *prev=n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -167,7 +167,7 @@ int NodeGui::hasPreviewImage(){
         return 1;
     }
     if(node->isOpenFXNode()){
-        OfxNode* n = dynamic_cast<OfxNode*>(node);
+        OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
         if(n->canHavePreviewImage())
             return 2;
         else
@@ -207,11 +207,7 @@ void NodeGui::markInputNull(Edge* e){
     }
 }
 
-void NodeGui::remove(){
-    //dockContainer->removeWidget(settings);
-    delete settings;
-    delete this;
-}
+
 
 void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
     QString tooltip;
@@ -227,13 +223,13 @@ void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
 void NodeGui::updatePreviewImageForReader(){
     if(int ret = hasPreviewImage()){
         if(ret == 1){
-            Reader* reader = dynamic_cast<Reader*>(node);
+            Reader* reader = dynamic_cast<Reader*>(node->getNode());
             QImage *prev = reader->getPreview();
             QPixmap prev_pixmap=QPixmap::fromImage(*prev);
             prev_pixmap=prev_pixmap.scaled(60,40);
             prev_pix->setPixmap(prev_pixmap);
         }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node);
+            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
             if(n->hasPreviewImage()){
                 QImage *prev = n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -368,13 +364,13 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
 }
 
 bool NodeGui::connectEdge(int edgeNumber,NodeGui* src){
-    assert(src);
     InputEdgesMap::const_iterator it = inputs.find(edgeNumber);
     if(it == inputs.end()){
         return false;
     }else{
         it->second->setSource(src);
         it->second->initLine();
+        return true;
     }
 }
 

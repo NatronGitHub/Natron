@@ -58,14 +58,16 @@ a KnobGui object and a Knob object.
 class KnobInstance
 {
     Knob* _knob;
-    KnobGui* _gui;
     NodeInstance* _node;
     
+protected:
+    KnobGui* _gui;
+
 public:
     KnobInstance(Knob* knob,KnobGui* gui,NodeInstance* node):
     _knob(knob),
-    _gui(gui),
-    _node(node)
+    _node(node),
+    _gui(gui)
     {}
     
     virtual ~KnobInstance();
@@ -91,6 +93,35 @@ public:
      the user will not be able to interact with it and
      the value will not refresh.*/
     void setEnabled(bool b);
+};
+
+
+class Group_KnobInstance : public KnobInstance {
+    
+public:
+    
+    Group_KnobInstance(Knob* knob,KnobGui* gui,NodeInstance* node):
+    KnobInstance(knob,gui,node)
+    {
+        
+    }
+    
+    void addKnob(Knob* knob);
+    
+};
+
+class Tab_KnobInstance : public KnobInstance {
+public:
+    
+    Tab_KnobInstance(Knob* knob,KnobGui* gui,NodeInstance* node):
+    KnobInstance(knob,gui,node)
+    {
+        
+    }
+    
+    void addTab(const std::string& name);
+    
+    void addKnob(const std::string& tabName,Knob* k);
 };
 
 #endif // KNOBINSTANCE_H

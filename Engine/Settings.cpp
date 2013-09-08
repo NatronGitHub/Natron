@@ -14,7 +14,7 @@
 #include <QDir>
 
 #include "Engine/Model.h"
-#include "Engine/LibraryBinary.h"
+#include "Global/LibraryBinary.h"
 
 
 
@@ -67,7 +67,7 @@ LibraryBinary* Settings::ReadersSettings::decoderForFiletype(const std::string& 
 
 Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
 
-/*Returns a pluginID if it could find an encoder for the filetype,
+/*Returns a library if it could find an encoder for the filetype,
  otherwise returns NULL.*/
 LibraryBinary* Settings::WritersSettings::encoderForFiletype(const std::string& type){
     for(std::map<std::string,LibraryBinary*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){

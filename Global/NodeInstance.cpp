@@ -26,15 +26,23 @@
 
 using namespace std;
 
-NodeInstance::NodeInstance(Node* node,AppInstance* app):
+NodeInstance::NodeInstance(AppInstance* app):
 _app(app),
-_node(node),
+_node(NULL),
 _gui(NULL)
 {
 
-    QObject::connect(_gui, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)));
 
 }
+void NodeInstance::setInternalNodePTR(Node* node){
+    _node = node;
+}
+
+void NodeInstance::setNodeGuiPTR(NodeGui* gui){
+        _gui = gui;
+        QObject::connect(_gui, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)));
+}
+
 
 NodeInstance::~NodeInstance(){
     for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
@@ -79,7 +87,7 @@ const std::string& NodeInstance::getName() const{
 
 
 bool NodeInstance::connectInput(NodeInstance* input,int inputNumber){
-    InputMap::const_iterator it = _inputs.find(inputNumber);
+    InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
         return false;
     }else{
@@ -87,6 +95,7 @@ bool NodeInstance::connectInput(NodeInstance* input,int inputNumber){
             if(!_gui->connectEdge(inputNumber, input->_gui)){
                 return false;
             }
+            _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber,input));
             return true;
         }else{
@@ -96,6 +105,10 @@ bool NodeInstance::connectInput(NodeInstance* input,int inputNumber){
 }
 
 void NodeInstance::connectOutput(NodeInstance* output,int outputNumber ){
+    OutputMap::iterator it = _outputs.find(outputNumber);
+    if (it != _outputs.end()) {
+        _outputs.erase(it);
+    }
     _outputs.insert(make_pair(outputNumber,output));
 }
 
@@ -110,19 +123,20 @@ bool NodeInstance::disconnectInput(int inputNumber){
             if(!_gui->connectEdge(inputNumber, NULL)){
                 return false;
             }
-            _inputs.insert(make_pair(inputNumber, NULL));
+            _inputs.insert(make_pair(inputNumber, (NodeInstance*)NULL));
             return true;
         }
     }
 }
 
 bool NodeInstance::disconnectInput(NodeInstance* input){
-    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second == input) {
             if(!_gui->connectEdge(it->first, NULL)){
                 return false;
             }
-            _inputs.insert(make_pair(it->first, NULL));
+            _inputs.erase(it);
+            _inputs.insert(make_pair(it->first, (NodeInstance*)NULL));
             return true;
         }else{
             return false;
@@ -132,14 +146,15 @@ bool NodeInstance::disconnectInput(NodeInstance* input){
 }
 
 bool NodeInstance::disconnectOutput(int outputNumber){
-    OutputMap::const_iterator it = _inputs.find(outputNumber);
+    OutputMap::iterator it = _inputs.find(outputNumber);
     if (it == _outputs.end()) {
         return false;
     }else{
         if(it->second == NULL){
             return false;
         }else{
-            _outputs.insert(make_pair(outputNumber, NULL));
+            _outputs.erase(it);
+            _outputs.insert(make_pair(outputNumber, (NodeInstance*)NULL));
             return true;
         }
     }
@@ -147,9 +162,10 @@ bool NodeInstance::disconnectOutput(int outputNumber){
 }
 
 bool NodeInstance::disconnectOutput(NodeInstance* output){
-    for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if (it->second == output) {
-            _outputs.insert(make_pair(it->first, NULL));
+            _outputs.erase(it);
+            _outputs.insert(make_pair(it->first, (NodeInstance*)NULL));
             return true;
         }else{
             return false;
@@ -165,7 +181,8 @@ void NodeInstance::setPosGui(double x,double y){
 
 void NodeInstance::refreshEdgesGui(){
     for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        it->second->refreshEdgesGui();
+        if(it->second)
+            it->second->refreshEdgesGui();
     }
     _gui->refreshEdges();
 }
@@ -183,19 +200,22 @@ void NodeInstance::updatePreviewImageGUI(){
 void NodeInstance::deactivate(){
     _gui->deactivate();
     
-    for (NodeInstance::InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        _app->disconnect(it->second,this);
+    for (NodeInstance::InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second)
+            _app->disconnect(it->second,this);
     }
-    NodeGui* firstChild = 0;
-    for (NodeInstance::OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+    NodeInstance* firstChild = 0;
+    for (NodeInstance::OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if(!it->second)
+            continue;
         if(it == _outputs.begin()){
-            firstChild = it->second->getNodeGui();
+            firstChild = it->second;
         }
        _app->disconnect(this, it->second);
     }
     if(firstChild){
         _app->triggerAutoSaveOnNextEngineRun();
-        checkIfViewerConnectedAndRefresh();
+        firstChild->checkIfViewerConnectedAndRefresh();
     }
 }
 
@@ -204,11 +224,13 @@ void NodeInstance::activate(){
     for (NodeInstance::InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         _app->connect(it->first,it->second, _node->getNodeInstance());
     }
-    NodeGui* firstChild = 0;
+    NodeInstance* firstChild = 0;
     for (NodeInstance::OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(it == _outputs.begin()){
-            firstChild = it->second->getNodeGui();
+            firstChild = it->second;
         }
+        if(!it->second)
+            continue;
         int inputNb = 0;
         for (NodeInstance::InputMap::const_iterator it2 = it->second->getInputs().begin();
              it2 != it->second->getInputs().end(); ++it2) {
@@ -221,7 +243,7 @@ void NodeInstance::activate(){
     }
     if(firstChild){
         _app->triggerAutoSaveOnNextEngineRun();
-        checkIfViewerConnectedAndRefresh();
+        firstChild->checkIfViewerConnectedAndRefresh();
     }
 }
 
@@ -263,7 +285,7 @@ void NodeInstance::initializeInputs(){
     _node->initializeInputs();
     int inputCount = _node->maximumInputs();
     for (int i = 0; i < inputCount; ++i) {
-        _inputs.insert(make_pair(i,NULL));
+        _inputs.insert(make_pair(i,(NodeInstance*)NULL));
     }
 }
 

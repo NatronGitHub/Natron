@@ -236,7 +236,7 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         _inMemorySize += mmEntry->size();
     }
     std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
-    if(evicted.second){
+    if(evicted.second && evicted.second->isRemovable()){
         /*switch the evicted entry from memory to the disk.*/
         MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
         mmEvictedEntry->deallocate();

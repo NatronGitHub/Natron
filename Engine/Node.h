@@ -51,8 +51,8 @@ public:
         _executingEngine(engine)
         {}
 	    Info()
-        : _firstFrame(-1)
-        , _lastFrame(-1)
+        : _firstFrame(0)
+        , _lastFrame(0)
         , _ydirection(0)
         , _blackOutside(false)
         , _rgbMode(true)
@@ -112,7 +112,7 @@ public:
     
     
     /*CONSTRUCTOR AND DESTRUCTORS*/
-    Node();
+    Node(NodeInstance* instance);
     virtual ~Node();
     /*============================*/
     
@@ -222,9 +222,7 @@ public:
     Model* getModel() const {return _model;}
 
     void setModel(Model* model);
-    
-    void setNodeInstance(NodeInstance* instance){_instance = instance;}
-    
+        
     NodeInstance* getNodeInstance() const {return _instance;}
     
     VideoEngine* getExecutingEngine() const {return _info.executingEngine();}
@@ -309,7 +307,7 @@ signals:
 class OutputNode : public Node{
 public:
     
-    OutputNode();
+    OutputNode(NodeInstance* instance);
     
     virtual ~OutputNode();
     

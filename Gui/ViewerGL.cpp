@@ -1109,10 +1109,8 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
         emit engineNeeded();
     }
-    //  else
     updateGL();
     
-    // }
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
     int zoomValue = 100*_zoomCtx._zoomFactor;
     if (zoomValue == 0) {

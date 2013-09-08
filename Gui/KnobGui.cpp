@@ -33,13 +33,14 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/AppManager.h"
 #include "Global/NodeInstance.h"
 #include "Global/KnobInstance.h"
+#include "Global/LibraryBinary.h"
+
 
 #include "Engine/Node.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
-#include "Engine/LibraryBinary.h"
 #include "Engine/Knob.h"
 
 #include "Gui/Button.h"
@@ -60,8 +61,8 @@ using namespace Powiter;
 using namespace std;
 
 
-KnobGui::KnobGui(Knob* knob):
-QWidget(),
+KnobGui::KnobGui(Knob* knob,QWidget* parent):
+QWidget(parent),
 _knob(knob),
 _triggerNewLine(true),
 _spacingBetweenItems(0),
@@ -127,7 +128,10 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
     return true;
 }
 //===========================FILE_KNOB_GUI=====================================
-
+File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
+    File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
+    QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
+}
 
 void File_KnobGui::createWidget(QGridLayout* layout,int row){
     
@@ -145,9 +149,11 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
     
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
     
-    layout->addWidget(desc, row, 0);
-    layout->addWidget(_lineEdit,row,1);
-    layout->addWidget(openFile,row,2);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(desc, row, 0+offset);
+    layout->addWidget(_lineEdit,row,1+offset);
+    layout->addWidget(openFile,row,2+offset);
 }
 
 void File_KnobGui::updateGUI(const Variant& variant){
@@ -167,8 +173,8 @@ void File_KnobGui::open_file(){
     }
     if(!filesList.isEmpty()){
         updateLastOpened(filesList.at(0));
+        emit filesSelected();
         pushUndoCommand(new KnobUndoCommand(this,Variant(oldList),Variant(filesList)));
-        emit valueChanged(Variant(filesList));
     }
 }
 
@@ -180,10 +186,8 @@ void File_KnobGui::onReturnPressed(){
     if(newList.isEmpty())
         return;
     QStringList oldList = dynamic_cast<File_Knob*>(_knob)->value<QStringList>();
-    
+    emit filesSelected();
     pushUndoCommand(new KnobUndoCommand(this,Variant(oldList),Variant(newList)));
-    
-    emit valueChanged(Variant(newList));
 }
 void File_KnobGui::updateLastOpened(const QString& str){
     QString withoutPath = SequenceFileDialog::removePath(str);
@@ -192,7 +196,10 @@ void File_KnobGui::updateLastOpened(const QString& str){
 }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
-
+OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
+    File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
+    QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
+}
 
 void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
@@ -207,10 +214,11 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     openFile->setIcon(QIcon(pix));
     
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
+    int offset = _knob->determineHierarchySize();
     
-    layout->addWidget(desc,row,0);
-    layout->addWidget(_lineEdit,row,1);
-    layout->addWidget(openFile,row,2);
+    layout->addWidget(desc,row,0+offset);
+    layout->addWidget(_lineEdit,row,1+offset);
+    layout->addWidget(openFile,row,2+offset);
 }
 
 
@@ -225,8 +233,8 @@ void OutputFile_KnobGui::open_file(){
         QString oldPattern = _knob->value<QString>();
         QString newPattern = dialog.filesToSave();
         updateLastOpened(SequenceFileDialog::removePath(oldPattern));
+        emit filesSelected();
         pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));
-        emit valueChanged(Variant(newPattern));
     }
 }
 
@@ -235,9 +243,8 @@ void OutputFile_KnobGui::open_file(){
 void OutputFile_KnobGui::onReturnPressed(){
     QString oldPattern = _knob->value<QString>();
     QString newPattern= _lineEdit->text();
-    pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));
-    emit valueChanged(Variant(newPattern));
-    
+    emit filesSelected();
+    pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));    
 }
 
 
@@ -252,7 +259,10 @@ void OutputFile_KnobGui::updateLastOpened(const QString& str){
 
 void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    layout->addWidget(desc,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    
+    layout->addWidget(desc,row,0+offset);
     
     Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
@@ -260,6 +270,9 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     QString subLabels_RGBA[] = {"r","g","b","a"};
     QString subLabels_XYZW[] = {"x","y","z","w"};
     
+    QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
+    QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
+    QList<QVariant> values = _knob->getValueAsVariant().getQVariant().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -277,9 +290,12 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         FeedbackSpinBox* box = new FeedbackSpinBox(this,false);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        box->setMaximum(INT_MAX);
-        box->setMinimum(INT_MIN);
-        box->setValue(0);
+        if(maximums.size() > i)
+            box->setMaximum(maximums.at(i).toInt());
+        if(minimums.size() > i)
+            box->setMinimum(minimums.at(i).toInt());
+        if(values.size() > i)
+            box->setValue(values.at(i).toInt());
         boxContainerLayout->addWidget(box);
         if(flags & Knob::READ_ONLY){
             box->setReadOnly(true);
@@ -287,12 +303,15 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         if(flags & Knob::INVISIBLE){
             box->setVisible(false);
         }
-        layout->addWidget(boxContainer,row,i+1);
+        layout->addWidget(boxContainer,row,i+1+offset);
+        _spinBoxes.push_back(box);
     }
 }
 void Int_KnobGui::updateGUI(const Variant& variant){
     QList<QVariant> list = variant.getQVariant().toList();
-    assert(list.size() == (U32)(_spinBoxes.size()));
+    if(list.isEmpty()){
+        return;
+    }
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i]->setValue(list.at(i).toInt());
     }
@@ -304,7 +323,6 @@ void Int_KnobGui::onSpinBoxValueChanged(){
         list << QVariant(_spinBoxes[i]->value());
     }
     pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().getQVariant().toStringList()),Variant(list)));
-    emit valueChanged(Variant(list));
 }
 
 //==========================BOOL_KNOB_GUI======================================
@@ -312,10 +330,13 @@ void Int_KnobGui::onSpinBoxValueChanged(){
 void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
     QLabel* label = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     _checkBox = new QCheckBox(this);
-    _checkBox->setChecked(false);
+    
+    _checkBox->setChecked(_knob->value<bool>());
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
-    layout->addWidget(label,row,0);
-    layout->addWidget(_checkBox,row,1);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(label,row,0+offset);
+    layout->addWidget(_checkBox,row,1+offset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::READ_ONLY){
         _checkBox->setEnabled(false);
@@ -333,14 +354,16 @@ void Bool_KnobGui::updateGUI(const Variant& variant){
 
 void Bool_KnobGui::onCheckBoxStateChanged(bool b){
     pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().getQVariant()),Variant(b)));
-    emit valueChanged(Variant(b));
 }
 
 
 //=============================DOUBLE_KNOB_GUI===================================
 void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    layout->addWidget(desc,row,0);
+    
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(desc,row,0+offset);
     
     Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
@@ -348,6 +371,10 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     QString subLabels_RGBA[] = {"r","g","b","a"};
     QString subLabels_XYZW[] = {"x","y","z","w"};
     
+    QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
+    QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
+    QList<QVariant> increments = _knob->getIncrement().getQVariant().toList();
+    QList<QVariant> values = _knob->getValueAsVariant().getQVariant().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -365,9 +392,14 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         FeedbackSpinBox* box = new FeedbackSpinBox(this,true);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        box->setMaximum(INT_MAX);
-        box->setMinimum(INT_MIN);
-        box->setValue(0);
+        if(maximums.size() > i)
+            box->setMaximum(maximums.at(i).toDouble());
+        if(minimums.size() > i)
+            box->setMinimum(minimums.at(i).toDouble());
+        if(increments.size() > i)
+            box->setIncrement(increments.at(i).toDouble());
+        if(values.size() > i)
+            box->setValue(values.at(i).toDouble());
         boxContainerLayout->addWidget(box);
         if(flags & Knob::READ_ONLY){
             box->setReadOnly(true);
@@ -375,12 +407,19 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         if(flags & Knob::INVISIBLE){
             box->setVisible(false);
         }
-        layout->addWidget(boxContainer,row,i+1);
+        int offset = _knob->determineHierarchySize();
+        if(_knob->getParentKnob()){
+            ++offset;
+        }
+        layout->addWidget(boxContainer,row,i+1+offset);
+        _spinBoxes.push_back(box);
     }
 }
 void Double_KnobGui::updateGUI(const Variant& variant){
     QList<QVariant> list = variant.getQVariant().toList();
-    assert(list.size() == (U32)_spinBoxes.size());
+    if(list.isEmpty()){
+        return;
+    }
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         _spinBoxes[i]->setValue(list.at(i).toDouble());
     }
@@ -392,14 +431,15 @@ void Double_KnobGui::onSpinBoxValueChanged(){
         list << QVariant(_spinBoxes[i]->value());
     }
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant().getQVariant(),Variant(list)));
-    emit valueChanged(Variant(list));
 }
 
 //=============================BUTTON_KNOB_GUI===================================
 void Button_KnobGui::createWidget(QGridLayout *layout, int row){
     _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),this);
     QObject::connect(_button, SIGNAL(pressed()),this,SIGNAL(emitValueChanged()));
-    layout->addWidget(_button,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(_button,row,0+offset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::INVISIBLE){
         _button->setVisible(false);
@@ -418,38 +458,48 @@ ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob):KnobGui(knob){
 
 void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     _comboBox = new ComboBox(this);
+    for (int i = 0; i < _entries.size(); ++i) {
+        _comboBox->addItem(_entries.at(i));
+    }
+    if(_entries.size() > 0)
+        _comboBox->setCurrentText(_entries[0]);
+    _comboBox->setCurrentIndex(_knob->value<int>());
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
-    layout->addWidget(desc,row,0);
-    layout->addWidget(_comboBox,row,1);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(desc,row,0+offset);
+    layout->addWidget(_comboBox,row,1+offset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::INVISIBLE){
         _comboBox->setVisible(false);
     }
 }
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));
-    emit valueChanged(Variant(i));
-    
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));    
     
 }
 void ComboBox_KnobGui::populate(const QStringList& entries){
-    for (int i = 0; i < entries.size(); ++i) {
-        _comboBox->addItem(entries.at(i));
-    }
-    if(entries.size() > 0)
-        _comboBox->setCurrentText(entries[0]);
+    _entries = entries;
+}
+
+void ComboBox_KnobGui::updateGUI(const Variant& variant){
+    int i = variant.getQVariant().toInt();
+    assert(i < _entries.size());
+    _comboBox->setCurrentText(_entries.at(i));
 }
 
 //=============================SEPARATOR_KNOB_GUI===================================
 void Separator_KnobGui::createWidget(QGridLayout* layout,int row){
     QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    layout->addWidget(name,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(name,row,0+offset);
     _line = new QFrame(this);
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    layout->addWidget(_line,row,1);
+    layout->addWidget(_line,row,1+offset);
 }
 
 
@@ -465,21 +515,28 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _aBox = new FeedbackSpinBox(this,true);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged(double)));
     
+    
+    QVector4D values = _knob->getMinimum().getQVariant().value<QVector4D>();
+    
     _rBox->setMaximum(1.);
     _rBox->setMinimum(0.);
     _rBox->setIncrement(0.1);
+    _rBox->setValue(values.x());
     
     _gBox->setMaximum(1.);
     _gBox->setMinimum(0.);
     _gBox->setIncrement(0.1);
+    _gBox->setValue(values.y());
     
     _bBox->setMaximum(1.);
     _bBox->setMinimum(0.);
     _bBox->setIncrement(0.1);
+    _bBox->setValue(values.z());
     
     _aBox->setMaximum(1.);
     _aBox->setMinimum(0.);
     _aBox->setIncrement(0.1);
+    _aBox->setValue(values.w());
     
     
     _rLabel = new QLabel("r",this);
@@ -487,9 +544,12 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _bLabel = new QLabel("b",this);
     _aLabel = new QLabel("a",this);
     
+    int offset = _knob->determineHierarchySize();
+    
+    
     QLabel* nameLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(nameLabel,row,0);
+    layout->addWidget(nameLabel,row,0+offset);
     
     QWidget* boxContainers = new QWidget(this);
     QHBoxLayout* boxLayout = new QHBoxLayout(boxContainers);
@@ -517,7 +577,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
     boxLayout->addWidget(_colorDialogButton);
     
-    layout->addWidget(boxContainers,row,1);
+    layout->addWidget(boxContainers,row,1+offset);
     
     
     Knob_Mask flags = _knob->getFlags();
@@ -568,7 +628,6 @@ void RGBA_KnobGui::onColorChanged(){
         newValues.setW(color.alphaF());
     }
     pushUndoCommand(new KnobUndoCommand(this,Variant(oldValues),Variant(newValues)));
-    emit valueChanged(Variant(newValues));
 }
 
 
@@ -590,10 +649,13 @@ void RGBA_KnobGui::disablePermantlyAlpha(){
 //=============================STRING_KNOB_GUI===================================
 void String_KnobGui::createWidget(QGridLayout *layout, int row){
     QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    layout->addWidget(name,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(name,row,0+offset);
     _lineEdit = new LineEdit(this);
-    layout->addWidget(_lineEdit,row,1);
+    layout->addWidget(_lineEdit,row,1+offset);
     QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
+    _lineEdit->setText(_knob->value<QString>());
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::READ_ONLY){
         _lineEdit->setReadOnly(true);
@@ -606,7 +668,6 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row){
 
 void String_KnobGui::onStringChanged(const QString& str){
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant().getQVariant(),Variant(str)));
-    emit valueChanged(Variant(str));
 }
 void String_KnobGui::updateGUI(const Variant& variant){
     _lineEdit->setText(variant.getQVariant().toString());
@@ -620,47 +681,66 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     QObject::connect(_box, SIGNAL(clicked(bool)), this, SLOT(setChecked(bool)));
     _box->setLayout(_boxLayout);
     _box->setCheckable(true);
-    layout->addWidget(_box,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    layout->addWidget(_box,row,+offset);
+    
+    for (U32 i = 0 ; i < _knobs.size(); ++i) {
+        _boxLayout->addWidget(_knobs[i]);
+        _knobs[i]->setParent(_box);
+        _knobs[i]->setVisible(_box->isChecked());
+    }
 }
 
 
 void Group_KnobGui::addKnob(KnobGui* k){
-    k->setParent(this);
-    _boxLayout->addWidget(k);
-    k->setVisible(_box->isChecked());
     _knobs.push_back(k);
 }
 void Group_KnobGui::setChecked(bool b){
     _box->setChecked(b);
     for(U32 i = 0 ; i < _knobs.size() ;++i) {
         _knobs[i]->setVisible(b);
+
     }
 }
 
 //=============================TAB_KNOB_GUI===================================
 void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
-    /*not a pretty call...*/
+    /*not a pretty call... considering using QTabWidget instead*/
     _tabWidget = new TabWidget(_knob->getKnobInstance()->getNode()->getNode()->getModel()->getApp()->getGui(),
                                TabWidget::NONE,this);
-    layout->addWidget(_tabWidget,row,0);
+    int offset = _knob->determineHierarchySize();
+    
+    
+    layout->addWidget(_tabWidget,row,0+offset);
+    addTabs();
+    addKnobsToTabs();
 }
-
-
 
 void Tab_KnobGui::addTab(const std::string& name){
-    QWidget* newTab = new QWidget(_tabWidget);
-    _tabWidget->appendTab(name.c_str(), newTab);
-    QVBoxLayout* newLayout = new QVBoxLayout(newTab);
-    newTab->setLayout(newLayout);
-    vector<KnobGui*> knobs;
-    _knobs.insert(make_pair(name, make_pair(newLayout, knobs)));
+    _tabs.push_back(name);
 }
 void Tab_KnobGui::addKnob(const std::string& tabName,KnobGui* k){
-    KnobsTabMap::iterator it = _knobs.find(tabName);
-    if(it!=_knobs.end()){
-        it->second.first->addWidget(k);
-        it->second.second.push_back(k);
-    }
+    _knobsToAdd.push_back(make_pair(tabName, k));
 }
 
-
+void Tab_KnobGui::addTabs(){
+    for (U32 i = 0; i < _tabs.size(); ++i) {
+        std::string name = _tabs[i];
+        QWidget* newTab = new QWidget(_tabWidget);
+        _tabWidget->appendTab(name.c_str(), newTab);
+        QVBoxLayout* newLayout = new QVBoxLayout(newTab);
+        newTab->setLayout(newLayout);
+        vector<KnobGui*> knobs;
+        _knobs.insert(make_pair(name, make_pair(newLayout, knobs)));
+    }
+}
+void Tab_KnobGui::addKnobsToTabs(){
+    for (U32 i = 0; i < _knobsToAdd.size(); ++i) {
+        KnobsTabMap::iterator it = _knobs.find(_knobsToAdd[i].first);
+        if(it!=_knobs.end()){
+            it->second.first->addWidget(_knobsToAdd[i].second);
+            it->second.second.push_back(_knobsToAdd[i].second);
+        }
+    }
+}

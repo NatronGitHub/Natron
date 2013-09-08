@@ -15,12 +15,12 @@
 #include <QtCore/QMutexLocker>
 #include <QtConcurrentRun>
 
+#include "Global/LibraryBinary.h"
 #include "Global/AppManager.h"
 
 #include "Engine/Row.h"
 #include "Engine/Settings.h"
 #include "Engine/Model.h"
-#include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
 
@@ -30,8 +30,8 @@
 using namespace std;
 using namespace Powiter;
 
-Writer::Writer():
-OutputNode(),
+Writer::Writer(NodeInstance* instance):
+OutputNode(instance),
 _requestedChannels(Mask_RGB), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
@@ -70,15 +70,18 @@ bool Writer::_validate(bool forReal){
         if(_filename.size() > 0){
             
             Write* write = 0;
-            PluginID* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+            Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
             if(!encoder){
-                cout << "Writer: couldn't find an appropriate encoder for filetype: " << _fileType << endl;
+                cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
             }else{
                 
 
-                pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("builder");
-                write = func.second(this);
-
+                pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+                if(func.first)
+                    write = func.second(this);
+                else{
+                    cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
+                }
                 write->premultiplyByAlpha(_premult);
                 /*check if the filename already contains the extension, otherwise appending it*/
                 QString extension;
@@ -120,6 +123,7 @@ void Writer::createKnobDynamically(){
 void Writer::initKnobs(){
     std::string fileDesc("File");
     _fileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", this, fileDesc,1, Knob::NONE));
+    QObject::connect(_fileKnob,SIGNAL(filesSelected()),this,SLOT(onFilesSelected()));
     assert(_fileKnob);
     
     std::string renderDesc("Render");
@@ -134,8 +138,8 @@ void Writer::initKnobs(){
     std::string filetypeStr("File type");
     _filetypeCombo = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", this, filetypeStr, 1,Knob::NONE));
     QObject::connect(_filetypeCombo, SIGNAL(valueChangedByUser()), this, SLOT(fileTypeChanged()));
-    const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
-    std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
+    const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
+    std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
         _allFileTypes << it->first.c_str();
     }
@@ -210,7 +214,7 @@ Writer::Buffer::~Buffer(){
 
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/
-    PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!isValid) return false;
     
     /*checking if channels are supported*/
@@ -252,7 +256,7 @@ void Writer::fileTypeChanged(){
         delete _writeOptions;
         _writeOptions = 0;
     }
-    PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!isValid) return;
     
     QString file(_filename.c_str());
@@ -270,3 +274,6 @@ void Writer::fileTypeChanged(){
     delete write;
 }
 
+void Writer::onFilesSelected(){
+    _filename = _fileKnob->getValueAsVariant().getQVariant().toString().toStdString();
+}

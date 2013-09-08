@@ -104,7 +104,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* e);
     
 private:
-    
+    void adjustSize(const QString& str);
     void createMenu();
     
 };

@@ -52,9 +52,10 @@ _value(QVariant(0)),
 _instance(NULL),
 _description(description),
 _flags(flags),
-_dimension(dimension)
+_dimension(dimension),
+_parentKnob(NULL)
 {
-    QObject::connect(this, SIGNAL(valueChanged(const QVariant&)), this, SIGNAL(valueChangedByUser()));
+    QObject::connect(this, SIGNAL(valueChanged(const Variant&)), this, SIGNAL(valueChangedByUser()));
 }
 
 Knob::~Knob(){
@@ -100,6 +101,16 @@ void Knob::setEnabled(bool b){
 
 void Knob::setVisible(bool b){
     _instance->setVisible(b);
+}
+
+int Knob::determineHierarchySize() const{
+    int ret = 0;
+    Knob* current = getParentKnob();
+    while(current){
+        ++ret;
+        current = current->getParentKnob();
+    }
+    return ret;
 }
 /***********************************FILE_KNOB*****************************************/
 
@@ -379,16 +390,18 @@ Knob(node,description,dimension,flags){
 }
 
 void Group_Knob::addKnob(Knob* k){
-
+    dynamic_cast<Group_KnobInstance*>(_instance)->addKnob(k);
+    k->setParentKnob(this);
 }
 /***********************************TAB_KNOB*****************************************/
 
 
 void Tab_Knob::addTab(const std::string& name){
-    
+    dynamic_cast<Tab_KnobInstance*>(_instance)->addTab(name);
 }
 
 void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
-    
+    dynamic_cast<Tab_KnobInstance*>(_instance)->addKnob(tabName,k);
+    k->setParentKnob(this);
 }
 

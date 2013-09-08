@@ -62,7 +62,7 @@ public:
     };
     
     
-    Writer();
+    Writer(NodeInstance* instance);
         
     virtual ~Writer();
     
@@ -112,6 +112,7 @@ public:
     
 public slots:
     void notifyWriterForCompletion();
+    void onFilesSelected();
     void fileTypeChanged();
     void startRendering();
     

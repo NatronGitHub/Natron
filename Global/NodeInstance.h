@@ -47,14 +47,16 @@ public:
     typedef std::map<int,NodeInstance*> OutputMap;
     
 #define foreachInput(CUR,NODE)\
-    for(NodeInstance::InputMap::const_iterator it = NODE->getInputs().begin(),if(it!=NODE->getInputs().end()) CUR = it->second; it!= NODE->getInputs().end() ;++it,if(it!=NODE->getInputs().end()) CUR = it->second) \
+    for(NodeInstance::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
     
     
-    NodeInstance(Node* node,AppInstance* app);
+    NodeInstance(AppInstance* app);
     
     virtual ~NodeInstance();
     
-    void setNodeGuiPTR(NodeGui* gui){_gui = gui;}
+    void setInternalNodePTR(Node* node);
+    
+    void setNodeGuiPTR(NodeGui* gui);
     
     Node* getNode() const {return _node;}
     

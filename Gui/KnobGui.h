@@ -49,7 +49,7 @@ public:
     
     friend class KnobUndoCommand;
     
-    KnobGui(Knob* knob);
+    KnobGui(Knob* knob,QWidget* parent = NULL);
     
     virtual ~KnobGui();
         
@@ -127,7 +127,7 @@ public:
     
     static KnobGui* BuildKnobGui(Knob* knob){ return new File_KnobGui(knob); }
     
-    File_KnobGui(Knob* knob):KnobGui(knob){}
+    File_KnobGui(Knob* knob);
 
     virtual ~File_KnobGui(){}
             
@@ -137,6 +137,8 @@ public slots:
     void open_file();
     void onReturnPressed();
     
+signals:
+    void filesSelected();
     
 protected:
     
@@ -160,7 +162,7 @@ public:
     
     static KnobGui* BuildKnobGui(Knob* knob){ return new OutputFile_KnobGui(knob); }
     
-    OutputFile_KnobGui(Knob* knob):KnobGui(knob){}
+    OutputFile_KnobGui(Knob* knob);
     
     virtual ~OutputFile_KnobGui(){}
     
@@ -331,6 +333,7 @@ protected:
     virtual void updateGUI(const Variant& variant);
     
 private:
+    QStringList _entries;
     ComboBox* _comboBox;
 };
 
@@ -480,9 +483,14 @@ public:
     
 protected:
     
-    virtual void updateGUI(const Variant& variant);
+    virtual void updateGUI(const Variant& variant){(void)variant;}
     
 private:
+    void addTabs();
+    void addKnobsToTabs();
+    
+    std::vector<std::string> _tabs;
+    std::vector< std::pair<std::string,KnobGui*> > _knobsToAdd;
     TabWidget* _tabWidget;
     KnobsTabMap _knobs;
 };

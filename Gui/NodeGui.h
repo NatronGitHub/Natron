@@ -127,9 +127,7 @@ public:
     
     /*Moves the settings panel on top of the list of panels.*/
     void putSettingsPanelFirst();
-    
-    void remove();
-    
+        
     void markInputNull(Edge* e);
     
     void pushUndoCommand(QUndoCommand* command);

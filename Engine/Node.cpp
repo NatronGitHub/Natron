@@ -162,11 +162,11 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node():
+Node::Node(NodeInstance* instance):
 _model(NULL),
 _info(),
 _marked(false),
-_instance(NULL)
+_instance(instance)
 {
 	
 }
@@ -290,7 +290,7 @@ Row* Node::get(int y,int x,int r){
 }
 
 Node* Node::hasViewerConnected(Node* node){
-    Node* out;
+    Node* out = 0;
     bool ok=false;
     _hasViewerConnected(node,&ok,out);
     if (ok) {
@@ -310,7 +310,8 @@ void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
     }else{
         const NodeInstance::OutputMap& outputs = node->getNodeInstance()->getOutputs();
         for (NodeInstance::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            _hasViewerConnected(it->second->getNode(),ok,out);
+            if(it->second)
+                _hasViewerConnected(it->second->getNode(),ok,out);
         }
     }
 }
@@ -332,7 +333,7 @@ void Node::setModel(Model* model){
     }
 }
 
-OutputNode::OutputNode():Node(),_videoEngine(0){
+OutputNode::OutputNode(NodeInstance* instance):Node(instance),_videoEngine(0){
     _mutex = new QMutex;
     _openGLCondition = new QWaitCondition;
     

@@ -13,6 +13,7 @@
 #include <cassert>
 #include <fstream>
 #include <QtCore/QStringList>
+
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
@@ -73,11 +74,9 @@ OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
 {
     assert(plugin);
 
-    OfxNode* node =  new OfxNode(plugin, desc, context);
-    if(context == kOfxImageEffectContextGenerator){
-        node->setCanHavePreviewImage();
-    }
-    return node->effectInstance();
+    
+    
+    return new Powiter::OfxImageEffectInstance(plugin,desc,context,false);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
@@ -143,7 +142,7 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
     }
 }
 
-OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name) {
+OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,NodeInstance* instance) {
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
         return NULL;
@@ -184,11 +183,12 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name) {
     if(!rval) {
         return NULL;
     }
-    OFX::Host::ImageEffect::Instance* ofxInstance = plugin->createInstance(context, NULL);
+    OfxNode* node = new OfxNode(instance,plugin,context) ;
+    Powiter::OfxImageEffectInstance* ofxInstance = node->effectInstance();
     ofxInstance->createInstanceAction();
-    ofxInstance->getClipPreferences();//not sure we should do this here
+    ofxInstance->getClipPreferences();
     //const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> clips = ofxInstance->getDescriptor().getClipsByOrder();
-    return dynamic_cast<Powiter::OfxImageEffectInstance*>(ofxInstance)->node();
+    return node;
 }
 
 QStringList Powiter::OfxHost::loadOFXPlugins() {

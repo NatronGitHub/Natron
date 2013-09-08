@@ -162,9 +162,13 @@ public:
     
     bool disconnect(NodeInstance* input,NodeInstance* output);
     
-private:
+    void autoConnect(NodeInstance* target,NodeInstance* created);
     
     void initNodeCountersAndSetName(NodeInstance* n);
+
+    
+private:
+    
     
 	void removeAutoSaves() const;
     
@@ -204,7 +208,13 @@ public:
     
     void removeInstance(int appID);
     
+    /*Tries to load all plugins in directory "where"*/
     static std::vector<Powiter::LibraryBinary*> loadPlugins(const QString& where);
+    
+    /*Tries to load all plugins in directory "where" that contains all the functions described by
+     their name in "functions".*/
+    static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
+                                                                            const std::vector<std::string>& functions);
 };
 
 

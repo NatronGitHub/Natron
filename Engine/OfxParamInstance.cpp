@@ -572,7 +572,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     if(layoutHint == 1){
         KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int2D", node, name, 2,Knob::NONE));
+    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", node, name, 2,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -691,7 +691,7 @@ _fileKnob(0),_outputFileKnob(0){
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
             _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", node, name, 1,Knob::NONE));
-            QObject::connect(_fileKnob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+            QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
             }
@@ -699,7 +699,7 @@ _fileKnob(0),_outputFileKnob(0){
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", node, name,1, Knob::NONE));
-            QObject::connect(_outputFileKnob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+            QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
                 _outputFileKnob->turnOffNewLine();
             }

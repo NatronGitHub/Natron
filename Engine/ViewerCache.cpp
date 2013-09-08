@@ -245,7 +245,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         if(viewer)
             viewer->getUiContext()->frameSeeker->removeCachedFrame();
     }
-    
+    assert(out->getMappedFile()->data());
     return out;
 }
 

@@ -132,26 +132,13 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, NodeInstance *node
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root,sc);
     _nodes.push_back(node_ui);
     _undoStack->push(new AddCommand(this,node_ui));
-    if(_nodeSelected)
-        autoConnect(_nodeSelected, node_ui);
-    
-    selectNode(node_ui);
-    
-    if(int ret = node_ui->hasPreviewImage()){
-        if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
-            n->computePreviewImage();
-        }
-    }
     return node_ui;
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event){
     old_pos=mapToScene(event->pos());
     oldp=event->pos();
-    U32 i=0;
-    bool found=false;
-    while(i<_nodes.size() && !found){
+    for(U32 i = 0;i<_nodes.size();++i){
         NodeGui* n=_nodes[i];
         
         QPointF evpt=n->mapFromScene(old_pos);
@@ -161,23 +148,19 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             
             _evtState=NODE_DRAGGING;
             _lastNodeDragStartPoint = n->pos();
-            found=true;
             break;
         }else{
             Edge* edge = n->hasEdgeNearbyPoint(old_pos);
             if(edge){
                 _arrowSelected = edge;
                 _evtState=ARROW_DRAGGING;
+                break;
             }else{
                 deselect();
                 _evtState=MOVING_AREA;
             }
             
         }
-        ++i;
-    }
-    if(!found){
-        
     }
 }
 void NodeGraph::deselect(){
@@ -190,9 +173,8 @@ void NodeGraph::deselect(){
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
-        U32 i=0;
         bool foundSrc=false;
-        while(i<_nodes.size()){
+        for(U32 i = 0; i<_nodes.size() ;++i){
             NodeGui* n=_nodes[i];
             QPointF ep = mapToScene(event->pos());
             QPointF evpt = n->mapFromScene(ep);
@@ -207,8 +189,6 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
                 
                 break;
             }
-            
-            ++i;
         }
         if(!foundSrc){
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
@@ -398,7 +378,8 @@ void NodeGraph::scaleView(qreal scaleFactor,QPointF){
 
 void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     Edge* first = 0;
-    if(!selected) return;
+    if(!selected)
+        return;
     bool cont = false;
     if(!selected->getNodeInstance()->isOutputNode() && !created->getNodeInstance()->isInputNode()){
         /*dst is not outputnode*/
@@ -407,6 +388,9 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         const NodeInstance::OutputMap& outputs = selected->getNodeInstance()->getOutputs();
         for (NodeInstance::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
             NodeInstance* output = it->second;
+            if(!output){
+                continue;
+            }
             const NodeGui::InputEdgesMap& outputEdges = output->getNodeGui()->getInputsArrows();
             Edge* edgeWithSelectedNode = 0;
             for (NodeGui::InputEdgesMap::const_iterator i = outputEdges.begin();i!=outputEdges.end();++i) {
@@ -505,14 +489,12 @@ void NodeGraph::deleteSelectedNode(){
 void NodeGraph::removeNode(NodeGui* n){
     for(U32 i = 0 ; i < _nodes.size();++i) {
         if (n == _nodes[i]) {
-            n->remove();
             _nodes.erase(_nodes.begin()+i);
             break;
         }
     }
     for(U32 i = 0 ; i < _nodesTrash.size();++i) {
         if (n == _nodesTrash[i]) {
-            n->remove();
             _nodes.erase(_nodesTrash.begin()+i);
             break;
         }
@@ -718,12 +700,11 @@ void RemoveCommand::undo(){
     
 }
 void RemoveCommand::redo(){
-    _node->getNodeInstance()->deactivate();
-    
     _inputs = _node->getNodeInstance()->getInputs();
     _outputs = _node->getNodeInstance()->getOutputs();
-
     
+    _node->getNodeInstance()->deactivate();
+
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNodeInstance()->getName().c_str()));

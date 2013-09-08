@@ -16,6 +16,7 @@
 #include <QtCore/QDir>
 
 #include "Global/NodeInstance.h"
+#include "Global/LibraryBinary.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
@@ -29,7 +30,6 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
-#include "Engine/LibraryBinary.h"
 
 #include "Writers/Writer.h"
 
@@ -129,21 +129,31 @@ const QStringList& AppInstance::getNodeNameList(){
 
 
 NodeInstance* AppInstance::createNode(const QString& name) {
-    Node* node = _model->createNode(name.toStdString());
+    NodeInstance* instance = new NodeInstance(this);
+    Node* node = _model->createNode(name.toStdString(),instance);
+    instance->setInternalNodePTR(node);
     NodeGui* nodegui = 0;
-    NodeInstance* instance = 0;
     if (node) {
-        instance = new NodeInstance(node,this);
         nodegui = _gui->createNodeGUI(instance);
-        instance->setNodeGuiPTR(nodegui);
         instance->initializeInputs();
+        NodeInstance* selected  =  0;
+        if(_gui->getSelectedNode()){
+            selected = _gui->getSelectedNode()->getNodeInstance();
+        }
+        autoConnect(selected, instance);
+        initNodeCountersAndSetName(instance);
+        if(node->className() == "Viewer"){
+            _gui->createViewerGui(instance);
+        }
         instance->initializeKnobs();
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;
     }
-    initNodeCountersAndSetName(instance);
     return instance;
+}
+void AppInstance::autoConnect(NodeInstance* target,NodeInstance* created){
+    _gui->autoConnect(target,created);
 }
 
 OutputNode* AppInstance::getCurrentOutput(){
@@ -416,7 +426,7 @@ bool AppInstance::disconnect(NodeInstance* input,NodeInstance* output){
 void AppInstance::initNodeCountersAndSetName(NodeInstance* n){
     assert(n);
     map<string,int>::iterator it = _nodeCounters.find(n->className());
-    if(it == _nodeCounters.end()){
+    if(it != _nodeCounters.end()){
         it->second++;
         n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)));
     }else{
@@ -440,26 +450,29 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
                 QString className;
                 int index = filename.lastIndexOf("."LIBRARY_EXT);
                 className = filename.left(index);
-                string dll = POWITER_PLUGINS_PATH + className.toStdString() + "." + LIBRARY_EXT;
-                
-                vector<string> functions;
-                functions.push_back("BuildKnob");
-                LibraryBinary* plugin = new LibraryBinary(dll,functions);
+                string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + LIBRARY_EXT;
+                LibraryBinary* plugin = new LibraryBinary(binaryPath);
                 if(!plugin->isValid()){
                     delete plugin;
-                }
-                pair<bool,KnobBuilder> builder = plugin->findFunction<KnobBuilder>("BuildKnob");
-                if(!builder.first){
-                    continue;
                 }else{
-                    Knob* knob = builder.second(NULL,str,1,0);
-                    _loadedKnobs.insert(make_pair(knob->name(), plugin));
-                    delete knob;
+                    ret.push_back(plugin);
                 }
             }else{
                 continue;
             }
         }
     }
+    return ret;
+}
 
+std::vector<Powiter::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
+                                                                 const std::vector<std::string>& functions){
+    std::vector<LibraryBinary*> ret;
+    std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
+    for (U32 i = 0; i < loadedLibraries.size(); ++i) {
+        if (loadedLibraries[i]->loadFunctions(functions)) {
+            ret.push_back(loadedLibraries[i]);
+        }
+    }
+    return ret;
 }

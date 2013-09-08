@@ -16,6 +16,8 @@
 #include <QLabel>
 #include <QMenu>
 #include <QStyle>
+#include <QFont>
+#include <QFontMetrics>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -164,6 +166,11 @@ void ComboBox::setCurrentText(const QString& text){
             break;
         }
     }
+    adjustSize(str);
+}
+void ComboBox::adjustSize(const QString& str){
+    int w = _currentText->fontMetrics().width(str);
+    setMaximumWidth(w+20);
 }
 QString ComboBox::text() const{
     return _currentText->text();
@@ -193,6 +200,7 @@ void ComboBox::setCurrentIndex(int index){
     }
     _currentIndex = index;
     _currentText->setText(str);
+    adjustSize(str);
     emit currentIndexChanged(index);
     emit currentIndexChanged(rawStr);
 }

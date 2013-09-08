@@ -12,13 +12,14 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/NodeInstance.h"
+#include "Global/AppManager.h"
 #ifdef __POWITER_UNIX__
 #include <dlfcn.h>
 #endif
 #include <iostream>
 
 
-#include "Engine/LibraryBinary.h"
+#include "Global/LibraryBinary.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 
@@ -48,225 +49,134 @@ KnobFactory::~KnobFactory(){
 }
 
 void KnobFactory::loadKnobPlugins(){
-    QDir d(POWITER_PLUGINS_PATH);
-    if (d.isReadable())
-    {
-        QStringList filters;
-        filters << QString(QString("*.")+QString(LIBRARY_EXT));
-        d.setNameFilters(filters);
-		QStringList fileList = d.entryList();
-        for(int i = 0 ; i < fileList.size() ; ++i) {
-            QString filename = fileList.at(i);
-            if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
-                QString className;
-                int index = filename.lastIndexOf("."LIBRARY_EXT);
-                className = filename.left(index);
-                string dll = POWITER_PLUGINS_PATH + className.toStdString() + "." + LIBRARY_EXT;
-                
-                vector<string> functions;
-                functions.push_back("BuildKnob");
-                LibraryBinary* plugin = new LibraryBinary(dll,functions);
-                if(!plugin->isValid()){
-                    delete plugin;
-                }
-                pair<bool,KnobBuilder> builder = plugin->findFunction<KnobBuilder>("BuildKnob");
-                if(!builder.first){
-                    continue;
-                }else{
-                    Knob* knob = builder.second(NULL,str,1,0);
-                    _loadedKnobs.insert(make_pair(knob->name(), plugin));
-                    delete knob;
-                }
-            }else{
-                continue;
+    vector<LibraryBinary*> plugins = AppManager::loadPlugins(POWITER_KNOBS_PLUGINS_PATH);
+    vector<string> functions;
+    functions.push_back("BuildKnob");
+    functions.push_back("BuildKnobGui");
+    for (U32 i = 0; i < plugins.size(); ++i) {
+        if (plugins[i]->loadFunctions(functions)) {
+            pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
+            if(builder.first){
+                 Knob* knob = builder.second(NULL,"",1,0);
+                _loadedKnobs.insert(make_pair(knob->name(), plugins[i]));
+                delete knob;
             }
+        }else{
+            delete plugins[i];
         }
     }
     loadBultinKnobs();
-    
 }
 
 void KnobFactory::loadBultinKnobs(){
     std::string stub;
     Knob* fileKnob = File_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> FILEfunctions;
-    FILEfunctions.insert(make_pair("builder",(HINSTANCE)&File_Knob::BuildKnob));
-    FILEfunctions.insert(make_pair("guibuilder",(HINSTANCE)&File_KnobGui::BuildKnobGui));
-    PluginID *FILEKnobPlugin = new PluginID(FILEfunctions,fileKnob->name().c_str());
-#else
+
     std::map<std::string,void*> FILEfunctions;
-    FILEfunctions.insert(make_pair("builder",(void*)&File_Knob::BuildKnob));
-    FILEfunctions.insert(make_pair("guibuilder",(void*)&File_KnobGui::BuildKnobGui));
-    PluginID *FILEKnobPlugin = new PluginID(FILEfunctions,fileKnob->name().c_str());
-#endif
+    FILEfunctions.insert(make_pair("BuildKnob",(void*)&File_Knob::BuildKnob));
+    FILEfunctions.insert(make_pair("BuildKnobGui",(void*)&File_KnobGui::BuildKnobGui));
+    LibraryBinary *FILEKnobPlugin = new LibraryBinary(FILEfunctions);
     _loadedKnobs.insert(make_pair(fileKnob->name(),FILEKnobPlugin));
     delete fileKnob;
     
     Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> INTfunctions;
-    INTfunctions.insert(make_pair("builder",(HINSTANCE)&Int_Knob::BuildKnob));
-    INTfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Int_KnobGui::BuildKnobGui));
-    PluginID *INTKnobPlugin = new PluginID(INTfunctions,intKnob->name().c_str());
-#else
+
     std::map<std::string,void*> INTfunctions;
-    INTfunctions.insert(make_pair("builder",(void*)&Int_Knob::BuildKnob));
-    INTfunctions.insert(make_pair("guibuilder",(void*)&Int_KnobGui::BuildKnobGui));
-    PluginID *INTKnobPlugin = new PluginID(INTfunctions,intKnob->name().c_str());
-#endif
+    INTfunctions.insert(make_pair("BuildKnob",(void*)&Int_Knob::BuildKnob));
+    INTfunctions.insert(make_pair("BuildKnobGui",(void*)&Int_KnobGui::BuildKnobGui));
+    LibraryBinary *INTKnobPlugin = new LibraryBinary(INTfunctions);
     _loadedKnobs.insert(make_pair(intKnob->name(),INTKnobPlugin));
     delete intKnob;
     
     
     Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> DOUBLEfunctions;
-    DOUBLEfunctions.insert(make_pair("builder",(HINSTANCE)&Double_Knob::BuildKnob));
-    DOUBLEfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Double_KnobGui::BuildKnobGui));
-    PluginID *DOUBLEKnobPlugin = new PluginID(DOUBLEfunctions,doubleKnob->name().c_str());
-#else
+
     std::map<std::string,void*> DOUBLEfunctions;
-    DOUBLEfunctions.insert(make_pair("builder",(void*)&Double_Knob::BuildKnob));
-    DOUBLEfunctions.insert(make_pair("guibuilder",(void*)&Double_KnobGui::BuildKnobGui));
-    PluginID *DOUBLEKnobPlugin = new PluginID(DOUBLEfunctions,doubleKnob->name().c_str());
-#endif
+    DOUBLEfunctions.insert(make_pair("BuildKnob",(void*)&Double_Knob::BuildKnob));
+    DOUBLEfunctions.insert(make_pair("BuildKnobGui",(void*)&Double_KnobGui::BuildKnobGui));
+    LibraryBinary *DOUBLEKnobPlugin = new LibraryBinary(DOUBLEfunctions);
     _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
     delete doubleKnob;
     
     Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> BOOLfunctions;
-    BOOLfunctions.insert(make_pair("builder",(HINSTANCE)&Bool_Knob::BuildKnob));
-    BOOLfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Bool_KnobGui::BuildKnobGui));
-    PluginID *BOOLKnobPlugin = new PluginID(BOOLfunctions,boolKnob->name().c_str());
-#else
+
     std::map<std::string,void*> BOOLfunctions;
-    BOOLfunctions.insert(make_pair("builder",(void*)&Bool_Knob::BuildKnob));
-    BOOLfunctions.insert(make_pair("guibuilder",(void*)&Bool_KnobGui::BuildKnobGui));
-    PluginID *BOOLKnobPlugin = new PluginID(BOOLfunctions,boolKnob->name().c_str());
-#endif
+    BOOLfunctions.insert(make_pair("BuildKnob",(void*)&Bool_Knob::BuildKnob));
+    BOOLfunctions.insert(make_pair("BuildKnobGui",(void*)&Bool_KnobGui::BuildKnobGui));
+    LibraryBinary *BOOLKnobPlugin = new LibraryBinary(BOOLfunctions);
     _loadedKnobs.insert(make_pair(boolKnob->name(),BOOLKnobPlugin));
     delete boolKnob;
     
     Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> BUTTONfunctions;
-    BUTTONfunctions.insert(make_pair("builder",(HINSTANCE)&Button_Knob::BuildKnob));
-    BUTTONfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Button_KnobGui::BuildKnobGui));
-    PluginID *BUTTONKnobPlugin = new PluginID(BUTTONfunctions,buttonKnob->name().c_str());
-#else
+
     std::map<std::string,void*> BUTTONfunctions;
-    BUTTONfunctions.insert(make_pair("builder",(void*)&Button_Knob::BuildKnob));
-    BUTTONfunctions.insert(make_pair("guibuilder",(void*)&Button_KnobGui::BuildKnobGui));
-    PluginID *BUTTONKnobPlugin = new PluginID(BUTTONfunctions,buttonKnob->name().c_str());
-#endif
+    BUTTONfunctions.insert(make_pair("BuildKnob",(void*)&Button_Knob::BuildKnob));
+    BUTTONfunctions.insert(make_pair("BuildKnobGui",(void*)&Button_KnobGui::BuildKnobGui));
+    LibraryBinary *BUTTONKnobPlugin = new LibraryBinary(BUTTONfunctions);
     _loadedKnobs.insert(make_pair(buttonKnob->name(),BUTTONKnobPlugin));
     delete buttonKnob;
     
     Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> OFfunctions;
-    OFfunctions.insert(make_pair("builder",(HINSTANCE)&OutputFile_Knob::BuildKnob));
-    OFfunctions.insert(make_pair("guibuilder",(HINSTANCE)&OutputFile_KnobGui::BuildKnobGui));
-    PluginID *OUTPUTFILEKnobPlugin = new PluginID(OFfunctions,outputFileKnob->name().c_str());
-#else
+
     std::map<std::string,void*> OFfunctions;
-    OFfunctions.insert(make_pair("builder",(void*)&OutputFile_Knob::BuildKnob));
-    OFfunctions.insert(make_pair("guibuilder",(void*)&OutputFile_KnobGui::BuildKnobGui));
-    PluginID *OUTPUTFILEKnobPlugin = new PluginID(OFfunctions,outputFileKnob->name().c_str());
-#endif
+    OFfunctions.insert(make_pair("BuildKnob",(void*)&OutputFile_Knob::BuildKnob));
+    OFfunctions.insert(make_pair("BuildKnobGui",(void*)&OutputFile_KnobGui::BuildKnobGui));
+    LibraryBinary *OUTPUTFILEKnobPlugin = new LibraryBinary(OFfunctions);
     _loadedKnobs.insert(make_pair(outputFileKnob->name(),OUTPUTFILEKnobPlugin));
     delete outputFileKnob;
     
     Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> CBBfunctions;
-    CBBfunctions.insert(make_pair("builder",(HINSTANCE)&ComboBox_Knob::BuildKnob));
-    CBBfunctions.insert(make_pair("guibuilder",(HINSTANCE)&ComboBox_KnobGui::BuildKnobGui));
-    PluginID *ComboBoxKnobPlugin = new PluginID(CBBfunctions,comboBoxKnob->name().c_str());
-#else
+
     std::map<std::string,void*> CBBfunctions;
-    CBBfunctions.insert(make_pair("builder",(void*)&ComboBox_Knob::BuildKnob));
-    CBBfunctions.insert(make_pair("guibuilder",(void*)&ComboBox_KnobGui::BuildKnobGui));
-    PluginID *ComboBoxKnobPlugin = new PluginID(CBBfunctions,comboBoxKnob->name().c_str());
-#endif
+    CBBfunctions.insert(make_pair("BuildKnob",(void*)&ComboBox_Knob::BuildKnob));
+    CBBfunctions.insert(make_pair("BuildKnobGui",(void*)&ComboBox_KnobGui::BuildKnobGui));
+    LibraryBinary *ComboBoxKnobPlugin = new LibraryBinary(CBBfunctions);
     _loadedKnobs.insert(make_pair(comboBoxKnob->name(),ComboBoxKnobPlugin));
     delete comboBoxKnob;
     
     
     Knob* separatorKnob = Separator_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> Sepfunctions;
-    Sepfunctions.insert(make_pair("builder",(HINSTANCE)&Separator_Knob::BuildKnob));
-    Sepfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Separator_KnobGui::BuildKnobGui));
-    PluginID *SeparatorKnobPlugin = new PluginID(Sepfunctions,separatorKnob->name().c_str());
-#else
+
     std::map<std::string,void*> Sepfunctions;
-    Sepfunctions.insert(make_pair("builder",(void*)&Separator_Knob::BuildKnob));
-    Sepfunctions.insert(make_pair("guibuilder",(void*)&Separator_KnobGui::BuildKnobGui));
-    PluginID *SeparatorKnobPlugin = new PluginID(Sepfunctions,separatorKnob->name().c_str());
-#endif
+    Sepfunctions.insert(make_pair("BuildKnob",(void*)&Separator_Knob::BuildKnob));
+    Sepfunctions.insert(make_pair("BuildKnobGui",(void*)&Separator_KnobGui::BuildKnobGui));
+    LibraryBinary *SeparatorKnobPlugin = new LibraryBinary(Sepfunctions);
     _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
     delete separatorKnob;
     
     Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> Grpfunctions;
-    Grpfunctions.insert(make_pair("builder",(HINSTANCE)&Group_Knob::BuildKnob));
-    Grpfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Group_KnobGui::BuildKnobGui));
-    PluginID *GroupKnobPlugin = new PluginID(Grpfunctions,groupKnob->name().c_str());
-#else
+
     std::map<std::string,void*> Grpfunctions;
-    Grpfunctions.insert(make_pair("builder",(void*)&Group_Knob::BuildKnob));
-    Grpfunctions.insert(make_pair("guibuilder",(void*)&Group_KnobGui::BuildKnobGui));
-    PluginID *GroupKnobPlugin = new PluginID(Grpfunctions,groupKnob->name().c_str());
-#endif
+    Grpfunctions.insert(make_pair("BuildKnob",(void*)&Group_Knob::BuildKnob));
+    Grpfunctions.insert(make_pair("BuildKnobGui",(void*)&Group_KnobGui::BuildKnobGui));
+    LibraryBinary *GroupKnobPlugin = new LibraryBinary(Grpfunctions);
     _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
     delete groupKnob;
     
     Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> RGBAfunctions;
-    RGBAfunctions.insert(make_pair("builder",(HINSTANCE)&RGBA_Knob::BuildKnob));
-    RGBAfunctions.insert(make_pair("guibuilder",(HINSTANCE)&RGBA_KnobGui::BuildKnobGui));
-    PluginID *RGBAKnobPlugin = new PluginID(RGBAfunctions,rgbaKnob->name().c_str());
-#else
+
     std::map<std::string,void*> RGBAfunctions;
-    RGBAfunctions.insert(make_pair("builder",(void*)&RGBA_Knob::BuildKnob));
-    RGBAfunctions.insert(make_pair("guibuilder",(void*)&RGBA_KnobGui::BuildKnobGui));
-    PluginID *RGBAKnobPlugin = new PluginID(RGBAfunctions,rgbaKnob->name().c_str());
-#endif
+    RGBAfunctions.insert(make_pair("BuildKnob",(void*)&RGBA_Knob::BuildKnob));
+    RGBAfunctions.insert(make_pair("BuildKnobGui",(void*)&RGBA_KnobGui::BuildKnobGui));
+    LibraryBinary *RGBAKnobPlugin = new LibraryBinary(RGBAfunctions);
     _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
     delete rgbaKnob;
     
     
     Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> TABfunctions;
-    TABfunctions.insert(make_pair("builder",(HINSTANCE)&Tab_Knob::BuildKnob));
-    TABfunctions.insert(make_pair("guibuilder",(HINSTANCE)&Tab_KnobGui::BuildKnobGui));
-    PluginID *TABKnobPlugin = new PluginID(TABfunctions,tabKnob->name().c_str());
-#else
+
     std::map<std::string,void*> TABfunctions;
-    TABfunctions.insert(make_pair("builder",(void*)&Tab_Knob::BuildKnob));
-    TABfunctions.insert(make_pair("guibuilder",(void*)&Tab_KnobGui::BuildKnobGui));
-    PluginID *TABKnobPlugin = new PluginID(TABfunctions,tabKnob->name().c_str());
-#endif
+    TABfunctions.insert(make_pair("BuildKnob",(void*)&Tab_Knob::BuildKnob));
+    TABfunctions.insert(make_pair("BuildKnobGui",(void*)&Tab_KnobGui::BuildKnobGui));
+    LibraryBinary *TABKnobPlugin = new LibraryBinary(TABfunctions);
     _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
     delete tabKnob;
     Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1,0);
-#ifdef __POWITER_WIN32__
-    std::map<std::string,HINSTANCE> STRfunctions;
-    STRfunctions.insert(make_pair("builder",(HINSTANCE)&String_Knob::BuildKnob));
-    STRfunctions.insert(make_pair("guibuilder",(HINSTANCE)&String_KnobGui::BuildKnobGui));
-    PluginID *STRKnobPlugin = new PluginID(STRfunctions,strKnob->name().c_str());
-#else
+
     std::map<std::string,void*> STRfunctions;
-    STRfunctions.insert(make_pair("builder",(void*)&String_Knob::BuildKnob));
-    STRfunctions.insert(make_pair("guibuilder",(void*)&String_KnobGui::BuildKnobGui));
-    PluginID *STRKnobPlugin = new PluginID(STRfunctions,strKnob->name().c_str());
-#endif
+    STRfunctions.insert(make_pair("BuildKnob",(void*)&String_Knob::BuildKnob));
+    STRfunctions.insert(make_pair("BuildKnobGui",(void*)&String_KnobGui::BuildKnobGui));
+    LibraryBinary *STRKnobPlugin = new LibraryBinary(STRfunctions);
     _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
     delete strKnob;
     
@@ -276,32 +186,40 @@ void KnobFactory::loadBultinKnobs(){
 /*Calls the unique instance of the KnobFactory and
  calls the appropriate pointer to function to create a knob.*/
 Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags){
-    const std::map<std::string,PluginID*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
-    std::map<std::string,PluginID*>::const_iterator it = loadedPlugins.find(name);
+    const std::map<std::string,LibraryBinary*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
+    std::map<std::string,LibraryBinary*>::const_iterator it = loadedPlugins.find(name);
     if(it == loadedPlugins.end()){
         return NULL;
     }else{
         Knob* knob = 0;
         KnobGui* knobGui = 0;
-        std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("builder");
+        std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
         if(!builderFunc.first){
             return NULL;
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
         knob = builder(node,description,dimension,flags);
         
-        std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("guibuilder");
+        std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("BuildKnobGui");
         if(!guiBuilderFunc.first){
             return NULL;
         }
         KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
         knobGui = guiBuilder(knob);
-        
         if(!knob || !knobGui)
             return NULL;
         
-        KnobInstance* instance = new KnobInstance(knob,knobGui,node->getNodeInstance());
+        KnobInstance* instance = 0;
+        if(knob->name() == "Tab"){
+            instance = new Tab_KnobInstance(knob,knobGui,node->getNodeInstance());
+        }else if(knob->name() == "Group"){
+            instance = new Group_KnobInstance(knob,knobGui,node->getNodeInstance());
+        }else{
+            instance = new KnobInstance(knob,knobGui,node->getNodeInstance());
+        }
         node->getNodeInstance()->addKnobInstance(instance);
+        knob->setKnobInstancePTR(instance);
+
         return knob;
     }
 }
@@ -314,4 +232,43 @@ KnobInstance::~KnobInstance(){
         delete _gui;
     }
     delete _knob;
+}
+
+/*Turn off the  new line for the gui's layout
+ before inserting the knob in the interface.*/
+void KnobInstance::turnOffNewLine(){
+    _gui->turnOffNewLine();
+}
+
+/*Set the spacing between items in the knob
+ gui.*/
+void KnobInstance::setSpacingBetweenItems(int spacing){
+    _gui->setSpacingBetweenItems(spacing);
+}
+
+/*Whether the knob should be visible on the gui.*/
+void KnobInstance::setVisible(bool b){
+    _gui->setVisible(b);
+}
+
+/*Whether the knob should be enabled. When disabled
+ the user will not be able to interact with it and
+ the value will not refresh.*/
+void KnobInstance::setEnabled(bool b){
+    _gui->setEnabled(b);
+}
+
+
+void Group_KnobInstance::addKnob(Knob* knob){
+    dynamic_cast<Group_KnobGui*>(_gui)->addKnob(knob->getKnobInstance()->getKnobGui());
+}
+
+void Tab_KnobInstance::addTab(const std::string& name){
+    dynamic_cast<Tab_KnobGui*>(_gui)->addTab(name);
+
+}
+
+void Tab_KnobInstance::addKnob(const std::string& tabName,Knob* k){
+    dynamic_cast<Tab_KnobGui*>(_gui)->addKnob(tabName,k->getKnobInstance()->getKnobGui());
+
 }

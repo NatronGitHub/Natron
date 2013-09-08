@@ -21,16 +21,14 @@
 using namespace std;
 using namespace Powiter;
 
-OfxImageEffectInstance::OfxImageEffectInstance(OfxNode* parent,
-                                               OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor& desc,
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
 , _canHavePreview(false)
-, _node(parent)
+, _node(NULL)
 {
-    assert(_node);
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()

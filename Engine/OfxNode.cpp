@@ -27,6 +27,12 @@
 
 #include "Writers/Writer.h"
 
+#include <ofxhPluginCache.h>
+#include <ofxhPluginAPICache.h>
+#include <ofxhImageEffect.h>
+#include <ofxhImageEffectAPI.h>
+#include <ofxhHost.h>
+
 using namespace std;
 using namespace Powiter;
 
@@ -46,19 +52,33 @@ namespace {
     }
 }
 
-OfxNode::OfxNode(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                 OFX::Host::ImageEffect::Descriptor         &other,
-                 const std::string  &context)
-: OutputNode()
+OfxNode::OfxNode(NodeInstance* instance,
+                 OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                 const std::string& context)
+: OutputNode(instance)
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
 , _isOutput(false)
 , _preview(NULL)
 , _canHavePreview(false)
-, effect_(new OfxImageEffectInstance(this,plugin,other,context,false))
+, effect_(NULL)
 {
+    /*Small hack to OFX::Host::ImageEffect::ImageEffectPlugin::createInstance. We want to
+     pass more parameters to OfxNode'sconstructor. OfxHost::newInstance is too limiting so we
+     must work around the guide lines.*/
+    plugin->getPluginHandle();
+    OFX::Host::ImageEffect::Descriptor *desc = plugin->getContext(context);
+    if(desc){
+        effect_ = new Powiter::OfxImageEffectInstance(plugin,*(desc),context,false);
+        effect_->setOfxNodePointer(this);
+        effect_->populate();
+    }
     
+    if(context == kOfxImageEffectContextGenerator){
+        setCanHavePreviewImage();
+    }
 }
+
 
 OfxNode::~OfxNode() {
     delete effect_;

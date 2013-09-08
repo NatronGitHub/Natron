@@ -67,6 +67,8 @@ public:
     
     NodeGui* createNodeGUI(QVBoxLayout *dockContainer,NodeInstance *node);
     
+    NodeGui* getSelectedNode() const {return _nodeSelected;}
+    
     void removeNode(NodeGui* n);
 
     virtual void enterEvent(QEvent *event);

@@ -95,7 +95,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNodeInstance()->getName().c_str());
-    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(nameChanged(QString)));
+    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SIGNAL(nameChanged(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_undoButton);
@@ -125,7 +125,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _tabWidget->addTab(_labelWidget,"Label");
     
     
-    initialize_knobs();
+    //initialize_knobs();
     
 }
 SettingsPanel::~SettingsPanel(){}
@@ -147,12 +147,15 @@ void SettingsPanel::initialize_knobs(){
         /*If the GUI doesn't already exist, we create it.*/
         if(!k->getKnobGui()->hasWidgetBeenCreated()){
             KnobGui* gui = k->getKnobGui();
+            gui->setParent(this);
             if(!gui->triggerNewLine() && i!=0){
                 gui->createGUI(_layoutSettings,i-1);
-                int knobSpacing  =  gui->getSpacingBetweenItems();
-                if(knobSpacing > maxSpacing)
-                    maxSpacing = knobSpacing;
+            }else{
+                gui->createGUI(_layoutSettings,i);
             }
+            int knobSpacing  =  gui->getSpacingBetweenItems();
+            if(knobSpacing > maxSpacing)
+                maxSpacing = knobSpacing;
         }
     }
     _layoutSettings->setHorizontalSpacing(maxSpacing);

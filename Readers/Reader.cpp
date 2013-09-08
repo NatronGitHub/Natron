@@ -14,10 +14,13 @@
 #include <cassert>
 #include <sstream>
 
+#include <QtCore/QMutex>
 #include <QtGui/QImage>
 
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
+#include "Global/LibraryBinary.h"
+
 
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"
@@ -27,7 +30,6 @@
 #include "Engine/Box.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerCache.h"
-#include "Engine/LibraryBinary.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
 
@@ -42,11 +44,13 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader():Node(),
+Reader::Reader(NodeInstance* instance):Node(instance),
 preview(0),
 has_preview(false),
 video_sequence(0),
-readHandle(0)
+readHandle(0),
+_fileKnob(0),
+_readMutex(new QMutex)
 {
 
    
@@ -56,6 +60,7 @@ readHandle(0)
 Reader::~Reader(){
     _buffer.clear();
 	delete preview;
+    delete _readMutex;
 }
 
 std::string Reader::className() {
@@ -68,8 +73,9 @@ std::string Reader::description() {
 
 void Reader::initKnobs(){
     std::string desc("File");
-    File_Knob* fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", this, desc,1, Knob::NONE));
-    assert(fileKnob);
+    _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", this, desc,1, Knob::NONE));
+    QObject::connect(_fileKnob, SIGNAL(valueChangedByUser()), this, SLOT(showFilePreview()));
+    assert(_fileKnob);
 }
 
 
@@ -77,11 +83,13 @@ void Reader::initKnobs(){
 
 bool Reader::readCurrentHeader(int current_frame){
     current_frame = clampToRange(current_frame);
-    QString filename = files[current_frame];
-    
-    if(filename.isEmpty()){
+    QString filename;
+    map<int,QString>::iterator it = files.find(current_frame);
+    if(it == files.end()){
         cout << "ERROR: Failed to find a frame for frame number " << current_frame << endl;
         return false;
+    }else{
+        filename = it->second;
     }
     
     /*the read handle used to decode the frame*/
@@ -96,16 +104,17 @@ bool Reader::readCurrentHeader(int current_frame){
             break;
     }
     
-    PluginID* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
+    Powiter::LibraryBinary* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if(!decoder){
         cout << "ERROR: Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return false;
     }
 
-    pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("builder");
-    _read = func.second(this);
-    if(!_read){
-        cout << "ERROR: Failed to create the decoder " << _read->decoderName() << endl;
+    pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
+    if(func.first){
+        _read = func.second(this);
+    }else{
+        cout << "ERROR: Failed to create the decoder for " << getName()  << ",something is wrong in the plugin."<< endl;
         return false;
     }
     /*In case the read handle supports scanlines, we read the header to determine
@@ -167,7 +176,14 @@ bool Reader::readCurrentHeader(int current_frame){
 
 void Reader::readCurrentData(int current_frame){
     current_frame = clampToRange(current_frame);
-    QString filename = files[current_frame];
+    QString filename;
+    map<int,QString>::iterator it = files.find(current_frame);
+    if(it == files.end()){
+        cout << "ERROR: Failed to find a frame for frame number " << current_frame << endl;
+        return;
+    }else{
+        filename = it->second;
+    }
     
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
@@ -196,16 +212,18 @@ void Reader::readCurrentData(int current_frame){
 void Reader::showFilePreview(){
     
     _buffer.clear();
-    
+    fileNameList = _fileKnob->getValueAsVariant().getQVariant().toStringList();
     getVideoSequenceFromFilesList();
     
     fitFrameToViewer(false);
     
-    if(readCurrentHeader(firstFrame())){ // FIXME: return value may be false and reader->readHandle may be NULL
+    _readMutex->lock();
+    if(readCurrentHeader(firstFrame())){ 
         readCurrentData(firstFrame());
         assert(readHandle);
         readHandle->make_preview();
     }
+    _readMutex->unlock();
     _buffer.clear();
 }
 

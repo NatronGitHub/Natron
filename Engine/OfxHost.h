@@ -11,11 +11,11 @@
 
 #include <QtCore/QStringList>
 #include <ofxhPluginCache.h>
-#include <ofxhImageEffect.h>
 #include <ofxhImageEffectAPI.h>
 
 #include "Global/Macros.h"
 
+class NodeInstance;
 class OfxNode;
 class Model;
 
@@ -57,7 +57,7 @@ public:
                                const char* format,
                                va_list args) OVERRIDE;
 
-    OfxNode* createOfxNode(const std::string& name);
+    OfxNode* createOfxNode(const std::string& name,NodeInstance* instance);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/

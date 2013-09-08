@@ -23,15 +23,14 @@ namespace Powiter {
 class OfxImageEffectInstance : public OFX::Host::ImageEffect::Instance
 {
 public:
-    OfxImageEffectInstance(OfxNode* parent,
-                           OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+    OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                            OFX::Host::ImageEffect::Descriptor& desc,
                            const std::string& context,
                            bool interactive);
 
     virtual ~OfxImageEffectInstance();
 
-
+    void setOfxNodePointer(OfxNode* node){_node = node;}
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////

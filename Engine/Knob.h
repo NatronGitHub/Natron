@@ -74,7 +74,7 @@ public:
         _variant = new QVariant(list);
     }
     
-    virtual ~Variant(){ delete _variant; }
+    virtual ~Variant(){ /*delete _variant;*/ }
     
     template<typename T>
     T value(){
@@ -108,6 +108,8 @@ public:
         }
         _variant->setValue(list);
     }
+    
+    bool isNull() const{return _variant->isNull();}
 };
 Q_DECLARE_METATYPE(Variant);
 
@@ -209,6 +211,8 @@ public:
         _minimum = Variant(variant,count);
     }
     
+    const Variant& getMinimum() const {return _minimum;}
+    
     void setMaximum(const QVariant& variant){
         _maximum = variant;
     }
@@ -221,6 +225,8 @@ public:
     void setMaximum(T variant[],int count){
         _maximum = Variant(variant,count);
     }
+    
+    const Variant& getMaximum() const {return _maximum;}
 
     
     void setIncrement(const QVariant& variant){
@@ -234,9 +240,16 @@ public:
     void setIncrement(T variant[],int count){
         _increment = Variant(variant,count);
     }
-
     
-    public slots:
+    const Variant& getIncrement() const {return _increment;}
+
+    void setParentKnob(Knob* knob){_parentKnob = knob;}
+    
+    Knob* getParentKnob() const {return _parentKnob;}
+    
+    int determineHierarchySize() const;
+    
+public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
     void onValueChanged(const Variant& variant){
@@ -257,6 +270,7 @@ signals:
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
     
+   
     
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
@@ -288,6 +302,7 @@ private:
      They store exactly the same type as _value*/
     Variant _maximum,_minimum;
     Variant _increment;
+    Knob* _parentKnob;
 };
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
@@ -295,7 +310,8 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
 /******************************FILE_KNOB**************************************/
 
 class File_Knob:public Knob
-{    
+{
+    Q_OBJECT
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
@@ -316,7 +332,9 @@ public:
     
     virtual std::string serialize() const;
     
-
+signals:
+    void filesSelected();
+    
 protected:
     
     virtual void tryStartRendering();
@@ -331,7 +349,7 @@ protected:
 
 class OutputFile_Knob:public Knob
 {
-    
+    Q_OBJECT
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
@@ -351,6 +369,8 @@ public:
     virtual const std::string name(){return "OutputFile";}
     
     virtual std::string serialize() const;
+signals:
+    void filesSelected();
     
 protected:
     
@@ -511,7 +531,11 @@ public:
         return new ComboBox_Knob(node,description,dimension,flags);
     }
     
-    ComboBox_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0);
+    ComboBox_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
+    Knob(node,description,dimension,flags)
+    {
+        
+    }
     
     virtual void fillHashVector();
     
@@ -525,7 +549,7 @@ public:
         emit populated(_entries);
     }
     
-    public slots:
+signals:
     
     void populated(const QStringList&);
     
@@ -578,7 +602,11 @@ public:
         return new RGBA_Knob(node,description,dimension,flags);
     }
     
-    RGBA_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0);
+    RGBA_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
+    Knob(node,description,dimension,flags)
+    {
+        
+    }
     
     virtual void fillHashVector();
     
