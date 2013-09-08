@@ -83,15 +83,18 @@ SOURCES += \
     Engine/OfxImageEffectInstance.cpp \
     Engine/OfxNode.cpp \
     Engine/OfxParamInstance.cpp \
-    Engine/PluginID.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/Timer.cpp \
     Engine/VideoEngine.cpp \
     Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
+    Engine/Knob.cpp \
+    Global/NodeInstance.cpp \
+    Global/KnobInstance.cpp \
     Global/AppManager.cpp \
     Global/main.cpp \
+    Global/LibraryBinary.cpp \
     Gui/ComboBox.cpp \
     Gui/Edge.cpp \
     Gui/FeedbackSpinBox.cpp \
@@ -129,10 +132,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    Engine/Knob.cpp \
-    Global/NodeInstance.cpp \
-    Global/KnobInstance.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+
 
 
 HEADERS += \
@@ -154,7 +155,6 @@ HEADERS += \
     Engine/OfxNode.h \
     Engine/OfxImageEffectInstance.h \
     Engine/OfxParamInstance.h \
-    Engine/PluginID.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \
@@ -168,6 +168,7 @@ HEADERS += \
     Global/Enums.h \
     Global/GLIncludes.h \
     Global/GlobalDefines.h \
+    Global/LibraryBinary.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
     Gui/Button.h \

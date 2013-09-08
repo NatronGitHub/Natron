@@ -47,6 +47,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Global/AppManager.h"
 #include "Global/NodeInstance.h"
+#include "Global/KnobInstance.h"
 
 
 using namespace std;
@@ -306,10 +307,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     
     if(e->key() == Qt::Key_R){
         NodeInstance* reader = _gui->_appInstance->createNode("Reader");
-        std::vector<KnobGui*> knobs = reader->getKnobs();
-        foreach(KnobGui* k,knobs){
-            if(k->name() == "InputFile"){
-                File_KnobGui* fk = dynamic_cast<File_KnobGui*>(k);
+        const std::vector<KnobInstance*>& knobs = reader->getKnobs();
+        foreach(KnobInstance* k,knobs){
+            if(k->getKnob()->name() == "InputFile"){
+                File_KnobGui* fk = dynamic_cast<File_KnobGui*>(k->getKnobGui());
                 fk->open_file();
                 break;
             }
@@ -317,10 +318,10 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
     }else if(e->key() == Qt::Key_W){
         NodeInstance* writer = _gui->_appInstance->createNode("Writer");
-        std::vector<KnobGui*> knobs = writer->getKnobs();
-        foreach(KnobGui* k,knobs){
-            if(k->name() == "OutputFile"){
-                OutputFile_KnobGui* fk = static_cast<OutputFile_KnobGui*>(k);
+        const std::vector<KnobInstance*>& knobs = writer->getKnobs();
+        foreach(KnobInstance* k,knobs){
+            if(k->getKnob()->name() == "OutputFile"){
+                OutputFile_KnobGui* fk = dynamic_cast<OutputFile_KnobGui*>(k->getKnobGui());
                 fk->open_file();
                 break;
             }

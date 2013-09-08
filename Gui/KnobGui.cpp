@@ -39,7 +39,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"
-#include "Engine/PluginID.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/Knob.h"
 
 #include "Gui/Button.h"

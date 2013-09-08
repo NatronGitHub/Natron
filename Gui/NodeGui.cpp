@@ -213,10 +213,10 @@ void NodeGui::remove(){
     delete this;
 }
 
-void NodeGui::updateChannelsTooltip(const ChannelSet& channels){
+void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
     QString tooltip;
     tooltip.append("Channels in input: ");
-    foreachChannels( z,channels){
+    foreachChannels( z,chan){
         tooltip.append("\n");
         tooltip.append(getChannelName(z).c_str());
         
@@ -310,7 +310,7 @@ void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
     
     
     
-    updateChannelsTooltip();
+    updateChannelsTooltip(node->getNode()->info().channels());
     
     
 }
@@ -318,29 +318,6 @@ bool NodeGui::isNearby(QPointF &point){
     QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
     return r.contains(point);
 }
-
-
-void  NodeGui::removeChild(NodeGui* c){
-	if(!children.empty()){
-		for(U32 i=0;i<children.size();++i) {
-            if(children[i] == c){
-                children.erase(children.begin()+i);
-                break;
-            }
-        }
-	}
-}
-void  NodeGui::removeParent(NodeGui* p){
-	if(!parents.empty()){
-		for(U32 i=0;i<parents.size();++i) {
-            if(parents[i] == p){
-                parents.erase(parents.begin()+i);
-                break;
-            }
-        }
-	}
-}
-
 
 void NodeGui::setName(QString s){
     name->setText(s);
@@ -354,8 +331,8 @@ Edge* NodeGui::firstAvailableEdge(){
         Edge* a = inputs[i];
         if (!a->hasSource()) {
             
-            if(getNode()->isOpenFXNode()){
-                OfxNode* ofxNode = dynamic_cast<OfxNode*>(getNode());
+            if(getNodeInstance()->isOpenFXNode()){
+                OfxNode* ofxNode = dynamic_cast<OfxNode*>(getNodeInstance()->getNode());
                 if(ofxNode->isInputOptional(i))
                     continue;
             }

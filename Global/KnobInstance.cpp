@@ -18,7 +18,7 @@
 #include <iostream>
 
 
-#include "Engine/PluginID.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 
@@ -28,7 +28,7 @@
 
 
 using namespace std;
-
+using namespace Powiter;
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension,Knob_Mask flags);
@@ -41,7 +41,7 @@ KnobFactory::KnobFactory(){
 }
 
 KnobFactory::~KnobFactory(){
-    for ( std::map<std::string,PluginID*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; ++it) {
+    for ( std::map<std::string,LibraryBinary*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; ++it) {
         delete it->second;
     }
     _loadedKnobs.clear();
@@ -52,108 +52,31 @@ void KnobFactory::loadKnobPlugins(){
     if (d.isReadable())
     {
         QStringList filters;
-#ifdef __POWITER_WIN32__
-        filters << "*.dll";
-#elif defined(__POWITER_OSX__)
-        filters << "*.dylib";
-#elif defined(__POWITER_LINUX__)
-        filters << "*.so";
-#endif
+        filters << QString(QString("*.")+QString(LIBRARY_EXT));
         d.setNameFilters(filters);
 		QStringList fileList = d.entryList();
         for(int i = 0 ; i < fileList.size() ; ++i) {
             QString filename = fileList.at(i);
-            if(filename.contains(".dll") || filename.contains(".dylib") || filename.contains(".so")){
+            if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
                 QString className;
-                int index = filename.size() -1;
-                while(filename.at(index) != QChar('.')) {
-                    --index;
-                }
+                int index = filename.lastIndexOf("."LIBRARY_EXT);
                 className = filename.left(index);
-                PluginID* plugin = 0;
-#ifdef __POWITER_WIN32__
-                HINSTANCE lib;
-                string dll;
-                dll.append(POWITER_PLUGINS_PATH);
-                dll.append(className.toStdString());
-                dll.append(".dll");
-                lib=LoadLibrary(dll.c_str());
-                if(lib==NULL){
-                    cout << " couldn't open library " << qPrintable(className) << endl;
-                }else{
-                    // successfully loaded the library, we create now an instance of the class
-                    //to find out the extensions it can decode and the name of the decoder
-                    std::map<std::string,HINSTANCE> functions;
-                    std::string knobName;
-                    KnobBuilder builder=(KnobBuilder)GetProcAddress(lib,"BuildKnob");
-                    if(builder!=NULL){
-                        Knob* knob=builder(NULL,"",1,0);
-                        knobName = knob->name().c_str();
-                        functions.insert(make_pair("builder", (HINSTANCE)builder));
-                        delete knob;
-                        
-                    }else{
-                        cout << "RunTime: couldn't call " << "BuildKnob" << endl;
-                        continue;
-                    }
-                    KnobGuiBuilder guiBuilder = (KnobGuiBuilder)GetProcAddress(lib,"BuildKnobGui");
-                    if(guiBuilder!=NULL){
-                        functions.insert(make_pair("guibuilder", (HINSTANCE)guiBuilder));
-                        plugin = new PluginID(functions,knobName);
-                        _loadedKnobs.insert(make_pair(knobName,plugin));
-
-                    }else{
-                        cout << "RunTime: couldn't call " << "BuildKnobGui" << endl;
-                        continue;
-                    }
-                    
-
-                    
-                }
+                string dll = POWITER_PLUGINS_PATH + className.toStdString() + "." + LIBRARY_EXT;
                 
-#elif defined(__POWITER_UNIX__)
-                string dll;
-                dll.append(POWITER_PLUGINS_PATH);
-                dll.append(className.toStdString());
-#ifdef __POWITER_OSX__
-                dll.append(".dylib");
-#elif defined(__POWITER_LINUX__)
-                dll.append(".so");
-#endif
-                void* lib=dlopen(dll.c_str(),RTLD_LAZY);
-                if(!lib){
-                    cout << " couldn't open library " << qPrintable(className) << endl;
+                vector<string> functions;
+                functions.push_back("BuildKnob");
+                LibraryBinary* plugin = new LibraryBinary(dll,functions);
+                if(!plugin->isValid()){
+                    delete plugin;
                 }
-                else{
-                    // successfully loaded the library, we create now an instance of the class
-                    //to find out the extensions it can decode and the name of the decoder
-                    std::map<std::string,void*> functions;
-                    std::string knobName;
-                    KnobBuilder builder=(KnobBuilder)dlsym(lib,"BuildKnob");
-                    if(builder!=NULL){
-                        std::string str("");
-                        Knob* knob=builder(NULL,str,1,0);
-                        knobName = knob->name().c_str();
-                        functions.insert(make_pair("builder", (void*)builder));
-                        delete knob;
-                        
-                    }else{
-                        cout << "RunTime: couldn't call " << "BuildKnob" << endl;
-                        continue;
-                    }
-                    KnobGuiBuilder guiBuilder = (KnobGuiBuilder)dlsym(lib,"BuildKnobGui");
-                    if(guiBuilder!=NULL){
-                        functions.insert(make_pair("guibuilder", (void*)guiBuilder));
-                        plugin = new PluginID(functions,knobName);
-                        _loadedKnobs.insert(make_pair(knobName,plugin));
-                        
-                    }else{
-                        cout << "RunTime: couldn't call " << "BuildKnobGui" << endl;
-                        continue;
-                    }
-
+                pair<bool,KnobBuilder> builder = plugin->findFunction<KnobBuilder>("BuildKnob");
+                if(!builder.first){
+                    continue;
+                }else{
+                    Knob* knob = builder.second(NULL,str,1,0);
+                    _loadedKnobs.insert(make_pair(knob->name(), plugin));
+                    delete knob;
                 }
-#endif
             }else{
                 continue;
             }
@@ -328,10 +251,10 @@ void KnobFactory::loadBultinKnobs(){
     std::map<std::string,void*> TABfunctions;
     TABfunctions.insert(make_pair("builder",(void*)&Tab_Knob::BuildKnob));
     TABfunctions.insert(make_pair("guibuilder",(void*)&Tab_KnobGui::BuildKnobGui));
-    PluginID *TABKnobPlugin = new PluginID(TABfunctions,tabKnob->name().c_str());#endif
+    PluginID *TABKnobPlugin = new PluginID(TABfunctions,tabKnob->name().c_str());
+#endif
     _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
     delete tabKnob;
-    
     Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1,0);
 #ifdef __POWITER_WIN32__
     std::map<std::string,HINSTANCE> STRfunctions;
@@ -360,37 +283,20 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
     }else{
         Knob* knob = 0;
         KnobGui* knobGui = 0;
-#ifdef __POWITER_UNIX__
-        std::pair<bool,void*> builderFunc = it->second->findFunction("builder");
+        std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("builder");
         if(!builderFunc.first){
             return NULL;
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
         knob = builder(node,description,dimension,flags);
         
-        std::pair<bool,void*> guiBuilderFunc = it->second->findFunction("guibuilder");
+        std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("guibuilder");
         if(!guiBuilderFunc.first){
             return NULL;
         }
         KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
         knobGui = guiBuilder(knob);
         
-#else
-        std::pair<bool,HINSTANCE> builderFunc = it->second->findFunction("builder");
-        if(!builderFunc.first){
-            return NULL;
-        }
-        KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        knob = builder(node,description,dimension,flags);
-        
-        std::pair<bool,HINSTANCE> guiBuilderFunc = it->second->findFunction("guibuilder");
-        if(!guiBuilderFunc.first){
-            return NULL;
-        }
-        KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
-        knobGui = guiBuilder(knob);
-        
-#endif
         if(!knob || !knobGui)
             return NULL;
         

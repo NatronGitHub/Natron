@@ -19,7 +19,6 @@
 #include <QtConcurrentRun>
 #include <ImfThreading.h>
 
-#include "Gui/Button.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -40,10 +39,12 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/FeedbackSpinBox.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/Button.h"
+
 
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
-
+#include "Global/NodeInstance.h"
 
 
 
@@ -562,10 +563,10 @@ void VideoEngine::drawOverlay() const{
 
 void VideoEngine::_drawOverlay(Node *output) const{
     output->drawOverlay();
-    foreach(Node* n,output->getParents()){
-        _drawOverlay(n);
+    const NodeInstance::InputMap& inputs = output->getNodeInstance()->getInputs();
+    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        _drawOverlay(it->second->getNode());
     }
-    
 }
 
 
@@ -649,14 +650,6 @@ VideoEngine::~VideoEngine(){
     
 }
 
-
-
-void VideoEngine::clearInfos(Node* out){
-    out->clear_info();
-    foreach(Node* c,out->getParents()){
-        clearInfos(c);
-    }
-}
 
 void VideoEngine::setDesiredFPS(double d){
     _timer->setDesiredFrameRate(d);
@@ -899,8 +892,10 @@ void VideoEngine::DAG::fillGraph(Node* n){
             _inputs.push_back(n);
         }
     }
-    foreach(Node* p,n->getParents()){
-        fillGraph(p);
+    
+    const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
+    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        fillGraph(it->second->getNode());
     }
 }
 void VideoEngine::DAG::clearGraph(){
@@ -919,9 +914,10 @@ void VideoEngine::DAG::topologicalSort(){
 }
 void VideoEngine::DAG::_depthCycle(Node* n){
     n->setMarked(true);
-    foreach(Node* p, n->getParents()){
-        if(!p->isMarked()){
-            _depthCycle(p);
+    const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
+    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        if(!it->second->getNode()->isMarked()){
+            _depthCycle(it->second->getNode());
         }
     }
     _sorted.push_back(n);

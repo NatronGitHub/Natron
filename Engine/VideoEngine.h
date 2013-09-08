@@ -549,13 +549,6 @@ public:
      **/
     const DAG& getCurrentDAG() const {return _dag;}
     
-    
-	/**
-     *@brief For all nodes in input of out and recursively until there is no more inputs, their info
-     *are cleared.
-     **/
-    void clearInfos(Node* out);
-    
 	/**
      *@returns Returns true if the engine is currently working.
      **/

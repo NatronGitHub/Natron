@@ -34,9 +34,7 @@ class Button_Knob;
 class Tab_Knob;
 class RGBA_Knob;
 class Int_Knob;
-class Int2D_Knob;
 class Double_Knob;
-class Double2D_Knob;
 class Bool_Knob;
 class ComboBox_Knob;
 class Group_Knob;
@@ -280,8 +278,8 @@ class OfxInteger2DInstance :public QObject, public OFX::Host::Param::Integer2DIn
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	int _x1,_x2;
-    Int2D_Knob *_knob;
+    int _values[2];
+    Int_Knob *_knob;
     std::string _paramName;
 public:
     OfxInteger2DInstance(OfxNode* node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);

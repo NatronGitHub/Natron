@@ -477,8 +477,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         if (!initiatedFromNode) {
             assert(_nodeGraphTab);
             assert(_nodeGraphTab->_nodeGraphArea);
-            _nodeGraphTab->_nodeGraphArea->removeNode(tab->getInternalNode()->getNodeUi());
-            _appInstance->getModel()->removeNode(tab->getInternalNode());
+            tab->getInternalNode()->getNodeInstance()->deactivate();
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
@@ -835,8 +834,7 @@ void Gui::openProject(){
         QStringList selectedFiles = dialog.selectedFiles();
         if (selectedFiles.size() > 0) {
             //clearing current graph
-            _nodeGraphTab->_nodeGraphArea->clear();
-            _appInstance->clearInternalNodes();
+            _appInstance->clearNodes();
             QString file = selectedFiles.at(0);
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));

@@ -20,19 +20,17 @@
 #include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
+#include "Global/KnobInstance.h"
+
 #include "Engine/Singleton.h"
 
-class PluginID;
 class Knob;
 class Node;
-class KnobInstance;
-
-typedef unsigned int Knob_Mask;
 
 /******************************VARIANT**************************************/
 
 /*Variant type used by knob storage type.
- Do not use explicit in front of the constructors to 
+ Do not use explicit in front of the constructors to
  allow type conversion!. This API should be
  transparant for the plug-in programmer.*/
 class Variant{
@@ -51,7 +49,7 @@ public:
     Variant(const Variant& other)
     :_variant(other._variant)
     {
-
+        
     }
     
     Variant(const QVariant& qtVariant):
@@ -121,7 +119,7 @@ class Knob : public QObject
     
 public:
     enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2,RGBA_STYLE_SCALAR=0x4,NO_ALPHA=0x8};
-
+    
     
     Knob(Node* node,const std::string& description,int dimension = 1,Knob_Mask flags = 0);
     
@@ -153,7 +151,7 @@ public:
         emit valueChanged(_value);
         tryStartRendering();
     }
-
+    
     template<typename T>
     void setValue(T variant[],int count){
         _value = Variant(variant,count);
@@ -168,7 +166,7 @@ public:
         tryStartRendering();
     }
     
-   
+    
     /*Set the value of the knob and emits the valueChanged signal*/
     void setValue(const Variant& variant){
         _value = variant;
@@ -181,9 +179,9 @@ public:
      way to retrieve results in the expected type.*/
     template<typename T>
     T value(){
-        return _value.value<T>;
+        return _value.value<T>();
     }
-
+    
     const Variant& getValueAsVariant() const { return _value; }
     
     /*You can call this when you want to remove this Knob
@@ -198,7 +196,47 @@ public:
     
     void setVisible(bool b);
     
-public slots:
+    void setMinimum(const QVariant& variant){
+        _minimum = variant;
+    }
+    
+    void setMinimum(const Variant& variant){
+        _minimum = variant;
+    }
+    
+    template<typename T>
+    void setMinimum(T variant[],int count){
+        _minimum = Variant(variant,count);
+    }
+    
+    void setMaximum(const QVariant& variant){
+        _maximum = variant;
+    }
+    
+    void setMaximum(const Variant& variant){
+        _maximum = variant;
+    }
+    
+    template<typename T>
+    void setMaximum(T variant[],int count){
+        _maximum = Variant(variant,count);
+    }
+
+    
+    void setIncrement(const QVariant& variant){
+        _increment = variant;
+    }
+    void setIncrement(const Variant& variant){
+        _increment = variant;
+    }
+    
+    template<typename T>
+    void setIncrement(T variant[],int count){
+        _increment = Variant(variant,count);
+    }
+
+    
+    public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
     void onValueChanged(const Variant& variant){
@@ -211,7 +249,7 @@ public slots:
 signals:
     /*Emitted whenever the slot onValueChanged is called.
      This notifies listeners that the value held by the
-     knob has changed by a user interaction. 
+     knob has changed by a user interaction.
      You can connect to this signal to do
      whatever processing you want.*/
     void valueChangedByUser();
@@ -219,12 +257,12 @@ signals:
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
     
-
+    
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
     virtual void _restoreFromString(const std::string& str) =0;
-
+    
     
     /*Should implement this to start rendering by calling startRendering.
      This is called by the onValueChanged() slot. If you don't want to
@@ -234,17 +272,22 @@ protected:
     //Called to tell the engine to start processing
     //This is can be called in the implementation of tryStartRendering
     void startRendering(bool initViewer);
-
+    
     Node *_node;
     Variant _value;
     std::vector<U64> _hashVector;
     KnobInstance* _instance;
-
+    
 private:
     
     std::string _description;
     Knob_Mask _flags;
     int _dimension;
+    
+    /*Theses are used when it makes sense (e.g: for a scalar).
+     They store exactly the same type as _value*/
+    Variant _maximum,_minimum;
+    Variant _increment;
 };
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
@@ -252,9 +295,7 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
 /******************************FILE_KNOB**************************************/
 
 class File_Knob:public Knob
-{
-    Q_OBJECT
-    
+{    
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
@@ -264,7 +305,7 @@ public:
     File_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
     Knob(node,description,dimension,flags)
     {}
-        
+    
     virtual void fillHashVector(){
         // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache.
         // explanation: The algorithm doing the look-up in the cache already takes care of the current frame name.
@@ -272,28 +313,24 @@ public:
     }
     
     virtual const std::string name(){return "InputFile";}
-                    
+    
     virtual std::string serialize() const;
     
-    
-signals:
-    void filesSelected();
-    
+
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
     
-
+    
+    
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
 
 class OutputFile_Knob:public Knob
 {
-    Q_OBJECT
     
 public:
     
@@ -315,16 +352,12 @@ public:
     
     virtual std::string serialize() const;
     
-    
-signals:
-    void filesSelected();
-    
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
+    
     
 };
 
@@ -349,17 +382,17 @@ public:
     virtual const std::string name(){return "Int";}
     
     virtual std::string serialize() const;
-        
+    
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
     const std::vector<int> getValues() const ;
- 
+    
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
+    
     
     
 };
@@ -387,13 +420,13 @@ public:
     
     
     bool getValue() const { return _value.getQVariant().toBool(); }
-        
+    
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
+    
     
     
 };
@@ -428,7 +461,7 @@ protected:
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
+    
     
     
 };
@@ -452,8 +485,8 @@ public:
     virtual const std::string name(){return "Button";}
     
     virtual std::string serialize() const{return "";}
-        
-public slots:
+    
+    public slots:
     void connectToSlot(const Variant& v);
     
     
@@ -462,7 +495,7 @@ protected:
     virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
-
+    
     
     
 };
@@ -492,7 +525,7 @@ public:
         emit populated(_entries);
     }
     
-public slots:
+    public slots:
     
     void populated(const QStringList&);
     
@@ -501,7 +534,7 @@ protected:
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-
+    
     
 private:
     QStringList _entries;
@@ -553,7 +586,7 @@ public:
     
     virtual std::string serialize() const;
     
-
+    
 protected:
     
     virtual void tryStartRendering(){

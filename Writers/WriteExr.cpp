@@ -144,35 +144,35 @@ std::vector<std::string> WriteExr::fileTypesEncoded() const {
 void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, KnobGui::NONE));
+    sepKnob = dynamic_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", _op, separatorDesc,1, Knob::NONE));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                            compressionCBDesc, KnobGui::NONE));
-    vector<string> compressionEntries;
+    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", _op,
+                                                                            compressionCBDesc, 1,Knob::NONE));
+    QStringList list;
     for (int i =0; i < 6; ++i) {
-        compressionEntries.push_back(EXR::compressionNames[i]);
+        list << EXR::compressionNames[i].c_str();
     }
-    compressionCBKnob->setPointer(&_compression);
-    compressionCBKnob->populate(compressionEntries);
+    compressionCBKnob->populate(list);
+    compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                      depthCBDesc, KnobGui::NONE));
-    vector<string> depthEntries;
+    depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", _op,
+                                                                      depthCBDesc,1, Knob::NONE));
+    list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
-        depthEntries.push_back(EXR::depthNames[i]);
+        list << EXR::depthNames[i].c_str();
     }
-    depthCBKnob->setPointer(&_dataType);
-    depthCBKnob->populate(depthEntries);
+    depthCBKnob->populate(list);
+    depthCBKnob->setValue(1);
     
     /*calling base-class version at the end*/
-    WriteKnobs::initKnobs(callback,fileType);
+    WriteKnobs::initKnobs(fileType);
 }
 void ExrWriteKnobs::cleanUpKnobs(){
-    sepKnob->enqueueForDeletion();
-    compressionCBKnob->enqueueForDeletion();
-    depthCBKnob->enqueueForDeletion();
+    sepKnob->deleteKnob();
+    compressionCBKnob->deleteKnob();
+    depthCBKnob->deleteKnob();
 }
 
 bool ExrWriteKnobs::allValid(){

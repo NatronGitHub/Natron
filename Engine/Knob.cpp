@@ -110,10 +110,9 @@ std::string File_Knob::serialize() const{
 void File_Knob::_restoreFromString(const std::string& str){
     //    _name->setText(str.c_str());
     QStringList filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
-    _value.setValue(filesList);
+    _value.setValue(Variant(filesList));
 }
 void File_Knob::tryStartRendering(){
-    emit filesSelected();
     QStringList files = _value.value<QStringList>();
     if(files.size() > 0){
         const std::string& className = _node->className();
@@ -131,12 +130,11 @@ std::string OutputFile_Knob::serialize() const{
     return _value.getQVariant().toString().toStdString();
 }
 void OutputFile_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(QVariant(str.c_str()));
+    _value.setValue(Variant(QString(str.c_str())));
 }
 
 
 void OutputFile_Knob::tryStartRendering(){
-    emit filesSelected();
     startRendering(false);
 }
 /***********************************INT_KNOB*****************************************/
@@ -178,7 +176,7 @@ void Int_Knob::_restoreFromString(const std::string& str){
             values.append(QVariant(vStr.toInt()));
             i = s.indexOf("v",i);
         }
-        _value.setValue(QVariant(values));
+        _value.setValue(Variant(values));
     }
 }
 
@@ -210,7 +208,7 @@ void Bool_Knob::_restoreFromString(const std::string& str){
     QString s(str.c_str());
     if(!s.isEmpty()){
         int val = s.toInt();
-        _value.setValue(QVariant((bool)val));
+        _value.setValue(Variant((bool)val));
     }
     
 }
@@ -258,7 +256,7 @@ void Double_Knob::_restoreFromString(const std::string& str){
             values.append(QVariant(vStr.toDouble()));
             i = s.indexOf("v",i);
         }
-        _value.setValue(QVariant(values));
+        _value.setValue(Variant(values));
     }
 }
 
@@ -300,7 +298,7 @@ std::string ComboBox_Knob::serialize() const{
     return QString::number(_value.getQVariant().toInt()).toStdString();
 }
 void ComboBox_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(QVariant(QString(str.c_str()).toInt()));
+    _value.setValue(Variant(QString(str.c_str()).toInt()));
 }
 
 void ComboBox_Knob::tryStartRendering(){
@@ -355,7 +353,7 @@ void RGBA_Knob::_restoreFromString(const std::string& str){
         ++i;
     }
     QVector4D v(rStr.toDouble(),gStr.toDouble(),bStr.toDouble(),aStr.toDouble());
-    _value.setValue(QVariant(v));
+    _value.setValue(Variant(v));
 
 }
 /***********************************STRING_KNOB*****************************************/
@@ -372,7 +370,7 @@ std::string String_Knob::serialize() const{
 }
 
 void String_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(QVariant(str.c_str()));
+    _value.setValue(Variant(QString(str.c_str())));
 }
 /***********************************GROUP_KNOB*****************************************/
 Group_Knob::Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags):

@@ -17,6 +17,8 @@
 #include <map>
 
 #include "Global/Macros.h"
+#include "GLobal/NodeInstance.h"
+
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
@@ -28,7 +30,7 @@ class SettingsPanel;
 class Knob;
 class QMutex;
 class QWaitCondition;
-class NodeInstance;
+//class NodeInstance;
 class Node
 {
 public:

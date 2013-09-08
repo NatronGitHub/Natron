@@ -29,6 +29,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/LibraryBinary.h"
 
 #include "Writers/Writer.h"
 
@@ -422,4 +423,43 @@ void AppInstance::initNodeCountersAndSetName(NodeInstance* n){
         _nodeCounters.insert(make_pair(n->className(), 1));
         n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)));
     }
+}
+
+std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
+    std::vector<LibraryBinary*> ret;
+    QDir d(where);
+    if (d.isReadable())
+    {
+        QStringList filters;
+        filters << QString(QString("*.")+QString(LIBRARY_EXT));
+        d.setNameFilters(filters);
+		QStringList fileList = d.entryList();
+        for(int i = 0 ; i < fileList.size() ; ++i) {
+            QString filename = fileList.at(i);
+            if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
+                QString className;
+                int index = filename.lastIndexOf("."LIBRARY_EXT);
+                className = filename.left(index);
+                string dll = POWITER_PLUGINS_PATH + className.toStdString() + "." + LIBRARY_EXT;
+                
+                vector<string> functions;
+                functions.push_back("BuildKnob");
+                LibraryBinary* plugin = new LibraryBinary(dll,functions);
+                if(!plugin->isValid()){
+                    delete plugin;
+                }
+                pair<bool,KnobBuilder> builder = plugin->findFunction<KnobBuilder>("BuildKnob");
+                if(!builder.first){
+                    continue;
+                }else{
+                    Knob* knob = builder.second(NULL,str,1,0);
+                    _loadedKnobs.insert(make_pair(knob->name(), plugin));
+                    delete knob;
+                }
+            }else{
+                continue;
+            }
+        }
+    }
+
 }

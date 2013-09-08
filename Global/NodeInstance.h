@@ -46,6 +46,10 @@ public:
     typedef std::map<int,NodeInstance*> InputMap;
     typedef std::map<int,NodeInstance*> OutputMap;
     
+#define foreachInput(CUR,NODE)\
+    for(NodeInstance::InputMap::const_iterator it = NODE->getInputs().begin(),if(it!=NODE->getInputs().end()) CUR = it->second; it!= NODE->getInputs().end() ;++it,if(it!=NODE->getInputs().end()) CUR = it->second) \
+    
+    
     NodeInstance(Node* node,AppInstance* app);
     
     virtual ~NodeInstance();
@@ -119,6 +123,8 @@ public:
     QPointF getPosGui() const;
     
     void updateNodeChannelsGui(const ChannelSet& channels);
+    
+    void updatePreviewImageGUI();
     
     void refreshEdgesGui();
     

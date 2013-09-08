@@ -12,18 +12,21 @@
 #include "OfxNode.h"
 
 #include <locale>
+#include <QImage>
 
-//#include "Engine/OfxHost.h" // for OfxHost::vmessage
+#include "Global/AppManager.h"
+#include "Global/NodeInstance.h"
+
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Model.h"
-#include "Writers/Writer.h"
-#include "Global/AppManager.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
-#include "Gui/NodeGui.h"
+
+#include "Writers/Writer.h"
+
 using namespace std;
 using namespace Powiter;
 
@@ -325,7 +328,7 @@ void OfxNode::computePreviewImage(){
 
     
     _preview = ret;
-    _nodeGUI->updatePreviewImageForReader();
+    _instance->updatePreviewImageGUI();
 }
 
 /*group is a string as such:

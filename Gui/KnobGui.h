@@ -35,7 +35,6 @@ class LineEdit;
 class Button;
 class FeedbackSpinBox;
 class ComboBox;
-class PluginID;
 class QFrame;
 class QLabel;
 class QGridLayout;

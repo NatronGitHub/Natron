@@ -19,8 +19,10 @@
 class Knob;
 class KnobGui;
 class NodeInstance;
-class PluginID;
 class Node;
+namespace Powiter {
+    class LibraryBinary;
+}
 
 typedef unsigned int Knob_Mask;
 /******************************KNOB_FACTORY**************************************/
@@ -28,7 +30,7 @@ typedef unsigned int Knob_Mask;
 
 class KnobFactory : public Singleton<KnobFactory>{
     
-    std::map<std::string,PluginID*> _loadedKnobs;
+    std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
     
     void loadKnobPlugins();
     
@@ -41,7 +43,7 @@ public:
     
     virtual ~KnobFactory();
     
-    const std::map<std::string,PluginID*>& getLoadedKnobs(){return _loadedKnobs;}
+    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
     
     /*Calls the unique instance of the KnobFactory and
      calls the appropriate pointer to function to create a knob.*/

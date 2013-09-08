@@ -13,10 +13,12 @@
 
 #include <cassert>
 #include <sstream>
+
 #include <QtGui/QImage>
 
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
+
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
@@ -25,15 +27,16 @@
 #include "Engine/Box.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerCache.h"
-#include "Engine/PluginID.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/Knob.h"
+
 #include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ReadExr.h"
 #include "Readers/ReadQt.h"
 #include "Readers/Read.h"
+
 #include "Writers/Writer.h"
-#include "Gui/NodeGui.h"
-#include "Engine/Knob.h"
 
 using namespace Powiter;
 using namespace std;
@@ -65,11 +68,8 @@ std::string Reader::description() {
 
 void Reader::initKnobs(){
     std::string desc("File");
-    KnobGui* knob = KnobFactory::createKnob("InputFile", cb, desc, Knob::NONE);
-    File_KnobGui* file = dynamic_cast<File_KnobGui*>(knob);
-    assert(file);
-	file->setPointer(&fileNameList);
-	Node::initKnobs(cb);
+    File_Knob* fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", this, desc,1, Knob::NONE));
+    assert(fileKnob);
 }
 
 
@@ -101,9 +101,9 @@ bool Reader::readCurrentHeader(int current_frame){
         cout << "ERROR: Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return false;
     }
-    ReadBuilder builder = (ReadBuilder)(decoder->first);
-    _read = builder(this);
-    
+
+    pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("builder");
+    _read = func.second(this);
     if(!_read){
         cout << "ERROR: Failed to create the decoder " << _read->decoderName() << endl;
         return false;
@@ -413,8 +413,7 @@ void Reader::setPreview(QImage* img){
         delete preview;
     preview=img;
     hasPreview(true);
-    assert(getNodeUi());
-    getNodeUi()->updatePreviewImageForReader();
+    _instance->updatePreviewImageGUI();
 }
 
 

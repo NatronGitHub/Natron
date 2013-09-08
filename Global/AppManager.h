@@ -37,6 +37,9 @@ class Gui;
 class OutputNode;
 class QLabel;
 
+namespace Powiter {
+    class LibraryBinary;
+}
 
 class Project{
 public:
@@ -200,6 +203,8 @@ public:
     AppInstance* getAppInstance(int appID) const;
     
     void removeInstance(int appID);
+    
+    static std::vector<Powiter::LibraryBinary*> loadPlugins(const QString& where);
 };
 
 

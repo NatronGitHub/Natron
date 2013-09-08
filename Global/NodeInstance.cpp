@@ -177,7 +177,9 @@ QPointF NodeInstance::getPosGui() const{
 void NodeInstance::updateNodeChannelsGui(const ChannelSet& channels){
     _gui->updateChannelsTooltip(channels);
 }
-
+void NodeInstance::updatePreviewImageGUI(){
+    _gui->updatePreviewImageForReader();
+}
 void NodeInstance::deactivate(){
     _gui->deactivate();
     
@@ -294,7 +296,7 @@ void NodeInstance::createKnobGuiDynamically(){
 }
 
 bool NodeInstance::isInputConnected(int inputNb) const{
-    InputMap::iterator it = _inputs.find(inputNb);
+    InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
     }else{
@@ -304,7 +306,7 @@ bool NodeInstance::isInputConnected(int inputNb) const{
 }
 
 bool NodeInstance::hasOutputConnected() const{
-    for(OutputMap::iterator it = _outputs.begin();it!=_outputs.end();++it){
+    for(OutputMap::const_iterator it = _outputs.begin();it!=_outputs.end();++it){
         if(it->second){
             return true;
         }

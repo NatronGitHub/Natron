@@ -35,7 +35,7 @@
 #include "Engine/NodeCache.h"
 #include "Engine/OfxHost.h"
 #include "Engine/ViewerCache.h"
-#include "Engine/PluginID.h"
+#include "Engine/LibraryBinary.h"
 #include "Engine/Knob.h"
 
 #include "Readers/Reader.h"
@@ -862,10 +862,10 @@ void Model::analyseSerializedNodeString(NodeInstance* n,XMLProjectLoader::XMLPar
     }else if(v->_element == "Knob"){
         XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
         assert(inputEl);
-        const std::vector<Knob*>& knobs = n->getNode()->getKnobs();
+        const std::vector<KnobInstance*>& knobs = n->getKnobs();
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
-                knobs[j]->restoreFromString(inputEl->_param.toStdString());
+            if (knobs[j]->getKnob()->getDescription() == inputEl->_description.toStdString()) {
+                knobs[j]->getKnob()->restoreFromString(inputEl->_param.toStdString());
                 break;
             }
         }

@@ -101,6 +101,9 @@ public:
     
     void setEnabledRedoButton(bool);
     
+    void initialize_knobs();
+
+    
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);
@@ -108,7 +111,6 @@ public slots:
 private:
     
 
-    void initialize_knobs();
 	
 };
 

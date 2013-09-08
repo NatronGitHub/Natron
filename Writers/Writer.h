@@ -15,6 +15,7 @@
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
@@ -111,9 +112,8 @@ public:
     
 public slots:
     void notifyWriterForCompletion();
-    void fileTypeChanged(int);
+    void fileTypeChanged();
     void startRendering();
-    void onFilesSelected();
     
 protected:
 	virtual void initKnobs() OVERRIDE;
@@ -131,7 +131,7 @@ private:
     WriteKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;
-    std::vector<std::string> _allFileTypes;
+    QStringList _allFileTypes;
     
     
     OutputFile_Knob* _fileKnob;
