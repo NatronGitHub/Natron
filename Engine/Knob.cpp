@@ -25,6 +25,7 @@
 
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/KnobGui.h"
+#include "Gui/NodeGui.h"
 
 using namespace std;
 using namespace Powiter;
@@ -205,29 +206,33 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
     if(it == loadedPlugins.end()){
         return NULL;
     }else{
-        Knob* knob = 0;
-        KnobGui* knobGui = 0;
         std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
         if(!builderFunc.first){
             return NULL;
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        knob = builder(node,description,dimension,flags);
-        
+        Knob* knob = builder(node,description,dimension,flags);
+        if(!knob){
+            return NULL;
+        }
+        node->addKnob(knob);
+        return knob;
+    }
+}
+KnobGui* KnobFactory::createGuiForKnob(Knob* knob){
+    const std::map<std::string,LibraryBinary*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
+    std::map<std::string,LibraryBinary*>::const_iterator it = loadedPlugins.find(knob->name());
+    if(it == loadedPlugins.end()){
+        return NULL;
+    }else{
         std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("BuildKnobGui");
         if(!guiBuilderFunc.first){
             return NULL;
         }
         KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
-        knobGui = guiBuilder(knob);
-        if(!knob || !knobGui)
-            return NULL;
-        
-        node->addKnob(knob);
-        return knob;
+        return guiBuilder(knob);
     }
 }
-
 
 
 
@@ -475,10 +480,8 @@ void Button_Knob::connectToSlot(const Variant& v){
 /***********************************COMBOBOX_KNOB*****************************************/
 void ComboBox_Knob::fillHashVector(){
     _hashVector.clear();
-    QString out(_value.getQVariant().toString());
-    for (int i =0; i< out.size(); ++i) {
-        _hashVector.push_back(out.at(i).unicode());
-    }
+    int value = _value.getQVariant().toInt();
+    _hashVector.push_back(value);
 }
 std::string ComboBox_Knob::serialize() const{
     return QString::number(_value.getQVariant().toInt()).toStdString();
@@ -569,10 +572,16 @@ void Group_Knob::addKnob(Knob* k){
 
 
 void Tab_Knob::addTab(const std::string& name){
-    
+    _knobs.insert(make_pair(name, std::vector<Knob*>()));
 }
 
 void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
-    
+    std::map<std::string,std::vector<Knob*> >::iterator it = _knobs.find(tabName);
+    if(it == _knobs.end()){
+        pair<std::map<std::string,std::vector<Knob*> >::iterator,bool> ret = _knobs.insert(make_pair(tabName, std::vector<Knob*>()));
+        ret.first->second.push_back(k);
+    }else{
+        it->second.push_back(k);
+    }
 }
 

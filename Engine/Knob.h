@@ -120,7 +120,7 @@ namespace Powiter {
 typedef unsigned int Knob_Mask;
 /******************************KNOB_FACTORY**************************************/
 
-
+class KnobGui;
 class KnobFactory : public Singleton<KnobFactory>{
     
     std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
@@ -141,6 +141,8 @@ public:
     /*Calls the unique instance of the KnobFactory and
      calls the appropriate pointer to function to create a knob.*/
     static Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
+    
+    static KnobGui* createGuiForKnob(Knob* knob);
     
 };
 
@@ -572,7 +574,6 @@ protected:
 
 class ComboBox_Knob:public Knob
 {
-    Q_OBJECT
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
@@ -592,15 +593,12 @@ public:
     virtual std::string serialize() const;
     
     /*Must be called right away after the constructor.*/
-    void populate(const QStringList& entries){
+    void populate(const std::vector<std::string>& entries){
         _entries = entries;
-        emit populated(_entries);
     }
     
-signals:
-    
-    void populated(const QStringList&);
-    
+    const std::vector<std::string>& getEntries() const {return _entries;}
+        
 protected:
     
     virtual void tryStartRendering();
@@ -609,7 +607,7 @@ protected:
     
     
 private:
-    QStringList _entries;
+    std::vector<std::string> _entries;
 };
 
 /******************************SEPARATOR_KNOB**************************************/
@@ -772,10 +770,7 @@ public:
     
     void addKnob(const std::string& tabName,Knob* k);
     
-signals:
-    
-    void newTabAdded(QString);
-    void newKnobAdded();
+    const std::map<std::string,std::vector<Knob*> >& getKnobs() const {return _knobs;}
     
 protected:
     
@@ -783,6 +778,8 @@ protected:
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
     
+private:
+    std::map<std::string,std::vector<Knob*> > _knobs;
 };
 
 #endif // KNOB_H

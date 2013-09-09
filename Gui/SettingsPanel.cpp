@@ -10,13 +10,13 @@
 
 #include "SettingsPanel.h"
 
+#include <iostream>
 #include <QLayout>
 #include <QAction>
 #include <QTabWidget>
 #include <QStyle>
 
 #include "Global/Macros.h"
-#include "Global/NodeInstance.h"
 
 #include "Engine/Node.h"
 
@@ -34,7 +34,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _mainLayout->setSpacing(0);
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(_mainLayout);
-    setObjectName(_nodeGUI->getNodeInstance()->getName().c_str());
+    setObjectName(_nodeGUI->getNode()->getName().c_str());
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     
@@ -93,7 +93,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QObject::connect(_redoButton, SIGNAL(pressed()),_nodeGUI, SLOT(redoCommand()));
     
     _nodeName = new LineEdit(_headerWidget);
-    _nodeName->setText(_nodeGUI->getNodeInstance()->getName().c_str());
+    _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
     QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SIGNAL(nameChanged(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
@@ -139,19 +139,49 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 void SettingsPanel::initialize_knobs(){
     
     /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<KnobInstance*>& knobs = _nodeGUI->getNodeInstance()->getKnobs();
+    
+    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
     int maxSpacing = 0;
     for(U32 i = 0 ; i < knobs.size(); ++i){
-        KnobInstance* k = knobs[i];
+        KnobGui* gui = _nodeGUI->findKnobGuiOrCreate(knobs[i]);
+        if(!gui){
+            return;
+        }
         /*If the GUI doesn't already exist, we create it.*/
-        if(!k->getKnobGui()->hasWidgetBeenCreated()){
-            KnobGui* gui = k->getKnobGui();
+        if(!gui->hasWidgetBeenCreated()){
             gui->setParent(this);
             if(!gui->triggerNewLine() && i!=0){
                 gui->createGUI(_layoutSettings,i-1);
             }else{
                 gui->createGUI(_layoutSettings,i);
             }
+            if(knobs[i]->name() == "Group"){
+                Group_Knob* groupKnob = dynamic_cast<Group_Knob*>(knobs[i]);
+                std::vector<KnobGui*> children;
+                for (U32 j = 0; j < groupKnob->getChildren().size(); ++j) {
+                    KnobGui* child = _nodeGUI->findKnobGuiOrCreate(groupKnob->getChildren()[j]);
+                    if(child){
+                        children.push_back(child);
+                    }
+                }
+                dynamic_cast<Group_KnobGui*>(gui)->addKnobs(children);
+            }else if(knobs[i]->name() == "Tab"){
+                Tab_Knob* tabKnob = dynamic_cast<Tab_Knob*>(knobs[i]);
+                std::map<std::string,std::vector<KnobGui*> > childrenGui;
+                const std::map<std::string,std::vector<Knob*> >& children = tabKnob->getKnobs();
+                for (std::map<std::string,std::vector<Knob*> >::const_iterator it = children.begin();
+                     it!=children.end();++it) {
+                    std::vector<KnobGui*> tabKnobs;
+                    for (U32 j = 0; j < it->second.size(); ++j) {
+                        KnobGui* child = _nodeGUI->findKnobGuiOrCreate(it->second[j]);
+                        if(child)
+                            tabKnobs.push_back(child);
+                    }
+                    childrenGui.insert(make_pair(it->first, tabKnobs));
+                }
+                dynamic_cast<Tab_KnobGui*>(gui)->addKnobs(childrenGui);
+            }
+            
             int knobSpacing  =  gui->getSpacingBetweenItems();
             if(knobSpacing > maxSpacing)
                 maxSpacing = knobSpacing;

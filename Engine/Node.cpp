@@ -166,24 +166,22 @@ void Node::Info::operator=(const Node::Info &other){
 Node::Node(Model* model):
 _model(model),
 _info(),
-_marked(false)
+_marked(false),
+_undoStack(new QUndoStack)
 {
 	
 }
 
 Node::~Node(){
-    
-    
-    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-        _app->disconnect(this, it->second);
-    }
-    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        _app->disconnect(it->second, this);
-    }
+//    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+//        _model->disconnect(this, it->second);
+//    }
+//    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+//        _model->disconnect(it->second, this);
+//    }
     for (U32 i = 0; i < _knobs.size(); ++i) {
         delete _knobs[i];
     }
-
     delete _undoStack;
 }
 
@@ -196,7 +194,7 @@ void Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
         _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
-        _inputs.insert(make_pair(i,(NodeInstance*)NULL));
+        _inputs.insert(make_pair(i,(Node*)NULL));
     }
     emit inputsInitialized();
 }
@@ -292,7 +290,7 @@ bool Node::disconnectInput(Node* input){
 //            }
             emit inputChanged(it->first);
             _inputs.erase(it);
-            _inputs.insert(make_pair(it->first, (NodeInstance*)NULL));
+            _inputs.insert(make_pair(it->first, (Node*)NULL));
             return true;
         }else{
             return false;
@@ -336,7 +334,7 @@ void Node::deactivate(){
     emit deactivated();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if(it->second)
-            _app->disconnect(it->second,this);
+            _model->disconnect(it->second,this);
     }
     Node* firstChild = 0;
     for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
@@ -345,7 +343,7 @@ void Node::deactivate(){
         if(it == _outputs.begin()){
             firstChild = it->second;
         }
-        _app->disconnect(this, it->second);
+        _model->disconnect(this, it->second);
     }
     if(firstChild){
         _model->triggerAutoSaveOnNextEngineRun();
@@ -357,7 +355,7 @@ void Node::activate(){
     // _gui->activate();
     emit activated();
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        _app->connect(it->first,it->second, this);
+        _model->connect(it->first,it->second, this);
     }
     Node* firstChild = 0;
     for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
@@ -374,7 +372,7 @@ void Node::activate(){
                 break;
             }
         }
-        _app->connect(inputNb,this, it->second);
+        _model->connect(inputNb,this, it->second);
     }
     if(firstChild){
         _model->triggerAutoSaveOnNextEngineRun();

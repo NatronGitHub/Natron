@@ -26,7 +26,7 @@ class Row;
 class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
-class Writer: public QObject, public OutputNode{
+class Writer: public OutputNode{
     
     Q_OBJECT
     
@@ -132,7 +132,7 @@ private:
     WriteKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;
-    QStringList _allFileTypes;
+    std::vector<std::string> _allFileTypes;
     
     
     OutputFile_Knob* _fileKnob;

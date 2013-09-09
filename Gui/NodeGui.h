@@ -27,7 +27,8 @@ class QVBoxLayout;
 class AppInstance;
 class NodeGraph;
 class QAction;
-
+class KnobGui;
+class Knob;
 class ChannelSet;
 class Node;
 
@@ -130,14 +131,12 @@ public:
      point pt. pt is in scene coord.*/
     Edge* hasEdgeNearbyPoint(const QPointF& pt);
     
-    void activate();
-    
-    void deactivate();
-    
     void setName(const QString& name);
     
     void refreshPosition(double x,double y);
-        
+    
+    KnobGui* findKnobGuiOrCreate(Knob* knob);
+    
 public slots:
     void undoCommand();
     
@@ -165,6 +164,10 @@ public slots:
     void initializeInputs();
     
     void initializeKnobs();
+    
+    void activate();
+    
+    void deactivate();
 signals:
     void nameChanged(QString);
     
@@ -199,6 +202,9 @@ protected:
     
     /*the graphical input arrows*/
     std::map<int,Edge*> inputs;
+    
+    /*the graphical knobs*/
+    std::map<Knob*,KnobGui*> _knobs;
     
     /*the graphical output arrows
      NOT YET USED*/

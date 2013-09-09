@@ -183,7 +183,7 @@ int ComboBox::activeIndex() const{
 void ComboBox::setCurrentIndex(int index){
     QString str;
     QString rawStr;
-    if(index >= 0){
+    if(index >= 0 && index < (int)_actions.size()){
         str = _actions[index]->text();
         rawStr = str;
         /*before displaying,prepend and append the text by some spacing.

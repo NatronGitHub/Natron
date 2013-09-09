@@ -44,7 +44,6 @@
 
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
-#include "Global/NodeInstance.h"
 
 
 

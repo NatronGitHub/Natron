@@ -32,10 +32,8 @@ namespace Powiter {
 }
 
 // FIXME: OFX::Host::ImageEffect::Instance should be a member
-class OfxNode : public QObject, public OutputNode
+class OfxNode : public OutputNode
 {
-    Q_OBJECT
-
 public:
     OfxNode(Model* model,
              OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -114,9 +112,7 @@ public:
     const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
     const std::string& getPluginGrouping() const; // forwarded to OfxImageEffectInstance
 
-public slots:
-    void onInstanceChangedAction(const QString&);
-    
+
 private:
 
     QMutex _lock; // lock used in engine(...) function

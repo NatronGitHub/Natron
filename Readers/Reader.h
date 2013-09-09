@@ -18,7 +18,6 @@
 #include "Engine/Node.h"
 
 class QImage;
-class NodeInstance;
 class FrameEntry;
 class File_Knob;
 class QMutex;
@@ -66,7 +65,7 @@ class ViewerCache;
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public QObject,public Node
+class Reader : public Node
 {
     Q_OBJECT
     

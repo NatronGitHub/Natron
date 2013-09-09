@@ -31,7 +31,7 @@ using namespace std;
 using namespace Powiter;
 
 Writer::Writer(Model* model):
-OutputNode(instance),
+OutputNode(model),
 _requestedChannels(Mask_RGB), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
@@ -73,6 +73,7 @@ bool Writer::_validate(bool forReal){
             Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
             if(!encoder){
                 cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
+                return false;
             }else{
                 
 
@@ -81,6 +82,7 @@ bool Writer::_validate(bool forReal){
                     write = func.second(this);
                 else{
                     cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
+                    return false;
                 }
                 write->premultiplyByAlpha(_premult);
                 /*check if the filename already contains the extension, otherwise appending it*/
@@ -129,7 +131,7 @@ void Writer::initKnobs(){
     std::string renderDesc("Render");
     Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", this, renderDesc, 1,Knob::NONE));
     assert(renderButton);
-    renderButton->setValue(SLOT(startRendering()));
+    QObject::connect(renderButton, SIGNAL(valueChanged(Variant)), this, SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
     Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", this, premultString, 1,Knob::NONE));
@@ -141,7 +143,7 @@ void Writer::initKnobs(){
     const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
-        _allFileTypes << it->first.c_str();
+        _allFileTypes.push_back(it->first.c_str());
     }
     _filetypeCombo->populate(_allFileTypes);
 }
@@ -242,15 +244,15 @@ bool Writer::validInfosForRendering(){
 
 void Writer::startRendering(){
     if(validInfosForRendering()){
-        _model->setCurrentGraph(this,false);
+        _model->updateDAG(this,false);
         _model->startVideoEngine();
     }
 }
 
 void Writer::fileTypeChanged(){
     int index = _filetypeCombo->value<int>();
-    assert(index < _allFileTypes.size());
-    _fileType = _allFileTypes.at(index).toStdString();
+    assert(index < (int)_allFileTypes.size());
+    _fileType = _allFileTypes[index];
     if(_writeOptions){
         _writeOptions->cleanUpKnobs();
         delete _writeOptions;

@@ -436,7 +436,7 @@ void Double_KnobGui::onSpinBoxValueChanged(){
 //=============================BUTTON_KNOB_GUI===================================
 void Button_KnobGui::createWidget(QGridLayout *layout, int row){
     _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),this);
-    QObject::connect(_button, SIGNAL(pressed()),this,SIGNAL(emitValueChanged()));
+    QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
     int offset = _knob->determineHierarchySize();
     
     layout->addWidget(_button,row,0+offset);
@@ -453,16 +453,17 @@ void Button_KnobGui::emitValueChanged(){
 //=============================COMBOBOX_KNOB_GUI===================================
 ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob):KnobGui(knob){
     ComboBox_Knob* cbKnob = dynamic_cast<ComboBox_Knob*>(knob);
-    QObject::connect(cbKnob,SIGNAL(populated(QStringList)),this,SLOT(populate(QStringList)));
+    _entries = cbKnob->getEntries();
 }
 
 void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     _comboBox = new ComboBox(this);
-    for (int i = 0; i < _entries.size(); ++i) {
-        _comboBox->addItem(_entries.at(i));
+    
+    for (U32 i = 0; i < _entries.size(); ++i) {
+        _comboBox->addItem(_entries[i].c_str());
     }
     if(_entries.size() > 0)
-        _comboBox->setCurrentText(_entries[0]);
+        _comboBox->setCurrentText(_entries[0].c_str());
     _comboBox->setCurrentIndex(_knob->value<int>());
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
@@ -479,14 +480,11 @@ void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));    
     
 }
-void ComboBox_KnobGui::populate(const QStringList& entries){
-    _entries = entries;
-}
 
 void ComboBox_KnobGui::updateGUI(const Variant& variant){
     int i = variant.getQVariant().toInt();
-    assert(i < _entries.size());
-    _comboBox->setCurrentText(_entries.at(i));
+    assert(i <= (int)_entries.size());
+    _comboBox->setCurrentText(_entries[i].c_str());
 }
 
 //=============================SEPARATOR_KNOB_GUI===================================
@@ -682,24 +680,23 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     _box->setLayout(_boxLayout);
     _box->setCheckable(true);
     int offset = _knob->determineHierarchySize();
+    layout->addWidget(_box,row,0+offset);
     
-    layout->addWidget(_box,row,+offset);
-    
-    for (U32 i = 0 ; i < _knobs.size(); ++i) {
-        _boxLayout->addWidget(_knobs[i]);
-        _knobs[i]->setParent(_box);
-        _knobs[i]->setVisible(_box->isChecked());
+}
+void Group_KnobGui::addKnobs(const std::vector<KnobGui*>& children){
+    _children = children;
+    for (U32 i = 0 ; i < children.size(); ++i) {
+        _boxLayout->addWidget(children[i]);
+        children[i]->setParent(_box);
+        children[i]->setVisible(_box->isChecked());
     }
+
 }
 
-
-void Group_KnobGui::addKnob(KnobGui* k){
-    _knobs.push_back(k);
-}
 void Group_KnobGui::setChecked(bool b){
     _box->setChecked(b);
-    for(U32 i = 0 ; i < _knobs.size() ;++i) {
-        _knobs[i]->setVisible(b);
+    for(U32 i = 0 ; i < _children.size() ;++i) {
+        _children[i]->setVisible(b);
 
     }
 }
@@ -711,36 +708,21 @@ void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
                                TabWidget::NONE,this);
     int offset = _knob->determineHierarchySize();
     
-    
     layout->addWidget(_tabWidget,row,0+offset);
-    addTabs();
-    addKnobsToTabs();
+    
 }
-
-void Tab_KnobGui::addTab(const std::string& name){
-    _tabs.push_back(name);
-}
-void Tab_KnobGui::addKnob(const std::string& tabName,KnobGui* k){
-    _knobsToAdd.push_back(make_pair(tabName, k));
-}
-
-void Tab_KnobGui::addTabs(){
-    for (U32 i = 0; i < _tabs.size(); ++i) {
-        std::string name = _tabs[i];
+void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs){
+    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs.begin() ;
+         it!=knobs.end(); ++it) {
+        std::string name = it->first;
         QWidget* newTab = new QWidget(_tabWidget);
         _tabWidget->appendTab(name.c_str(), newTab);
         QVBoxLayout* newLayout = new QVBoxLayout(newTab);
         newTab->setLayout(newLayout);
-        vector<KnobGui*> knobs;
-        _knobs.insert(make_pair(name, make_pair(newLayout, knobs)));
-    }
-}
-void Tab_KnobGui::addKnobsToTabs(){
-    for (U32 i = 0; i < _knobsToAdd.size(); ++i) {
-        KnobsTabMap::iterator it = _knobs.find(_knobsToAdd[i].first);
-        if(it!=_knobs.end()){
-            it->second.first->addWidget(_knobsToAdd[i].second);
-            it->second.second.push_back(_knobsToAdd[i].second);
+        vector<KnobGui*> knobs = it->second;
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            newLayout->addWidget(knobs[i]);
         }
     }
+
 }

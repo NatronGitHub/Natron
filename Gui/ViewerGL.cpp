@@ -1653,7 +1653,6 @@ void ViewerGL::disconnectViewer(){
     _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->abort(); // aborting current work
     blankInfoForViewer();
     fitToFormat(displayWindow());
-    _viewerTab->getGui()->_appInstance->getModel()->setCurrentGraph(NULL,true);
     clearViewer();
 }
 

@@ -15,7 +15,6 @@
 #include <QImage>
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
 
 #include "Engine/OfxParamInstance.h"
 #include "Engine/Row.h"
@@ -268,21 +267,21 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     }
 }
 
-
-void OfxNode::onInstanceChangedAction(const QString& str){
-    double frame  = effectInstance()->getFrameRecursive();
-    OfxPointD renderScale;
-    effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);
-    effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    effectInstance()->paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
-    effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    
-    if(isOutputNode())
-        getExecutingEngine()->changeDAGAndStartEngine(this);
-    else{
-        getExecutingEngine()->seekRandomFrame(getExecutingEngine()->getCurrentDAG().getOutput()->getTimeLine().currentFrame());
-    }
-}
+//
+//void OfxNode::onInstanceChangedAction(const QString& str){
+//    double frame  = effectInstance()->getFrameRecursive();
+//    OfxPointD renderScale;
+//    effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);
+//    effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+//    effectInstance()->paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
+//    effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+//    
+//    if(isOutputNode())
+//        getExecutingEngine()->changeDAGAndStartEngine(this);
+//    else{
+//        getExecutingEngine()->seekRandomFrame(getExecutingEngine()->getCurrentDAG().getOutput()->getTimeLine().currentFrame());
+//    }
+//}
 
 
 void OfxNode::computePreviewImage(){
@@ -349,7 +348,7 @@ void OfxNode::computePreviewImage(){
 
     
     _preview = ret;
-    _instance->updatePreviewImageGUI();
+    notifyGuiPreviewChanged();
 }
 
 /*group is a string as such:

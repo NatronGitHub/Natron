@@ -115,7 +115,7 @@ public:
     typedef std::map<int,Node*> OutputMap;
     
 #define foreachInput(CUR,NODE)\
-for(NodeInstance::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
+for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
 
     /*CONSTRUCTOR AND DESTRUCTORS*/
     Node(Model* model);
@@ -336,6 +336,10 @@ for(NodeInstance::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!
         emit refreshEdgesGUI();
     }
    
+    void notifyGuiPreviewChanged(){
+        emit previewImageChanged();
+    }
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -367,6 +371,7 @@ signals:
         
     void refreshEdgesGUI();
 
+    void previewImageChanged();
     
 protected:
     
@@ -481,7 +486,7 @@ public:
     
     TimeLine& getTimeLine(){return _timeline;}
         
-    void updateDAG(bool isViewer,,bool initViewer = false);
+    void updateDAG(bool isViewer,bool initViewer = false);
 
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const

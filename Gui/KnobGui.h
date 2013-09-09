@@ -324,16 +324,13 @@ public:
 public slots:
     
     void onCurrentIndexChanged(int i);
-    
-    void populate(const QStringList& entries);
-
 
 protected:
     
     virtual void updateGUI(const Variant& variant);
     
 private:
-    QStringList _entries;
+    std::vector<std::string> _entries;
     ComboBox* _comboBox;
 };
 
@@ -441,7 +438,7 @@ public:
 
     virtual void createWidget(QGridLayout* layout,int row);
 
-    void addKnob(KnobGui* k);
+    void addKnobs(const std::vector<KnobGui*>& children);
     
 protected:
     
@@ -457,8 +454,7 @@ private:
     
     QGroupBox* _box;
     QVBoxLayout* _boxLayout;
-    std::vector<KnobGui*> _knobs;
-    
+    std::vector<KnobGui*> _children;
 };
 
 
@@ -477,22 +473,15 @@ public:
 
     virtual void createWidget(QGridLayout* layout,int row);
     
-    void addTab(const std::string& name);
-    
-    void addKnob(const std::string& tabName,KnobGui* k);
+    void addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs);
     
 protected:
     
     virtual void updateGUI(const Variant& variant){(void)variant;}
     
 private:
-    void addTabs();
-    void addKnobsToTabs();
-    
-    std::vector<std::string> _tabs;
-    std::vector< std::pair<std::string,KnobGui*> > _knobsToAdd;
+  
     TabWidget* _tabWidget;
-    KnobsTabMap _knobs;
 };
 
 

@@ -149,9 +149,9 @@ void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string compressionCBDesc("Compression");
     compressionCBKnob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", _op,
                                                                             compressionCBDesc, 1,Knob::NONE));
-    QStringList list;
+    std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
-        list << EXR::compressionNames[i].c_str();
+        list.push_back(EXR::compressionNames[i].c_str());
     }
     compressionCBKnob->populate(list);
     compressionCBKnob->setValue(3);
@@ -161,7 +161,7 @@ void ExrWriteKnobs::initKnobs(const std::string& fileType) {
                                                                       depthCBDesc,1, Knob::NONE));
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
-        list << EXR::depthNames[i].c_str();
+        list.push_back(EXR::depthNames[i].c_str());
     }
     depthCBKnob->populate(list);
     depthCBKnob->setValue(1);

@@ -431,7 +431,7 @@ void Reader::setPreview(QImage* img){
         delete preview;
     preview=img;
     hasPreview(true);
-    _instance->updatePreviewImageGUI();
+    notifyGuiPreviewChanged();
 }
 
 

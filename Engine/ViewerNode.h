@@ -24,7 +24,7 @@ class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-class ViewerNode: public QObject,public OutputNode
+class ViewerNode: public OutputNode
 {
     Q_OBJECT
     

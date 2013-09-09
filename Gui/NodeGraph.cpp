@@ -46,7 +46,6 @@ CLANG_DIAG_ON(unused-private-field);
 
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
 
 
 using namespace std;

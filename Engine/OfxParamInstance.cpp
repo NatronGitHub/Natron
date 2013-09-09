@@ -44,7 +44,6 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     _knob->setValue(QString(SLOT(emitInstanceChanged())));
-    QObject::connect(this, SIGNAL(buttonPressed(QString)), _node, SLOT(onInstanceChangedAction(QString)));
 }
 
 void OfxPushButtonInstance::emitInstanceChanged(){
@@ -265,13 +264,11 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
-    QStringList list;
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = pSet.getStringProperty(kOfxParamPropChoiceOption,i);
         _entries.push_back(str);
-        list << str.c_str();
     }
-    _knob->populate(list);
+    _knob->populate(_entries);
     int def = pSet.getIntProperty(kOfxParamPropDefault);
     
     set(def);

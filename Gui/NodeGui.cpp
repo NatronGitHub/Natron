@@ -25,6 +25,7 @@
 
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/Knob.h"
 
 #include "Global/AppManager.h"
 
@@ -53,9 +54,12 @@ settings(0)
     QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
     QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
     QObject::connect(node, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
-    QObject::connect(node, SIGNAL(refreshEdgesGUI),this,SLOT(refreshEdges()));
-    QObject::connect(node, SIGNAL(knobsInitialied()),this,SLOT(initializeKnob()));
+    QObject::connect(node, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
+    QObject::connect(node, SIGNAL(knobsInitialied()),this,SLOT(initializeKnobs()));
     QObject::connect(node, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
+    QObject::connect(node, SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()));
+    QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
+    QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
     
     
     setCacheMode(DeviceCoordinateCache);
@@ -166,7 +170,8 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
-    delete node;
+    if(!node->isOpenFXNode())
+        delete node;
 
 }
 void NodeGui::refreshPosition(double x,double y){
@@ -448,6 +453,21 @@ void NodeGui::deactivate(){
 void NodeGui::initializeKnobs(){
     if(settings){
         settings->initialize_knobs();
+    }
+}
+
+KnobGui* NodeGui::findKnobGuiOrCreate(Knob* knob){
+    map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
+    if (it == _knobs.end()) {
+        KnobGui* ret =  KnobFactory::createGuiForKnob(knob);
+        if(!ret){
+            std::cout << "Failed to create gui for Knob" << std::endl;
+            return NULL;
+        }
+        _knobs.insert(make_pair(knob, ret));
+        return ret;
+    }else{
+        return it->second;
     }
 }
 
