@@ -115,8 +115,7 @@ public:
     
     Gui* getGui() const {return _gui;}
     
-    /*makes the viewer black*/
-    void disconnectViewer();
+   
     
 public slots:
     
@@ -138,6 +137,9 @@ public slots:
     
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
+    
+    /*makes the viewer black*/
+    void disconnectViewer();
     
 signals:
     void recenteringNeeded();

@@ -20,8 +20,6 @@
 
 #include "Global/MemoryInfo.h"
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
-#include "Global/KnobInstance.h"
 #include "Global/LibraryBinary.h"
 
 
@@ -48,11 +46,12 @@
 #include "Writers/Write.h"
 #include "Writers/WriteQt.h"
 #include "Writers/WriteExr.h"
+
 #include "Gui/Gui.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
-
+#include "Gui/NodeGui.h"
 
 using namespace std;
 using namespace Powiter;
@@ -152,13 +151,15 @@ _currentOutput(0)
         assert(_frmt);
         addFormat(_frmt);
     }
-    
-    
 }
 
 
 
 Model::~Model() {
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        _currentNodes[i]->deleteNode();
+    }
+
     _viewerCache->save();
     delete _viewerCache;
     foreach(Format* f,_formats) delete f;
@@ -189,49 +190,81 @@ void Model::loadAllPlugins(){
     
 }
 
-
-
-
-std::pair<int,bool> Model::setCurrentGraph(OutputNode *output,bool isViewer){
-    _currentOutput = output;
-    if(output){
-        output->getVideoEngine()->resetAndMakeNewDag(output,isViewer);
-        const std::vector<Node*>& inputs = output->getVideoEngine()->getCurrentDAG().getInputs();
-        bool hasFrames = false;
-        bool hasInputDifferentThanReader = false;
-        for (U32 i = 0; i< inputs.size(); ++i) {
-            assert(inputs[i]);
-            Reader* r = dynamic_cast<Reader*>(inputs[i]);
-            if (r) {
-                if (r->hasFrames()) {
-                    hasFrames = true;
-                }
-            }else{
-                hasInputDifferentThanReader = true;
-            }
-        }
-        return make_pair(inputs.size(),hasFrames || hasInputDifferentThanReader);
-    }else{
-        return make_pair(0, false);
+void Model::clearNodes(){
+    foreach(Node* n,_currentNodes){
+        delete n;
     }
+    _currentNodes.clear();
 }
 
 
-Node* Model::createNode(const std::string& name,NodeInstance* instance) {
+void Model::checkViewersConnection(){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        if (_currentNodes[i]->className() == "Viewer") {
+            dynamic_cast<OutputNode*>(_currentNodes[i])->updateDAG(true);
+        }
+    }
+}
+
+void Model::updateDAG(OutputNode *output,bool isViewer){
+    assert(output);
+    _currentOutput = output;
+    output->updateDAG(isViewer);
+}
+
+
+Node* Model::createNode(const std::string& name) {
 	Node* node = 0;
     if(name == "Reader"){
-		node = new Reader(instance);
+		node = new Reader(this);
 	}else if(name =="Viewer"){
-        node = new ViewerNode(_viewerCache,instance);
+        node = new ViewerNode(_viewerCache,this);
 	}else if(name == "Writer"){
-		node = new Writer(instance);
+		node = new Writer(this);
     } else {
-        node = ofxHost->createOfxNode(name,instance);
+        node = ofxHost->createOfxNode(name,this);
     }
-    node->setModel(this);
     return node;
 }
+void Model::initNodeCountersAndSetName(Node* n){
+    assert(n);
+    map<string,int>::iterator it = _nodeCounters.find(n->className());
+    if(it != _nodeCounters.end()){
+        it->second++;
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)).toStdString());
+    }else{
+        _nodeCounters.insert(make_pair(n->className(), 1));
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)).toStdString());
+    }
+}
 
+bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        if (_currentNodes[i]->getName() == inputName) {
+            connect(inputNumber,_currentNodes[i], output);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Model::connect(int inputNumber,Node* input,Node* output){
+    if(!output->connectInput(input, inputNumber)){
+        return false;
+    }
+    input->connectOutput(output);
+    return true;
+}
+
+bool Model::disconnect(Node* input,Node* output){
+    if(!output->disconnectInput(input)){
+        return false;
+    }
+    if(!input->disconnectOutput(output)){
+        return false;
+    }
+    return true;
+}
 
 void Model::addFormat(Format* frmt){_formats.push_back(frmt);}
 
@@ -455,14 +488,14 @@ VideoEngine* Model::getVideoEngine() const{
 
 
 QString Model::serializeNodeGraph() const{
-    const std::vector<NodeInstance*>& activeNodes = _appInstance->getAllActiveNodes();
+    const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
     QString ret;
     
     QXmlStreamWriter writer(&ret);
     writer.setAutoFormatting(true);
     writer.writeStartDocument();
     writer.writeStartElement("Nodes");
-    foreach(NodeInstance* n, activeNodes){
+    foreach(Node* n, activeNodes){
         //serialize inputs
         assert(n);
         writer.writeStartElement("Node");
@@ -470,7 +503,7 @@ QString Model::serializeNodeGraph() const{
         if(!n->isOpenFXNode()){
             writer.writeAttribute("ClassName",n->className().c_str());
         }else{
-            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
+            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
             std::string name = ofxNode->getShortLabel();
             std::string grouping = ofxNode->getPluginGrouping();
             vector<string> groups = ofxExtractAllPartsOfGrouping(grouping);
@@ -481,11 +514,11 @@ QString Model::serializeNodeGraph() const{
             }
             writer.writeAttribute("ClassName",name.c_str());
         }
-        writer.writeAttribute("Label", n->getNode()->getName().c_str());
+        writer.writeAttribute("Label", n->getName().c_str());
         
         writer.writeStartElement("Inputs");
-        const NodeInstance::InputMap& inputs = n->getInputs();
-        for (NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
+        const Node::InputMap& inputs = n->getInputs();
+        for (Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
             writer.writeStartElement("Input");
             writer.writeAttribute("Number", QString::number(it->first));
             writer.writeAttribute("Name", it->second->getName().c_str());
@@ -493,12 +526,12 @@ QString Model::serializeNodeGraph() const{
         }
         writer.writeEndElement(); // end inputs
                                   //serialize knobs
-        const std::vector<KnobInstance*>& knobs = n->getKnobs();
+        const std::vector<Knob*>& knobs = n->getKnobs();
         writer.writeStartElement("Knobs");
         for (U32 i = 0; i < knobs.size(); ++i) {
             writer.writeStartElement("Knob");
-            writer.writeAttribute("Description", knobs[i]->getKnob()->getDescription().c_str());
-            writer.writeAttribute("Param", knobs[i]->getKnob()->serialize().c_str());
+            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
+            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
             writer.writeEndElement();//end knob
         }
         writer.writeEndElement(); // end knobs
@@ -507,9 +540,14 @@ QString Model::serializeNodeGraph() const{
         
         writer.writeStartElement("Gui");
         
-        writer.writeAttribute("X", QString::number(n->getPosGui().x()));
-        writer.writeAttribute("Y", QString::number(n->getPosGui().y()));
-        
+        NodeGui* nodeGui = _appInstance->getNodeGui(n);
+        double x=0,y=0;
+        if(nodeGui){
+            x = nodeGui->pos().x();
+            y = nodeGui->pos().y();
+        }
+        writer.writeAttribute("X", QString::number(x));
+        writer.writeAttribute("Y", QString::number(y));
         writer.writeEndElement();//end gui
         
         writer.writeEndElement();//end node
@@ -521,7 +559,7 @@ QString Model::serializeNodeGraph() const{
 
 void Model::restoreGraphFromString(const QString& str){
     // pair< Node, pair< AttributeName, AttributeValue> >
-    std::vector<std::pair<NodeInstance*, XMLProjectLoader::XMLParsedElement* > > actionsMap;
+    std::vector<std::pair<Node*, XMLProjectLoader::XMLParsedElement* > > actionsMap;
     QXmlStreamReader reader(str);
     
     while(!reader.atEnd() && !reader.hasError()){
@@ -555,7 +593,7 @@ void Model::restoreGraphFromString(const QString& str){
                 
                 assert(_appInstance);
                 _appInstance->deselectAllNodes();
-                NodeInstance* n = _appInstance->createNode(className);
+                Node* n = _appInstance->createNode(className);
                 if(!n){
                     QString text("Failed to restore the graph! \n The node ");
                     text.append(className);
@@ -566,7 +604,7 @@ void Model::restoreGraphFromString(const QString& str){
                     _appInstance->createNode("Viewer");
                     return;
                 }
-                n->setName(label);
+                n->setName(label.toStdString());
                 
                 reader.readNext();
                 while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
@@ -645,26 +683,26 @@ void Model::restoreGraphFromString(const QString& str){
     }
     //adjusting knobs & connecting nodes now
     for (U32 i = 0; i < actionsMap.size(); ++i) {
-        pair<NodeInstance*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
+        pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
         analyseSerializedNodeString(action.first, action.second);
     }
     
 }
-void Model::analyseSerializedNodeString(NodeInstance* n,XMLProjectLoader::XMLParsedElement* v){
+void Model::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v){
     assert(n);
     if(v->_element == "Input"){
         XMLProjectLoader::InputXMLParsedElement* inputEl = static_cast<XMLProjectLoader::InputXMLParsedElement*>(v);
         assert(inputEl);
         int inputNb = inputEl->_number;
-        _appInstance->connect(inputNb,inputEl->_name.toStdString(), n);
+        connect(inputNb,inputEl->_name.toStdString(), n);
         //  cout << "Input: " << inputEl->_number << " :" << inputEl->_name.toStdString() << endl;
     }else if(v->_element == "Knob"){
         XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
         assert(inputEl);
-        const std::vector<KnobInstance*>& knobs = n->getKnobs();
+        const std::vector<Knob*>& knobs = n->getKnobs();
         for (U32 j = 0; j < knobs.size(); ++j) {
-            if (knobs[j]->getKnob()->getDescription() == inputEl->_description.toStdString()) {
-                knobs[j]->getKnob()->restoreFromString(inputEl->_param.toStdString());
+            if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
+                knobs[j]->restoreFromString(inputEl->_param.toStdString());
                 break;
             }
         }
@@ -672,7 +710,10 @@ void Model::analyseSerializedNodeString(NodeInstance* n,XMLProjectLoader::XMLPar
     }else if(v->_element == "Gui"){
         XMLProjectLoader::NodeGuiXMLParsedElement* inputEl = static_cast<XMLProjectLoader::NodeGuiXMLParsedElement*>(v);
         assert(inputEl);
-        n->setPosGui(inputEl->_x,inputEl->_y);
+        NodeGui* nodeGui = _appInstance->getNodeGui(n);
+        if(nodeGui){
+            nodeGui->refreshPosition(inputEl->_x,inputEl->_y);
+        }
         //  cout << "Gui/Pos: " << inputEl->_x << " , " << inputEl->_y << endl;
     }
 }
@@ -715,5 +756,10 @@ void Model::saveProject(const QString& path,const QString& filename,bool autoSav
         
     }
 }
-
+void Model::triggerAutoSaveOnNextEngineRun(){
+    if(getVideoEngine()){
+        getVideoEngine()->triggerAutoSaveOnNextRun();
+        _appInstance->setProjectTitleAsModified();
+    }
+}
 

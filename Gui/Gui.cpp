@@ -28,7 +28,6 @@ CLANG_DIAG_ON(unused-private-field);
  
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
 
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
@@ -141,31 +140,30 @@ void Gui::closeEvent(QCloseEvent *e){
 }
 
 
-NodeGui* Gui::createNodeGUI( NodeInstance* node){
+NodeGui* Gui::createNodeGUI( Node* node){
     NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
-    node->setNodeGuiPTR(gui);
     if(int ret = gui->hasPreviewImage()){
         if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
+            OfxNode* n = dynamic_cast<OfxNode*>(node);
             n->computePreviewImage();
         }
     }
     return gui;
 }
-void Gui::createViewerGui(NodeInstance* viewer){
+void Gui::createViewerGui(Node* viewer){
     TabWidget* where = _nextViewerTabPlace;
     if(!where){
         where = _viewersPane;
     }else{
         _nextViewerTabPlace = NULL; // < reseting anchor to default
     }
-    dynamic_cast<ViewerNode*>(viewer->getNode())->initializeViewerTab(where);
-    _lastSelectedViewer = dynamic_cast<ViewerNode*>(viewer->getNode())->getUiContext();
+    dynamic_cast<ViewerNode*>(viewer)->initializeViewerTab(where);
+    _lastSelectedViewer = dynamic_cast<ViewerNode*>(viewer)->getUiContext();
 }
-void Gui::autoConnect(NodeInstance* target,NodeInstance* created){
+void Gui::autoConnect(NodeGui* target,NodeGui* created){
     if(target)
-        _nodeGraphTab->_nodeGraphArea->autoConnect(target->getNodeGui(), created->getNodeGui());
-    _nodeGraphTab->_nodeGraphArea->selectNode(created->getNodeGui());
+        _nodeGraphTab->_nodeGraphArea->autoConnect(target, created);
+    _nodeGraphTab->_nodeGraphArea->selectNode(created);
 }
 NodeGui* Gui::getSelectedNode() const{
     return _nodeGraphTab->_nodeGraphArea->getSelectedNode();
@@ -495,7 +493,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         if (!initiatedFromNode) {
             assert(_nodeGraphTab);
             assert(_nodeGraphTab->_nodeGraphArea);
-            tab->getInternalNode()->getNodeInstance()->deactivate();
+            tab->getInternalNode()->deactivate();
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());

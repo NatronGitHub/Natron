@@ -438,6 +438,7 @@ _maximized(false)
         
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
+    
 }
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);

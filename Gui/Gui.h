@@ -49,7 +49,6 @@ class QToolBar;
 class QGraphicsScene;
 class AppInstance;
 class NodeGui;
-class NodeInstance;
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
@@ -138,9 +137,9 @@ public:
     
     void createGui();
     
-    NodeGui* createNodeGUI(NodeInstance *node);
+    NodeGui* createNodeGUI(Node *node);
     
-    void autoConnect(NodeInstance* target,NodeInstance* created);
+    void autoConnect(NodeGui* target,NodeGui* created);
     
     NodeGui* getSelectedNode() const;
     
@@ -150,7 +149,7 @@ public:
     
     bool eventFilter(QObject *target, QEvent *event);
 
-    void createViewerGui(NodeInstance* viewer);
+    void createViewerGui(Node* viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/

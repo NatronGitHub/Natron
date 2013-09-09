@@ -563,10 +563,10 @@ void VideoEngine::drawOverlay() const{
 
 void VideoEngine::_drawOverlay(Node *output) const{
     output->drawOverlay();
-    const NodeInstance::InputMap& inputs = output->getNodeInstance()->getInputs();
-    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+    const Node::InputMap& inputs = output->getInputs();
+    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second)
-            _drawOverlay(it->second->getNode());
+            _drawOverlay(it->second);
     }
 }
 
@@ -600,12 +600,12 @@ void VideoEngine::startEngine(int nbFrames){
         
     }
 }
-void VideoEngine::repeatSameFrame(){
+void VideoEngine::repeatSameFrame(bool initViewer){
     if (dagHasInputs()) {
         if(_working){
-            appendTask(_dag.outputAsViewer()->currentFrame(), 1, false,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
+            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
         }else{
-            render(1,false,true,true);
+            render(1,initViewer,true,true);
         }
     }
 }
@@ -894,10 +894,10 @@ void VideoEngine::DAG::fillGraph(Node* n){
         }
     }
     
-    const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
-    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+    const Node::InputMap& inputs = n->getInputs();
+    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second)
-            fillGraph(it->second->getNode());
+            fillGraph(it->second);
     }
 }
 void VideoEngine::DAG::clearGraph(){
@@ -916,10 +916,10 @@ void VideoEngine::DAG::topologicalSort(){
 }
 void VideoEngine::DAG::_depthCycle(Node* n){
     n->setMarked(true);
-    const NodeInstance::InputMap& inputs = n->getNodeInstance()->getInputs();
-    for(NodeInstance::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second && !it->second->getNode()->isMarked()){
-            _depthCycle(it->second->getNode());
+    const Node::InputMap& inputs = n->getInputs();
+    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        if(it->second && !it->second->isMarked()){
+            _depthCycle(it->second);
         }
     }
     _sorted.push_back(n);

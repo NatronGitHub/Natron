@@ -15,7 +15,7 @@
 
 #include "Global/Macros.h"
 
-class NodeInstance;
+class Node;
 class OfxNode;
 class Model;
 
@@ -57,7 +57,7 @@ public:
                                const char* format,
                                va_list args) OVERRIDE;
 
-    OfxNode* createOfxNode(const std::string& name,NodeInstance* instance);
+    OfxNode* createOfxNode(const std::string& name,Model* model);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/

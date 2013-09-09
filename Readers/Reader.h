@@ -350,7 +350,7 @@ public:
         int _bufferSize; /// maximum size of the buffer
     };
     
-    Reader(NodeInstance* instance);
+    Reader(Model* model);
 
     virtual ~Reader();
 

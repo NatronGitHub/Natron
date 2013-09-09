@@ -90,8 +90,6 @@ SOURCES += \
     Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
     Engine/Knob.cpp \
-    Global/NodeInstance.cpp \
-    Global/KnobInstance.cpp \
     Global/AppManager.cpp \
     Global/main.cpp \
     Global/LibraryBinary.cpp \
@@ -237,8 +235,6 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
     Engine/Knob.h \
-    Global/NodeInstance.h \
-    Global/KnobInstance.h
 
 
 INSTALLS += target

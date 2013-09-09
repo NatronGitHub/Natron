@@ -27,10 +27,9 @@ class QVBoxLayout;
 class AppInstance;
 class NodeGraph;
 class QAction;
-class QUndoCommand;
-class QUndoStack;
+
 class ChannelSet;
-class NodeInstance;
+class Node;
 
 class NodeGui : public QObject,public QGraphicsItem
 {
@@ -42,7 +41,7 @@ public:
     
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
-            NodeInstance *node,
+            Node *node,
             qreal x,qreal y ,
             QGraphicsItem *parent=0,
             QGraphicsScene *sc=0,
@@ -50,8 +49,7 @@ public:
 
     ~NodeGui();
     
-    /*returns a ptr to the internal node*/
-    NodeInstance* getNodeInstance(){return node;}
+    Node* getNode() const {return node;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
@@ -75,10 +73,7 @@ public:
      the node.*/
     virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent);
     
-    /*initialises the input edges*/
-    void initializeInputs();
-    
-    void initializeKnobs();
+   
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
@@ -104,14 +99,7 @@ public:
     /*Returns a pointer to the layout containing settings panels.*/
     QVBoxLayout* getDockContainer(){return dockContainer;}
     
-    /*Updates the preview image if this is a reader node. Can
-     only be called by reader nodes, otherwise does nothing*/
-	void updatePreviewImageForReader();
-    
-    /*Updates the channels tooltip. This is called by Node::validate(),
-     i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip(const ChannelSet& channels);
-    
+        
        
     /*toggles selected on/off*/
     void setSelected(bool b);
@@ -130,17 +118,14 @@ public:
         
     void markInputNull(Edge* e);
     
-    void pushUndoCommand(QUndoCommand* command);
+    
     
     static const int NODE_LENGTH = 80;
     static const int NODE_HEIGHT = 30;
     static const int PREVIEW_LENGTH = 40;
     static const int PREVIEW_HEIGHT = 40;
     
-    void setName(QString);
-    
-    void refreshEdges();
-    
+        
     /*Returns an edge if the node has an edge close to the
      point pt. pt is in scene coord.*/
     Edge* hasEdgeNearbyPoint(const QPointF& pt);
@@ -149,11 +134,37 @@ public:
     
     void deactivate();
     
+    void setName(const QString& name);
     
+    void refreshPosition(double x,double y);
+        
 public slots:
     void undoCommand();
+    
     void redoCommand();
     
+    void onCanUndoChanged(bool);
+    
+    void onCanRedoChanged(bool);
+    
+    /*Updates the preview image.*/
+	void updatePreviewImage();
+    
+    /*Updates the channels tooltip. This is called by Node::validate(),
+     i.e, when the channel requested for the node change.*/
+    void updateChannelsTooltip();
+    
+    
+    void onInternalNameChanged(const QString&);
+    
+    void deleteNode();
+        
+    void refreshEdges();
+    
+    /*initialises the input edges*/
+    void initializeInputs();
+    
+    void initializeKnobs();
 signals:
     void nameChanged(QString);
     
@@ -163,7 +174,7 @@ protected:
     NodeGraph* _dag;
     
     /*pointer to the internal node*/
-    NodeInstance* node;
+    Node* node;
     
     /*true if the node is selected by the user*/
     bool _selected;
@@ -197,7 +208,6 @@ protected:
     bool settingsPanel_displayed;
     SettingsPanel* settings;
 
-    QUndoStack* _undoStack;
   
 };
 

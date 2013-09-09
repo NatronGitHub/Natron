@@ -84,9 +84,9 @@ class AppInstance;
 class OutputNode;
 class ViewerNodeNode;
 class VideoEngine;
+class ViewerNode;
 class QMutex;
 class Node;
-class NodeInstance;
 class OutputNode;
 
 namespace Powiter{
@@ -109,7 +109,7 @@ public:
 	
   
 	/*Create a new node internally*/
-    Node* createNode(const std::string& name,NodeInstance* instance);
+    Node* createNode(const std::string& name);
 
 	/*Return a list of the name of all nodes available currently in Powiter*/
     const QStringList& getNodeNameList(){return _nodeNames;}
@@ -125,11 +125,11 @@ public:
 
     OutputNode* getCurrentOutput() const {return _currentOutput;}
 
-	/*Set the output of the graph used by the videoEngine.*/
-    std::pair<int,bool> setCurrentGraph(OutputNode* output,bool isViewer);
+	/*Refresh the graph used by the output's videoEngine.*/
+    void updateDAG(OutputNode* output,bool isViewer);
 
+    void checkViewersConnection();
 
-    
     
 	/*add a new built-in format to the default ones*/
     void addFormat(Format* frmt);
@@ -153,15 +153,28 @@ public:
     
     QMutex* getGeneralMutex() const {return _generalMutex;}
     
+    void triggerAutoSaveOnNextEngineRun();
+    
+    bool connect(int inputNumber,const std::string& inputName,Node* output);
+    
+    bool connect(int inputNumber,Node* input,Node* output);
+    
+    bool disconnect(Node* input,Node* output);
+    
+    void initNodeCountersAndSetName(Node* n);
+
+    void clearNodes();
+    
 public slots:
     void clearPlaybackCache();
     
     void clearDiskCache();
     
     void clearNodeCache();
-    
-    
+
 private:
+    
+
     
     /*loads plugins(nodes)*/
     // void loadPluginsAndInitNameList();
@@ -191,12 +204,17 @@ private:
         
     /*Analyses and takes action for 1 node ,given 1 attribute from the serialized version
      of the node graph.*/
-    void analyseSerializedNodeString(NodeInstance* n,XMLProjectLoader::XMLParsedElement* v);
+    void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
     
     
     AppInstance* _appInstance;
 
-    OutputNode* _currentOutput; /*The output of the currently active graph.*/
+    OutputNode* _currentOutput; /*The output of the last used graph.*/
+    
+    std::vector<Node*> _currentNodes;
+    
+    std::map<std::string,int> _nodeCounters;
+
         
     std::vector<Format*> _formats;    
     

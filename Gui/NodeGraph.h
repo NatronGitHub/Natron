@@ -35,7 +35,7 @@ class QKeyEvent;
 class Gui;
 class SettingsPanel;
 class NodeGui;
-class NodeInstance;
+class Node;
 class AppInstance;
 class Edge;
 class SmartInputDialog;
@@ -65,7 +65,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,NodeInstance *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Node *node);
     
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     
@@ -186,8 +186,8 @@ public:
     virtual void redo();
     
 private:
-    std::map<int,NodeInstance*> _outputs; 
-    std::map<int,NodeInstance*> _inputs;
+    std::map<int,Node*> _outputs;
+    std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -201,8 +201,8 @@ public:
     virtual void redo();
     
 private:
-    std::map<int,NodeInstance*> _outputs;
-    std::map<int,NodeInstance*> _inputs;
+    std::map<int,Node*> _outputs;
+    std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };

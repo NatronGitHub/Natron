@@ -15,7 +15,6 @@
 #include <QMessageBox>
 #include <QtCore/QDir>
 
-#include "Global/NodeInstance.h"
 #include "Global/LibraryBinary.h"
 
 #include "Gui/ViewerGL.h"
@@ -103,16 +102,13 @@ _model(0),_gui(0),_appID(appID)
 
 
 AppInstance::~AppInstance(){
-    for (U32 i = 0; i < _currentNodes.size(); ++i) {
-        delete _currentNodes[i];
-    }
     removeAutoSaves();
     delete _model;
     appPTR->removeInstance(_appID);
 }
 
-std::pair<int,bool> AppInstance::setCurrentGraph(OutputNode *output,bool isViewer){
-    return _model->setCurrentGraph(output, isViewer);
+void AppInstance::updateDAG(OutputNode *output,bool isViewer){
+    _model->updateDAG(output, isViewer);
 }
 
 void AppInstance::addBuiltinPluginToolButtons(){
@@ -128,32 +124,31 @@ const QStringList& AppInstance::getNodeNameList(){
 }
 
 
-NodeInstance* AppInstance::createNode(const QString& name) {
-    NodeInstance* instance = new NodeInstance(this);
-    Node* node = _model->createNode(name.toStdString(),instance);
-    instance->setInternalNodePTR(node);
+Node* AppInstance::createNode(const QString& name) {
+    Node* node = _model->createNode(name.toStdString());
     NodeGui* nodegui = 0;
     if (node) {
-        nodegui = _gui->createNodeGUI(instance);
-        instance->initializeInputs();
-        NodeInstance* selected  =  0;
+        nodegui = _gui->createNodeGUI(node);
+        _nodeMapping.insert(make_pair(node,nodegui));
+        node->initializeInputs();
+        Node* selected  =  0;
         if(_gui->getSelectedNode()){
-            selected = _gui->getSelectedNode()->getNodeInstance();
+            selected = _gui->getSelectedNode()->getNode();
         }
-        autoConnect(selected, instance);
-        initNodeCountersAndSetName(instance);
+        autoConnect(selected, node);
+        _model->initNodeCountersAndSetName(node);
         if(node->className() == "Viewer"){
-            _gui->createViewerGui(instance);
+            _gui->createViewerGui(node);
         }
-        instance->initializeKnobs();
+        node->initializeKnobs();
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;
     }
-    return instance;
+    return node;
 }
-void AppInstance::autoConnect(NodeInstance* target,NodeInstance* created){
-    _gui->autoConnect(target,created);
+void AppInstance::autoConnect(Node* target,Node* created){
+    _gui->autoConnect(getNodeGui(target),getNodeGui(created));
 }
 
 OutputNode* AppInstance::getCurrentOutput(){
@@ -185,12 +180,12 @@ void AppInstance::stackPluginToolButtons(const std::vector<std::string>& groups,
                                          const std::string& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
-const std::vector<NodeInstance*> AppInstance::getAllActiveNodes() const{
+const std::vector<Node*> AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
     const std::vector<NodeGui*>&  actives= _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
-    vector<NodeInstance*> ret;
+    vector<Node*> ret;
     for (U32 j = 0; j < actives.size(); ++j) {
-        ret.push_back(actives[j]->getNodeInstance());
+        ret.push_back(actives[j]->getNode());
     }
     return ret;
 }
@@ -239,13 +234,15 @@ void AppInstance::autoSave(){
     saveProject(_currentProject._projectPath, _currentProject._projectName, true);
 }
 void AppInstance::triggerAutoSaveOnNextEngineRun(){
-    if(_model->getVideoEngine()){
-        _model->getVideoEngine()->triggerAutoSaveOnNextRun();
-        QString text("Powiter - ");
-        text.append(_currentProject._projectName);
-        text.append(" (*)");
-        _gui->setWindowTitle(text);
-    }
+    _model->triggerAutoSaveOnNextEngineRun();
+}
+
+void AppInstance::setProjectTitleAsModified(){
+    QString text("Powiter - ");
+    text.append(_currentProject._projectName);
+    text.append(" (*)");
+    _gui->setWindowTitle(text);
+    
 }
 void AppInstance::removeAutoSaves() const{
     /*removing all previous autosave files*/
@@ -260,10 +257,7 @@ void AppInstance::removeAutoSaves() const{
     }
 }
 void AppInstance::clearNodes(){
-    foreach(NodeInstance* n,_currentNodes){
-        delete n;
-    }
-    _currentNodes.clear();
+    _model->clearNodes();
 }
 
 bool AppInstance::isSaveUpToDate() const{
@@ -333,8 +327,6 @@ bool AppInstance::findAutoSave(){
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
             if(ret == QMessageBox::No || ret == QMessageBox::Escape){
                 removeAutoSaves();
-                if(getCurrentViewer())
-                    getCurrentViewer()->getUiContext()->viewer->disconnectViewer();
                 clearNodes();
                 resetCurrentProject();
                 return false;
@@ -391,48 +383,34 @@ void AppManager::removeInstance(int appID){
     _appInstances.erase(appID);
 }
 
-bool AppInstance::connect(int inputNumber,const std::string& parentName,NodeInstance* output){
-    for (U32 i = 0; i < _currentNodes.size(); ++i) {
-        if (_currentNodes[i]->getName() == parentName) {
-            connect(inputNumber,_currentNodes[i], output);
-            return true;
+bool AppInstance::connect(int inputNumber,const std::string& parentName,Node* output){
+    return _model->connect(inputNumber, parentName, output);
+}
+
+bool AppInstance::connect(int inputNumber,Node* input,Node* output){
+    return _model->connect(inputNumber, input, output);
+}
+bool AppInstance::disconnect(Node* input,Node* output){
+    return _model->disconnect(input, output);
+}
+
+
+NodeGui* AppInstance::getNodeGui(Node* n) const {
+    map<Node*,NodeGui*>::const_iterator it = _nodeMapping.find(n);
+    if(it==_nodeMapping.end()){
+        return NULL;
+    }else{
+        return it->second;
+    }
+    }
+Node* AppInstance::getNode(NodeGui* n) const{
+    for (map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin(); it!=_nodeMapping.end(); ++it) {
+        if(it->second == n){
+            return it->first;
         }
     }
-    return false;
-}
+    return NULL;
 
-bool AppInstance::connect(int inputNumber,NodeInstance* input,NodeInstance* output){
-
-    if(!output->connectInput(input, inputNumber)){
-        return false;
-    }
-    input->connectOutput(output);
-    input->refreshEdgesGui();
-    output->refreshEdgesGui();
-    return true;
-}
-bool AppInstance::disconnect(NodeInstance* input,NodeInstance* output){
-    if(!output->disconnectInput(input)){
-        return false;
-    }
-    if(!input->disconnectOutput(output)){
-        return false;
-    }
-    input->refreshEdgesGui();
-    output->refreshEdgesGui();
-    return true;
-}
-
-void AppInstance::initNodeCountersAndSetName(NodeInstance* n){
-    assert(n);
-    map<string,int>::iterator it = _nodeCounters.find(n->className());
-    if(it != _nodeCounters.end()){
-        it->second++;
-        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)));
-    }else{
-        _nodeCounters.insert(make_pair(n->className(), 1));
-        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)));
-    }
 }
 
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){

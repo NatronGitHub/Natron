@@ -62,7 +62,7 @@ public:
     };
     
     
-    Writer(NodeInstance* instance);
+    Writer(Model* model);
         
     virtual ~Writer();
     

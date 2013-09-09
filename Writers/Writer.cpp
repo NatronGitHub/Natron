@@ -30,7 +30,7 @@
 using namespace std;
 using namespace Powiter;
 
-Writer::Writer(NodeInstance* instance):
+Writer::Writer(Model* model):
 OutputNode(instance),
 _requestedChannels(Mask_RGB), // temporary
 _premult(false),

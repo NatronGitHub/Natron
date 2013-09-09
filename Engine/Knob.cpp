@@ -11,18 +11,20 @@
 #include "Knob.h"
 
 #include <QtGui/QVector4D>
-
+#include <QtCore/QDir>
 
 #include "Engine/Node.h"
 #include "Engine/Model.h"
 
 #include "Global/AppManager.h"
-#include "Global/KnobInstance.h"
+#include "Global/LibraryBinary.h"
+#include "Global/GlobalDefines.h"
+
 
 #include "Readers/Reader.h"
 
 #include "Gui/SequenceFileDialog.h"
-
+#include "Gui/KnobGui.h"
 
 using namespace std;
 using namespace Powiter;
@@ -42,6 +44,192 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
 }
 
 
+/*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
+ This function should in turn call a specific class-based static function with the appropriate param.*/
+typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension,Knob_Mask flags);
+
+typedef KnobGui* (*KnobGuiBuilder)(Knob* knob);
+
+/***********************************FACTORY******************************************/
+KnobFactory::KnobFactory(){
+    loadKnobPlugins();
+}
+
+KnobFactory::~KnobFactory(){
+    for ( std::map<std::string,LibraryBinary*>::iterator it = _loadedKnobs.begin(); it!=_loadedKnobs.end() ; ++it) {
+        delete it->second;
+    }
+    _loadedKnobs.clear();
+}
+
+void KnobFactory::loadKnobPlugins(){
+    vector<LibraryBinary*> plugins = AppManager::loadPlugins(POWITER_KNOBS_PLUGINS_PATH);
+    vector<string> functions;
+    functions.push_back("BuildKnob");
+    functions.push_back("BuildKnobGui");
+    for (U32 i = 0; i < plugins.size(); ++i) {
+        if (plugins[i]->loadFunctions(functions)) {
+            pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
+            if(builder.first){
+                Knob* knob = builder.second(NULL,"",1,0);
+                _loadedKnobs.insert(make_pair(knob->name(), plugins[i]));
+                delete knob;
+            }
+        }else{
+            delete plugins[i];
+        }
+    }
+    loadBultinKnobs();
+}
+
+void KnobFactory::loadBultinKnobs(){
+    std::string stub;
+    Knob* fileKnob = File_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> FILEfunctions;
+    FILEfunctions.insert(make_pair("BuildKnob",(void*)&File_Knob::BuildKnob));
+    FILEfunctions.insert(make_pair("BuildKnobGui",(void*)&File_KnobGui::BuildKnobGui));
+    LibraryBinary *FILEKnobPlugin = new LibraryBinary(FILEfunctions);
+    _loadedKnobs.insert(make_pair(fileKnob->name(),FILEKnobPlugin));
+    delete fileKnob;
+    
+    Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> INTfunctions;
+    INTfunctions.insert(make_pair("BuildKnob",(void*)&Int_Knob::BuildKnob));
+    INTfunctions.insert(make_pair("BuildKnobGui",(void*)&Int_KnobGui::BuildKnobGui));
+    LibraryBinary *INTKnobPlugin = new LibraryBinary(INTfunctions);
+    _loadedKnobs.insert(make_pair(intKnob->name(),INTKnobPlugin));
+    delete intKnob;
+    
+    
+    Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> DOUBLEfunctions;
+    DOUBLEfunctions.insert(make_pair("BuildKnob",(void*)&Double_Knob::BuildKnob));
+    DOUBLEfunctions.insert(make_pair("BuildKnobGui",(void*)&Double_KnobGui::BuildKnobGui));
+    LibraryBinary *DOUBLEKnobPlugin = new LibraryBinary(DOUBLEfunctions);
+    _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
+    delete doubleKnob;
+    
+    Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> BOOLfunctions;
+    BOOLfunctions.insert(make_pair("BuildKnob",(void*)&Bool_Knob::BuildKnob));
+    BOOLfunctions.insert(make_pair("BuildKnobGui",(void*)&Bool_KnobGui::BuildKnobGui));
+    LibraryBinary *BOOLKnobPlugin = new LibraryBinary(BOOLfunctions);
+    _loadedKnobs.insert(make_pair(boolKnob->name(),BOOLKnobPlugin));
+    delete boolKnob;
+    
+    Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> BUTTONfunctions;
+    BUTTONfunctions.insert(make_pair("BuildKnob",(void*)&Button_Knob::BuildKnob));
+    BUTTONfunctions.insert(make_pair("BuildKnobGui",(void*)&Button_KnobGui::BuildKnobGui));
+    LibraryBinary *BUTTONKnobPlugin = new LibraryBinary(BUTTONfunctions);
+    _loadedKnobs.insert(make_pair(buttonKnob->name(),BUTTONKnobPlugin));
+    delete buttonKnob;
+    
+    Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> OFfunctions;
+    OFfunctions.insert(make_pair("BuildKnob",(void*)&OutputFile_Knob::BuildKnob));
+    OFfunctions.insert(make_pair("BuildKnobGui",(void*)&OutputFile_KnobGui::BuildKnobGui));
+    LibraryBinary *OUTPUTFILEKnobPlugin = new LibraryBinary(OFfunctions);
+    _loadedKnobs.insert(make_pair(outputFileKnob->name(),OUTPUTFILEKnobPlugin));
+    delete outputFileKnob;
+    
+    Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> CBBfunctions;
+    CBBfunctions.insert(make_pair("BuildKnob",(void*)&ComboBox_Knob::BuildKnob));
+    CBBfunctions.insert(make_pair("BuildKnobGui",(void*)&ComboBox_KnobGui::BuildKnobGui));
+    LibraryBinary *ComboBoxKnobPlugin = new LibraryBinary(CBBfunctions);
+    _loadedKnobs.insert(make_pair(comboBoxKnob->name(),ComboBoxKnobPlugin));
+    delete comboBoxKnob;
+    
+    
+    Knob* separatorKnob = Separator_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> Sepfunctions;
+    Sepfunctions.insert(make_pair("BuildKnob",(void*)&Separator_Knob::BuildKnob));
+    Sepfunctions.insert(make_pair("BuildKnobGui",(void*)&Separator_KnobGui::BuildKnobGui));
+    LibraryBinary *SeparatorKnobPlugin = new LibraryBinary(Sepfunctions);
+    _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
+    delete separatorKnob;
+    
+    Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> Grpfunctions;
+    Grpfunctions.insert(make_pair("BuildKnob",(void*)&Group_Knob::BuildKnob));
+    Grpfunctions.insert(make_pair("BuildKnobGui",(void*)&Group_KnobGui::BuildKnobGui));
+    LibraryBinary *GroupKnobPlugin = new LibraryBinary(Grpfunctions);
+    _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
+    delete groupKnob;
+    
+    Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> RGBAfunctions;
+    RGBAfunctions.insert(make_pair("BuildKnob",(void*)&RGBA_Knob::BuildKnob));
+    RGBAfunctions.insert(make_pair("BuildKnobGui",(void*)&RGBA_KnobGui::BuildKnobGui));
+    LibraryBinary *RGBAKnobPlugin = new LibraryBinary(RGBAfunctions);
+    _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
+    delete rgbaKnob;
+    
+    
+    Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> TABfunctions;
+    TABfunctions.insert(make_pair("BuildKnob",(void*)&Tab_Knob::BuildKnob));
+    TABfunctions.insert(make_pair("BuildKnobGui",(void*)&Tab_KnobGui::BuildKnobGui));
+    LibraryBinary *TABKnobPlugin = new LibraryBinary(TABfunctions);
+    _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
+    delete tabKnob;
+    Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1,0);
+    
+    std::map<std::string,void*> STRfunctions;
+    STRfunctions.insert(make_pair("BuildKnob",(void*)&String_Knob::BuildKnob));
+    STRfunctions.insert(make_pair("BuildKnobGui",(void*)&String_KnobGui::BuildKnobGui));
+    LibraryBinary *STRKnobPlugin = new LibraryBinary(STRfunctions);
+    _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
+    delete strKnob;
+    
+    
+}
+
+/*Calls the unique instance of the KnobFactory and
+ calls the appropriate pointer to function to create a knob.*/
+Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags){
+    const std::map<std::string,LibraryBinary*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
+    std::map<std::string,LibraryBinary*>::const_iterator it = loadedPlugins.find(name);
+    if(it == loadedPlugins.end()){
+        return NULL;
+    }else{
+        Knob* knob = 0;
+        KnobGui* knobGui = 0;
+        std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
+        if(!builderFunc.first){
+            return NULL;
+        }
+        KnobBuilder builder = (KnobBuilder)(builderFunc.second);
+        knob = builder(node,description,dimension,flags);
+        
+        std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("BuildKnobGui");
+        if(!guiBuilderFunc.first){
+            return NULL;
+        }
+        KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
+        knobGui = guiBuilder(knob);
+        if(!knob || !knobGui)
+            return NULL;
+        
+        node->addKnob(knob);
+        return knob;
+    }
+}
+
+
+
 
 /***********************************KNOB BASE******************************************/
 
@@ -49,13 +237,13 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
 Knob::Knob(Node* node,const std::string& description,int dimension,Knob_Mask flags):
 _node(node),
 _value(QVariant(0)),
-_instance(NULL),
 _description(description),
 _flags(flags),
 _dimension(dimension),
+_newLine(true),
+_itemSpacing(0),
 _parentKnob(NULL)
 {
-    QObject::connect(this, SIGNAL(valueChanged(const Variant&)), this, SIGNAL(valueChangedByUser()));
 }
 
 Knob::~Knob(){
@@ -68,39 +256,27 @@ Knob_Mask Knob::getFlags() const{
 void Knob::startRendering(bool initViewer){
     Node* viewer = Node::hasViewerConnected(_node);
     if(viewer){
-       _node->getModel()->clearPlaybackCache();
-       _node->getModel()->setCurrentGraph(dynamic_cast<OutputNode*>(viewer),true);
-        int currentFrameCount = _node->getModel()->getVideoEngine()->getFrameCountForCurrentPlayback();
-        if(initViewer){
-            _node->getModel()->getApp()->triggerAutoSaveOnNextEngineRun();
-            if (currentFrameCount > 1 || currentFrameCount == -1) {
-                _node->getModel()->startVideoEngine(-1);
-            }else{
-                _node->getModel()->startVideoEngine(1);
-            }
-        }else{
-            _node->getModel()->getVideoEngine()->seekRandomFrame(_node->getModel()->getCurrentOutput()->getTimeLine().currentFrame());
-        }
+        dynamic_cast<OutputNode*>(viewer)->updateDAG(true,initViewer);
     }
 }
 
 void Knob::deleteKnob(){
-    delete _instance;
+    emit deleteWanted();
 }
 
 void Knob::turnOffNewLine(){
-    _instance->turnOffNewLine();
+    _newLine = false;
 }
 
 void Knob::setSpacingBetweenItems(int spacing){
-    _instance->setSpacingBetweenItems(spacing);
+    _itemSpacing = spacing;
 }
 void Knob::setEnabled(bool b){
-    _instance->setEnabled(b);
+    emit enabledStateChanged(b);
 }
 
 void Knob::setVisible(bool b){
-    _instance->setVisible(b);
+    emit visibleStateChanged(b);
 }
 
 int Knob::determineHierarchySize() const{
@@ -128,7 +304,6 @@ void File_Knob::tryStartRendering(){
     if(files.size() > 0){
         const std::string& className = _node->className();
         if(className == "Reader"){
-            _node->getModel()->setCurrentGraph(NULL,false);
             dynamic_cast<Reader*>(_node)->showFilePreview();
         }
         startRendering(true);
@@ -365,7 +540,7 @@ void RGBA_Knob::_restoreFromString(const std::string& str){
     }
     QVector4D v(rStr.toDouble(),gStr.toDouble(),bStr.toDouble(),aStr.toDouble());
     _value.setValue(Variant(v));
-
+    
 }
 /***********************************STRING_KNOB*****************************************/
 void String_Knob::fillHashVector(){
@@ -384,24 +559,20 @@ void String_Knob::_restoreFromString(const std::string& str){
     _value.setValue(Variant(QString(str.c_str())));
 }
 /***********************************GROUP_KNOB*****************************************/
-Group_Knob::Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags):
-Knob(node,description,dimension,flags){
-    
-}
+
 
 void Group_Knob::addKnob(Knob* k){
-    dynamic_cast<Group_KnobInstance*>(_instance)->addKnob(k);
-    k->setParentKnob(this);
+    _children.push_back(k);
+    emit newChildAdded();
 }
 /***********************************TAB_KNOB*****************************************/
 
 
 void Tab_Knob::addTab(const std::string& name){
-    dynamic_cast<Tab_KnobInstance*>(_instance)->addTab(name);
+    
 }
 
 void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
-    dynamic_cast<Tab_KnobInstance*>(_instance)->addKnob(tabName,k);
-    k->setParentKnob(this);
+    
 }
 

@@ -26,7 +26,6 @@
 
 
 class NodeGui;
-class NodeInstance;
 class Node;
 class Model;
 class ViewerNode;
@@ -93,7 +92,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    NodeInstance* createNode(const QString& name);
+    Node* createNode(const QString& name);
     
     /*Get a reference to the list of all the node names 
      available. E.g : Viewer,Reader, Blur, etc...*/
@@ -105,7 +104,7 @@ public:
     /*Pointer to the model*/
 	Model* getModel(){return _model;}
     
-    std::pair<int,bool> setCurrentGraph(OutputNode *output,bool isViewer);
+    void updateDAG(OutputNode *output,bool isViewer);
     
     bool isRendering() const;
     
@@ -124,7 +123,7 @@ public:
                              const std::string& pluginIconPath,
                              const std::string& groupIconPath);
     
-    const std::vector<NodeInstance*> getAllActiveNodes() const;
+    const std::vector<Node*> getAllActiveNodes() const;
     
     const QString& getCurrentProjectName() const {return _currentProject._projectName;}
     
@@ -139,6 +138,8 @@ public:
     void autoSave();
     
     void triggerAutoSaveOnNextEngineRun();
+    
+    void setProjectTitleAsModified();
         
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
     
@@ -156,16 +157,17 @@ public:
     
     ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
     
-    bool connect(int inputNumber,const std::string& inputName,NodeInstance* output);
+    bool connect(int inputNumber,const std::string& inputName,Node* output);
     
-    bool connect(int inputNumber,NodeInstance* intput,NodeInstance* output);
+    bool connect(int inputNumber,Node* input,Node* output);
     
-    bool disconnect(NodeInstance* input,NodeInstance* output);
+    bool disconnect(Node* input,Node* output);
     
-    void autoConnect(NodeInstance* target,NodeInstance* created);
+    void autoConnect(Node* target,Node* created);
     
-    void initNodeCountersAndSetName(NodeInstance* n);
-
+    NodeGui* getNodeGui(Node* n) const;
+    
+    Node* getNode(NodeGui* n) const;
     
 private:
     
@@ -182,13 +184,11 @@ private:
     Model* _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
     
-    std::vector<NodeInstance*> _currentNodes;
-    
-    std::map<std::string,int> _nodeCounters;
-    
     Project _currentProject;
     
     int _appID;
+    
+    std::map<Node*,NodeGui*> _nodeMapping;
 };
 
 class AppManager : public Singleton<AppManager>{

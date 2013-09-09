@@ -52,10 +52,10 @@ namespace {
     }
 }
 
-OfxNode::OfxNode(NodeInstance* instance,
+OfxNode::OfxNode(Model* model,
                  OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                  const std::string& context)
-: OutputNode(instance)
+: OutputNode(model)
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
 , _isOutput(false)
@@ -63,19 +63,20 @@ OfxNode::OfxNode(NodeInstance* instance,
 , _canHavePreview(false)
 , effect_(NULL)
 {
-    /*Small hack to OFX::Host::ImageEffect::ImageEffectPlugin::createInstance. We want to
-     pass more parameters to OfxNode'sconstructor. OfxHost::newInstance is too limiting so we
-     must work around the guide lines.*/
+    /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
+     We need to pass more parameters to the constructor of OfxNode. That means we cannot
+     create the OfxNode in the virtual function newInstance. Thus we create before it before
+     instanciating the OfxImageEffect. The problem is that calling OFX::Host::ImageEffect::ImageEffectPlugin::createInstance
+     creates the OfxImageEffect and calls populate(). populate() will actually create all OfxClipInstance and OfxParamInstance.
+     All these subclasses need a valid pointer to an OfxNode. Hence we need to set the pointer to the OfxNode in 
+     OfxImageEffect BEFORE calling populate(). 
+     */
     plugin->getPluginHandle();
-    OFX::Host::ImageEffect::Descriptor *desc = plugin->getContext(context);
-    if(desc){
-        effect_ = new Powiter::OfxImageEffectInstance(plugin,*(desc),context,false);
+    OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
+    if (desc) {
+        effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
         effect_->setOfxNodePointer(this);
         effect_->populate();
-    }
-    
-    if(context == kOfxImageEffectContextGenerator){
-        setCanHavePreviewImage();
     }
 }
 

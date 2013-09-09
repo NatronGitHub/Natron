@@ -392,7 +392,7 @@ protected:
      *@brief Starts the engine to repeat the same frame (usually called when panning/zooming)
      * The engine will not  initialise  the viewer to fit the frame in the viewport.
      **/
-    void repeatSameFrame();
+    void repeatSameFrame(bool initViewer = false);
     
     /**
      *@brief Does nothing yet as there ain't no progress bar.

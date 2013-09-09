@@ -44,7 +44,7 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader(NodeInstance* instance):Node(instance),
+Reader::Reader(Model* model):Node(model),
 preview(0),
 has_preview(false),
 video_sequence(0),

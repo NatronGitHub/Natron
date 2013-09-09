@@ -40,6 +40,7 @@ public:
     void setSource(NodeGui* src){
         this->source=src;
         src ? has_source=true : has_source=false;
+        initLine();
 
     }
     

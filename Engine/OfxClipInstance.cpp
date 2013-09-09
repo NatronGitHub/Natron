@@ -22,11 +22,12 @@ using namespace Powiter;
 using namespace std;
 
 OfxClipInstance::OfxClipInstance(OfxNode* node,
+                                 Powiter::OfxImageEffectInstance* effect,
                                  int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
-: OFX::Host::ImageEffect::ClipInstance(node->effectInstance(), *desc)
+: OFX::Host::ImageEffect::ClipInstance(effect, *desc)
 , _node(node)
-, _effect(node->effectInstance())
+, _effect(effect)
 //, _clipIndex(index)
 , _outputImage(NULL)
 {

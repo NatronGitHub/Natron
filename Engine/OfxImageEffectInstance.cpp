@@ -46,7 +46,7 @@ OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OF
                                                                               int index) {
     (void)plugin;
     assert(plugin == this);
-    return new OfxClipInstance(node(), index, descriptor);
+    return new OfxClipInstance(node(),node()->effectInstance(),index, descriptor);
 }
 
 OfxStatus OfxImageEffectInstance::vmessage(const char* type,

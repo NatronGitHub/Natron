@@ -20,7 +20,6 @@
 #include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
-#include "Global/KnobInstance.h"
 
 #include "Engine/Singleton.h"
 
@@ -113,6 +112,39 @@ public:
 };
 Q_DECLARE_METATYPE(Variant);
 
+
+namespace Powiter {
+    class LibraryBinary;
+}
+
+typedef unsigned int Knob_Mask;
+/******************************KNOB_FACTORY**************************************/
+
+
+class KnobFactory : public Singleton<KnobFactory>{
+    
+    std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
+    
+    void loadKnobPlugins();
+    
+    void loadBultinKnobs();
+    
+public:
+    
+    
+    KnobFactory();
+    
+    virtual ~KnobFactory();
+    
+    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
+    
+    /*Calls the unique instance of the KnobFactory and
+     calls the appropriate pointer to function to create a knob.*/
+    static Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
+    
+};
+
+
 /******************************KNOB_BASE**************************************/
 
 class Knob : public QObject
@@ -134,11 +166,7 @@ public:
     Node* getNode() const { return _node; }
     
     int getDimension() const {return _dimension;}
-    
-    KnobInstance* getKnobInstance() const {return _instance;}
-    
-    void setKnobInstancePTR(KnobInstance* instance){_instance = instance;}
-    
+            
     Knob_Mask getFlags() const;
     
     /*Must return the name of the knob. This name will be used by the KnobFactory
@@ -270,7 +298,12 @@ signals:
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
     
+    /*emitted by deleteKnob()*/
+    void deleteWanted();
    
+    void enabledStateChanged(bool);
+    
+    void visibleStateChanged(bool);
     
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
@@ -290,13 +323,15 @@ protected:
     Node *_node;
     Variant _value;
     std::vector<U64> _hashVector;
-    KnobInstance* _instance;
     
 private:
     
     std::string _description;
     Knob_Mask _flags;
     int _dimension;
+    
+    bool _newLine;
+    int _itemSpacing;
     
     /*Theses are used when it makes sense (e.g: for a scalar).
      They store exactly the same type as _value*/
@@ -332,8 +367,13 @@ public:
     
     virtual std::string serialize() const;
     
+    void openFile(){
+        emit shoudOpenFile();
+    }
+    
 signals:
     void filesSelected();
+    void shoudOpenFile();
     
 protected:
     
@@ -369,8 +409,16 @@ public:
     virtual const std::string name(){return "OutputFile";}
     
     virtual std::string serialize() const;
+    
+    void openFile(){
+        emit shoudOpenFile();
+    }
+
 signals:
+    
     void filesSelected();
+    
+    void shoudOpenFile();
     
 protected:
     
@@ -664,13 +712,19 @@ private:
 class Group_Knob:public Knob
 {
     Q_OBJECT
+    
+    std::vector<Knob*> _children;
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
         return new Group_Knob(node,description,dimension,flags);
     }
     
-    Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0);
+    Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
+    Knob(node,description,dimension,flags)
+    {
+        
+    }
     
     virtual void fillHashVector(){}
     
@@ -679,6 +733,11 @@ public:
     virtual std::string serialize() const{return "";}
     
     void addKnob(Knob* k);
+    
+    const std::vector<Knob*>& getChildren() const {return _children;}
+    
+signals:
+    void newChildAdded();
     
 protected:
     
@@ -712,6 +771,11 @@ public:
     void addTab(const std::string& name);
     
     void addKnob(const std::string& tabName,Knob* k);
+    
+signals:
+    
+    void newTabAdded(QString);
+    void newKnobAdded();
     
 protected:
     

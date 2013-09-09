@@ -13,8 +13,7 @@
 #include <cassert>
 #include <QLayout>
 #include <QAction> 
-#include <QUndoStack>
-#include <QUndoCommand>
+
 
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
@@ -28,16 +27,15 @@
 #include "Engine/ViewerNode.h"
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
 
 
 using namespace std;
 
-static const qreal pi=3.14159265358979323846264338327950288419717;
+static const double pi=3.14159265358979323846264338327950288419717;
 
 NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer,
-                 NodeInstance *node,
+                 Node *node,
                  qreal x, qreal y,
                  QGraphicsItem *parent,
                  QGraphicsScene* scene,
@@ -50,6 +48,16 @@ _selected(false),
 sc(scene),
 settings(0)
 {
+    
+    
+    QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
+    QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
+    QObject::connect(node, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
+    QObject::connect(node, SIGNAL(refreshEdgesGUI),this,SLOT(refreshEdges()));
+    QObject::connect(node, SIGNAL(knobsInitialied()),this,SLOT(initializeKnob()));
+    QObject::connect(node, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
+    
+    
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
     
@@ -85,7 +93,7 @@ settings(0)
 	}
     if(int ret = hasPreviewImage()){
         if(ret == 1){
-            Reader* n = dynamic_cast<Reader*>(node->getNode());
+            Reader* n = dynamic_cast<Reader*>(node);
             if(n->hasPreview()){
                 QImage *prev=n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -105,7 +113,7 @@ settings(0)
             }
             
         }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
+            OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
                 QImage *prev=n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -139,11 +147,10 @@ settings(0)
 		dockContainer->addWidget(settings);
 	}
     
-    // needed for the layout to work correctly
-    //  QWidget* pr=dockContainer->parentWidget();
-    //  pr->setMinimumSize(dockContainer->sizeHint());
-    _undoStack = new QUndoStack;
-    
+}
+
+void NodeGui::deleteNode(){
+    delete this;
 }
 
 NodeGui::~NodeGui(){
@@ -159,15 +166,30 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
-    delete _undoStack;
+    delete node;
 
 }
+void NodeGui::refreshPosition(double x,double y){
+    setPos(x, y);
+    refreshEdges();
+    for (Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+        if(it->second){
+            it->second->doRefreshEdgesGUI();
+        }
+    }
+}
+void NodeGui::refreshEdges(){
+    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
+        i->second->initLine();
+    }
+}
+
 int NodeGui::hasPreviewImage(){
     if (node->className() == "Reader") {
         return 1;
     }
     if(node->isOpenFXNode()){
-        OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
+        OfxNode* n = dynamic_cast<OfxNode*>(node);
         if(n->canHavePreviewImage())
             return 2;
         else
@@ -177,26 +199,24 @@ int NodeGui::hasPreviewImage(){
     }
 }
 
-void NodeGui::pushUndoCommand(QUndoCommand* command){
-    _undoStack->push(command);
+void NodeGui::onCanUndoChanged(bool b){
     if(settings){
-        settings->setEnabledUndoButton(_undoStack->canUndo());
-        settings->setEnabledRedoButton(_undoStack->canRedo());
+        settings->setEnabledUndoButton(b);
     }
 }
-void NodeGui::undoCommand(){
-    _undoStack->undo();
+
+void NodeGui::onCanRedoChanged(bool b){
     if(settings){
-        settings->setEnabledUndoButton(_undoStack->canUndo());
-        settings->setEnabledRedoButton(_undoStack->canRedo());
+        settings->setEnabledRedoButton(b);
     }
+
+}
+
+void NodeGui::undoCommand(){
+    node->undoCommand();
 }
 void NodeGui::redoCommand(){
-    _undoStack->redo();
-    if(settings){
-        settings->setEnabledUndoButton(_undoStack->canUndo());
-        settings->setEnabledRedoButton(_undoStack->canRedo());
-    }
+    node->redoCommand();
 }
 
 void NodeGui::markInputNull(Edge* e){
@@ -209,10 +229,10 @@ void NodeGui::markInputNull(Edge* e){
 
 
 
-void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
+void NodeGui::updateChannelsTooltip(){
     QString tooltip;
     tooltip.append("Channels in input: ");
-    foreachChannels( z,chan){
+    foreachChannels( z,node->info().channels()){
         tooltip.append("\n");
         tooltip.append(getChannelName(z).c_str());
         
@@ -220,16 +240,16 @@ void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
     channels->setToolTip(tooltip);
 }
 
-void NodeGui::updatePreviewImageForReader(){
+void NodeGui::updatePreviewImage(){
     if(int ret = hasPreviewImage()){
         if(ret == 1){
-            Reader* reader = dynamic_cast<Reader*>(node->getNode());
+            Reader* reader = dynamic_cast<Reader*>(node);
             QImage *prev = reader->getPreview();
             QPixmap prev_pixmap=QPixmap::fromImage(*prev);
             prev_pixmap=prev_pixmap.scaled(60,40);
             prev_pix->setPixmap(prev_pixmap);
         }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node->getNode());
+            OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
                 QImage *prev = n->getPreview();
                 QPixmap prev_pixmap=QPixmap::fromImage(*prev);
@@ -241,7 +261,7 @@ void NodeGui::updatePreviewImageForReader(){
     }
 }
 void NodeGui::initializeInputs(){
-    int inputnb = node->getNode()->maximumInputs();
+    int inputnb = node->maximumInputs();
     double piDividedbyX = (double)(pi/(double)(inputnb+1));
     double angle = pi-piDividedbyX;
     for(int i = 0; i < inputnb;++i){
@@ -302,20 +322,20 @@ void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
     font.setBold(true);
     font.setPointSize(14);
     painter->setFont(font);
-    
-    
-    
-    
-    updateChannelsTooltip(node->getNode()->info().channels());
-    
-    
+
+    updateChannelsTooltip();
 }
 bool NodeGui::isNearby(QPointF &point){
     QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
     return r.contains(point);
 }
 
-void NodeGui::setName(QString s){
+void NodeGui::setName(const QString& name){
+    onInternalNameChanged(name);
+    emit nameChanged(name);
+}
+
+void NodeGui::onInternalNameChanged(const QString& s){
     name->setText(s);
     if(settings)
         settings->setNodeName(s);
@@ -326,9 +346,8 @@ Edge* NodeGui::firstAvailableEdge(){
     for (U32 i = 0 ; i < inputs.size(); ++i) {
         Edge* a = inputs[i];
         if (!a->hasSource()) {
-            
-            if(getNodeInstance()->isOpenFXNode()){
-                OfxNode* ofxNode = dynamic_cast<OfxNode*>(getNodeInstance()->getNode());
+            if(node->isOpenFXNode()){
+                OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
                 if(ofxNode->isInputOptional(i))
                     continue;
             }
@@ -375,11 +394,7 @@ bool NodeGui::connectEdge(int edgeNumber,NodeGui* src){
 }
 
 
-void NodeGui::refreshEdges(){
-    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
-        i->second->initLine();
-    }
-}
+
 Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
     for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
         if(i->second->contains(i->second->mapFromScene(pt))){
@@ -403,7 +418,7 @@ void NodeGui::activate(){
             getSettingPanel()->setVisible(true);
         }
     }else{
-        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node->getNode());
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
         _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
@@ -424,7 +439,7 @@ void NodeGui::deactivate(){
         }
         
     }else{
-        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node->getNode());
+        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
         _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
@@ -435,3 +450,4 @@ void NodeGui::initializeKnobs(){
         settings->initialize_knobs();
     }
 }
+

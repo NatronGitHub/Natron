@@ -13,6 +13,8 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
+#include <QUndoStack>
+#include <QUndoCommand>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
@@ -25,12 +27,11 @@
 #include "Engine/Row.h"
 #include "Engine/Knob.h"
 
+
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
-#include "Global/KnobInstance.h"
 
 
 
@@ -88,10 +89,10 @@ void Node::merge_info(bool forReal){
 	int final_direction=0;
 	ChannelSet chans;
     bool displayMode = info().rgbMode();
-	for (NodeInstance::InputMap::const_iterator it = _instance->getInputs().begin();
-         it!=_instance->getInputs().end();++it) {
+	for (Node::InputMap::const_iterator it = getInputs().begin();
+         it!=getInputs().end();++it) {
         
-        Node* input = it->second->getNode();
+        Node* input = it->second;
         merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
         if(forReal){
             final_direction+=input->info().ydirection();
@@ -113,7 +114,7 @@ void Node::merge_info(bool forReal){
         _info.merge_dataWindow(input->info().dataWindow());
         _info.merge_displayWindow(input->info().displayWindow());
     }
-    U32 size = _instance->getInputs().size();
+    U32 size = getInputs().size();
     if(size > 0)
         final_direction = final_direction / size;
 	_info.set_channels(chans);
@@ -162,20 +163,42 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node(NodeInstance* instance):
-_model(NULL),
+Node::Node(Model* model):
+_model(model),
 _info(),
-_marked(false),
-_instance(instance)
+_marked(false)
 {
 	
 }
 
+Node::~Node(){
+    
+    
+    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        _app->disconnect(this, it->second);
+    }
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        _app->disconnect(it->second, this);
+    }
+    for (U32 i = 0; i < _knobs.size(); ++i) {
+        delete _knobs[i];
+    }
+
+    delete _undoStack;
+}
+
+void Node::deleteNode(){
+    emit deleteWanted();
+}
+
 
 void Node::initializeInputs(){
-    for(int i = 0;i < maximumInputs();++i){
+    int inputCount = maximumInputs();
+    for(int i = 0;i < inputCount;++i){
         _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
+        _inputs.insert(make_pair(i,(NodeInstance*)NULL));
     }
+    emit inputsInitialized();
 }
 const std::string Node::getInputLabel(int inputNb) const{
     map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
@@ -186,12 +209,12 @@ const std::string Node::getInputLabel(int inputNb) const{
     }
 }
 
-Node* Node::input(int index){
-    NodeInstance* n = _instance->input(index);
-    if(!n){
+Node* Node::input(int index) const{
+    InputMap::const_iterator it = _inputs.find(index);
+    if(it == _inputs.end()){
         return NULL;
     }else{
-        return n->getNode();
+        return it->second;
     }
 }
 
@@ -210,8 +233,153 @@ bool Node::validate(bool forReal){
     if(!_validate(forReal))
         return false;
     preProcess();
-    _instance->updateNodeChannelsGui(_info.channels());
+    
+    //_instance->updateNodeChannelsGui(_info.channels());
+    emit channelsChanged();
     return true;
+}
+
+bool Node::connectInput(Node* input,int inputNumber){
+    InputMap::iterator it = _inputs.find(inputNumber);
+    if (it == _inputs.end()) {
+        return false;
+    }else{
+        if (it->second == NULL) {
+//            if(!_gui->connectEdge(inputNumber, input->_gui)){
+//                return false;
+//            }
+            emit inputChanged(inputNumber);
+            _inputs.erase(it);
+            _inputs.insert(make_pair(inputNumber,input));
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+void Node::connectOutput(Node* output,int outputNumber ){
+    OutputMap::iterator it = _outputs.find(outputNumber);
+    if (it != _outputs.end()) {
+        _outputs.erase(it);
+    }
+    _outputs.insert(make_pair(outputNumber,output));
+}
+
+bool Node::disconnectInput(int inputNumber){
+    InputMap::const_iterator it = _inputs.find(inputNumber);
+    if (it == _inputs.end()) {
+        return false;
+    }else{
+        if(it->second == NULL){
+            return false;
+        }else{
+//            if(!_gui->connectEdge(inputNumber, NULL)){
+//                return false;
+//            }
+            emit inputChanged(inputNumber);
+            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+            return true;
+        }
+    }
+}
+
+bool Node::disconnectInput(Node* input){
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (it->second == input) {
+//            if(!_gui->connectEdge(it->first, NULL)){
+//                return false;
+//            }
+            emit inputChanged(it->first);
+            _inputs.erase(it);
+            _inputs.insert(make_pair(it->first, (NodeInstance*)NULL));
+            return true;
+        }else{
+            return false;
+        }
+    }
+    return false;
+}
+
+bool Node::disconnectOutput(int outputNumber){
+    OutputMap::iterator it = _inputs.find(outputNumber);
+    if (it == _outputs.end()) {
+        return false;
+    }else{
+        if(it->second == NULL){
+            return false;
+        }else{
+            _outputs.erase(it);
+            _outputs.insert(make_pair(outputNumber, (Node*)NULL));
+            return true;
+        }
+    }
+    
+}
+
+bool Node::disconnectOutput(Node* output){
+    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if (it->second == output) {
+            _outputs.erase(it);
+            _outputs.insert(make_pair(it->first, (Node*)NULL));
+            return true;
+        }else{
+            return false;
+        }
+    }
+    return false;
+}
+
+
+void Node::deactivate(){
+    // _gui->deactivate();
+    emit deactivated();
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second)
+            _app->disconnect(it->second,this);
+    }
+    Node* firstChild = 0;
+    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if(!it->second)
+            continue;
+        if(it == _outputs.begin()){
+            firstChild = it->second;
+        }
+        _app->disconnect(this, it->second);
+    }
+    if(firstChild){
+        _model->triggerAutoSaveOnNextEngineRun();
+        _model->checkViewersConnection();
+    }
+}
+
+void Node::activate(){
+    // _gui->activate();
+    emit activated();
+    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        _app->connect(it->first,it->second, this);
+    }
+    Node* firstChild = 0;
+    for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if(it == _outputs.begin()){
+            firstChild = it->second;
+        }
+        if(!it->second)
+            continue;
+        int inputNb = 0;
+        for (InputMap::const_iterator it2 = it->second->getInputs().begin();
+             it2 != it->second->getInputs().end(); ++it2) {
+            if (it2->second == this) {
+                inputNb = it2->first;
+                break;
+            }
+        }
+        _app->connect(inputNb,this, it->second);
+    }
+    if(firstChild){
+        _model->triggerAutoSaveOnNextEngineRun();
+        _model->checkViewersConnection();
+    }
 }
 
 
@@ -224,9 +392,8 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     /*Clear the values left to compute the hash key*/
     _hashValue.reset();
     /*append all values stored in knobs*/
-    const vector<KnobInstance*>& knobs = _instance->getKnobs();
-    for(U32 i=0;i<knobs.size();++i) {
-        Hash64_appendKnob(&_hashValue,knobs[i]->getKnob());
+    for(U32 i = 0 ; i< _knobs.size();++i) {
+        Hash64_appendKnob(&_hashValue,_knobs[i]);
     }
     /*append the node name*/
     Hash64_appendQString(&_hashValue, QString(className().c_str()));
@@ -234,10 +401,11 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     alreadyComputedHash.push_back(_name);
     
     /*Recursive call to parents and add their hash key*/
-    const NodeInstance::InputMap& inputs = _instance->getInputs();
-    for (NodeInstance::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
-        it->second->getNode()->computeTreeHash(alreadyComputedHash);
-        _hashValue.append(it->second->getNode()->hash().value());
+    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second){
+            it->second->computeTreeHash(alreadyComputedHash);
+            _hashValue.append(it->second->hash().value());
+        }
     }
     /*Compute the hash key*/
     _hashValue.computeHash();
@@ -250,7 +418,7 @@ bool Node::hashChanged(){
 }
 
 void Node::createKnobDynamically(){
-    _instance->createKnobGuiDynamically();
+    emit knobsInitialied();
 }
 
 
@@ -308,36 +476,68 @@ void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
         out = node;
         *ok = true;
     }else{
-        const NodeInstance::OutputMap& outputs = node->getNodeInstance()->getOutputs();
-        for (NodeInstance::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        const OutputMap& outputs = node->getOutputs();
+        for (OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
             if(it->second)
-                _hasViewerConnected(it->second->getNode(),ok,out);
+                _hasViewerConnected(it->second,ok,out);
         }
     }
 }
-bool Node::hasOutputConnected() const{
-    return _instance->hasOutputConnected();
-}
 bool Node::isInputConnected(int inputNb) const{
-    return _instance->isInputConnected(inputNb);
+    InputMap::const_iterator it = _inputs.find(inputNb);
+    if(it != _inputs.end()){
+        return it->second != NULL;
+    }else{
+        return false;
+    }
+    
 }
 
-Node::~Node(){
-    _inputLabelsMap.clear();
+bool Node::hasOutputConnected() const{
+    for(OutputMap::const_iterator it = _outputs.begin();it!=_outputs.end();++it){
+        if(it->second){
+            return true;
+        }
+    }
+    return false;
 }
 
-void Node::setModel(Model* model){
-    _model = model;
-    if(isOutputNode()){
-        dynamic_cast<OutputNode*>(this)->initVideoEngine();
+void Node::removeKnob(Knob* knob){
+    for (U32 i = 0; i < _knobs.size(); ++i) {
+        if (_knobs[i] == knob) {
+            _knobs.erase(_knobs.begin()+i);
+            break;
+        }
     }
 }
 
-OutputNode::OutputNode(NodeInstance* instance):Node(instance),_videoEngine(0){
-    _mutex = new QMutex;
-    _openGLCondition = new QWaitCondition;
-    
-    
+void Node::initializeKnobs(){
+    initKnobs();
+    emit knobsInitialied();
+}
+
+void Node::pushUndoCommand(QUndoCommand* command){
+    _undoStack->push(command);
+    emit canUndoChanged(_undoStack->canUndo());
+    emit canRedoChanged(_undoStack->canRedo());
+}
+void Node::undoCommand(){
+    _undoStack->undo();
+    emit canUndoChanged(_undoStack->canUndo());
+    emit canRedoChanged(_undoStack->canRedo());
+}
+void Node::redoCommand(){
+    _undoStack->redo();
+    emit canUndoChanged(_undoStack->canUndo());
+    emit canRedoChanged(_undoStack->canRedo());
+}
+
+OutputNode::OutputNode(Model* model):
+Node(model),
+_mutex(new QMutex),
+_openGLCondition(new QWaitCondition),
+_videoEngine(new VideoEngine(_model,_openGLCondition,_mutex))
+{
 }
 
 OutputNode::~OutputNode(){
@@ -345,9 +545,6 @@ OutputNode::~OutputNode(){
     delete _videoEngine;
     delete _mutex;
     delete _openGLCondition;
-}
-void OutputNode::initVideoEngine(){
-    _videoEngine = new VideoEngine(_model,_openGLCondition,_mutex);
 }
 
 void TimeLine::seek(int frame){
@@ -359,4 +556,30 @@ void TimeLine::seek(int frame){
 void TimeLine::seek_noEmit(int frame){
     assert(frame <= _lastFrame && frame >= _firstFrame);
     _currentFrame = frame;
+}
+
+void OutputNode::updateDAG(bool isViewer,bool initViewer){
+    _videoEngine->resetAndMakeNewDag(this,isViewer);
+    if(isViewer){
+        const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
+        bool hasFrames = false;
+        bool hasInputDifferentThanReader = false;
+        for (U32 i = 0; i< inputs.size(); ++i) {
+            assert(inputs[i]);
+            Reader* r = dynamic_cast<Reader*>(inputs[i]);
+            if (r) {
+                if (r->hasFrames()) {
+                    hasFrames = true;
+                }
+            }else{
+                hasInputDifferentThanReader = true;
+            }
+        }
+        if(hasInputDifferentThanReader || hasFrames){
+            _videoEngine->repeatSameFrame(initViewer);
+        }else{
+            dynamic_cast<ViewerNode*>(this)->disconnectViewer();
+        }
+    }
+
 }

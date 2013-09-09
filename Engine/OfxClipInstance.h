@@ -30,9 +30,10 @@ namespace Powiter {
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(OfxNode* node, int index, OFX::Host::ImageEffect::ClipDescriptor* desc);
+    OfxClipInstance(OfxNode* node,Powiter::OfxImageEffectInstance* effect,int index, OFX::Host::ImageEffect::ClipDescriptor* desc);
     
     virtual ~OfxClipInstance(){}
+    
     
     /// Get the Raw Unmapped Pixel Depth from the host
     ///

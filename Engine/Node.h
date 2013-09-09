@@ -17,7 +17,6 @@
 #include <map>
 
 #include "Global/Macros.h"
-#include "GLobal/NodeInstance.h"
 
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
@@ -30,9 +29,12 @@ class SettingsPanel;
 class Knob;
 class QMutex;
 class QWaitCondition;
-//class NodeInstance;
-class Node
+class QUndoCommand;
+class QUndoStack;
+class Node : public QObject
 {
+    Q_OBJECT
+    
 public:
 	/*Per-node infos. This class is used to pass infos along the graph
 	 *and to know what we can request from a node.*/
@@ -109,24 +111,42 @@ public:
         VideoEngine* _executingEngine;// the engine owning the node currently. This is protected by a mutex and is thread-safe.
 	};
     
+    typedef std::map<int,Node*> InputMap;
+    typedef std::map<int,Node*> OutputMap;
     
-    
+#define foreachInput(CUR,NODE)\
+for(NodeInstance::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
+
     /*CONSTRUCTOR AND DESTRUCTORS*/
-    Node(NodeInstance* instance);
+    Node(Model* model);
     virtual ~Node();
+    
+    void deleteNode();
     /*============================*/
     
     /*Hash related functions*/
     const Hash64& hash() const { return _hashValue; }
+    
     void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
+    
     bool hashChanged();
+    
     /*============================*/
     
     /*overload this to init any knobs*/
-    virtual void initKnobs(){}
+    
+    void initializeKnobs();
     
 	virtual void createKnobDynamically();
-        
+    
+    /*Called by KnobFactory::createKnob. You
+     should never call this yourself.*/
+    void addKnob(Knob* knob){_knobs.push_back(knob);}
+    
+    void removeKnob(Knob* knob);
+    
+    const std::vector<Knob*>& getKnobs() const {return _knobs;}
+    
     /*============================*/
     /*Returns a pointer to the Viewer node ptr if this node has a viewer connected,
      otherwise returns NULL.*/
@@ -135,6 +155,7 @@ public:
     
     /*DAG related (topological sorting)*/
     void setMarked(bool mark){_marked = mark;}
+    
     bool isMarked(){return _marked;}
     
     
@@ -142,30 +163,87 @@ public:
     
 	/*Node infos*/
 	const Info& info() const { return _info; }
+    
     void clear_info();
 
 
 	Box2D& getRequestedBox(){return _requestedBox;}
+    
     int width() const {return info().displayWindow().w();}
+    
     int height() const {return info().displayWindow().h();}
        
     /*============================*/
     
     /*Node type related functions*/
     virtual bool isInputNode() const {return false;}
+    
     virtual bool isOutputNode() const {return false;}
     /*============================*/
     
     /*Node Input related functions*/
     void initializeInputs();
+    
     virtual int maximumInputs() const {return 1;}
+    
     virtual int minimumInputs() const {return 1;}
-    Node* input(int index);
+    
+    Node* input(int index) const;
+    
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
+    
     virtual std::string setInputLabel(int inputNb);
+    
     const std::string getInputLabel(int inputNb) const;
-    bool hasOutputConnected() const;
+    
     bool isInputConnected(int inputNb) const;
+    
+    bool hasOutputConnected() const;
+    
+    const InputMap& getInputs() const {return _inputs;}
+    
+    const OutputMap& getOutputs() const {return _outputs;}
+    
+    /** @brief Adds the node parent to the input inputNumber of the
+     * node. Returns true if it succeeded, false otherwise.
+     * When returning false, this means an input was already
+     * connected for this inputNumber. It should be removed
+     * beforehand.
+     */
+    bool connectInput(Node* input,int inputNumber);
+    
+    /** @brief Adds the node child to the output outputNumber of the
+     * node.
+     */
+    void connectOutput(Node* output,int outputNumber = 0);
+    
+    /** @brief Removes the node connected to the input inputNumber of the
+     * node. Returns true if it succeeded, false otherwise.
+     * When returning false, this means no node was connected for this input.
+     */
+    bool disconnectInput(int inputNumber);
+    
+    /** @brief Removes the node input of the
+     * node inputs. Returns true if it succeeded, false otherwise.
+     * When returning false, this means the node input was not
+     * connected.
+     */
+    bool disconnectInput(Node* input);
+    
+    /** @brief Removes the node connected to the output outputNumber of the
+     * node. Returns true if it succeeded, false otherwise.
+     * When returning false, this means no node was connected for this output.
+     */
+    bool disconnectOutput(int outputNumber);
+    
+    /** @brief Removes the node output of the
+     * node outputs. Returns true if it succeeded, false otherwise.
+     * When returning false, this means the node output was not
+     * connected.
+     */
+    bool disconnectOutput(Node* output);
+    
+
     /*============================*/
     
     
@@ -173,7 +251,10 @@ public:
     /*node name related functions*/
     const std::string& getName() const { return _name ; }
 
-    void setName(const std::string& name) { _name = name; }
+    void setName(const std::string& name) {
+        _name = name;
+        emit nameChanged(name.c_str());
+    }
 
     /*============================*/
 
@@ -220,11 +301,7 @@ public:
     virtual bool isOpenFXNode() const {return false;}
     
     Model* getModel() const {return _model;}
-
-    void setModel(Model* model);
-        
-    NodeInstance* getNodeInstance() const {return _instance;}
-    
+            
     VideoEngine* getExecutingEngine() const {return _info.executingEngine();}
         
     void setExecutingEngine(VideoEngine* engine){_info.setExecutingEngine(engine);}
@@ -234,11 +311,70 @@ public:
     void set_lastFrame(int nb) { _info.set_lastFrame(nb); }
     
     
+    /*Make this node inactive. It will appear
+     as if it was removed from the graph editor
+     but the object still lives to allow
+     undo/redo operations.*/
+    void deactivate();
+    
+    /*Make this node active. It will appear
+     again on the node graph.
+     WARNING: this function can only be called
+     after a call to deactivate() has been made.
+     Calling activate() on a node whose already
+     been activated will not do anything.
+     */
+    void activate();
+        
+    void pushUndoCommand(QUndoCommand* command);
+    
+    void undoCommand();
+    
+    void redoCommand();
+    
+    void doRefreshEdgesGUI(){
+        emit refreshEdgesGUI();
+    }
+   
+public slots:
+    
+    void onGUINameChanged(const QString& str){
+        _name = str.toStdString();
+    }
+    
+
+signals:
+    
+    void inputsInitialized();
+    
+    void knobsInitialied();
+    
+    void channelsChanged();
+    
+    void inputChanged(int);
+        
+    void activated();
+    
+    void deactivated();
+    
+    void canUndoChanged(bool);
+    
+    void canRedoChanged(bool);
+    
+    void nameChanged(QString);
+    
+    void deleteWanted();
+        
+    void refreshEdgesGUI();
+
     
 protected:
     
-    virtual ChannelSet supportedComponents() = 0; 
+    virtual ChannelSet supportedComponents() = 0;
+    
     virtual void preProcess(){}
+    
+    virtual void initKnobs(){}
 
 	virtual bool _validate(bool /*forReal*/) = 0;
     
@@ -250,20 +386,28 @@ protected:
     std::string _name; //node name set by the user
 	Hash64 _hashValue; // hash value
 	Box2D _requestedBox; // composition of all the area requested by children
-	NodeInstance* _instance; // ptr to the instance
+    
+    std::map<int,Node*> _outputs;
+    std::map<int,Node*> _inputs;
+    std::vector<Knob*> _knobs;
+
+    QUndoStack* _undoStack;
 
 private:
     
-    
+        
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
+    
     void merge_info(bool forReal);
+    
     void copy_info(Node* parent);
+    
     static void _hasViewerConnected(Node* node,bool* ok,Node*& out);
     
 };
 typedef Node* (*NodeBuilder)();
 
-class TimeLine: public QObject{
+class TimeLine: public QObject {
     Q_OBJECT
     
     int _firstFrame;
@@ -296,18 +440,23 @@ public:
     void decrementCurrentFrame(){--_currentFrame; emit frameChanged(_currentFrame);}
 
 public slots:
+    
     void seek(int frame);
+    
     void seek_noEmit(int frame);
     
+    
 signals:
+    
     void frameChanged(int);
+    
     
 };
 
 class OutputNode : public Node{
 public:
     
-    OutputNode(NodeInstance* instance);
+    OutputNode(Model* model);
     
     virtual ~OutputNode();
     
@@ -316,6 +465,7 @@ public:
     
     /*Node utility functions*/
     virtual std::string className() OVERRIDE = 0; // should be const
+    
     virtual std::string description() OVERRIDE = 0; // should be const
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
@@ -330,8 +480,8 @@ public:
     const TimeLine& getTimeLine() const {return _timeline;}
     
     TimeLine& getTimeLine(){return _timeline;}
-    
-    void initVideoEngine();
+        
+    void updateDAG(bool isViewer,,bool initViewer = false);
 
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const

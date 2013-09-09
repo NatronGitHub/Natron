@@ -24,8 +24,9 @@ class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-class ViewerNode: public OutputNode
+class ViewerNode: public QObject,public OutputNode
 {
+    Q_OBJECT
     
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
@@ -35,7 +36,7 @@ class ViewerNode: public OutputNode
 public:
     
         
-    ViewerNode(ViewerCache* cache,NodeInstance* instance);
+    ViewerNode(ViewerCache* cache,Model* model);
     
     virtual ~ViewerNode();
     
@@ -75,10 +76,17 @@ public:
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
     
+    void disconnectViewer(){
+        emit viewerDisconnected();
+    }
+    
 protected:
     
     virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
-	
+    
+signals:
+    void viewerDisconnected();
+    
 private:
     
     virtual bool _validate(bool forReal);

@@ -31,8 +31,6 @@ CLANG_DIAG_ON(unused-private-field);
 
 
 #include "Global/AppManager.h"
-#include "Global/NodeInstance.h"
-#include "Global/KnobInstance.h"
 #include "Global/LibraryBinary.h"
 
 
@@ -78,7 +76,7 @@ KnobGui::~KnobGui(){
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
-    _knob->getNode()->getNodeInstance()->pushUndoCommand(cmd);
+    _knob->getNode()->pushUndoCommand(cmd);
 }
 
 
@@ -131,6 +129,7 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
 File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
     File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
     QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
+    QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
 void File_KnobGui::createWidget(QGridLayout* layout,int row){
@@ -197,8 +196,9 @@ void File_KnobGui::updateLastOpened(const QString& str){
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
-    File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
+    OutputFile_Knob* fileKnob = dynamic_cast<OutputFile_Knob*>(knob);
     QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
+    QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
 void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
@@ -707,7 +707,7 @@ void Group_KnobGui::setChecked(bool b){
 //=============================TAB_KNOB_GUI===================================
 void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
     /*not a pretty call... considering using QTabWidget instead*/
-    _tabWidget = new TabWidget(_knob->getKnobInstance()->getNode()->getNode()->getModel()->getApp()->getGui(),
+    _tabWidget = new TabWidget(_knob->getNode()->getModel()->getApp()->getGui(),
                                TabWidget::NONE,this);
     int offset = _knob->determineHierarchySize();
     

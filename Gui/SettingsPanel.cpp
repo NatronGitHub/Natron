@@ -17,7 +17,6 @@
 
 #include "Global/Macros.h"
 #include "Global/NodeInstance.h"
-#include "Global/KnobInstance.h"
 
 #include "Engine/Node.h"
 
