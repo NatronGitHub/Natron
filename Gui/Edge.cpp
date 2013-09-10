@@ -63,7 +63,7 @@ Edge::~Edge(){
 void Edge::initLine(){
     int h = NodeGui::NODE_HEIGHT;
     int w = NodeGui::NODE_LENGTH;
-    if(dest->hasPreviewImage()){
+    if(dest->getNode()->canMakePreviewImage()){
         h += NodeGui::PREVIEW_HEIGHT;
         w += NodeGui::PREVIEW_LENGTH;
     }
@@ -74,7 +74,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
 
-        if(source->hasPreviewImage()){
+        if(source->getNode()->canMakePreviewImage()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }
@@ -90,7 +90,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
-        if(dest->hasPreviewImage()){
+        if(dest->getNode()->canMakePreviewImage()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }
@@ -126,7 +126,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
-        if(dest->hasPreviewImage()){
+        if(dest->getNode()->canMakePreviewImage()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }

@@ -57,13 +57,13 @@ class ActionRef : public QObject{
     AppInstance* _app;
 public:
     
-    ActionRef(AppInstance* app,QAction* action,const std::string& nodeName):_app(app),_action(action),_nodeName(nodeName){
+    ActionRef(AppInstance* app,QAction* action,const QString& nodeName):_app(app),_action(action),_nodeName(nodeName){
         QObject::connect(action, SIGNAL(triggered()), this, SLOT(onTriggered()));
     }
     virtual ~ActionRef(){QObject::disconnect(_action, SIGNAL(triggered()), this, SLOT(onTriggered()));}
     
     QAction* _action;
-    std::string _nodeName;
+    QString _nodeName;
     
     public slots:
     void onTriggered();
@@ -78,16 +78,16 @@ class ToolButton : public QToolButton{
 public:
     
     ToolButton(AppInstance* app,
-               const std::string& actionName,
-               const std::vector<std::string>& firstElement,
-               const std::string& pluginName,
+               const QString& actionName,
+               const QStringList& firstElement,
+               const QString& pluginName,
                QIcon pluginIcon = QIcon(),
                QIcon groupIcon = QIcon(),
                QWidget* parent = 0);
     
-    void addTool(const std::string& actionName,
-                 const std::vector<std::string>& grouping,
-                 const std::string& pluginName,
+    void addTool(const QString& actionName,
+                 const QStringList& grouping,
+                 const QString& pluginName,
                  QIcon pluginIcon = QIcon());
     
     virtual ~ToolButton();
@@ -188,11 +188,11 @@ public:
     
     void loadStyleSheet();
     
-    void addPluginToolButton(const std::string& actionName,
-                             const std::vector<std::string>& groups,
-                             const std::string& pluginName,
-                             const std::string& pluginIconPath,
-                             const std::string& groupIconPath);
+    void addPluginToolButton(const QString& actionName,
+                             const QStringList& groups,
+                             const QString& pluginName,
+                             const QString& pluginIconPath,
+                             const QString& groupIconPath);
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     
@@ -273,7 +273,7 @@ public:
     
     /*TOOLBOX*/
     QToolBar* _toolBox;
-    std::map<std::string,ToolButton*> _toolGroups;
+    std::map<QString,ToolButton*> _toolGroups;
     
     /*PROPERTIES*/
     //======================

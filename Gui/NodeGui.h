@@ -55,8 +55,7 @@ public:
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
     
-    /*0 if not, 1 if yes and this is a Reader, 2 if yes and this is an OpenFX node*/
-    int hasPreviewImage();
+    
   
     /*Returns tru if the NodeGUI contains the point*/
     virtual bool contains(const QPointF &point) const;
@@ -80,8 +79,7 @@ public:
      to query the src and dst of a specific arrow.*/
     const std::map<int,Edge*>& getInputsArrows() const {return inputs;}
     
-    /*Use NULL for src to disconnect.*/
-    bool connectEdge(int edgeNumber,NodeGui* src);
+   
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -153,6 +151,7 @@ public slots:
      i.e, when the channel requested for the node change.*/
     void updateChannelsTooltip();
     
+    void onLineEditNameChanged(const QString&);
     
     void onInternalNameChanged(const QString&);
     
@@ -168,6 +167,9 @@ public slots:
     void activate();
     
     void deactivate();
+    
+    /*Use NULL for src to disconnect.*/
+    bool connectEdge(int edgeNumber);
 signals:
     void nameChanged(QString);
     

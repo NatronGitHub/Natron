@@ -141,13 +141,13 @@ void Gui::closeEvent(QCloseEvent *e){
 
 
 NodeGui* Gui::createNodeGUI( Node* node){
-    NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
-    if(int ret = gui->hasPreviewImage()){
+    if(int ret = node->canMakePreviewImage()){
         if(ret == 2){
             OfxNode* n = dynamic_cast<OfxNode*>(node);
             n->computePreviewImage();
         }
     }
+    NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
     return gui;
 }
 void Gui::createViewerGui(Node* viewer){
@@ -182,6 +182,16 @@ void Gui::createGui(){
 
 
 bool Gui::eventFilter(QObject *target, QEvent *event){
+    if(event->type() == QEvent::MouseMove ||
+       event->type() == QEvent::MouseButtonPress ||
+       event->type() == QEvent::MouseButtonDblClick ||
+       event->type() == QEvent::MouseButtonRelease ||
+       event->type() == QEvent::KeyPress){
+        /*Make top level instance this instance since it receives all
+         user inputs.*/
+        appPTR->setAsTopLevelInstance(_appInstance->getAppID());
+        
+    }
     
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
@@ -724,22 +734,22 @@ QWidget* Gui::findExistingTab(const std::string& name) const{
     }
 }
 
-void Gui::addPluginToolButton(const std::string& actionName,
-                              const std::vector<std::string>& groups,
-                              const std::string& pluginName,
-                              const std::string& pluginIconPath,
-                              const std::string& groupIconPath){
+void Gui::addPluginToolButton(const QString& actionName,
+                              const QStringList& groups,
+                              const QString& pluginName,
+                              const QString& pluginIconPath,
+                              const QString& groupIconPath){
     
     QIcon pluginIcon,groupIcon;
-    if(!pluginIconPath.empty() && QFile::exists(pluginIconPath.c_str())){
-        pluginIcon.addFile(pluginIconPath.c_str());
+    if(!pluginIconPath.isEmpty() && QFile::exists(pluginIconPath)){
+        pluginIcon.addFile(pluginIconPath);
     }
-    if(!groupIconPath.empty() && QFile::exists(groupIconPath.c_str())){
-        groupIcon.addFile(groupIconPath.c_str());
+    if(!groupIconPath.isEmpty() && QFile::exists(groupIconPath)){
+        groupIcon.addFile(groupIconPath);
     }else{
         groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
     }
-    std::string mainGroup;
+    QString mainGroup;
     if(groups.size()){
         mainGroup = groups[0];
     }else{
@@ -747,21 +757,21 @@ void Gui::addPluginToolButton(const std::string& actionName,
         groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
     }
     
-    std::map<std::string,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
+    std::map<QString,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
     if(found != _toolGroups.end()){
         found->second->addTool(actionName,groups,pluginName,pluginIcon);
     }else{
         ToolButton* tb = new ToolButton(_appInstance,actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
         _toolBox->addWidget(tb);
-        tb->setToolTip(mainGroup.c_str());
+        tb->setToolTip(mainGroup);
         _toolGroups.insert(make_pair(mainGroup,tb));
     }
     
 }
 ToolButton::ToolButton(AppInstance* app,
-                       const std::string& actionName,
-                       const std::vector<std::string>& firstElement,
-                       const std::string& pluginName,
+                       const QString& actionName,
+                       const QStringList& firstElement,
+                       const QString& pluginName,
                        QIcon pluginIcon , QIcon groupIcon ,
                        QWidget* parent)
 :QToolButton(parent),
@@ -774,15 +784,15 @@ _app(app){
     setMaximumSize(35,35);
     
     QMenu* _lastMenu = _menu;
-    for (U32 i = 1; i < firstElement.size(); ++i) {
-        _lastMenu = _lastMenu->addMenu(firstElement[i].c_str());
+    for (int i = 1; i < firstElement.size(); ++i) {
+        _lastMenu = _lastMenu->addMenu(firstElement[i]);
         _subMenus.push_back(_lastMenu);
     }
     QAction* action = 0;
     if(pluginIcon.isNull()){
-        action = _lastMenu->addAction(pluginName.c_str());
+        action = _lastMenu->addAction(pluginName);
     }else{
-        action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
+        action = _lastMenu->addAction(pluginIcon, pluginName);
     }
     ActionRef* actionRef = new ActionRef(_app,action,actionName);
     _actions.push_back(actionRef);
@@ -794,14 +804,14 @@ ToolButton::~ToolButton(){
     }
 }
 
-void ToolButton::addTool(const std::string& actionName,const std::vector<std::string>& grouping,const std::string& pluginName,QIcon pluginIcon){
+void ToolButton::addTool(const QString& actionName,const QStringList& grouping,const QString& pluginName,QIcon pluginIcon){
     std::vector<std::string> subMenuToAdd;
     int index = 1;
     QMenu* _lastMenu = _menu;
     while(index < (int)grouping.size()){
         bool found = false;
         for (U32 i =  0; i < _subMenus.size(); ++i) {
-            if (_subMenus[i]->title() == QString(grouping[index].c_str())) {
+            if (_subMenus[i]->title() == QString(grouping[index])) {
                 _lastMenu = _subMenus[i];
                 found = true;
                 break;
@@ -812,21 +822,21 @@ void ToolButton::addTool(const std::string& actionName,const std::vector<std::st
         ++index;
     }
     for(int i = index; i < (int)grouping.size() ; ++i) {
-        QMenu* menu = _lastMenu->addMenu(grouping[index].c_str());
+        QMenu* menu = _lastMenu->addMenu(grouping[index]);
         _subMenus.push_back(menu);
         _lastMenu = menu;
     }
     QAction* action = 0;
     if(pluginIcon.isNull()){
-        action = _lastMenu->addAction(pluginName.c_str());
+        action = _lastMenu->addAction(pluginName);
     }else{
-        action = _lastMenu->addAction(pluginIcon, pluginName.c_str());
+        action = _lastMenu->addAction(pluginIcon, pluginName);
     }
     ActionRef* actionRef = new ActionRef(_app,action,actionName);
     _actions.push_back(actionRef);
 }
 void ActionRef::onTriggered(){
-    _app->createNode(_nodeName.c_str());
+    _app->createNode(_nodeName);
 }
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);

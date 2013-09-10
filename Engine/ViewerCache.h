@@ -12,9 +12,12 @@
 #ifndef POWITER_ENGINE_VIEWERCACHE_H_
 #define POWITER_ENGINE_VIEWERCACHE_H_
 
+#include <QtCore/QObject>
+
 #include "Engine/AbstractCache.h" // for MemoryMappedEntry
-#include "Gui/Texture.h" // for TextureRect
 #include "Engine/Singleton.h"
+
+#include "Gui/Texture.h" // for TextureRect
 
 class Format;
 class ChannelSet;
@@ -69,15 +72,15 @@ public:
 
 class ReaderInfo;
 class MemoryMappedEntry;
-class ViewerCache : public AbstractDiskCache 
+class ViewerCache :public QObject, public AbstractDiskCache , public Singleton<ViewerCache>
 {
-    
-    Model* _model;
-    
+       Q_OBJECT
 public:
     
     
-	ViewerCache(Model* model);
+	ViewerCache();
+    
+    static ViewerCache* getViewerCache() {return ViewerCache::instance();}
     
 	virtual ~ViewerCache();
     
@@ -105,6 +108,11 @@ public:
     
     
     void clearInMemoryPortion();
+    
+signals:
+    void addedFrame();
+    void removedFrame();
+    void clearedInMemoryFrames();
 };
 
 

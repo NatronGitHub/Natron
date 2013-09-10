@@ -26,6 +26,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/Row.h"
 #include "Engine/Knob.h"
+#include "Engine/OfxNode.h"
 
 
 #include "Readers/Reader.h"
@@ -246,9 +247,9 @@ bool Node::connectInput(Node* input,int inputNumber){
 //            if(!_gui->connectEdge(inputNumber, input->_gui)){
 //                return false;
 //            }
-            emit inputChanged(inputNumber);
             _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber,input));
+            emit inputChanged(inputNumber);
             return true;
         }else{
             return false;
@@ -272,11 +273,8 @@ bool Node::disconnectInput(int inputNumber){
         if(it->second == NULL){
             return false;
         }else{
-//            if(!_gui->connectEdge(inputNumber, NULL)){
-//                return false;
-//            }
-            emit inputChanged(inputNumber);
             _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+            emit inputChanged(inputNumber);
             return true;
         }
     }
@@ -285,12 +283,9 @@ bool Node::disconnectInput(int inputNumber){
 bool Node::disconnectInput(Node* input){
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second == input) {
-//            if(!_gui->connectEdge(it->first, NULL)){
-//                return false;
-//            }
-            emit inputChanged(it->first);
             _inputs.erase(it);
             _inputs.insert(make_pair(it->first, (Node*)NULL));
+            emit inputChanged(it->first);
             return true;
         }else{
             return false;
@@ -330,13 +325,12 @@ bool Node::disconnectOutput(Node* output){
 
 
 void Node::deactivate(){
-    // _gui->deactivate();
-    emit deactivated();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if(it->second)
             _model->disconnect(it->second,this);
     }
     Node* firstChild = 0;
+    OutputMap outputsCopy = _outputs;
     for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(!it->second)
             continue;
@@ -345,6 +339,7 @@ void Node::deactivate(){
         }
         _model->disconnect(this, it->second);
     }
+    emit deactivated();
     if(firstChild){
         _model->triggerAutoSaveOnNextEngineRun();
         _model->checkViewersConnection();
@@ -353,7 +348,6 @@ void Node::deactivate(){
 
 void Node::activate(){
     // _gui->activate();
-    emit activated();
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         _model->connect(it->first,it->second, this);
     }
@@ -374,6 +368,8 @@ void Node::activate(){
         }
         _model->connect(inputNb,this, it->second);
     }
+    emit activated();
+
     if(firstChild){
         _model->triggerAutoSaveOnNextEngineRun();
         _model->checkViewersConnection();
@@ -528,6 +524,21 @@ void Node::redoCommand(){
     _undoStack->redo();
     emit canUndoChanged(_undoStack->canUndo());
     emit canRedoChanged(_undoStack->canRedo());
+}
+
+int Node::canMakePreviewImage(){
+    if (className() == "Reader") {
+        return 1;
+    }
+    if(isOpenFXNode()){
+        OfxNode* n = dynamic_cast<OfxNode*>(this);
+        if(n->canHavePreviewImage())
+            return 2;
+        else
+            return 0;
+    }else{
+        return 0;
+    }
 }
 
 OutputNode::OutputNode(Model* model):

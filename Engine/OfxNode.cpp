@@ -77,6 +77,9 @@ OfxNode::OfxNode(Model* model,
         effect_->setOfxNodePointer(this);
         effect_->populate();
     }
+    if(context == kOfxImageEffectContextGenerator){
+        _canHavePreview = true;
+    }
 }
 
 
@@ -113,9 +116,9 @@ std::string OfxNode::className() { // should be const
     if (label!="Viewer") {
         return label;
     }else{
-        std::string grouping = effectInstance()->getDescriptor().getPluginGrouping();
-        std::vector<std::string> groups = ofxExtractAllPartsOfGrouping(grouping);
-        return groups[0] + effectInstance()->getLongLabel();
+        QString grouping = effectInstance()->getDescriptor().getPluginGrouping().c_str();
+        QStringList groups = ofxExtractAllPartsOfGrouping(grouping);
+        return groups[0].toStdString() + effectInstance()->getLongLabel();
     }
 }
 
@@ -355,14 +358,13 @@ void OfxNode::computePreviewImage(){
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group) {
-    std::vector<std::string> out;
-    QString str(group.c_str());
+QStringList ofxExtractAllPartsOfGrouping(const QString& str) {
+    QStringList out;
     int pos = 0;
     while(pos < str.size()){
-        std::string newPart;
+        QString newPart;
         while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
-            newPart.append(1,str.at(pos).toLatin1());
+            newPart.append(str.at(pos));
             ++pos;
         }
         ++pos;

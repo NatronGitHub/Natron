@@ -10,20 +10,24 @@
 #define POWITER_ENGINE_OFXHOST_H_
 
 #include <QtCore/QStringList>
+#include <QtCore/QObject>
+#include <QtCore/QString>
+
 #include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 
 #include "Global/Macros.h"
 
-class Node;
 class OfxNode;
 class Model;
-
 namespace Powiter {
 
-class OfxHost : public OFX::Host::ImageEffect::Host {
+class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
+    
+    Q_OBJECT
+    
 public:
-    OfxHost(Model* model);
+    OfxHost();
     virtual ~OfxHost();
 
     /// Create a new instance of an image effect plug-in.
@@ -63,13 +67,14 @@ public:
      to load them all.*/
     QStringList loadOFXPlugins();
 
+signals:
+    void toolButtonAdded(QStringList,QString,QString,QString);
+    
 private:
     /*Writes all plugins loaded and their descriptors to
      the OFX plugin cache. (called by the destructor) */
     void writeOFXCache();
     
-    Model* _model;
-
     OFX::Host::ImageEffect::PluginCache _imageEffectPluginCache;
 
 

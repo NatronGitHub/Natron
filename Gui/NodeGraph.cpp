@@ -400,7 +400,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 
                 /*we now try to move the created node in between the 2 previous*/
                 QPointF parentPos = created->mapFromScene(selected->scenePos());
-                if(selected->hasPreviewImage()){
+                if(selected->getNode()->canMakePreviewImage()){
                     parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
                 }else{
                     parentPos.ry() += (NodeGui::NODE_HEIGHT);
@@ -472,7 +472,7 @@ void NodeGraph::removeNode(NodeGui* n){
     }
     for(U32 i = 0 ; i < _nodesTrash.size();++i) {
         if (n == _nodesTrash[i]) {
-            _nodes.erase(_nodesTrash.begin()+i);
+            _nodesTrash.erase(_nodesTrash.begin()+i);
             break;
         }
     }
@@ -763,7 +763,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
     textEdit=new QComboBox(this);
     textEdit->setEditable(true);
 
-    textEdit->addItems(graph->getGui()->_appInstance->getNodeNameList());
+    textEdit->addItems(appPTR->getNodeNameList());
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
     textEdit->lineEdit()->selectAll();
@@ -778,7 +778,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
-        if(graph->getGui()->_appInstance->getNodeNameList().contains(res)){
+        if(appPTR->getNodeNameList().contains(res)){
             graph->getGui()->_appInstance->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);

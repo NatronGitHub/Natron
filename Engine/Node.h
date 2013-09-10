@@ -340,6 +340,9 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
         emit previewImageChanged();
     }
     
+    /*0 if not, 1 if yes and this is a Reader, 2 if yes and this is an OpenFX node*/
+    int canMakePreviewImage();
+    
 public slots:
     
     void onGUINameChanged(const QString& str){

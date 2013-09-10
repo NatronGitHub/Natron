@@ -449,7 +449,7 @@ void VideoEngine::run(){
             //panning/zooming.
             viewer->getUiContext()->viewer->stopDisplayingProgressBar();
             if(!_lastRunArgs._sameFrame){
-                FrameEntry* entry = _model->getViewerCache()->addFrame(key,
+                FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key,
                                                                             _treeVersion,
                                                                             zoomFactor,
                                                                             exposure,

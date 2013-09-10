@@ -52,6 +52,7 @@ settings(0)
     
     
     QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
+    QObject::connect(this, SIGNAL(nameChanged(QString)), this, SLOT(onLineEditNameChanged(QString)));
     QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
     QObject::connect(node, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
     QObject::connect(node, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
@@ -60,6 +61,7 @@ settings(0)
     QObject::connect(node, SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()));
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
+    QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
     
     
     setCacheMode(DeviceCoordinateCache);
@@ -68,7 +70,7 @@ settings(0)
     setPos(x,y);
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
-	if(hasPreviewImage()){ 
+	if(node->canMakePreviewImage()){ 
 		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)));
 	}else{
 		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)));
@@ -88,14 +90,14 @@ settings(0)
 	
     name=scene->addSimpleText(node->getName().c_str());
 	
-	if(hasPreviewImage()){
+	if(node->canMakePreviewImage()){
 		name->setX(itemPos.x()+35);
 		name->setY(itemPos.y()+1);
 	}else{
 		name->setX(itemPos.x()+10);
 		name->setY(itemPos.y()+channels->boundingRect().height()+5);
 	}
-    if(int ret = hasPreviewImage()){
+    if(int ret = node->canMakePreviewImage()){
         if(ret == 1){
             Reader* n = dynamic_cast<Reader*>(node);
             if(n->hasPreview()){
@@ -185,24 +187,15 @@ void NodeGui::refreshPosition(double x,double y){
 }
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
+        const Node::InputMap& nodeInputs = node->getInputs();
+        Node::InputMap::const_iterator it = nodeInputs.find(i->first);
+        assert(it!=nodeInputs.end());
+        NodeGui *nodeInputGui = _dag->getGui()->_appInstance->getNodeGui(it->second);
+        i->second->setSource(nodeInputGui);
         i->second->initLine();
     }
 }
 
-int NodeGui::hasPreviewImage(){
-    if (node->className() == "Reader") {
-        return 1;
-    }
-    if(node->isOpenFXNode()){
-        OfxNode* n = dynamic_cast<OfxNode*>(node);
-        if(n->canHavePreviewImage())
-            return 2;
-        else
-            return 0;
-    }else{
-        return 0;
-    }
-}
 
 void NodeGui::onCanUndoChanged(bool b){
     if(settings){
@@ -246,7 +239,7 @@ void NodeGui::updateChannelsTooltip(){
 }
 
 void NodeGui::updatePreviewImage(){
-    if(int ret = hasPreviewImage()){
+    if(int ret = node->canMakePreviewImage()){
         if(ret == 1){
             Reader* reader = dynamic_cast<Reader*>(node);
             QImage *prev = reader->getPreview();
@@ -339,7 +332,10 @@ void NodeGui::setName(const QString& name){
     onInternalNameChanged(name);
     emit nameChanged(name);
 }
-
+void NodeGui::onLineEditNameChanged(const QString& s){
+    name->setText(s);
+    sc->update();
+}
 void NodeGui::onInternalNameChanged(const QString& s){
     name->setText(s);
     if(settings)
@@ -387,13 +383,18 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
     return NULL;
 }
 
-bool NodeGui::connectEdge(int edgeNumber,NodeGui* src){
-    InputEdgesMap::const_iterator it = inputs.find(edgeNumber);
-    if(it == inputs.end()){
+bool NodeGui::connectEdge(int edgeNumber){
+    Node::InputMap::const_iterator it = node->getInputs().find(edgeNumber);
+    if(it == node->getInputs().end()){
+        return false;
+    }
+    NodeGui* src = _dag->getGui()->_appInstance->getNodeGui(it->second);
+    InputEdgesMap::const_iterator it2 = inputs.find(edgeNumber);
+    if(it2 == inputs.end()){
         return false;
     }else{
-        it->second->setSource(src);
-        it->second->initLine();
+        it2->second->setSource(src);
+        it2->second->initLine();
         return true;
     }
 }
@@ -417,6 +418,12 @@ void NodeGui::activate(){
         _dag->scene()->addItem(it->second);
         it->second->setActive(true);
     }
+    refreshEdges();
+    for (Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+        if(it->second){
+            it->second->doRefreshEdgesGUI();
+        }
+    }
     if(node->className() != "Viewer"){
         if(isThisPanelEnabled()){
             setSettingsPanelEnabled(false);
@@ -427,6 +434,7 @@ void NodeGui::activate(){
         _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
+    
 }
 
 void NodeGui::deactivate(){
@@ -436,7 +444,9 @@ void NodeGui::deactivate(){
     for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
         _dag->scene()->removeItem(it->second);
         it->second->setActive(false);
+        it->second->setSource(NULL);
     }
+   
     if(node->className() != "Viewer"){
         if(isThisPanelEnabled()){
             setSettingsPanelEnabled(false);
@@ -448,6 +458,7 @@ void NodeGui::deactivate(){
         _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
+    
 }
 
 void NodeGui::initializeKnobs(){

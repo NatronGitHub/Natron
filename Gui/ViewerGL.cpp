@@ -1226,7 +1226,7 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 }
 void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
     _currentViewerInfos = viewerInfos;
-    Format* df=_viewerTab->getGui()->_appInstance->getModel()->findExistingFormat(displayWindow().w(), displayWindow().h());
+    Format* df = appPTR->findExistingFormat(displayWindow().w(), displayWindow().h());
     if(df)
         _currentViewerInfos->displayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
@@ -1551,7 +1551,6 @@ void glScale(M44f& result,const M44f& matrix,float x,float y,float z){
     scale(3,3) = 1;
     
     result = matrix * scale;
-    //   _glMultMats44(result, matrix, scale);
 }
 
 /*Replicate of the glTranslate function but for a custom matrix*/
@@ -1578,7 +1577,6 @@ void glTranslate(M44f& result,const M44f& matrix,float x,float y,float z){
     translate(3,3) = 1;
     
     result = matrix * translate;
-    //_glMultMats44(result, matrix, translate);
 }
 
 /*Replicate of the glRotate function but for a custom matrix*/
@@ -1619,7 +1617,6 @@ void glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z){
 	rotate(3,3)  = 1;
     
     result = matrix * rotate;
-    //    _glMultMats44(result, matrix, rotate);
     
 }
 
@@ -1627,30 +1624,11 @@ void glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z){
 void glLoadIdentity(M44f& matrix){
     
     matrix.setIdentity();
-    //    matrix[0] = 1.0f;
-    //    matrix[1] = 0.0f;
-    //    matrix[2] = 0.0f;
-    //    matrix[3] = 0.0f;
-    //
-    //    matrix[4] = 0.0f;
-    //    matrix[5] = 1.0f;
-    //    matrix[6] = 0.0f;
-    //    matrix[7] = 0.0f;
-    //
-    //    matrix[8] = 0.0f;
-    //    matrix[9] = 0.0f;
-    //    matrix[10] = 1.0f;
-    //    matrix[11] = 0.0f;
-    //
-    //    matrix[12] = 0.0f;
-    //    matrix[13] = 0.0f;
-    //    matrix[14] = 0.0f;
-    //    matrix[15] = 1.0f;
 }
 #endif // WITH_EIGEN
 
 void ViewerGL::disconnectViewer(){
-    _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->abort(); // aborting current work
+    _viewerTab->getInternalNode()->getVideoEngine()->abort(); // aborting current work
     blankInfoForViewer();
     fitToFormat(displayWindow());
     clearViewer();

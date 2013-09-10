@@ -156,9 +156,6 @@ public:
     // END of OFX::Host::ImageEffect::Instance methods
     //
 
-    bool canHavePreviewImage() const { return _canHavePreview; }
-
-    void setCanHavePreviewImage() { _canHavePreview = true; }
     
     OfxNode* node() { return _node; }
     
@@ -168,8 +165,12 @@ private:
     const OfxNode* node() const { return _node; }
 
 private:
-    bool _canHavePreview;
-    OfxNode* _node; // FIXME: OfxImageEffectInstance should be able to work without the node_
+    OfxNode* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+                     Not easy since every Knob need a valid pointer to a node when 
+                     KnobFactory::createKnob() is called. That's why we need to pass a pointer
+                     to an OfxParamInstance. Without this pointer we would be unable
+                     to track the knobs that have been created for 1 Node since OfxParamInstance
+                     is totally dissociated from Node.*/
     
     /*Use this to re-create parenting between effect's params.
      The key is the name of a param and the Instance a pointer to the associated effect.

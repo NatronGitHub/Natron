@@ -132,14 +132,17 @@ public slots:
     void seekRandomFrame(double value){seekRandomFrame((int)value);}
     void centerViewer();
     void toggleLoopMode(bool);
-    
     void onViewerChannelsChanged(int);
-    
+
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);
     
     /*makes the viewer black*/
     void disconnectViewer();
+    
+    void onCachedFrameAdded(int);
+    void onCachedFrameRemoved();
+    void onViewerCacheCleared();
     
 signals:
     void recenteringNeeded();

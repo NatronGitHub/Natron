@@ -11,28 +11,32 @@
 
 #include "ViewerNode.h"
 
-#include "Gui/ViewerGL.h"
-#include "Gui/Gui.h"
 #include "Global/AppManager.h"
+
+#include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
-#include "Engine/Row.h"
 #include "Gui/Timeline.h"
+
+#include "Engine/Row.h"
 #include "Engine/ViewerCache.h"
-#include "Readers/Reader.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
-#include "Global/AppManager.h"
+
+#include "Readers/Reader.h"
 
 using namespace Powiter;
 
-ViewerNode::ViewerNode(ViewerCache* cache,Model* model):OutputNode(model),
+ViewerNode::ViewerNode(Model* model):OutputNode(model),
 _viewerInfos(0),
 _uiContext(0),
-_viewerCache(cache),
 _pboIndex(0)
 {
+    ViewerCache* cache = ViewerCache::getViewerCache();
+    QObject::connect(cache, SIGNAL(addedFrame()), this, SLOT(onCachedFrameAdded()));
+    QObject::connect(cache, SIGNAL(removedFrame()), this, SLOT(onCachedFrameAdded()));
+    QObject::connect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));
 }
 
 void ViewerNode::initializeViewerTab(TabWidget* where){
@@ -150,8 +154,7 @@ void ViewerInfos::operator=(const ViewerInfos &other){
 }
 
 FrameEntry* ViewerNode::get(U64 key){
-    
-  return  _viewerCache->get(key);
+    return ViewerCache::getViewerCache()->get(key);
 }
 
 
@@ -191,4 +194,14 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     _uiContext->viewer->fillPBO(cachedFrame, output, dataSize);
 
     
+}
+
+void ViewerNode::onCachedFrameAdded(){
+    emit addedCachedFrame(currentFrame());
+}
+void ViewerNode::onCachedFrameRemoved(){
+    emit removedCachedFrame();
+}
+void ViewerNode::onViewerCacheCleared(){
+    emit clearedViewerCache();
 }

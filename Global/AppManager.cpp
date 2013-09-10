@@ -16,6 +16,8 @@
 #include <QtCore/QDir>
 
 #include "Global/LibraryBinary.h"
+#include "Global/MemoryInfo.h"
+
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
@@ -29,8 +31,23 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/Knob.h"
+#include "Engine/NodeCache.h"
+#include "Engine/OfxHost.h"
+#include "Engine/Format.h"
+
+
+#include "Readers/Reader.h"
+#include "Readers/Read.h"
+#include "Readers/ReadExr.h"
+#include "Readers/ReadFfmpeg_deprecated.h"
+#include "Readers/ReadQt.h"
 
 #include "Writers/Writer.h"
+#include "Writers/Write.h"
+#include "Writers/WriteQt.h"
+#include "Writers/WriteExr.h"
 
 
 
@@ -45,10 +62,10 @@ _model(0),_gui(0),_appID(appID)
     
     _gui->createGui();
     
-    addBuiltinPluginToolButtons();
+    const vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
-        string name = _toolButtons[i]->_pluginName;
+        QString name = _toolButtons[i]->_pluginName;
         if (_toolButtons[i]->_groups.size() >= 1) {
             name.append("  [");
             name.append(_toolButtons[i]->_groups[0]);
@@ -59,10 +76,7 @@ _model(0),_gui(0),_appID(appID)
                                   _toolButtons[i]->_pluginName,
                                   _toolButtons[i]->_pluginIconPath,
                                   _toolButtons[i]->_groupIconPath);
-        delete _toolButtons[i];
-    }
-    _toolButtons.clear();
-        
+    }        
     _gui->show();
         
     /*Check if auto-save dir already exists*/
@@ -110,19 +124,6 @@ AppInstance::~AppInstance(){
 void AppInstance::updateDAG(OutputNode *output,bool isViewer){
     _model->updateDAG(output, isViewer);
 }
-
-void AppInstance::addBuiltinPluginToolButtons(){
-    vector<string> grouping;
-    grouping.push_back("io");
-    _gui->addPluginToolButton("Reader", grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
-    _gui->addPluginToolButton("Viewer", grouping, "Viewer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
-    _gui->addPluginToolButton("Writer", grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
-}
-
-const QStringList& AppInstance::getNodeNameList(){
-    return _model->getNodeNameList();
-}
-
 
 Node* AppInstance::createNode(const QString& name) {
     Node* node = _model->createNode(name.toStdString());
@@ -174,12 +175,6 @@ Writer* AppInstance::getCurrentWriter(){
     return dynamic_cast<Writer*>(output);
 }
 
-void AppInstance::stackPluginToolButtons(const std::vector<std::string>& groups,
-                                         const std::string& pluginName,
-                                         const std::string& pluginIconPath,
-                                         const std::string& groupIconPath){
-    _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
-}
 const std::vector<Node*> AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
     const std::vector<NodeGui*>&  actives= _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
@@ -453,4 +448,324 @@ std::vector<Powiter::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(con
         }
     }
     return ret;
+}
+
+AppInstance* AppManager::getTopLevelInstance () const{
+    map<int,AppInstance*>::const_iterator it = _appInstances.find(_topLevelInstanceID);
+    if(it == _appInstances.end()){
+        return NULL;
+    }else{
+        return it->second;
+    }
+}
+
+AppManager::AppManager():
+_availableID(0),
+_topLevelInstanceID(0),
+ofxHost(new Powiter::OfxHost())
+{
+    connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
+                     this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
+    
+    /*loading all plugins*/
+    loadAllPlugins();
+    
+    loadBuiltinFormats();
+    
+    /*node cache initialisation & restoration*/
+    NodeCache* nc = NodeCache::getNodeCache();
+    U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
+                            Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*
+    getSystemTotalRAM();
+    nc->setMaximumCacheSize(nodeCacheMaxSize);
+    
+    
+    /*viewer cache initialisation & restoration*/
+    ViewerCache* viewerCache = ViewerCache::getViewerCache();
+    viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
+    viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
+    viewerCache->restore();
+    
+    KnobFactory::instance();
+    
+}
+
+AppManager::~AppManager(){
+    ViewerCache::getViewerCache()->save();
+    for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
+        delete it->second.second;
+    }
+    for(WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
+        delete it->second.second;
+    }
+    _nodeNames.clear();
+    foreach(Format* f,_formats){
+        delete f;
+    }
+    foreach(PluginToolButton* p,_toolButtons){
+        delete p;
+    }
+}
+
+void AppManager::loadAllPlugins(){
+    /*loading node plugins*/
+    loadBuiltinNodePlugins();
+    
+    /*loading read plugins*/
+    loadReadPlugins();
+    
+    /*loading write plugins*/
+    loadWritePlugins();
+    
+    /*loading ofx plugins*/
+    QStringList ofxPluginNames = ofxHost->loadOFXPlugins();
+    _nodeNames.append(ofxPluginNames);
+    
+}
+
+void AppManager::loadReadPlugins(){
+    vector<string> functions;
+    functions.push_back("BuildRead");
+    vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_READERS_PLUGINS_PATH, functions);
+    for (U32 i = 0 ; i < plugins.size(); ++i) {
+        pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
+        if(func.first){
+            Read* read = func.second(NULL);
+            assert(read);
+            vector<string> extensions = read->fileTypesDecoded();
+            string decoderName = read->decoderName();
+            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,plugins[i])));
+            delete read;
+        }
+    }
+    
+    loadBuiltinReads();
+    
+    std::map<std::string, LibraryBinary*> defaultMapping;
+    for (ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
+        if(it->first == "OpenEXR"){
+            defaultMapping.insert(make_pair("exr", it->second.second));
+        }else if(it->first == "QImage (Qt)"){
+            defaultMapping.insert(make_pair("jpg", it->second.second));
+            defaultMapping.insert(make_pair("bmp", it->second.second));
+            defaultMapping.insert(make_pair("jpeg", it->second.second));
+            defaultMapping.insert(make_pair("gif", it->second.second));
+            defaultMapping.insert(make_pair("png", it->second.second));
+            defaultMapping.insert(make_pair("pbm", it->second.second));
+            defaultMapping.insert(make_pair("pgm", it->second.second));
+            defaultMapping.insert(make_pair("ppm", it->second.second));
+            defaultMapping.insert(make_pair("xbm", it->second.second));
+            defaultMapping.insert(make_pair("xpm", it->second.second));
+        }
+    }
+    Settings::getPowiterCurrentSettings()->_readersSettings.fillMap(defaultMapping);
+}
+
+void AppManager::loadBuiltinReads(){
+    Read* readExr = ReadExr::BuildRead(NULL);
+    assert(readExr);
+    std::vector<std::string> extensions = readExr->fileTypesDecoded();
+    std::string decoderName = readExr->decoderName();
+    
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("BuildRead", (void*)&ReadExr::BuildRead));
+    LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
+    assert(EXRplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
+        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,EXRplugin)));
+    }
+    delete readExr;
+    
+    Read* readQt = ReadQt::BuildRead(NULL);
+    assert(readQt);
+    extensions = readQt->fileTypesDecoded();
+    decoderName = readQt->decoderName();
+    
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("BuildRead", (void*)&ReadQt::BuildRead));
+    LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
+    assert(Qtplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
+        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,Qtplugin)));
+    }
+    delete readQt;
+    
+    Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
+    assert(readFfmpeg);
+    extensions = readFfmpeg->fileTypesDecoded();
+    decoderName = readFfmpeg->decoderName();
+    
+    std::map<std::string,void*> FFfunctions;
+    FFfunctions.insert(make_pair("ReadBuilder", (void*)&ReadFFMPEG::BuildRead));
+    LibraryBinary *FFMPEGplugin = new LibraryBinary(FFfunctions);
+    assert(FFMPEGplugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
+        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,FFMPEGplugin)));
+    }
+    delete readFfmpeg;
+    
+}
+void AppManager::loadBuiltinNodePlugins(){
+    // these  are built-in nodes
+    _nodeNames.append("Reader");
+    _nodeNames.append("Viewer");
+    _nodeNames.append("Writer");
+    QStringList grouping;
+    grouping.push_back("io");
+    addPluginToolButtons(grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+    addPluginToolButtons(grouping, "Viewer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+    addPluginToolButtons(grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+}
+
+/*loads extra writer plug-ins*/
+void AppManager::loadWritePlugins(){
+    
+    vector<string> functions;
+    functions.push_back("BuildWrite");
+    vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_WRITERS_PLUGINS_PATH, functions);
+    for (U32 i = 0 ; i < plugins.size(); ++i) {
+        pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
+        if(func.first){
+            Write* write = func.second(NULL);
+            assert(write);
+            vector<string> extensions = write->fileTypesEncoded();
+            string encoderName = write->encoderName();
+            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,plugins[i])));
+            delete write;
+        }
+    }
+    loadBuiltinWrites();
+    std::map<std::string, LibraryBinary*> defaultMapping;
+    for (WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
+        if(it->first == "OpenEXR"){
+            defaultMapping.insert(make_pair("exr", it->second.second));
+        }else if(it->first == "QImage (Qt)"){
+            defaultMapping.insert(make_pair("jpg", it->second.second));
+            defaultMapping.insert(make_pair("bmp", it->second.second));
+            defaultMapping.insert(make_pair("jpeg", it->second.second));
+            defaultMapping.insert(make_pair("gif", it->second.second));
+            defaultMapping.insert(make_pair("png", it->second.second));
+            defaultMapping.insert(make_pair("pbm", it->second.second));
+            defaultMapping.insert(make_pair("pgm", it->second.second));
+            defaultMapping.insert(make_pair("ppm", it->second.second));
+            defaultMapping.insert(make_pair("xbm", it->second.second));
+            defaultMapping.insert(make_pair("xpm", it->second.second));
+        }
+    }
+    Settings::getPowiterCurrentSettings()->_writersSettings.fillMap(defaultMapping);
+}
+
+/*loads writes that are built-ins*/
+void AppManager::loadBuiltinWrites(){
+    Write* writeQt = WriteQt::BuildWrite(NULL);
+    assert(writeQt);
+    std::vector<std::string> extensions = writeQt->fileTypesEncoded();
+    string encoderName = writeQt->encoderName();
+    
+    std::map<std::string,void*> Qtfunctions;
+    Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
+    LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
+    assert(QtWritePlugin);
+    for (U32 i = 0 ; i < extensions.size(); ++i) {
+        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+    }
+    delete writeQt;
+    
+    Write* writeEXR = WriteExr::BuildWrite(NULL);
+    std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
+    string encoderNameExr = writeEXR->encoderName();
+    
+    std::map<std::string,void*> EXRfunctions;
+    EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
+    LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
+    assert(ExrWritePlugin);
+    for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
+        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensionsExr,ExrWritePlugin)));
+    }
+    delete writeEXR;
+}
+
+void AppManager::loadBuiltinFormats(){
+    /*initializing list of all Formats available*/
+    std::vector<std::string> formatNames;
+    formatNames.push_back("PC_Video");
+    formatNames.push_back("NTSC");
+    formatNames.push_back("PAL");
+    formatNames.push_back("HD");
+    formatNames.push_back("NTSC_16:9");
+    formatNames.push_back("PAL_16:9");
+    formatNames.push_back("1K_Super_35(full-ap)");
+    formatNames.push_back("1K_Cinemascope");
+    formatNames.push_back("2K_Super_35(full-ap)");
+    formatNames.push_back("2K_Cinemascope");
+    formatNames.push_back("4K_Super_35(full-ap)");
+    formatNames.push_back("4K_Cinemascope");
+    formatNames.push_back("square_256");
+    formatNames.push_back("square_512");
+    formatNames.push_back("square_1K");
+    formatNames.push_back("square_2K");
+    
+    std::vector< std::vector<float> > resolutions;
+    std::vector<float> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
+    std::vector<float> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
+    std::vector<float> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
+    std::vector<float> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
+    std::vector<float> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
+    std::vector<float> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
+    std::vector<float> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
+    std::vector<float> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
+    std::vector<float> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
+    std::vector<float> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
+    std::vector<float> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
+    std::vector<float> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
+    std::vector<float> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
+    std::vector<float> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
+    std::vector<float> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
+    std::vector<float> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
+    
+    resolutions.push_back(pcvideo);
+    resolutions.push_back(ntsc);
+    resolutions.push_back(pal);
+    resolutions.push_back(hd);
+    resolutions.push_back(ntsc169);
+    resolutions.push_back(pal169);
+    resolutions.push_back(super351k);
+    resolutions.push_back(cine1k);
+    resolutions.push_back(super352k);
+    resolutions.push_back(cine2K);
+    resolutions.push_back(super4K35);
+    resolutions.push_back(cine4K);
+    resolutions.push_back(square256);
+    resolutions.push_back(square512);
+    resolutions.push_back(square1K);
+    resolutions.push_back(square2K);
+    
+    assert(formatNames.size() == resolutions.size());
+    for(U32 i =0;i<formatNames.size();++i) {
+        const std::vector<float>& v = resolutions[i];
+        assert(v.size() >= 3);
+        Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
+        assert(_frmt);
+        _formats.push_back(_frmt);
+    }
+
+}
+
+Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
+    
+	for(U32 i =0;i< _formats.size();++i) {
+		Format* frmt = _formats[i];
+        assert(frmt);
+		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
+			return frmt;
+		}
+	}
+	return NULL;
+}
+
+void AppManager::addPluginToolButtons(const QStringList& groups,
+                          const QString& pluginName,
+                          const QString& pluginIconPath,
+                          const QString& groupIconPath){
+    _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }

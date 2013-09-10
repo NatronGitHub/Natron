@@ -19,7 +19,6 @@
 #include "Engine/Node.h"
 
 
-class ViewerCache;
 class ViewerInfos;
 class TabWidget;
 class ViewerTab;
@@ -30,13 +29,12 @@ class ViewerNode: public OutputNode
     
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
-    ViewerCache* _viewerCache;
     int _pboIndex;
     
 public:
     
         
-    ViewerNode(ViewerCache* cache,Model* model);
+    ViewerNode(Model* model);
     
     virtual ~ViewerNode();
     
@@ -79,6 +77,10 @@ public:
     void disconnectViewer(){
         emit viewerDisconnected();
     }
+public slots:
+    void onCachedFrameAdded();
+    void onCachedFrameRemoved();
+    void onViewerCacheCleared();
     
 protected:
     
@@ -86,6 +88,9 @@ protected:
     
 signals:
     void viewerDisconnected();
+    void addedCachedFrame(int);
+    void removedCachedFrame();
+    void clearedViewerCache();
     
 private:
     

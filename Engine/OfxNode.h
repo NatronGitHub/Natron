@@ -18,6 +18,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -130,6 +131,6 @@ private:
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-std::vector<std::string> ofxExtractAllPartsOfGrouping(const std::string& group);
+QStringList ofxExtractAllPartsOfGrouping(const QString& group);
 
 #endif // POWITER_ENGINE_OFXNODE_H_

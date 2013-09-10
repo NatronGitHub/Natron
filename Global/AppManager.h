@@ -17,6 +17,11 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
+#include <QtCore/QStringList>
+
+#ifndef Q_MOC_RUN
+#include <boost/scoped_ptr.hpp>
+#endif
 
 #include "Global/Macros.h"
 #include "Engine/Singleton.h"
@@ -34,10 +39,11 @@ class ViewerTab;
 class TabWidget;
 class Gui;
 class OutputNode;
-class QLabel;
+class Format;
 
 namespace Powiter {
     class LibraryBinary;
+    class OfxHost;
 }
 
 class Project{
@@ -60,27 +66,6 @@ public:
  by the handy macro appPTR*/
 class AppInstance : public QObject
 {
-    class PluginToolButton{
-    public:
-        PluginToolButton( std::vector<std::string> groups,
-                          std::string pluginName,
-                          std::string pluginIconPath,
-                          std::string groupIconPath):
-        _groups(groups),
-        _pluginName(pluginName),
-        _pluginIconPath(pluginIconPath),
-        _groupIconPath(groupIconPath)
-        {
-            
-        }
-        std::vector<std::string> _groups;
-        std::string _pluginName;
-        std::string _pluginIconPath;
-        std::string _groupIconPath;
-        
-    };
-    
-    std::vector<PluginToolButton*> _toolButtons;
     
 public:
     AppInstance(int appID,const QString& projectName = QString());
@@ -93,10 +78,6 @@ public:
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
     Node* createNode(const QString& name);
-    
-    /*Get a reference to the list of all the node names 
-     available. E.g : Viewer,Reader, Blur, etc...*/
-    const QStringList& getNodeNameList();
     
     /*Pointer to the GUI*/
     Gui* getGui(){return _gui;}
@@ -117,11 +98,6 @@ public:
     ViewerNode* getCurrentViewer();
     
     Writer* getCurrentWriter();
-    
-    void stackPluginToolButtons(const std::vector<std::string>& groups,
-                             const std::string& pluginName,
-                             const std::string& pluginIconPath,
-                             const std::string& groupIconPath);
     
     const std::vector<Node*> getAllActiveNodes() const;
     
@@ -178,9 +154,7 @@ private:
      whether he/she wants to load it. If something was loaded this function
      returns true,otherwise false.*/
     bool findAutoSave();
-    
-    void addBuiltinPluginToolButtons();
-    
+        
     Model* _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
     
@@ -191,22 +165,61 @@ private:
     std::map<Node*,NodeGui*> _nodeMapping;
 };
 
-class AppManager : public Singleton<AppManager>{
-    
-    std::map<int,AppInstance*> _appInstances;
-    int _availableID;
+class AppManager : public QObject, public Singleton<AppManager>
+{
+
+    Q_OBJECT
     
 public:
     
-    AppManager():_availableID(0){}
+    class PluginToolButton{
+    public:
+        PluginToolButton(const QStringList& groups,
+                         const QString& pluginName,
+                         const QString& pluginIconPath,
+                         const QString& groupIconPath):
+        _groups(groups),
+        _pluginName(pluginName),
+        _pluginIconPath(pluginIconPath),
+        _groupIconPath(groupIconPath)
+        {
+            
+        }
+        QStringList _groups;
+        QString _pluginName;
+        QString _pluginIconPath;
+        QString _groupIconPath;
+        
+    };
+
+    typedef std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> >::iterator ReadPluginsIterator;
+    typedef ReadPluginsIterator WritePluginsIterator;
     
-    virtual ~AppManager() {}
+    AppManager();
+    
+    virtual ~AppManager();
+    
+    const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const {return ofxHost;}
     
     AppInstance* newAppInstance(const QString& projectName = QString());
     
     AppInstance* getAppInstance(int appID) const;
     
     void removeInstance(int appID);
+    
+    void setAsTopLevelInstance(int appID){
+        _topLevelInstanceID = appID;
+    }
+    
+    AppInstance* getTopLevelInstance () const;
+    
+    /*Return a list of the name of all nodes available currently in the software*/
+    const QStringList& getNodeNameList(){return _nodeNames;}
+    
+    /*Find a builtin format with the same resolution and aspect ratio*/
+    Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
+    
+    const std::vector<PluginToolButton*>& getPluginsToolButtons() const {return _toolButtons;}
     
     /*Tries to load all plugins in directory "where"*/
     static std::vector<Powiter::LibraryBinary*> loadPlugins(const QString& where);
@@ -215,6 +228,63 @@ public:
      their name in "functions".*/
     static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
                                                                             const std::vector<std::string>& functions);
+ 
+public slots:
+    
+    void addPluginToolButtons(const QStringList& groups,
+                                const QString& pluginName,
+                                const QString& pluginIconPath,
+                                const QString& groupIconPath);
+    
+private:
+    
+    /*Loads all kind of plugins*/
+    void loadAllPlugins();
+    
+    //////////////////////////////
+    //// NODE PLUGINS
+    /* Viewer,Reader,Writer...etc.
+     No function to load external plugins
+     yet since the SDK isn't released.*/
+    void loadBuiltinNodePlugins();
+    //////////////////////////////
+    
+    //////////////////////////////
+    //// READ PLUGINS
+    /*loads extra reader plug-ins */
+    void loadReadPlugins();
+    /*loads reads that are incorporated to Powiter*/
+    void loadBuiltinReads();
+    //////////////////////////////
+
+    //////////////////////////////
+    //// WRITE PLUGINS
+    /*loads extra writer plug-ins*/
+    void loadWritePlugins();
+    /*loads writes that are built-ins*/
+    void loadBuiltinWrites();
+    //////////////////////////////
+    
+    void loadBuiltinFormats();
+    
+    
+    std::map<int,AppInstance*> _appInstances;
+    
+    int _availableID;
+    
+    int _topLevelInstanceID;
+    
+    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _readPluginsLoaded;
+    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _writePluginsLoaded;
+    
+    std::vector<Format*> _formats;
+    
+    QStringList _nodeNames;
+    
+    boost::scoped_ptr<Powiter::OfxHost> ofxHost;
+    
+    std::vector<PluginToolButton*> _toolButtons;
+    
 };
 
 

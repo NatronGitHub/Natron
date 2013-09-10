@@ -505,13 +505,13 @@ void Separator_KnobGui::createWidget(QGridLayout* layout,int row){
 //=============================RGBA_KNOB_GUI===================================
 void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _rBox = new FeedbackSpinBox(this,true);
-    QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged(double)));
+    QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     _gBox = new FeedbackSpinBox(this,true);
-    QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged(double)));
+    QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     _bBox = new FeedbackSpinBox(this,true);
-    QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged(double)));
+    QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     _aBox = new FeedbackSpinBox(this,true);
-    QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged(double)));
+    QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     
     
     QVector4D values = _knob->getMinimum().getQVariant().value<QVector4D>();

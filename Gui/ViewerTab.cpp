@@ -437,6 +437,12 @@ _maximized(false)
         
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
+    QObject::connect(_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
+    
+    QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(int)),this,SLOT(onCachedFrameAdded(int)));
+    QObject::connect(_viewerNode,SIGNAL(removedCachedFrame()),this,SLOT(onCachedFrameRemoved()));
+    QObject::connect(_viewerNode,SIGNAL(clearedViewerCache()),this,SLOT(onViewerCacheCleared()));
+    
     
 }
 void ViewerTab::toggleLoopMode(bool b){
@@ -598,4 +604,14 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
  
 void ViewerTab::disconnectViewer(){
     viewer->disconnectViewer();
+}
+
+void ViewerTab::onCachedFrameAdded(int i){
+    frameSeeker->addCachedFrame(i);
+}
+void ViewerTab::onCachedFrameRemoved(){
+    frameSeeker->removeCachedFrame();
+}
+void ViewerTab::onViewerCacheCleared(){
+    frameSeeker->clearCachedFrames();
 }

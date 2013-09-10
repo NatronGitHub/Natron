@@ -62,7 +62,7 @@ public:
     virtual void removeReference() {--_refCount; assert(_refCount >= 0);}
     
     /*Returns true if the cache can delete this entry*/
-    virtual bool isRemovable() const {return !_refCount;}
+    virtual bool isRemovable() const {return _refCount == 0;}
     
     /*Returns the size of the entry in bytes.*/
     virtual U64 size() const {return _size;}

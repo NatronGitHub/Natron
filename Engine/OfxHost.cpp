@@ -26,9 +26,8 @@
 
 using namespace Powiter;
 
-Powiter::OfxHost::OfxHost(Model* model)
-:_model(model),
-_imageEffectPluginCache(*this)
+Powiter::OfxHost::OfxHost()
+:_imageEffectPluginCache(*this)
 {
     _properties.setStringProperty(kOfxPropName, "PowiterHost");
     _properties.setStringProperty(kOfxPropLabel, "Powiter");
@@ -187,7 +186,6 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
     Powiter::OfxImageEffectInstance* ofxInstance = node->effectInstance();
     ofxInstance->createInstanceAction();
     ofxInstance->getClipPreferences();
-    //const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> clips = ofxInstance->getDescriptor().getClipsByOrder();
     return node;
 }
 
@@ -229,37 +227,36 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
         assert(p);
         if(p->getContexts().size() == 0)
             continue;
-        std::string name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel);
-        if(name.empty()){
-            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel);
+        QString name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel).c_str();
+        if(name.isEmpty()){
+            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel).c_str();
         }
-        std::string rawName = name;
-        std::string id = p->getIdentifier();
-        std::string grouping = p->getDescriptor().getPluginGrouping();
+        QString rawName = name;
+        QString id = p->getIdentifier().c_str();
+        QString grouping = p->getDescriptor().getPluginGrouping().c_str();
 
 
-        std::vector<std::string> groups = ofxExtractAllPartsOfGrouping(grouping);
+        QStringList groups = ofxExtractAllPartsOfGrouping(grouping);
         if (groups.size() >= 1) {
             name.append("  [");
             name.append(groups[0]);
             name.append("]");
         }
         assert(p->getBinary());
-        std::string iconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-        iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+        QString iconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
+        iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
         iconFilename.append(id);
         iconFilename.append(".png");
-        std::string groupIconFilename;
+        QString groupIconFilename;
         if (groups.size() >= 1) {
-            groupIconFilename = p->getBinary()->getBundlePath() + "/Contents/Resources/";
-            groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1));
+            groupIconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
+            groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        // FIXME: maybe use signal/slot for the following to disconnect core functionality from GUI
-        _model->getApp()->stackPluginToolButtons(groups,rawName,iconFilename,groupIconFilename); // FIXME: this really belongs to the GUI
-        _ofxPlugins.insert(make_pair(name, make_pair(id, grouping)));
-        pluginNames.append(name.c_str());
+        emit toolButtonAdded(groups, rawName, iconFilename, groupIconFilename);
+        _ofxPlugins.insert(make_pair(name.toStdString(), make_pair(id.toStdString(), grouping.toStdString())));
+        pluginNames.append(name);
     }
     return pluginNames;
 }

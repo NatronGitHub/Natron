@@ -22,23 +22,19 @@
 #include "Global/AppManager.h"
 #include "Engine/Model.h"
 #include "Engine/Settings.h"
-#include "Gui/ViewerGL.h"
 #include "Engine/MemoryFile.h"
-#include "Gui/Gui.h"
-#include "Gui/ViewerTab.h"
-#include "Gui/Timeline.h"
-#include "Readers/Reader.h"
 #include "Engine/Hash64.h"
 #include "Engine/Row.h"
 #include "Engine/Format.h"
 #include "Engine/ViewerNode.h"
 
+#include "Readers/Reader.h"
+
 using namespace std;
 using namespace Powiter;
 
 
-ViewerCache::ViewerCache(Model* model) : AbstractDiskCache(0),
-_model(model)
+ViewerCache::ViewerCache() : AbstractDiskCache(0)
 {}
 
 ViewerCache::~ViewerCache(){}
@@ -236,31 +232,22 @@ FrameEntry* ViewerCache::addFrame(U64 key,
         delete out;
         return NULL;
     }
-    ViewerNode* viewer = _model->getVideoEngine()->getCurrentDAG().outputAsViewer();
-    if(viewer){
-        viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
-    }
+    emit addedFrame();
     out->addReference(); //increase refcount BEFORE adding it to the cache and exposing it to the other threads
     if(AbstractDiskCache::add(key, out)){
-        if(viewer)
-            viewer->getUiContext()->frameSeeker->removeCachedFrame();
+        emit removedFrame();
     }
     assert(out->getMappedFile()->data());
     return out;
 }
 
 void ViewerCache::clearInMemoryPortion(){
-    if(!_model->getVideoEngine())
-        return;
-    ViewerNode* viewer = _model->getVideoEngine()->getCurrentDAG().outputAsViewer();
-    if(viewer)
-        viewer->getUiContext()->frameSeeker->clearCachedFrames();
+    emit clearedInMemoryFrames();
     clearInMemoryCache();
 }
 
 FrameEntry* ViewerCache::get(U64 key){
     CacheEntry* entry = isInMemory(key);
-    ViewerNode* viewer = _model->getVideoEngine()->getCurrentDAG().outputAsViewer();
     if (!entry) {// not in memory
         entry = getCacheEntry(key);
         if(!entry){ //neither on disk
@@ -271,14 +258,13 @@ FrameEntry* ViewerCache::get(U64 key){
             if(!frameEntry->reOpen()){
                 return NULL;
             }
-            viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
+            emit addedFrame();
             return frameEntry;
         }
     }else{ // found in memory
         FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
-        if(viewer)
-            viewer->getUiContext()->frameSeeker->addCachedFrame(viewer->currentFrame());
+        emit addedFrame();
         return frameEntry;
     }
     return NULL;
