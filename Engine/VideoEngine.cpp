@@ -96,16 +96,18 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         ViewerNode* viewer = _dag.outputAsViewer();
         zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
-        viewer->getUiContext()->play_Forward_Button->setChecked(forward);
-        viewer->getUiContext()->play_Forward_Button->setDown(forward);
-        viewer->getUiContext()->play_Backward_Button->setChecked(!forward);
-        viewer->getUiContext()->play_Backward_Button->setDown(!forward);
+        emit engineStarted(forward);
     }else{
         zoomFactor = 1.f;
     }
     
-
+    U64 oldVersion = _treeVersion;
     changeTreeVersion();
+    
+    /*If the DAG changed we clear the playback cache.*/
+    if(_treeVersion != oldVersion){
+        _model->clearPlaybackCache();
+    }
     
     _lastRunArgs._zoomFactor = zoomFactor;
     _lastRunArgs._sameFrame = sameFrame;
@@ -123,10 +125,8 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
 }
 void VideoEngine::stopEngine(){
     if(_dag.isOutputAViewer()){
-        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setChecked(false);
-        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setDown(false);
-        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setChecked(false);
-        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setDown(false);
+        emit engineStopped();
+
     }
     // cout << "- STOPPING ENGINE"<<endl;
     _lastRunArgs._frameRequestsCount = 0;
@@ -236,19 +236,18 @@ void VideoEngine::run(){
             /*!recursiveCall means this is the first time it's called for the sequence.*/
             if(!_lastRunArgs._recursiveCall){
                 currentFrame = viewer->getTimeLine().currentFrame();
-                if(!_lastRunArgs._sameFrame){
-                    firstFrame = _dag.firstFrame();
-                    lastFrame = _dag.lastFrame();
-                    
-                    /*clamping the current frame to the range [first,last] if it wasn't*/
-                    if(currentFrame < firstFrame){
-                        currentFrame = firstFrame;
-                    }
-                    else if(currentFrame > lastFrame){
-                        currentFrame = lastFrame;
-                    }
-                    viewer->getTimeLine().seek(currentFrame);
+                firstFrame = _dag.firstFrame();
+                lastFrame = _dag.lastFrame();
+                
+                /*clamping the current frame to the range [first,last] if it wasn't*/
+                if(currentFrame < firstFrame){
+                    currentFrame = firstFrame;
                 }
+                else if(currentFrame > lastFrame){
+                    currentFrame = lastFrame;
+                }
+                viewer->getTimeLine().seek(currentFrame);
+                
             }else{ // if the call is recursive, i.e: the next frame in the sequence
                 /*clear the node cache, as it is very unlikely the user will re-use
                  data from previous frame.*/
@@ -356,7 +355,7 @@ void VideoEngine::run(){
             r = columnSpan.second+1;
             
             
-            iscached = viewer->get(key);
+            iscached = ViewerCache::getViewerCache()->get(key);
             
             /*Found in viewer cache, we execute the cached engine and leave*/
             if(iscached){
@@ -663,10 +662,7 @@ void VideoEngine::abort(){
     _mutex->unlock();
     if(_dag.outputAsViewer()){
         _dag.outputAsViewer()->getUiContext()->viewer->forceUnmapPBO();
-        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setChecked(false);
-        _dag.outputAsViewer()->getUiContext()->play_Backward_Button->setDown(false);
-        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setChecked(false);
-        _dag.outputAsViewer()->getUiContext()->play_Forward_Button->setDown(false);
+        emit engineStopped();
     }
 }
 
@@ -835,7 +831,7 @@ void VideoEngine::runTasks(){
 void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
-            return;
+          return;
         _dag.outputAsViewer()->getTimeLine().seek(frameNB);
 
         render(frameCount,initViewer,forward,sameFrame);

@@ -472,6 +472,6 @@ void TimeLineGui::setFrameRange(int min,int max){
 void TimeLineGui::setBoundaries(int first,int last){
     _first = first;
     _last = last;
-    repaint();
+    // repaint();
 }
 int TimeLineGui::currentFrame() const{return _timeLine.currentFrame();}

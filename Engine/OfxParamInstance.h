@@ -73,7 +73,6 @@ class OfxIntegerInstance : public QObject,public OFX::Host::Param::IntegerInstan
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    int _value;
     Int_Knob* _knob;
     std::string _paramName;
 public:
@@ -103,7 +102,6 @@ class OfxDoubleInstance :public QObject, public OFX::Host::Param::DoubleInstance
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    double _value;
     std::string _paramName;
     Double_Knob* _knob;
 public:
@@ -133,7 +131,6 @@ class OfxBooleanInstance : public QObject,public OFX::Host::Param::BooleanInstan
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    bool _value;
     Bool_Knob* _knob;
     std::string _paramName;
 public:
@@ -163,7 +160,6 @@ class OfxChoiceInstance :public QObject, public OFX::Host::Param::ChoiceInstance
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    std::string _currentEntry;
     std::vector<std::string> _entries;
     ComboBox_Knob* _knob;
     std::string _paramName;
@@ -192,7 +188,6 @@ class OfxRGBAInstance :public QObject, public OFX::Host::Param::RGBAInstance {
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    QVector4D _color;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
@@ -221,7 +216,6 @@ class OfxRGBInstance :public QObject, public OFX::Host::Param::RGBInstance {
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    QVector4D _color;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
@@ -249,7 +243,6 @@ class OfxDouble2DInstance : public QObject,public OFX::Host::Param::Double2DInst
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _values[2];
     Double_Knob* _knob;
     std::string _paramName;
 public:
@@ -278,7 +271,6 @@ class OfxInteger2DInstance :public QObject, public OFX::Host::Param::Integer2DIn
 protected:
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    int _values[2];
     Int_Knob *_knob;
     std::string _paramName;
 public:

@@ -186,7 +186,7 @@ public:
     virtual void redo();
     
 private:
-    std::map<int,Node*> _outputs;
+    std::multimap<int,Node*> _outputs;
     std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
@@ -201,7 +201,7 @@ public:
     virtual void redo();
     
 private:
-    std::map<int,Node*> _outputs;
+    std::multimap<int,Node*> _outputs;
     std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;

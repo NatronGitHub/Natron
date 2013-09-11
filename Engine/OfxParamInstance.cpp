@@ -86,28 +86,26 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
-    _knob->setValue(def);
-
+    set(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
-    v = _value;
+    v = _knob->getValues()[0];
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::get(OfxTime /*time*/, int& v) {
-    v = _value;
+    v = _knob->getValues()[0];
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::set(int v){
-    _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
 }
 OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
-    _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
 }
 void OfxIntegerInstance::onInstanceChanged(){
+   
     _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
@@ -147,23 +145,22 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     _knob->setMinimum(min);
     _knob->setMaximum(max);
     _knob->setIncrement(incr);
-    _knob->setValue(def);
+    set(def);
+    
 }
 OfxStatus OfxDoubleInstance::get(double& v){
-    v = _value;
+    v = _knob->getValues()[0];
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::get(OfxTime /*time*/, double& v){
-    v = _value;
+    v = _knob->getValues()[0];
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::set(double v) {
-    _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
 }
 OfxStatus OfxDoubleInstance::set(OfxTime /*time*/, double v){
-    _value = v;
     _knob->setValue(v);
     return kOfxStatOK;
 }
@@ -207,25 +204,23 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
-    _knob->setValue(def);
+    set((bool)def);
     
 }
 OfxStatus OfxBooleanInstance::get(bool& b){
-    b = _value;
+    b = _knob->getValue();
     return kOfxStatOK;
 }
 OfxStatus OfxBooleanInstance::get(OfxTime /*time*/, bool& b) {
-    b = _value;
+    b = _knob->getValue();
     return kOfxStatOK;
 }
 OfxStatus OfxBooleanInstance::set(bool b){
-    _value = b;
     _knob->setValue(b);
     return kOfxStatOK;
 }
 
 OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
-    _value = b;
     _knob->setValue(b);
     return kOfxStatOK;
 }
@@ -274,21 +269,11 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     set(def);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
-    for (unsigned int i = 0; i < _entries.size(); ++i) {
-        if (_entries[i] == _currentEntry) {
-            v = i;
-            return kOfxStatOK;
-        }
-    }
+    v = _knob->getActiveEntry();
     return kOfxStatErrBadIndex;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
-    for (unsigned int i = 0; i < _entries.size(); ++i) {
-        if (_entries[i] == _currentEntry) {
-            v = i;
-            return kOfxStatOK;
-        }
-    }
+    v = _knob->getActiveEntry();
     return kOfxStatErrBadIndex;
 }
 OfxStatus OfxChoiceInstance::set(int v){
@@ -351,13 +336,11 @@ _paramName(name){
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
     double defA = getProperties().getDoubleProperty(kOfxParamPropDefault,3);
-    _color.setX(defR);
-    _color.setY(defG);
-    _color.setZ(defB);
-    _color.setW(defA);
-    _knob->setValue(_color);
+    set(defR, defG, defB, defA);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
+  
+    QVector4D _color = _knob->getValues();
     r = _color.x();
     g = _color.y();
     b = _color.z();
@@ -365,6 +348,7 @@ OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::get(OfxTime /*time*/, double&r ,double& g, double& b, double& a) {
+    QVector4D _color = _knob->getValues();
     r = _color.x();
     g = _color.y();
     b = _color.z();
@@ -372,6 +356,7 @@ OfxStatus OfxRGBAInstance::get(OfxTime /*time*/, double&r ,double& g, double& b,
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
+    QVector4D _color;
     _color.setX(r);
     _color.setY(g);
     _color.setZ(b);
@@ -380,6 +365,7 @@ OfxStatus OfxRGBAInstance::set(double r,double g , double b ,double a){
     return kOfxStatOK;
 }
 OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,double a){
+    QVector4D _color;
     _color.setX(r);
     _color.setY(g);
     _color.setZ(b);
@@ -427,26 +413,24 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
     
-    _color.setX(defR);
-    _color.setY(defG);
-    _color.setZ(defB);
-    _color.setW(1.0);
-    _knob->setValue(_color);
-    
+    set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
+    QVector4D _color = _knob->getValues();
     r = _color.x();
     g = _color.y();
     b = _color.z();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::get(OfxTime /*time*/, double& r, double& g, double& b) {
+    QVector4D _color = _knob->getValues();
     r = _color.x();
     g = _color.y();
     b = _color.z();
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(double r,double g,double b){
+    QVector4D _color;
 	_color.setX(r);
     _color.setY(g);
     _color.setZ(b);
@@ -455,6 +439,7 @@ OfxStatus OfxRGBInstance::set(double r,double g,double b){
     return kOfxStatOK;
 }
 OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
+    QVector4D _color;
 	_color.setX(r);
     _color.setY(g);
     _color.setZ(b);
@@ -510,33 +495,33 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     maximum[1] = getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1);
     increment[1] = getProperties().getDoubleProperty(kOfxParamPropIncrement,1);
     def[1] = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
-    
-    _values[0] = def[0];
-    _values[1] = def[1];
-    
     _knob->setMinimum<double>(minimum,2);
     _knob->setMaximum<double>(maximum,2);
     _knob->setIncrement<double>(increment,2);
-    _knob->setValue<double>(_values,2);
+    _knob->setValue<double>(def,2);
     
 }
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
+    const vector<double>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::get(OfxTime /*time*/, double& x1, double& x2) {
+    const vector<double>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::set(double x1,double x2){
+    double _values[2];
 	_values[0] = x1;
     _values[1] = x2;
     _knob->setValue<double>(_values,2);
 	return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
+    double _values[2];
 	_values[0] = x1;
     _values[1] = x2;
     _knob->setValue<double>(_values,2);
@@ -589,32 +574,32 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     maximum[1] = getProperties().getIntProperty(kOfxParamPropDisplayMax,1);
     increment[1] = getProperties().getIntProperty(kOfxParamPropIncrement,1);
     def[1] = getProperties().getIntProperty(kOfxParamPropDefault,1);
-    
-    _values[0] = def[0];
-    _values[1] = def[1];
-    
     _knob->setMinimum<int>(minimum,2);
     _knob->setMaximum<int>(maximum,2);
     _knob->setIncrement<int>(increment,2);
-    _knob->setValue<int>(_values,2);
+    _knob->setValue<int>(def,2);
 }
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
+    const vector<int>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::get(OfxTime /*time*/, int& x1, int& x2) {
+    const vector<int>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::set(int x1,int x2){
+    int _values[2];
 	_values[0] = x1;
     _values[1] = x2;
    _knob->setValue<int>(_values,2);
 	return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
+    int _values[2];
 	_values[0] = x1;
     _values[1] = x2;
     _knob->setValue<int>(_values,2);
@@ -663,8 +648,10 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
 }
 void OfxGroupInstance::addKnob(Knob *k) {
     if(_groupKnob){
+        k->setParentKnob(_groupKnob);
         _groupKnob->addKnob(k);
     }else{
+        k->setParentKnob(_node->getTabKnob());
         _node->getTabKnob()->addKnob(_paramName, k);
     }
 }
@@ -713,6 +700,8 @@ _fileKnob(0),_outputFileKnob(0){
             _stringKnob->turnOffNewLine();
         }
         _stringKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+        _returnValue = getProperties().getStringProperty(kOfxParamPropDefault,1);
+        set(_returnValue.c_str());
     }
     
 }
@@ -732,7 +721,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     }else if(_outputFileKnob){
         str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
     }else{
-        str = _returnValue;
+        str = _stringKnob->getString();
     }
     return kOfxStatOK;
 }
@@ -752,7 +741,7 @@ OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     }else if(_outputFileKnob){
         str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
     }else{
-        str = _returnValue;
+        str = _stringKnob->getString();
     }
     return kOfxStatOK;
 }
@@ -829,7 +818,7 @@ void OfxStringInstance::onInstanceChanged(){
          _node->computePreviewImage();
 
     }
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+     _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);

@@ -144,6 +144,10 @@ public slots:
     void onCachedFrameRemoved();
     void onViewerCacheCleared();
     
+    void onEngineStarted(bool forward);
+    
+    void onEngineStopped();
+    
 signals:
     void recenteringNeeded();
     

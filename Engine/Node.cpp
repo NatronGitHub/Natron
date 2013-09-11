@@ -65,8 +65,8 @@ void Node::clear_info(){
     
 }
 void Node::Info::reset(){
-    _firstFrame = -1;
-    _lastFrame = -1;
+    _firstFrame = 0;
+    _lastFrame = 0;
     _ydirection = 0;
     _channels = Mask_None;
     _dataWindow.set(0, 0, 0, 0);
@@ -90,11 +90,18 @@ void Node::merge_info(bool forReal){
 	int final_direction=0;
 	ChannelSet chans;
     bool displayMode = info().rgbMode();
+    int count = 0;
 	for (Node::InputMap::const_iterator it = getInputs().begin();
          it!=getInputs().end();++it) {
-        
+        if(!it->second)
+            continue;
         Node* input = it->second;
-        merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
+        if(count > 0)
+            merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
+        else{
+            _info.set_firstFrame(input->info().firstFrame());
+            _info.set_lastFrame(input->info().lastFrame());
+        }
         if(forReal){
             final_direction+=input->info().ydirection();
             chans += input->info().channels();
@@ -114,6 +121,12 @@ void Node::merge_info(bool forReal){
         }
         _info.merge_dataWindow(input->info().dataWindow());
         _info.merge_displayWindow(input->info().displayWindow());
+        ++count;
+    }
+    if(isOutputNode()){
+        OutputNode* node =  dynamic_cast<OutputNode*>(this);
+        node->getTimeLine().setFirstFrame(_info.firstFrame());
+        node->getTimeLine().setLastFrame(_info.lastFrame());
     }
     U32 size = getInputs().size();
     if(size > 0)
@@ -244,9 +257,6 @@ bool Node::connectInput(Node* input,int inputNumber){
         return false;
     }else{
         if (it->second == NULL) {
-//            if(!_gui->connectEdge(inputNumber, input->_gui)){
-//                return false;
-//            }
             _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber,input));
             emit inputChanged(inputNumber);
@@ -258,86 +268,74 @@ bool Node::connectInput(Node* input,int inputNumber){
 }
 
 void Node::connectOutput(Node* output,int outputNumber ){
-    OutputMap::iterator it = _outputs.find(outputNumber);
-    if (it != _outputs.end()) {
-        _outputs.erase(it);
-    }
+    assert(output);
+    disconnectOutput(output);
     _outputs.insert(make_pair(outputNumber,output));
 }
 
-bool Node::disconnectInput(int inputNumber){
+int Node::disconnectInput(int inputNumber){
     InputMap::const_iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
-        return false;
+        return -1;
     }else{
         if(it->second == NULL){
-            return false;
+            return -1;
         }else{
             _inputs.insert(make_pair(inputNumber, (Node*)NULL));
             emit inputChanged(inputNumber);
-            return true;
+            return it->first;
         }
     }
 }
 
-bool Node::disconnectInput(Node* input){
+int Node::disconnectInput(Node* input){
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second == input) {
             _inputs.erase(it);
             _inputs.insert(make_pair(it->first, (Node*)NULL));
             emit inputChanged(it->first);
-            return true;
+            return it->first;
         }else{
-            return false;
+            return -1;
         }
     }
-    return false;
+    return -1;
 }
 
-bool Node::disconnectOutput(int outputNumber){
-    OutputMap::iterator it = _inputs.find(outputNumber);
-    if (it == _outputs.end()) {
-        return false;
-    }else{
-        if(it->second == NULL){
-            return false;
-        }else{
-            _outputs.erase(it);
-            _outputs.insert(make_pair(outputNumber, (Node*)NULL));
-            return true;
-        }
-    }
-    
-}
-
-bool Node::disconnectOutput(Node* output){
-    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+int Node::disconnectOutput(Node* output){
+    for (OutputMap::iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
         if (it->second == output) {
+            int outputNumber = it->first;;
             _outputs.erase(it);
-            _outputs.insert(make_pair(it->first, (Node*)NULL));
-            return true;
-        }else{
-            return false;
+            return outputNumber;
         }
     }
-    return false;
+    return -1;
 }
 
 
+/*After this call this node still knows the link to the old inputs/outputs
+ but no other node knows this node.*/
 void Node::deactivate(){
+    /*Removing this node from the output of all inputs*/
+    _deactivatedState._inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(it->second)
-            _model->disconnect(it->second,this);
+        if(it->second){
+            int outputNb = it->second->disconnectOutput(this);
+            _deactivatedState._inputConnections.insert(make_pair(it->second, make_pair(outputNb, it->first)));
+            it->second = NULL;
+        }
     }
     Node* firstChild = 0;
-    OutputMap outputsCopy = _outputs;
+    _deactivatedState._outputsConnections.clear();
     for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(!it->second)
             continue;
         if(it == _outputs.begin()){
             firstChild = it->second;
         }
-        _model->disconnect(this, it->second);
+        int inputNb = it->second->disconnectInput(this);
+        _deactivatedState._outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     emit deactivated();
     if(firstChild){
@@ -347,26 +345,32 @@ void Node::deactivate(){
 }
 
 void Node::activate(){
-    // _gui->activate();
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        _model->connect(it->first,it->second, this);
+        if(!it->second)
+            continue;
+        InputConnectionsIterator found = _deactivatedState._inputConnections.find(it->second);
+        if(found == _deactivatedState._inputConnections.end()){
+            cout << "Big issue while activating this node, canceling process." << endl;
+            return;
+        }
+        /*InputNumber must be the same than the one we stored at disconnection time.*/
+        assert(found->second.first == it->first);
+        it->second->connectOutput(this,found->second.first);
     }
     Node* firstChild = 0;
     for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
+        if(!it->second)
+            continue;
         if(it == _outputs.begin()){
             firstChild = it->second;
         }
-        if(!it->second)
-            continue;
-        int inputNb = 0;
-        for (InputMap::const_iterator it2 = it->second->getInputs().begin();
-             it2 != it->second->getInputs().end(); ++it2) {
-            if (it2->second == this) {
-                inputNb = it2->first;
-                break;
-            }
+        OutputConnectionsIterator found = _deactivatedState._outputsConnections.find(it->second);
+        if(found == _deactivatedState._outputsConnections.end()){
+            cout << "Big issue while activating this node, canceling process." << endl;
+            return;
         }
-        _model->connect(inputNb,this, it->second);
+        assert(found->second.first == it->first);
+        it->second->connectInput(this,found->second.first);
     }
     emit activated();
 
@@ -488,12 +492,7 @@ bool Node::isInputConnected(int inputNb) const{
 }
 
 bool Node::hasOutputConnected() const{
-    for(OutputMap::const_iterator it = _outputs.begin();it!=_outputs.end();++it){
-        if(it->second){
-            return true;
-        }
-    }
-    return false;
+    return _outputs.size() > 0;
 }
 
 void Node::removeKnob(Knob* knob){

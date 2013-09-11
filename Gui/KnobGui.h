@@ -20,6 +20,7 @@
 #include <QUndoCommand>
 #include <QWidget>
 #include <QLineEdit>
+#include <QLabel>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -29,7 +30,6 @@
 
 class TabWidget;
 class QCheckBox;
-class QGroupBox;
 class Node;
 class LineEdit;
 class Button;
@@ -40,6 +40,8 @@ class QLabel;
 class QGridLayout;
 class Knob;
 class QVBoxLayout;
+class QHBoxLayout;
+class QGridLayout;
 class KnobGui : public QWidget
 {
     Q_OBJECT
@@ -64,10 +66,10 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QGridLayout* layout,int row){
-        createWidget(layout, row);
+    void createGUI(QGridLayout* layout,int row,int offset){
+        createWidget(layout, row,offset);
         _widgetCreated = true;
-        updateGUI(_lastInteralValueTracked);
+        updateGUI(_knob->getValueAsVariant());
     }
     
     void pushUndoCommand(QUndoCommand* cmd);
@@ -79,7 +81,6 @@ public slots:
      This should in turn update the GUI but not emit the valueChanged()
      signal.*/
     void onInternalValueChanged(const Variant& variant){
-        _lastInteralValueTracked = variant;
         if(_widgetCreated)
             updateGUI(variant);
     }
@@ -92,7 +93,7 @@ signals:
     
 protected:
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
-    virtual void createWidget(QGridLayout* layout,int row)=0;
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset)=0;
     
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
@@ -115,7 +116,6 @@ private:
     bool _triggerNewLine;
     int _spacingBetweenItems;
     bool _widgetCreated;
-    Variant _lastInteralValueTracked;
 };
 
 //================================
@@ -131,7 +131,7 @@ public:
 
     virtual ~File_KnobGui(){}
             
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
 public slots:
     void open_file();
@@ -166,7 +166,7 @@ public:
     
     virtual ~OutputFile_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
 public slots:
     void open_file();
@@ -204,7 +204,7 @@ public:
     
     virtual ~Int_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     void setMaximum(int);
     void setMinimum(int);
@@ -233,7 +233,7 @@ public:
 
     virtual ~Bool_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
 public slots:
     
@@ -262,7 +262,7 @@ public:
     
     virtual ~Double_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     void setMaximum(int);
     void setMinimum(int);
@@ -291,7 +291,7 @@ public:
     
     virtual ~Button_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     
 public slots:
@@ -318,7 +318,7 @@ public:
     
     virtual ~ComboBox_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
         
 public slots:
@@ -344,7 +344,7 @@ public:
     
     virtual ~Separator_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
 protected:
     
@@ -364,7 +364,7 @@ public:
     
     virtual ~RGBA_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     void disablePermantlyAlpha();
     
@@ -411,7 +411,7 @@ public:
 	
     virtual ~String_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     public slots:
     void onStringChanged(const QString& str);
@@ -426,24 +426,58 @@ private:
 
 
 /***************************/
+
+class GroupBoxLabel : public QLabel{
+    Q_OBJECT
+    
+    bool _checked;
+public:
+    
+    GroupBoxLabel(QWidget* parent = 0);
+    
+    virtual ~GroupBoxLabel(){}
+    
+    virtual void mousePressEvent(QMouseEvent*){
+        emit checked(!_checked);
+    }
+    
+    bool isChecked() const {return _checked;}
+    
+public slots:
+    
+    void setChecked(bool);
+    
+signals:
+    void checked(bool);
+    
+    
+    
+};
+
+
+
 class Group_KnobGui : public KnobGui{
     Q_OBJECT
 public:
     static KnobGui* BuildKnobGui(Knob* knob){ return new Group_KnobGui(knob); }
 
     
-    Group_KnobGui(Knob* knob):KnobGui(knob){}
+    Group_KnobGui(Knob* knob):KnobGui(knob),_checked(false){}
     
     virtual ~Group_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row);
-
-    void addKnobs(const std::vector<KnobGui*>& children);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    
+    void addKnob(KnobGui* child,int row,int column){
+        _children.push_back(std::make_pair(child,std::make_pair(row,column)));
+    }
+    
+    bool isChecked() const {return _button->isChecked();}
     
 protected:
     
     
-    virtual void updateGUI(const Variant& variant){(void)variant;}
+    virtual void updateGUI(const Variant& variant);
     
     
 public slots:
@@ -451,10 +485,11 @@ public slots:
 
     
 private:
-    
-    QGroupBox* _box;
-    QVBoxLayout* _boxLayout;
-    std::vector<KnobGui*> _children;
+    bool _checked;
+    QGridLayout* _layout;
+    GroupBoxLabel* _button;
+    QLabel* _name;
+    std::vector< std::pair< KnobGui*,std::pair<int,int> > > _children;
 };
 
 
@@ -471,7 +506,7 @@ public:
     
     ~Tab_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row);
+    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     void addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs);
     

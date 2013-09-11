@@ -129,6 +129,10 @@ public:
 
     void clearNodes();
     
+    void connectViewersToViewerCache();
+    
+    void disconnectViewersFromViewerCache();
+    
 public slots:
     void clearPlaybackCache();
     

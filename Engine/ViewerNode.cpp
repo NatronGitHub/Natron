@@ -33,12 +33,22 @@ _viewerInfos(0),
 _uiContext(0),
 _pboIndex(0)
 {
+    connectSlotsToViewerCache();
+}
+
+void ViewerNode::connectSlotsToViewerCache(){
     ViewerCache* cache = ViewerCache::getViewerCache();
     QObject::connect(cache, SIGNAL(addedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(cache, SIGNAL(removedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));
 }
 
+void ViewerNode::disconnectSlotsToViewerCache(){
+    ViewerCache* cache = ViewerCache::getViewerCache();
+    QObject::disconnect(cache, SIGNAL(addedFrame()), this, SLOT(onCachedFrameAdded()));
+    QObject::disconnect(cache, SIGNAL(removedFrame()), this, SLOT(onCachedFrameAdded()));
+    QObject::disconnect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));
+}
 void ViewerNode::initializeViewerTab(TabWidget* where){
    _uiContext = _model->getApp()->addNewViewerTab(this,where);
 }
@@ -152,11 +162,6 @@ void ViewerInfos::operator=(const ViewerInfos &other){
     set_dataWindow(other.dataWindow());
     set_rgbMode(other.rgbMode());
 }
-
-FrameEntry* ViewerNode::get(U64 key){
-    return ViewerCache::getViewerCache()->get(key);
-}
-
 
 void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     assert(frame);

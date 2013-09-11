@@ -37,7 +37,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     setObjectName(_nodeGUI->getNode()->getName().c_str());
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    
     setFrameShape(QFrame::Box);
     
     _headerWidget = new QFrame(this);
@@ -106,17 +105,15 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _mainLayout->addWidget(_headerWidget);
 
     _tabWidget = new QTabWidget(this);
+    _tabWidget->setObjectName("_tabWidget");
     _mainLayout->addWidget(_tabWidget);
     
-    
-    
     _settingsTab = new QWidget(_tabWidget);
-   // _settingsTab->setStyleSheet("background-color : rgb(50,50,50); color:(200,200,200);");
+    _settingsTab->setObjectName("_settingsTab");
     _layoutSettings=new QGridLayout(_settingsTab);
     _layoutSettings->setSpacing(0);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");
-
     
     _labelWidget=new QWidget(_tabWidget);
     _layoutLabel=new QVBoxLayout(_labelWidget);
@@ -137,11 +134,9 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 }
 
 void SettingsPanel::initialize_knobs(){
-    
-    /*We now have all knobs in a vector, just add them to the layout.*/
-    
-    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
     int maxSpacing = 0;
+    /*We now have all knobs in a vector, just add them to the layout.*/
+    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
     for(U32 i = 0 ; i < knobs.size(); ++i){
         KnobGui* gui = _nodeGUI->findKnobGuiOrCreate(knobs[i]);
         if(!gui){
@@ -149,23 +144,9 @@ void SettingsPanel::initialize_knobs(){
         }
         /*If the GUI doesn't already exist, we create it.*/
         if(!gui->hasWidgetBeenCreated()){
-            gui->setParent(this);
-            if(!gui->triggerNewLine() && i!=0){
-                gui->createGUI(_layoutSettings,i-1);
-            }else{
-                gui->createGUI(_layoutSettings,i);
-            }
-            if(knobs[i]->name() == "Group"){
-                Group_Knob* groupKnob = dynamic_cast<Group_Knob*>(knobs[i]);
-                std::vector<KnobGui*> children;
-                for (U32 j = 0; j < groupKnob->getChildren().size(); ++j) {
-                    KnobGui* child = _nodeGUI->findKnobGuiOrCreate(groupKnob->getChildren()[j]);
-                    if(child){
-                        children.push_back(child);
-                    }
-                }
-                dynamic_cast<Group_KnobGui*>(gui)->addKnobs(children);
-            }else if(knobs[i]->name() == "Tab"){
+            Knob* parentKnob = knobs[i]->getParentKnob();
+            if(knobs[i]->name() == "Tab"){
+                /*create all children*/
                 Tab_Knob* tabKnob = dynamic_cast<Tab_Knob*>(knobs[i]);
                 std::map<std::string,std::vector<KnobGui*> > childrenGui;
                 const std::map<std::string,std::vector<Knob*> >& children = tabKnob->getKnobs();
@@ -180,12 +161,25 @@ void SettingsPanel::initialize_knobs(){
                     childrenGui.insert(make_pair(it->first, tabKnobs));
                 }
                 dynamic_cast<Tab_KnobGui*>(gui)->addKnobs(childrenGui);
+            }else if(parentKnob && parentKnob->name() == "Tab"){
+                /*the tab widget already created all children*/
+                continue;
+            }else{
+                gui->setParent(_settingsTab);
+                int row = i;
+                int offsetColumn = knobs[i]->determineHierarchySize();
+                if(!gui->triggerNewLine() && i!=0) --i;
+                gui->createGUI(_layoutSettings,i,knobs[i]->determineHierarchySize());
+                if(parentKnob){
+                    Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_nodeGUI->findKnobGuiOrCreate(parentKnob));
+                    parentGui->addKnob(gui,row,offsetColumn);
+                    gui->setVisible(parentGui->isChecked());
+                }
             }
-            
-            int knobSpacing  =  gui->getSpacingBetweenItems();
-            if(knobSpacing > maxSpacing)
-                maxSpacing = knobSpacing;
         }
+        int knobSpacing  =  gui->getSpacingBetweenItems();
+        if(knobSpacing > maxSpacing)
+            maxSpacing = knobSpacing;
     }
     _layoutSettings->setHorizontalSpacing(maxSpacing);
 }

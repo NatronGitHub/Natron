@@ -69,6 +69,7 @@ class AppInstance : public QObject
     
 public:
     AppInstance(int appID,const QString& projectName = QString());
+    
     ~AppInstance();
     
     int getAppID() const {return _appID;}
@@ -145,6 +146,10 @@ public:
     
     Node* getNode(NodeGui* n) const;
     
+    void connectViewersToViewerCache();
+    
+    void disconnectViewersFromViewerCache();
+    
 private:
     
     
@@ -207,9 +212,7 @@ public:
     
     void removeInstance(int appID);
     
-    void setAsTopLevelInstance(int appID){
-        _topLevelInstanceID = appID;
-    }
+    void setAsTopLevelInstance(int appID);
     
     AppInstance* getTopLevelInstance () const;
     

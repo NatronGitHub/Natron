@@ -116,6 +116,7 @@ void Model::initNodeCountersAndSetName(Node* n){
 bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
         if (_currentNodes[i]->getName() == inputName) {
+
             connect(inputNumber,_currentNodes[i], output);
             return true;
         }
@@ -124,18 +125,22 @@ bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
 }
 
 bool Model::connect(int inputNumber,Node* input,Node* output){
+    output->disconnectInput(inputNumber);
     if(!output->connectInput(input, inputNumber)){
         return false;
+    }
+    if(!input){
+        return true;
     }
     input->connectOutput(output);
     return true;
 }
 
 bool Model::disconnect(Node* input,Node* output){
-    if(!output->disconnectInput(input)){
+    if(input->disconnectOutput(output) < 0){
         return false;
     }
-    if(!input->disconnectOutput(output)){
+    if(output->disconnectInput(input) < 0){
         return false;
     }
     return true;
@@ -213,10 +218,12 @@ QString Model::serializeNodeGraph() const{
         writer.writeStartElement("Inputs");
         const Node::InputMap& inputs = n->getInputs();
         for (Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
-            writer.writeStartElement("Input");
-            writer.writeAttribute("Number", QString::number(it->first));
-            writer.writeAttribute("Name", it->second->getName().c_str());
-            writer.writeEndElement();// end input
+            if(it->second){
+                writer.writeStartElement("Input");
+                writer.writeAttribute("Number", QString::number(it->first));
+                writer.writeAttribute("Name", it->second->getName().c_str());
+                writer.writeEndElement();// end input
+            }
         }
         writer.writeEndElement(); // end inputs
                                   //serialize knobs
@@ -388,7 +395,9 @@ void Model::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedEleme
         XMLProjectLoader::InputXMLParsedElement* inputEl = static_cast<XMLProjectLoader::InputXMLParsedElement*>(v);
         assert(inputEl);
         int inputNb = inputEl->_number;
-        connect(inputNb,inputEl->_name.toStdString(), n);
+        if(!connect(inputNb,inputEl->_name.toStdString(), n)){
+            cout << "Failed to connect " << inputEl->_name.toStdString()  << " to " << n->getName() << endl;
+        }
         //  cout << "Input: " << inputEl->_number << " :" << inputEl->_name.toStdString() << endl;
     }else if(v->_element == "Knob"){
         XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
@@ -457,3 +466,18 @@ void Model::triggerAutoSaveOnNextEngineRun(){
     }
 }
 
+void Model::connectViewersToViewerCache(){
+    foreach(Node* n,_currentNodes){
+        if(n->className() == "Viewer"){
+            dynamic_cast<ViewerNode*>(n)->connectSlotsToViewerCache();
+        }
+    }
+}
+
+void Model::disconnectViewersFromViewerCache(){
+    foreach(Node* n,_currentNodes){
+        if(n->className() == "Viewer"){
+            dynamic_cast<ViewerNode*>(n)->disconnectSlotsToViewerCache();
+        }
+    }
+}

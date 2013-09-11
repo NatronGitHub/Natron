@@ -68,15 +68,18 @@ public:
     int lastFrame() const;
     
     int currentFrame() const;
-    
-    FrameEntry* get(U64 key);
-        
+            
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
     
     void disconnectViewer(){
         emit viewerDisconnected();
     }
+    
+    void connectSlotsToViewerCache();
+    
+    void disconnectSlotsToViewerCache();
+    
 public slots:
     void onCachedFrameAdded();
     void onCachedFrameRemoved();

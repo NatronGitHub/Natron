@@ -443,11 +443,25 @@ _maximized(false)
     QObject::connect(_viewerNode,SIGNAL(removedCachedFrame()),this,SLOT(onCachedFrameRemoved()));
     QObject::connect(_viewerNode,SIGNAL(clearedViewerCache()),this,SLOT(onViewerCacheCleared()));
     
-    
+    QObject::connect(vengine, SIGNAL(engineStarted(bool)), this, SLOT(onEngineStarted(bool)));
+    QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
 }
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);
     _viewerNode->getVideoEngine()->toggleLoopMode(b);
+}
+void ViewerTab::onEngineStarted(bool forward){
+    play_Forward_Button->setChecked(forward);
+    play_Forward_Button->setDown(forward);
+    play_Backward_Button->setChecked(!forward);
+    play_Backward_Button->setDown(!forward);
+}
+
+void ViewerTab::onEngineStopped(){
+    play_Forward_Button->setChecked(false);
+    play_Forward_Button->setDown(false);
+    play_Backward_Button->setChecked(false);
+    play_Backward_Button->setDown(false);
 }
 
 void ViewerTab::updateZoomComboBox(int value){
@@ -561,12 +575,12 @@ void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
     if(!onInit){
         _currentFrameBox->setMaximum(viewerInfos->lastFrame());
         _currentFrameBox->setMinimum(viewerInfos->firstFrame());
-        int curFirstFrame = frameSeeker->firstFrame();
-        int curLastFrame =  frameSeeker->lastFrame();
-        if ((viewerInfos->firstFrame() != curFirstFrame) || (viewerInfos->lastFrame() != curLastFrame)) {
+        // int curFirstFrame = frameSeeker->firstFrame();
+        // int curLastFrame =  frameSeeker->lastFrame();
+        // if ((viewerInfos->firstFrame() != curFirstFrame) || (viewerInfos->lastFrame() != curLastFrame)) {
             frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
             frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
-        }
+       // }
     }
 }
 void ViewerTab::onViewerChannelsChanged(int i){

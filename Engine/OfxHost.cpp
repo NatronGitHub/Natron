@@ -12,7 +12,6 @@
 
 #include <cassert>
 #include <fstream>
-#include <QtCore/QStringList>
 
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
@@ -21,8 +20,6 @@
 
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/Model.h"
-#include "Global/AppManager.h" // for ctrlPTR, but FIXME: this global variable shouldn't be used here, and in fact it is used to update the GUI, which is wrong!
 
 using namespace Powiter;
 
@@ -212,7 +209,7 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
 
-    /// now read an old cache cache
+    /// now read an old cache
     std::ifstream ifs("PowiterOFXCache.xml");
     OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
@@ -261,16 +258,6 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
     return pluginNames;
 }
 
-#if 0
-// in the future, display the plugins loaded on the loading wallpaper
-void Powiter::OfxHost::displayLoadedPlugins() {
-    int i = 0;
-    for(OFXPluginsIterator it = _ofxPlugins.begin() ; it != _ofxPlugins.end() ; ++it) {
-        std::cout << it->first << std::endl;
-    }
-    std::cout  << i << " plugin(s) loaded." << std::endl;
-}
-#endif
 
 
 void Powiter::OfxHost::writeOFXCache(){

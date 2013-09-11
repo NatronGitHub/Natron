@@ -132,7 +132,7 @@ File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
     QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
-void File_KnobGui::createWidget(QGridLayout* layout,int row){
+void File_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     _lineEdit = new LineEdit(this);
@@ -147,12 +147,10 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
     openFile->setIcon(QIcon(pix));
     
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
-    
-    int offset = _knob->determineHierarchySize();
-    
-    layout->addWidget(desc, row, 0+offset);
-    layout->addWidget(_lineEdit,row,1+offset);
-    layout->addWidget(openFile,row,2+offset);
+        
+    layout->addWidget(desc, row, 0+columnOffset);
+    layout->addWidget(_lineEdit,row,1+columnOffset);
+    layout->addWidget(openFile,row,2+columnOffset);
 }
 
 void File_KnobGui::updateGUI(const Variant& variant){
@@ -201,7 +199,7 @@ OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
     QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
-void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
+void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     _lineEdit = new LineEdit(this);
     _lineEdit->setPlaceholderText(QString("File path..."));
@@ -214,11 +212,10 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     openFile->setIcon(QIcon(pix));
     
     QObject::connect(openFile,SIGNAL(clicked()),this,SLOT(open_file()));
-    int offset = _knob->determineHierarchySize();
     
-    layout->addWidget(desc,row,0+offset);
-    layout->addWidget(_lineEdit,row,1+offset);
-    layout->addWidget(openFile,row,2+offset);
+    layout->addWidget(desc,row,0+columnOffset);
+    layout->addWidget(_lineEdit,row,1+columnOffset);
+    layout->addWidget(openFile,row,2+columnOffset);
 }
 
 
@@ -257,22 +254,19 @@ void OutputFile_KnobGui::updateLastOpened(const QString& str){
 //==========================INT_KNOB_GUI======================================
 
 
-void Int_KnobGui::createWidget(QGridLayout *layout, int row){
-    QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    int offset = _knob->determineHierarchySize();
+void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+    QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);    
     
-    
-    layout->addWidget(desc,row,0+offset);
+    layout->addWidget(desc,row,0+columnOffset);
     
     Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
     
-    QString subLabels_RGBA[] = {"r","g","b","a"};
-    QString subLabels_XYZW[] = {"x","y","z","w"};
+    QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
+    QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
     QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
     QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
-    QList<QVariant> values = _knob->getValueAsVariant().getQVariant().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -290,12 +284,16 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         FeedbackSpinBox* box = new FeedbackSpinBox(this,false);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        if(maximums.size() > i)
-            box->setMaximum(maximums.at(i).toInt());
-        if(minimums.size() > i)
-            box->setMinimum(minimums.at(i).toInt());
-        if(values.size() > i)
-            box->setValue(values.at(i).toInt());
+        if(_knob->getDimension() > 1){
+            if(maximums.size() > i)
+                box->setMaximum(maximums.at(i).toInt());
+            if(minimums.size() > i)
+                box->setMinimum(minimums.at(i).toInt());
+        }else{
+            box->setMaximum(_knob->getMaximum().getQVariant().toInt());
+            box->setMinimum(_knob->getMinimum().getQVariant().toInt());
+        }
+        
         boxContainerLayout->addWidget(box);
         if(flags & Knob::READ_ONLY){
             box->setReadOnly(true);
@@ -303,17 +301,22 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         if(flags & Knob::INVISIBLE){
             box->setVisible(false);
         }
-        layout->addWidget(boxContainer,row,i+1+offset);
+        layout->addWidget(boxContainer,row,i+1+columnOffset);
         _spinBoxes.push_back(box);
     }
 }
 void Int_KnobGui::updateGUI(const Variant& variant){
-    QList<QVariant> list = variant.getQVariant().toList();
-    if(list.isEmpty()){
-        return;
-    }
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        _spinBoxes[i]->setValue(list.at(i).toInt());
+    if(_knob->getDimension() > 1){
+        QList<QVariant> list = variant.getQVariant().toList();
+        if(list.isEmpty()){
+            return;
+        }
+        for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+            _spinBoxes[i]->setValue(list.at(i).toInt());
+        }
+    }else{
+        int value = variant.getQVariant().toInt();
+        _spinBoxes[0]->setValue(value);
     }
 }
 
@@ -327,16 +330,12 @@ void Int_KnobGui::onSpinBoxValueChanged(){
 
 //==========================BOOL_KNOB_GUI======================================
 
-void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
+void Bool_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QLabel* label = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     _checkBox = new QCheckBox(this);
-    
-    _checkBox->setChecked(_knob->value<bool>());
-    QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
-    int offset = _knob->determineHierarchySize();
-    
-    layout->addWidget(label,row,0+offset);
-    layout->addWidget(_checkBox,row,1+offset);
+    QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));    
+    layout->addWidget(label,row,0+columnOffset);
+    layout->addWidget(_checkBox,row,1+columnOffset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::READ_ONLY){
         _checkBox->setEnabled(false);
@@ -358,23 +357,20 @@ void Bool_KnobGui::onCheckBoxStateChanged(bool b){
 
 
 //=============================DOUBLE_KNOB_GUI===================================
-void Double_KnobGui::createWidget(QGridLayout *layout, int row){
+void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    
-    int offset = _knob->determineHierarchySize();
-    
-    layout->addWidget(desc,row,0+offset);
+        
+    layout->addWidget(desc,row,0+columnOffset);
     
     Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
     
-    QString subLabels_RGBA[] = {"r","g","b","a"};
-    QString subLabels_XYZW[] = {"x","y","z","w"};
+    QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
+    QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
     QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
     QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
     QList<QVariant> increments = _knob->getIncrement().getQVariant().toList();
-    QList<QVariant> values = _knob->getValueAsVariant().getQVariant().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -392,14 +388,24 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         FeedbackSpinBox* box = new FeedbackSpinBox(this,true);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
-        if(maximums.size() > i)
-            box->setMaximum(maximums.at(i).toDouble());
-        if(minimums.size() > i)
-            box->setMinimum(minimums.at(i).toDouble());
-        if(increments.size() > i)
-            box->setIncrement(increments.at(i).toDouble());
-        if(values.size() > i)
-            box->setValue(values.at(i).toDouble());
+        if(_knob->getDimension() > 1){
+            if(maximums.size() > i)
+                box->setMaximum(maximums.at(i).toDouble());
+            if(minimums.size() > i)
+                box->setMinimum(minimums.at(i).toDouble());
+            if(increments.size() > i){
+                double incr = increments.at(i).toDouble();
+                if(incr > 0)
+                    box->setIncrement(incr);
+            }
+        }else{
+            box->setMaximum(_knob->getMaximum().getQVariant().toDouble());
+            box->setMinimum(_knob->getMinimum().getQVariant().toDouble());
+            double incr = _knob->getIncrement().getQVariant().toDouble();
+            if(incr > 0)
+                box->setIncrement(incr);
+        }
+        
         boxContainerLayout->addWidget(box);
         if(flags & Knob::READ_ONLY){
             box->setReadOnly(true);
@@ -411,17 +417,22 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         if(_knob->getParentKnob()){
             ++offset;
         }
-        layout->addWidget(boxContainer,row,i+1+offset);
+        layout->addWidget(boxContainer,row,i+1+columnOffset);
         _spinBoxes.push_back(box);
     }
 }
 void Double_KnobGui::updateGUI(const Variant& variant){
-    QList<QVariant> list = variant.getQVariant().toList();
-    if(list.isEmpty()){
-        return;
-    }
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        _spinBoxes[i]->setValue(list.at(i).toDouble());
+    if(_knob->getDimension() > 1){
+        QList<QVariant> list = variant.getQVariant().toList();
+        if(list.isEmpty()){
+            return;
+        }
+        for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+            _spinBoxes[i]->setValue(list.at(i).toDouble());
+        }
+    }else{
+        double value = variant.getQVariant().toDouble();
+        _spinBoxes[0]->setValue(value);
     }
 }
 
@@ -434,12 +445,11 @@ void Double_KnobGui::onSpinBoxValueChanged(){
 }
 
 //=============================BUTTON_KNOB_GUI===================================
-void Button_KnobGui::createWidget(QGridLayout *layout, int row){
+void Button_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),this);
     QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
-    int offset = _knob->determineHierarchySize();
     
-    layout->addWidget(_button,row,0+offset);
+    layout->addWidget(_button,row,0+columnOffset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::INVISIBLE){
         _button->setVisible(false);
@@ -456,7 +466,7 @@ ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob):KnobGui(knob){
     _entries = cbKnob->getEntries();
 }
 
-void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
+void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     _comboBox = new ComboBox(this);
     
     for (U32 i = 0; i < _entries.size(); ++i) {
@@ -464,13 +474,10 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     }
     if(_entries.size() > 0)
         _comboBox->setCurrentText(_entries[0].c_str());
-    _comboBox->setCurrentIndex(_knob->value<int>());
     QLabel* desc = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
-    int offset = _knob->determineHierarchySize();
-    
-    layout->addWidget(desc,row,0+offset);
-    layout->addWidget(_comboBox,row,1+offset);
+    QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));    
+    layout->addWidget(desc,row,0+columnOffset);
+    layout->addWidget(_comboBox,row,1+columnOffset);
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::INVISIBLE){
         _comboBox->setVisible(false);
@@ -488,22 +495,20 @@ void ComboBox_KnobGui::updateGUI(const Variant& variant){
 }
 
 //=============================SEPARATOR_KNOB_GUI===================================
-void Separator_KnobGui::createWidget(QGridLayout* layout,int row){
-    QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    int offset = _knob->determineHierarchySize();
-    
-    layout->addWidget(name,row,0+offset);
+void Separator_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+    QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);    
+    layout->addWidget(name,row,0+columnOffset);
     _line = new QFrame(this);
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    layout->addWidget(_line,row,1+offset);
+    layout->addWidget(_line,row,1+columnOffset);
 }
 
 
 
 //=============================RGBA_KNOB_GUI===================================
-void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
+void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     _rBox = new FeedbackSpinBox(this,true);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     _gBox = new FeedbackSpinBox(this,true);
@@ -513,41 +518,31 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _aBox = new FeedbackSpinBox(this,true);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     
-    
-    QVector4D values = _knob->getMinimum().getQVariant().value<QVector4D>();
-    
     _rBox->setMaximum(1.);
     _rBox->setMinimum(0.);
     _rBox->setIncrement(0.1);
-    _rBox->setValue(values.x());
     
     _gBox->setMaximum(1.);
     _gBox->setMinimum(0.);
     _gBox->setIncrement(0.1);
-    _gBox->setValue(values.y());
     
     _bBox->setMaximum(1.);
     _bBox->setMinimum(0.);
     _bBox->setIncrement(0.1);
-    _bBox->setValue(values.z());
     
     _aBox->setMaximum(1.);
     _aBox->setMinimum(0.);
     _aBox->setIncrement(0.1);
-    _aBox->setValue(values.w());
     
     
-    _rLabel = new QLabel("r",this);
-    _gLabel = new QLabel("g",this);
-    _bLabel = new QLabel("b",this);
-    _aLabel = new QLabel("a",this);
-    
-    int offset = _knob->determineHierarchySize();
-    
+    _rLabel = new QLabel("r:",this);
+    _gLabel = new QLabel("g:",this);
+    _bLabel = new QLabel("b:",this);
+    _aLabel = new QLabel("a:",this);
     
     QLabel* nameLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(nameLabel,row,0+offset);
+    layout->addWidget(nameLabel,row,0+columnOffset);
     
     QWidget* boxContainers = new QWidget(this);
     QHBoxLayout* boxLayout = new QHBoxLayout(boxContainers);
@@ -575,7 +570,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
     boxLayout->addWidget(_colorDialogButton);
     
-    layout->addWidget(boxContainers,row,1+offset);
+    layout->addWidget(boxContainers,row,1+columnOffset);
     
     
     Knob_Mask flags = _knob->getFlags();
@@ -645,15 +640,13 @@ void RGBA_KnobGui::disablePermantlyAlpha(){
 }
 
 //=============================STRING_KNOB_GUI===================================
-void String_KnobGui::createWidget(QGridLayout *layout, int row){
+void String_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
-    int offset = _knob->determineHierarchySize();
     
-    layout->addWidget(name,row,0+offset);
+    layout->addWidget(name,row,0+columnOffset);
     _lineEdit = new LineEdit(this);
-    layout->addWidget(_lineEdit,row,1+offset);
+    layout->addWidget(_lineEdit,row,1+columnOffset);
     QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
-    _lineEdit->setText(_knob->value<QString>());
     Knob_Mask flags = _knob->getFlags();
     if(flags & Knob::READ_ONLY){
         _lineEdit->setReadOnly(true);
@@ -670,49 +663,78 @@ void String_KnobGui::onStringChanged(const QString& str){
 void String_KnobGui::updateGUI(const Variant& variant){
     _lineEdit->setText(variant.getQVariant().toString());
 }
-
-
+#include <QSpacerItem>
 //=============================GROUP_KNOB_GUI===================================
-void Group_KnobGui::createWidget(QGridLayout* layout,int row){
-    _box = new QGroupBox(QString(QString(_knob->getDescription().c_str())+":"),this);
-    _boxLayout = new QVBoxLayout(_box);
-    QObject::connect(_box, SIGNAL(clicked(bool)), this, SLOT(setChecked(bool)));
-    _box->setLayout(_boxLayout);
-    _box->setCheckable(true);
-    int offset = _knob->determineHierarchySize();
-    layout->addWidget(_box,row,0+offset);
+GroupBoxLabel::GroupBoxLabel(QWidget* parent):
+QLabel(parent),
+_checked(false){
     
+    QObject::connect(this, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)));
 }
-void Group_KnobGui::addKnobs(const std::vector<KnobGui*>& children){
-    _children = children;
-    for (U32 i = 0 ; i < children.size(); ++i) {
-        _boxLayout->addWidget(children[i]);
-        children[i]->setParent(_box);
-        children[i]->setVisible(_box->isChecked());
-    }
 
+void GroupBoxLabel::setChecked(bool b){
+    _checked = b;
+    if(b){
+        QImage img(POWITER_IMAGES_PATH"groupbox_unfolded.png");
+        QPixmap pix = QPixmap::fromImage(img);
+        pix = pix.scaled(20, 20);
+        setPixmap(pix);
+    }else{
+        QImage img(POWITER_IMAGES_PATH"groupbox_folded.png");
+        QPixmap pix = QPixmap::fromImage(img);
+        pix = pix.scaled(20, 20);
+        setPixmap(pix);
+    }
+}
+
+void Group_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+    _layout = layout;
+    _button = new GroupBoxLabel(this);
+    
+    QObject::connect(_button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)));
+    layout->addWidget(_button,row,0+columnOffset);
+    
+    QLabel* name = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),this);
+    layout->addWidget(name, row, 1+columnOffset);
+    
 }
 
 void Group_KnobGui::setChecked(bool b){
-    _box->setChecked(b);
-    for(U32 i = 0 ; i < _children.size() ;++i) {
-        _children[i]->setVisible(b);
-
+    if(b == _checked){
+        return;
     }
+    _checked = b;
+    for(U32 i = 0 ; i < _children.size() ;++i) {
+        if(!b){
+            _children[i].first->hide();
+            _layout->removeWidget(_children[i].first);
+            _children[i].first->setParent(NULL);
+        }else{
+            _children[i].first->show();
+            _layout->addWidget(_children[i].first, _children[i].second.first, _children[i].second.second);
+            _children[i].first->setParent(_layout->parentWidget());
+        }
+        //        _children[i].first->setVisible(b);
+        //   sa->viewport()->update();
+    }
+}
+void Group_KnobGui::updateGUI(const Variant& variant){
+    bool b = variant.getQVariant().toBool();
+    setChecked(b);
+    _button->setChecked(b);
 }
 
 //=============================TAB_KNOB_GUI===================================
-void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
+void Tab_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     /*not a pretty call... considering using QTabWidget instead*/
     _tabWidget = new TabWidget(_knob->getNode()->getModel()->getApp()->getGui(),
                                TabWidget::NONE,this);
-    int offset = _knob->determineHierarchySize();
     
-    layout->addWidget(_tabWidget,row,0+offset);
+    layout->addWidget(_tabWidget,row,0+columnOffset);
     
 }
 void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs){
-    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs.begin() ;
+    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs.begin();
          it!=knobs.end(); ++it) {
         std::string name = it->first;
         QWidget* newTab = new QWidget(_tabWidget);
@@ -721,6 +743,8 @@ void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& k
         newTab->setLayout(newLayout);
         vector<KnobGui*> knobs = it->second;
         for (U32 i = 0; i < knobs.size(); ++i) {
+            knobs[i]->layout()->removeWidget(knobs[i]);
+            knobs[i]->setParent(this);
             newLayout->addWidget(knobs[i]);
         }
     }

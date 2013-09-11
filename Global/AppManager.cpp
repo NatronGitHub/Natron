@@ -136,8 +136,8 @@ Node* AppInstance::createNode(const QString& name) {
         if(_gui->getSelectedNode()){
             selected = _gui->getSelectedNode()->getNode();
         }
-        autoConnect(selected, node);
         _model->initNodeCountersAndSetName(node);
+        autoConnect(selected, node);
         if(node->className() == "Viewer"){
             _gui->createViewerGui(node);
         }
@@ -361,6 +361,7 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
 AppInstance* AppManager::newAppInstance(const QString& projectName){
     AppInstance* instance = new AppInstance(_availableID,projectName);
     _appInstances.insert(make_pair(_availableID, instance));
+    setAsTopLevelInstance(_availableID);
     ++_availableID;
     return instance;
 }
@@ -406,6 +407,14 @@ Node* AppInstance::getNode(NodeGui* n) const{
     }
     return NULL;
 
+}
+
+void AppInstance::connectViewersToViewerCache(){
+    _model->connectViewersToViewerCache();
+}
+
+void AppInstance::disconnectViewersFromViewerCache(){
+    _model->disconnectViewersFromViewerCache();
 }
 
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
@@ -768,4 +777,18 @@ void AppManager::addPluginToolButtons(const QStringList& groups,
                           const QString& pluginIconPath,
                           const QString& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
+}
+
+void AppManager::setAsTopLevelInstance(int appID){
+    if(_topLevelInstanceID == appID){
+        return;
+    }
+    _topLevelInstanceID = appID;
+    for(map<int,AppInstance*>::iterator it = _appInstances.begin();it!=_appInstances.end();++it){
+        if (it->first != _topLevelInstanceID) {
+            it->second->disconnectViewersFromViewerCache();
+        }else{
+            it->second->connectViewersToViewerCache();
+        }
+    }
 }

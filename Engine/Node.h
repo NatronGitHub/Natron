@@ -112,7 +112,7 @@ public:
 	};
     
     typedef std::map<int,Node*> InputMap;
-    typedef std::map<int,Node*> OutputMap;
+    typedef std::multimap<int,Node*> OutputMap;
     
 #define foreachInput(CUR,NODE)\
 for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
@@ -218,30 +218,20 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     void connectOutput(Node* output,int outputNumber = 0);
     
     /** @brief Removes the node connected to the input inputNumber of the
-     * node. Returns true if it succeeded, false otherwise.
-     * When returning false, this means no node was connected for this input.
+     * node. Returns the inputNumber if it could remove it, otherwise returns
+     -1.
      */
-    bool disconnectInput(int inputNumber);
+    int disconnectInput(int inputNumber);
     
     /** @brief Removes the node input of the
-     * node inputs. Returns true if it succeeded, false otherwise.
-     * When returning false, this means the node input was not
-     * connected.
-     */
-    bool disconnectInput(Node* input);
-    
-    /** @brief Removes the node connected to the output outputNumber of the
-     * node. Returns true if it succeeded, false otherwise.
-     * When returning false, this means no node was connected for this output.
-     */
-    bool disconnectOutput(int outputNumber);
+     * node inputs. Returns the inputNumber if it could remove it, otherwise returns
+     -1.*/
+    int disconnectInput(Node* input);
     
     /** @brief Removes the node output of the
-     * node outputs. Returns true if it succeeded, false otherwise.
-     * When returning false, this means the node output was not
-     * connected.
-     */
-    bool disconnectOutput(Node* output);
+     * node outputs. Returns the outputNumber if it could remove it,
+     otherwise returns -1.*/
+    int disconnectOutput(Node* output);
     
 
     /*============================*/
@@ -395,14 +385,23 @@ protected:
 	Hash64 _hashValue; // hash value
 	Box2D _requestedBox; // composition of all the area requested by children
     
-    std::map<int,Node*> _outputs;
-    std::map<int,Node*> _inputs;
+    std::multimap<int,Node*> _outputs; //multiple outputs per slot
+    std::map<int,Node*> _inputs;//only 1 input per slot
     std::vector<Knob*> _knobs;
-
+    
     QUndoStack* _undoStack;
 
 private:
     
+    typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
+    typedef OutputConnectionsIterator InputConnectionsIterator;
+    struct DeactivatedState{
+        /*The output node was connected from inputNumber to the outputNumber of this...*/
+        std::map<Node*,std::pair<int,int> > _outputsConnections;
+        
+        /*The input node was connected from outputNumber to the inputNumber of this...*/
+        std::map<Node*,std::pair<int,int> > _inputConnections;
+    };
         
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     
@@ -411,6 +410,8 @@ private:
     void copy_info(Node* parent);
     
     static void _hasViewerConnected(Node* node,bool* ok,Node*& out);
+    
+    DeactivatedState _deactivatedState;
     
 };
 typedef Node* (*NodeBuilder)();

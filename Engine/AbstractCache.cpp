@@ -236,13 +236,21 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         _inMemorySize += mmEntry->size();
     }
     std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
-    if(evicted.second && evicted.second->isRemovable()){
-        /*switch the evicted entry from memory to the disk.*/
-        MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
-        mmEvictedEntry->deallocate();
-        _inMemorySize -= mmEvictedEntry->size();
-        return AbstractCacheHelper::add(evicted.first, evicted.second);
+    if(evicted.second){
+        if(evicted.second->isRemovable()){
+            /*switch the evicted entry from memory to the disk.*/
+            MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
+            mmEvictedEntry->deallocate();
+            _inMemorySize -= mmEvictedEntry->size();
+            return AbstractCacheHelper::add(evicted.first, evicted.second);
+        }else{
+            /*We risk an infinite loop here. It might happen if all entries in the cache cannot be removed.
+             This is bad design if all entries in the cache cannot be removed, this means that they all live
+             in memory and that you shouldn't use a disk cache for this purpose.*/
+            add(evicted.first,evicted.second);
+        }
     }
+    
     return false;
 }
 
@@ -321,10 +329,14 @@ void AbstractDiskCache::clearInMemoryCache(){
     _inMemorySize = 0;
     while(_inMemoryPortion.size() > 0){
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
-        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
-        assert(mmEntry);
-        mmEntry->deallocate();
-        AbstractCacheHelper::add(evicted.first, evicted.second);
+        if(evicted.second->isRemovable()){
+            MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
+            assert(mmEntry);
+            mmEntry->deallocate();
+            AbstractCacheHelper::add(evicted.first, evicted.second);
+        }else{
+            add(evicted.first, evicted.second);
+        }
     }
 }
 

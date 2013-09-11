@@ -148,7 +148,7 @@ settings(0)
 	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
 		this->dockContainer=dockContainer;
-		settings=new SettingsPanel(this,dag);
+		settings=new SettingsPanel(this,dockContainer->parentWidget());
         
 		dockContainer->addWidget(settings);
 	}

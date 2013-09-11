@@ -182,17 +182,12 @@ void Gui::createGui(){
 
 
 bool Gui::eventFilter(QObject *target, QEvent *event){
-    if(event->type() == QEvent::MouseMove ||
-       event->type() == QEvent::MouseButtonPress ||
-       event->type() == QEvent::MouseButtonDblClick ||
-       event->type() == QEvent::MouseButtonRelease ||
-       event->type() == QEvent::KeyPress){
+    if(dynamic_cast<QInputEvent*>(event)){
         /*Make top level instance this instance since it receives all
          user inputs.*/
         appPTR->setAsTopLevelInstance(_appInstance->getAppID());
-        
     }
-    
+     
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Right) {
@@ -237,7 +232,10 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     
 }
 void Gui::setupUi()
-{	
+{
+    
+    setMouseTracking(true);
+    installEventFilter(this);
     QDesktopWidget* desktop=QApplication::desktop();
     QRect screen=desktop->screenGeometry();
     assert(!isFullScreen());

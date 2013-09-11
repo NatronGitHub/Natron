@@ -186,10 +186,6 @@ void ViewerGL::drawRenderingVAO(){
         (GLfloat)img.w()  , 0.f                 //15
     };
     
-    //    cout << "[PAINT]: " << "x = "<< r.x  << " y = " << r.y
-    //    << " r = " << r.r << " t = " << r.t << " w = " << r.w
-    //    << " h = " << r.h << endl;
-    
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, 32*sizeof(GLfloat), vertices);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -203,7 +199,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ARRAY_BUFFER,0);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _iboTriangleStripId);
-    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0); // apparantly emits a leak error the 1st time it is rendering an image
+    glDrawElements(GL_TRIANGLE_STRIP, 28, GL_UNSIGNED_BYTE, 0);
     checkGLErrors();
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -431,6 +427,8 @@ void ViewerGL::paintGL()
 
 
 void ViewerGL::drawOverlay(){
+    
+    ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
     _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
     

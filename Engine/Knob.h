@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 
+#include <QtGui/QVector4D>
 #include <QtCore/QVariant>
 #include <QtCore/QStringList>
 
@@ -119,7 +120,7 @@ namespace Powiter {
 
 typedef unsigned int Knob_Mask;
 /******************************KNOB_FACTORY**************************************/
-
+//Maybe the factory should move to a separate file since it is used to create KnobGui aswell
 class KnobGui;
 class KnobFactory : public Singleton<KnobFactory>{
     
@@ -325,12 +326,13 @@ protected:
     Node *_node;
     Variant _value;
     std::vector<U64> _hashVector;
+    int _dimension;
+
     
 private:
     
     std::string _description;
     Knob_Mask _flags;
-    int _dimension;
     
     bool _newLine;
     int _itemSpacing;
@@ -598,6 +600,8 @@ public:
     }
     
     const std::vector<std::string>& getEntries() const {return _entries;}
+    
+    int getActiveEntry() const {return _value.getQVariant().toInt();}
         
 protected:
     
@@ -660,6 +664,8 @@ public:
     
     virtual std::string serialize() const;
     
+    QVector4D getValues() const {return _value.getQVariant().value<QVector4D>();}
+    
     
 protected:
     
@@ -693,6 +699,8 @@ public:
     virtual const std::string name(){return "String";}
     
     virtual std::string serialize() const;
+    
+    std::string getString() const {return _value.getQVariant().toString().toStdString();}
     
 protected:
     
@@ -733,9 +741,6 @@ public:
     void addKnob(Knob* k);
     
     const std::vector<Knob*>& getChildren() const {return _children;}
-    
-signals:
-    void newChildAdded();
     
 protected:
     

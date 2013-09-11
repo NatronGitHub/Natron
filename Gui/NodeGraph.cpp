@@ -367,69 +367,85 @@ void NodeGraph::scaleView(qreal scaleFactor,QPointF){
     if (factor < 0.07 || factor > 100)
         return;
     
-    _root->scale(scaleFactor,scaleFactor);
+    scale(scaleFactor,scaleFactor);
     
 }
 
 void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
+    
+    /*Corner cases*/
+    if(selected->getNode()->isInputNode() && created->getNode()->isInputNode())
+        return;
+    if(selected->getNode()->isOutputNode() && created->getNode()->isOutputNode())
+        return;
+    
     Edge* first = 0;
     if(!selected)
         return;
     bool cont = false;
+    /*If the node selected isn't an output node and the node created isn't an output
+     node we want to connect the node created to the output of the node selected*/
     if(!selected->getNode()->isOutputNode() && !created->getNode()->isInputNode()){
-        /*dst is not outputnode*/
         
-        /*check first if it has outputs and connect the outputs to the new node*/
-        const Node::OutputMap& outputs = selected->getNode()->getOutputs();
-        for (Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            Node* outputNode = it->second;
-            if(!outputNode){
-                continue;
-            }
-            NodeGui* output = _gui->_appInstance->getNodeGui(outputNode);
-            const NodeGui::InputEdgesMap& outputEdges = output->getInputsArrows();
-            Edge* edgeWithSelectedNode = 0;
-            for (NodeGui::InputEdgesMap::const_iterator i = outputEdges.begin();i!=outputEdges.end();++i) {
-                if (i->second->getSource() == selected) {
-                    edgeWithSelectedNode = i->second;
-                    break;
+        /*check first if the node selected has outputs and connect the outputs to the new node*/
+        if(!created->getNode()->isOutputNode()){
+            while(selected->getNode()->hasOutputConnected()){
+                Node* outputNode = selected->getNode()->getOutputs().begin()->second;
+                assert(outputNode);
+                
+                /*Find which edge is connected to the selected node */
+                NodeGui* output = _gui->_appInstance->getNodeGui(outputNode);
+                assert(output);
+                const NodeGui::InputEdgesMap& outputEdges = output->getInputsArrows();
+                Edge* edgeWithSelectedNode = 0;
+                for (NodeGui::InputEdgesMap::const_iterator i = outputEdges.begin();i!=outputEdges.end();++i) {
+                    if (i->second->getSource() == selected) {
+                        edgeWithSelectedNode = i->second;
+                        break;
+                    }
                 }
-            }
-            if(edgeWithSelectedNode && !created->getNode()->isOutputNode()){
-                _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
-                
-                /*we now try to move the created node in between the 2 previous*/
-                QPointF parentPos = created->mapFromScene(selected->scenePos());
-                if(selected->getNode()->canMakePreviewImage()){
-                    parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
-                }else{
-                    parentPos.ry() += (NodeGui::NODE_HEIGHT);
+                /*Now connecting the selected node's output to the output of the created node.
+                 If the node created is an output node we don't connect it's output
+                 with the outputs of the selected node since it has no output.*/
+                if(edgeWithSelectedNode){
+                    _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
+                    
+                    /*we now try to move the created node in between the selected node and its
+                     old output.*/
+                    QPointF parentPos = created->mapFromScene(selected->scenePos());
+                    if(selected->getNode()->canMakePreviewImage()){
+                        parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
+                    }else{
+                        parentPos.ry() += (NodeGui::NODE_HEIGHT);
+                    }
+                    QPointF childPos = created->mapFromScene(output->scenePos());
+                    QPointF newPos = (parentPos + childPos)/2.;
+                    QPointF oldPos = created->mapFromScene(created->scenePos());
+                    QPointF diff = newPos - oldPos;
+                    
+                    created->moveBy(diff.x(), diff.y());
+                    
+                    /*now moving the output node so it is at an appropriate distance (not too close to
+                     the created one)*/
+                    QPointF childTopLeft = output->scenePos();
+                    QPointF createdBottomLeft = created->scenePos()+QPointF(0,created->boundingRect().height());
+                    QPointF createdTopLeft = created->scenePos();
+                    QPointF parentBottomLeft = selected->scenePos()+QPointF(0,selected->boundingRect().height());
+                    
+                    double diffY_child_created,diffY_created_parent;
+                    diffY_child_created = childTopLeft.y() - createdBottomLeft.y();
+                    diffY_created_parent = createdTopLeft.y() - parentBottomLeft.y();
+                    
+                    double diffX_child_created,diffX_created_parent;
+                    diffX_child_created = childTopLeft.x() - createdBottomLeft.x();
+                    diffX_created_parent = createdTopLeft.x() - parentBottomLeft.x();
+                    
+                    output->moveBy(diffX_created_parent-diffX_child_created, diffY_created_parent-diffY_child_created);
+                    
+                    selected->refreshEdges();
+                    created->refreshEdges();
+                    edgeWithSelectedNode->initLine();
                 }
-                QPointF childPos = created->mapFromScene(output->scenePos());
-                QPointF newPos = (parentPos + childPos)/2.;
-                QPointF oldPos = created->mapFromScene(created->scenePos());
-                QPointF diff = newPos - oldPos;
-        
-                created->moveBy(diff.x(), diff.y());
-                
-                /*now moving the output node so it is at an appropriate distance (not too close to
-                 the created one)*/
-                QPointF childTopLeft = output->scenePos();
-                QPointF createdBottomLeft = created->scenePos()+QPointF(0,created->boundingRect().height());
-                QPointF createdTopLeft = created->scenePos();
-                QPointF parentBottomLeft = selected->scenePos()+QPointF(0,selected->boundingRect().height());
-                
-                double diffY_child_created,diffY_created_parent;
-                diffY_child_created = childTopLeft.y() - createdBottomLeft.y();
-                diffY_created_parent = createdTopLeft.y() - parentBottomLeft.y();
-                
-                double diffX_child_created,diffX_created_parent;
-                diffX_child_created = childTopLeft.x() - createdBottomLeft.x();
-                diffX_created_parent = createdTopLeft.x() - parentBottomLeft.x();
-                
-                output->moveBy(diffX_created_parent-diffX_child_created, diffY_created_parent-diffY_child_created);
-                
-                edgeWithSelectedNode->initLine();
             }
         }
         first = created->firstAvailableEdge();
@@ -438,12 +454,12 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
             cont = true;
         }
     }else{
-        /*dst is outputnode,src isn't*/        
+        /*selected is an output node or the created node is an input node. We want to connect the created node
+         as input of the selected node.*/
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
             _undoStack->push(new ConnectCommand(this,first,first->getSource(),created));
             cont = true;
-            
         }
     }
     

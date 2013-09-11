@@ -237,7 +237,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     if(AbstractDiskCache::add(key, out)){
         emit removedFrame();
     }
-    assert(out->getMappedFile()->data());
+    assert(out->getMappedFile());
     return out;
 }
 

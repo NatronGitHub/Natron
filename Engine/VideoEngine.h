@@ -513,6 +513,10 @@ signals:
     
     void doRunTasks();
     
+    void engineStarted(bool forward);
+    
+    void engineStopped();
+    
 public:
     /**
      *@brief Sets the _autoSaveOnNextRun to true
