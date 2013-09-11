@@ -42,8 +42,8 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
-        .arg(viewer->dataWindow().x())
-        .arg(viewer->dataWindow().y())
+        .arg(viewer->dataWindow().left())
+        .arg(viewer->dataWindow().bottom())
         .arg(viewer->dataWindow().right())
         .arg(viewer->dataWindow().top());
     
@@ -186,8 +186,8 @@ void InfoViewerWidget::changeResolution(){
     if(format.name() == string("")){
         QString reso;
         reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
-        .arg(viewer->displayWindow().w())
-        .arg(viewer->displayWindow().h());
+        .arg(viewer->displayWindow().width())
+        .arg(viewer->displayWindow().height());
         resolution->setText(reso);
         resolution->setMaximumWidth(resolution->sizeHint().width());
     }else{
@@ -203,10 +203,10 @@ void InfoViewerWidget::changeResolution(){
 void InfoViewerWidget::changeDataWindow(){
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
-    .arg(viewer->dataWindow().x())
-    .arg(viewer->dataWindow().y())
-    .arg(viewer->dataWindow().w())
-    .arg(viewer->dataWindow().h());
+    .arg(viewer->dataWindow().left())
+    .arg(viewer->dataWindow().bottom())
+    .arg(viewer->dataWindow().width())
+    .arg(viewer->dataWindow().height());
 
     coordDispWindow->setText(bbox);
 }

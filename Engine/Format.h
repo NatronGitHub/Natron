@@ -23,8 +23,8 @@ class Format : public Box2D {
 	
 	
 public:
-	Format(int x, int y, int r, int t, const std::string& name, double pa=1.0);
-    Format(const Format& other):Box2D(other.x(),other.y(),other.right(),other.top()),_pixel_aspect(other.pixel_aspect()),_name(other.name()){}
+	Format(int l, int b, int r, int t, const std::string& name, double pa=1.0);
+    Format(const Format& other):Box2D(other.left(),other.bottom(),other.right(),other.top()),_pixel_aspect(other.pixel_aspect()),_name(other.name()){}
   
     Format();
     virtual ~Format(){}
@@ -35,15 +35,15 @@ public:
     void pixel_aspect( double p) ;
 	
 	Format operator=(const Format& other){
-        set(other.x(), other.y(), other.right(), other.top());
+        set(other.left(), other.bottom(), other.right(), other.top());
         _name = other.name();
         pixel_aspect(other.pixel_aspect());
         return *this;
     }
     bool operator==(const Format& other){
         return _pixel_aspect == other.pixel_aspect() &&
-        x() == other.x() &&
-        y() == other.y() &&
+        left() == other.left() &&
+        bottom() == other.bottom() &&
         right() == other.right() &&
         top() == other.top();
     }

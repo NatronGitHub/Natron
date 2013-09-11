@@ -168,10 +168,9 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
 
 
 	Box2D& getRequestedBox(){return _requestedBox;}
-    
-    int width() const {return info().displayWindow().w();}
-    
-    int height() const {return info().displayWindow().h();}
+
+    int width() const {return info().displayWindow().width();}
+    int height() const {return info().displayWindow().height();}
        
     /*============================*/
     

@@ -287,12 +287,12 @@ U64 FrameEntry::computeHashKey(int frameNB,
     _hash.append((U64)*(reinterpret_cast<U32*>(&exposure)));
     _hash.append((U64)*(reinterpret_cast<U32*>(&lut)));
     _hash.append((U64)*(reinterpret_cast<U32*>(&byteMode)));
-    _hash.append(bbox.x());
-    _hash.append(bbox.y());
+    _hash.append(bbox.left());
+    _hash.append(bbox.bottom());
     _hash.append(bbox.top());
     _hash.append(bbox.right());
-    _hash.append(dispW.x());
-    _hash.append(dispW.y());
+    _hash.append(dispW.left());
+    _hash.append(dispW.bottom());
     _hash.append(dispW.top());
     _hash.append(dispW.right());
     _hash.append(frameRect.x);

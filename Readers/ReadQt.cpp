@@ -35,7 +35,7 @@ ReadQt::~ReadQt(){
 }
 
 void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
-    int h = op->info().displayWindow().h();
+    int h = op->info().displayWindow().height();
     int Y = h - y - 1;
     const uchar* buffer = _img->scanLine(Y);
     if(autoAlpha() && !_img->hasAlphaChannel()){

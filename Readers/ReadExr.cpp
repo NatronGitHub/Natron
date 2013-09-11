@@ -379,7 +379,7 @@ void ReadExr::readScanLine(int y){
     // const Format& dispW = readerInfo().displayWindow();
     int r = bbox.right();
     //bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
-    int x= bbox.x();
+    int x= bbox.left();
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
     const ChannelSet& channels = readerInfo().channels();
     Row* out = new Row(x,y,r,channels);

@@ -168,22 +168,22 @@ void ViewerGL::drawRenderingVAO(){
     const TextureRect& r = _drawing ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
-        0.f               , (GLfloat)img.h()  , //0
-        (GLfloat)r.x      , (GLfloat)img.h()  , //1
-        (GLfloat)r.r + 1.f, (GLfloat)img.h()  , //2
-        (GLfloat)img.w()  , (GLfloat)img.h()  , //3
+        0.f               , (GLfloat)img.height()  , //0
+        (GLfloat)r.x      , (GLfloat)img.height()  , //1
+        (GLfloat)r.r + 1.f, (GLfloat)img.height()  , //2
+        (GLfloat)img.width()  , (GLfloat)img.height()  , //3
         0.f               , (GLfloat)r.t + 1.f, //4
         (GLfloat)r.x      , (GLfloat)r.t + 1.f, //5
         (GLfloat)r.r + 1.f, (GLfloat)r.t + 1.f, //6
-        (GLfloat)img.w()  , (GLfloat)r.t + 1.f, //7
+        (GLfloat)img.width()  , (GLfloat)r.t + 1.f, //7
         0.f               , (GLfloat)r.y      , //8
         (GLfloat)r.x      , (GLfloat)r.y      , //9
         (GLfloat)r.r + 1.f, (GLfloat)r.y      , //10
-        (GLfloat)img.w()  , (GLfloat)r.y      , //11
+        (GLfloat)img.width()  , (GLfloat)r.y      , //11
         0.f               , 0.f               , //12
         (GLfloat)r.x      , 0.f               , //13
         (GLfloat)r.r + 1.f, 0.f               , //14
-        (GLfloat)img.w()  , 0.f                 //15
+        (GLfloat)img.width()  , 0.f                 //15
     };
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
@@ -430,12 +430,12 @@ void ViewerGL::drawOverlay(){
     
     ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
-    _textRenderer.print(displayWindow().w(),0, _resolutionOverlay,QColor(233,233,233));
+    _textRenderer.print(displayWindow().width(),0, _resolutionOverlay,QColor(233,233,233));
     
-    QPoint topRight(displayWindow().w(),displayWindow().h());
-    QPoint topLeft(0,displayWindow().h());
+    QPoint topRight(displayWindow().width(),displayWindow().height());
+    QPoint topLeft(0,displayWindow().height());
     QPoint btmLeft(0,0);
-    QPoint btmRight(displayWindow().w(),0 );
+    QPoint btmRight(displayWindow().width(),0 );
     
     glBegin(GL_LINES);
     glColor4f(0.5, 0.5, 0.5,1.0);
@@ -456,13 +456,13 @@ void ViewerGL::drawOverlay(){
     if(displayWindow() != dataWindow()){
         
         _textRenderer.print(dataWindow().right(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
-        _textRenderer.print(dataWindow().x(), dataWindow().y(), _btmLeftBBOXoverlay, QColor(150,150,150));
+        _textRenderer.print(dataWindow().left(), dataWindow().bottom(), _btmLeftBBOXoverlay, QColor(150,150,150));
         
         
         QPoint topRight2(dataWindow().right(), dataWindow().top());
-        QPoint topLeft2(dataWindow().x(),dataWindow().top());
-        QPoint btmLeft2(dataWindow().x(),dataWindow().y() );
-        QPoint btmRight2(dataWindow().right(),dataWindow().y() );
+        QPoint topLeft2(dataWindow().left(),dataWindow().top());
+        QPoint btmLeft2(dataWindow().left(),dataWindow().bottom() );
+        QPoint btmRight2(dataWindow().right(),dataWindow().bottom() );
         glPushAttrib(GL_LINE_BIT);
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
@@ -497,7 +497,7 @@ void ViewerGL::drawProgressBar(){
     glLineWidth(5);
     glBegin(GL_LINES);
     
-    glVertex3f(dW.x(),_progressBarY,1);
+    glVertex3f(dW.left(),_progressBarY,1);
     glVertex3f(dW.right(),_progressBarY,1);
     
     glEnd();
@@ -580,8 +580,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     int prev = -1;
     res = toImgCoordinates_fast(0,y).y();
     if (res < 0) { // all the image is above the viewer
-        ret.first = displayWindow.y();
-        ret.second = displayWindow.h()-1;
+        ret.first = displayWindow.bottom();
+        ret.second = displayWindow.height()-1;
         return ret; // do not add any row
     }
     // testing bottom now
@@ -594,7 +594,7 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
-    while(res < displayWindow.h() && y >= 0){
+    while(res < displayWindow.height() && y >= 0){
         /*y is a valid line in widget coord && res contains the image y coord.*/
         if(res != prev){
             rows.push_back(res);
@@ -619,8 +619,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     int prev = -1;
     res = toImgCoordinates_fast(x,0).x();
     if (res < 0) { // all the image is on the left of the viewer
-        ret.first = displayWindow.x();
-        ret.second = displayWindow.w()-1;
+        ret.first = displayWindow.left();
+        ret.second = displayWindow.width()-1;
         _textureColumns.clear();
         return ret;
     }
@@ -634,7 +634,7 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
-    while(res < displayWindow.w() && x < width()){
+    while(res < displayWindow.width() && x < width()){
         /*y is a valid column in widget coord && res contains the image x coord.*/
         if(res != prev){
             columns.push_back(res);
@@ -1042,10 +1042,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPointF pos;
     pos = toImgCoordinates_fast((float)event->x(), event->y());
     const Format& dispW = displayWindow();
-    if(pos.x() >= dispW.x() &&
-       pos.x() <= dispW.w() &&
-       pos.y() >= dispW.y() &&
-       pos.y() <= dispW.h() &&
+    if(pos.x() >= dispW.left() &&
+       pos.x() <= dispW.width() &&
+       pos.y() >= dispW.bottom() &&
+       pos.y() <= dispW.height() &&
        event->x() >= 0 && event->x() < width() &&
        event->y() >= 0 && event->y() < height()){
         if(!_infoViewer->colorAndMouseVisible()){
@@ -1158,7 +1158,7 @@ QPoint ViewerGL::toWidgetCoordinates(int x, int y){
     return QPoint((((float)x - left)/(right - left))*w,(((float)y - top)/(bottom - top))*h);
 }
 /*Returns coordinates with 0,0 at top left, Powiter inverts
- y as such : y= displayWindow().h() - y  to get the coordinates
+ y as such : y= displayWindow().height() - y  to get the coordinates
  with 0,0 at bottom left*/
 QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     GLint viewport[4];
@@ -1180,7 +1180,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
     if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
     QPointF pos = toImgCoordinates_fast(x, y);
-    if(pos.x() < displayWindow().x() || pos.x() >= displayWindow().w() || pos.y() < displayWindow().y() || pos.y() >=displayWindow().h())
+    if(pos.x() < displayWindow().left() || pos.x() >= displayWindow().width() || pos.y() < displayWindow().bottom() || pos.y() >=displayWindow().height())
         return QVector4D(0,0,0,0);
     if(byteMode()==1 || !_hasHW){
         U32 pixel;
@@ -1200,8 +1200,8 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
 }
 
 void ViewerGL::fitToFormat(Format displayWindow){
-    double h = displayWindow.h();
-    double w = displayWindow.w();
+    double h = displayWindow.height();
+    double w = displayWindow.width();
     double zoomFactor = height()/h;
     setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01) );
     resetMousePos();
@@ -1224,7 +1224,8 @@ void ViewerGL::setInfoViewer(InfoViewerWidget* i ){
 }
 void ViewerGL::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool){
     _currentViewerInfos = viewerInfos;
-    Format* df = appPTR->findExistingFormat(displayWindow().w(), displayWindow().h());
+    Format* df = appPTR->findExistingFormat(displayWindow().width(), displayWindow().height());
+
     if(df)
         _currentViewerInfos->displayWindow().name(df->name());
     updateDataWindowAndDisplayWindowInfo();
@@ -1234,13 +1235,13 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     emit infoResolutionChanged();
     emit infoDataWindowChanged();
     _resolutionOverlay.clear();
-    _resolutionOverlay.append(QString::number(displayWindow().w()));
+    _resolutionOverlay.append(QString::number(displayWindow().width()));
     _resolutionOverlay.append("x");
-    _resolutionOverlay.append(QString::number(displayWindow().h()));
+    _resolutionOverlay.append(QString::number(displayWindow().height()));
     _btmLeftBBOXoverlay.clear();
-    _btmLeftBBOXoverlay.append(QString::number(dataWindow().x()));
+    _btmLeftBBOXoverlay.append(QString::number(dataWindow().left()));
     _btmLeftBBOXoverlay.append(",");
-    _btmLeftBBOXoverlay.append(QString::number(dataWindow().y()));
+    _btmLeftBBOXoverlay.append(QString::number(dataWindow().bottom()));
     _topRightBBOXoverlay.clear();
     _topRightBBOXoverlay.append(QString::number(dataWindow().right()));
     _topRightBBOXoverlay.append(",");

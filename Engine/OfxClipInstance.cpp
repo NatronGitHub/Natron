@@ -155,8 +155,8 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
     const Box2D& bbox = _node->info().dataWindow();
-    v.x1 = bbox.x();
-    v.y1 = bbox.y();
+    v.x1 = bbox.left();
+    v.y1 = bbox.bottom();
     v.x2 = bbox.right();
     v.y2 = bbox.top();
     return v;

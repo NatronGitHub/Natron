@@ -111,6 +111,7 @@ void Model::initNodeCountersAndSetName(Node* n){
         _nodeCounters.insert(make_pair(n->className(), 1));
         n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)).toStdString());
     }
+
 }
 
 bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
