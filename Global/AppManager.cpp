@@ -765,7 +765,7 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
 	for(U32 i =0;i< _formats.size();++i) {
 		Format* frmt = _formats[i];
         assert(frmt);
-		if(frmt->w() == w && frmt->h() == h && frmt->pixel_aspect()==pixel_aspect){
+		if(frmt->width() == w && frmt->height() == h && frmt->pixel_aspect()==pixel_aspect){
 			return frmt;
 		}
 	}
