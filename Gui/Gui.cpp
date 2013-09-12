@@ -112,13 +112,15 @@ bool Gui::exit(){
     }else if(ret == 2){
         return false;
     }
-    delete _appInstance;
-    delete this;
 
     if(_appInstance->getAppID() != 0){
+        delete _appInstance;
+        delete this;
         return false;
     }else{
-        qApp->exit(0);
+        delete _appInstance;
+        delete this;
+        qApp->quit();
         return true;
     }
     
