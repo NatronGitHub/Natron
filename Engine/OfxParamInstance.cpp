@@ -270,11 +270,11 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
 }
 OfxStatus OfxChoiceInstance::get(int& v){
     v = _knob->getActiveEntry();
-    return kOfxStatErrBadIndex;
+    return kOfxStatOK;
 }
 OfxStatus OfxChoiceInstance::get(OfxTime /*time*/, int& v){
     v = _knob->getActiveEntry();
-    return kOfxStatErrBadIndex;
+    return kOfxStatOK;
 }
 OfxStatus OfxChoiceInstance::set(int v){
     if(v < (int)_entries.size()){
