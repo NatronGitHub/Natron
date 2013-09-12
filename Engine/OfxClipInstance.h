@@ -166,6 +166,7 @@ class OfxImage : public OFX::Host::ImageEffect::Image
     protected :
     
     void   *_data; // where we are keeping our image data
+    size_t _rowBytes;
     BitDepthEnum _bitDepth;
 };
 

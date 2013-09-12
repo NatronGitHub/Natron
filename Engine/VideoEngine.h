@@ -13,6 +13,7 @@
 #define POWITER_ENGINE_VIDEOENGINE_H_
 
 // FIXME: can the definitions of classes EngineMainEntry, Worker, and RowRunnable be moved to VideoEngine.cpp?
+#include <cassert>
 #include <vector>
 #include <QtCore/QObject>
 #include <QtCore/QThreadPool>
@@ -349,6 +350,7 @@ private:
     bool _mustQuit;/*!< true when we quit the engine*/
     
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
+    bool _treeVersionValid;/*!< was _treeVersion initialized? */
     
     bool _loopMode; /*!< on if the player will loop*/
         
@@ -601,7 +603,7 @@ public:
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
      *represents the version of the graph.
      **/
-    U64 getCurrentTreeVersion(){return _treeVersion;}
+    U64 getCurrentTreeVersion() { assert(_treeVersionValid); return _treeVersion;}
     
 private:
 
