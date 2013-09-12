@@ -89,7 +89,8 @@ OfxNode::~OfxNode() {
 
 ChannelSet OfxNode::supportedComponents() {
     // FIXME: should be const...
-    const OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip("Output");
+    const OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
     const vector<string>& suppComponents = clip->getSupportedComponents();
     ChannelSet supportedComp;
     for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
@@ -135,7 +136,8 @@ OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
     MappedInputV copy;
     for (U32 i = 0; i < clips.size(); ++i) {
-        if(clips[i]->getShortLabel() != "Output"){
+        assert(clips[i]);
+        if(clips[i]->getShortLabel() != kOfxImageEffectOutputClipName){
             copy.push_back(clips[i]);
             // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
         }
@@ -182,7 +184,8 @@ bool OfxNode::_validate(bool forReal){
     }
     
     if (isInputNode()) {
-        OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip("Output");
+        OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+        assert(clip);
         /*if forReal is true we need to pass down the tree all the infos generated
          besides just the frame range.*/
         if (forReal) {
@@ -239,7 +242,10 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     //the input clips and output clip are filled at this point, we need to copy the output image
     //into the rows, each thread handle a specific row again (the mutex locker is dead).
 
-    OfxImage* img = dynamic_cast<OfxImage*>(effectInstance()->getClip("Output")->getImage(0.0,NULL));
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    assert(clip);
+    const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage(0.0,NULL));
+    assert(img);
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
         const OfxRGBAColourB* srcPixels = img->pixelB(out->offset(), y);
@@ -328,9 +334,9 @@ void OfxNode::computePreviewImage(){
     renderScale.x = renderScale.y = 1.;
     effectInstance()->beginRenderAction(0, 25, 1, true, renderScale);
     effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
-    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip("Output");
+    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(outputClip);
-    OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
+    const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
     assert(img);
     OfxRectI bounds = img->getBounds();
     int w = (bounds.x2-bounds.x1) < 64 ? (bounds.x2-bounds.x1) : 64;
