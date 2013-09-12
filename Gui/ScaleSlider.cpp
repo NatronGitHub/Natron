@@ -11,9 +11,11 @@
 #include "ScaleSlider.h"
 
 #include <qlayout.h>
+#if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
 CLANG_DIAG_ON(unused-private-field);
+#endif
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
