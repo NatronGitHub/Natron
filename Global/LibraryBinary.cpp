@@ -10,46 +10,47 @@
  */
 #include "LibraryBinary.h"
 
-#include "Global/GlobalDefines.h"
+#include <cassert>
+#include <iostream>
 
+#include "Global/GlobalDefines.h"
 #ifdef __POWITER_UNIX__
 #include <dlfcn.h>
 #endif
 
-#include <iostream>
 
 using namespace std;
 using namespace Powiter;
 
-LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type):
-_type(type),
-_library(0),
-_valid(true)
+LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
+: _type(type)
+, _library(0)
+, _valid(false)
 {
     
 }
 
-LibraryBinary::LibraryBinary(const std::map<std::string,value_type>& functions):
-_type(LibraryBinary::BUILTIN),
-_library(0),
-_valid(true)
+LibraryBinary::LibraryBinary(const std::map<std::string,value_type>& functions)
+: _type(LibraryBinary::BUILTIN)
+, _library(0)
+, _valid(false)
 {
     _functions = functions;
 }
 
-LibraryBinary::LibraryBinary(const std::string& binaryPath):
-_type(LibraryBinary::EXTERNAL),
-_library(0),
-_valid(true)
+LibraryBinary::LibraryBinary(const std::string& binaryPath)
+: _type(LibraryBinary::EXTERNAL)
+, _library(0)
+, _valid(false)
 {
     loadBinary(binaryPath);
 }
 
 LibraryBinary::LibraryBinary(const std::string& binaryPath,
-                             const std::vector<std::string>& funcNames):
-_type(LibraryBinary::EXTERNAL),
-_library(0),
-_valid(true)
+                             const std::vector<std::string>& funcNames)
+: _type(LibraryBinary::EXTERNAL)
+, _library(0)
+, _valid(false)
 {
     
     if(!loadBinary(binaryPath)){
@@ -58,7 +59,8 @@ _valid(true)
     loadFunctions(funcNames);
 }
 
-bool LibraryBinary::loadBinary(const std::string& binaryPath){
+bool LibraryBinary::loadBinary(const std::string& binaryPath) {
+    assert(!_valid);
     if(_type != EXTERNAL){
         std::cout << "Trying to load a binary but the library is a built-in library." << std::endl;
         return false;
@@ -71,15 +73,17 @@ bool LibraryBinary::loadBinary(const std::string& binaryPath){
     _library = dlopen(binaryPath.c_str(),RTLD_LAZY);
 #endif
     if(!_library){
-        std::cout << "Couldn't open library " << binaryPath  << ". You must delete this object to avoid memory leaks." << std::endl;
+        std::cout << "Couldn't open library " << binaryPath  << ": " << dlerror() << std::endl;
         _valid = false;
         return false;
     }
+    _valid = true;
     return true;
 }
 
-bool LibraryBinary::loadFunctions(const std::vector<std::string>& funcNames){
+bool LibraryBinary::loadFunctions(const std::vector<std::string>& funcNames) {
     bool ret = true;
+    assert(_valid);
     for (U32 i = 0; i < funcNames.size(); ++i) {
 #ifdef __POWITER_WIN32__
         value_type v = (value_type)GetProcAddress(_library,funcNames[i].c_str())
@@ -98,6 +102,10 @@ bool LibraryBinary::loadFunctions(const std::vector<std::string>& funcNames){
 
 
 LibraryBinary::~LibraryBinary() {
+    if (!_valid) {
+        return;
+    }
+    assert(_library);
 #ifdef __POWITER_WIN32__
     FreeLibarary(_library);
 #elif defined(__POWITER_UNIX__)

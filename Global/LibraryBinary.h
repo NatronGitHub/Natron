@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_PLUGINID_H_
-#define POWITER_ENGINE_PLUGINID_H_
+#ifndef POWITER_GLOBAL_LIBRARYBINARY_H_
+#define POWITER_GLOBAL_LIBRARYBINARY_H_
 
 #include <string>
 #include <map>
@@ -19,11 +19,11 @@
 namespace Powiter{
 
 #ifdef __POWITER_OSX__
-    #define LIBRARY_EXT "dylib"
+    #define POWITER_LIBRARY_EXT "dylib"
 #elif defined(__POWITER_LINUX__)
-    #define LIBRARY_EXT "so"
+    #define POWITER_LIBRARY_EXT "so"
 #elif defined(__POWITER_WIN32__)
-    #define LIBRARY_EXT "dll"
+    #define POWITER_LIBRARY_EXT "dll"
 #else
     #error "Operating system not supported by the library loader."
 #endif
