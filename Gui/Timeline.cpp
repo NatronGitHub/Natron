@@ -80,6 +80,8 @@ void TimeLineGui::updateScale(){
     _increment = (_timeLine.lastFrame() - _timeLine.firstFrame() +1)/(maximumDisplayedUnits + 1);
     if(_increment == 0){
         _increment = 1;
+    }else{
+        while((_timeLine.firstFrame()+_increment)%5!=0) ++_increment;
     }
     
     int c = _timeLine.firstFrame() + _increment;
@@ -105,7 +107,7 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     p.setWindow(0, 0, w, h);
     p.fillRect(0, 0, w, h,_backgroundColor );
     
-    QFont f("Times",10);
+    QFont f("Helvetica",10);
     p.setPen(_scaleColor);
     p.setFont(f);
     p.drawLine(BORDER_OFFSET_, LINE_START, BORDER_OFFSET_, LINE_START+BORDER_HEIGHT_); // left border
@@ -190,21 +192,29 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     
     
     /*drawing cached line*/
-    double incr=(w-2*BORDER_OFFSET_)/(double)(_displayedValues.size()-1);
     p.setPen(_cachedLineColor);
     for(U32 i =0 ; i < _cached.size() ; ++i) {
         double pos = getCoordPosition(_cached[i]);
-        p.drawLine(pos-incr/2.0,BORDER_HEIGHT_+LINE_START+2,pos+incr/2.0,BORDER_HEIGHT_+LINE_START+2);
-        p.drawLine(pos-incr/2.0,BORDER_HEIGHT_+LINE_START+3,pos+incr/2.0,BORDER_HEIGHT_+LINE_START+3);
-        p.drawLine(pos-incr/2.0,BORDER_HEIGHT_+LINE_START+4,pos+incr/2.0,BORDER_HEIGHT_+LINE_START+4);
+        double previousOrNext;
+        if (_cached[i] == _timeLine.firstFrame()) {
+            previousOrNext = getCoordPosition(_cached[i]+1);
+        }else{
+            previousOrNext = getCoordPosition(_cached[i]-1);
+        }
+        double width = pos - previousOrNext;
+        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+2,pos+width/2.0,BORDER_HEIGHT_+LINE_START+2);
+        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+3,pos+width/2.0,BORDER_HEIGHT_+LINE_START+3);
+        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+4,pos+width/2.0,BORDER_HEIGHT_+LINE_START+4);
     }
 }
 void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
     int w = size().width();
     double scaleW = w-2*BORDER_OFFSET_ ;
     double incr=((scaleW)/(double)(_displayedValues.size()-1))/(double)_increment;
-    QPointF pos(BORDER_OFFSET_-1,LINE_START);
+    //QPointF pos(BORDER_OFFSET_-1,LINE_START);
     for(int i =0;i<_displayedValues.size();++i) {
+        int x = getCoordPosition(_displayedValues[i]);
+        int y = LINE_START;
         p->setPen(_ticksColor);
         QString nbStr = QString::number(_displayedValues[i]);
         int offset = nbStr.size()*2;
@@ -212,18 +222,18 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
            && _displayedValues[i] != _last
            && getScalePosition(_Mouse.x())!= _displayedValues[i]
            && _timeLine.currentFrame() != _displayedValues[i])
-            p->drawText(QPointF(pos.x()-offset,pos.y()), nbStr,'g',3);
+            p->drawText(QPointF(x-offset,y), nbStr,'g',3);
         p->setPen(scaleColor);
         if(i != _displayedValues.size()-1){
             for(int j=1;j<_increment;++j) {
-                p->drawLine(pos.x()+j*incr,2+BORDER_HEIGHT_+LINE_START,pos.x()+j*incr,BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_/2);
+                p->drawLine(x+j*incr,2+BORDER_HEIGHT_+LINE_START,x+j*incr,BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_/2);
             }
         }
         
         if(i>0 && i<_displayedValues.size()-1){
-            p->drawLine(pos.x(),2+BORDER_HEIGHT_+LINE_START,pos.x(),2+BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_);
+            p->drawLine(x,2+BORDER_HEIGHT_+LINE_START,x,2+BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_);
         }
-        pos.setX(pos.x()+incr*_increment);
+        //  pos.setX(pos.x()+incr*_increment);
     }
     
 }
