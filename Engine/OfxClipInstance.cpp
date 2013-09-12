@@ -266,23 +266,33 @@ OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     }else if(bitDepth == eBitDepthFloat){
         pixSize = 16;
     }
-    _data = malloc((int)((bounds.x2-bounds.x1) * (bounds.y2-bounds.y1))*pixSize) ;
+    assert(bounds.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
+    assert(bounds.y1 != kOfxFlagInfiniteMin);
+    assert(bounds.x2 != kOfxFlagInfiniteMax);
+    assert(bounds.y2 != kOfxFlagInfiniteMax);
+    int xmin = (int)std::floor(bounds.x1);
+    int xmax = (int)std::ceil(bounds.x2);
+    _rowBytes = (xmax - xmin) * pixSize;
+    int ymin = (int)std::floor(bounds.y1);
+    int ymax = (int)std::ceil(bounds.y2);
+
+    _data = malloc(_rowBytes * (ymax-ymin)) ;
     // render scale x and y of 1.0
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 1);
     // data ptr
     setPointerProperty(kOfxImagePropData,_data);
     // bounds and rod
-    setIntProperty(kOfxImagePropBounds, bounds.x1, 0);
-    setIntProperty(kOfxImagePropBounds, bounds.y1, 1);
-    setIntProperty(kOfxImagePropBounds, bounds.x2, 2);
-    setIntProperty(kOfxImagePropBounds, bounds.y2, 3);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x1, 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y1, 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x2, 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y2, 3);
+    setIntProperty(kOfxImagePropBounds, xmin, 0);
+    setIntProperty(kOfxImagePropBounds, ymin, 1);
+    setIntProperty(kOfxImagePropBounds, xmax, 2);
+    setIntProperty(kOfxImagePropBounds, ymax, 3);
+    setIntProperty(kOfxImagePropRegionOfDefinition, xmin, 0);
+    setIntProperty(kOfxImagePropRegionOfDefinition, ymin, 1);
+    setIntProperty(kOfxImagePropRegionOfDefinition, xmax, 2);
+    setIntProperty(kOfxImagePropRegionOfDefinition, ymax, 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, (bounds.x2-bounds.x1) * pixSize);
+    setIntProperty(kOfxImagePropRowBytes, _rowBytes);
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
 
@@ -291,8 +301,8 @@ OfxRGBAColourB* OfxImage::pixelB(int x, int y) const{
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }
@@ -301,8 +311,8 @@ OfxRGBAColourS* OfxImage::pixelS(int x, int y) const{
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }
@@ -311,8 +321,8 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }

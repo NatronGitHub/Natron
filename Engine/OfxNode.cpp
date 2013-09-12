@@ -194,11 +194,19 @@ bool OfxNode::_validate(bool forReal){
             OfxRectD rod;
             //This function calculates the merge of the inputs RoD.
             effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+            assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
+            assert(rod.y1 != kOfxFlagInfiniteMin);
+            assert(rod.x2 != kOfxFlagInfiniteMax);
+            assert(rod.y2 != kOfxFlagInfiniteMax);
+            int xmin = (int)std::floor(rod.x1);
+            int ymin = (int)std::floor(rod.y1);
+            int xmax = (int)std::ceil(rod.x2);
+            int ymax = (int)std::ceil(rod.y2);
             double pa = clip->getAspectRatio();
             //  cout << "pa : " << pa << endl;
             //we just set the displayWindow/dataWindow rather than merge it
-            _info.set_displayWindow(Format(rod.x1, rod.y1, rod.x2, rod.y2, "",pa));
-            _info.set_dataWindow(Box2D(rod.x1, rod.y1, rod.x2, rod.y2));
+            _info.set_displayWindow(Format(xmin, ymin, xmax, ymax, "",pa));
+            _info.set_dataWindow(Box2D(xmin, ymin, xmax, ymax));
             _info.set_rgbMode(true);
             _info.set_ydirection(1);
             string comp = clip->getUnmappedComponents();
@@ -323,13 +331,17 @@ void OfxNode::computePreviewImage(){
     OfxRectD rod;
     //This function calculates the merge of the inputs RoD.
     effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+    assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
+    assert(rod.y1 != kOfxFlagInfiniteMin);
+    assert(rod.x2 != kOfxFlagInfiniteMax);
+    assert(rod.y2 != kOfxFlagInfiniteMax);
     OfxRectI renderW;
-    renderW.x1 = rod.x1;
-    renderW.x2 = rod.x2;
-    renderW.y1 = rod.y1;
-    renderW.y2 = rod.y2;
+    renderW.x1 = (int)std::floor(rod.x1);
+    renderW.y1 = (int)std::floor(rod.y1);
+    renderW.x2 = (int)std::ceil(rod.x2);
+    renderW.y2 = (int)std::ceil(rod.y2);
     Box2D oldBox(info().dataWindow());
-    _info.set_dataWindow(Box2D(rod.x1, rod.y1, rod.x2, rod.y2));
+    _info.set_dataWindow(Box2D(renderW.x1, renderW.y1, renderW.x2, renderW.y2));
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.;
     effectInstance()->beginRenderAction(0, 25, 1, true, renderScale);
