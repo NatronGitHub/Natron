@@ -277,5 +277,5 @@ void Writer::fileTypeChanged(){
 }
 
 void Writer::onFilesSelected(){
-    _filename = _fileKnob->getValueAsVariant().getQVariant().toString().toStdString();
+    _filename = _fileKnob->getValueAsVariant().toString().toStdString();
 }

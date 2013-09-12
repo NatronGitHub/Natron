@@ -212,7 +212,7 @@ void Reader::readCurrentData(int current_frame){
 void Reader::showFilePreview(){
     
     _buffer.clear();
-    fileNameList = _fileKnob->getValueAsVariant().getQVariant().toStringList();
+    fileNameList = _fileKnob->getValueAsVariant().toStringList();
     getVideoSequenceFromFilesList();
     
     fitFrameToViewer(false);

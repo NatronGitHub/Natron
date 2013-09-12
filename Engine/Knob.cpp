@@ -240,7 +240,7 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob){
 
 Knob::Knob(Node* node,const std::string& description,int dimension,Knob_Mask flags):
 _node(node),
-_value(QVariant(0)),
+_value(),
 _dimension(dimension),
 _description(description),
 _flags(flags),
@@ -248,6 +248,7 @@ _newLine(true),
 _itemSpacing(0),
 _parentKnob(NULL)
 {
+    //_value.setValue(0); // it is better to keep it as an invalid variant
 }
 
 Knob::~Knob(){
@@ -295,13 +296,13 @@ int Knob::determineHierarchySize() const{
 /***********************************FILE_KNOB*****************************************/
 
 std::string File_Knob::serialize() const{
-    return SequenceFileDialog::patternFromFilesList(_value.getQVariant().toStringList()).toStdString();
+    return SequenceFileDialog::patternFromFilesList(_value.toStringList()).toStdString();
 }
 
 void File_Knob::_restoreFromString(const std::string& str){
     //    _name->setText(str.c_str());
     QStringList filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
-    _value.setValue(Variant(filesList));
+    _value.setValue(filesList);
 }
 void File_Knob::tryStartRendering(){
     QStringList files = _value.value<QStringList>();
@@ -317,10 +318,10 @@ void File_Knob::tryStartRendering(){
 /***********************************OUTPUT_FILE_KNOB*****************************************/
 
 std::string OutputFile_Knob::serialize() const{
-    return _value.getQVariant().toString().toStdString();
+    return _value.toString().toStdString();
 }
 void OutputFile_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(Variant(QString(str.c_str())));
+    _value.setValue(str);
 }
 
 
@@ -331,18 +332,18 @@ void OutputFile_Knob::tryStartRendering(){
 void Int_Knob::fillHashVector(){
     _hashVector.clear();
     if(_dimension > 1){
-        QList<QVariant> list = _value.getQVariant().toList();
+        QList<QVariant> list = _value.toList();
         for (int i = 0; i < list.size(); ++i) {
             _hashVector.push_back((U64)list.at(i).toInt());
         }
     }else{
-        _hashVector.push_back((U64)_value.getQVariant().toInt());
+        _hashVector.push_back((U64)_value.toInt());
     }
 }
 
 
 std::string Int_Knob::serialize() const{
-    QList<QVariant> list = _value.getQVariant().toList();
+    QList<QVariant> list = _value.toList();
     QString str;
     if(_dimension > 1){
         for (int i = 0; i < list.size(); ++i) {
@@ -355,7 +356,7 @@ std::string Int_Knob::serialize() const{
             }
         }
     }else{
-        str.append(QString::number(_value.getQVariant().toInt()));
+        str.append(QString::number(_value.toInt()));
     }
     return str.toStdString();
 }
@@ -375,10 +376,10 @@ void Int_Knob::_restoreFromString(const std::string& str){
                 values.append(QVariant(vStr.toInt()));
                 i = s.indexOf("v",i);
             }
-            _value.setValue(Variant(values));
+            _value.setValue(values);
         }else{
             QString s(str.c_str());
-            _value.setValue(Variant(s.toInt()));
+            _value.setValue(s.toInt());
         }
         
     }
@@ -387,12 +388,12 @@ void Int_Knob::_restoreFromString(const std::string& str){
 const std::vector<int> Int_Knob::getValues() const {
     vector<int> ret;
     if(_dimension > 1){
-    QList<QVariant> list = _value.getQVariant().toList();
+    QList<QVariant> list = _value.toList();
     for (int i = 0; i < list.size(); ++i) {
         ret.push_back(list.at(i).toInt());
     }
     }else{
-        ret.push_back(_value.getQVariant().toInt());
+        ret.push_back(_value.toInt());
     }
     return ret;
 }
@@ -404,19 +405,19 @@ void Int_Knob::tryStartRendering(){
 /***********************************BOOL_KNOB*****************************************/
 void Bool_Knob::fillHashVector(){
     _hashVector.clear();
-    _hashVector.push_back((U64)_value.getQVariant().toBool());
+    _hashVector.push_back((U64)_value.toBool());
 }
 
 
 std::string Bool_Knob::serialize() const{
-    bool value = _value.getQVariant().toBool();
+    bool value = _value.toBool();
     return value ? "1" : "0";
 }
 void Bool_Knob::_restoreFromString(const std::string& str){
     QString s(str.c_str());
     if(!s.isEmpty()){
         int val = s.toInt();
-        _value.setValue(Variant((bool)val));
+        _value.setValue((bool)val);
     }
     
 }
@@ -429,13 +430,13 @@ void Bool_Knob::tryStartRendering(){
 void Double_Knob::fillHashVector(){
     _hashVector.clear();
     if(_dimension > 1){
-        QList<QVariant> list = _value.getQVariant().toList();
+        QList<QVariant> list = _value.toList();
         for (int i = 0; i < list.size(); ++i) {
             double value = list.at(i).toDouble();
             _hashVector.push_back(*(reinterpret_cast<U64*>(&(value))));
         }
     }else{
-        double value = _value.getQVariant().toDouble();
+        double value = _value.toDouble();
         _hashVector.push_back(*(reinterpret_cast<U64*>(&(value))));
     }
 }
@@ -444,7 +445,7 @@ void Double_Knob::fillHashVector(){
 std::string Double_Knob::serialize() const{
     QString str;
     if(_dimension > 1){
-        QList<QVariant> list = _value.getQVariant().toList();
+        QList<QVariant> list = _value.toList();
         for (int i = 0; i < list.size(); ++i) {
             str.append("v");
             str.append(QString::number(i));
@@ -456,7 +457,7 @@ std::string Double_Knob::serialize() const{
         }
         
     }else{
-        double value = _value.getQVariant().toDouble();
+        double value = _value.toDouble();
         str.append(QString::number(value));
     }
     return str.toStdString();
@@ -478,10 +479,10 @@ void Double_Knob::_restoreFromString(const std::string& str){
                 values.append(QVariant(vStr.toDouble()));
                 i = s.indexOf("v",i);
             }
-            _value.setValue(Variant(values));
+            _value.setValue(values);
         }else{
             QString s(str.c_str());
-            _value.setValue(Variant(s.toDouble()));
+            _value.setValue(s.toDouble());
         }
         
     }
@@ -490,12 +491,12 @@ void Double_Knob::_restoreFromString(const std::string& str){
 const std::vector<double> Double_Knob::getValues() const {
     vector<double> ret;
     if(_dimension > 1){
-        QList<QVariant> list = _value.getQVariant().toList();
+        QList<QVariant> list = _value.toList();
         for (int i = 0; i < list.size(); ++i) {
             ret.push_back(list.at(i).toDouble());
         }
     }else{
-        ret.push_back(_value.getQVariant().toDouble());
+        ret.push_back(_value.toDouble());
     }
     return ret;
 }
@@ -512,7 +513,7 @@ Knob(node,description,dimension,flags)
 }
 
 void Button_Knob::connectToSlot(const Variant& v){
-    const char* str = v.getQVariant().toString().toStdString().c_str();
+    const char* str = v.toString().toStdString().c_str();
     (void)str;
     QObject::connect(this,SIGNAL(valueChangedByUser()),this,str);
 }
@@ -520,14 +521,14 @@ void Button_Knob::connectToSlot(const Variant& v){
 /***********************************COMBOBOX_KNOB*****************************************/
 void ComboBox_Knob::fillHashVector(){
     _hashVector.clear();
-    int value = _value.getQVariant().toInt();
+    int value = _value.toInt();
     _hashVector.push_back(value);
 }
 std::string ComboBox_Knob::serialize() const{
-    return QString::number(_value.getQVariant().toInt()).toStdString();
+    return QString::number(_value.toInt()).toStdString();
 }
 void ComboBox_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(Variant(QString(str.c_str()).toInt()));
+    _value.setValue(QString(str.c_str()).toInt());
 }
 
 void ComboBox_Knob::tryStartRendering(){
@@ -535,7 +536,7 @@ void ComboBox_Knob::tryStartRendering(){
 }
 /***********************************RGBA_KNOB*****************************************/
 void RGBA_Knob::fillHashVector(){
-    QVector4D values = _value.getQVariant().value<QVector4D>();
+    QVector4D values = _value.value<QVector4D>();
     _hashVector.clear();
     double x[1]; x[0] = values.x();
     double y[1]; y[0] = values.y();
@@ -547,7 +548,7 @@ void RGBA_Knob::fillHashVector(){
     _hashVector.push_back(*(reinterpret_cast<U64*>(&(w))));
 }
 std::string RGBA_Knob::serialize() const{
-    QVector4D values = _value.getQVariant().value<QVector4D>();
+    QVector4D values = _value.value<QVector4D>();
     return QString("r "+ QString::number(values.x()) + " g " + QString::number(values.y()) +
                    " b " + QString::number(values.z()) + " a " +QString::number(values.w())).toStdString();
 }
@@ -582,24 +583,24 @@ void RGBA_Knob::_restoreFromString(const std::string& str){
         ++i;
     }
     QVector4D v(rStr.toDouble(),gStr.toDouble(),bStr.toDouble(),aStr.toDouble());
-    _value.setValue(Variant(v));
+    _value.setValue(v);
     
 }
 /***********************************STRING_KNOB*****************************************/
 void String_Knob::fillHashVector(){
     _hashVector.clear();
-    QString str(_value.getQVariant().toString());
+    QString str(_value.toString());
     for (int i = 0; i < str.size(); ++i) {
         _hashVector.push_back(str.at(i).unicode());
     }
 }
 
 std::string String_Knob::serialize() const{
-    return _value.getQVariant().toString().toStdString();
+    return _value.toString().toStdString();
 }
 
 void String_Knob::_restoreFromString(const std::string& str){
-    _value.setValue(Variant(QString(str.c_str())));
+    _value.setValue(str);
 }
 /***********************************GROUP_KNOB*****************************************/
 

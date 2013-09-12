@@ -30,38 +30,41 @@ class Node;
 /******************************VARIANT**************************************/
 
 /*Variant type used by knob storage type.
- Do not use explicit in front of the constructors to
- allow type conversion!. This API should be
- transparant for the plug-in programmer.*/
-class Variant{
-    
-    
-    QVariant* _variant;
-    
+
+ <<Do not use explicit in front of the constructors to
+   allow type conversion!. This API should be
+   transparant for the plug-in programmer.>>
+ 
+ NO!
+
+ from C++ Coding Standards: 101 Rules, Guidelines, and Best Practices:
+ 40. Avoid providing implicit conversions.
+ Not all change is progress: Implicit conversions can often do more damage than good.
+ Think twice before providing implicit conversions to and from the types you define,
+ and prefer to rely on explicit conversions (explicit constructors and named conversion functions).
+ 
+ setValue() is an explicit conversion function and works great.
+ Don't pessimize prematurely (one line of code should run a cascade of implicit conversions)
+ The code is not more difficult to read, and implicit conversions are avoided.
+ Read the book above for more details on why implicit conversions are evil.
+ */
+//
+// Inheritance is private here to avoid exposing implicitely all methods of QVariant,
+// but public inheritance should work as well.
+// Is there a reason for non-public inheritance?
+// Note [FD]: in the previous version, the QVariant was stored as a pointer, and was
+// never deleted.
+class Variant : private QVariant {
 public:
     
-    Variant():
-    _variant(new QVariant)
+    Variant()
+    : QVariant()
     {
-        
     }
     
-    Variant(const Variant& other)
-    :_variant(other._variant)
+    explicit Variant(const QVariant& qtVariant)
+    : QVariant(qtVariant)
     {
-        
-    }
-    
-    Variant(const QVariant& qtVariant):
-    _variant(new QVariant(qtVariant))
-    {
-        
-    }
-    
-    Variant(const std::string& str):
-    _variant(new QVariant(str.c_str()))
-    {
-        
     }
     
     template<typename T>
@@ -71,48 +74,67 @@ public:
         for (int i = 0; i < count; ++i) {
             list << QVariant(variant[i]);
         }
-        _variant = new QVariant(list);
+        QVariant::setValue(list);
     }
     
-    virtual ~Variant(){ /*delete _variant;*/ }
+    virtual ~Variant()
+    {
+    }
     
     template<typename T>
-    T value(){
-        return _variant->value<T>();
+    T value() const {
+        return QVariant::value<T>();
     }
     
-    const QVariant& getQVariant() const {
-        return *_variant;
+    template<typename T>
+    void setValue(const T &value) {
+        QVariant::setValue(value);
     }
-    
-    void setValue(const Variant& variant){
-        _variant->setValue(variant.getQVariant());
-    }
-    
-    void setValue(QVariant qtVariant){
-        _variant->setValue(qtVariant);
-    }
-    
-    void setValue(const QVariant& qtVariant){
-        _variant->setValue(qtVariant);
-    }
-    
-    void setValue(const std::string& str){
-        _variant->setValue(QString(str.c_str()));
-    }
+
     template<typename T>
     void setValue(T variant[],int count){
         QList<QVariant> list;
         for (int i = 0; i < count; ++i) {
             list << QVariant(variant[i]);
         }
-        _variant->setValue(list);
+        QVariant::setValue(list);
     }
-    
-    bool isNull() const{return _variant->isNull();}
+
+
+    int toInt(bool *ok = 0) const { return QVariant::toInt(ok); }
+    uint toUInt(bool *ok = 0) const { return QVariant::toUInt(ok); }
+    qlonglong toLongLong(bool *ok = 0) const { return QVariant::toLongLong(ok); }
+    qulonglong toULongLong(bool *ok = 0) const { return QVariant::toULongLong(ok); }
+    bool toBool() const { return QVariant::toBool(); }
+    double toDouble(bool *ok = 0) const { return QVariant::toDouble(ok); }
+    float toFloat(bool *ok = 0) const { return QVariant::toFloat(ok); }
+    qreal toReal(bool *ok = 0) const { return QVariant::toReal(ok); }
+    QByteArray toByteArray() const { return QVariant::toByteArray(); }
+    //QBitArray toBitArray() const { return QVariant::toBitArray(); }
+    QString toString() const { return QVariant::toString(); }
+    QStringList toStringList() const { return QVariant::toStringList(); }
+    QChar toChar() const { return QVariant::toChar(); }
+    //QDate toDate() const { return QVariant::toDate(); }
+    //QTime toTime() const { return QVariant::toTime(); }
+    //QDateTime toDateTime() const { return QVariant::toDateTime(); }
+    QList<QVariant> toList() const { return QVariant::toList(); }
+    QMap<QString, QVariant> toMap() const { return QVariant::toMap(); }
+    QHash<QString, QVariant> toHash() const { return QVariant::toHash(); }
+
+    bool isNull() const{return QVariant::isNull();}
 };
 Q_DECLARE_METATYPE(Variant);
 
+// specializations of setValue() for simple string types (to avoid conversions)
+template<>
+inline void Variant::setValue(const std::string& str){
+    QVariant::setValue(QString(str.c_str()));
+}
+
+template<>
+inline void Variant::setValue(const char* const& str){
+    QVariant::setValue(QString(str));
+}
 
 namespace Powiter {
     class LibraryBinary;
@@ -193,6 +215,7 @@ public:
     }
     
     /*to allow implicit cast*/
+#if 0
     void setValue(const QVariant& variant){
         _value = variant;
         emit valueChanged(_value);
@@ -206,7 +229,14 @@ public:
         emit valueChanged(_value);
         tryStartRendering();
     }
-    
+#endif
+    template<typename T>
+    void setValue(const T &value) {
+        _value.setValue(value);
+        emit valueChanged(_value);
+        tryStartRendering();
+    }
+
     /*Used to extract the value held by the knob.
      Derived classes should provide a more appropriate
      way to retrieve results in the expected type.*/
@@ -230,7 +260,7 @@ public:
     void setVisible(bool b);
     
     void setMinimum(const QVariant& variant){
-        _minimum = variant;
+        _minimum.setValue(variant);
     }
     
     void setMinimum(const Variant& variant){
@@ -245,7 +275,7 @@ public:
     const Variant& getMinimum() const {return _minimum;}
     
     void setMaximum(const QVariant& variant){
-        _maximum = variant;
+        _maximum.setValue(variant);
     }
     
     void setMaximum(const Variant& variant){
@@ -261,7 +291,7 @@ public:
 
     
     void setIncrement(const QVariant& variant){
-        _increment = variant;
+        _increment.setValue(variant);
     }
     void setIncrement(const Variant& variant){
         _increment = variant;
@@ -491,7 +521,7 @@ public:
     virtual std::string serialize() const;
     
     
-    bool getValue() const { return _value.getQVariant().toBool(); }
+    bool getValue() const { return _value.toBool(); }
     
 protected:
     
@@ -601,7 +631,7 @@ public:
     
     const std::vector<std::string>& getEntries() const {return _entries;}
     
-    int getActiveEntry() const {return _value.getQVariant().toInt();}
+    int getActiveEntry() const {return _value.toInt();}
         
 protected:
     
@@ -664,7 +694,7 @@ public:
     
     virtual std::string serialize() const;
     
-    QVector4D getValues() const {return _value.getQVariant().value<QVector4D>();}
+    QVector4D getValues() const {return _value.value<QVector4D>();}
     
     
 protected:
@@ -700,7 +730,7 @@ public:
     
     virtual std::string serialize() const;
     
-    std::string getString() const {return _value.getQVariant().toString().toStdString();}
+    std::string getString() const {return _value.toString().toStdString();}
     
 protected:
     
