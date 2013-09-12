@@ -101,11 +101,15 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         zoomFactor = 1.f;
     }
     
-    U64 oldVersion = _treeVersion;
+    bool oldVersionValid = _treeVersionValid;
+    U64 oldVersion;
+    if (oldVersionValid) {
+        oldVersion = getCurrentTreeVersion();
+    }
     changeTreeVersion();
     
     /*If the DAG changed we clear the playback cache.*/
-    if(_treeVersion != oldVersion){
+    if(!oldVersionValid || (_treeVersion != oldVersion)){
         _model->clearPlaybackCache();
     }
     
@@ -343,7 +347,7 @@ void VideoEngine::run(){
             lut =  viewer->getUiContext()->viewer->lutType();
             byteMode = viewer->getUiContext()->viewer->byteMode();
             key = FrameEntry::computeHashKey(currentFrame,
-                                             _treeVersion,
+                                             getCurrentTreeVersion(),
                                              zoomFactor,
                                              exposure,
                                              lut,
@@ -364,7 +368,7 @@ void VideoEngine::run(){
                 /*Checking that the entry retrieve matches absolutely what we
                  asked for.*/
                 assert(iscached->_textureRect == textureRect);
-                assert(iscached->_treeVers == _treeVersion);
+                assert(iscached->_treeVers == getCurrentTreeVersion());
                 // assert(iscached->_zoom == _viewerCacheArgs._zoomFactor);
                 assert(iscached->_lut == lut);
                 assert(iscached->_exposure == exposure);
@@ -613,6 +617,7 @@ _model(model),
 _working(false),
 _aborted(false),
 _mustQuit(false),
+_treeVersionValid(false),
 _loopMode(true),
 _autoSaveOnNextRun(false),
 _openGLCondition(openGLCondition),
@@ -876,7 +881,7 @@ void VideoEngine::changeTreeVersion(){
     std::vector<std::string> v;
     output->computeTreeHash(v);
     _treeVersion = output->hash().value();
-    
+    _treeVersionValid = true;
 }
 
 
