@@ -288,6 +288,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
 
 
 void OfxNode::computePreviewImage(){
+    assert(effectInstance());
     if(effectInstance()->getContext() != kOfxImageEffectContextGenerator){
         return;
     }
@@ -310,6 +311,7 @@ void OfxNode::computePreviewImage(){
     }
     
     QImage* ret = new QImage(64,64,QImage::Format_ARGB32);
+    assert(ret);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
     OfxRectD rod;
@@ -326,7 +328,10 @@ void OfxNode::computePreviewImage(){
     renderScale.x = renderScale.y = 1.;
     effectInstance()->beginRenderAction(0, 25, 1, true, renderScale);
     effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
-    OfxImage* img = dynamic_cast<OfxImage*>(effectInstance()->getClip("Output")->getImage(0.0,NULL));
+    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip("Output");
+    assert(outputClip);
+    OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
+    assert(img);
     OfxRectI bounds = img->getBounds();
     int w = (bounds.x2-bounds.x1) < 64 ? (bounds.x2-bounds.x1) : 64;
     int h = (bounds.y2-bounds.y1) < 64 ? (bounds.y2-bounds.y1) : 64;
