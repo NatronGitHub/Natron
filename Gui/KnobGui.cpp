@@ -156,7 +156,7 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
 }
 
 void File_KnobGui::updateGUI(const Variant& variant){
-    std::string pattern = SequenceFileDialog::patternFromFilesList(variant.getQVariant().toStringList()).toStdString();
+    std::string pattern = SequenceFileDialog::patternFromFilesList(variant.toStringList()).toStdString();
     _lineEdit->setText(pattern.c_str());
 }
 
@@ -223,7 +223,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row,int columnOff
 
 
 void OutputFile_KnobGui::updateGUI(const Variant& variant){
-    _lineEdit->setText(variant.getQVariant().toString());
+    _lineEdit->setText(variant.toString());
 }
 void OutputFile_KnobGui::open_file(){
     std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
@@ -267,8 +267,8 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
     QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
-    QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
-    QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
+    QList<QVariant> maximums = _knob->getMaximum().toList();
+    QList<QVariant> minimums = _knob->getMinimum().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -292,8 +292,8 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
             if(minimums.size() > i)
                 box->setMinimum(minimums.at(i).toInt());
         }else{
-            box->setMaximum(_knob->getMaximum().getQVariant().toInt());
-            box->setMinimum(_knob->getMinimum().getQVariant().toInt());
+            box->setMaximum(_knob->getMaximum().toInt());
+            box->setMinimum(_knob->getMinimum().toInt());
         }
         
         boxContainerLayout->addWidget(box);
@@ -309,7 +309,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
 }
 void Int_KnobGui::updateGUI(const Variant& variant){
     if(_knob->getDimension() > 1){
-        QList<QVariant> list = variant.getQVariant().toList();
+        QList<QVariant> list = variant.toList();
         if(list.isEmpty()){
             return;
         }
@@ -317,7 +317,7 @@ void Int_KnobGui::updateGUI(const Variant& variant){
             _spinBoxes[i]->setValue(list.at(i).toInt());
         }
     }else{
-        int value = variant.getQVariant().toInt();
+        int value = variant.toInt();
         _spinBoxes[0]->setValue(value);
     }
 }
@@ -327,7 +327,7 @@ void Int_KnobGui::onSpinBoxValueChanged(){
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         list << QVariant(_spinBoxes[i]->value());
     }
-    pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().getQVariant().toStringList()),Variant(list)));
+    pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().toStringList()),Variant(list)));
 }
 
 //==========================BOOL_KNOB_GUI======================================
@@ -348,13 +348,13 @@ void Bool_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
 }
 
 void Bool_KnobGui::updateGUI(const Variant& variant){
-    bool b = variant.getQVariant().toBool();
+    bool b = variant.toBool();
     _checkBox->setChecked(b);
 }
 
 
 void Bool_KnobGui::onCheckBoxStateChanged(bool b){
-    pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().getQVariant()),Variant(b)));
+    pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant()),Variant(b)));
 }
 
 
@@ -370,9 +370,9 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
     QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
     QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
-    QList<QVariant> maximums = _knob->getMaximum().getQVariant().toList();
-    QList<QVariant> minimums = _knob->getMinimum().getQVariant().toList();
-    QList<QVariant> increments = _knob->getIncrement().getQVariant().toList();
+    QList<QVariant> maximums = _knob->getMaximum().toList();
+    QList<QVariant> minimums = _knob->getMinimum().toList();
+    QList<QVariant> increments = _knob->getIncrement().toList();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(this);
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -401,9 +401,9 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
                     box->setIncrement(incr);
             }
         }else{
-            box->setMaximum(_knob->getMaximum().getQVariant().toDouble());
-            box->setMinimum(_knob->getMinimum().getQVariant().toDouble());
-            double incr = _knob->getIncrement().getQVariant().toDouble();
+            box->setMaximum(_knob->getMaximum().toDouble());
+            box->setMinimum(_knob->getMinimum().toDouble());
+            double incr = _knob->getIncrement().toDouble();
             if(incr > 0)
                 box->setIncrement(incr);
         }
@@ -425,7 +425,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
 }
 void Double_KnobGui::updateGUI(const Variant& variant){
     if(_knob->getDimension() > 1){
-        QList<QVariant> list = variant.getQVariant().toList();
+        QList<QVariant> list = variant.toList();
         if(list.isEmpty()){
             return;
         }
@@ -433,7 +433,7 @@ void Double_KnobGui::updateGUI(const Variant& variant){
             _spinBoxes[i]->setValue(list.at(i).toDouble());
         }
     }else{
-        double value = variant.getQVariant().toDouble();
+        double value = variant.toDouble();
         _spinBoxes[0]->setValue(value);
     }
 }
@@ -443,7 +443,7 @@ void Double_KnobGui::onSpinBoxValueChanged(){
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
         list << QVariant(_spinBoxes[i]->value());
     }
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant().getQVariant(),Variant(list)));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(list)));
 }
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -459,7 +459,9 @@ void Button_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
 }
 
 void Button_KnobGui::emitValueChanged(){
-    emit valueChanged(QVariant(0));
+    Variant v;
+    v.setValue(0);
+    emit valueChanged(v); // FIXME: why QVariant(0)? Isn't an invalid Variant (i.e. Variant()) OK? 
 }
 
 //=============================COMBOBOX_KNOB_GUI===================================
@@ -491,7 +493,7 @@ void ComboBox_KnobGui::onCurrentIndexChanged(int i){
 }
 
 void ComboBox_KnobGui::updateGUI(const Variant& variant){
-    int i = variant.getQVariant().toInt();
+    int i = variant.toInt();
     assert(i <= (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
 }
@@ -581,7 +583,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     }
 }
 void RGBA_KnobGui::updateGUI(const Variant& variant){
-    QVector4D v = variant.getQVariant().value<QVector4D>();
+    QVector4D v = variant.value<QVector4D>();
     _rBox->setValue(v.x());
     _gBox->setValue(v.y());
     _bBox->setValue(v.z());
@@ -612,7 +614,7 @@ void RGBA_KnobGui::onColorChanged(){
     color.setGreenF(_gBox->value());
     color.setBlueF(_bBox->value());
     color.setAlphaF(_aBox->value());
-    QVector4D oldValues = _knob->getValueAsVariant().getQVariant().value<QVector4D>();
+    QVector4D oldValues = _knob->getValueAsVariant().value<QVector4D>();
     QVector4D newValues;
     newValues.setX(color.redF());
     newValues.setY(color.greenF());
@@ -660,10 +662,10 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
 }
 
 void String_KnobGui::onStringChanged(const QString& str){
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant().getQVariant(),Variant(str)));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(str)));
 }
 void String_KnobGui::updateGUI(const Variant& variant){
-    _lineEdit->setText(variant.getQVariant().toString());
+    _lineEdit->setText(variant.toString());
 }
 #include <QSpacerItem>
 //=============================GROUP_KNOB_GUI===================================
@@ -721,7 +723,7 @@ void Group_KnobGui::setChecked(bool b){
     }
 }
 void Group_KnobGui::updateGUI(const Variant& variant){
-    bool b = variant.getQVariant().toBool();
+    bool b = variant.toBool();
     setChecked(b);
     _button->setChecked(b);
 }
