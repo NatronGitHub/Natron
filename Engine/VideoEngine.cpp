@@ -146,7 +146,10 @@ void VideoEngine::run(){
             return;
         
         /*Locking out other rendering tasks so 1 VideoEngine gets access to all
-         nodes.*/
+         nodes.That means only 1 frame can be rendered at any time. We would have to copy
+         all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
+         running simultaneously which is not very efficient and adds the burden to synchronize
+         states of nodes etc...*/
         _model->getGeneralMutex()->lock();
         if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
             stopEngine();

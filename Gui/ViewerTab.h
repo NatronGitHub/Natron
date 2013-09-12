@@ -115,8 +115,8 @@ public:
     
     Gui* getGui() const {return _gui;}
     
-   
-    
+    virtual QSize minimumSizeHint() const;
+    virtual QSize sizeHint() const;
 public slots:
     
     void startPause(bool);
@@ -155,6 +155,7 @@ protected:
     
     bool eventFilter(QObject *target, QEvent *event);
     virtual void keyPressEvent(QKeyEvent* e);
+    
 };
 
 #endif // POWITER_GUI_VIEWERTAB_H_

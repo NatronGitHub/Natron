@@ -154,11 +154,15 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
-    const Box2D& bbox = _node->info().dataWindow();
-    v.x1 = bbox.left();
-    v.y1 = bbox.bottom();
-    v.x2 = bbox.right();
-    v.y2 = bbox.top();
+    if(getName() == kOfxImageEffectOutputClipName){
+        const Box2D& bbox = _node->info().dataWindow();
+        v.x1 = bbox.left();
+        v.y1 = bbox.bottom();
+        v.x2 = bbox.right();
+        v.y2 = bbox.top();
+    }else{
+        
+    }
     return v;
 }
 

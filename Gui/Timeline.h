@@ -26,7 +26,7 @@
 #define TICK_HEIGHT_ 7
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
-
+class ViewerTab;
 class QMouseEvent;
 class TimeLine;
 class TimeLineGui : public QWidget{
@@ -46,6 +46,15 @@ class TimeLineGui : public QWidget{
     
     TimeLine& _timeLine;
     
+    ViewerTab* _viewerTab;//ptr to the viewer tab holding this timeline
+    
+    QColor _cursorColor;
+    QColor _boundsColor;
+    QColor _cachedLineColor;
+    QColor _backgroundColor;
+    QColor _ticksColor;
+    QColor _scaleColor;
+    
 signals:
     void positionChanged(int);
 public slots:
@@ -55,7 +64,7 @@ public slots:
         
 public:
     
-    explicit TimeLineGui(TimeLine& timeLine,QWidget* parent=0);
+    explicit TimeLineGui(TimeLine& timeLine,ViewerTab* parentTab);
     virtual ~TimeLineGui(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/
@@ -77,7 +86,13 @@ public:
     int lastFrame() const{return _last;}
     int currentFrame() const;
 
-
+    void setCursorColor(const QColor& cursorColor);
+    void setBoundsColor(const QColor& boundsColor);
+    void setCachedLineColor(const QColor& cachedLineColor);
+    void setTicksColor(const QColor& ticksColor);
+    void setBackGroundColor(const QColor& backgroundColor);
+    void setScaleColor(const QColor& scaleColor);
+    
     void seek_notSlot(int);
     
 protected:
@@ -92,7 +107,6 @@ protected:
 private:
     double getScalePosition(double); // input: scale value, output: corresponding coordinate on scale
     double getCoordPosition(double); // opposite
-    void fillCoordLut();
     void updateScale();
     void drawTicks(QPainter* p,QColor& scaleColor);
     void changeFirst(int);

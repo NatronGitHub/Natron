@@ -631,3 +631,11 @@ void ViewerTab::onCachedFrameRemoved(){
 void ViewerTab::onViewerCacheCleared(){
     frameSeeker->clearCachedFrames();
 }
+
+
+QSize ViewerTab::minimumSizeHint() const{
+    return QWidget::minimumSizeHint();
+}
+QSize ViewerTab::sizeHint() const{
+    return QWidget::sizeHint();
+}
