@@ -16,6 +16,7 @@
 #include <vector>
 #include <stdexcept>
 #include <QtGui/QImage>
+#include <QtGui/QImageWriter>
 
 #include "Engine/Lut.h"
 #include "Engine/Format.h"
@@ -28,15 +29,13 @@ using namespace Powiter;
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
 std::vector<std::string> WriteQt::fileTypesEncoded() const {
     std::vector<std::string> out;
-    out.push_back("jpg");
-    out.push_back("bmp");
-    out.push_back("jpeg");
-    out.push_back("png");
-    out.push_back("pbm");
-    out.push_back("pgm");
-    out.push_back("ppm");
-    out.push_back("xbm");
-    out.push_back("xpm");
+    // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
+    const QList<QByteArray>& supported = QImageWriter::supportedImageFormats();
+    // Qt 4 supports: BMP, JPG, JPEG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM
+    // Qt 5 doesn't support TIFF
+    for (int i = 0; i < supported.count(); ++i) {
+        out.push_back(std::string(supported.at(i).toLower().data()));
+    }
     return out;
 }
 
