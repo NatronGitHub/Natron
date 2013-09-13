@@ -147,30 +147,6 @@ bool Model::disconnect(Node* input,Node* output){
     return true;
 }
 
-
-
-void Model::clearPlaybackCache(){
-    if (!_currentOutput) {
-        return;
-    }
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
-}
-
-
-void Model::clearDiskCache(){
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
-    ViewerCache::getViewerCache()->clearDiskCache();
-}
-
-
-void  Model::clearNodeCache(){
-    NodeCache::getNodeCache()->clear();
-}
-
-
-
-
-
 /*starts the videoEngine for nbFrames. It will re-init the viewer so the
  *frame fit in the viewer.*/
 void Model::startVideoEngine(int nbFrames){

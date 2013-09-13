@@ -186,7 +186,7 @@ void TabWidget::floatPane(){
 
 void TabWidget::addNewViewer(){
     _gui->setNewViewerAnchor(this);
-    _gui->_appInstance->createNode("Viewer");
+    _gui->getApp()->createNode("Viewer");
 }
 
 void TabWidget::moveNodeGraphHere(){

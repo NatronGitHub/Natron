@@ -190,7 +190,7 @@ void NodeGui::refreshEdges(){
         const Node::InputMap& nodeInputs = node->getInputs();
         Node::InputMap::const_iterator it = nodeInputs.find(i->first);
         assert(it!=nodeInputs.end());
-        NodeGui *nodeInputGui = _dag->getGui()->_appInstance->getNodeGui(it->second);
+        NodeGui *nodeInputGui = _dag->getGui()->getApp()->getNodeGui(it->second);
         i->second->setSource(nodeInputGui);
         i->second->initLine();
     }
@@ -388,7 +388,7 @@ bool NodeGui::connectEdge(int edgeNumber){
     if(it == node->getInputs().end()){
         return false;
     }
-    NodeGui* src = _dag->getGui()->_appInstance->getNodeGui(it->second);
+    NodeGui* src = _dag->getGui()->getApp()->getNodeGui(it->second);
     InputEdgesMap::const_iterator it2 = inputs.find(edgeNumber);
     if(it2 == inputs.end()){
         return false;

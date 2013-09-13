@@ -1057,7 +1057,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         _infoViewer->setColor(color);
         _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
-        VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
+        VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
         if(videoEngine && !videoEngine->isWorking())
             emit infoColorUnderMouseChanged();
     }else{
@@ -1106,7 +1106,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_drawing){
-        _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
+        _viewerTab->getGui()->getApp()->clearPlaybackCache();
         emit engineNeeded();
     }
     updateGL();
@@ -1127,7 +1127,7 @@ void ViewerGL::setZoomFactor(double f){
 
 void ViewerGL::zoomSlot(int v){
     assert(v > 0);
-    if(!_viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->isWorking()){
+    if(!_viewerTab->getGui()->getApp()->getVideoEngine()->isWorking()){
         double value = v/100.f;
         if(value < 0.01) {
             value = 0.01;
@@ -1136,7 +1136,7 @@ void ViewerGL::zoomSlot(int v){
         }
         _zoomCtx._zoomFactor = value;
         if(_drawing){
-            _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
+            _viewerTab->getGui()->getApp()->clearPlaybackCache();
             emit engineNeeded();
         }else{
             updateGL();
@@ -1179,7 +1179,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 }
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
+    VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
     if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < displayWindow().left() || pos.x() >= displayWindow().width() || pos.y() < displayWindow().bottom() || pos.y() >=displayWindow().height())
