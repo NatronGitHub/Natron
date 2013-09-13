@@ -354,7 +354,7 @@ void ViewerGL::resizeGL(int width, int height){
 }
 void ViewerGL::paintGL()
 {
-    assert_checkGLErrors();
+    checkGLErrors();
     if (_must_initBlackTex) {
         initBlackTex();
     }
@@ -427,7 +427,7 @@ void ViewerGL::paintGL()
     if(_drawProgressBar){
         drawProgressBar();
     }
-    checkGLErrors();
+    assert_checkGLErrors();
 }
 
 
@@ -1727,7 +1727,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     }
     _drawProgressBar = true;
     _progressBarY = y;
-    updateGL(); // FIXME: this slows down rendering, why not just update()?
+    updateGL();
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
 }
