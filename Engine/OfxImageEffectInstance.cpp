@@ -27,11 +27,17 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
 , _node(NULL)
+, _parentingMap()
 {
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
 {
+    for (std::map<std::string,OFX::Host::Param::Instance*>::iterator it = _parentingMap.begin();
+         it != _parentingMap.end();
+         ++it) {
+        delete it->second;
+    }
 }
 
 const std::string& OfxImageEffectInstance::getDefaultOutputFielding() const {
