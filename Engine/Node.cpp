@@ -290,13 +290,14 @@ int Node::disconnectInput(int inputNumber){
 
 int Node::disconnectInput(Node* input){
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second == input) {
-            _inputs.erase(it);
-            _inputs.insert(make_pair(it->first, (Node*)NULL));
-            emit inputChanged(it->first);
-            return it->first;
-        }else{
+        if (it->second != input) {
             return -1;
+        } else {
+            int inputNumber = it->first;
+            _inputs.erase(it);
+            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+            emit inputChanged(inputNumber);
+            return inputNumber;
         }
     }
     return -1;
@@ -495,13 +496,8 @@ bool Node::hasOutputConnected() const{
     return _outputs.size() > 0;
 }
 
-void Node::removeKnob(Knob* knob){
-    for (U32 i = 0; i < _knobs.size(); ++i) {
-        if (_knobs[i] == knob) {
-            _knobs.erase(_knobs.begin()+i);
-            break;
-        }
-    }
+void Node::removeKnob(Knob* knob) {
+    _knobs.erase( std::remove(_knobs.begin(), _knobs.end(), knob), _knobs.end()); // erase all elements with value knobs
 }
 
 void Node::initializeKnobs(){
