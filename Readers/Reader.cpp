@@ -333,6 +333,7 @@ void Reader::Buffer::clear(){
         assert(*it);
         if((*it)->_readHandle)
             delete (*it)->_readHandle; // delete readHandle
+        delete *it;
     }
     _buffer.clear();
 }
