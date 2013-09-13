@@ -689,7 +689,7 @@ void AppManager::loadBuiltinWrites(){
     LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
     assert(ExrWritePlugin);
     for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
-        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensionsExr,ExrWritePlugin)));
+        _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
     }
     delete writeEXR;
 }
