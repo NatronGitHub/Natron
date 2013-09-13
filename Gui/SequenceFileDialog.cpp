@@ -860,7 +860,15 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     }
     bool found = false;
     size_t found_index;
-    QString str = index.data().toString();
+    QString str;
+    if (index.column() == 0) {
+        str = index.data().toString();
+    } else if (index.column() == 1) {
+        QFileSystemModel* model = _fd->getFileSystemModel();
+        QModelIndex modelIndex = _fd->mapToSource(index);
+        QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
+        str = idx.data().toString();
+    }
     for (size_t i =0 ;i < _nameMapping.size() ;++i) {
         if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
             found = true;
@@ -875,10 +883,10 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     // QRect geom = option.rect;
-    if(index.column() == 0){
-        // FIXME: with the default delegate (QStyledItemDelegate), there is a margins
-        // of a few more pixels between border and icon, and between icon and text, not with this one
-
+    
+    // FIXME: with the default delegate (QStyledItemDelegate), there is a margins
+    // of a few more pixels between border and icon, and between icon and text, not with this one
+    if (index.column() == 0) {
         QRect r;
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
@@ -899,7 +907,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                             icon.pixmap(iconSize),
                             r);
         painter->drawText(textRect,Qt::TextSingleLine,nameToPaint,&r);
-    } else if(index.column() == 1) {
+    } else if (index.column() == 1) {
         QRect r;
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
