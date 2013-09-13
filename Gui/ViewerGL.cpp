@@ -780,6 +780,7 @@ void ViewerGL::initBlackTex(){
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
+    assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);
@@ -788,6 +789,7 @@ void ViewerGL::initBlackTex(){
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    frameData = NULL;
     checkGLErrors();
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
@@ -822,6 +824,7 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
     }else{
         dataSize = sizeof(float)*w*h*4;
     }
+    assert(!frameData);
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
     assert(frameData);
@@ -853,8 +856,10 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
+    assert(frameData);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
+    frameData = NULL;
     if(byteMode() == 1.f || !_hasHW){
         //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
         //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
@@ -866,7 +871,6 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    frameData = 0;
     _pBOmapped = false;
     checkGLErrors();
     
@@ -1718,8 +1722,10 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     
 }
 void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
+    assert(frameData);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
+    frameData = NULL;
     if(byteMode() == 1.f || !_hasHW){
         _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
     }else{
@@ -1728,6 +1734,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     _drawProgressBar = true;
     _progressBarY = y;
     updateGL();
+    assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
 }

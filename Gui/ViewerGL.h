@@ -573,7 +573,13 @@ class ViewerTab;
             /**
              *@brief Unmap the currently mapped PBO if any.
              **/
-            void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
+            void forceUnmapPBO() {
+                if (frameData) {
+                    makeCurrent();
+                    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+                    frameData = NULL;
+                }
+            }
             
 
             
