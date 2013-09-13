@@ -41,14 +41,22 @@ class ViewerTab;
 
 #ifndef POWITER_DEBUG
 #define checkGLErrors() ((void)0)
+#define assert_checkGLErrors() ((void)0)
 #else
 #define checkGLErrors() \
 { \
-	GLenum error = glGetError(); \
-	if(error != GL_NO_ERROR) { \
+    GLenum error = glGetError(); \
+    if(error != GL_NO_ERROR) { \
         std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; \
         } \
-		}
+        }
+#define assert_checkGLErrors() \
+{ \
+    GLenum error = glGetError(); \
+    if(error != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; abort(); \
+        } \
+        }
 #endif
                 
         

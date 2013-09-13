@@ -207,6 +207,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    checkGLErrors();
 }
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -330,7 +331,8 @@ ViewerGL::~ViewerGL(){
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
     glDeleteBuffers(1, &_iboTriangleStripId);
-  	delete _blankViewerInfos;
+    checkGLErrors();
+    delete _blankViewerInfos;
 	delete _infoViewer;
 }
 
@@ -353,7 +355,8 @@ void ViewerGL::resizeGL(int width, int height){
 }
 void ViewerGL::paintGL()
 {
-    
+    assert_checkGLErrors();
+
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -381,22 +384,22 @@ void ViewerGL::paintGL()
         //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode()) {
             activateShaderRGB();
-      checkGLErrors();
-      } else if(!rgbMode()) {
+            checkGLErrors();
+        } else if(!rgbMode()) {
             activateShaderLC();
-    checkGLErrors();
+            checkGLErrors();
 
         }
     }else{
         glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
-     checkGLErrors();
-       if(_hasHW && !shaderBlack->bind()){
+        checkGLErrors();
+        if(_hasHW && !shaderBlack->bind()){
             cout << qPrintable(shaderBlack->log()) << endl;
-    checkGLErrors();
+            checkGLErrors();
         }
         if(_hasHW)
             shaderBlack->setUniformValue("Tex", 0);
-    checkGLErrors();
+        checkGLErrors();
         
     }
     checkGLErrors();
@@ -423,6 +426,7 @@ void ViewerGL::paintGL()
     if(_drawProgressBar){
         drawProgressBar();
     }
+    checkGLErrors();
 }
 
 
@@ -484,8 +488,7 @@ void ViewerGL::drawOverlay(){
         glEnd();
         glDisable(GL_LINE_STIPPLE);
         glPopAttrib();
-        
-        
+        checkGLErrors();
     }
     VideoEngine* vengine = _viewerTab->getInternalNode()->getVideoEngine();
     if(vengine)
@@ -504,6 +507,7 @@ void ViewerGL::drawProgressBar(){
     
     glEnd();
     glLineWidth(1);
+    checkGLErrors();
 }
 
 
@@ -536,7 +540,7 @@ void ViewerGL::initializeGL(){
     
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    
+    checkGLErrors();
     
     
     if(_hasHW){
@@ -549,10 +553,11 @@ void ViewerGL::initializeGL(){
             cout << qPrintable(shaderBlack->log()) << endl;
         }
         initShaderGLSL();
+        checkGLErrors();
     }
-    
-    
+
     initBlackTex();
+    checkGLErrors();
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -768,18 +773,24 @@ void ViewerGL::initBlackTex(){
     fitToFormat(displayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
+    checkGLErrors();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
+    checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+    checkGLErrors();
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    assert(frameData);
     U32* output = reinterpret_cast<U32*>(frameData);
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    checkGLErrors();
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    
+    checkGLErrors();
 }
 
 
@@ -820,7 +831,10 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
     //cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-	return glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    assert(ret);
+    return ret;
 }
 
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
@@ -1175,6 +1189,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     winY = viewport[3]- y;
     glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+    checkGLErrors();
     return QVector3D(posX,posY,posZ);
 }
 
@@ -1192,10 +1207,12 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         g |= (pixel >> 8);
         r |= (pixel >> 16);
         a |= (pixel >> 24);
+        checkGLErrors();
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
     }else if(byteMode()==0 && _hasHW){
         GLfloat pixel[4];
         glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        checkGLErrors();
         return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
     }
     return QVector4D(0,0,0,0);
@@ -1707,8 +1724,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     }
     _drawProgressBar = true;
     _progressBarY = y;
-    updateGL();
+    updateGL(); // FIXME: this slows down rendering, why not just update()?
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    
-    
+    checkGLErrors();
 }
