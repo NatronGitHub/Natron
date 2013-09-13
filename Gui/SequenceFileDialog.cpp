@@ -78,11 +78,54 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        const std::vector<std::string>& filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
                                        FileDialogMode mode, // if it is an open or save dialog
-                                       const std::string& currentDirectory): // the directory to show first
-QDialog(parent),
-_filters(filters),
-_currentHistoryLocation(-1),
-_dialogMode(mode)
+                                       const std::string& currentDirectory) // the directory to show first
+: QDialog(parent)
+, _frameSequences()
+, _nameMapping()
+, _filters(filters)
+, _view(0)
+, _itemDelegate(0)
+, _proxy(0)
+, _model(0)
+, _mainLayout(0)
+, _requestedDir()
+, _lookInLabel(0)
+, _lookInCombobox(0)
+, _previousButton(0)
+, _nextButton(0)
+, _upButton(0)
+, _createDirButton(0)
+, _previewButton(0)
+, _openButton(0)
+, _cancelButton(0)
+, _addFavoriteButton(0)
+, _removeFavoriteButton(0)
+, _selectionLineEdit(0)
+, _sequenceButton(0)
+, _filterLabel(0)
+, _filterLineEdit(0)
+, _filterDropDown(0)
+, _fileExtensionCombo(0)
+, _buttonsLayout(0)
+, _centerLayout(0)
+, _favoriteLayout(0)
+, _favoriteButtonsLayout(0)
+, _selectionLayout(0)
+, _filterLineLayout(0)
+, _filterLayout(0)
+, _buttonsWidget(0)
+, _favoriteWidget(0)
+, _favoriteButtonsWidget(0)
+, _selectionWidget(0)
+, _filterLineWidget(0)
+, _filterWidget(0)
+, _favoriteView(0)
+, _centerSplitter(0)
+, _history()
+, _currentHistoryLocation(-1)
+, _showHiddenAction(0)
+, _newFolderAction(0)
+, _dialogMode(mode)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
@@ -791,71 +834,81 @@ void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pa
     }
 }
 
-void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const{
-    if(index.column() == 0){
-        QString str = index.data().toString();
-        bool found = false;
-        for(unsigned int i =0 ;i < _nameMapping.size() ;++i) {
-            if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
-                QRect r;
-                if (option.state & QStyle::State_Selected){
-                    painter->fillRect(option.rect, option.palette.highlight());
-                }
-                QString nameToPaint = SequenceFileDialog::removePath(_nameMapping[i].second.second);
-                int totalSize = option.rect.width();
-                int iconSize = option.decorationSize.width();
-                int textSize = totalSize - iconSize;
-                
-                QFileInfo fileInfo(index.data(QFileSystemModel::FilePathRole).toString());
-                QIcon icon = _fd->getFileSystemModel()->iconProvider()->icon(fileInfo);
-                
-                QRect iconRect(option.rect.x(),option.rect.y(),iconSize,option.rect.height());
-                QRect textRect(option.rect.x()+iconSize,option.rect.y(),textSize,option.rect.height());
-                
-                painter->drawPixmap(iconRect,
-                                    icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height()))),
-                                    r);
-                painter->drawText(textRect,Qt::TextSingleLine,nameToPaint,&r);
-                
-                found = true;
-                
-                break;
-            }
-        }
-        if(!found){ // must be a directory or a single image file
-            QStyledItemDelegate::paint(painter,option,index);
-            return;
-            
-        }
-    }else if(index.column() == 1){
-        QFileSystemModel* model = _fd->getFileSystemModel();
-        QModelIndex modelIndex = _fd->mapToSource(index);
-        QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
-        QString str = idx.data().toString();
-        bool found = false;
-        for(unsigned int i =0 ;i < _nameMapping.size() ;++i) {
-            if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
-                QRect r;
-                if (option.state & QStyle::State_Selected){
-                    painter->fillRect(option.rect, option.palette.highlight());
-                }
-                string memString = printAsRAM(_nameMapping[i].second.first,2);
-                QString nameToPaint(memString.c_str());
-                painter->drawText(option.rect,Qt::TextSingleLine,nameToPaint,&r);
-                found = true;
-                break;
-            }
-        }
-        if(!found){
-            if(index.column() == 3){
-                _fd->getSequenceView()->setColumnWidth(3,_fd->getSequenceView()->width()/4);
-            }
-            QStyledItemDelegate::paint(painter,option,index);
-        }
-    }else{
-        QStyledItemDelegate::paint(painter,option,index);
+// grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
+static QString QDirModelPrivate_size(quint64 bytes)
+{
+    // According to the Si standard KB is 1000 bytes, KiB is 1024
+    // but on windows sizes are calulated by dividing by 1024 so we do what they do.
+    const quint64 kb = 1024;
+    const quint64 mb = 1024 * kb;
+    const quint64 gb = 1024 * mb;
+    const quint64 tb = 1024 * gb;
+    if (bytes >= tb)
+        return QFileSystemModel::tr("%1 TB").arg(QLocale().toString(qreal(bytes) / tb, 'f', 3));
+    if (bytes >= gb)
+        return QFileSystemModel::tr("%1 GB").arg(QLocale().toString(qreal(bytes) / gb, 'f', 2));
+    if (bytes >= mb)
+        return QFileSystemModel::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
+    if (bytes >= kb)
+        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString(bytes / kb));
+    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString(bytes));
+}
+
+void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &option, const QModelIndex & index) const {
+    if(index.column() != 0 && index.column() != 1) {
+        return QStyledItemDelegate::paint(painter,option,index);
     }
-    
+    bool found = false;
+    size_t found_index;
+    QString str = index.data().toString();
+    for (size_t i =0 ;i < _nameMapping.size() ;++i) {
+        if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
+            found = true;
+            found_index = i;
+            break;
+        }
+    }
+    if(!found) { // probably a directory or a single image file
+        return QStyledItemDelegate::paint(painter,option,index);
+    }
+    // get the proper subrect from the style
+    QStyle *style = QApplication::style();
+    QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
+    // QRect geom = option.rect;
+    if(index.column() == 0){
+        // FIXME: with the default delegate (QStyledItemDelegate), there is a margins
+        // of a few more pixels between border and icon, and between icon and text, not with this one
+
+        QRect r;
+        if (option.state & QStyle::State_Selected){
+            painter->fillRect(geom, option.palette.highlight());
+        }
+        QString nameToPaint = SequenceFileDialog::removePath(_nameMapping[found_index].second.second);
+        int totalSize = geom.width();
+        int iconWidth = option.decorationSize.width();
+        int textSize = totalSize - iconWidth;
+
+        QFileInfo fileInfo(index.data(QFileSystemModel::FilePathRole).toString());
+        QIcon icon = _fd->getFileSystemModel()->iconProvider()->icon(fileInfo);
+        QRect iconRect(geom.x(),geom.y(),iconWidth,geom.height());
+        QSize iconSize = icon.actualSize(QSize(iconRect.width(),iconRect.height()));
+        
+        QRect textRect(geom.x()+iconWidth,geom.y(),textSize,geom.height());
+
+        painter->drawPixmap(iconRect,
+                            icon.pixmap(iconSize),
+                            r);
+        painter->drawText(textRect,Qt::TextSingleLine,nameToPaint,&r);
+    } else if(index.column() == 1) {
+        QRect r;
+        if (option.state & QStyle::State_Selected){
+            painter->fillRect(geom, option.palette.highlight());
+        }
+        QString nameToPaint(QDirModelPrivate_size(_nameMapping[found_index].second.first));
+        painter->drawText(geom,Qt::TextSingleLine|Qt::AlignRight,nameToPaint,&r);
+    }
+
+
 }
 
 void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const{
@@ -1706,7 +1759,10 @@ void UrlModel::changed(const QString &path)
     }
 }
 
-FavoriteView::FavoriteView(QWidget *parent) : QListView(parent)
+FavoriteView::FavoriteView(QWidget *parent)
+: QListView(parent)
+, urlModel(0)
+, _itemDelegate(0)
 {
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -1715,9 +1771,12 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
 {
     setIconSize(QSize(24,24));
     setUniformItemSizes(true);
+    assert(!urlModel);
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(model);
-    setItemDelegate(new FavoriteItemDelegate(model));
+    assert(!_itemDelegate);
+    _itemDelegate = new FavoriteItemDelegate(model);
+    setItemDelegate(_itemDelegate);
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
@@ -1733,6 +1792,8 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
 
 FavoriteView::~FavoriteView()
 {
+    delete urlModel;
+    delete _itemDelegate;
 }
 
 

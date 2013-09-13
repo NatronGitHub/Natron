@@ -145,6 +145,7 @@ protected:
     }
 private:
     UrlModel *urlModel;
+    FavoriteItemDelegate *_itemDelegate;
 };
 
 /**

@@ -40,8 +40,8 @@ using namespace std;
 using namespace Powiter;
 
 namespace {
-    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
-        const std::vector<U64>& values= knob->getHashVector();
+    void Hash64_appendKnob(Hash64* hash, const Knob& knob){
+        const std::vector<U64>& values= knob.getHashVector();
         for(U32 i=0;i<values.size();++i) {
             hash->append(values[i]);
         }
@@ -177,13 +177,20 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node(Model* model):
-_model(model),
-_info(),
-_marked(false),
-_undoStack(new QUndoStack)
+Node::Node(Model* model)
+: QObject()
+, _model(model)
+, _info()
+, _marked(false)
+, _inputLabelsMap()
+, _name()
+, _hashValue()
+, _requestedBox()
+, _outputs()
+, _inputs()
+, _knobs()
+, _undoStack(new QUndoStack)
 {
-	
 }
 
 Node::~Node(){
@@ -196,7 +203,6 @@ Node::~Node(){
     for (U32 i = 0; i < _knobs.size(); ++i) {
         delete _knobs[i];
     }
-    delete _undoStack;
 }
 
 void Node::deleteNode(){
@@ -290,13 +296,14 @@ int Node::disconnectInput(int inputNumber){
 
 int Node::disconnectInput(Node* input){
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if (it->second == input) {
-            _inputs.erase(it);
-            _inputs.insert(make_pair(it->first, (Node*)NULL));
-            emit inputChanged(it->first);
-            return it->first;
-        }else{
+        if (it->second != input) {
             return -1;
+        } else {
+            int inputNumber = it->first;
+            _inputs.erase(it);
+            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+            emit inputChanged(inputNumber);
+            return inputNumber;
         }
     }
     return -1;
@@ -391,7 +398,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     _hashValue.reset();
     /*append all values stored in knobs*/
     for(U32 i = 0 ; i< _knobs.size();++i) {
-        Hash64_appendKnob(&_hashValue,_knobs[i]);
+        Hash64_appendKnob(&_hashValue,*_knobs[i]);
     }
     /*append the node name*/
     Hash64_appendQString(&_hashValue, QString(className().c_str()));
@@ -495,13 +502,8 @@ bool Node::hasOutputConnected() const{
     return _outputs.size() > 0;
 }
 
-void Node::removeKnob(Knob* knob){
-    for (U32 i = 0; i < _knobs.size(); ++i) {
-        if (_knobs[i] == knob) {
-            _knobs.erase(_knobs.begin()+i);
-            break;
-        }
-    }
+void Node::removeKnob(Knob* knob) {
+    _knobs.erase( std::remove(_knobs.begin(), _knobs.end(), knob), _knobs.end()); // erase all elements with value knobs
 }
 
 void Node::initializeKnobs(){

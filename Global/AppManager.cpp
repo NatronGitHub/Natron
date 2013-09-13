@@ -11,8 +11,10 @@
 #include "AppManager.h"
 
 #include <cassert>
+#include <boost/scoped_ptr.hpp>
 #include <QLabel>
 #include <QMessageBox>
+#include <QtGui/QImageReader>
 #include <QtCore/QDir>
 
 #include "Global/LibraryBinary.h"
@@ -62,12 +64,15 @@ _format(appPTR->findExistingFormat(2048, 1556,1.)){
     
 }
 
-AppInstance::AppInstance(int appID,const QString& projectName):
-_model(0),_gui(0),_appID(appID)
+using boost::scoped_ptr;
+
+AppInstance::AppInstance(int appID,const QString& projectName)
+: _model(new Model(this))
+, _gui(new Gui(this))
+, _currentProject()
+, _appID(appID)
+, _nodeMapping()
 {
-    _model = new Model(this);
-    _gui=new Gui(this);
-    
     _gui->createGui();
     
     const vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
@@ -125,7 +130,6 @@ _model(0),_gui(0),_appID(appID)
 
 AppInstance::~AppInstance(){
     removeAutoSaves();
-    delete _model;
     appPTR->removeInstance(_appID);
 }
 
@@ -156,6 +160,15 @@ Node* AppInstance::createNode(const QString& name) {
     }
     return node;
 }
+
+VideoEngine* AppInstance::getVideoEngine() {
+    return _model->getVideoEngine();
+}
+
+void AppInstance::checkViewersConnection() {
+    return _model->checkViewersConnection();
+}
+
 void AppInstance::autoConnect(Node* target,Node* created){
     _gui->autoConnect(getNodeGui(target),getNodeGui(created));
 }
@@ -425,6 +438,25 @@ void AppInstance::disconnectViewersFromViewerCache(){
     _model->disconnectViewersFromViewerCache();
 }
 
+void AppInstance::clearPlaybackCache(){
+    if (!_model->getCurrentOutput()) { // FIXME: the playback cache is global, why should this action depend on this model's output?
+        return;
+    }
+    ViewerCache::getViewerCache()->clearInMemoryPortion();
+}
+
+
+void AppInstance::clearDiskCache(){
+    ViewerCache::getViewerCache()->clearInMemoryPortion();
+    ViewerCache::getViewerCache()->clearDiskCache();
+}
+
+
+void  AppInstance::clearNodeCache(){
+    NodeCache::getNodeCache()->clear();
+}
+
+
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     std::vector<LibraryBinary*> ret;
     QDir d(where);
@@ -476,10 +508,18 @@ AppInstance* AppManager::getTopLevelInstance () const{
     }
 }
 
-AppManager::AppManager():
-_availableID(0),
-_topLevelInstanceID(0),
-ofxHost(new Powiter::OfxHost())
+AppManager::AppManager()
+: QObject()
+, Singleton<AppManager>()
+, _appInstances()
+, _availableID(0)
+, _topLevelInstanceID(0)
+, _readPluginsLoaded()
+, _writePluginsLoaded()
+, _formats()
+, _nodeNames()
+, ofxHost(new Powiter::OfxHost())
+, _toolButtons()
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
                      this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -524,13 +564,19 @@ AppManager::~AppManager(){
     }
 }
 
-void AppManager::loadAllPlugins(){
+void AppManager::loadAllPlugins() {
+    assert(_nodeNames.empty());
+    assert(_formats.empty());
+    assert(_toolButtons.empty());
+
     /*loading node plugins*/
     loadBuiltinNodePlugins();
     
+    assert(_readPluginsLoaded.empty());
     /*loading read plugins*/
     loadReadPlugins();
     
+    assert(_writePluginsLoaded.empty());
     /*loading write plugins*/
     loadWritePlugins();
     
@@ -579,48 +625,51 @@ void AppManager::loadReadPlugins(){
 }
 
 void AppManager::loadBuiltinReads(){
-    Read* readExr = ReadExr::BuildRead(NULL);
-    assert(readExr);
-    std::vector<std::string> extensions = readExr->fileTypesDecoded();
-    std::string decoderName = readExr->decoderName();
-    
-    std::map<std::string,void*> EXRfunctions;
-    EXRfunctions.insert(make_pair("BuildRead", (void*)&ReadExr::BuildRead));
-    LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
-    assert(EXRplugin);
-    for (U32 i = 0 ; i < extensions.size(); ++i) {
-        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,EXRplugin)));
+    {
+        Read* readExr = ReadExr::BuildRead(NULL);
+        assert(readExr);
+        std::vector<std::string> extensions = readExr->fileTypesDecoded();
+        std::string decoderName = readExr->decoderName();
+
+        std::map<std::string,void*> EXRfunctions;
+        EXRfunctions.insert(make_pair("BuildRead", (void*)&ReadExr::BuildRead));
+        LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
+        assert(EXRplugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,EXRplugin)));
+        }
+        delete readExr;
     }
-    delete readExr;
-    
-    Read* readQt = ReadQt::BuildRead(NULL);
-    assert(readQt);
-    extensions = readQt->fileTypesDecoded();
-    decoderName = readQt->decoderName();
-    
-    std::map<std::string,void*> Qtfunctions;
-    Qtfunctions.insert(make_pair("BuildRead", (void*)&ReadQt::BuildRead));
-    LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
-    assert(Qtplugin);
-    for (U32 i = 0 ; i < extensions.size(); ++i) {
-        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,Qtplugin)));
+    {
+        Read* readQt = ReadQt::BuildRead(NULL);
+        assert(readQt);
+        std::vector<std::string> extensions = readQt->fileTypesDecoded();
+        std::string decoderName = readQt->decoderName();
+
+        std::map<std::string,void*> Qtfunctions;
+        Qtfunctions.insert(make_pair("BuildRead", (void*)&ReadQt::BuildRead));
+        LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
+        assert(Qtplugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,Qtplugin)));
+        }
+        delete readQt;
     }
-    delete readQt;
-    
-    Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
-    assert(readFfmpeg);
-    extensions = readFfmpeg->fileTypesDecoded();
-    decoderName = readFfmpeg->decoderName();
-    
-    std::map<std::string,void*> FFfunctions;
-    FFfunctions.insert(make_pair("ReadBuilder", (void*)&ReadFFMPEG::BuildRead));
-    LibraryBinary *FFMPEGplugin = new LibraryBinary(FFfunctions);
-    assert(FFMPEGplugin);
-    for (U32 i = 0 ; i < extensions.size(); ++i) {
-        _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,FFMPEGplugin)));
+    {
+        Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
+        assert(readFfmpeg);
+        std::vector<std::string> extensions = readFfmpeg->fileTypesDecoded();
+        std::string decoderName = readFfmpeg->decoderName();
+
+        std::map<std::string,void*> FFfunctions;
+        FFfunctions.insert(make_pair("ReadBuilder", (void*)&ReadFFMPEG::BuildRead));
+        LibraryBinary *FFMPEGplugin = new LibraryBinary(FFfunctions);
+        assert(FFMPEGplugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,FFMPEGplugin)));
+        }
+        delete readFfmpeg;
     }
-    delete readFfmpeg;
-    
 }
 void AppManager::loadBuiltinNodePlugins(){
     // these  are built-in nodes
@@ -657,16 +706,13 @@ void AppManager::loadWritePlugins(){
         if(it->first == "OpenEXR"){
             defaultMapping.insert(make_pair("exr", it->second.second));
         }else if(it->first == "QImage (Qt)"){
-            defaultMapping.insert(make_pair("jpg", it->second.second));
-            defaultMapping.insert(make_pair("bmp", it->second.second));
-            defaultMapping.insert(make_pair("jpeg", it->second.second));
-            defaultMapping.insert(make_pair("gif", it->second.second));
-            defaultMapping.insert(make_pair("png", it->second.second));
-            defaultMapping.insert(make_pair("pbm", it->second.second));
-            defaultMapping.insert(make_pair("pgm", it->second.second));
-            defaultMapping.insert(make_pair("ppm", it->second.second));
-            defaultMapping.insert(make_pair("xbm", it->second.second));
-            defaultMapping.insert(make_pair("xpm", it->second.second));
+            // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
+            const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
+            // Qt 4 supports: BMP, GIF, JPG, JPEG, MNG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM, SVG
+            // Qt 5 doesn't support TIFF
+            for (int i = 0; i < supported.count(); ++i) {
+                defaultMapping.insert(make_pair(std::string(supported.at(i).toLower().data()), it->second.second));
+            }
         }
     }
     Settings::getPowiterCurrentSettings()->_writersSettings.fillMap(defaultMapping);
@@ -674,32 +720,34 @@ void AppManager::loadWritePlugins(){
 
 /*loads writes that are built-ins*/
 void AppManager::loadBuiltinWrites(){
-    Write* writeQt = WriteQt::BuildWrite(NULL);
-    assert(writeQt);
-    std::vector<std::string> extensions = writeQt->fileTypesEncoded();
-    string encoderName = writeQt->encoderName();
-    
-    std::map<std::string,void*> Qtfunctions;
-    Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
-    LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
-    assert(QtWritePlugin);
-    for (U32 i = 0 ; i < extensions.size(); ++i) {
-        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+    {
+        scoped_ptr<Write> writeQt(new WriteQt(NULL));
+        assert(writeQt);
+        std::vector<std::string> extensions = writeQt->fileTypesEncoded();
+        string encoderName = writeQt->encoderName();
+
+        std::map<std::string,void*> Qtfunctions;
+        Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
+        LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
+        assert(QtWritePlugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+        }
     }
-    delete writeQt;
     
-    Write* writeEXR = WriteExr::BuildWrite(NULL);
-    std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
-    string encoderNameExr = writeEXR->encoderName();
-    
-    std::map<std::string,void*> EXRfunctions;
-    EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
-    LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
-    assert(ExrWritePlugin);
-    for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
-        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensionsExr,ExrWritePlugin)));
+    {
+        scoped_ptr<Write> writeEXR(new WriteExr(NULL));
+        std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
+        string encoderNameExr = writeEXR->encoderName();
+
+        std::map<std::string,void*> EXRfunctions;
+        EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
+        LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
+        assert(ExrWritePlugin);
+        for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
+        }
     }
-    delete writeEXR;
 }
 
 void AppManager::loadBuiltinFormats(){

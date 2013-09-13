@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/Macros.h"
 
@@ -140,7 +141,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
 	virtual void createKnobDynamically();
     
     /*Called by KnobFactory::createKnob. You
-     should never call this yourself.*/
+     should never call this yourself. The knob belongs only to this Node.*/
     void addKnob(Knob* knob){_knobs.push_back(knob);}
     
     void removeKnob(Knob* knob);
@@ -388,7 +389,7 @@ protected:
     std::map<int,Node*> _inputs;//only 1 input per slot
     std::vector<Knob*> _knobs;
     
-    QUndoStack* _undoStack;
+    boost::scoped_ptr<QUndoStack> _undoStack;
 
 private:
     

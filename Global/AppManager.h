@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <boost/scoped_ptr.hpp>
 
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
@@ -41,6 +42,7 @@ class ViewerTab;
 class TabWidget;
 class Gui;
 class Format;
+class VideoEngine;
 class OutputNode;
 
 namespace Powiter {
@@ -66,7 +68,7 @@ public:
  by the handy macro appPTR*/
 class AppInstance : public QObject
 {
-    
+    Q_OBJECT
 public:
     AppInstance(int appID,const QString& projectName = QString());
     
@@ -83,9 +85,10 @@ public:
     /*Pointer to the GUI*/
     Gui* getGui(){return _gui;}
     
-    /*Pointer to the model*/
-	Model* getModel(){return _model;}
-    
+    /* The following methods are forwarded to the model */
+    VideoEngine* getVideoEngine();
+    void checkViewersConnection();
+
     void updateDAG(OutputNode *output,bool isViewer);
     
     bool isRendering() const;
@@ -154,6 +157,13 @@ public:
     
     void disconnectViewersFromViewerCache();
     
+public slots:
+    void clearPlaybackCache();
+
+    void clearDiskCache();
+
+    void clearNodeCache();
+
 private:
     
     
@@ -164,7 +174,7 @@ private:
      returns true,otherwise false.*/
     bool findAutoSave();
         
-    Model* _model; // the model of the MVC pattern
+    boost::scoped_ptr<Model> _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
     
     Project _currentProject;

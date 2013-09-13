@@ -74,8 +74,11 @@ void Model::clearNodes(){
 
 void Model::checkViewersConnection(){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        assert(_currentNodes[i]);
         if (_currentNodes[i]->className() == "Viewer") {
-            dynamic_cast<OutputNode*>(_currentNodes[i])->updateDAG(true);
+            OutputNode* n = dynamic_cast<OutputNode*>(_currentNodes[i]);
+            assert(n);
+            n->updateDAG(true);
         }
     }
 }
@@ -98,6 +101,7 @@ Node* Model::createNode(const std::string& name) {
     } else {
         node = appPTR->getOfxHost()->createOfxNode(name,this);
     }
+    assert(node);
     _currentNodes.push_back(node);
     return node;
 }
@@ -116,6 +120,7 @@ void Model::initNodeCountersAndSetName(Node* n){
 
 bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        assert(_currentNodes[i]);
         if (_currentNodes[i]->getName() == inputName) {
 
             connect(inputNumber,_currentNodes[i], output);
@@ -146,30 +151,6 @@ bool Model::disconnect(Node* input,Node* output){
     }
     return true;
 }
-
-
-
-void Model::clearPlaybackCache(){
-    if (!_currentOutput) {
-        return;
-    }
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
-}
-
-
-void Model::clearDiskCache(){
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
-    ViewerCache::getViewerCache()->clearDiskCache();
-}
-
-
-void  Model::clearNodeCache(){
-    NodeCache::getNodeCache()->clear();
-}
-
-
-
-
 
 /*starts the videoEngine for nbFrames. It will re-init the viewer so the
  *frame fit in the viewer.*/
@@ -469,6 +450,7 @@ void Model::triggerAutoSaveOnNextEngineRun(){
 
 void Model::connectViewersToViewerCache(){
     foreach(Node* n,_currentNodes){
+        assert(n);
         if(n->className() == "Viewer"){
             dynamic_cast<ViewerNode*>(n)->connectSlotsToViewerCache();
         }
@@ -477,6 +459,7 @@ void Model::connectViewersToViewerCache(){
 
 void Model::disconnectViewersFromViewerCache(){
     foreach(Node* n,_currentNodes){
+        assert(n);
         if(n->className() == "Viewer"){
             dynamic_cast<ViewerNode*>(n)->disconnectSlotsToViewerCache();
         }

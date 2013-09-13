@@ -100,30 +100,28 @@ cacheMenu(0)
 {
 }
 
-Gui::~Gui(){
-    
-    
+Gui::~Gui()
+{
+    delete _nodeGraphTab;
+    delete _appInstance;
 }
 
 bool Gui::exit(){
     int ret = saveWarning();
-    if(ret == 0){
+    if (ret == 0) {
         saveProject();
-    }else if(ret == 2){
+    } else if (ret == 2) {
         return false;
     }
-
-    if(_appInstance->getAppID() != 0){
-        delete _appInstance;
+    assert(_appInstance);
+    if (_appInstance->getAppID() != 0) {
         delete this;
         return false;
-    }else{
-        delete _appInstance;
+    } else {
         delete this;
         qApp->quit();
         return true;
     }
-    
 }
 
 void Gui::toggleFullScreen()
@@ -135,8 +133,9 @@ void Gui::toggleFullScreen()
     }
 }
 
-void Gui::closeEvent(QCloseEvent *e){
-    if(!exit()){
+void Gui::closeEvent(QCloseEvent *e) {
+    assert(e);
+    if (!exit()) {
         e->ignore();
         return;
     }
@@ -151,9 +150,12 @@ NodeGui* Gui::createNodeGUI( Node* node){
             n->computePreviewImage();
         }
     }
+    assert(_nodeGraphTab);
+    assert(_nodeGraphTab->_nodeGraphArea);
     NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
     return gui;
 }
+
 void Gui::createViewerGui(Node* viewer){
     TabWidget* where = _nextViewerTabPlace;
     if(!where){
@@ -164,12 +166,19 @@ void Gui::createViewerGui(Node* viewer){
     dynamic_cast<ViewerNode*>(viewer)->initializeViewerTab(where);
     _lastSelectedViewer = dynamic_cast<ViewerNode*>(viewer)->getUiContext();
 }
-void Gui::autoConnect(NodeGui* target,NodeGui* created){
-    if(target)
+
+void Gui::autoConnect(NodeGui* target,NodeGui* created) {
+    assert(_nodeGraphTab);
+    assert(_nodeGraphTab->_nodeGraphArea);
+    if(target) {
         _nodeGraphTab->_nodeGraphArea->autoConnect(target, created);
+    }
     _nodeGraphTab->_nodeGraphArea->selectNode(created);
 }
-NodeGui* Gui::getSelectedNode() const{
+
+NodeGui* Gui::getSelectedNode() const {
+    assert(_nodeGraphTab);
+    assert(_nodeGraphTab->_nodeGraphArea);
     return _nodeGraphTab->_nodeGraphArea->getSelectedNode();
 }
 
@@ -185,7 +194,8 @@ void Gui::createGui(){
 
 
 
-bool Gui::eventFilter(QObject *target, QEvent *event){
+bool Gui::eventFilter(QObject *target, QEvent *event) {
+    assert(_appInstance);
     if(dynamic_cast<QInputEvent*>(event)){
         /*Make top level instance this instance since it receives all
          user inputs.*/
@@ -195,11 +205,11 @@ bool Gui::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Right) {
-            _appInstance->getModel()->getVideoEngine()->nextFrame();
+            _appInstance->getVideoEngine()->nextFrame();
             focusNextChild();
             return true;
         }else if(keyEvent->key() == Qt::Key_Left){
-            _appInstance->getModel()->getVideoEngine()->previousFrame();
+            _appInstance->getVideoEngine()->previousFrame();
             focusNextChild();
             return true;
         }
@@ -210,29 +220,47 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
 	setWindowTitle(QApplication::translate("Powiter", "Powiter"));
+    assert(actionNew_project);
 	actionNew_project->setText(QApplication::translate("Powiter", "New Project"));
-	actionOpen_project->setText(QApplication::translate("Powiter", "Open Project..."));
-	actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
+    assert(actionOpen_project);
+    actionOpen_project->setText(QApplication::translate("Powiter", "Open Project..."));
+    assert(actionSave_project);
+    actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
+    assert(actionSaveAs_project);
     actionSaveAs_project->setText(QApplication::translate("Powiter", "Save Project As..."));
-	actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
+    assert(actionPreferences);
+    actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
+    assert(actionExit);
     actionExit->setText(QApplication::translate("Powiter", "Exit"));
-	actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
-	actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
-	actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
-	actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
-	actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
-	actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
+    assert(actionProject_settings);
+    actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
+    assert(actionFullScreen);
+    actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
+    assert(actionSplitViewersTab);
+    actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
+    assert(actionClearDiskCache);
+    actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
+    assert(actionClearPlayBackCache);
+    actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
+    assert(actionClearNodeCache);
+    actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
     
     
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
     
 	//WorkShop->setTabText(WorkShop->indexOf(GraphEditor), QApplication::translate("Powiter", "Graph Editor"));
-	menuFile->setTitle(QApplication::translate("Powiter", "File"));
-	menuEdit->setTitle(QApplication::translate("Powiter", "Edit"));
-	menuDisplay->setTitle(QApplication::translate("Powiter", "Display"));
-	menuOptions->setTitle(QApplication::translate("Powiter", "Options"));
-	viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
-	cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
+    assert(menuFile);
+    menuFile->setTitle(QApplication::translate("Powiter", "File"));
+    assert(menuEdit);
+    menuEdit->setTitle(QApplication::translate("Powiter", "Edit"));
+    assert(menuDisplay);
+    menuDisplay->setTitle(QApplication::translate("Powiter", "Display"));
+    assert(menuOptions);
+    menuOptions->setTitle(QApplication::translate("Powiter", "Options"));
+    assert(viewersMenu);
+    viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
+    assert(cacheMenu);
+    cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
     
 }
 void Gui::setupUi()
@@ -426,14 +454,11 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
 	retranslateUi(this);
-    
-    
-    
-    Model* model = _appInstance->getModel();
+
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
-    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),model,SLOT(clearDiskCache()));
-    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),model,SLOT(clearPlaybackCache()));
-    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),model,SLOT(clearNodeCache()));
+    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),_appInstance,SLOT(clearDiskCache()));
+    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),_appInstance,SLOT(clearPlaybackCache()));
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),_appInstance,SLOT(clearNodeCache()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     
 	QMetaObject::connectSlotsByName(this);
@@ -520,7 +545,8 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     }
     
 }
-void Gui::addNodeGraph(){
+void Gui::addNodeGraph() {
+    assert(!_nodeGraphTab);
     NodeGraphTab* tab = new NodeGraphTab(this,_workshopPane);
     _nodeGraphTab = tab;
     assert(_workshopPane);
@@ -543,7 +569,8 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
         }
         if (found) {
             return;
-        }else{
+        } else {
+            assert(_nodeGraphTab);
             /*if it is not found we have to recover the name*/
             if(what == _nodeGraphTab->_nodeGraphArea)
                 name = "Node Graph";
@@ -563,7 +590,10 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
 
 
 
-NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent){
+NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
+: _graphScene(0)
+, _nodeGraphArea(0)
+{
     _graphScene=new QGraphicsScene(parent);
 	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
@@ -704,19 +734,25 @@ void Gui::closePane(TabWidget* what){
     
 }
 
-FloatingWidget::FloatingWidget(QWidget* parent) : QWidget(parent), _embeddedWidget(0){
-    
+FloatingWidget::FloatingWidget(QWidget* parent)
+: QWidget(parent)
+, _embeddedWidget(0)
+, _layout(0)
+{
     setWindowFlags(Qt::WindowStaysOnTopHint | Qt::Window);
     _layout = new QVBoxLayout(this);
     _layout->setContentsMargins(0, 0, 0, 0);
     setLayout(_layout);
     
 }
-void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w){
+void FloatingWidget::setWidget(const QSize& widgetSize,QWidget* w)
+{
+    assert(w);
     if (_embeddedWidget) {
         return;
     }
     w->setParent(this);
+    assert(_layout);
     _layout->addWidget(w);
     w->setVisible(true);
     resize(widgetSize);
@@ -776,8 +812,12 @@ ToolButton::ToolButton(AppInstance* app,
                        const QString& pluginName,
                        QIcon pluginIcon , QIcon groupIcon ,
                        QWidget* parent)
-:QToolButton(parent),
-_app(app){
+: QToolButton(parent)
+, _app(app)
+, _menu(0)
+, _subMenus()
+, _actions()
+{
     setPopupMode(QToolButton::InstantPopup);
     _menu = new QMenu(this);
     if(!groupIcon.isNull())
@@ -809,12 +849,12 @@ ToolButton::~ToolButton(){
 void ToolButton::addTool(const QString& actionName,const QStringList& grouping,const QString& pluginName,QIcon pluginIcon){
     std::vector<std::string> subMenuToAdd;
     int index = 1;
-    QMenu* _lastMenu = _menu;
+    QMenu* lastMenu = _menu;
     while(index < (int)grouping.size()){
         bool found = false;
         for (U32 i =  0; i < _subMenus.size(); ++i) {
             if (_subMenus[i]->title() == QString(grouping[index])) {
-                _lastMenu = _subMenus[i];
+                lastMenu = _subMenus[i];
                 found = true;
                 break;
             }
@@ -824,15 +864,15 @@ void ToolButton::addTool(const QString& actionName,const QStringList& grouping,c
         ++index;
     }
     for(int i = index; i < (int)grouping.size() ; ++i) {
-        QMenu* menu = _lastMenu->addMenu(grouping[index]);
+        QMenu* menu = lastMenu->addMenu(grouping[index]);
         _subMenus.push_back(menu);
-        _lastMenu = menu;
+        lastMenu = menu;
     }
     QAction* action = 0;
     if(pluginIcon.isNull()){
-        action = _lastMenu->addAction(pluginName);
+        action = lastMenu->addAction(pluginName);
     }else{
-        action = _lastMenu->addAction(pluginIcon, pluginName);
+        action = lastMenu->addAction(pluginIcon, pluginName);
     }
     ActionRef* actionRef = new ActionRef(_app,action,actionName);
     _actions.push_back(actionRef);

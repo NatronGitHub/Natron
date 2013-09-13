@@ -133,12 +133,6 @@ public:
     
     void disconnectViewersFromViewerCache();
     
-public slots:
-    void clearPlaybackCache();
-    
-    void clearDiskCache();
-    
-    void clearNodeCache();
 
 private:
     

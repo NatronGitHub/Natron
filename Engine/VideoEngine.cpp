@@ -110,7 +110,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     
     /*If the DAG changed we clear the playback cache.*/
     if(!oldVersionValid || (_treeVersion != oldVersion)){
-        _model->clearPlaybackCache();
+        _model->getApp()->clearPlaybackCache(); // FIXME: the playback cache seems to be global to the application, why should we clear it here?
     }
     
     _lastRunArgs._zoomFactor = zoomFactor;

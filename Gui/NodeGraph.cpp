@@ -196,8 +196,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         _arrowSelected->initLine();
         scene()->update();
-        _gui->_appInstance->getModel()->clearPlaybackCache();
-        _gui->_appInstance->getModel()->checkViewersConnection();
+        _gui->getApp()->clearPlaybackCache();
+        _gui->getApp()->checkViewersConnection();
     }else if(_evtState == NODE_DRAGGING){
         if(_nodeSelected)
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
@@ -283,7 +283,7 @@ bool NodeGraph::event(QEvent* event){
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
     if(e->key() == Qt::Key_R){
-        Node* reader = _gui->_appInstance->createNode("Reader");
+        Node* reader = _gui->getApp()->createNode("Reader");
         const std::vector<Knob*>& knobs = reader->getKnobs();
         foreach(Knob* k,knobs){
             if(k->name() == "InputFile"){
@@ -294,7 +294,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         }
         
     }else if(e->key() == Qt::Key_W){
-        Node* writer = _gui->_appInstance->createNode("Writer");
+        Node* writer = _gui->getApp()->createNode("Writer");
         const std::vector<Knob*>& knobs = writer->getKnobs();
         foreach(Knob* k,knobs){
             if(k->name() == "OutputFile"){
@@ -326,7 +326,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 }
 void NodeGraph::connectCurrentViewerToSelection(){
     ViewerTab* lastSelectedViewerTab = _gui->getLastSelectedViewer();
-    const NodeGui::InputEdgesMap& edges = _gui->_appInstance->getNodeGui(lastSelectedViewerTab->getInternalNode())->getInputsArrows();
+    const NodeGui::InputEdgesMap& edges = _gui->getApp()->getNodeGui(lastSelectedViewerTab->getInternalNode())->getInputsArrows();
     NodeGui::InputEdgesMap::const_iterator it = edges.find(1);
     if(it!=edges.end()){
         _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
@@ -396,7 +396,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                 assert(outputNode);
                 
                 /*Find which edge is connected to the selected node */
-                NodeGui* output = _gui->_appInstance->getNodeGui(outputNode);
+                NodeGui* output = _gui->getApp()->getNodeGui(outputNode);
                 assert(output);
                 const NodeGui::InputEdgesMap& outputEdges = output->getInputsArrows();
                 Edge* edgeWithSelectedNode = 0;
@@ -468,7 +468,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     if(cont){
         Node* viewer = Node::hasViewerConnected(first->getDest()->getNode());
         if(viewer){
-            _gui->_appInstance->updateDAG(dynamic_cast<OutputNode*>(viewer),true);
+            _gui->getApp()->updateDAG(dynamic_cast<OutputNode*>(viewer),true);
         }
     }
 }
@@ -719,10 +719,10 @@ void ConnectCommand::undo(){
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
-        _graph->getGui()->_appInstance->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        _graph->getGui()->_appInstance->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
     if(_oldSrc){
@@ -732,7 +732,7 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    _graph->getGui()->_appInstance->triggerAutoSaveOnNextEngineRun();
+    _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
     Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
         dynamic_cast<OutputNode*>(viewer)->updateDAG(true);
@@ -744,10 +744,10 @@ void ConnectCommand::redo(){
     _edge->setSource(_newSrc);
     
     if(_oldSrc){
-        _graph->getGui()->_appInstance->disconnect(_oldSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        _graph->getGui()->_appInstance->connect(_edge->getInputNumber(), _newSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), _edge->getDest()->getNode());
     }
     
     _edge->initLine();
@@ -758,7 +758,7 @@ void ConnectCommand::redo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    _graph->getGui()->_appInstance->triggerAutoSaveOnNextEngineRun();
+    _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
     Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
         dynamic_cast<OutputNode*>(viewer)->updateDAG(true);
@@ -797,7 +797,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
         if(appPTR->getNodeNameList().contains(res)){
-            graph->getGui()->_appInstance->createNode(res);
+            graph->getGui()->getApp()->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             textEdit->releaseKeyboard();

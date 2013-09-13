@@ -41,14 +41,22 @@ class ViewerTab;
 
 #ifndef POWITER_DEBUG
 #define checkGLErrors() ((void)0)
+#define assert_checkGLErrors() ((void)0)
 #else
 #define checkGLErrors() \
 { \
-	GLenum error = glGetError(); \
-	if(error != GL_NO_ERROR) { \
+    GLenum error = glGetError(); \
+    if(error != GL_NO_ERROR) { \
         std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; \
         } \
-		}
+        }
+#define assert_checkGLErrors() \
+{ \
+    GLenum error = glGetError(); \
+    if(error != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; abort(); \
+        } \
+        }
 #endif
                 
         
@@ -249,7 +257,8 @@ class ViewerTab;
             ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
             bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
-            
+            bool _must_initBlackTex;
+
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
                         
             std::vector<int> _textureColumns; /*!< The last columns computed by computeColumnSpan. This member is
@@ -313,7 +322,7 @@ class ViewerTab;
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void drawing(bool d){_drawing=d;if(!_drawing) initBlackTex();}
+            void drawing(bool d){_drawing=d;if(!_drawing) { _must_initBlackTex = true; };}
             
             /**
              *@returns Returns true if the viewer is displaying something.
@@ -564,7 +573,13 @@ class ViewerTab;
             /**
              *@brief Unmap the currently mapped PBO if any.
              **/
-            void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
+            void forceUnmapPBO() {
+                if (frameData) {
+                    makeCurrent();
+                    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+                    frameData = NULL;
+                }
+            }
             
 
             

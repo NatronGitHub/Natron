@@ -478,55 +478,55 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->startPause(b);
     else
         play_Forward_Button->setChecked(false);
 }
 void ViewerTab::abort(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->startBackward(b);
     else
         play_Backward_Button->setChecked(false);
 }
 void ViewerTab::previousFrame(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->previousFrame();
 }
 void ViewerTab::nextFrame(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->nextFrame();
 }
 void ViewerTab::previousIncrement(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->previousIncrement();
 }
 void ViewerTab::nextIncrement(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->nextIncrement();
 }
 void ViewerTab::firstFrame(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->firstFrame();
 }
 void ViewerTab::lastFrame(){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->lastFrame();
 }
 void ViewerTab::seekRandomFrame(int f){
-    _gui->_appInstance->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, true);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->seekRandomFrame(f);
 }
@@ -612,7 +612,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {
-        _gui->selectNode(_gui->_appInstance->getNodeGui(_viewerNode));
+        _gui->selectNode(_gui->getApp()->getNodeGui(_viewerNode));
         
     }
     return QWidget::eventFilter(target, event);

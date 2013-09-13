@@ -207,6 +207,7 @@ void ViewerGL::drawRenderingVAO(){
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    checkGLErrors();
 }
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -272,40 +273,39 @@ void ViewerGL::initConstructor(){
 }
 
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
-{
-    
+: QGLWidget(context,parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
+{ 
     initConstructor();
-    
 }
+
 ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
+: QGLWidget(format,parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
 {
-    
     initConstructor();
-    
 }
 
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
+: QGLWidget(parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
 {
     initConstructor();
-    
 }
 
 
@@ -330,7 +330,8 @@ ViewerGL::~ViewerGL(){
     glDeleteBuffers(1, &_vboVerticesId);
     glDeleteBuffers(1, &_vboTexturesId);
     glDeleteBuffers(1, &_iboTriangleStripId);
-  	delete _blankViewerInfos;
+    checkGLErrors();
+    delete _blankViewerInfos;
 	delete _infoViewer;
 }
 
@@ -353,7 +354,10 @@ void ViewerGL::resizeGL(int width, int height){
 }
 void ViewerGL::paintGL()
 {
-    
+    checkGLErrors();
+    if (_must_initBlackTex) {
+        initBlackTex();
+    }
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -381,22 +385,22 @@ void ViewerGL::paintGL()
         //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
         if(rgbMode()) {
             activateShaderRGB();
-      checkGLErrors();
-      } else if(!rgbMode()) {
+            checkGLErrors();
+        } else if(!rgbMode()) {
             activateShaderLC();
-    checkGLErrors();
+            checkGLErrors();
 
         }
     }else{
         glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
-     checkGLErrors();
-       if(_hasHW && !shaderBlack->bind()){
+        checkGLErrors();
+        if(_hasHW && !shaderBlack->bind()){
             cout << qPrintable(shaderBlack->log()) << endl;
-    checkGLErrors();
+            checkGLErrors();
         }
         if(_hasHW)
             shaderBlack->setUniformValue("Tex", 0);
-    checkGLErrors();
+        checkGLErrors();
         
     }
     checkGLErrors();
@@ -423,6 +427,7 @@ void ViewerGL::paintGL()
     if(_drawProgressBar){
         drawProgressBar();
     }
+    assert_checkGLErrors();
 }
 
 
@@ -484,8 +489,7 @@ void ViewerGL::drawOverlay(){
         glEnd();
         glDisable(GL_LINE_STIPPLE);
         glPopAttrib();
-        
-        
+        checkGLErrors();
     }
     VideoEngine* vengine = _viewerTab->getInternalNode()->getVideoEngine();
     if(vengine)
@@ -504,6 +508,7 @@ void ViewerGL::drawProgressBar(){
     
     glEnd();
     glLineWidth(1);
+    checkGLErrors();
 }
 
 
@@ -536,7 +541,7 @@ void ViewerGL::initializeGL(){
     
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    
+    checkGLErrors();
     
     
     if(_hasHW){
@@ -549,10 +554,11 @@ void ViewerGL::initializeGL(){
             cout << qPrintable(shaderBlack->log()) << endl;
         }
         initShaderGLSL();
+        checkGLErrors();
     }
-    
-    
+
     initBlackTex();
+    checkGLErrors();
 }
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
@@ -765,21 +771,31 @@ void ViewerGL::restoreGLState()
 }
 
 void ViewerGL::initBlackTex(){
+    assert(_must_initBlackTex);
     fitToFormat(displayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
+    assert_checkGLErrors();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
+    checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
+    checkGLErrors();
+    assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    assert(frameData);
     U32* output = reinterpret_cast<U32*>(frameData);
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    frameData = NULL;
+    checkGLErrors();
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    
+    checkGLErrors();
+    _must_initBlackTex = false;
 }
 
 
@@ -808,6 +824,7 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
     }else{
         dataSize = sizeof(float)*w*h*4;
     }
+    assert(!frameData);
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
     assert(frameData);
@@ -820,7 +837,10 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
     //cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
-	return glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    checkGLErrors();
+    assert(ret);
+    return ret;
 }
 
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
@@ -836,8 +856,10 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
+    assert(frameData);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
+    frameData = NULL;
     if(byteMode() == 1.f || !_hasHW){
         //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
         //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
@@ -849,7 +871,6 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    frameData = 0;
     _pBOmapped = false;
     checkGLErrors();
     
@@ -1057,7 +1078,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         _infoViewer->setColor(color);
         _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
-        VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
+        VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
         if(videoEngine && !videoEngine->isWorking())
             emit infoColorUnderMouseChanged();
     }else{
@@ -1106,7 +1127,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_drawing){
-        _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
+        _viewerTab->getGui()->getApp()->clearPlaybackCache();
         emit engineNeeded();
     }
     updateGL();
@@ -1127,7 +1148,7 @@ void ViewerGL::setZoomFactor(double f){
 
 void ViewerGL::zoomSlot(int v){
     assert(v > 0);
-    if(!_viewerTab->getGui()->_appInstance->getModel()->getVideoEngine()->isWorking()){
+    if(!_viewerTab->getGui()->getApp()->getVideoEngine()->isWorking()){
         double value = v/100.f;
         if(value < 0.01) {
             value = 0.01;
@@ -1136,7 +1157,7 @@ void ViewerGL::zoomSlot(int v){
         }
         _zoomCtx._zoomFactor = value;
         if(_drawing){
-            _viewerTab->getGui()->_appInstance->getModel()->clearPlaybackCache();
+            _viewerTab->getGui()->getApp()->clearPlaybackCache();
             emit engineNeeded();
         }else{
             updateGL();
@@ -1175,11 +1196,12 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     winY = viewport[3]- y;
     glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+    checkGLErrors();
     return QVector3D(posX,posY,posZ);
 }
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    VideoEngine* videoEngine = _viewerTab->getGui()->_appInstance->getModel()->getVideoEngine();
+    VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
     if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < displayWindow().left() || pos.x() >= displayWindow().width() || pos.y() < displayWindow().bottom() || pos.y() >=displayWindow().height())
@@ -1192,10 +1214,12 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         g |= (pixel >> 8);
         r |= (pixel >> 16);
         a |= (pixel >> 24);
+        checkGLErrors();
         return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
     }else if(byteMode()==0 && _hasHW){
         GLfloat pixel[4];
         glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);
+        checkGLErrors();
         return QVector4D(pixel[0],pixel[1],pixel[2],pixel[3]);
     }
     return QVector4D(0,0,0,0);
@@ -1698,8 +1722,10 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     
 }
 void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
+    assert(frameData);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
+    frameData = NULL;
     if(byteMode() == 1.f || !_hasHW){
         _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
     }else{
@@ -1708,7 +1734,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     _drawProgressBar = true;
     _progressBarY = y;
     updateGL();
+    assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    
-    
+    checkGLErrors();
 }
