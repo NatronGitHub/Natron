@@ -11,6 +11,7 @@
 #include "AppManager.h"
 
 #include <cassert>
+#include <boost/scoped_ptr.hpp>
 #include <QLabel>
 #include <QMessageBox>
 #include <QtCore/QDir>
@@ -53,13 +54,15 @@
 
 using namespace Powiter;
 using namespace std;
+using boost::scoped_ptr;
 
-AppInstance::AppInstance(int appID,const QString& projectName):
-_model(0),_gui(0),_appID(appID)
+AppInstance::AppInstance(int appID,const QString& projectName)
+: _model(new Model(this))
+, _gui(new Gui(this))
+, _currentProject()
+, _appID(appID)
+, _nodeMapping()
 {
-    _model = new Model(this);
-    _gui=new Gui(this);
-    
     _gui->createGui();
     
     const vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
@@ -117,7 +120,6 @@ _model(0),_gui(0),_appID(appID)
 
 AppInstance::~AppInstance(){
     removeAutoSaves();
-    delete _model;
     appPTR->removeInstance(_appID);
 }
 
@@ -148,6 +150,15 @@ Node* AppInstance::createNode(const QString& name) {
     }
     return node;
 }
+
+VideoEngine* AppInstance::getVideoEngine() {
+    return _model->getVideoEngine();
+}
+
+void AppInstance::checkViewersConnection() {
+    return _model->checkViewersConnection();
+}
+
 void AppInstance::autoConnect(Node* target,Node* created){
     _gui->autoConnect(getNodeGui(target),getNodeGui(created));
 }
@@ -417,6 +428,25 @@ void AppInstance::disconnectViewersFromViewerCache(){
     _model->disconnectViewersFromViewerCache();
 }
 
+void AppInstance::clearPlaybackCache(){
+    if (!_model->getCurrentOutput()) { // FIXME: the playback cache is global, why should this action depend on this model's output?
+        return;
+    }
+    ViewerCache::getViewerCache()->clearInMemoryPortion();
+}
+
+
+void AppInstance::clearDiskCache(){
+    ViewerCache::getViewerCache()->clearInMemoryPortion();
+    ViewerCache::getViewerCache()->clearDiskCache();
+}
+
+
+void  AppInstance::clearNodeCache(){
+    NodeCache::getNodeCache()->clear();
+}
+
+
 std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     std::vector<LibraryBinary*> ret;
     QDir d(where);
@@ -468,10 +498,18 @@ AppInstance* AppManager::getTopLevelInstance () const{
     }
 }
 
-AppManager::AppManager():
-_availableID(0),
-_topLevelInstanceID(0),
-ofxHost(new Powiter::OfxHost())
+AppManager::AppManager()
+: QObject()
+, Singleton<AppManager>()
+, _appInstances()
+, _availableID(0)
+, _topLevelInstanceID(0)
+, _readPluginsLoaded()
+, _writePluginsLoaded()
+, _formats()
+, _nodeNames()
+, ofxHost(new Powiter::OfxHost())
+, _toolButtons()
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
                      this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -516,13 +554,19 @@ AppManager::~AppManager(){
     }
 }
 
-void AppManager::loadAllPlugins(){
+void AppManager::loadAllPlugins() {
+    assert(_nodeNames.empty());
+    assert(_formats.empty());
+    assert(_toolButtons.empty());
+
     /*loading node plugins*/
     loadBuiltinNodePlugins();
     
+    assert(_readPluginsLoaded.empty());
     /*loading read plugins*/
     loadReadPlugins();
     
+    assert(_writePluginsLoaded.empty());
     /*loading write plugins*/
     loadWritePlugins();
     
@@ -666,32 +710,34 @@ void AppManager::loadWritePlugins(){
 
 /*loads writes that are built-ins*/
 void AppManager::loadBuiltinWrites(){
-    Write* writeQt = WriteQt::BuildWrite(NULL);
-    assert(writeQt);
-    std::vector<std::string> extensions = writeQt->fileTypesEncoded();
-    string encoderName = writeQt->encoderName();
-    
-    std::map<std::string,void*> Qtfunctions;
-    Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
-    LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
-    assert(QtWritePlugin);
-    for (U32 i = 0 ; i < extensions.size(); ++i) {
-        _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+    {
+        scoped_ptr<Write> writeQt(new WriteQt(NULL));
+        assert(writeQt);
+        std::vector<std::string> extensions = writeQt->fileTypesEncoded();
+        string encoderName = writeQt->encoderName();
+
+        std::map<std::string,void*> Qtfunctions;
+        Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
+        LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
+        assert(QtWritePlugin);
+        for (U32 i = 0 ; i < extensions.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,QtWritePlugin)));
+        }
     }
-    delete writeQt;
     
-    Write* writeEXR = WriteExr::BuildWrite(NULL);
-    std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
-    string encoderNameExr = writeEXR->encoderName();
-    
-    std::map<std::string,void*> EXRfunctions;
-    EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
-    LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
-    assert(ExrWritePlugin);
-    for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
-        _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
+    {
+        scoped_ptr<Write> writeEXR(new WriteExr(NULL));
+        std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
+        string encoderNameExr = writeEXR->encoderName();
+
+        std::map<std::string,void*> EXRfunctions;
+        EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
+        LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
+        assert(ExrWritePlugin);
+        for (U32 i = 0 ; i < extensionsExr.size(); ++i) {
+            _writePluginsLoaded.insert(make_pair(encoderNameExr,make_pair(extensionsExr,ExrWritePlugin)));
+        }
     }
-    delete writeEXR;
 }
 
 void AppManager::loadBuiltinFormats(){
