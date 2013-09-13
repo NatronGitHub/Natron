@@ -202,6 +202,7 @@ public:
     
     void selectNode(NodeGui* node);
     
+    AppInstance* getApp() { return _appInstance; }
 private:
 
     void addNodeGraph();
@@ -225,8 +226,9 @@ public slots:
      **/
     int saveWarning();
     
-public:
+private:
     AppInstance* _appInstance;
+public:
     /*TOOL BAR ACTIONS*/
     //======================
     QAction *actionNew_project;
