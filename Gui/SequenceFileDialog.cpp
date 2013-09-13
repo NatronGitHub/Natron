@@ -78,11 +78,54 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        const std::vector<std::string>& filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
                                        FileDialogMode mode, // if it is an open or save dialog
-                                       const std::string& currentDirectory): // the directory to show first
-QDialog(parent),
-_filters(filters),
-_currentHistoryLocation(-1),
-_dialogMode(mode)
+                                       const std::string& currentDirectory) // the directory to show first
+: QDialog(parent)
+, _frameSequences()
+, _nameMapping()
+, _filters(filters)
+, _view(0)
+, _itemDelegate(0)
+, _proxy(0)
+, _model(0)
+, _mainLayout(0)
+, _requestedDir()
+, _lookInLabel(0)
+, _lookInCombobox(0)
+, _previousButton(0)
+, _nextButton(0)
+, _upButton(0)
+, _createDirButton(0)
+, _previewButton(0)
+, _openButton(0)
+, _cancelButton(0)
+, _addFavoriteButton(0)
+, _removeFavoriteButton(0)
+, _selectionLineEdit(0)
+, _sequenceButton(0)
+, _filterLabel(0)
+, _filterLineEdit(0)
+, _filterDropDown(0)
+, _fileExtensionCombo(0)
+, _buttonsLayout(0)
+, _centerLayout(0)
+, _favoriteLayout(0)
+, _favoriteButtonsLayout(0)
+, _selectionLayout(0)
+, _filterLineLayout(0)
+, _filterLayout(0)
+, _buttonsWidget(0)
+, _favoriteWidget(0)
+, _favoriteButtonsWidget(0)
+, _selectionWidget(0)
+, _filterLineWidget(0)
+, _filterWidget(0)
+, _favoriteView(0)
+, _centerSplitter(0)
+, _history()
+, _currentHistoryLocation(-1)
+, _showHiddenAction(0)
+, _newFolderAction(0)
+, _dialogMode(mode)
 {
     setWindowFlags(Qt::Window);
     _mainLayout = new QVBoxLayout(this);
@@ -1706,7 +1749,10 @@ void UrlModel::changed(const QString &path)
     }
 }
 
-FavoriteView::FavoriteView(QWidget *parent) : QListView(parent)
+FavoriteView::FavoriteView(QWidget *parent)
+: QListView(parent)
+, urlModel(0)
+, _itemDelegate(0)
 {
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -1715,9 +1761,12 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
 {
     setIconSize(QSize(24,24));
     setUniformItemSizes(true);
+    assert(!urlModel);
     urlModel = new UrlModel(this);
     urlModel->setFileSystemModel(model);
-    setItemDelegate(new FavoriteItemDelegate(model));
+    assert(!_itemDelegate);
+    _itemDelegate = new FavoriteItemDelegate(model);
+    setItemDelegate(_itemDelegate);
     setModel(urlModel);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
@@ -1733,6 +1782,8 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
 
 FavoriteView::~FavoriteView()
 {
+    delete urlModel;
+    delete _itemDelegate;
 }
 
 
