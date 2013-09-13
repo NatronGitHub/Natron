@@ -330,6 +330,7 @@ void OfxNode::computePreviewImage(){
     rS.x = rS.y = 1.0;
     OfxRectD rod;
     //This function calculates the merge of the inputs RoD.
+    effectInstance()->beginRenderAction(0, 25, 1, true, rS);
     effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
     assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
     assert(rod.y1 != kOfxFlagInfiniteMin);
@@ -342,10 +343,7 @@ void OfxNode::computePreviewImage(){
     renderW.y2 = (int)std::ceil(rod.y2);
     Box2D oldBox(info().dataWindow());
     _info.set_dataWindow(Box2D(renderW.x1, renderW.y1, renderW.x2, renderW.y2));
-    OfxPointD renderScale;
-    renderScale.x = renderScale.y = 1.;
-    effectInstance()->beginRenderAction(0, 25, 1, true, renderScale);
-    effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+    effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, rS);
     OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(outputClip);
     const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
@@ -370,7 +368,7 @@ void OfxNode::computePreviewImage(){
         }
     }
     _info.set_dataWindow(oldBox);
-    effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
+    effectInstance()->endRenderAction(0, 25, 1, true, rS);
 
     
     _preview = ret;

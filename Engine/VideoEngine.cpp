@@ -982,6 +982,7 @@ void VideoEngine::DAG::debug(){
 bool VideoEngine::DAG::validate(bool forReal){
     /*Validating the DAG in topological order*/
     for (DAGIterator it = begin(); it!=end(); ++it) {
+        assert(*it);
         if(!(*it)->validate(forReal)){
             return false;
         }else{
