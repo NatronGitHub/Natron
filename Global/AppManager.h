@@ -24,7 +24,9 @@
 #endif
 
 #include "Global/Macros.h"
+
 #include "Engine/Singleton.h"
+
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -38,8 +40,8 @@ class Writer;
 class ViewerTab;
 class TabWidget;
 class Gui;
-class OutputNode;
 class Format;
+class OutputNode;
 
 namespace Powiter {
     class LibraryBinary;
@@ -48,16 +50,14 @@ namespace Powiter {
 
 class Project{
 public:
-    Project():_hasProjectBeenSavedByUser(false){
-        _projectName = "Untitled.rs";
-        _age = QDateTime::currentDateTime();
-    }
+    Project();
     
     QString _projectName;
     QString _projectPath;
     bool _hasProjectBeenSavedByUser;
     QDateTime _age;
     QDateTime _lastAutoSave;
+    Format* _format;
 };
 
 /*Controler (see Model-view-controler pattern on wikipedia). This class
@@ -119,6 +119,10 @@ public:
     void setProjectTitleAsModified();
         
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
+    
+    const Format& getProjectFormat() const {return *(_currentProject._format);}
+    
+    void setProjectFormat(Format* frmt){_currentProject._format = frmt;}
     
     void resetCurrentProject();
     

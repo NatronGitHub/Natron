@@ -214,7 +214,8 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
         if(!knob){
             return NULL;
         }
-        node->addKnob(knob);
+        if(node)
+            node->addKnob(knob);
         return knob;
     }
 }

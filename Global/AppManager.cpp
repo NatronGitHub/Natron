@@ -37,7 +37,6 @@
 #include "Engine/OfxHost.h"
 #include "Engine/Format.h"
 
-
 #include "Readers/Reader.h"
 #include "Readers/Read.h"
 #include "Readers/ReadExr.h"
@@ -53,6 +52,15 @@
 
 using namespace Powiter;
 using namespace std;
+
+
+Project::Project():
+_projectName("Untitled.rs"),
+_hasProjectBeenSavedByUser(false),
+_age(QDateTime::currentDateTime()),
+_format(appPTR->findExistingFormat(2048, 1556,1.)){
+    
+}
 
 AppInstance::AppInstance(int appID,const QString& projectName):
 _model(0),_gui(0),_appID(appID)

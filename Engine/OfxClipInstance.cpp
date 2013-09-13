@@ -16,6 +16,9 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
+#include "Engine/Model.h"
+
+#include "Global/AppManager.h"
 #include "Global/Macros.h"
 
 using namespace Powiter;
@@ -161,7 +164,11 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
         v.x2 = bbox.right();
         v.y2 = bbox.top();
     }else{
-        
+        const Format& format = _node->getModel()->getApp()->getProjectFormat();
+        v.x1 = format.left();
+        v.y1 = format.bottom();
+        v.x2 = format.right();
+        v.y2 = format.top();
     }
     return v;
 }

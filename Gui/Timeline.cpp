@@ -220,7 +220,6 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
         int offset = nbStr.size()*2;
         if(_displayedValues[i] != _first
            && _displayedValues[i] != _last
-           && getScalePosition(_Mouse.x())!= _displayedValues[i]
            && _timeLine.currentFrame() != _displayedValues[i])
             p->drawText(QPointF(x-offset,y), nbStr,'g',3);
         p->setPen(scaleColor);
