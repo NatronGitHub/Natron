@@ -40,8 +40,8 @@ using namespace std;
 using namespace Powiter;
 
 namespace {
-    void Hash64_appendKnob(Hash64* hash, const Knob* knob){
-        const std::vector<U64>& values= knob->getHashVector();
+    void Hash64_appendKnob(Hash64* hash, const Knob& knob){
+        const std::vector<U64>& values= knob.getHashVector();
         for(U32 i=0;i<values.size();++i) {
             hash->append(values[i]);
         }
@@ -177,13 +177,20 @@ void Node::Info::operator=(const Node::Info &other){
 }
 
 
-Node::Node(Model* model):
-_model(model),
-_info(),
-_marked(false),
-_undoStack(new QUndoStack)
+Node::Node(Model* model)
+: QObject()
+, _model(model)
+, _info()
+, _marked(false)
+, _inputLabelsMap()
+, _name()
+, _hashValue()
+, _requestedBox()
+, _outputs()
+, _inputs()
+, _knobs()
+, _undoStack(new QUndoStack)
 {
-	
 }
 
 Node::~Node(){
@@ -196,7 +203,6 @@ Node::~Node(){
     for (U32 i = 0; i < _knobs.size(); ++i) {
         delete _knobs[i];
     }
-    delete _undoStack;
 }
 
 void Node::deleteNode(){
@@ -392,7 +398,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     _hashValue.reset();
     /*append all values stored in knobs*/
     for(U32 i = 0 ; i< _knobs.size();++i) {
-        Hash64_appendKnob(&_hashValue,_knobs[i]);
+        Hash64_appendKnob(&_hashValue,*_knobs[i]);
     }
     /*append the node name*/
     Hash64_appendQString(&_hashValue, QString(className().c_str()));
