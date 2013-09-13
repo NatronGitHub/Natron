@@ -273,40 +273,39 @@ void ViewerGL::initConstructor(){
 }
 
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
-:QGLWidget(context,parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
-{
-    
+: QGLWidget(context,parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
+{ 
     initConstructor();
-    
 }
+
 ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
-:QGLWidget(format,parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
+: QGLWidget(format,parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
 {
-    
     initConstructor();
-    
 }
 
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
-:QGLWidget(parent,shareWidget),
-_textRenderer(this),
-_shaderLoaded(false),
-_lut(1),
-_viewerTab(parent),
-_drawing(false)
+: QGLWidget(parent,shareWidget)
+, _textRenderer(this)
+, _shaderLoaded(false)
+, _lut(1)
+, _viewerTab(parent)
+, _drawing(false)
+, _must_initBlackTex(true)
 {
     initConstructor();
-    
 }
 
 
@@ -356,7 +355,9 @@ void ViewerGL::resizeGL(int width, int height){
 void ViewerGL::paintGL()
 {
     assert_checkGLErrors();
-
+    if (_must_initBlackTex) {
+        initBlackTex();
+    }
     double w = (double)width();
     double h = (double)height();
     glMatrixMode (GL_PROJECTION);
@@ -770,10 +771,11 @@ void ViewerGL::restoreGLState()
 }
 
 void ViewerGL::initBlackTex(){
+    assert(_must_initBlackTex);
     fitToFormat(displayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
-    checkGLErrors();
+    assert_checkGLErrors();
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, _pboIds[0]);
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
@@ -791,6 +793,7 @@ void ViewerGL::initBlackTex(){
     
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     checkGLErrors();
+    _must_initBlackTex = false;
 }
 
 

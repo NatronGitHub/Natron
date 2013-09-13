@@ -257,7 +257,8 @@ class ViewerTab;
             ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
             bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
-            
+            bool _must_initBlackTex;
+
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
                         
             std::vector<int> _textureColumns; /*!< The last columns computed by computeColumnSpan. This member is
@@ -321,7 +322,7 @@ class ViewerTab;
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void drawing(bool d){_drawing=d;if(!_drawing) initBlackTex();}
+            void drawing(bool d){_drawing=d;if(!_drawing) { _must_initBlackTex = true; };}
             
             /**
              *@returns Returns true if the viewer is displaying something.
