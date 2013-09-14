@@ -137,8 +137,7 @@ public slots:
     void open_file();
     void onReturnPressed();
     
-signals:
-    void filesSelected();
+
     
 protected:
     
@@ -171,9 +170,7 @@ public:
 public slots:
     void open_file();
     void onReturnPressed();
-    
-signals:
-    void filesSelected();
+
     
 protected:
     

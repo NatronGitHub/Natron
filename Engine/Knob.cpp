@@ -306,6 +306,7 @@ void File_Knob::_restoreFromString(const std::string& str){
     _value.setValue(filesList);
 }
 void File_Knob::tryStartRendering(){
+    emit filesSelected();
     QStringList files = _value.value<QStringList>();
     if(files.size() > 0){
         const std::string& className = _node->className();
@@ -327,6 +328,7 @@ void OutputFile_Knob::_restoreFromString(const std::string& str){
 
 
 void OutputFile_Knob::tryStartRendering(){
+    emit filesSelected();
     startRendering(false);
 }
 /***********************************INT_KNOB*****************************************/

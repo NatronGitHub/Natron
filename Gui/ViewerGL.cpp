@@ -834,6 +834,7 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
 
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
     _pBOmapped = true;
+    cout << "Allocating" << endl;
     //cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
@@ -856,7 +857,10 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
-    assert(frameData);
+    cout << "Copying" << endl;
+    /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine). 
+     This buffer (frameData) might be NULL if we were running in cached mode.*/
+    //assert(frameData);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     frameData = NULL;

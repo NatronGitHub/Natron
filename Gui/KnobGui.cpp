@@ -130,7 +130,6 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
 //===========================FILE_KNOB_GUI=====================================
 File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
     File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
-    QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
     QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
@@ -172,7 +171,6 @@ void File_KnobGui::open_file(){
     }
     if(!filesList.isEmpty()){
         updateLastOpened(filesList.at(0));
-        emit filesSelected();
         pushUndoCommand(new KnobUndoCommand(this,Variant(oldList),Variant(filesList)));
     }
 }
@@ -185,7 +183,6 @@ void File_KnobGui::onReturnPressed(){
     if(newList.isEmpty())
         return;
     QStringList oldList = dynamic_cast<File_Knob*>(_knob)->value<QStringList>();
-    emit filesSelected();
     pushUndoCommand(new KnobUndoCommand(this,Variant(oldList),Variant(newList)));
 }
 void File_KnobGui::updateLastOpened(const QString& str){
@@ -197,7 +194,6 @@ void File_KnobGui::updateLastOpened(const QString& str){
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
     OutputFile_Knob* fileKnob = dynamic_cast<OutputFile_Knob*>(knob);
-    QObject::connect(this, SIGNAL(filesSelected()), fileKnob, SIGNAL(filesSelected()));
     QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
 }
 
@@ -232,7 +228,6 @@ void OutputFile_KnobGui::open_file(){
         QString oldPattern = _knob->value<QString>();
         QString newPattern = dialog.filesToSave();
         updateLastOpened(SequenceFileDialog::removePath(oldPattern));
-        emit filesSelected();
         pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));
     }
 }
@@ -242,8 +237,7 @@ void OutputFile_KnobGui::open_file(){
 void OutputFile_KnobGui::onReturnPressed(){
     QString oldPattern = _knob->value<QString>();
     QString newPattern= _lineEdit->text();
-    emit filesSelected();
-    pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));    
+    pushUndoCommand(new KnobUndoCommand(this,Variant(oldPattern),Variant(newPattern)));
 }
 
 

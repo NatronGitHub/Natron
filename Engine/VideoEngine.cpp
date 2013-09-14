@@ -398,14 +398,10 @@ void VideoEngine::run(){
             x = dataW.left();
             r = dataW.right();
         }
-        /*If it reaches here, it means the frame neither belong
+        /*If it reaches here, it means the frame doesn't belong
          to the ViewerCache, we must
-         allocate resources and render the frame.
-         If this is a recursive call, we explicitly fallback
-         to the viewer cache storage as the texture cache is not
-         meant for playback.*/
+         allocate resources and render the frame.*/
         _lastFrameInfos._rows = rows;
-        
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             _mutex->lock();
@@ -669,7 +665,7 @@ void VideoEngine::abort(){
     _aborted=true;
     _mutex->unlock();
     if(_dag.outputAsViewer()){
-        _dag.outputAsViewer()->getUiContext()->viewer->forceUnmapPBO();
+        // _dag.outputAsViewer()->getUiContext()->viewer->forceUnmapPBO();
         emit engineStopped();
     }
 }

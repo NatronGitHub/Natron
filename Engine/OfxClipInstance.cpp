@@ -163,14 +163,13 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
         v.y1 = bbox.bottom();
         v.x2 = bbox.right();
         v.y2 = bbox.top();
+//        cout << "RoD output clip with w = " << v.x2-v.x1 << " and h = " << v.y2-v.y1 << endl;
     }else{
         const Format& format = _node->getModel()->getApp()->getProjectFormat();
         v.x1 = format.left();
         v.y1 = format.bottom();
         v.x2 = format.right();
         v.y2 = format.top();
- 
-        //        cout << "RoD input clip with w = " << v.x2-v.x1 << " and h = " << v.y2-v.y1 << endl;
     }
     return v;
 }
@@ -208,7 +207,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 
     if(isOutput()){
         if (!_outputImage) {
-            //        cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;
+            //   cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;
             _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
         }else{
             OfxRectI outputImageBounds = _outputImage->getROD();

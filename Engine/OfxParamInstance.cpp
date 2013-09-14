@@ -827,6 +827,7 @@ void OfxStringInstance::onInstanceChanged(){
 }
 void OfxStringInstance::getVideoSequenceFromFilesList(){
     _files.clear();
+    QStringList _filesList = _fileKnob->value<QStringList>();
     bool first_time=true;
     QString originalName;
     foreach(QString Qfilename,_filesList)
@@ -895,17 +896,18 @@ int OfxStringInstance::clampToRange(int f){
 }
 bool OfxStringInstance::isValid() const{
     if(_fileKnob){
-        return !_filesList.isEmpty();
+        return !_fileKnob->value<QStringList>().isEmpty();
     }
     if(_outputFileKnob){
-        return !_outputFilePattern.empty();
+        return !_outputFileKnob->value<QString>().toStdString().empty();
     }
     return true;
 }
 std::string OfxStringInstance::filenameFromPattern(int frameIndex) const{
     if(_outputFileKnob){
+        std::string pattern = _outputFileKnob->value<QString>().toStdString();
         if(isValid()){
-            QString p(_outputFilePattern.c_str());
+            QString p(pattern.c_str());
             return p.replace("#", QString::number(frameIndex)).toStdString();
         }
     }
