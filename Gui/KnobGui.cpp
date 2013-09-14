@@ -453,9 +453,7 @@ void Button_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
 }
 
 void Button_KnobGui::emitValueChanged(){
-    Variant v;
-    v.setValue(0);
-    emit valueChanged(v); // FIXME: why QVariant(0)? Isn't an invalid Variant (i.e. Variant()) OK? 
+    emit valueChanged(Variant()); 
 }
 
 //=============================COMBOBOX_KNOB_GUI===================================

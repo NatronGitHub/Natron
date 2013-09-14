@@ -512,13 +512,11 @@ void Double_Knob::tryStartRendering(){
 Button_Knob::Button_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags):
 Knob(node,description,dimension,flags)
 {
-    QObject::connect(this,SIGNAL(valueChanged(const Variant&)),this,SLOT(connectToSlot(const Variant&)));
+    //QObject::connect(this,SIGNAL(valueChanged(const Variant&)),this,SLOT(connectToSlot(const Variant&)));
 }
 
-void Button_Knob::connectToSlot(const Variant& v){
-    const char* str = v.toString().toStdString().c_str();
-    (void)str;
-    QObject::connect(this,SIGNAL(valueChangedByUser()),this,str);
+void Button_Knob::connectToSlot(const char* v){
+    QObject::connect(this,SIGNAL(valueChangedByUser()),this,v);
 }
 
 /***********************************COMBOBOX_KNOB*****************************************/

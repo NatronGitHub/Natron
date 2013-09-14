@@ -131,7 +131,7 @@ void Writer::initKnobs(){
     std::string renderDesc("Render");
     Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", this, renderDesc, 1,Knob::NONE));
     assert(renderButton);
-    QObject::connect(renderButton, SIGNAL(valueChanged(Variant)), this, SLOT(startRendering()));
+    QObject::connect(renderButton, SIGNAL(valueChangedByUser()), this, SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
     Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", this, premultString, 1,Knob::NONE));
@@ -220,7 +220,7 @@ bool Writer::validInfosForRendering(){
     if(!isValid) return false;
     
     /*checking if channels are supported*/
-    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("builder");
+    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
     Write* write = func.second(this);
     try {
         write->supportsChannelsForWriting(_requestedChannels);
@@ -243,6 +243,8 @@ bool Writer::validInfosForRendering(){
 }
 
 void Writer::startRendering(){
+    _fileType = _allFileTypes[_filetypeCombo->value<int>()];
+    _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
         _model->updateDAG(this,false);
         _model->startVideoEngine();
@@ -268,12 +270,14 @@ void Writer::fileTypeChanged(){
     _fileKnob->setValue(file);
     
     /*checking if channels are supported*/
-    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("builder");
-    Write* write = func.second(this);
-    _writeOptions = write->initSpecificKnobs();
-    if(_writeOptions)
-        _writeOptions->initKnobs(_fileType);
-    delete write;
+    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    if(func.first){
+        Write* write = func.second(this);
+        _writeOptions = write->initSpecificKnobs();
+        if(_writeOptions)
+            _writeOptions->initKnobs(_fileType);
+        delete write;
+    }
 }
 
 void Writer::onFilesSelected(){

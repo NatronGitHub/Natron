@@ -149,10 +149,10 @@ Node* AppInstance::createNode(const QString& name) {
             selected = _gui->getSelectedNode()->getNode();
         }
         _model->initNodeCountersAndSetName(node);
-        autoConnect(selected, node);
         if(node->className() == "Viewer"){
             _gui->createViewerGui(node);
         }
+        autoConnect(selected, node);
         node->initializeKnobs();
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;

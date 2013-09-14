@@ -21,6 +21,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/VideoEngine.h"
 
 using namespace std;
 using namespace Powiter;
@@ -43,11 +44,6 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     
-    _knob->setValue(QString(SLOT(emitInstanceChanged())));
-}
-
-void OfxPushButtonInstance::emitInstanceChanged(){
-    emit buttonPressed(getName().c_str());
 }
 
 
@@ -62,6 +58,20 @@ void OfxPushButtonInstance::setSecret(){
 }
 Knob* OfxPushButtonInstance::getKnob() const{
     return _knob;
+}
+
+void OfxPushButtonInstance::onInstanceChanged(){
+    
+    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    OfxPointD renderScale;
+    renderScale.x = renderScale.y = 1.0;
+    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    if(_node->OutputNode::isOutputNode()){
+        OutputNode* n = dynamic_cast<OutputNode*>(_node);
+        n->updateDAG(false);
+        n->getVideoEngine()->startEngine(-1);
+    }
 }
 
 OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)

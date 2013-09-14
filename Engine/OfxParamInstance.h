@@ -43,9 +43,6 @@ class Knob;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
     
-signals:
-    void buttonPressed(QString);
-    
 public:
     
     // callback which should set enabled state as appropriate
@@ -56,8 +53,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void emitInstanceChanged();
+public slots:
+    void onInstanceChanged();
+
 protected:
     OfxNode* _node;
     Button_Knob *_knob;

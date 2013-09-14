@@ -589,7 +589,7 @@ public:
     virtual std::string serialize() const{return "";}
     
     public slots:
-    void connectToSlot(const Variant& v);
+    void connectToSlot(const char* v);
     
     
 protected:

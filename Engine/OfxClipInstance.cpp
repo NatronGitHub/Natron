@@ -121,7 +121,10 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    return _node->hasOutputConnected();
+    if(!_node->isOutputNode())
+        return _node->hasOutputConnected();
+    else
+        return true;
 }
 
 // Unmapped Frame Rate -
@@ -157,7 +160,7 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
-    if(getName() == kOfxImageEffectOutputClipName){
+    if(getName() == kOfxImageEffectOutputClipName || _node->isOutputNode()){
         const Box2D& bbox = _node->info().dataWindow();
         v.x1 = bbox.left();
         v.y1 = bbox.bottom();
