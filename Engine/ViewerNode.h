@@ -55,7 +55,11 @@ public:
     
     virtual int disconnectInput(Node* input);
     
-    void tryAddEmptyInput();
+    bool tryAddEmptyInput();
+    
+    void addEmptyInput();
+
+    void removeEmptyInputs();
     
     void setActiveInputAndRefresh(int inputNb);
     
@@ -97,7 +101,7 @@ public:
     
     void disconnectSlotsToViewerCache();
     
-
+    
     
 public slots:
     void onCachedFrameAdded();
@@ -118,9 +122,7 @@ private:
     
     virtual bool _validate(bool doFullWork);
     
-    void removeEmptyInputs();
     
-    void addEmptyInput();
 };
 
 /*#ifdef __cplusplus

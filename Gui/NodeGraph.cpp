@@ -331,8 +331,8 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     NodeGui* gui = _gui->getApp()->getNodeGui(v);
     if(gui){
         NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
-        while(it==gui->getInputsArrows().end()){
-            v->tryAddEmptyInput();
+        while(it == gui->getInputsArrows().end()){
+            v->addEmptyInput();
             it = gui->getInputsArrows().find(inputNB);
         }
         _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
@@ -761,10 +761,13 @@ void ConnectCommand::redo(){
         ViewerNode* v = dynamic_cast<ViewerNode*>(_edge->getDest()->getNode());
         if(!_newSrc){
             v->disconnectInput(_edge->getInputNumber());
+            _edge->initLine();
         }else{
             if(v->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
                 _edge->setSource(_newSrc);
                 _newSrc->getNode()->connectOutput(v);
+                _edge->initLine();
+
             }
         }
     }else{
@@ -781,9 +784,9 @@ void ConnectCommand::redo(){
                 << " to (output) " << _edge->getDest()->getNode()->getName() << endl;
             }
         }
+        _edge->initLine();
     }
     
-    _edge->initLine();
     if(_newSrc){
         setText(QObject::tr("Connect %1 to %2")
             .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));

@@ -107,18 +107,21 @@ bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection){
     }
     return false;
 }
-void ViewerNode::tryAddEmptyInput(){
+bool ViewerNode::tryAddEmptyInput(){
     if(_inputs.size() <= 10){
         if(_inputs.size() > 0){
             InputMap::const_iterator it = _inputs.end();
             --it;
             if(it->second != NULL){
                 addEmptyInput();
+                return true;
             }
         }else{
             addEmptyInput();
+            return true;
         }
     }
+    return false;
 }
 void ViewerNode::addEmptyInput(){
     _activeInput = _inputsCount-1;
@@ -133,8 +136,14 @@ void ViewerNode::removeEmptyInputs(){
         InputMap::iterator it = _inputs.end();
         --it;
         if(it->second == NULL){
+            InputMap::iterator it2 = it;
+            --it2;
+            if(it2->second!=NULL)
+                break;
+            //int inputNb = it->first;
             _inputs.erase(it);
             --_inputsCount;
+            emit inputsInitialized();
         }else{
             break;
         }
