@@ -649,7 +649,7 @@ _mutex(mutex)
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
     connect(this, SIGNAL(doRunTasks()), this, SLOT(runTasks()));
     _workerThreadsWatcher = new QFutureWatcher<void>;
-    connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)),Qt::QueuedConnection);
+    //  connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)),Qt::QueuedConnection);
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
@@ -1044,7 +1044,6 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     double t =  now.tv_sec  - _lastComputeFrameTime.tv_sec +
     (now.tv_usec - _lastComputeFrameTime.tv_usec) * 1e-6f;
     if(t >= 0.3){
-        //   cout << zoomedY << endl;
         _dag.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_lastFrameInfos._textureRect, y,zoomedY);
         return true;
     }else{
