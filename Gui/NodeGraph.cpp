@@ -322,9 +322,12 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
     }
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
-    if(!_nodeSelected)
-        return;
+    
     ViewerNode* v = _gui->getLastSelectedViewer()->getInternalNode();
+    if(!_nodeSelected){
+        v->setActiveInputAndRefresh(inputNB);
+        return;
+    }
     NodeGui* gui = _gui->getApp()->getNodeGui(v);
     if(gui){
         NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);

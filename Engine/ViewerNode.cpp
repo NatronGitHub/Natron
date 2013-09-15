@@ -289,6 +289,9 @@ void ViewerNode::onViewerCacheCleared(){
     emit clearedViewerCache();
 }
 void ViewerNode::setActiveInputAndRefresh(int inputNb){
-    _activeInput = inputNb;
-    updateDAG(false);
+    InputMap::iterator it = _inputs.find(inputNb);
+    if(it!=_inputs.end() && it->second!=NULL){
+        _activeInput = inputNb;
+        updateDAG(false);
+    }
 }
