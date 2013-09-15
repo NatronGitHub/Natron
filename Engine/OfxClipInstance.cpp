@@ -160,7 +160,8 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
-    if(getName() == kOfxImageEffectOutputClipName || _node->isOutputNode()){
+    if((_node->isInputNode() && getName() == kOfxImageEffectOutputClipName)
+       || !_node->isInputNode()){
         const Box2D& bbox = _node->info().dataWindow();
         v.x1 = bbox.left();
         v.y1 = bbox.bottom();
