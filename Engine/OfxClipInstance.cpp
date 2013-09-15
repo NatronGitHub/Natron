@@ -240,12 +240,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
             return clip->getImage(time, optionalBounds);
         }else{
-            ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2,roi.y2,Mask_RGBA);
+            ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
             srcImg.claimInterest(true);
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
-            for (int y = roi.y1; y <= roi.y2; ++y) {
+            for (int y = roi.y1; y < roi.y2; ++y) {
                 OfxRGBAColourF* dstImg = ret->pixelF(0, y);
                 assert(dstImg);
                 Row* row = srcImg.at(y);

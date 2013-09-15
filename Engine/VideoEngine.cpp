@@ -166,19 +166,21 @@ void VideoEngine::run(){
         if(_mustQuit)
             return;
         
+        
         /*Locking out other rendering tasks so 1 VideoEngine gets access to all
          nodes.That means only 1 frame can be rendered at any time. We would have to copy
          all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
          running simultaneously which is not very efficient and adds the burden to synchronize
          states of nodes etc...*/
         _model->getGeneralMutex()->lock();
+        _working = true;
+
         if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
             stopEngine();
             return;
         }
 
         
-        _working = true; 
         
         /*beginRenderAction for all openFX nodes*/
         for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
@@ -686,7 +688,6 @@ void VideoEngine::abort(){
     _aborted=true;
     _mutex->unlock();
     if(_dag.outputAsViewer()){
-        // _dag.outputAsViewer()->getUiContext()->viewer->forceUnmapPBO();
         emit engineStopped();
     }
 }

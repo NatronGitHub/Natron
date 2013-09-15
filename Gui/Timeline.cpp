@@ -386,7 +386,6 @@ void TimeLineGui::removeCachedFrame(){
 void TimeLineGui::setFrameRange(int min,int max){
     _timeLine.setFirstFrame(min);
     _timeLine.setLastFrame(max);
-    updateScale();
 }
 /*initialises the boundaries on the timeline*/
 void TimeLineGui::setBoundaries(int first,int last){

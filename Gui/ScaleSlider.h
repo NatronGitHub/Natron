@@ -41,10 +41,10 @@ public:
                 int nbDisplayedValues=5,QWidget* parent=0);
     virtual ~ScaleSlider();
     /*These functions require a call to XXscale(nb,inf,sup) ,hence the updateScale */
-    void setMinimum(double m){_minimum=m; updateScale();}
-    void setMaximum(double m){_maximum=m; updateScale();}
-    void setPrecision(double i){_nbValues=i; updateScale();}
-    void changeScale(Powiter::Scale_Type type){_type = type; updateScale();}
+    void setMinimum(double m){_minimum=m;}
+    void setMaximum(double m){_maximum=m;}
+    void setPrecision(double i){_nbValues=i;}
+    void changeScale(Powiter::Scale_Type type){_type = type;}
     /*---------------------------------------------*/
     
     Powiter::Scale_Type type() const {return _type;}
