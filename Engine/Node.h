@@ -212,21 +212,21 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
      */
     bool connectInput(Node* input,int inputNumber);
     
-    /** @brief Adds the node child to the output outputNumber of the
-     * node.
-     */
-    void connectOutput(Node* output,int outputNumber = 0);
-    
     /** @brief Removes the node connected to the input inputNumber of the
      * node. Returns the inputNumber if it could remove it, otherwise returns
      -1.
      */
-    int disconnectInput(int inputNumber);
+    virtual int disconnectInput(int inputNumber);
     
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
      -1.*/
-    int disconnectInput(Node* input);
+    virtual int disconnectInput(Node* input);
+    
+    /** @brief Adds the node child to the output outputNumber of the
+     * node.
+     */
+    void connectOutput(Node* output,int outputNumber = 0);
     
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
@@ -254,7 +254,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*============================*/
     
     /*Calculations related functions*/
-    bool validate(bool forReal);
+    bool validate(bool doFullWork);
     
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
         Q_UNUSED(y);
@@ -369,12 +369,10 @@ signals:
 protected:
     
     virtual ChannelSet supportedComponents() = 0;
-    
-    virtual void preProcess(){}
-    
+        
     virtual void initKnobs(){}
 
-	virtual bool _validate(bool /*forReal*/) = 0;
+	virtual bool _validate(bool /*doFullWork*/) = 0;
     
     Model* _model; // pointer to the model
 	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
@@ -405,7 +403,7 @@ private:
         
     void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     
-    void merge_info(bool forReal);
+    void merge_info(bool doFullWork);
     
     void copy_info(Node* parent);
     
@@ -490,11 +488,11 @@ public:
     
     TimeLine& getTimeLine(){return _timeline;}
         
-    void updateDAG(bool isViewer,bool initViewer = false);
+    void updateDAG(bool initViewer = false);
 
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
-    virtual bool _validate(bool /*forReal*/) OVERRIDE = 0;
+    virtual bool _validate(bool /*doFullWork*/) OVERRIDE = 0;
     
     TimeLine _timeline;
 

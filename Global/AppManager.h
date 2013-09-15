@@ -89,12 +89,10 @@ public:
     VideoEngine* getVideoEngine();
     void checkViewersConnection();
 
-    void updateDAG(OutputNode *output,bool isViewer);
+    void updateDAG(OutputNode *output,bool initViewer);
     
     bool isRendering() const;
-    
-    void changeDAGAndStartRendering(OutputNode* output);
-    
+        
     void startRendering(int nbFrames = -1);
     
     OutputNode* getCurrentOutput();

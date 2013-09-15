@@ -478,7 +478,7 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->startPause(b);
     else
@@ -489,39 +489,39 @@ void ViewerTab::abort(){
     _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->startBackward(b);
     else
         play_Backward_Button->setChecked(false);
 }
 void ViewerTab::previousFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->previousFrame();
 }
 void ViewerTab::nextFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->nextFrame();
 }
 void ViewerTab::previousIncrement(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->previousIncrement();
 }
 void ViewerTab::nextIncrement(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->nextIncrement();
 }
 void ViewerTab::firstFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->firstFrame();
 }
 void ViewerTab::lastFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->lastFrame();
 }

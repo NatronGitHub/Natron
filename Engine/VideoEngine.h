@@ -202,7 +202,7 @@ public:
          *starting from input nodes and finishing to the output node. During that pass all frame ranges
          *are merged (retaining only the minimum and the maximum) and some other influencial infos are
          *passed as well. i.e : channels that a node needs from its input, the requested region of processing...etc
-         *@param forReal[in] If true,this pass will actually do more work and will make sure to propagate all infos
+         *@param doFullWork[in] If true,this pass will actually do more work and will make sure to propagate all infos
          *through the graph. Generally this is called AFTER that all readers have read the headers of their current frame
          *so they know what display window/channels...etc to pass down to their outputs.
          *If false, validate is much lighter and will only merge the frame range.
@@ -210,7 +210,7 @@ public:
          *false and all subsequent computations should be canceled.
          *@TODO: validate should throw a detailed exception of what failed.
          */
-        bool validate(bool forReal);
+        bool validate(bool doFullWork);
         
         void debug();
     private:
@@ -538,7 +538,7 @@ public:
     /**
      *@brief Do not call this. This is called internally by the DAG GUI when the user changes the graph.
      **/
-    void changeDAGAndStartEngine(OutputNode* output);
+    void changeDAGAndStartEngine(OutputNode* output,bool initViewer);
     
     /**
      *@brief Convenience function. It resets the graph, emptying all nodes stored in the DAG.

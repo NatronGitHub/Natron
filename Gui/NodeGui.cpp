@@ -260,13 +260,46 @@ void NodeGui::updatePreviewImage(){
 }
 void NodeGui::initializeInputs(){
     int inputnb = node->maximumInputs();
-    double piDividedbyX = (double)(pi/(double)(inputnb+1));
-    double angle = pi-piDividedbyX;
-    for(int i = 0; i < inputnb;++i){
-        Edge* edge = new Edge(i,angle,this,parentItem(),sc);
-        inputs.insert(make_pair(i,edge));
-        angle -= piDividedbyX;
+    while ((int)inputs.size() > inputnb) {
+        InputEdgesMap::iterator it = inputs.end();
+        --it;
+        delete it->second;
+        inputs.erase(it);
     }
+    for(int i = 0; i < inputnb;++i){
+        if(inputs.find(i) == inputs.end()){
+            Edge* edge = new Edge(i,0.,this,parentItem(),sc);
+            inputs.insert(make_pair(i,edge));
+        }
+    }
+    int emptyInputsCount = 0;
+    for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        if(!it->second->hasSource()){
+            ++emptyInputsCount;
+        }
+    }
+    /*if only 1 empty input, display it aside*/
+    if(emptyInputsCount == 1 && node->maximumInputs() > 1){
+        for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+            if(!it->second->hasSource()){
+                it->second->setAngle(pi);
+                it->second->initLine();
+                return;
+            }
+        }
+
+    }
+    
+    double piDividedbyX = (double)(pi/(double)(emptyInputsCount+1));
+    double angle = pi-piDividedbyX;
+    for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+        if(!it->second->hasSource()){
+            it->second->setAngle(angle);
+            angle -= piDividedbyX;
+            it->second->initLine();
+        }
+    }
+    
 }
 bool NodeGui::contains(const QPointF &point) const{
     return rectangle->contains(point);

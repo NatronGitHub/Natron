@@ -31,7 +31,9 @@ using namespace Powiter;
 ViewerNode::ViewerNode(Model* model):OutputNode(model),
 _viewerInfos(0),
 _uiContext(0),
-_pboIndex(0)
+_pboIndex(0),
+_inputsCount(1),
+_activeInput(0)
 {
     connectSlotsToViewerCache();
 }
@@ -61,10 +63,100 @@ ViewerNode::~ViewerNode(){
 }
 
 bool ViewerNode::_validate(bool){
-    
-   // (void)forReal;
-   // makeCurrentViewer();
     return true;
+}
+bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection){
+    InputMap::iterator found = _inputs.find(inputNumber);
+    /*If the selected node is a viewer itself, return*/
+    if(input->className() == "Viewer" && found!=_inputs.end() && !found->second){
+        return false;
+    }
+    /*Adding all empty edges so it creates at least the inputNB'th one.*/
+    while(_inputsCount <= inputNumber){
+        tryAddEmptyInput();
+    }
+    //#1: first case, If the inputNB of the viewer is already connected & this is not
+    // an autoConnection, just refresh it*/
+    InputMap::iterator inputAlreadyConnected = _inputs.end();
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (it->second == input) {
+            inputAlreadyConnected = it;
+            break;
+        }
+    }
+    
+    if(found!=_inputs.end() && found->second && !autoConnection &&
+       ((inputAlreadyConnected!=_inputs.end()) || (inputAlreadyConnected==_inputs.end() && input->className() == "Viewer"))){
+        setActiveInputAndRefresh(found->first);
+        return false;
+    }
+    /*#2:second case: Before connecting the appropriate edge we search for any other edge connected with the
+     selected node, in which case we just refresh the already connected edge.*/
+    for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
+        if(i->second && i->second == input){
+            setActiveInputAndRefresh(i->first);
+            return false;
+        }
+    }
+    if (found != _inputs.end()) {
+        _inputs.erase(found);
+        _inputs.insert(std::make_pair(inputNumber,input));
+        emit inputChanged(inputNumber);
+        tryAddEmptyInput();
+        return true;
+    }
+    return false;
+}
+void ViewerNode::tryAddEmptyInput(){
+    if(_inputs.size() <= 10){
+        if(_inputs.size() > 0){
+            InputMap::const_iterator it = _inputs.end();
+            --it;
+            if(it->second != NULL){
+                addEmptyInput();
+            }
+        }else{
+            addEmptyInput();
+        }
+    }
+}
+void ViewerNode::addEmptyInput(){
+    _activeInput = _inputsCount-1;
+    ++_inputsCount;
+    initializeInputs();
+}
+
+void ViewerNode::removeEmptyInputs(){
+    /*While there're NULL inputs at the tail of the map,remove them.
+     Stops at the first non-NULL input.*/
+    while (_inputs.size() > 1) {
+        InputMap::iterator it = _inputs.end();
+        --it;
+        if(it->second == NULL){
+            _inputs.erase(it);
+            --_inputsCount;
+        }else{
+            break;
+        }
+    }
+}
+int ViewerNode::disconnectInput(int inputNumber){
+    int ret = Node::disconnectInput(inputNumber);
+    if(ret!=-1){
+        removeEmptyInputs();
+        _activeInput = _inputs.size()-1;
+        initializeInputs();
+    }
+    return ret;
+}
+
+int ViewerNode::disconnectInput(Node* input){
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second == input){
+            return disconnectInput(it->first);
+        }
+    }
+    return -1;
 }
 
 std::string ViewerNode::description(){
@@ -72,28 +164,21 @@ std::string ViewerNode::description(){
 }
 
 void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
-    Row* row = input(0)->get(y,offset,range);
+    Row* row = input(_activeInput)->get(y,offset,range);
     if(row){
         row->zoomedY(out->zoomedY());
-        
         /*drawRow will fill a portion of the RAM buffer holding the frame.
          This will write at the appropriate offset in the buffer thanks
          to the zoomedY(). Note that this can be called concurrently since
          2 rows do not overlap in memory.*/
-        //  const ChannelSet& uiChannels = _uiContext->displayChannels();
         const float* r = NULL;
         const float* g = NULL;
         const float* b = NULL;
         const float* a = NULL;
-        
-        //        if (uiChannels & Channel_red)
-            r = (*row)[Channel_red];
-        //        if (uiChannels & Channel_green)
-            g = (*row)[Channel_green];
-        //        if (uiChannels & Channel_blue)
-            b = (*row)[Channel_blue];
-        //        if (uiChannels & Channel_alpha)
-            a = (*row)[Channel_alpha];
+        r = (*row)[Channel_red];
+        g = (*row)[Channel_green];
+        b = (*row)[Channel_blue];
+        a = (*row)[Channel_alpha];
         _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
         row->release();
     }
@@ -168,13 +253,10 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     size_t dataSize = 0;
     int w = frame->_textureRect.w;
     int h = frame->_textureRect.h;
-    //Texture::DataType type;
     if(frame->_byteMode==1.0){
         dataSize  = w * h * sizeof(U32) ;
-        //type = Texture::BYTE;
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
-        //type = Texture::FLOAT;
     }
     ViewerGL* gl_viewer = _uiContext->viewer;
     if(_viewerInfos){
@@ -187,8 +269,6 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     _viewerInfos->set_firstFrame(_info.firstFrame());
     _viewerInfos->set_lastFrame(_info.lastFrame());
     _uiContext->setCurrentViewerInfos(_viewerInfos,false);
-    
-    
     /*allocating pbo*/
     void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
     checkGLErrors();
@@ -197,8 +277,6 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     const char* cachedFrame = frame->getMappedFile()->data();
     assert(cachedFrame);
     _uiContext->viewer->fillPBO(cachedFrame, output, dataSize);
-
-    
 }
 
 void ViewerNode::onCachedFrameAdded(){
@@ -209,4 +287,8 @@ void ViewerNode::onCachedFrameRemoved(){
 }
 void ViewerNode::onViewerCacheCleared(){
     emit clearedViewerCache();
+}
+void ViewerNode::setActiveInputAndRefresh(int inputNb){
+    _activeInput = inputNb;
+    updateDAG(false);
 }

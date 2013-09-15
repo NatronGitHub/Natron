@@ -133,8 +133,8 @@ AppInstance::~AppInstance(){
     appPTR->removeInstance(_appID);
 }
 
-void AppInstance::updateDAG(OutputNode *output,bool isViewer){
-    _model->updateDAG(output, isViewer);
+void AppInstance::updateDAG(OutputNode *output,bool initViewer){
+    _model->updateDAG(output,initViewer);
 }
 
 Node* AppInstance::createNode(const QString& name) {
@@ -184,9 +184,7 @@ ViewerNode* AppInstance::getCurrentViewer(){
 bool AppInstance::isRendering() const{
     return _model->getVideoEngine()->isWorking();
 }
-void AppInstance::changeDAGAndStartRendering(OutputNode* output){
-    _model->getVideoEngine()->changeDAGAndStartEngine(output);
-}
+
 void AppInstance::startRendering(int nbFrames){
     _model->startVideoEngine(nbFrames);
 }

@@ -70,12 +70,12 @@ public:
     
     virtual std::string description();
     
-    /*If forReal is true, it creates a new Write and set _writeHandle
+    /*If doFullWork is true, it creates a new Write and set _writeHandle
      to this newly created Write. It also calls Write::setupFile with 
      the filename selected in the GUI. If the buffer is full, it appends
      the Write task to the _queuedTasks vector. They will be launched
      by the notifyWriterForCompletion() function.*/
-    virtual bool _validate(bool forReal);
+    virtual bool _validate(bool doFullWork);
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
 	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);

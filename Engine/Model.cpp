@@ -78,15 +78,15 @@ void Model::checkViewersConnection(){
         if (_currentNodes[i]->className() == "Viewer") {
             OutputNode* n = dynamic_cast<OutputNode*>(_currentNodes[i]);
             assert(n);
-            n->updateDAG(true);
+            n->updateDAG(false);
         }
     }
 }
 
-void Model::updateDAG(OutputNode *output,bool isViewer){
+void Model::updateDAG(OutputNode *output,bool initViewer){
     assert(output);
     _currentOutput = output;
-    output->updateDAG(isViewer);
+    output->updateDAG(initViewer);
 }
 
 
@@ -131,7 +131,7 @@ bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
 }
 
 bool Model::connect(int inputNumber,Node* input,Node* output){
-    output->disconnectInput(inputNumber);
+    //output->disconnectInput(inputNumber);
     if(!output->connectInput(input, inputNumber)){
         return false;
     }

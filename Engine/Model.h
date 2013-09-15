@@ -105,7 +105,7 @@ public:
     OutputNode* getCurrentOutput() const {return _currentOutput;}
 
 	/*Refresh the graph used by the output's videoEngine.*/
-    void updateDAG(OutputNode* output,bool isViewer);
+    void updateDAG(OutputNode* output,bool initViewer);
 
     void checkViewersConnection();
     

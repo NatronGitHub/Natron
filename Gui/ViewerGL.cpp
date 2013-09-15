@@ -270,6 +270,7 @@ void ViewerGL::initConstructor(){
     _displayChannels = 0.f;
     _progressBarY = -1;
     _drawProgressBar = false;
+    _updatingTexture = false;
 }
 
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
@@ -771,7 +772,7 @@ void ViewerGL::restoreGLState()
 }
 
 void ViewerGL::initBlackTex(){
-    assert(_must_initBlackTex);
+    // assert(_must_initBlackTex);
     fitToFormat(displayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
@@ -780,7 +781,7 @@ void ViewerGL::initBlackTex(){
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
-    assert(!frameData);
+    // assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);
@@ -802,6 +803,7 @@ void ViewerGL::initBlackTex(){
 
 void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
     
+    while(_updatingTexture){}
     if(byteMode()==0 && _hasHW){
         convertRowToFitTextureBGRA_fp(r,g,b,_textureColumns,zoomedY,a);
     }
@@ -1725,6 +1727,7 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
 }
 void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
     assert(frameData);
+    _updatingTexture = true;
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
     frameData = NULL;
@@ -1739,4 +1742,5 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
+    _updatingTexture = false;
 }

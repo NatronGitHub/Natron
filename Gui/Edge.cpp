@@ -16,7 +16,7 @@
 
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
-
+#include "Engine/ViewerNode.h"
 using namespace std;
 
 const qreal pi= 3.14159265358979323846264338327950288419717;
@@ -226,7 +226,17 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      QPen myPen = pen();
 
      myPen.setColor(Qt::black);
-
+     if(dest->getNode()->className() == "Viewer"){
+         ViewerNode* v = dynamic_cast<ViewerNode*>(dest->getNode());
+         if(v->activeInput() != inputNb){
+             QVector<qreal> dashStyle;
+             qreal space = 4;
+             dashStyle << 3 << space;
+             myPen.setDashPattern(dashStyle);
+         }else{
+             myPen.setStyle(Qt::SolidLine);
+         }
+     }
      painter->setPen(myPen);
      painter->setBrush(Qt::black);   
      painter->drawLine(line());

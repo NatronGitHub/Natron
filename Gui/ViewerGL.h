@@ -286,10 +286,10 @@ class ViewerTab;
                         
             bool _drawProgressBar;
             
+            bool _updatingTexture;
+            
             int _progressBarY;
-            
-            
-            
+                        
         public:
             
             

@@ -87,6 +87,23 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     if (_working) {
         return;
     }
+    cout <<"=============================================" << endl;
+    if(sameFrame){
+        cout << ">>>Starting engine to refresh the same frame.<<<" << endl;
+    
+    }else{
+        cout << "Starting engine";
+        if(forward){
+            cout << " in forward fashion";
+        }else{
+            cout << " in backward fashion";
+        }
+        cout << " for " << frameCount << " frames." << endl;
+       
+    }
+    if(fitFrameToViewer){
+        cout << ">>Fitting viewer to the frame<<" << endl;;
+    }
     // cout << "+ STARTING ENGINE " << endl;
     _timer->playState=RUNNING;
    
@@ -138,7 +155,7 @@ void VideoEngine::stopEngine(){
     _working = false;
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
-    
+    cout << ">>>Engine stopped.<<<" << endl;
 
 }
 
@@ -302,6 +319,7 @@ void VideoEngine::run(){
         QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(metaReadHeader,_1,currentFrame));
         for (int i = 0; i < readHeaderResults.size(); i++) {
             if (readHeaderResults.at(i) == false) {
+                stopEngine();
                 _mutex->lock();
                 _startCondition.wait(_mutex);
                 _mutex->unlock();
@@ -401,6 +419,9 @@ void VideoEngine::run(){
         /*If it reaches here, it means the frame doesn't belong
          to the ViewerCache, we must
          allocate resources and render the frame.*/
+        /*****************************************************************************************************/
+        /*****************************COMPUTING FRAME*********************************************************/
+        /*****************************************************************************************************/
         _lastFrameInfos._rows = rows;
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
@@ -800,19 +821,19 @@ void VideoEngine::recenterViewer(){
 
 
 
-void VideoEngine::changeDAGAndStartEngine(OutputNode* output){
+void VideoEngine::changeDAGAndStartEngine(OutputNode* output,bool initViewer){
     abort();
     if(!_working){
         if(_dag.getOutput()){
-            _changeDAGAndStartEngine(_dag.getOutput()->getTimeLine().currentFrame(), -1, false,true,false,output);
+            _changeDAGAndStartEngine(_dag.getOutput()->getTimeLine().currentFrame(), -1, initViewer,true,false,output);
         }else{
-            _changeDAGAndStartEngine(0, -1, false,true,false,output);
+            _changeDAGAndStartEngine(0, -1, initViewer,true,false,output);
         }
     }else{
         if(_dag.getOutput()){
-            appendTask(_dag.getOutput()->getTimeLine().currentFrame(), 1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
+            appendTask(_dag.getOutput()->getTimeLine().currentFrame(), 1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }else{
-            appendTask(0,1, false,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
+            appendTask(0,1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }
     }
 }
@@ -843,30 +864,33 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
     }
 }
 
-void VideoEngine::_changeDAGAndStartEngine(int , int frameCount, bool initViewer,bool,bool sameFrame,OutputNode* output){
+void VideoEngine::_changeDAGAndStartEngine(int , int , bool initViewer,bool,bool ,OutputNode* output){
     bool isViewer = false;
     if(dynamic_cast<ViewerNode*>(output)){
         isViewer = true;
     }
     _dag.resetAndSort(output,isViewer);
-    const vector<Node*>& inputs = _dag.getInputs();
-    bool start = false;
-    for (U32 i = 0 ; i < inputs.size(); ++i) {
-        if(inputs[i]->className() == "Reader"){
-            Reader* reader = dynamic_cast<Reader*>(inputs[i]);
-            if(reader->hasFrames()) start = true;
-            else{
-                start = false;
-                break;
-            }
-        }else{
-            if(inputs[0]->isInputNode()){
-                start = true;
+    if(isViewer){
+        const std::vector<Node*>& inputs = _dag.getInputs();
+        bool hasFrames = false;
+        bool hasInputDifferentThanReader = false;
+        for (U32 i = 0; i< inputs.size(); ++i) {
+            assert(inputs[i]);
+            Reader* r = dynamic_cast<Reader*>(inputs[i]);
+            if (r) {
+                if (r->hasFrames()) {
+                    hasFrames = true;
+                }
+            }else{
+                hasInputDifferentThanReader = true;
             }
         }
+        if(hasInputDifferentThanReader || hasFrames){
+            repeatSameFrame(initViewer);
+        }else{
+            dynamic_cast<ViewerNode*>(output)->disconnectViewer();
+        }
     }
-    if(start)
-        render(frameCount,initViewer,_lastRunArgs._forward,sameFrame);
 }
 
 
@@ -975,11 +999,11 @@ void VideoEngine::DAG::debug(){
 }
 
 /*sets infos accordingly across all the DAG*/
-bool VideoEngine::DAG::validate(bool forReal){
+bool VideoEngine::DAG::validate(bool doFullWork){
     /*Validating the DAG in topological order*/
     for (DAGIterator it = begin(); it!=end(); ++it) {
         assert(*it);
-        if(!(*it)->validate(forReal)){
+        if(!(*it)->validate(doFullWork)){
             return false;
         }else{
             (*it)->setExecutingEngine(_output->getVideoEngine());

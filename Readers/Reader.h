@@ -444,7 +444,7 @@ public:
     /**
      * @brief Not documented yet as it will be revisited soon.
      */
-    virtual bool _validate(bool forReal) OVERRIDE;
+    virtual bool _validate(bool doFullWork) OVERRIDE;
 	
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)

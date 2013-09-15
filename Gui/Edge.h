@@ -60,6 +60,8 @@ public:
     
     void initLine();
     
+    void setAngle(double a){angle = a;}
+    
     QGraphicsScene* getScene() const {return scene;}
 
 private:

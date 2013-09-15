@@ -132,6 +132,7 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root,sc);
     _nodes.push_back(node_ui);
     _undoStack->push(new AddCommand(this,node_ui));
+    _evtState = DEFAULT;
     return node_ui;
     
 }
@@ -318,17 +319,19 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         if(_nodeSelected){
             deleteSelectedNode();
         }
-    }else if(e->key() == Qt::Key_1){
-        if(_nodeSelected){
-            connectCurrentViewerToSelection();
-        }
     }
 }
-void NodeGraph::connectCurrentViewerToSelection(){
-    ViewerTab* lastSelectedViewerTab = _gui->getLastSelectedViewer();
-    const NodeGui::InputEdgesMap& edges = _gui->getApp()->getNodeGui(lastSelectedViewerTab->getInternalNode())->getInputsArrows();
-    NodeGui::InputEdgesMap::const_iterator it = edges.find(1);
-    if(it!=edges.end()){
+void NodeGraph::connectCurrentViewerToSelection(int inputNB){
+    if(!_nodeSelected)
+        return;
+    ViewerNode* v = _gui->getLastSelectedViewer()->getInternalNode();
+    NodeGui* gui = _gui->getApp()->getNodeGui(v);
+    if(gui){
+        NodeGui::InputEdgesMap::const_iterator it = gui->getInputsArrows().find(inputNB);
+        while(it==gui->getInputsArrows().end()){
+            v->tryAddEmptyInput();
+            it = gui->getInputsArrows().find(inputNB);
+        }
         _undoStack->push(new ConnectCommand(this,it->second,it->second->getSource(),_nodeSelected));
     }
 }
@@ -340,8 +343,6 @@ void NodeGraph::enterEvent(QEvent *event)
         
         _nodeCreationShortcutEnabled=true;
         setFocus();
-        //grabMouse();
-        //releaseMouse();
         grabKeyboard();
     }
 }
@@ -410,7 +411,17 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                  If the node created is an output node we don't connect it's output
                  with the outputs of the selected node since it has no output.*/
                 if(edgeWithSelectedNode){
-                    _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
+                    if(outputNode->className() == "Viewer"){
+                        ViewerNode* v = dynamic_cast<ViewerNode*>(outputNode);
+                        if(selected){
+                            selected->getNode()->disconnectOutput(outputNode);
+                        }
+                        if(v->connectInput(created->getNode(), edgeWithSelectedNode->getInputNumber(),true)){
+                            created->getNode()->connectOutput(v);
+                        }
+                    }else{
+                        _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
+                    }
                     
                     /*we now try to move the created node in between the selected node and its
                      old output.*/
@@ -446,7 +457,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                     
                     selected->refreshEdges();
                     created->refreshEdges();
-                    edgeWithSelectedNode->initLine();
+                    refreshAllEdges();
                 }
             }
         }
@@ -465,10 +476,11 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         }
     }
     
+    
     if(cont){
         Node* viewer = Node::hasViewerConnected(first->getDest()->getNode());
         if(viewer){
-            _gui->getApp()->updateDAG(dynamic_cast<OutputNode*>(viewer),true);
+            _gui->getApp()->updateDAG(dynamic_cast<OutputNode*>(viewer),false);
         }
     }
 }
@@ -735,19 +747,37 @@ void ConnectCommand::undo(){
     _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
     Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(true);
+        dynamic_cast<OutputNode*>(viewer)->updateDAG(false);
     }
     
     
 }
 void ConnectCommand::redo(){
-    _edge->setSource(_newSrc);
     
-    if(_oldSrc){
-        _graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), _edge->getDest()->getNode());
-    }
-    if(_newSrc){
-        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), _edge->getDest()->getNode());
+    if (_edge->getDest()->getNode()->className() == "Viewer") {
+        ViewerNode* v = dynamic_cast<ViewerNode*>(_edge->getDest()->getNode());
+        if(!_newSrc){
+            v->disconnectInput(_edge->getInputNumber());
+        }else{
+            if(v->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
+                _edge->setSource(_newSrc);
+                _newSrc->getNode()->connectOutput(v);
+            }
+        }
+    }else{
+        _edge->setSource(_newSrc);
+        if(_oldSrc){
+            if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), _edge->getDest()->getNode())){
+                cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
+                << " to (output) " << _edge->getDest()->getNode()->getName() << endl;
+            }
+        }
+        if(_newSrc){
+            if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), _edge->getDest()->getNode())){
+                cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
+                << " to (output) " << _edge->getDest()->getNode()->getName() << endl;
+            }
+        }
     }
     
     _edge->initLine();
@@ -761,7 +791,7 @@ void ConnectCommand::redo(){
     _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
     Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(true);
+        dynamic_cast<OutputNode*>(viewer)->updateDAG(false);
     }
 
     
@@ -836,5 +866,8 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     }
     return false;
 }
-
-
+void NodeGraph::refreshAllEdges(){
+    for (U32 i=0; i < _nodes.size(); ++i) {
+        _nodes[i]->refreshEdges();
+    }
+}

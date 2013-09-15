@@ -58,13 +58,13 @@ std::string Writer::description() {
     return "OutputNode";
 }
 
-bool Writer::_validate(bool forReal){
+bool Writer::_validate(bool doFullWork){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
     _timeline.setFirstFrame(info().firstFrame());
     _timeline.setLastFrame(info().lastFrame());
     
-    if (forReal) {
+    if (doFullWork) {
         
         
         if(_filename.size() > 0){

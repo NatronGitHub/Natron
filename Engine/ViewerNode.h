@@ -30,7 +30,8 @@ class ViewerNode: public OutputNode
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
     int _pboIndex;
-    
+    int _inputsCount;
+    int _activeInput;
 public:
     
         
@@ -38,11 +39,27 @@ public:
     
     virtual ~ViewerNode();
     
-    virtual int maximumInputs() const OVERRIDE { return 1; }
+    virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
     
     virtual int minimumInputs() const OVERRIDE { return 1; }
     
     virtual bool cacheData() const OVERRIDE { return false; }
+    
+    virtual std::string setInputLabel(int inputNb){
+        return QString::number(inputNb+1).toStdString();
+    }
+    
+    bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
+    
+    virtual int disconnectInput(int inputNumber);
+    
+    virtual int disconnectInput(Node* input);
+    
+    void tryAddEmptyInput();
+    
+    void setActiveInputAndRefresh(int inputNb);
+    
+    int activeInput() const {return _activeInput;}
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
@@ -80,6 +97,8 @@ public:
     
     void disconnectSlotsToViewerCache();
     
+
+    
 public slots:
     void onCachedFrameAdded();
     void onCachedFrameRemoved();
@@ -97,9 +116,11 @@ signals:
     
 private:
     
-    virtual bool _validate(bool forReal);
+    virtual bool _validate(bool doFullWork);
     
+    void removeEmptyInputs();
     
+    void addEmptyInput();
 };
 
 /*#ifdef __cplusplus

@@ -209,6 +209,7 @@ private:
 
 
 public slots:
+    
     bool exit();
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
@@ -217,6 +218,17 @@ public slots:
     void saveProject();
     void saveProjectAs();
     void autoSave();
+    
+    void connectInput1();
+    void connectInput2();
+    void connectInput3();
+    void connectInput4();
+    void connectInput5();
+    void connectInput6();
+    void connectInput7();
+    void connectInput8();
+    void connectInput9();
+    void connectInput10();
     
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
@@ -239,11 +251,20 @@ public:
     QAction *actionExit;
     QAction *actionProject_settings;
     QAction *actionFullScreen;
-	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
     
+    QAction* actionConnectInput1;
+    QAction* actionConnectInput2;
+    QAction* actionConnectInput3;
+    QAction* actionConnectInput4;
+    QAction* actionConnectInput5;
+    QAction* actionConnectInput6;
+    QAction* actionConnectInput7;
+    QAction* actionConnectInput8;
+    QAction* actionConnectInput9;
+    QAction* actionConnectInput10;
     
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
@@ -293,6 +314,7 @@ public:
     QMenu *menuDisplay;
     QMenu *menuOptions;
 	QMenu *viewersMenu;
+    QMenu *viewerInputsMenu;
     QMenu *cacheMenu;
     
     

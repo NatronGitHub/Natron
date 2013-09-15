@@ -72,10 +72,19 @@ actionPreferences(0),
 actionExit(0),
 actionProject_settings(0),
 actionFullScreen(0),
-actionSplitViewersTab(0),
 actionClearDiskCache(0),
 actionClearPlayBackCache(0),
 actionClearNodeCache(0),
+actionConnectInput1(0),
+actionConnectInput2(0),
+actionConnectInput3(0),
+actionConnectInput4(0),
+actionConnectInput5(0),
+actionConnectInput6(0),
+actionConnectInput7(0),
+actionConnectInput8(0),
+actionConnectInput9(0),
+actionConnectInput10(0),
 _centralWidget(0),
 _mainLayout(0),
 _viewersPane(0),
@@ -96,6 +105,7 @@ menuEdit(0),
 menuDisplay(0),
 menuOptions(0),
 viewersMenu(0),
+viewerInputsMenu(0),
 cacheMenu(0)
 {
 }
@@ -236,14 +246,33 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
     assert(actionFullScreen);
     actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
-    assert(actionSplitViewersTab);
-    actionSplitViewersTab->setText(QApplication::translate("Powiter","Toggle Multi-View Area"));
     assert(actionClearDiskCache);
     actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
     assert(actionClearPlayBackCache);
     actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
     assert(actionClearNodeCache);
     actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
+    
+    assert(actionConnectInput1);
+    actionConnectInput1 ->setText(QApplication::translate("Powiter","Connect to input 1"));
+    assert(actionConnectInput2);
+    actionConnectInput2 ->setText(QApplication::translate("Powiter","Connect to input 2"));
+    assert(actionConnectInput3);
+    actionConnectInput3 ->setText(QApplication::translate("Powiter","Connect to input 3"));
+    assert(actionConnectInput4);
+    actionConnectInput4 ->setText(QApplication::translate("Powiter","Connect to input 4"));
+    assert(actionConnectInput5);
+    actionConnectInput5 ->setText(QApplication::translate("Powiter","Connect to input 5"));
+    assert(actionConnectInput6);
+    actionConnectInput6 ->setText(QApplication::translate("Powiter","Connect to input 6"));
+    assert(actionConnectInput7);
+    actionConnectInput7 ->setText(QApplication::translate("Powiter","Connect to input 7"));
+    assert(actionConnectInput8);
+    actionConnectInput8 ->setText(QApplication::translate("Powiter","Connect to input 8"));
+    assert(actionConnectInput9);
+    actionConnectInput9 ->setText(QApplication::translate("Powiter","Connect to input 9"));
+    assert(actionConnectInput10);
+    actionConnectInput10 ->setText(QApplication::translate("Powiter","Connect to input 10"));
     
     
 	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
@@ -261,7 +290,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
     assert(cacheMenu);
     cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
-    
+    assert(viewerInputsMenu);
+    viewerInputsMenu->setTitle(QApplication::translate("Powiter", "Connect Current Viewer"));
 }
 void Gui::setupUi()
 {
@@ -285,6 +315,7 @@ void Gui::setupUi()
 	menuDisplay = new QMenu(menubar);
 	menuOptions = new QMenu(menubar);
 	viewersMenu= new QMenu(menuDisplay);
+    viewerInputsMenu = new QMenu(viewersMenu);
 	cacheMenu= new QMenu(menubar);
     
 	setMenuBar(menubar);
@@ -323,8 +354,6 @@ void Gui::setupUi()
 	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
 	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
     actionFullScreen->setIcon(get_icon("view-fullscreen"));
-	actionSplitViewersTab=new QAction(this);
-	actionSplitViewersTab->setObjectName(QString::fromUtf8("actionSplitViewersTab"));
 	actionClearDiskCache = new QAction(this);
 	actionClearDiskCache->setObjectName(QString::fromUtf8("actionClearDiskCache"));
 	actionClearDiskCache->setCheckable(false);
@@ -337,6 +366,46 @@ void Gui::setupUi()
 	actionClearNodeCache->setObjectName(QString::fromUtf8("actionClearNodeCache"));
 	actionClearNodeCache->setCheckable(false);
 	actionClearNodeCache->setShortcut(QKeySequence(Qt::CTRL+Qt::SHIFT+Qt::Key_B));
+    
+    actionConnectInput1 = new QAction(this);
+	actionConnectInput1->setCheckable(false);
+	actionConnectInput1->setShortcut(QKeySequence(Qt::Key_1));
+    
+    actionConnectInput2 = new QAction(this);
+	actionConnectInput2->setCheckable(false);
+	actionConnectInput2->setShortcut(QKeySequence(Qt::Key_2));
+    
+    actionConnectInput3 = new QAction(this);
+	actionConnectInput3->setCheckable(false);
+	actionConnectInput3->setShortcut(QKeySequence(Qt::Key_3));
+    
+    actionConnectInput4 = new QAction(this);
+	actionConnectInput4->setCheckable(false);
+	actionConnectInput4->setShortcut(QKeySequence(Qt::Key_4));
+    
+    actionConnectInput5 = new QAction(this);
+	actionConnectInput5->setCheckable(false);
+	actionConnectInput5->setShortcut(QKeySequence(Qt::Key_5));
+    
+    actionConnectInput6 = new QAction(this);
+	actionConnectInput6->setCheckable(false);
+	actionConnectInput6->setShortcut(QKeySequence(Qt::Key_6));
+    
+    actionConnectInput7 = new QAction(this);
+	actionConnectInput7->setCheckable(false);
+	actionConnectInput7->setShortcut(QKeySequence(Qt::Key_7));
+    
+    actionConnectInput8 = new QAction(this);
+	actionConnectInput8->setCheckable(false);
+	actionConnectInput8->setShortcut(QKeySequence(Qt::Key_8));
+    
+    actionConnectInput9 = new QAction(this);
+	actionConnectInput9->setCheckable(false);
+	actionConnectInput9->setShortcut(QKeySequence(Qt::Key_9));
+    
+    actionConnectInput10 = new QAction(this);
+	actionConnectInput10->setCheckable(false);
+	actionConnectInput10->setShortcut(QKeySequence(Qt::Key_0));
 	
     
 	/*CENTRAL AREA*/
@@ -420,15 +489,7 @@ void Gui::setupUi()
     
     _leftRightSplitter->addWidget(_middleRightSplitter);
     
-    
-    
-    
     _mainLayout->addWidget(_leftRightSplitter);
-    
-    
-    
-    
-    
 	
     
 	menubar->addAction(menuFile->menuAction());
@@ -447,9 +508,20 @@ void Gui::setupUi()
 	
 	menuOptions->addAction(actionProject_settings);
 	menuDisplay->addAction(viewersMenu->menuAction());
+    viewersMenu->addAction(viewerInputsMenu->menuAction());
+    viewerInputsMenu->addAction(actionConnectInput1);
+    viewerInputsMenu->addAction(actionConnectInput2);
+    viewerInputsMenu->addAction(actionConnectInput3);
+    viewerInputsMenu->addAction(actionConnectInput4);
+    viewerInputsMenu->addAction(actionConnectInput5);
+    viewerInputsMenu->addAction(actionConnectInput6);
+    viewerInputsMenu->addAction(actionConnectInput7);
+    viewerInputsMenu->addAction(actionConnectInput8);
+    viewerInputsMenu->addAction(actionConnectInput9);
+    viewerInputsMenu->addAction(actionConnectInput10);
     menuDisplay->addSeparator();
 	menuDisplay->addAction(actionFullScreen);
-	viewersMenu->addAction(actionSplitViewersTab);
+    
 	cacheMenu->addAction(actionClearDiskCache);
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
@@ -460,6 +532,17 @@ void Gui::setupUi()
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),_appInstance,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),_appInstance,SLOT(clearNodeCache()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
+    
+    QObject::connect(actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));
+    QObject::connect(actionConnectInput2, SIGNAL(triggered()),this,SLOT(connectInput2()));
+    QObject::connect(actionConnectInput3, SIGNAL(triggered()),this,SLOT(connectInput3()));
+    QObject::connect(actionConnectInput4, SIGNAL(triggered()),this,SLOT(connectInput4()));
+    QObject::connect(actionConnectInput5, SIGNAL(triggered()),this,SLOT(connectInput5()));
+    QObject::connect(actionConnectInput6, SIGNAL(triggered()),this,SLOT(connectInput6()));
+    QObject::connect(actionConnectInput7, SIGNAL(triggered()),this,SLOT(connectInput7()));
+    QObject::connect(actionConnectInput8, SIGNAL(triggered()),this,SLOT(connectInput8()));
+    QObject::connect(actionConnectInput9, SIGNAL(triggered()),this,SLOT(connectInput9()));
+    QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
 	QMetaObject::connectSlotsByName(this);
     
@@ -547,10 +630,10 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
 }
 void Gui::addNodeGraph() {
     assert(!_nodeGraphTab);
-    NodeGraphTab* tab = new NodeGraphTab(this,_workshopPane);
-    _nodeGraphTab = tab;
+    _nodeGraphTab = new NodeGraphTab(this,_workshopPane);
     assert(_workshopPane);
-    _workshopPane->appendTab("Node graph",tab->_nodeGraphArea);
+    _workshopPane->appendTab("Node graph",_nodeGraphTab->_nodeGraphArea);
+   
 }
 
 void Gui::moveTab(QWidget* what,TabWidget *where){
@@ -967,4 +1050,35 @@ void Gui::errorDialog(const QString& title,const QString& text){
 
 void Gui::selectNode(NodeGui* node){
     _nodeGraphTab->_nodeGraphArea->selectNode(node);
+}
+
+void Gui::connectInput1(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(0);
+}
+void Gui::connectInput2(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(1);
+}
+void Gui::connectInput3(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(2);
+}
+void Gui::connectInput4(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(3);
+}
+void Gui::connectInput5(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(4);
+}
+void Gui::connectInput6(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(5);
+}
+void Gui::connectInput7(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(6);
+}
+void Gui::connectInput8(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(7);
+}
+void Gui::connectInput9(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(8);
+}
+void Gui::connectInput10(){
+    _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(9);
 }

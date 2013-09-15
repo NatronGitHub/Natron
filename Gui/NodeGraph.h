@@ -111,11 +111,14 @@ public:
     /*Returns true if the graph has no value, i.e:
      this is just output nodes*/
     bool isGraphWorthLess() const;
-    
-    void connectCurrentViewerToSelection();
-    
+        
     Gui* getGui() const {return _gui;}
     
+    void refreshAllEdges();
+    
+public slots:
+    void connectCurrentViewerToSelection(int inputNB);
+
 protected:
 
     void mousePressEvent(QMouseEvent *event);

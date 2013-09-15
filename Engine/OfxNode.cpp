@@ -170,7 +170,7 @@ bool OfxNode::isInputOptional(int inpubNb) const {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
-bool OfxNode::_validate(bool forReal){
+bool OfxNode::_validate(bool doFullWork){
     _firstTime = true;
     _timeline.setFirstFrame(info().firstFrame());
     _timeline.setLastFrame(info().lastFrame());
@@ -186,9 +186,9 @@ bool OfxNode::_validate(bool forReal){
     if (isInputNode()) {
         OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
         assert(clip);
-        /*if forReal is true we need to pass down the tree all the infos generated
+        /*if doFullWork is true we need to pass down the tree all the infos generated
          besides just the frame range.*/
-        if (forReal) {
+        if (doFullWork) {
             OfxPointD rS;
             rS.x = rS.y = 1.0;
             OfxRectD rod;

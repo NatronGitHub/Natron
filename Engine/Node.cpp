@@ -84,7 +84,7 @@ void Node::Info::merge_displayWindow(const Format& other){
         _displayWindow.name(other.name());
     }
 }
-void Node::merge_info(bool forReal){
+void Node::merge_info(bool doFullWork){
 	
     clear_info();
 	int final_direction=0;
@@ -102,7 +102,7 @@ void Node::merge_info(bool forReal){
             _info.set_firstFrame(input->info().firstFrame());
             _info.set_lastFrame(input->info().lastFrame());
         }
-        if(forReal){
+        if(doFullWork){
             final_direction+=input->info().ydirection();
             chans += input->info().channels();
             ChannelSet supportedComp = supportedComponents();
@@ -194,12 +194,6 @@ Node::Node(Model* model)
 }
 
 Node::~Node(){
-//    for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
-//        _model->disconnect(this, it->second);
-//    }
-//    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-//        _model->disconnect(it->second, this);
-//    }
     for (U32 i = 0; i < _knobs.size(); ++i) {
         delete _knobs[i];
     }
@@ -213,9 +207,12 @@ void Node::deleteNode(){
 void Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
-        _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
-        _inputs.insert(make_pair(i,(Node*)NULL));
+        if(_inputs.find(i) == _inputs.end()){
+            _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
+            _inputs.insert(make_pair(i,(Node*)NULL));
+        }
     }
+    
     emit inputsInitialized();
 }
 const std::string Node::getInputLabel(int inputNb) const{
@@ -244,15 +241,12 @@ std::string Node::setInputLabel(int inputNb){
     return out;
 }
 
-bool Node::validate(bool forReal){
+bool Node::validate(bool doFullWork){
     if(!isInputNode()){
-        merge_info(forReal);
+        merge_info(doFullWork);
     }
-    if(!_validate(forReal))
+    if(!_validate(doFullWork))
         return false;
-    preProcess();
-    
-    //_instance->updateNodeChannelsGui(_info.channels());
     emit channelsChanged();
     return true;
 }
@@ -280,13 +274,14 @@ void Node::connectOutput(Node* output,int outputNumber ){
 }
 
 int Node::disconnectInput(int inputNumber){
-    InputMap::const_iterator it = _inputs.find(inputNumber);
+    InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
         return -1;
     }else{
         if(it->second == NULL){
             return -1;
         }else{
+            _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber, (Node*)NULL));
             emit inputChanged(inputNumber);
             return it->first;
@@ -568,28 +563,6 @@ void TimeLine::seek_noEmit(int frame){
     _currentFrame = frame;
 }
 
-void OutputNode::updateDAG(bool isViewer,bool initViewer){
-    _videoEngine->resetAndMakeNewDag(this,isViewer);
-    if(isViewer){
-        const std::vector<Node*>& inputs = _videoEngine->getCurrentDAG().getInputs();
-        bool hasFrames = false;
-        bool hasInputDifferentThanReader = false;
-        for (U32 i = 0; i< inputs.size(); ++i) {
-            assert(inputs[i]);
-            Reader* r = dynamic_cast<Reader*>(inputs[i]);
-            if (r) {
-                if (r->hasFrames()) {
-                    hasFrames = true;
-                }
-            }else{
-                hasInputDifferentThanReader = true;
-            }
-        }
-        if(hasInputDifferentThanReader || hasFrames){
-            _videoEngine->repeatSameFrame(initViewer);
-        }else{
-            dynamic_cast<ViewerNode*>(this)->disconnectViewer();
-        }
-    }
-
+void OutputNode::updateDAG(bool initViewer){
+    _videoEngine->changeDAGAndStartEngine(this, initViewer);
 }

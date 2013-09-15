@@ -262,7 +262,7 @@ Knob_Mask Knob::getFlags() const{
 void Knob::startRendering(bool initViewer){
     Node* viewer = Node::hasViewerConnected(_node);
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(true,initViewer);
+        dynamic_cast<OutputNode*>(viewer)->updateDAG(initViewer);
     }
 }
 

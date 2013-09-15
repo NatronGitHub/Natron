@@ -211,7 +211,6 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
     int w = size().width();
     double scaleW = w-2*BORDER_OFFSET_ ;
     double incr=((scaleW)/(double)(_displayedValues.size()-1))/(double)_increment;
-    //QPointF pos(BORDER_OFFSET_-1,LINE_START);
     for(int i =0;i<_displayedValues.size();++i) {
         int x = getCoordPosition(_displayedValues[i]);
         int y = LINE_START;
