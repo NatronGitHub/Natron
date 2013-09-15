@@ -452,6 +452,7 @@ void VideoEngine::run(){
         int counter = 0;
         gettimeofday(&_lastComputeFrameTime, 0);
         _sequence.clear();
+        
         for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
             Row* row = new Row(x,*it,r,outChannels);
             row->zoomedY(counter);
@@ -920,8 +921,15 @@ void VideoEngine::DAG::fillGraph(Node* n){
     
     const Node::InputMap& inputs = n->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second)
+        if(it->second){
+            if(n->className() == "Viewer"){
+                ViewerNode* v = dynamic_cast<ViewerNode*>(n);
+                if (it->first!=v->activeInput()) {
+                    continue;
+                }
+            }
             fillGraph(it->second);
+        }
     }
 }
 void VideoEngine::DAG::clearGraph(){

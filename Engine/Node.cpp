@@ -95,6 +95,11 @@ void Node::merge_info(bool doFullWork){
          it!=getInputs().end();++it) {
         if(!it->second)
             continue;
+        if(className() == "Viewer"){
+            ViewerNode* n = dynamic_cast<ViewerNode*>(this);
+            if(n->activeInput()!=it->first)
+                continue;
+        }
         Node* input = it->second;
         if(count > 0)
             merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
