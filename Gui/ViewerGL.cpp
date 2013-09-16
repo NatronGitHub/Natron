@@ -1689,14 +1689,14 @@ void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
     setFocus();
     // grabMouse();
-    grabKeyboard();
+    // grabKeyboard();
 }
 void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
-    setFocus();
+    //setFocus(); // ??
     // releaseMouse();
-    releaseKeyboard();
+    //releaseKeyboard();
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
                                                  // if(isVisible()){
