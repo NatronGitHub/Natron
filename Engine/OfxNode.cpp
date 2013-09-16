@@ -230,7 +230,7 @@ bool OfxNode::_validate(bool doFullWork){
     return true;
     
 }
-void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
+void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, Row* out) {
     OfxRectI renderW;
     const Format& dispW = info().displayWindow();
     renderW.x1 = dispW.left();
@@ -257,6 +257,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
         const OfxRGBAColourB* srcPixels = img->pixelB(out->offset(), y);
+        assert(srcPixels);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -266,6 +267,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
     {
         const OfxRGBAColourS* srcPixels = img->pixelS(out->offset(), y);
+        assert(srcPixels);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
@@ -275,6 +277,7 @@ void OfxNode::engine(int y,int ,int ,ChannelSet channels ,Row* out){
     }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
     {
         const OfxRGBAColourF* srcPixels = img->pixelF(out->offset(), y);
+        assert(srcPixels);
         foreachChannels(chan, channels){
             float* writeable = out->writable(chan);
             if(writeable){
