@@ -329,16 +329,19 @@ void AbstractDiskCache::initializeSubDirectories(){
 AbstractDiskCache::~AbstractDiskCache(){
 }
 
-void AbstractDiskCache::clearInMemoryCache(){
+void AbstractDiskCache::clearInMemoryCache() {
     _inMemorySize = 0;
-    while(_inMemoryPortion.size() > 0){
+    while (_inMemoryPortion.size() > 0) {
+        // FIXME: infinite loop (it happened to me [FD]! if cache elements are not removable, how could they *become* removable during the execution of this loop?
+        // why not purge everything (it's just a cache)
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
-        if(evicted.second->isRemovable()){
+        assert(evicted.second);
+        if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
             assert(mmEntry);
             mmEntry->deallocate();
             AbstractCacheHelper::add(evicted.first, evicted.second);
-        }else{
+        } else {
             add(evicted.first, evicted.second);
         }
     }
