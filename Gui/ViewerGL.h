@@ -571,19 +571,6 @@ class ViewerTab;
             bool hasPBOCurrentlyMapped() const {return _pBOmapped;}
             
             /**
-             *@brief Unmap the currently mapped PBO if any.
-             **/
-            void forceUnmapPBO() {
-                if (frameData) {
-                    makeCurrent();
-                    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-                    frameData = NULL;
-                }
-            }
-            
-
-            
-            /**
              *@returns A vector with the columns indexes of the full-size image that are
              *really contained in the texture.
              **/
