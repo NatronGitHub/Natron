@@ -106,7 +106,7 @@ public:
     void restoreFromTrash(NodeGui* node);
     
     /*Effectivly deletes all nodes. Called on load/save*/
-    void clear();
+  //  void clear();
     
     /*Returns true if the graph has no value, i.e:
      this is just output nodes*/

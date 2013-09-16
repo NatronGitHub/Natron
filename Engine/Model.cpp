@@ -59,6 +59,7 @@ Model::~Model() {
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
         _currentNodes[i]->deleteNode();
     }
+	_currentNodes.clear();
     
     delete _generalMutex;
 }
@@ -66,7 +67,7 @@ Model::~Model() {
 
 void Model::clearNodes(){
     foreach(Node* n,_currentNodes){
-        delete n;
+        n->deleteNode();
     }
     _currentNodes.clear();
 }
