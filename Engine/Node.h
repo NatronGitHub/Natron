@@ -28,10 +28,9 @@ class Row;
 class Model;
 class SettingsPanel;
 class Knob;
-class QMutex;
-class QWaitCondition;
 class QUndoCommand;
 class QUndoStack;
+
 class Node : public QObject
 {
     Q_OBJECT
@@ -480,10 +479,6 @@ public:
    
     VideoEngine* getVideoEngine() const {return _videoEngine;}
     
-    QMutex* getEngineMutex() const {return _mutex;}
-    
-    QWaitCondition* getOpenGLCondition() const {return _openGLCondition;}
-    
     const TimeLine& getTimeLine() const {return _timeline;}
     
     TimeLine& getTimeLine(){return _timeline;}
@@ -498,10 +493,6 @@ protected:
 
     
 private:
-
-    
-    QMutex* _mutex;
-    QWaitCondition* _openGLCondition;
     VideoEngine* _videoEngine;
 };
 

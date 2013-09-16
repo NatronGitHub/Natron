@@ -618,17 +618,17 @@ void NodeGraph::restoreFromTrash(NodeGui* node){
     }
 }
 
-void NodeGraph::clear(){
-    foreach(NodeGui* n,_nodes){
-        scene()->removeItem(n);
-        if(n->getSettingPanel())
-            n->getSettingPanel()->hide();
-        delete n;
-    }
-    _nodes.clear();
-    _nodesTrash.clear();
-    _nodeSelected = 0;
-}
+// void NodeGraph::clear(){
+//     foreach(NodeGui* n,_nodes){
+//         scene()->removeItem(n);
+//         if(n->getSettingPanel())
+//             n->getSettingPanel()->hide();
+//         delete n;
+//     }
+//     _nodes.clear();
+//     _nodesTrash.clear();
+//     _nodeSelected = 0;
+// }
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
 _node(node),

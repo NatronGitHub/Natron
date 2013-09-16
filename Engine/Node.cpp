@@ -11,8 +11,6 @@
 
 #include "Node.h"
 
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
 #include <QUndoStack>
 #include <QUndoCommand>
 
@@ -547,19 +545,15 @@ int Node::canMakePreviewImage(){
     }
 }
 
-OutputNode::OutputNode(Model* model):
-Node(model),
-_mutex(new QMutex),
-_openGLCondition(new QWaitCondition),
-_videoEngine(new VideoEngine(_model,_openGLCondition,_mutex))
+OutputNode::OutputNode(Model* model)
+: Node(model)
+, _videoEngine(new VideoEngine(_model))
 {
 }
 
 OutputNode::~OutputNode(){
     _videoEngine->quitEngineThread();
     delete _videoEngine;
-    delete _mutex;
-    delete _openGLCondition;
 }
 
 void TimeLine::seek(int frame){

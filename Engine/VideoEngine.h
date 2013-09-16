@@ -15,6 +15,7 @@
 // FIXME: can the definitions of classes EngineMainEntry, Worker, and RowRunnable be moved to VideoEngine.cpp?
 #include <cassert>
 #include <vector>
+#include <boost/scoped_ptr.hpp>
 #include <QtCore/QObject>
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
@@ -343,10 +344,12 @@ private:
     
     DAG _dag; /*!< The internal DAG instance.*/
     
-    Timer* _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
+    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
+    QMutex _abortedMutex; //!< protects _aborted
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
+    QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine*/
     
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
@@ -356,29 +359,24 @@ private:
         
     bool _autoSaveOnNextRun; /*!< on if we need to to an autosave at the end of the next compute frame.*/
     
-    QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
+    boost::scoped_ptr<QFutureWatcher<void> > _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
     QVector<Row*> _sequence;
-    
-    QFutureWatcher<void>* _computeFrameWatcher;/*!< watcher of the thread running the function
-                                                EngineMainEntry::computeFrameRequest. It stores the
-                                                results of the function and calls
-                                                VideoEngine::dispatchComputeFrameRequestThread()
-                                                when finished.*/
-    // QThreadPool* _threadPool;
-    
-    QWaitCondition* _openGLCondition;
+
+    QWaitCondition _openGLCondition; // FIXME: where is the counter associated with this condition???
+    QMutex _openGLMutex; //!< protects *_openGLCount
+    int _openGLCount;
     
     QWaitCondition _startCondition;
-    
-    QMutex* _mutex;
-    
+    QMutex _startMutex; //!< protects _startCount
+    int _startCount;
+
     RunArgs _lastRunArgs;
         
     LastFrameInfos _lastFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
     
-    timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
+    struct timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
 protected:
     virtual void run();
@@ -573,7 +571,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent = NULL);
+    VideoEngine(Model* model, QObject* parent = NULL);
     
     
     virtual ~VideoEngine();

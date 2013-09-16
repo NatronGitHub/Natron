@@ -780,16 +780,19 @@ void ViewerGL::initBlackTex(){
     checkGLErrors();
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
-    // assert(!frameData);
+    assert(!frameData);
+    assert(!_pBOmapped);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);
+    _pBOmapped = true;
     U32* output = reinterpret_cast<U32*>(frameData);
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     frameData = NULL;
+    _pBOmapped = false;
     checkGLErrors();
     _blackTex->fillOrAllocateTexture(texSize,Texture::BYTE);
     
@@ -833,14 +836,15 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
     return dataSize;
 }
 
-void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID){
-    _pBOmapped = true;
+void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
     //cout << "    + mapping PBO" << endl;
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
+    assert(!_pBOmapped);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(ret);
+    _pBOmapped = true;
     return ret;
 }
 
@@ -859,10 +863,15 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     }
     /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine). 
      This buffer (frameData) might be NULL if we were running in cached mode.*/
+    // [FD]: where is ViewerNode::cachedEngine ?
     //assert(frameData);
+    assert(_pBOmapped);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    _pBOmapped = false;
     checkGLErrors();
-    frameData = NULL;
+    if (frameData) {
+        frameData = NULL;
+    }
     if(byteMode() == 1.f || !_hasHW){
         //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
         //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
@@ -874,10 +883,7 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     
     // cout << "    - unmapping PBO" << endl;
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    _pBOmapped = false;
     checkGLErrors();
-    
-
 }
 
 void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
@@ -1724,11 +1730,13 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
     updateGL();
     
 }
-void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY){
-    assert(frameData);
+void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY) {
     _updatingTexture = true;
+    assert(frameData);
+    assert(_pBOmapped);
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     checkGLErrors();
+    _pBOmapped = false;
     frameData = NULL;
     if(byteMode() == 1.f || !_hasHW){
         _defaultDisplayTexture->updatePartOfTexture(region,texY,Texture::BYTE);
@@ -1741,5 +1749,7 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     assert(!frameData);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
+    _pBOmapped = true;
+
     _updatingTexture = false;
 }
