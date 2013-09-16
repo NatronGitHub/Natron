@@ -496,27 +496,29 @@ void VideoEngine::run(){
             }
         }
         
-        int counter = 0;
         gettimeofday(&_lastComputeFrameTime, 0);
-        _sequence.clear();
-        
-        for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
-            Row* row = new Row(x,*it,r,outChannels);
-            assert(row);
-            row->zoomedY(counter);
-            // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
-//            if(counter%10 == 0){
-//            // UNCOMMENT to report progress.
-//                QObject::connect(worker, SIGNAL(finished(int,int)), this ,SLOT(checkAndDisplayProgress(int,int)),Qt::QueuedConnection);
-//            }
-            _sequence.push_back(row);
-            //  _threadPool->start(worker);
-            ++counter;
+        {
+            int counter = 0;
+            QVector<Row*> sequence;
+            sequence.reserve(rows.size());
+
+            for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+                Row* row = new Row(x,*it,r,outChannels);
+                assert(row);
+                row->zoomedY(counter);
+                // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
+                //            if(counter%10 == 0){
+                //            // UNCOMMENT to report progress.
+                //                QObject::connect(worker, SIGNAL(finished(int,int)), this ,SLOT(checkAndDisplayProgress(int,int)),Qt::QueuedConnection);
+                //            }
+                sequence.push_back(row);
+                //  _threadPool->start(worker);
+                ++counter;
+            }
+            _workerThreadsWatcher->setFuture(QtConcurrent::map(sequence,boost::bind(metaEnginePerRow,_1,_dag.getOutput())));
+            _workerThreadsWatcher->waitForFinished();
+            //_threadPool->waitForDone();
         }
-        _workerThreadsWatcher->setFuture(QtConcurrent::map(_sequence,boost::bind(metaEnginePerRow,_1,_dag.getOutput())));
-        _workerThreadsWatcher->waitForFinished();
-        //_threadPool->waitForDone();
-        
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
             //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
@@ -711,7 +713,6 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _loopMode(true)
 , _autoSaveOnNextRun(false)
 , _workerThreadsWatcher(new QFutureWatcher<void>)
-, _sequence()
 , _openGLCondition()
 , _openGLMutex()
 , _openGLCount(0)

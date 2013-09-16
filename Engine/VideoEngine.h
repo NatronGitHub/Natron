@@ -362,7 +362,6 @@ private:
     boost::scoped_ptr<QFutureWatcher<void> > _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
-    QVector<Row*> _sequence;
 
     QWaitCondition _openGLCondition; // FIXME: where is the counter associated with this condition???
     QMutex _openGLMutex; //!< protects *_openGLCount
