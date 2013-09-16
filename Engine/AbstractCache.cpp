@@ -147,18 +147,19 @@ void AbstractCacheHelper::clear(){
     std::vector<std::pair<U64,CacheEntry*> > backUp;
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
-            if(entry->isMemoryMappedEntry()){
-                MemoryMappedEntry* mmapEntry = dynamic_cast<MemoryMappedEntry*>(entry);
-                if(mmapEntry){
-                    if(QFile::exists(mmapEntry->path().c_str())){
-                        QFile::remove(mmapEntry->path().c_str());
-                    }
+        assert(entry);
+        if (entry->isMemoryMappedEntry()) {
+            MemoryMappedEntry* mmapEntry = dynamic_cast<MemoryMappedEntry*>(entry);
+            if (mmapEntry) {
+                if(QFile::exists(mmapEntry->path().c_str())){
+                    QFile::remove(mmapEntry->path().c_str());
                 }
             }
-            _size -= entry->size();
-        if(entry->isRemovable()){
+        }
+        _size -= entry->size();
+        if (entry->isRemovable()) {
             delete entry;
-        }else{
+        } else {
             backUp.push_back(make_pair(it->first,it->second));
         }
     }
@@ -192,20 +193,22 @@ bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
     }
     std::pair<U64,CacheEntry*> evicted = _cache.insert(key,entry,evict);
     
-    if(evicted.second){
+    if (evicted.second) {
         /*while we removed an entry from the cache that must not be removed, we insert it again.
          If all the entries in the cache cannot be removed (in theory it should never happen), the
          last one will be evicted.*/
         
         while(!evicted.second->isRemovable()) {
             evicted = _cache.insert(key,entry,true);
+            assert(evicted.second);
         }
         _size -= evicted.second->size();
         
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
-        if(evicted.second->isMemoryMappedEntry()){
+        if (evicted.second->isMemoryMappedEntry()) {
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
-            if(mmEntry){
+            if (mmEntry) {
+                assert(mmEntry->getMappedFile());
                 std::string path = mmEntry->getMappedFile()->path();
                 QFile::remove(path.c_str());
             }
@@ -236,14 +239,15 @@ bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
         _inMemorySize += mmEntry->size();
     }
     std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
-    if(evicted.second){
-        if(evicted.second->isRemovable()){
+    if (evicted.second) {
+        if (evicted.second->isRemovable()) {
             /*switch the evicted entry from memory to the disk.*/
             MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
+            assert(mmEvictedEntry);
             mmEvictedEntry->deallocate();
             _inMemorySize -= mmEvictedEntry->size();
             return AbstractCacheHelper::add(evicted.first, evicted.second);
-        }else{
+        } else {
             /*We risk an infinite loop here. It might happen if all entries in the cache cannot be removed.
              This is bad design if all entries in the cache cannot be removed, this means that they all live
              in memory and that you shouldn't use a disk cache for this purpose.*/
