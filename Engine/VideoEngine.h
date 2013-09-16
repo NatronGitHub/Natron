@@ -346,8 +346,10 @@ private:
     
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
+    QMutex _abortedMutex; //!< protects _aborted
     bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
     
+    QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine*/
     
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
@@ -362,12 +364,13 @@ private:
                                                  Worker::finishComputeFrameRequest()*/    
     QVector<Row*> _sequence;
 
-    QWaitCondition* _openGLCondition;
+    QWaitCondition* _openGLCondition; // FIXME: where is the counter associated with this condition???
+    QMutex* _mutex; // FIXME: xhat does this mutex protect???
     
     QWaitCondition _startCondition;
-    
-    QMutex* _mutex;
-    
+    QMutex _startMutex; //!< protects _startCount
+    int _startCount;
+
     RunArgs _lastRunArgs;
         
     LastFrameInfos _lastFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/

@@ -57,7 +57,8 @@ using namespace Powiter;
  *@param current_frame[in] The frame number in the sequence to decode.
  */
 
-bool metaReadHeader(Reader* reader,int current_frame){
+bool metaReadHeader(Reader* reader,int current_frame) {
+    assert(reader);
     if(!reader->readCurrentHeader(current_frame))
         return false;
     return true;
@@ -68,7 +69,8 @@ bool metaReadHeader(Reader* reader,int current_frame){
  *@param reader[in] A pointer to the reader that will read the data.
  *@param current_frame[in] The frame number in the sequence to decode.
  */
-void metaReadData(Reader* reader,int current_frame){
+void metaReadData(Reader* reader,int current_frame) {
+    assert(reader);
     reader->readCurrentData(current_frame);
 }
 
@@ -78,6 +80,8 @@ void metaReadData(Reader* reader,int current_frame){
  *@param output[in] The output node of the graph.
  */
 void metaEnginePerRow(Row* row, Node* output){
+    assert(row);
+    assert(output);
     output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     delete row;
     // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
@@ -112,6 +116,9 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         ViewerNode* viewer = _dag.outputAsViewer();
+        assert(viewer);
+        assert(viewer->getUiContext());
+        assert(viewer->getUiContext()->viewer);
         zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
         emit engineStarted(forward);
     }else{
@@ -162,9 +169,13 @@ void VideoEngine::stopEngine(){
 void VideoEngine::run(){
     
     for(;;){ // infinite loop
-        
-        if(_mustQuit)
-            return;
+
+        {
+            QMutexLocker locker(&_mustQuitMutex);
+            if(_mustQuit) {
+                return;
+            }
+        }
         
         
         /*Locking out other rendering tasks so 1 VideoEngine gets access to all
@@ -185,9 +196,10 @@ void VideoEngine::run(){
         /*beginRenderAction for all openFX nodes*/
         for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             OfxNode* n = dynamic_cast<OfxNode*>(*it);
-            if(n){
+            if(n) {
                 OfxPointD renderScale;
                 renderScale.x = renderScale.y = 1.0;
+                assert(n->effectInstance());
                 n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
             }
         }
@@ -200,27 +212,27 @@ void VideoEngine::run(){
         if (!_dag.isOutputAViewer()) {
             if(!_dag.isOutputAnOpenFXNode()){
                 assert(writer);
-                if(!_lastRunArgs._recursiveCall){
-                    lastFrame = writer->getTimeLine().lastFrame();
-                    currentFrame = writer->getTimeLine().firstFrame();
-                    writer->getTimeLine().seek(writer->getTimeLine().firstFrame());
-                    
-                }else{
-                    lastFrame = writer->getTimeLine().lastFrame();
-                    writer->getTimeLine().incrementCurrentFrame();
-                    currentFrame = writer->getTimeLine().currentFrame();
+                TimeLine& t = writer->getTimeLine();
+                if (!_lastRunArgs._recursiveCall) {
+                    lastFrame = t.lastFrame();
+                    currentFrame = t.firstFrame();
+                    t.seek(t.firstFrame());
+                } else {
+                    lastFrame = t.lastFrame();
+                    t.incrementCurrentFrame();
+                    currentFrame = t.currentFrame();
                 }
-            }else{
+            } else {
                 assert(ofxOutput);
-                if(!_lastRunArgs._recursiveCall){
-                    lastFrame = ofxOutput->getTimeLine().lastFrame();
-                    currentFrame = ofxOutput->getTimeLine().firstFrame();
-                    ofxOutput->getTimeLine().seek(ofxOutput->getTimeLine().firstFrame());
-                    
-                }else{
-                    lastFrame = ofxOutput->getTimeLine().lastFrame();
-                    ofxOutput->getTimeLine().incrementCurrentFrame();
-                    currentFrame = ofxOutput->getTimeLine().currentFrame();
+                TimeLine& t = ofxOutput->getTimeLine();
+                if (!_lastRunArgs._recursiveCall) {
+                    lastFrame = t.lastFrame();
+                    currentFrame = t.firstFrame();
+                    t.seek(t.firstFrame());
+                } else {
+                    lastFrame = t.lastFrame();
+                    t.incrementCurrentFrame();
+                    currentFrame = t.currentFrame();
                 }
             }
         }
@@ -242,25 +254,34 @@ void VideoEngine::run(){
             stopEngine();
             emit doRunTasks();
             //runTasks();
-            _mutex->lock();
-            _startCondition.wait(_mutex);
-            _mutex->unlock();
+            {
+                QMutexLocker locker(&_startMutex);
+                while(_startCount <= 0) {
+                    _startCondition.wait(_mutex);
+                }
+                --_startCount;
+            }
             continue;
         }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
             /*stoping the engine for writers*/
             stopEngine();
-            _mutex->lock();
-            _startCondition.wait(_mutex);
-            _mutex->unlock();
+            {
+                QMutexLocker locker(&_startMutex);
+                while(_startCount <= 0) {
+                    _startCondition.wait(_mutex);
+                }
+                --_startCount;
+            }
             continue;
         }
         
         
         
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){ //openfx viewers are UNSUPPORTED
+            assert(viewer);
             /*Determine what is the current frame when output is a viewer*/
             /*!recursiveCall means this is the first time it's called for the sequence.*/
-            if(!_lastRunArgs._recursiveCall){
+            if (!_lastRunArgs._recursiveCall) {
                 currentFrame = viewer->getTimeLine().currentFrame();
                 firstFrame = _dag.firstFrame();
                 lastFrame = _dag.lastFrame();
@@ -274,13 +295,14 @@ void VideoEngine::run(){
                 }
                 viewer->getTimeLine().seek(currentFrame);
                 
-            }else{ // if the call is recursive, i.e: the next frame in the sequence
+            } else { // if the call is recursive, i.e: the next frame in the sequence
                 /*clear the node cache, as it is very unlikely the user will re-use
                  data from previous frame.*/
                 //  NodeCache::getNodeCache()->clear();
                 lastFrame = _dag.lastFrame();
                 firstFrame = _dag.firstFrame();
-                if(_lastRunArgs._forward){
+                assert(_dag.outputAsViewer());
+                if (_lastRunArgs._forward) {
                     currentFrame = _dag.outputAsViewer()->currentFrame()+1;
                     if(currentFrame > lastFrame){
                         if(_loopMode)
@@ -290,7 +312,7 @@ void VideoEngine::run(){
                             return;
                         }
                     }
-                }else{
+                } else {
                     currentFrame  = _dag.outputAsViewer()->currentFrame()-1;
                     if(currentFrame < firstFrame){
                         if(_loopMode)
@@ -310,8 +332,10 @@ void VideoEngine::run(){
         const std::vector<Node*>& inputs = _dag.getInputs();
         for(U32 j=0;j<inputs.size();++j) {
             Node* currentInput=inputs[j];
+            assert(currentInput);
             if(currentInput->className() == string("Reader")){
                 Reader* inp = static_cast<Reader*>(currentInput);
+                assert(inp);
                 inp->fitFrameToViewer(_lastRunArgs._fitToViewer);
                 readers << inp;
             }
@@ -322,19 +346,27 @@ void VideoEngine::run(){
         for (int i = 0; i < readHeaderResults.size(); i++) {
             if (readHeaderResults.at(i) == false) {
                 stopEngine();
-                _mutex->lock();
-                _startCondition.wait(_mutex);
-                _mutex->unlock();
+                {
+                    QMutexLocker locker(&_startMutex);
+                    while(_startCount <= 0) {
+                        _startCondition.wait(_mutex);
+                    }
+                    --_startCount;
+                }
                 continue;
             }
         }
         
         _dag.validate(true);
-        
+
+        assert(_dag.getOutput());
         const Format &_dispW = _dag.getOutput()->info().displayWindow();
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+        if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
+            assert(viewer);
             viewer->makeCurrentViewer();
-            if(_lastRunArgs._fitToViewer){
+            if (_lastRunArgs._fitToViewer) {
+                assert(viewer->getUiContext());
+                assert(viewer->getUiContext()->viewer);
                 viewer->getUiContext()->viewer->fitToFormat(_dispW);
                 _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
             }
@@ -352,6 +384,9 @@ void VideoEngine::run(){
         float zoomFactor = 0.f;
         float byteMode = 0.f;
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+            assert(viewer);
+            assert(viewer->getUiContext());
+            assert(viewer->getUiContext()->viewer);
             viewer->getUiContext()->viewer->drawing(true);
             
             std::pair<int,int> rowSpan = viewer->getUiContext()->viewer->computeRowSpan(rows,_dispW);
@@ -384,7 +419,7 @@ void VideoEngine::run(){
             
             iscached = ViewerCache::getViewerCache()->get(key);
             /*Found in viewer cache, we execute the cached engine and leave*/
-            if(iscached){
+            if (iscached) {
                 _lastFrameInfos._cachedEntry = iscached;
 
                 /*Checking that the entry retrieve matches absolutely what we
@@ -404,6 +439,7 @@ void VideoEngine::run(){
                 emit doCachedEngine();
                 _openGLCondition->wait(_mutex);
                 _mutex->unlock();
+                assert(_lastFrameInfos._cachedEntry);
                 _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
                 engineLoop();
                 _model->getGeneralMutex()->unlock();
@@ -432,17 +468,20 @@ void VideoEngine::run(){
             _mutex->unlock();
         }
         
-        if(!_lastRunArgs._sameFrame){
+        if (!_lastRunArgs._sameFrame) {
+            assert(NodeCache::getNodeCache());
             NodeCache::getNodeCache()->clear();
         }
         ChannelSet outChannels;
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+        if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
+            assert(viewer);
+            assert(viewer->getUiContext());
             outChannels = viewer->getUiContext()->displayChannels();
-        }
-        else{// channels requested are those requested by the user
-            if(!_dag.isOutputAnOpenFXNode()){
+        } else {// channels requested are those requested by the user
+            if (!_dag.isOutputAnOpenFXNode()) {
+                assert(writer);
                 outChannels = writer->requestedChannels();
-            }else{
+            } else {
                 //openfx outputs can only output RGBA
                 outChannels = Mask_RGBA;
             }
@@ -454,6 +493,7 @@ void VideoEngine::run(){
         
         for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
             Row* row = new Row(x,*it,r,outChannels);
+            assert(row);
             row->zoomedY(counter);
             // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
 //            if(counter%10 == 0){
@@ -472,7 +512,11 @@ void VideoEngine::run(){
             //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
             //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
             //panning/zooming.
+            assert(viewer);
+            assert(viewer->getUiContext());
+            assert(viewer->getUiContext()->viewer);
             viewer->getUiContext()->viewer->stopDisplayingProgressBar();
+            assert(ViewerCache::getViewerCache());
             FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key,
                                                                         _treeVersion,
                                                                         zoomFactor,
@@ -484,13 +528,19 @@ void VideoEngine::run(){
                                                                         _dispW);
             
             if(entry){
+                assert(entry->getMappedFile());
+                assert(entry->getMappedFile()->data());
+                assert(viewer->getUiContext());
+                assert(viewer->getUiContext()->viewer);
+                assert(viewer->getUiContext()->viewer->getFrameData());
                 memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
                 entry->removeReference(); // removing reference as we're done with the entry.
             }
             
             
-        }else if(!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+        } else if (!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             /*if the output is a writer we actually start writing on disk now*/
+            assert(_dag.outputAsWriter());
             _dag.outputAsWriter()->startWriting();
         }
         engineLoop();
@@ -633,46 +683,54 @@ void VideoEngine::repeatSameFrame(bool initViewer){
     }
 }
 
-VideoEngine::VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent):QThread(parent),
-_model(model),
-_working(false),
-_aborted(false),
-_mustQuit(false),
-_treeVersionValid(false),
-_loopMode(true),
-_autoSaveOnNextRun(false),
-_openGLCondition(openGLCondition),
-_mutex(mutex)
+VideoEngine::VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent)
+: QThread(parent)
+, _model(model)
+, _waitingTasks()
+, _working(false)
+, _dag()
+, _timer(new Timer)
+, _abortedMutex()
+, _aborted(false)
+, _mustQuitMutex()
+, _mustQuit(false)
+, _treeVersion(0)
+, _treeVersionValid(false)
+, _loopMode(true)
+, _autoSaveOnNextRun(false)
+, _workerThreadsWatcher(new QFutureWatcher<void>)
+, _sequence()
+, _openGLCondition(openGLCondition)
+, _mutex(mutex)
+, _startCondition()
+, _startMutex()
+, _startCount(0)
+, _lastRunArgs()
+, _lastFrameInfos()
+, _lastComputeFrameTime()
 {
     
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
     connect(this, SIGNAL(doRunTasks()), this, SLOT(runTasks()));
-    _workerThreadsWatcher = new QFutureWatcher<void>;
     //  connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)),Qt::QueuedConnection);
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
-    
-    _timer=new Timer();
-    //_threadPool = new QThreadPool;
-    
-    
-    
 }
 
 VideoEngine::~VideoEngine(){
     _workerThreadsWatcher->waitForFinished();
-    //  _threadPool->waitForDone();
-    _mutex->lock();
-    _aborted = true;
-    _startCondition.wakeOne();
-    _mutex->unlock();
+    {
+        QMutexLocker locker(&_abortedMutex);
+        _aborted = true;
+    }
+    {
+        QMutexLocker locker(&_startMutex);
+        ++_startCount;
+        _startCondition.wakeOne();
+    }
     wait();
-    delete _workerThreadsWatcher;
-    //  delete _threadPool;
-    delete _timer;
-    
 }
 
 
@@ -683,9 +741,10 @@ void VideoEngine::setDesiredFPS(double d){
 
 void VideoEngine::abort(){
     _workerThreadsWatcher->cancel();
-    _mutex->lock();
-    _aborted=true;
-    _mutex->unlock();
+    {
+        QMutexLocker locker(&_abortedMutex);
+        _aborted = true;
+    }
     if(_dag.outputAsViewer()){
         emit engineStopped();
     }
@@ -1058,10 +1117,15 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     }
 }
 void VideoEngine::quitEngineThread(){
-    _mutex->lock();
-    _mustQuit = true;
-    _startCondition.wakeOne();
-    _mutex->unlock();
+    {
+        QMutexLocker locker(&_mustQuitMutex);
+        _mustQuit = true;
+    }
+    {
+        QMutexLocker locker(&_startMutex);
+        ++_startCount;
+        _startCondition.wakeOne();
+    }
 }
 
 void VideoEngine::toggleLoopMode(bool b){
