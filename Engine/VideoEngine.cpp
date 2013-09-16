@@ -675,6 +675,7 @@ void VideoEngine::updateDisplay(){
     }else{
         glViewport (0, 0, width, height/ap);
     }
+    viewer->updateColorPicker();
     viewer->updateGL();
 }
 
@@ -777,7 +778,7 @@ void VideoEngine::startPause(bool c){
 }
 void VideoEngine::startBackward(bool c){
     
-    if(_dag.outputAsViewer()->getUiContext()->play_Forward_Button->isChecked()){
+    if(_working){
         abort();
         return;
     }

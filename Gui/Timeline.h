@@ -57,6 +57,8 @@ class TimeLineGui : public QWidget{
     
 signals:
     void positionChanged(int);
+    void currentFrameChanged(int);
+    
 public slots:
     void seek(int);
     void seek(double d){seek((int)d);}

@@ -1094,13 +1094,12 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         if(!_infoViewer->colorAndMouseVisible()){
             _infoViewer->showColorAndMouseInfo();
         }
-        QVector4D color = getColorUnderMouse(event->x(), event->y());
-        _infoViewer->setColor(color);
+        VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
+        if(videoEngine && !videoEngine->isWorking()){
+            updateColorPicker(event->x(),event->y());
+        }
         _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
         emit infoMousePosChanged();
-        VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
-        if(videoEngine && !videoEngine->isWorking())
-            emit infoColorUnderMouseChanged();
     }else{
         if(_infoViewer->colorAndMouseVisible()){
             _infoViewer->hideColorAndMouseInfo();
@@ -1126,6 +1125,30 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         
     }
 }
+void ViewerGL::updateColorPicker(int x,int y){
+    QPoint pos;
+    bool xInitialized = false;
+    bool yInitialized = false;
+    if(x != INT_MAX){
+        xInitialized = true;
+        pos.setX(x);
+    }
+    if(y != INT_MAX){
+        yInitialized = true;
+        pos.setY(y);
+    }
+    QPoint currentPos = mapFromGlobal(QCursor::pos());
+    if(!xInitialized){
+        pos.setX(currentPos.x());
+    }
+    if(!yInitialized){
+        pos.setY(currentPos.y());
+    }
+    QVector4D color = getColorUnderMouse(pos.x(),pos.y());
+    _infoViewer->setColor(color);
+    emit infoColorUnderMouseChanged();
+}
+
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
     
@@ -1221,13 +1244,13 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 }
 
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
-    VideoEngine* videoEngine = _viewerTab->getGui()->getApp()->getVideoEngine();
-    if(videoEngine && videoEngine->isWorking()) return QVector4D(0,0,0,0);
+    
     QPointF pos = toImgCoordinates_fast(x, y);
     if(pos.x() < displayWindow().left() || pos.x() >= displayWindow().width() || pos.y() < displayWindow().bottom() || pos.y() >=displayWindow().height())
         return QVector4D(0,0,0,0);
     if(byteMode()==1 || !_hasHW){
         U32 pixel;
+        glReadBuffer(GL_FRONT);
         glReadPixels( x, height()-y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
         U8 r=0,g=0,b=0,a=0;
         b |= pixel;

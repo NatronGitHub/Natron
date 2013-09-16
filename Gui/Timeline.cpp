@@ -283,12 +283,14 @@ void TimeLineGui::changeLast(int v){
 void TimeLineGui::seek(int v){
     if(v >=_first && v<=_last)
         _timeLine.seek_noEmit(v);
+    emit currentFrameChanged(v);
     repaint();
 }
 
 void TimeLineGui::seek_notSlot(int v){
     if(v >=_first && v<=_last)
         _timeLine.seek_noEmit(v);
+    emit currentFrameChanged(v);
     QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
 

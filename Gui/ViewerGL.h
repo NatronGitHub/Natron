@@ -627,6 +627,8 @@ class ViewerTab;
              **/
             void updateExposure(double);
             
+            void updateColorPicker(int x = INT_MAX,int y = INT_MAX);
+            
             
             /**
              *@brief Updates the Viewer with what has been computed so far in the texture.
