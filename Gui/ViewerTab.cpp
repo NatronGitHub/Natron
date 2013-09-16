@@ -548,7 +548,7 @@ ViewerTab::~ViewerTab()
 
 void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     if(event->key() == Qt::Key_Space){
-        releaseKeyboard();
+        //releaseKeyboard();
         if(_maximized){
             _maximized=false;
             _gui->minimize();

@@ -258,7 +258,7 @@ bool NodeGraph::event(QEvent* event){
         QKeyEvent *ke = static_cast<QKeyEvent*>(event);
         if (ke &&  ke->key() == Qt::Key_Tab && _nodeCreationShortcutEnabled ) {
             if(smartNodeCreationEnabled){
-                releaseKeyboard();
+                //releaseKeyboard();
                 QPoint global = mapToGlobal(oldp.toPoint());
                 SmartInputDialog* nodeCreation=new SmartInputDialog(this);
                 nodeCreation->move(global.x(), global.y());
@@ -342,11 +342,9 @@ void NodeGraph::connectCurrentViewerToSelection(int inputNB){
 void NodeGraph::enterEvent(QEvent *event)
 {
     QGraphicsView::enterEvent(event);
-    if(smartNodeCreationEnabled){
-        
+    if (smartNodeCreationEnabled) {
         _nodeCreationShortcutEnabled=true;
-        setFocus();
-        grabKeyboard();
+        setFocus(); // grabKeyboard();
     }
 }
 void NodeGraph::leaveEvent(QEvent *event)
@@ -355,7 +353,7 @@ void NodeGraph::leaveEvent(QEvent *event)
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
         setFocus();
-        releaseKeyboard();
+        //releaseKeyboard();
     }
 }
 
@@ -824,7 +822,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
     textEdit->setFocusPolicy(Qt::StrongFocus);
     setFocusProxy(textEdit->lineEdit());
     textEdit->lineEdit()->setFocus(Qt::ActiveWindowFocusReason);
-    textEdit->grabKeyboard();
+    textEdit->setFocus(); // textEdit->grabKeyboard();
     installEventFilter(this);
 
 
@@ -836,7 +834,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
             graph->getGui()->getApp()->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
-            textEdit->releaseKeyboard();
+            //textEdit->releaseKeyboard();
 
             graph->setFocus(Qt::ActiveWindowFocusReason);
             delete this;
@@ -848,7 +846,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     }else if(e->key()== Qt::Key_Escape){
         graph->setSmartNodeCreationEnabled(true);
         graph->setMouseTracking(true);
-        textEdit->releaseKeyboard();
+        //textEdit->releaseKeyboard();
 
         graph->setFocus(Qt::ActiveWindowFocusReason);
 
@@ -864,7 +862,7 @@ bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     if(e->type()==QEvent::Close){
         graph->setSmartNodeCreationEnabled(true);
         graph->setMouseTracking(true);
-        textEdit->releaseKeyboard();
+        //textEdit->releaseKeyboard();
 
         graph->setFocus(Qt::ActiveWindowFocusReason);
 
