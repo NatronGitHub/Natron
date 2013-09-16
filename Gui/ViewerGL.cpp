@@ -578,18 +578,19 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& displayWindow){
+std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vector<int>* rows) {
     /*First off,we test the 1st and last row to check wether the
      image is contained in the viewer*/
     // testing top of the image
+    assert(rows);
+    assert(rows->size() == 0);
     std::pair<int,int> ret;
     int y = 0;
-    int res = -1;
     int prev = -1;
-    res = toImgCoordinates_fast(0,y).y();
-    if (res < 0) { // all the image is above the viewer
-        ret.first = displayWindow.bottom();
-        ret.second = displayWindow.height()-1;
+    double res = toImgCoordinates_fast(0,y).y();
+    ret.first = displayWindow.bottom();
+    ret.second = displayWindow.top()-1;
+    if (res < 0.) { // all the image is above the viewer
         return ret; // do not add any row
     }
     // testing bottom now
@@ -597,38 +598,44 @@ std::pair<int,int> ViewerGL::computeRowSpan(std::vector<int>& rows,const Box2D& 
     res = toImgCoordinates_fast(0,y).y();
     /*for all the others row (apart the first and last) we can check.
      */
-    while(res < 0 && y >= 0){
+    while(y >= 0 && res < displayWindow.bottom()){
         /*while y is an invalid line, iterate*/
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
-    while(res < displayWindow.height() && y >= 0){
+    while(y >= 0 && res >= displayWindow.bottom() && res < displayWindow.top()){
         /*y is a valid line in widget coord && res contains the image y coord.*/
-        if(res != prev){
-            rows.push_back(res);
-            prev = res;
+        int row = std::floor(res);
+        assert(row >= displayWindow.bottom() && row < displayWindow.top());
+        if(row != prev){
+            rows->push_back(row);
+            prev = row;
         }
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
-    if(rows.size() > 0){
-        ret.first = rows.front();
-        ret.second = rows.back();
+    if(rows->size() > 0){
+        ret.first = rows->front();
+        ret.second = rows->back();
     }
+    assert(ret.first >= displayWindow.bottom() && ret.first < displayWindow.top());
+    assert(ret.second >= displayWindow.bottom() && ret.second < displayWindow.top());
     return ret;
 }
-std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const Box2D& displayWindow){
+
+std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::vector<int>* columns) {
     /*First off,we test the 1st and last columns to check wether the
      image is contained in the viewer*/
     // testing right of the image
+    assert(columns);
+    assert(columns->size() == 0);
     std::pair<int,int> ret;
     int x = width()-1;
-    int res = -1;
     int prev = -1;
-    res = toImgCoordinates_fast(x,0).x();
-    if (res < 0) { // all the image is on the left of the viewer
-        ret.first = displayWindow.left();
-        ret.second = displayWindow.width()-1;
+    double res = toImgCoordinates_fast(x,0).x();
+    ret.first = displayWindow.left();
+    ret.second = displayWindow.right()-1;
+    if (res < 0.) { // all the image is on the left of the viewer
         _textureColumns.clear();
         return ret;
     }
@@ -637,25 +644,29 @@ std::pair<int,int> ViewerGL::computeColumnSpan(std::vector<int>& columns,const B
     res = toImgCoordinates_fast(x,0).x();
     /*for all the others columns (apart the first and last) we can check.
      */
-    while(res < 0 && x < width()){
+    while(x < width() && res < displayWindow.left()) {
         /*while x is an invalid column, iterate from left to right*/
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
-    while(res < displayWindow.width() && x < width()){
+    while(x < width() && res >= displayWindow.left() && res < displayWindow.right()) {
         /*y is a valid column in widget coord && res contains the image x coord.*/
-        if(res != prev){
-            columns.push_back(res);
-            prev = res;
+        int column = std::floor(res);
+        assert(column >= displayWindow.left() && column < displayWindow.right());
+        if(column != prev){
+            columns->push_back(column);
+            prev = column;
         }
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
-    if(columns.size() > 0){
-        ret.first = columns.front();
-        ret.second = columns.back();
+    if(columns->size() > 0){
+        ret.first = columns->front();
+        ret.second = columns->back();
     }
-    _textureColumns = columns;
+    assert(ret.first >= displayWindow.left() && ret.first < displayWindow.right());
+    assert(ret.second >= displayWindow.left() && ret.second < displayWindow.right());
+    _textureColumns = *columns;
     return ret;
 }
 

@@ -392,8 +392,8 @@ void VideoEngine::run(){
             assert(viewer->getUiContext()->viewer);
             viewer->getUiContext()->viewer->drawing(true);
             
-            std::pair<int,int> rowSpan = viewer->getUiContext()->viewer->computeRowSpan(rows,_dispW);
-            std::pair<int,int> columnSpan = viewer->getUiContext()->viewer->computeColumnSpan(columns, _dispW);
+            std::pair<int,int> rowSpan = viewer->getUiContext()->viewer->computeRowSpan(_dispW, &rows);
+            std::pair<int,int> columnSpan = viewer->getUiContext()->viewer->computeColumnSpan(_dispW, &columns);
             
             TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
             

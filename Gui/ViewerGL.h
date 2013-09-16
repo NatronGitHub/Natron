@@ -431,12 +431,12 @@ class ViewerTab;
              *@param zoomFactor[in] The zoom factor applied to the display window.
              *@return Returns a pair with the first row index and the last row indexes.
              **/
-            std::pair<int,int> computeRowSpan(std::vector<int>& rows,const Box2D& displayWindow);
+            std::pair<int,int> computeRowSpan(const Box2D& displayWindow, std::vector<int>* rows);
             
             /**
              *@brief same as computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow) but for columns.
              **/
-            std::pair<int,int> computeColumnSpan(std::vector<int>& columns,const Box2D& displayWindow);
+            std::pair<int,int> computeColumnSpan(const Box2D& displayWindow, std::vector<int>* columns);
             
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
