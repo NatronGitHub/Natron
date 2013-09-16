@@ -79,7 +79,10 @@ AppInstance::AppInstance(int appID,const QString& projectName)
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
         QString name = _toolButtons[i]->_pluginName;
-        if (_toolButtons[i]->_groups.size() >= 1) {
+        if (_toolButtons[i]->_groups.size() >= 1 &&
+            name != "Reader" &&
+            name != "Viewer" &&
+            name != "Writer") {
             name.append("  [");
             name.append(_toolButtons[i]->_groups[0]);
             name.append("]");
@@ -675,7 +678,7 @@ void AppManager::loadBuiltinNodePlugins(){
     _nodeNames.append("Viewer");
     _nodeNames.append("Writer");
     QStringList grouping;
-    grouping.push_back("io");
+    grouping.push_back("IO");
     addPluginToolButtons(grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
     addPluginToolButtons(grouping, "Viewer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
     addPluginToolButtons(grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");

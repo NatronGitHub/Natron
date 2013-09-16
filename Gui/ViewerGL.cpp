@@ -517,7 +517,6 @@ void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
  	//glClearColor(0.0,0.0,0.0,1.0);
 	//glClear(GL_COLOR_BUFFER_BIT);
-    checkFrameBufferCompleteness("initializeGL:");
     _blackTex = new Texture;
     _defaultDisplayTexture = new Texture;
     glGenBuffersARB(2, &_pboIds[0]);
