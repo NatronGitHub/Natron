@@ -70,10 +70,13 @@ OfxNode::OfxNode(Model* model,
      All these subclasses need a valid pointer to an OfxNode. Hence we need to set the pointer to the OfxNode in 
      OfxImageEffect BEFORE calling populate(). 
      */
-    plugin->getPluginHandle();
+    assert(plugin);
+    OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
+    (void)ph;
     OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
     if (desc) {
         effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
+        assert(effect_);
         effect_->setOfxNodePointer(this);
         effect_->populate();
     }

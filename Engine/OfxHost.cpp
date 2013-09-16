@@ -170,19 +170,27 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
             }
         }
     }
-    bool rval ;
+    bool rval = false;
     try{
         rval = plugin->getPluginHandle();
     } catch (const std::exception &e) {
-        std::cout << "Could not get plugin handle:" << e.what() << std::endl;
+        std::cout << "Error: Could not get plugin handle for plugin \"" << name << "\":" << e.what() << std::endl;
     }
     if(!rval) {
         return NULL;
     }
-    OfxNode* node = new OfxNode(model,plugin,context) ;
-    Powiter::OfxImageEffectInstance* ofxInstance = node->effectInstance();
-    ofxInstance->createInstanceAction();
-    ofxInstance->getClipPreferences();
+    OfxNode* node = new OfxNode(model,plugin,context);
+    assert(node);
+    Powiter::OfxImageEffectInstance* effect = node->effectInstance();
+    if (effect) {
+        effect->createInstanceAction();
+        effect->getClipPreferences();
+    } else {
+        std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
+        delete node;
+        node = NULL;
+    }
+
     return node;
 }
 
