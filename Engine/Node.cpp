@@ -408,6 +408,11 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     /*Recursive call to parents and add their hash key*/
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if(it->second){
+            if(className() == "Viewer"){
+                ViewerNode* v = dynamic_cast<ViewerNode*>(this);
+                if(it->first!=v->activeInput())
+                    continue;
+            }
             it->second->computeTreeHash(alreadyComputedHash);
             _hashValue.append(it->second->hash().value());
         }

@@ -383,7 +383,6 @@ void VideoEngine::run(){
             
             
             iscached = ViewerCache::getViewerCache()->get(key);
-            
             /*Found in viewer cache, we execute the cached engine and leave*/
             if(iscached){
                 _lastFrameInfos._cachedEntry = iscached;
@@ -474,22 +473,21 @@ void VideoEngine::run(){
             //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
             //panning/zooming.
             viewer->getUiContext()->viewer->stopDisplayingProgressBar();
-            if(!_lastRunArgs._sameFrame){
-                FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key,
-                                                                            _treeVersion,
-                                                                            zoomFactor,
-                                                                            exposure,
-                                                                            lut,
-                                                                            byteMode,
-                                                                            _lastFrameInfos._textureRect,
-                                                                            dataW,
-                                                                            _dispW);
-                
-                if(entry){
-                    memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
-                    entry->removeReference(); // removing reference as we're done with the entry.
-                }
+            FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key,
+                                                                        _treeVersion,
+                                                                        zoomFactor,
+                                                                        exposure,
+                                                                        lut,
+                                                                        byteMode,
+                                                                        _lastFrameInfos._textureRect,
+                                                                        dataW,
+                                                                        _dispW);
+            
+            if(entry){
+                memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
+                entry->removeReference(); // removing reference as we're done with the entry.
             }
+            
             
         }else if(!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             /*if the output is a writer we actually start writing on disk now*/
