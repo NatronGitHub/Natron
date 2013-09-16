@@ -15,7 +15,7 @@
 #include <map>
 #include <vector>
 #include "Global/Macros.h"
-
+#include "Global/GlobalDefines.h"
 namespace Powiter{
 
 #ifdef __POWITER_OSX__
@@ -42,7 +42,7 @@ public:
     
     LibraryBinary(LibraryBinary::LibraryType type);
     
-    LibraryBinary(const std::map<std::string,value_type>& functions);
+    LibraryBinary(const std::map<std::string,void*>& functions);
     
     LibraryBinary(const std::string& binaryPath);
     

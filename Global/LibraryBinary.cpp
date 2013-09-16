@@ -30,12 +30,18 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
     
 }
 
-LibraryBinary::LibraryBinary(const std::map<std::string,value_type>& functions)
+LibraryBinary::LibraryBinary(const std::map<string, void *> &functions)
 : _type(LibraryBinary::BUILTIN)
 , _library(0)
 , _valid(false)
 {
+#ifdef __POWITER_UNIX__
     _functions = functions;
+#else
+    for(std::map<string, void *>::const_iterator it = functions.begin();it!=functions.end();++it){
+        _functions.insert(make_pair(it->first,(HINSTANCE)it->second));
+    }
+#endif
 }
 
 LibraryBinary::LibraryBinary(const std::string& binaryPath)
@@ -73,7 +79,11 @@ bool LibraryBinary::loadBinary(const std::string& binaryPath) {
     _library = dlopen(binaryPath.c_str(),RTLD_LAZY);
 #endif
     if(!_library){
+#ifdef __POWITER_UNIX__
         std::cout << "Couldn't open library " << binaryPath  << ": " << dlerror() << std::endl;
+#else
+         std::cout << "Couldn't open library " << binaryPath  << std::endl;
+#endif
         _valid = false;
         return false;
     }
@@ -86,7 +96,7 @@ bool LibraryBinary::loadFunctions(const std::vector<std::string>& funcNames) {
     assert(_valid);
     for (U32 i = 0; i < funcNames.size(); ++i) {
 #ifdef __POWITER_WIN32__
-        value_type v = (value_type)GetProcAddress(_library,funcNames[i].c_str())
+        value_type v = (value_type)GetProcAddress(_library,funcNames[i].c_str());
 #elif defined(__POWITER_UNIX__)
         value_type v = (value_type)dlsym(_library,funcNames[i].c_str());
 #endif
@@ -107,7 +117,7 @@ LibraryBinary::~LibraryBinary() {
     }
     assert(_library);
 #ifdef __POWITER_WIN32__
-    FreeLibarary(_library);
+    FreeLibrary(_library);
 #elif defined(__POWITER_UNIX__)
     dlclose(_library);
 #endif

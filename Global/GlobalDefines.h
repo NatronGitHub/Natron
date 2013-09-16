@@ -14,9 +14,7 @@
 #include <utility>
 #if defined(_WIN32)
 #include <string>
-#define NOMINMAX ///< Qt5 bug workaround with qdatetime.h
 #include <windows.h>
-#define OPENEXR_DLL
 #endif
 
 #ifndef Q_MOC_RUN

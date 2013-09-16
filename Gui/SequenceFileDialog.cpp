@@ -1364,7 +1364,7 @@ QStringList SequenceFileDialog::selectedFiles(){
     QModelIndexList indexes = _view->selectionModel()->selectedRows();
     if(indexes.count() > 0){
         QDir dir = currentDirectory();
-        QString prefix = dir.absolutePath()+QDir::separator();
+        QString prefix = dir.absolutePath()+"/";
         QModelIndex sequenceIndex = indexes.at(0);
         QString path = sequenceIndex.data().toString();
         path = prefix+path;

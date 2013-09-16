@@ -13,6 +13,7 @@
 #include <cassert>
 #include <string>
 #include <map>
+#include <locale>
 
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
