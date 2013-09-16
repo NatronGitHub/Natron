@@ -148,10 +148,13 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     if (!isRunning()) {
         start(HighestPriority);
     } else {
-        _startCondition.wakeOne();
+        QMutexLocker locker(&_startMutex);
+        ++_startCount;
+       _startCondition.wakeOne();
     }
 }
-void VideoEngine::stopEngine(){
+
+void VideoEngine::stopEngine() {
     if(_dag.isOutputAViewer()){
         emit engineStopped();
 
@@ -438,7 +441,10 @@ void VideoEngine::run(){
                 {
                     QMutexLocker locker(&_openGLMutex);
                     emit doCachedEngine();
-                    _openGLCondition.wait(&_openGLMutex);
+                    while(_openGLCount <= 0) {
+                        _openGLCondition.wait(&_openGLMutex);
+                    }
+                    --_openGLCount;
                 }
                 assert(_lastFrameInfos._cachedEntry);
                 _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
@@ -465,9 +471,12 @@ void VideoEngine::run(){
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             QMutexLocker locker(&_openGLMutex);
             emit doFrameStorageAllocation();
-            _openGLCondition.wait(&_openGLMutex);
+            while(_openGLCount <= 0) {
+                _openGLCondition.wait(&_openGLMutex);
+            }
+            --_openGLCount;
         }
-        
+
         if (!_lastRunArgs._sameFrame) {
             assert(NodeCache::getNodeCache());
             NodeCache::getNodeCache()->clear();
@@ -580,8 +589,10 @@ void VideoEngine::engineLoop(){
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         QMutexLocker locker(&_openGLMutex);
         emit doUpdateViewer();
-        _openGLCondition.wait(&_openGLMutex);
-        
+        while(_openGLCount <= 0) {
+            _openGLCondition.wait(&_openGLMutex);
+        }
+        --_openGLCount;
     }
     _lastRunArgs._fitToViewer = false;
     _lastRunArgs._recursiveCall = true;
@@ -603,12 +614,14 @@ void VideoEngine::updateViewer(){
     _lastRunArgs._zoomFactor = viewer->getZoomFactor();
     
     updateDisplay(); // updating viewer & pixel aspect ratio if needed
+    ++_openGLCount;
     _openGLCondition.wakeOne();
 }
 
 void VideoEngine::cachedEngine(){
     QMutexLocker locker(&_openGLMutex);
     _dag.outputAsViewer()->cachedFrameEngine(_lastFrameInfos._cachedEntry);
+    ++_openGLCount;
     _openGLCondition.wakeOne();
 }
 
@@ -617,6 +630,7 @@ void VideoEngine::allocateFrameStorage(){
     _lastFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(
                                                 _lastFrameInfos._textureRect.w,
                                                _lastFrameInfos._textureRect.h);
+    ++_openGLCount;
     _openGLCondition.wakeOne();
 }
 

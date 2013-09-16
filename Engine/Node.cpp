@@ -11,8 +11,6 @@
 
 #include "Node.h"
 
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
 #include <QUndoStack>
 #include <QUndoCommand>
 

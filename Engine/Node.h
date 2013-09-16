@@ -28,10 +28,9 @@ class Row;
 class Model;
 class SettingsPanel;
 class Knob;
-class QMutex;
-class QWaitCondition;
 class QUndoCommand;
 class QUndoStack;
+
 class Node : public QObject
 {
     Q_OBJECT
