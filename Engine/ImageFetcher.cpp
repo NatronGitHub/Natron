@@ -36,10 +36,15 @@ void ImageFetcher::claimInterest(bool blocking){
     _results = new QFutureWatcher<Row*>;
     QObject::connect(_results, SIGNAL(resultReadyAt(int)), this, SLOT(notifyFinishedAt(int)));
     QObject::connect(_results, SIGNAL(finished()), this, SLOT(onCompletion()));
-    _results->setFuture(QtConcurrent::mapped(_sequence.begin(),_sequence.end(),
-                                               boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r)));
-    if(blocking){
-        _results->waitForFinished();
+    if(!blocking){
+        QFuture<Row*> future = QtConcurrent::mapped(_sequence.begin(),_sequence.end(),
+                                                    boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
+        _results->setFuture(future);
+    }else{
+        QVector<Row*> ret = QtConcurrent::blockingMapped(_sequence, boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
+        for (int i = 0; i < ret.size(); i++) {
+            _interest.insert(make_pair(ret.at(i)->y(),ret.at(i)));
+        }
     }
 }
 
