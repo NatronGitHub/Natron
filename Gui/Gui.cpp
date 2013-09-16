@@ -680,10 +680,6 @@ NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
     _graphScene=new QGraphicsScene(parent);
 	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
-    _nodeGraphArea->grabKeyboard();
-    _nodeGraphArea->releaseKeyboard();
-    _nodeGraphArea->setFocus();
-    
 }
 
 void Gui::splitPaneHorizontally(TabWidget* what){
