@@ -73,12 +73,23 @@ OfxNode::OfxNode(Model* model,
     assert(plugin);
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
     (void)ph;
-    OFX::Host::ImageEffect::Descriptor* desc = plugin->getContext(context);
+    OFX::Host::ImageEffect::Descriptor* desc = NULL;
+    try {
+        desc = plugin->getContext(context);
+    } catch (const std::exception &e) {
+        cout << "Error: Caught exception while creating OfxNode: " << e.what() << std::endl;
+        throw;
+    }
     if (desc) {
-        effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
-        assert(effect_);
-        effect_->setOfxNodePointer(this);
-        effect_->populate();
+        try {
+            effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
+            assert(effect_);
+            effect_->setOfxNodePointer(this);
+            effect_->populate();
+        } catch (const std::exception &e) {
+            cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
+            throw;
+        }
     }
     if(context == kOfxImageEffectContextGenerator){
         _canHavePreview = true;
