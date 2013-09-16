@@ -480,10 +480,6 @@ public:
    
     VideoEngine* getVideoEngine() const {return _videoEngine;}
     
-    QMutex* getEngineMutex() const {return _mutex;}
-    
-    QWaitCondition* getOpenGLCondition() const {return _openGLCondition;}
-    
     const TimeLine& getTimeLine() const {return _timeline;}
     
     TimeLine& getTimeLine(){return _timeline;}
@@ -498,10 +494,6 @@ protected:
 
     
 private:
-
-    
-    QMutex* _mutex;
-    QWaitCondition* _openGLCondition;
     VideoEngine* _videoEngine;
 };
 

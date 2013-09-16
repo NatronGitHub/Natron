@@ -364,8 +364,9 @@ private:
                                                  Worker::finishComputeFrameRequest()*/    
     QVector<Row*> _sequence;
 
-    QWaitCondition* _openGLCondition; // FIXME: where is the counter associated with this condition???
-    QMutex* _mutex; // FIXME: xhat does this mutex protect???
+    QWaitCondition _openGLCondition; // FIXME: where is the counter associated with this condition???
+    QMutex _openGLMutex; //!< protects *_openGLCount
+    int _openGLCount;
     
     QWaitCondition _startCondition;
     QMutex _startMutex; //!< protects _startCount
@@ -570,7 +571,7 @@ public:
      *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
      engine-wise synchronisaton;
      **/
-    VideoEngine(Model* model,QWaitCondition* openGLCondition,QMutex* mutex,QObject* parent = NULL);
+    VideoEngine(Model* model, QObject* parent = NULL);
     
     
     virtual ~VideoEngine();
