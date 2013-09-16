@@ -618,8 +618,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
         ret.first = rows->front();
         ret.second = rows->back();
     }
-    assert(ret.first >= displayWindow.bottom() && ret.first < displayWindow.top());
-    assert(ret.second >= displayWindow.bottom() && ret.second < displayWindow.top());
+    assert(ret.first >= displayWindow.bottom() && ret.first <= displayWindow.top() - 1);
+    assert(ret.second >= displayWindow.bottom() && ret.second <= displayWindow.top() - 1);
     return ret;
 }
 
