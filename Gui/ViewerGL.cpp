@@ -1145,6 +1145,7 @@ void ViewerGL::updateColorPicker(int x,int y){
         pos.setY(currentPos.y());
     }
     QVector4D color = getColorUnderMouse(pos.x(),pos.y());
+    //   cout << "r: " << color.x() << " g: " << color.y() << " b: " << color.z() << endl;
     _infoViewer->setColor(color);
     emit infoColorUnderMouseChanged();
 }
