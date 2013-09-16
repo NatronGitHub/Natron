@@ -12,7 +12,11 @@
 #include "ImageFetcher.h"
 
 #include <stdexcept>
+#if QT_VERSION < 0x050000
 #include <QtConcurrentMap>
+#else
+#include <QtConcurrent>
+#endif
 #include <QtGui/QImage>
 #include <boost/bind.hpp>
 
