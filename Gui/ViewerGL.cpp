@@ -860,10 +860,13 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     }
     /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine). 
      This buffer (frameData) might be NULL if we were running in cached mode.*/
+    // [FD]: where is ViewerNode::cachedEngine ?
     //assert(frameData);
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    checkGLErrors();
-    frameData = NULL;
+    if (frameData); {
+        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+        checkGLErrors();
+        frameData = NULL;
+    }
     if(byteMode() == 1.f || !_hasHW){
         //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
         //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
