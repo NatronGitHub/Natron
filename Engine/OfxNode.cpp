@@ -253,6 +253,20 @@ bool OfxNode::_validate(bool doFullWork){
     return true;
     
 }
+
+
+void OfxNode::openFilesForAllFileParams(){
+    const map<string,OFX::Host::Param::Instance*>& params = effect_->getParams();
+    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+        if(it->second->getType() == kOfxParamTypeString){
+            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+            assert(param);
+            param->ifFileKnobPopDialog();
+        }
+    }
+
+}
+
 void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, Row* out) {
     OfxRectI renderW;
     const Format& dispW = info().displayWindow();

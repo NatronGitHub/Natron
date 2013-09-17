@@ -402,12 +402,12 @@ public:
     virtual std::string serialize() const;
     
     void openFile(){
-        emit shoudOpenFile();
+        emit shouldOpenFile();
     }
     
 signals:
     void filesSelected();
-    void shoudOpenFile();
+    void shouldOpenFile();
     
 protected:
     
@@ -445,14 +445,14 @@ public:
     virtual std::string serialize() const;
     
     void openFile(){
-        emit shoudOpenFile();
+        emit shouldOpenFile();
     }
 
 signals:
     
     void filesSelected();
     
-    void shoudOpenFile();
+    void shouldOpenFile();
     
 protected:
     

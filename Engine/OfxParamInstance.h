@@ -336,6 +336,8 @@ public:
     // returns true if it is a file param and that it is not empty
     bool isValid() const;
     
+    void ifFileKnobPopDialog();
+    
     /*Returns the frame name according to the current pattern stored by this param
      for the frame frameIndex.*/
     std::string filenameFromPattern(int frameIndex) const;
