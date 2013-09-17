@@ -618,8 +618,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
         ret.first = rows->front();
         ret.second = rows->back();
     }
-    assert(ret.first >= displayWindow.bottom() && ret.first <= displayWindow.top() - 1);
-    assert(ret.second >= displayWindow.bottom() && ret.second <= displayWindow.top() - 1);
+    assert(ret.first >= displayWindow.bottom() && ret.first <= std::max(displayWindow.bottom(), displayWindow.top()-1));
+    assert(ret.second >= std::min(displayWindow.bottom(),displayWindow.top()-1) && ret.second < displayWindow.top());
     return ret;
 }
 
@@ -664,8 +664,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::
         ret.first = columns->front();
         ret.second = columns->back();
     }
-    assert(ret.first >= displayWindow.left() && ret.first < displayWindow.right());
-    assert(ret.second >= displayWindow.left() && ret.second < displayWindow.right());
+    assert(ret.first >= displayWindow.left() && ret.first <= std::max(displayWindow.left(), displayWindow.right()-1));
+    assert(ret.second >= std::min(displayWindow.left(),displayWindow.right()-1) && ret.second < displayWindow.right());
     _textureColumns = *columns;
     return ret;
 }
