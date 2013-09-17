@@ -27,9 +27,9 @@ public:
         U32 _mask;
     public:
         iterator(const iterator& other):_cur(other._cur),_mask(other._mask){}
-        iterator(U32 mask,Powiter::Channel cur){
+        iterator(U32 mask_, Powiter::Channel cur) {
             _cur = cur;
-            _mask = mask;
+            _mask = mask_;
         }
         Powiter::Channel operator *() const{return _cur;}
         Powiter::Channel operator->() const{return _cur;}

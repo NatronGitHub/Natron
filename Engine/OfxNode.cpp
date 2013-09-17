@@ -57,6 +57,8 @@ OfxNode::OfxNode(Model* model,
 : OutputNode(model)
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
+, _firstTimeMutex()
+, _firstTime(false)
 , _isOutput(false)
 , _preview(NULL)
 , _canHavePreview(false)
@@ -192,6 +194,7 @@ bool OfxNode::isInputOptional(int inpubNb) const {
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
 bool OfxNode::_validate(bool doFullWork){
+    QMutexLocker g(&_firstTimeMutex);
     _firstTime = true;
     _timeline.setFirstFrame(info().firstFrame());
     _timeline.setLastFrame(info().lastFrame());
@@ -264,7 +267,7 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
     OfxPointD renderScale;
     effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);
     {
-        QMutexLocker g(&_lock);
+        QMutexLocker g(&_firstTimeMutex);
         if(_firstTime){
             _firstTime = false;
             OfxStatus stat = effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
@@ -380,22 +383,24 @@ void OfxNode::computePreviewImage(){
     const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
     assert(img);
     OfxRectI bounds = img->getBounds();
-    int w = (bounds.x2-bounds.x1) < 64 ? (bounds.x2-bounds.x1) : 64;
-    int h = (bounds.y2-bounds.y1) < 64 ? (bounds.y2-bounds.y1) : 64;
-    float zoomFactor = (float)h/(float)(bounds.y2-bounds.y1);
+    int w = std::min(bounds.x2-bounds.x1, 64);
+    int h = std::min(bounds.y2-bounds.y1, 64);
+    double zoomFactor = (double)h/(bounds.y2-bounds.y1);
     for (int i = 0; i < h; ++i) {
-        float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearest);
+        double y = i / zoomFactor;
+        int nearestY = (int)(y+0.5);
+        OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearestY);
         QRgb *dst_pixels = (QRgb *) ret->scanLine(i);
         assert(src_pixels);
         for(int j = 0 ; j < w ; ++j) {
-            float x = (float)j*1.f/zoomFactor;
-            int nearestX;
-            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            double x = j / zoomFactor;
+            int nearestX = (int)(x+0.5);
             OfxRGBAColourF p = src_pixels[nearestX];
-            dst_pixels[j] = qRgba(p.r*255, p.g*255, p.b*255,p.a ? p.a*255 : 255);
+            uchar r = (uchar)std::min(p.r*256., 255.);
+            uchar g = (uchar)std::min(p.g*256., 255.);
+            uchar b = (uchar)std::min(p.b*256., 255.);
+            uchar a = (p.a != 0.) ? (uchar)std::min(p.a*256., 255.) : 255;
+            dst_pixels[j] = qRgba(r, g, b, a);
         }
     }
     _info.set_dataWindow(oldBox);

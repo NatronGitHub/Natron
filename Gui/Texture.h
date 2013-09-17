@@ -26,13 +26,13 @@ public:
     
     TextureRect() : x(0) , y(0) , r(0) , t(0) , w(0) , h(0) {}
     
-    TextureRect(int x,int y,int r,int t,int w,int h) :
-    x(x),
-    y(y),
-    r(r),
-    t(t),
-    w(w),
-    h(h){}
+    TextureRect(int x_, int y_, int r_, int t_, int w_, int h_) :
+    x(x_),
+    y(y_),
+    r(r_),
+    t(t_),
+    w(w_),
+    h(h_){}
     
     int x,y,r,t; // the edges of the texture. These are coordinates in the full size image
     int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t

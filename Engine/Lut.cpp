@@ -174,7 +174,7 @@ void Lut::fillTables() const {
     if(init_) return;
     //bool linearTrue = true; // linear() is a class property, no need to test it
     for (int i = 0; i < 0x10000; ++i) {
-        float inp = index_to_float(i);
+        float inp = index_to_float((U16)i);
         float f = to_byte(inp);
         //if(!isEqual_float(f, inp*255.f, 10000))
         //    linearTrue = false;
@@ -187,7 +187,7 @@ void Lut::fillTables() const {
         float f = from_byte((float)b);
         from_byte_table[b] = f;
         int i = hipart(f);
-        to_byte_table[i] = b*0x100;
+        to_byte_table[i] = (U16)(b*0x100);
     }
 
 }
@@ -298,10 +298,10 @@ void Lut::from_float(float* to, const float* from, const float* alpha, int W, in
 void Lut::to_byte(uchar* to, const float* from, int W, int delta ) const {
     assert(!linear());
     validate();
-    unsigned char* end = to+W*delta;
+    uchar* end = to+W*delta;
     int start = rand()%W;
     const float* q;
-    unsigned char* p;
+    uchar* p;
     unsigned error;
     validate();
 
@@ -309,13 +309,13 @@ void Lut::to_byte(uchar* to, const float* from, int W, int delta ) const {
     error = 0x80;
     for (p = to+start*delta, q = from+start; p < end; p += delta) {
         error = (error&0xff) + to_byte_table[hipart(*q)]; ++q;
-        *p = (error>>8);
+        *p = (uchar)(error>>8);
     }
     /* go backwards from starting point to start of line: */
     error = 0x80;
     for (p = to+(start-1)*delta, q = from+start; p >= to; p -= delta) {
         --q; error = (error&0xff) + to_byte_table[hipart(*q)];
-        *p = (error>>8);
+        *p = (uchar)(error>>8);
     }
 }
 void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int delta ) const {
@@ -331,15 +331,17 @@ void Lut::to_byte(uchar* to, const float* from, const float* alpha, int W, int d
     error = 0x80;
     for (p = to+start*delta, q = from+start,a+=start; p < end; p += delta) {
         const float v = *q * *a;
-        error = (error&0xff) + to_byte_table[hipart(v)]; ++q; ++a;
-        *p = (error>>8);
+        error = (error&0xff) + to_byte_table[hipart(v)];
+        ++q;
+        ++a;
+        *p = (uchar)(error>>8);
     }
     /* go backwards from starting point to start of line: */
     error = 0x80;
     for (p = to+(start-1)*delta, q = from+start , a = alpha+start; p >= to; p -= delta) {
         const float v = *q * *a;
         --q;--a; error = (error&0xff) + to_byte_table[hipart(v)];
-        *p = (error>>8);
+        *p = (uchar)(error>>8);
     }
 
 }
@@ -450,7 +452,7 @@ void linear_to_byte(uchar* to, const float* from, int W, int delta ){
             *p = 0;
         } else if (G < 255) {
             int i = (int)G;
-            *p = i;
+            *p = (uchar)i;
             error = G-i;
         } else {
             *p = 255;
@@ -464,7 +466,7 @@ void linear_to_byte(uchar* to, const float* from, int W, int delta ){
             *p = 0;
         } else if (G < 255) {
             int i = (int)G;
-            *p = i;
+            *p = (uchar)i;
             error = G-i;
         } else {
             *p = 255;

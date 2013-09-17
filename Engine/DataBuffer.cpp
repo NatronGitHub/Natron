@@ -12,6 +12,7 @@
 #include "DataBuffer.h"
 
 #include <cstring> // for memset()
+#include <cstdlib> // for malloc, free
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -49,14 +50,14 @@ void DataBuffer::clear(){
 	memset(_buffer,0,_size);
 }
 
-size_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
+ssize_t DataBuffer::fillBuffer(const void* src,size_t nb_bytes,size_t step){
 	QMutexLocker guard(_lock);
 	const unsigned char* inbuffer = reinterpret_cast<const unsigned char*>(src) ;
 	if(!valid())
 		return -1;
-	size_t extra = 0;
+	ssize_t extra = 0;
 	if(nb_bytes > _size){
-		extra = nb_bytes - _size;
+		extra = (ssize_t)nb_bytes - (ssize_t)_size;
 		int index=0;
 		for(U32 i=0; i < _size;i+=step){
 			_buffer[index] = inbuffer[i];

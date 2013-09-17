@@ -471,7 +471,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
             QString filename = fileList.at(i);
             if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
                 QString className;
-                int index = filename.lastIndexOf("."POWITER_LIBRARY_EXT);
+                int index = filename.lastIndexOf("." POWITER_LIBRARY_EXT);
                 className = filename.left(index);
                 string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
