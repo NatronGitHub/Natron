@@ -402,7 +402,7 @@ void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext){
     if (sequenceModeEnabled()) {
         //find out if there's already a # character
         QString unpathed = removePath(str);
-        int pos = unpathed.indexOf(QChar('#'));
+        pos = unpathed.indexOf(QChar('#'));
         if(pos == -1){
             str.append("#");
         }
@@ -682,16 +682,18 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         QString name = item.data(QFileSystemModel::FilePathRole).toString();
         QString originalName = name;
         QString extension = SequenceFileDialog::removeFileExtension(name);
-        int i = name.size() - 1;
-        QString fNumber ;
-        while(i>=0 && name.at(i).isDigit()) {
-            fNumber.prepend(name.at(i));
-            --i;
+        {
+            int i = name.size() - 1;
+            QString fNumber ;
+            while(i>=0 && name.at(i).isDigit()) {
+                fNumber.prepend(name.at(i));
+                --i;
+            }
+            if(i == 0 || i == name.size()-1){
+                continue;
+            }
+            name = name.left(i+1);
         }
-        if(i == 0 || i == name.size()-1){
-            continue;
-        }
-        name = name.left(i+1);
         const FileSequence frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
         /*we don't display sequences with no frame contiguous like 10-13-15.
          *This is corner case and is not useful anyway, we rather display it as several files
@@ -1883,12 +1885,14 @@ void FavoriteView::editUrl(){
     }
     QString cleanpath = QDir::cleanPath(newName);
     QUrl url = QUrl::fromLocalFile(newName);
-    UrlModel *urlModel = dynamic_cast<UrlModel*>(model());
-    QFileSystemModel* fileSystemModel = urlModel->getFileSystemModel();
+    UrlModel *myurlModel = dynamic_cast<UrlModel*>(model());
+    assert(myurlModel);
+    QFileSystemModel* fileSystemModel = myurlModel->getFileSystemModel();
+    assert(fileSystemModel);
     QModelIndex idx = fileSystemModel->index(cleanpath);
     if (!fileSystemModel->isDir(idx))
         return;
-    urlModel->setUrl(index, url, idx);
+    myurlModel->setUrl(index, url, idx);
 }
 
 void FavoriteView::clicked(const QModelIndex &index)

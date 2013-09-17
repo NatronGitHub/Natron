@@ -380,8 +380,7 @@ void Int_Knob::_restoreFromString(const std::string& str){
                 i = s.indexOf("v",i);
             }
             _value.setValue(values);
-        }else{
-            QString s(str.c_str());
+        } else {
             _value.setValue(s.toInt());
         }
         
@@ -483,8 +482,7 @@ void Double_Knob::_restoreFromString(const std::string& str){
                 i = s.indexOf("v",i);
             }
             _value.setValue(values);
-        }else{
-            QString s(str.c_str());
+        } else {
             _value.setValue(s.toDouble());
         }
         

@@ -580,7 +580,12 @@ void RGBA_KnobGui::updateGUI(const Variant& variant){
     _gBox->setValue(v.y());
     _bBox->setValue(v.z());
     _aBox->setValue(v.w());
-    QColor color(v.x()*255,v.y()*255,v.z()*255,v.w()*255);
+    
+    uchar r = (uchar)std::min(v.x()*256., 255.);
+    uchar g = (uchar)std::min(v.y()*256., 255.);
+    uchar b = (uchar)std::min(v.z()*256., 255.);
+    uchar a = (uchar)std::min(v.w()*256., 255.);
+    QColor color(r, g, b, a);
     updateLabel(color);
 }
 void RGBA_KnobGui::showColorDialog(){
@@ -729,9 +734,9 @@ void Tab_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     layout->addWidget(_tabWidget,row,0+columnOffset);
     
 }
-void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs){
-    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs.begin();
-         it!=knobs.end(); ++it) {
+void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs_){
+    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs_.begin();
+         it!=knobs_.end(); ++it) {
         std::string name = it->first;
         QWidget* newTab = new QWidget(_tabWidget);
         _tabWidget->appendTab(name.c_str(), newTab);

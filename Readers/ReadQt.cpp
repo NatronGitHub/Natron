@@ -23,7 +23,12 @@
 using namespace std;
 using namespace Powiter;
 
-ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
+ReadQt::ReadQt(Reader* op)
+: Read(op)
+, _img(0)
+, filename()
+{
+}
 
 void ReadQt::initializeColorSpace(){
     _lut=Color::getLut(Color::LUT_DEFAULT_VIEWER);
@@ -53,7 +58,8 @@ bool ReadQt::supports_stereo() const {
     return false;
 }
 
-void ReadQt::readHeader(const QString& filename, bool) {
+void ReadQt::readHeader(const QString& filename_, bool)
+{
     this->filename = filename;
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/
@@ -116,14 +122,12 @@ void ReadQt::make_preview(){
     QImage* img = new QImage(w,h,_img->format());
     for(int i =0 ; i < h ; ++i) {
         float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearest);
+        int nearestY = (int)(y+0.5);
+        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearestY);
         QRgb *dst_pixels = (QRgb *) img->scanLine(i);
         for(int j = 0 ; j < w ; ++j) {
             float x = (float)j*1.f/zoomFactor;
-            int nearestX;
-            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            int nearestX = (int)(x+0.5);
             dst_pixels[j] = src_pixels[nearestX];
         }
     }

@@ -97,7 +97,7 @@ public:
     /*Do not pay heed to these, they're used internally so the viewer
      know how to fill the display texture.*/
     int zoomedY(){return _zoomedY;}
-    void zoomedY(int z){_zoomedY = z;}
+    void set_zoomedY(int z){_zoomedY = z;}
     
     /*Called by the NodeCache so the destructor of Row doesn't
      try to double-free the buffers.*/

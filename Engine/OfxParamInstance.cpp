@@ -780,7 +780,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
             str = "";
         }
     }else if(_outputFileKnob){
-        str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
+        str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
     }else{
         str = _stringKnob->getString();
     }
@@ -801,7 +801,7 @@ OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
             str = "";
         }
     }else if(_outputFileKnob){
-        str = filenameFromPattern(_node->effectInstance()->timeLineGetTime());
+        str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
     }else{
         str = _stringKnob->getString();
     }

@@ -25,7 +25,13 @@
 using namespace std;
 using namespace Powiter;
 
-Read::Read(Reader* op):is_stereo(false),_premult(false), _autoCreateAlpha(false),op(op),_lut(0),_readerInfo()
+Read::Read(Reader* op_)
+: is_stereo(false)
+, _premult(false)
+, _autoCreateAlpha(false)
+, op(op_)
+, _lut(0)
+, _readerInfo()
 {
 }
 

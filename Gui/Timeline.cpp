@@ -133,7 +133,7 @@ void TimeLineGui::paintEvent(QPaintEvent *){
         currentPoly.push_back(QPointF(currentPos + CURSOR_WIDTH/2,BORDER_HEIGHT_+LINE_START -2 -CURSOR_HEIGHT));
         QString mouseNumber(QString::number(getScalePosition(_Mouse.x())));
         QPointF mouseNbTextPos(currentPos,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
-        int offset = mouseNumber.size()*2.5;
+        int offset = (int)(mouseNumber.size()*2.5);
         p.drawText(QPointF(mouseNbTextPos.x()-offset,mouseNbTextPos.y()), mouseNumber,'g',3);
         
         p.setRenderHint(QPainter::Antialiasing);
@@ -152,16 +152,16 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     cursorPoly.push_back(QPointF(cursorX + CURSOR_WIDTH/2,BORDER_HEIGHT_+LINE_START -2 -CURSOR_HEIGHT));
     QString curNumber(QString::number(_timeLine.currentFrame()));
     QPointF textPos(cursorX,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
-    int textOffset = curNumber.size()*2.5;
+    int textOffset = (int)(curNumber.size()*2.5);
     p.drawText(QPointF(textPos.x()-textOffset,textPos.y()), curNumber,'g',3);
     p.setPen(_boundsColor);
     QString firstNumber(QString::number(_first));
     QPointF firstPos(firstX,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
-    textOffset = firstNumber.size()*2.5;
+    textOffset = (int)(firstNumber.size()*2.5);
     p.drawText(QPointF(firstPos.x()-textOffset,firstPos.y()), firstNumber,'g',3);
     QString lastNumber(QString::number(_last));
     QPointF lastPos(lastX,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
-    textOffset = lastNumber.size()*2.5;
+    textOffset = (int)(lastNumber.size()*2.5);
     p.drawText(QPointF(lastPos.x()-textOffset,lastPos.y()), lastNumber,'g',3);
     QPainterPath cursor;
     p.setRenderHint(QPainter::Antialiasing);
@@ -202,9 +202,12 @@ void TimeLineGui::paintEvent(QPaintEvent *){
             previousOrNext = getCoordPosition(_cached[i]-1);
         }
         double width = pos - previousOrNext;
-        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+2,pos+width/2.0,BORDER_HEIGHT_+LINE_START+2);
-        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+3,pos+width/2.0,BORDER_HEIGHT_+LINE_START+3);
-        p.drawLine(pos-width/2.0,BORDER_HEIGHT_+LINE_START+4,pos+width/2.0,BORDER_HEIGHT_+LINE_START+4);
+        p.drawLine((int)(pos-width/2.0+0.5),BORDER_HEIGHT_+LINE_START+2,
+                   (int)(pos+width/2.0+0.5),BORDER_HEIGHT_+LINE_START+2);
+        p.drawLine((int)(pos-width/2.0+0.5),BORDER_HEIGHT_+LINE_START+3,
+                   (int)(pos+width/2.0+0.5),BORDER_HEIGHT_+LINE_START+3);
+        p.drawLine((int)(pos-width/2.0+0.5),BORDER_HEIGHT_+LINE_START+4,
+                   (int)(pos+width/2.0+0.5),BORDER_HEIGHT_+LINE_START+4);
     }
 }
 void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
@@ -212,7 +215,7 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
     double scaleW = w-2*BORDER_OFFSET_ ;
     double incr=((scaleW)/(double)(_displayedValues.size()-1))/(double)_increment;
     for(int i =0;i<_displayedValues.size();++i) {
-        int x = getCoordPosition(_displayedValues[i]);
+        int x = (int)getCoordPosition(_displayedValues[i]);
         int y = LINE_START;
         p->setPen(_ticksColor);
         QString nbStr = QString::number(_displayedValues[i]);
@@ -224,7 +227,8 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
         p->setPen(scaleColor);
         if(i != _displayedValues.size()-1){
             for(int j=1;j<_increment;++j) {
-                p->drawLine(x+j*incr,2+BORDER_HEIGHT_+LINE_START,x+j*incr,BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_/2);
+                p->drawLine((int)(x+j*incr+0.5),2+BORDER_HEIGHT_+LINE_START,
+                            (int)(x+j*incr+0.5),BORDER_HEIGHT_+LINE_START-TICK_HEIGHT_/2);
             }
         }
         
@@ -300,12 +304,11 @@ void TimeLineGui::changeFirstAndLast(QString str){
 
 void TimeLineGui::mousePressEvent(QMouseEvent* e){
     
-    int c = getScalePosition(e->x());
+    int c = (int)getScalePosition(e->x());
     if(e->modifiers().testFlag(Qt::ControlModifier)){
         _state = DRAGGING_BOUNDARY;
-        int firstPos,lastPos;
-        firstPos = getCoordPosition(_first);
-        lastPos = getCoordPosition(_last);
+        int firstPos = (int)getCoordPosition(_first);
+        int lastPos = (int)getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
             if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame()){
                 _last = c;
@@ -332,16 +335,15 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
     _alphaCursor=true;
     _Mouse = e->pos();
     if(_state==DRAGGING_CURSOR){
-        int c = getScalePosition(e->x());
+        int c = (int)getScalePosition(e->x());
         if(c >= _first && c <=_last){
             _timeLine.seek_noEmit(c);
             emit positionChanged(_timeLine.currentFrame());
         }
     }else if(_state == DRAGGING_BOUNDARY){
-        int c = getScalePosition(e->x());
-        int firstPos,lastPos;
-        firstPos = getCoordPosition(_first);
-        lastPos = getCoordPosition(_last);
+        int c = (int)getScalePosition(e->x());
+        int firstPos = (int)getCoordPosition(_first);
+        int lastPos = (int)getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
             if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame() && c >= _first){
                 _last = c;

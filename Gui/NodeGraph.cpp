@@ -550,7 +550,7 @@ void NodeGraph::autoResizeScene(){
     setSceneRect(rect);
 }
 QImage NodeGraph::getFullSceneScreenShot(){
-    QImage img(scene()->width(),scene()->height(), QImage::Format_ARGB32_Premultiplied);
+    QImage img((int)scene()->width(), (int)scene()->height(), QImage::Format_ARGB32_Premultiplied);
     img.fill(QColor(71,71,71,255));
     QRectF viewRect = visibleRect();
     QPainter painter(&img);
@@ -801,9 +801,13 @@ void ConnectCommand::redo(){
 
 
 
-SmartInputDialog::SmartInputDialog(NodeGraph* graph):QDialog()
+SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
+: QDialog()
+, graph(graph_)
+, layout(NULL)
+, textLabel(NULL)
+, textEdit(NULL)
 {
-    this->graph=graph;
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
     setObjectName(QString("SmartDialog"));

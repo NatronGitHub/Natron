@@ -45,16 +45,16 @@ class ViewerTab;
 #else
 #define checkGLErrors() \
 { \
-    GLenum error = glGetError(); \
-    if(error != GL_NO_ERROR) { \
-        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; \
+    GLenum _glerror_ = glGetError(); \
+    if(_glerror_ != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
         } \
         }
 #define assert_checkGLErrors() \
 { \
-    GLenum error = glGetError(); \
-    if(error != GL_NO_ERROR) { \
-        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; abort(); \
+    GLenum _glerror_ = glGetError(); \
+    if(_glerror_ != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
         } \
         }
 #endif

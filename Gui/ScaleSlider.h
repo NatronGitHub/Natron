@@ -32,25 +32,25 @@ class ScaleSlider : public QWidget
     Q_OBJECT
     
     double _minimum,_maximum;
-    double _nbValues;
+    int _nbValues;
     Powiter::Scale_Type _type;
     
 public:
     
-    ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter::Scale_Type type=Powiter::LINEAR_SCALE,
+    ScaleSlider(double bottom, double top, int nbValues, double initialPos,Powiter::Scale_Type type=Powiter::LINEAR_SCALE,
                 int nbDisplayedValues=5,QWidget* parent=0);
     virtual ~ScaleSlider();
     /*These functions require a call to XXscale(nb,inf,sup) ,hence the updateScale */
     void setMinimum(double m){_minimum=m;}
     void setMaximum(double m){_maximum=m;}
-    void setPrecision(double i){_nbValues=i;}
+    void setPrecision(int i){_nbValues=i;}
     void changeScale(Powiter::Scale_Type type){_type = type;}
     /*---------------------------------------------*/
     
     Powiter::Scale_Type type() const {return _type;}
     double minimum() const {return _minimum;}
     double maximum() const {return _maximum;}
-    double precision() const {return _nbValues;}
+    int precision() const {return _nbValues;}
 
     
 signals:
@@ -78,21 +78,21 @@ protected:
 private:
    
     
-    static std::vector<double> logScale(int N,float inf,float sup){
+    static std::vector<double> logScale(int N, double inf, double sup) {
         std::vector<double> out;
         for(int i =0;i < N;++i) {
             out.push_back(std::pow((double)i,3)*(sup-inf)/(std::pow((double)(N-1),3)) + inf);
         }
         return out;
     }
-    static std::vector<double> expScale(int N,float inf,float sup){
+    static std::vector<double> expScale(int N, double inf, double sup){
         std::vector<double> out;
         for(int i =0;i < N;++i) {
             out.push_back(std::pow((double)(i),1./2.2)*(sup-inf)/(std::pow((double)(N-1),1./2.2)) + inf);
         }
         return out;
     }
-    static std::vector<double> linearScale(int N,float inf,float sup){
+    static std::vector<double> linearScale(int N, double inf, double sup){
         std::vector<double> out;
         double v=inf;
         for(int i =0;i < N;++i) {

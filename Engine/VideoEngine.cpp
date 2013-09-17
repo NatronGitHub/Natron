@@ -57,7 +57,7 @@ using namespace Powiter;
  *@param current_frame[in] The frame number in the sequence to decode.
  */
 
-bool metaReadHeader(Reader* reader,int current_frame) {
+static bool metaReadHeader(Reader* reader,int current_frame) {
     assert(reader);
     if(!reader->readCurrentHeader(current_frame))
         return false;
@@ -69,7 +69,7 @@ bool metaReadHeader(Reader* reader,int current_frame) {
  *@param reader[in] A pointer to the reader that will read the data.
  *@param current_frame[in] The frame number in the sequence to decode.
  */
-void metaReadData(Reader* reader,int current_frame) {
+static void metaReadData(Reader* reader,int current_frame) {
     assert(reader);
     reader->readCurrentData(current_frame);
 }
@@ -79,7 +79,7 @@ void metaReadData(Reader* reader,int current_frame) {
  *@param row[in] The row to compute. Note that after that function row will be deleted and cannot be accessed any longer.
  *@param output[in] The output node of the graph.
  */
-void metaEnginePerRow(Row* row, Node* output){
+static void metaEnginePerRow(Row* row, Node* output){
     assert(row);
     assert(output);
     output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
@@ -507,7 +507,7 @@ void VideoEngine::run(){
             for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
                 Row* row = new Row(x,*it,r,outChannels);
                 assert(row);
-                row->zoomedY(counter);
+                row->set_zoomedY(counter);
                 // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
                 //            if(counter%10 == 0){
                 //            // UNCOMMENT to report progress.
@@ -678,9 +678,9 @@ void VideoEngine::updateDisplay(){
     int height = viewer->height();
     double ap = viewer->displayWindow().pixel_aspect();
     if(ap > 1.f){
-        glViewport (0, 0, width*ap, height);
+        glViewport (0, 0, (int)(width*ap), height);
     }else{
-        glViewport (0, 0, width, height/ap);
+        glViewport (0, 0, width, (int)(height/ap));
     }
     viewer->updateColorPicker();
     viewer->updateGL();
@@ -840,7 +840,7 @@ void VideoEngine::previousIncrement(){
     if(_working){
         abort();
     }
-    int frame = _dag.outputAsViewer()->currentFrame()- _dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
+    int frame = _dag.outputAsViewer()->currentFrame() - (int)_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,false,false);
     else{
@@ -854,7 +854,7 @@ void VideoEngine::nextIncrement(){
     if(_working){
         abort();
     }
-    int frame = _dag.outputAsViewer()->currentFrame()+_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
+    int frame = _dag.outputAsViewer()->currentFrame() + (int)_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
     if(!_working)
         _startEngine(frame, 1, false,true,false);
     else
