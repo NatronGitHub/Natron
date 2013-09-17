@@ -186,8 +186,6 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
     if (effect) {
         stat = effect->createInstanceAction();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        bool ok = effect->getClipPreferences();
-        assert(ok); // OFX Test Props crashes here
     } else {
         std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
         delete node;

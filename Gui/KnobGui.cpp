@@ -130,7 +130,7 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
 //===========================FILE_KNOB_GUI=====================================
 File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
     File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
-    QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
+    QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
 
 void File_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
@@ -194,7 +194,7 @@ void File_KnobGui::updateLastOpened(const QString& str){
 //============================OUTPUT_FILE_KNOB_GUI====================================
 OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
     OutputFile_Knob* fileKnob = dynamic_cast<OutputFile_Knob*>(knob);
-    QObject::connect(fileKnob,SIGNAL(shoudOpenFile()),this,SLOT(open_file()));
+    QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
 
 void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){

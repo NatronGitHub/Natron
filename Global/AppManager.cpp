@@ -37,6 +37,8 @@
 #include "Engine/Knob.h"
 #include "Engine/NodeCache.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OfxNode.h"
 #include "Engine/Format.h"
 
 #include "Readers/Reader.h"
@@ -157,6 +159,16 @@ Node* AppInstance::createNode(const QString& name) {
         }
         autoConnect(selected, node);
         node->initializeKnobs();
+        if(node->isOpenFXNode()){
+            OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+            ofxNode->openFilesForAllFileParams();
+            bool ok = ofxNode->effectInstance()->getClipPreferences();
+            if(!ok){
+                node->deleteNode();
+                return NULL;
+            }
+        }
+        
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;

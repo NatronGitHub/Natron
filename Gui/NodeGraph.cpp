@@ -175,6 +175,7 @@ void NodeGraph::deselect(){
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     if(_evtState==ARROW_DRAGGING){
         bool foundSrc=false;
+        NodeGui* dst = _arrowSelected->getDest();
         for(U32 i = 0; i<_nodes.size() ;++i){
             NodeGui* n=_nodes[i];
             QPointF ep = mapToScene(event->pos());
@@ -195,7 +196,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),NULL));
             scene()->update();
         }
-        _arrowSelected->initLine();
+        dst->refreshEdges();
         scene()->update();
         _gui->getApp()->clearPlaybackCache();
         _gui->getApp()->checkViewersConnection();
@@ -754,9 +755,9 @@ void ConnectCommand::undo(){
     
 }
 void ConnectCommand::redo(){
-    
-    if (_edge->getDest()->getNode()->className() == "Viewer") {
-        ViewerNode* v = dynamic_cast<ViewerNode*>(_edge->getDest()->getNode());
+    NodeGui* dst = _edge->getDest();
+    if (dst->getNode()->className() == "Viewer") {
+        ViewerNode* v = dynamic_cast<ViewerNode*>(dst->getNode());
         if(!_newSrc){
             v->disconnectInput(_edge->getInputNumber());
         }else{
@@ -769,19 +770,19 @@ void ConnectCommand::redo(){
     }else{
         _edge->setSource(_newSrc);
         if(_oldSrc){
-            if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), _edge->getDest()->getNode())){
+            if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                << " to (output) " << _edge->getDest()->getNode()->getName() << endl;
+                << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
-            if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), _edge->getDest()->getNode())){
+            if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                << " to (output) " << _edge->getDest()->getNode()->getName() << endl;
+                << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
     }
-    _edge->initLine();
+    dst->refreshEdges();
     
     if(_newSrc){
         setText(QObject::tr("Connect %1 to %2")

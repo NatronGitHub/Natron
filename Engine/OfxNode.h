@@ -69,12 +69,10 @@ public:
     virtual bool isOpenFXNode() const OVERRIDE {return true;}
         
     virtual ChannelSet supportedComponents() OVERRIDE;
-    
+        
     virtual bool _validate(bool) OVERRIDE;
     
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
-
-
 
 
     
@@ -113,7 +111,8 @@ public:
     const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
     const std::string& getPluginGrouping() const; // forwarded to OfxImageEffectInstance
 
-
+    void openFilesForAllFileParams();
+    
 private:
 
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
