@@ -364,14 +364,16 @@ void VideoEngine::run(){
         
         _dag.validate(true);
 
-        assert(_dag.getOutput());
-        const Format &_dispW = _dag.getOutput()->info().displayWindow();
+        OutputNode* outputNode = _dag.getOutput();
+        assert(outputNode);
+        const Format &_dispW = outputNode->info().displayWindow();
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             assert(viewer);
             viewer->makeCurrentViewer();
             if (_lastRunArgs._fitToViewer) {
                 assert(viewer->getUiContext());
                 assert(viewer->getUiContext()->viewer);
+                assert(_dispW.height() > 0. && _dispW.width() > 0);
                 viewer->getUiContext()->viewer->fitToFormat(_dispW);
                 _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
             }
@@ -381,7 +383,7 @@ void VideoEngine::run(){
         vector<int> rows;
         vector<int> columns;
         int x=0,r=0;
-        const Box2D& dataW = _dag.getOutput()->info().dataWindow();
+        const Box2D& dataW = outputNode->info().dataWindow();
         FrameEntry* iscached= 0;
         U64 key = 0;
         float lut = 0.f;
