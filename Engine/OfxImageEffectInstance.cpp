@@ -397,8 +397,11 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
     if(!dag.getOutput()){
         return;
     }
-
-    return dag.getOutput()->getTimeLine().seek(t);
+    // FIXME: wrong Temporal Coordinates!!!
+    // See http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id476301
+    // - the effect may not begin at frame 0
+    // - it depends on the input and output FPS of the effect 
+    return dag.getOutput()->getTimeLine().seek((int)t);
     
 }
 
