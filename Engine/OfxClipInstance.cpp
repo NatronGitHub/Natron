@@ -237,8 +237,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
             OfxNode* ofxInputNode = dynamic_cast<OfxNode*>(input);
-            ofxInputNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
+            assert(ofxInputNode);
+            assert(ofxInputNode->effectInstance());
+            OfxStatus stat = ofxInputNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
+            assert(stat == kOfxStatOK);
             OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
+            assert(clip);
             return clip->getImage(time, optionalBounds);
         }else{
             ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);

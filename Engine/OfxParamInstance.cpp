@@ -56,17 +56,22 @@ void OfxPushButtonInstance::setEnabled(){
 void OfxPushButtonInstance::setSecret(){
     _knob->setVisible(!getSecret());
 }
-Knob* OfxPushButtonInstance::getKnob() const{
+
+Knob* OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
-void OfxPushButtonInstance::onInstanceChanged(){
-    
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+void OfxPushButtonInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     if(_node->OutputNode::isOutputNode()){
         OutputNode* n = dynamic_cast<OutputNode*>(_node);
         n->updateDAG(false);
@@ -115,12 +120,16 @@ OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     return kOfxStatOK;
 }
 void OfxIntegerInstance::onInstanceChanged(){
-   
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
@@ -181,11 +190,16 @@ OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, dou
     return kOfxStatErrMissingHostFeature;
 }
 void OfxDoubleInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
@@ -234,13 +248,20 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     _knob->setValue(b);
     return kOfxStatOK;
 }
-void OfxBooleanInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+
+void OfxBooleanInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
+
 // callback which should set enabled state as appropriate
 void OfxBooleanInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -302,12 +323,18 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
         return kOfxStatErrBadIndex;
     }
 }
-void OfxChoiceInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+
+void OfxChoiceInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 
 
@@ -384,12 +411,17 @@ OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,dou
     return kOfxStatOK;
 }
 
-void OfxRGBAInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+void OfxRGBAInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 
 // callback which should set enabled state as appropriate
@@ -458,12 +490,17 @@ OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
     return kOfxStatOK;
 }
 
-void OfxRGBInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+void OfxRGBInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
@@ -537,13 +574,20 @@ OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
     _knob->setValue<double>(_values,2);
 	return kOfxStatOK;
 }
-void OfxDouble2DInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+
+void OfxDouble2DInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
+
 // callback which should set enabled state as appropriate
 void OfxDouble2DInstance::setEnabled(){
     _knob->setEnabled(getEnabled());
@@ -615,12 +659,18 @@ OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
     _knob->setValue<int>(_values,2);
 	return kOfxStatOK;
 }
-void OfxInteger2DInstance::onInstanceChanged(){
-    _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+
+void OfxInteger2DInstance::onInstanceChanged() {
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
 
 // callback which should set enabled state as appropriate
@@ -716,6 +766,7 @@ _fileKnob(0),_outputFileKnob(0){
     
 }
 OfxStatus OfxStringInstance::get(std::string &str) {
+    assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
@@ -736,6 +787,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
+    assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
@@ -821,20 +873,26 @@ void OfxStringInstance::setSecret(){
     }
     
 }
-void OfxStringInstance::onInstanceChanged(){
-    if(_fileKnob){
+
+void OfxStringInstance::onInstanceChanged() {
+    if (_fileKnob) {
         getVideoSequenceFromFilesList();
         _returnValue = _fileKnob->value<QString>().toStdString();
          _node->computePreviewImage();
 
     }
-     _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(_node->effectInstance());
+    OfxStatus stat;
+    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-
+    stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
+    assert(stat == kOfxStatOK);
+    stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(stat == kOfxStatOK);
 }
+
 void OfxStringInstance::getVideoSequenceFromFilesList(){
     _files.clear();
     QStringList _filesList = _fileKnob->value<QStringList>();

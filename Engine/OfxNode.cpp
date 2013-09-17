@@ -85,7 +85,8 @@ OfxNode::OfxNode(Model* model,
             effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
             assert(effect_);
             effect_->setOfxNodePointer(this);
-            effect_->populate();
+            OfxStatus stat = effect_->populate();
+            assert(stat == kOfxStatOK);
         } catch (const std::exception &e) {
             cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
             throw;
@@ -103,6 +104,7 @@ OfxNode::~OfxNode() {
 
 ChannelSet OfxNode::supportedComponents() {
     // FIXME: should be const...
+    assert(effectInstance());
     const OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(clip);
     const vector<string>& suppComponents = clip->getSupportedComponents();
@@ -118,12 +120,14 @@ bool OfxNode::isOutputNode() const {
 }
 
 bool OfxNode::isInputNode() const {
+    assert(effectInstance());
     if(effectInstance()->getContext() == kOfxImageEffectContextGenerator)
         return true;
     return false;
 }
 
 std::string OfxNode::className() { // should be const
+    assert(effectInstance());
     std::string label = getShortLabel();
     if(label.empty()){
         label = effectInstance()->getLabel();
@@ -147,6 +151,7 @@ std::string OfxNode::setInputLabel(int inputNb) {
     }
 }
 OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
+    assert(effectInstance());
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
     MappedInputV copy;
     for (U32 i = 0; i < clips.size(); ++i) {
@@ -162,7 +167,8 @@ OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
 int OfxNode::maximumInputs() const {
     if(isInputNode()){
         return 0;
-    }else{
+    } else {
+        assert(effectInstance());
         int totalClips = effectInstance()->getDescriptor().getClips().size();
         return totalClips-1;
     }
@@ -170,6 +176,7 @@ int OfxNode::maximumInputs() const {
 }
 
 int OfxNode::minimumInputs() const {
+    assert(effectInstance());
     typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
     const ClipsMap& clips = effectInstance()->getDescriptor().getClips();
     int minimalCount = 0;
@@ -198,6 +205,7 @@ bool OfxNode::_validate(bool doFullWork){
     }
     
     if (isInputNode()) {
+        assert(effectInstance());
         OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
         assert(clip);
         /*if doFullWork is true we need to pass down the tree all the infos generated
@@ -207,7 +215,8 @@ bool OfxNode::_validate(bool doFullWork){
             rS.x = rS.y = 1.0;
             OfxRectD rod;
             //This function calculates the merge of the inputs RoD.
-            effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+            OfxStatus stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+            assert(stat == kOfxStatOK);
             assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
             assert(rod.y1 != kOfxFlagInfiniteMin);
             assert(rod.x2 != kOfxFlagInfiniteMax);
@@ -247,6 +256,7 @@ bool OfxNode::_validate(bool doFullWork){
 void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, Row* out) {
     OfxRectI renderW;
     const Format& dispW = info().displayWindow();
+    assert(effectInstance());
     renderW.x1 = dispW.left();
     renderW.x2 = dispW.right();
     renderW.y1 = dispW.bottom();
@@ -257,7 +267,8 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
         QMutexLocker g(&_lock);
         if(_firstTime){
             _firstTime = false;
-            effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+            OfxStatus stat = effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+            assert(stat == kOfxStatOK);
 
         }
     }
@@ -347,8 +358,10 @@ void OfxNode::computePreviewImage(){
     rS.x = rS.y = 1.0;
     OfxRectD rod;
     //This function calculates the merge of the inputs RoD.
-    effectInstance()->beginRenderAction(0, 25, 1, true, rS);
-    effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+    OfxStatus stat = effectInstance()->beginRenderAction(0, 25, 1, true, rS);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
+    assert(stat == kOfxStatOK);
     assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
     assert(rod.y1 != kOfxFlagInfiniteMin);
     assert(rod.x2 != kOfxFlagInfiniteMax);
@@ -360,7 +373,8 @@ void OfxNode::computePreviewImage(){
     renderW.y2 = (int)std::ceil(rod.y2);
     Box2D oldBox(info().dataWindow());
     _info.set_dataWindow(Box2D(renderW.x1, renderW.y1, renderW.x2, renderW.y2));
-    effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, rS);
+    stat = effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, rS);
+    assert(stat == kOfxStatOK);
     OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(outputClip);
     const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
@@ -385,8 +399,8 @@ void OfxNode::computePreviewImage(){
         }
     }
     _info.set_dataWindow(oldBox);
-    effectInstance()->endRenderAction(0, 25, 1, true, rS);
-
+    stat = effectInstance()->endRenderAction(0, 25, 1, true, rS);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     
     _preview = ret;
     notifyGuiPreviewChanged();

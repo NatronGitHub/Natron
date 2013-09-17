@@ -139,6 +139,7 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
 }
 
 OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
+    OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
         return NULL;
@@ -183,8 +184,10 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
     assert(node);
     Powiter::OfxImageEffectInstance* effect = node->effectInstance();
     if (effect) {
-        effect->createInstanceAction();
-        effect->getClipPreferences();
+        stat = effect->createInstanceAction();
+        assert(stat == kOfxStatOK);
+        bool ok = effect->getClipPreferences();
+        assert(ok);
     } else {
         std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
         delete node;

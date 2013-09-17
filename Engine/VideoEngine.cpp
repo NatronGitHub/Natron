@@ -203,7 +203,9 @@ void VideoEngine::run(){
                 OfxPointD renderScale;
                 renderScale.x = renderScale.y = 1.0;
                 assert(n->effectInstance());
-                n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
+                OfxStatus stat;
+                stat = n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
+                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
         }
         
@@ -562,7 +564,10 @@ void VideoEngine::run(){
             if(n){
                 OfxPointD renderScale;
                 renderScale.x = renderScale.y = 1.0;
-                n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
+                assert(n->effectInstance());
+                OfxStatus stat;
+                stat = n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
+                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
         }
         _model->getGeneralMutex()->unlock();
