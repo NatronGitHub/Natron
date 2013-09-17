@@ -60,7 +60,7 @@ bool ReadQt::supports_stereo() const {
 
 void ReadQt::readHeader(const QString& filename_, bool)
 {
-    this->filename = filename;
+    filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/
     _img= new QImage(filename);
