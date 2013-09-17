@@ -453,19 +453,23 @@ void AbstractDiskCache::restore(){
             }
             
             /*now that we're done using it, clear it*/
-            QFile::remove(settingsFilePath);
-            QFile newFile(settingsFilePath);
-            newFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            QTextStream outsetti(&newFile);
+            //QFile::remove(settingsFilePath);
+            //QFile newFile(settingsFilePath);
+            //newFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+            //QTextStream outsetti(&newFile);
+            //outsetti << cacheVersion().c_str() << endl;
+            //newFile.close();
+            _restoreFile.remove();
+            _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+            QTextStream outsetti(&_restoreFile);
             outsetti << cacheVersion().c_str() << endl;
-            newFile.close();
-            
-        }else{ /*cache version is different*/
+            _restoreFile.close();
+        } else { /*cache version is different*/
             /*re-create the cache*/
-            _restoreFile.resize(0);
+            _restoreFile.remove();
             cleanUpDiskAndReset();
             /*re-create settings file*/
-            QFile _restoreFile(settingsFilePath);
+            //QFile _restoreFile(settingsFilePath); // error?
             _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
             QTextStream outsetti(&_restoreFile);
             outsetti << cacheVersion().c_str() << endl;
