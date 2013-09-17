@@ -27,13 +27,15 @@ Row::Row():_cacheWillDelete(false){
     buffers = 0;
 }
 
-void Row::turnOn(Channel c){
+void Row::turnOn(Channel c) {
     if( c & _channels) return;
     _channels += c;
-    if(c != Channel_alpha)
+    if(c != Channel_alpha) {
         buffers[c] = (float*)calloc((r-x),sizeof(float));
-    else{
+        assert(buffers[c]);
+    } else {
         buffers[c] = (float*)malloc((r-x)*sizeof(float));
+        assert(buffers[c]);
         for(int i =0 ;i <  (r-x) ;++i) {
             buffers[c][i] = 1.f;
         }
@@ -49,16 +51,19 @@ Row::Row(int x,int y, int range, ChannelSet channels)
     this->r=range;
     _channels = channels;
     buffers = (float**)malloc(POWITER_MAX_BUFFERS_PER_ROW*sizeof(float*));
+    assert(buffers);
     memset(buffers, 0, sizeof(float*)*POWITER_MAX_BUFFERS_PER_ROW);
     
 }
 bool Row::allocateRow(const char*){
     size_t dataSize = (r-x)*sizeof(float);
     foreachChannels(z, _channels){
-        if(z != Channel_alpha)
+        if(z != Channel_alpha) {
             buffers[z] = (float*)calloc((r-x),sizeof(float));
-        else{
+            assert(buffers[z]);
+        } else {
             buffers[z] = (float*)malloc(dataSize);
+            assert(buffers[z]);
             for(int i =0 ;i <  (r-x) ;++i) {
                 buffers[z][i] = 1.f;
             }
@@ -76,10 +81,11 @@ void Row::range(int offset,int right){
     r = right;
     x = offset;
     foreachChannels(z, _channels){
-        if(buffers[(int)z])
+        if (buffers[(int)z]) {
             buffers[(int)z] = (float*)realloc(buffers[(int)z],(r-x)*sizeof(float));
-        else
+        } else {
             buffers[(int)z] = (float*)malloc((r-x)*sizeof(float));
+        }
     }
 }
 
@@ -90,13 +96,25 @@ Row::~Row(){
     }
     free(buffers);
 }
-const float* Row::operator[](Channel z) const{
-    return _channels & z ?  buffers[z] - x : NULL;
+
+const float* Row::operator[](Channel z) const {
+    if (_channels & z) {
+        assert(buffers[z]);
+        return buffers[z] - x;
+    } else {
+        return NULL;
+    }
 }
 
-float* Row::writable(Channel c){
-    return _channels & c ?  buffers[c] - x : NULL;
+float* Row::writable(Channel c) {
+    if (_channels & c) {
+        assert(buffers[c]);
+        return buffers[c] - x;
+    } else {
+        return NULL;
+    }
 }
+
 void Row::copy(const Row *source,ChannelSet channels,int o,int r){
     _channels = channels;
     range(o, r); // does nothing if the range is smaller
