@@ -86,7 +86,7 @@ OfxNode::OfxNode(Model* model,
             assert(effect_);
             effect_->setOfxNodePointer(this);
             OfxStatus stat = effect_->populate();
-            assert(stat == kOfxStatOK);
+            assert(stat == kOfxStatOK); // Prop Tester crashes here
         } catch (const std::exception &e) {
             cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
             throw;
