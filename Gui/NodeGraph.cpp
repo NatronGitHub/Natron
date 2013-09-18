@@ -495,21 +495,20 @@ void NodeGraph::deleteSelectedNode(){
 }
 
 
-void NodeGraph::removeNode(NodeGui* n){
-    for(U32 i = 0 ; i < _nodes.size();++i) {
-        if (n == _nodes[i]) {
-            _nodes.erase(_nodes.begin()+i);
-            break;
-        }
+void NodeGraph::removeNode(NodeGui* n) {
+    assert(n);
+    std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), n);
+    if (it != _nodes.end()) {
+        _nodes.erase(it);
     }
-    for(U32 i = 0 ; i < _nodesTrash.size();++i) {
-        if (n == _nodesTrash[i]) {
-            _nodesTrash.erase(_nodesTrash.begin()+i);
-            break;
-        }
+    it = std::find(_nodesTrash.begin(), _nodesTrash.end(), n);
+    if (it != _nodesTrash.end()) {
+        _nodesTrash.erase(it);
     }
 }
-void NodeGraph::selectNode(NodeGui* n){
+
+void NodeGraph::selectNode(NodeGui* n) {
+    assert(n);
     _nodeSelected = n;
     /*now remove previously selected node*/
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
@@ -598,22 +597,21 @@ void NodeGraph::NodeGraphNavigator::setImage(const QImage& img){
 const std::vector<NodeGui*>& NodeGraph::getAllActiveNodes() const{
     return _nodes;
 }
-void NodeGraph::moveToTrash(NodeGui* node){
-    for(U32 i = 0; i < _nodes.size() ; ++i) {
-        if(node == _nodes[i]){
-            _nodesTrash.push_back(_nodes[i]);
-            _nodes.erase(_nodes.begin()+i);
-            break;
-        }
+void NodeGraph::moveToTrash(NodeGui* node) {
+    assert(node);
+    std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), node);
+    if (it != _nodes.end()) {
+        _nodesTrash.push_back(*it);
+        _nodes.erase(it);
     }
 }
-void NodeGraph::restoreFromTrash(NodeGui* node){
-    for(U32 i = 0; i < _nodesTrash.size() ; ++i) {
-        if(node == _nodesTrash[i]){
-            _nodes.push_back(_nodesTrash[i]);
-            _nodesTrash.erase(_nodesTrash.begin()+i);
-            break;
-        }
+
+void NodeGraph::restoreFromTrash(NodeGui* node) {
+    assert(node);
+    std::vector<NodeGui*>::iterator it = std::find(_nodesTrash.begin(), _nodesTrash.end(), node);
+    if (it != _nodesTrash.end()) {
+        _nodes.push_back(*it);
+        _nodesTrash.erase(it);
     }
 }
 

@@ -383,6 +383,8 @@ void TimeLineGui::addCachedFrame(int f){
  //  repaint();
 }
 void TimeLineGui::removeCachedFrame(){
+    // FIXME: std::vector is not the appropriate container! a list has a pop_front() method
+    // erasing the first element of a vector is the worst that could happen
     _cached.erase(_cached.begin());
    // repaint();
 }

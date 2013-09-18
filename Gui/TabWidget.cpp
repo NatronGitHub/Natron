@@ -300,58 +300,50 @@ void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
     
 }
 
-QWidget*  TabWidget::removeTab(int index){
-    if(index < (int)_tabs.size()){
-        QWidget* tab = _tabs[index];
-        _tabs.erase(_tabs.begin()+index);
-        _tabBar->removeTab(index);
-        if(_tabs.size() > 0){
-            makeCurrentTab(0);
-        }
-        else{
-            _currentWidget = 0;
-            _mainLayout->addStretch();
-            if (_isFloating) {
-                closeFloatingPane();
-            }
-        }
-        return tab;
-    }else{
+QWidget*  TabWidget::removeTab(int index) {
+    if (index < 0 || index >= (int)_tabs.size()) {
         return NULL;
     }
+    QWidget* tab = _tabs[index];
+    _tabs.erase(_tabs.begin()+index);
+    _tabBar->removeTab(index);
+    if (_tabs.size() > 0) {
+        makeCurrentTab(0);
+    } else {
+        _currentWidget = 0;
+        _mainLayout->addStretch();
+        if (_isFloating) {
+            closeFloatingPane();
+        }
+    }
+    return tab;
 }
+
 void TabWidget::removeTab(QWidget* widget){
     for (U32 i = 0; i < _tabs.size(); ++i) {
         if (_tabs[i] == widget) {
-            _tabs.erase(_tabs.begin()+i);
-            _tabBar->removeTab(i);
-            if(_tabs.size() > 0){
-                makeCurrentTab(0);
-            }else{
-                _currentWidget = 0;
-                _mainLayout->addStretch();
-                if (_isFloating) {
-                    closeFloatingPane();
-                }
-            }
+            QWidget* tab = removeTab(i);
+            assert(tab == widget);
+            (void)tab;
             break;
         }
     }
 }
 
 void TabWidget::makeCurrentTab(int index){
-    if((U32)index < _tabs.size()){
-        /*Removing previous widget if any*/
-        if(_currentWidget){
-            _currentWidget->setVisible(false);
-            _mainLayout->removeWidget(_currentWidget);
-            _currentWidget->setParent(0);
-        }
-        _mainLayout->addWidget(_tabs[index]);
-        _currentWidget = _tabs[index];
-        _currentWidget->setVisible(true);
-        _currentWidget->setParent(this);
+    if(index < 0 || index >= (int)_tabs.size()) {
+        return;
     }
+    /*Removing previous widget if any*/
+    if (_currentWidget) {
+        _currentWidget->setVisible(false);
+        _mainLayout->removeWidget(_currentWidget);
+        _currentWidget->setParent(0);
+    }
+    _mainLayout->addWidget(_tabs[index]);
+    _currentWidget = _tabs[index];
+    _currentWidget->setVisible(true);
+    _currentWidget->setParent(this);
 }
 
 void TabWidget::dragEnterEvent(QDragEnterEvent* event){
