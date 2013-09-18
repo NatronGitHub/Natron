@@ -278,17 +278,13 @@ void Node::connectOutput(Node* output,int outputNumber ){
 
 int Node::disconnectInput(int inputNumber){
     InputMap::iterator it = _inputs.find(inputNumber);
-    if (it == _inputs.end()) {
+    if (it == _inputs.end() || it->second == NULL) {
         return -1;
-    }else{
-        if(it->second == NULL){
-            return -1;
-        }else{
-            _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
-            emit inputChanged(inputNumber);
-            return it->first;
-        }
+    } else {
+        _inputs.erase(it);
+        _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+        emit inputChanged(inputNumber);
+        return inputNumber;
     }
 }
 
