@@ -94,9 +94,9 @@ AppInstance::AppInstance(int appID,const QString& projectName)
                                   _toolButtons[i]->_pluginName,
                                   _toolButtons[i]->_pluginIconPath,
                                   _toolButtons[i]->_groupIconPath);
-    }        
+    }
     _gui->show();
-        
+    
     /*Check if auto-save dir already exists*/
     QDir dir(QDir::tempPath()+QDir::separator()+"Powiter");
     if(!dir.exists()){
@@ -342,7 +342,7 @@ bool AppInstance::findAutoSave(){
             title.append(_currentProject._projectName);
             title.append(" (*)");
             _gui->setWindowTitle(title);
-
+            
             if(exists){
                 text = "A recent auto-save of " + filename + " was found.\n"
                 "Would you like to restore it entirely? Clicking No will remove this auto-save.";
@@ -350,7 +350,7 @@ bool AppInstance::findAutoSave(){
                 text = "An auto-save was restored successfully. It didn't belong to any project\n"
                 "Would you like to restore it ? Clicking No will remove this auto-save forever.";
             }
-
+            
             
             QMessageBox::StandardButton ret = QMessageBox::question(_gui, "Auto-save", text,
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
@@ -385,11 +385,11 @@ void AppInstance::deselectAllNodes() const{
 
 void AppInstance::showErrorDialog(const QString& title,const QString& message) const{
     _gui->errorDialog(title, message);
-
+    
 }
 
 ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
-   return  _gui->addNewViewerTab(node, where);
+    return  _gui->addNewViewerTab(node, where);
 }
 
 AppInstance* AppManager::newAppInstance(const QString& projectName){
@@ -432,7 +432,7 @@ NodeGui* AppInstance::getNodeGui(Node* n) const {
     }else{
         return it->second;
     }
-    }
+}
 Node* AppInstance::getNode(NodeGui* n) const{
     for (map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin(); it!=_nodeMapping.end(); ++it) {
         if(it->second == n){
@@ -440,7 +440,7 @@ Node* AppInstance::getNode(NodeGui* n) const{
         }
     }
     return NULL;
-
+    
 }
 
 void AppInstance::connectViewersToViewerCache(){
@@ -483,7 +483,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
             QString filename = fileList.at(i);
             if(filename.endsWith(".dll") || filename.endsWith(".dylib") || filename.endsWith(".so")){
                 QString className;
-                int index = filename.lastIndexOf("."POWITER_LIBRARY_EXT);
+                int index = filename.lastIndexOf("." POWITER_LIBRARY_EXT);
                 className = filename.left(index);
                 string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
@@ -501,7 +501,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
 }
 
 std::vector<Powiter::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
-                                                                 const std::vector<std::string>& functions){
+                                                                             const std::vector<std::string>& functions){
     std::vector<LibraryBinary*> ret;
     std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
     for (U32 i = 0; i < loadedLibraries.size(); ++i) {
@@ -538,7 +538,7 @@ AppManager::AppManager()
 , _viewerCache(new ViewerCache())
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
-                     this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
+            this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
     
     /*loading all plugins*/
     loadAllPlugins();
@@ -546,11 +546,10 @@ AppManager::AppManager()
     loadBuiltinFormats();
     
     /*node cache initialisation & restoration*/
-    U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
-                            Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*
-    getSystemTotalRAM();
-    _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);
-    
+    double maxCacheMemoryPercent = Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent;
+    double maxPlayBackMemoryPercent = Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent;
+    U64 nodeCacheMaxSize = (U64)((maxCacheMemoryPercent - maxPlayBackMemoryPercent)* getSystemTotalRAM());
+    _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);    
     
     /*viewer cache initialisation & restoration*/
     _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
@@ -583,7 +582,7 @@ void AppManager::loadAllPlugins() {
     assert(_nodeNames.empty());
     assert(_formats.empty());
     assert(_toolButtons.empty());
-
+    
     /*loading node plugins*/
     loadBuiltinNodePlugins();
     
@@ -645,7 +644,7 @@ void AppManager::loadBuiltinReads(){
         assert(readExr);
         std::vector<std::string> extensions = readExr->fileTypesDecoded();
         std::string decoderName = readExr->decoderName();
-
+        
         std::map<std::string,void*> EXRfunctions;
         EXRfunctions.insert(make_pair("BuildRead", (void*)&ReadExr::BuildRead));
         LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
@@ -660,7 +659,7 @@ void AppManager::loadBuiltinReads(){
         assert(readQt);
         std::vector<std::string> extensions = readQt->fileTypesDecoded();
         std::string decoderName = readQt->decoderName();
-
+        
         std::map<std::string,void*> Qtfunctions;
         Qtfunctions.insert(make_pair("BuildRead", (void*)&ReadQt::BuildRead));
         LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
@@ -675,7 +674,7 @@ void AppManager::loadBuiltinReads(){
         assert(readFfmpeg);
         std::vector<std::string> extensions = readFfmpeg->fileTypesDecoded();
         std::string decoderName = readFfmpeg->decoderName();
-
+        
         std::map<std::string,void*> FFfunctions;
         FFfunctions.insert(make_pair("ReadBuilder", (void*)&ReadFFMPEG::BuildRead));
         LibraryBinary *FFMPEGplugin = new LibraryBinary(FFfunctions);
@@ -740,7 +739,7 @@ void AppManager::loadBuiltinWrites(){
         assert(writeQt);
         std::vector<std::string> extensions = writeQt->fileTypesEncoded();
         string encoderName = writeQt->encoderName();
-
+        
         std::map<std::string,void*> Qtfunctions;
         Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
         LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
@@ -754,7 +753,7 @@ void AppManager::loadBuiltinWrites(){
         scoped_ptr<Write> writeEXR(new WriteExr(NULL));
         std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
         string encoderNameExr = writeEXR->encoderName();
-
+        
         std::map<std::string,void*> EXRfunctions;
         EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
         LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
@@ -785,23 +784,23 @@ void AppManager::loadBuiltinFormats(){
     formatNames.push_back("square_1K");
     formatNames.push_back("square_2K");
     
-    std::vector< std::vector<float> > resolutions;
-    std::vector<float> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
-    std::vector<float> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
-    std::vector<float> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
-    std::vector<float> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
-    std::vector<float> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
-    std::vector<float> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
-    std::vector<float> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
-    std::vector<float> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
-    std::vector<float> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
-    std::vector<float> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
-    std::vector<float> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
-    std::vector<float> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
-    std::vector<float> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
-    std::vector<float> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
-    std::vector<float> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
-    std::vector<float> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
+    std::vector< std::vector<double> > resolutions;
+    std::vector<double> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
+    std::vector<double> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
+    std::vector<double> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
+    std::vector<double> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
+    std::vector<double> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
+    std::vector<double> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
+    std::vector<double> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
+    std::vector<double> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
+    std::vector<double> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
+    std::vector<double> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
+    std::vector<double> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
+    std::vector<double> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
+    std::vector<double> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
+    std::vector<double> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
+    std::vector<double> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
+    std::vector<double> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
     
     resolutions.push_back(pcvideo);
     resolutions.push_back(ntsc);
@@ -822,13 +821,13 @@ void AppManager::loadBuiltinFormats(){
     
     assert(formatNames.size() == resolutions.size());
     for(U32 i =0;i<formatNames.size();++i) {
-        const std::vector<float>& v = resolutions[i];
+        const std::vector<double>& v = resolutions[i];
         assert(v.size() >= 3);
-        Format* _frmt = new Format(0,0,v[0],v[1],formatNames[i],v[2]);
+        Format* _frmt = new Format(0, 0, (int)v[0], (int)v[1], formatNames[i], v[2]);
         assert(_frmt);
         _formats.push_back(_frmt);
     }
-
+    
 }
 
 Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
@@ -844,9 +843,9 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
 }
 
 void AppManager::addPluginToolButtons(const QStringList& groups,
-                          const QString& pluginName,
-                          const QString& pluginIconPath,
-                          const QString& groupIconPath){
+                                      const QString& pluginName,
+                                      const QString& pluginIconPath,
+                                      const QString& groupIconPath){
     _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
 

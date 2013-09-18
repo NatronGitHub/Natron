@@ -22,7 +22,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 using namespace std;
 
-ScaleSlider::ScaleSlider(double bottom,double top,double nbValues,double initialPos,Powiter::Scale_Type type,int nbDisplayedValues,QWidget* parent):
+ScaleSlider::ScaleSlider(double bottom, double top, int nbValues, double initialPos, Powiter::Scale_Type type, int nbDisplayedValues, QWidget* parent):
 QWidget(parent),
 _minimum(bottom),
 _maximum(top),
@@ -52,11 +52,17 @@ void ScaleSlider::updateScale(){
     }
     double incr = (double)(_values.size())/(double)(_displayedValues.size()-1);
     double index = 0;
-    for(U32 i =0;i< _displayedValues.size();++i) {
-        if(ceil(index) >= _values.size()){ _displayedValues[i]=_values.back();index+=incr; continue;}
-        if(floor(index) <=0){_displayedValues[i]=_values[0];index+=incr;continue;}
-        if(floor(index)==index){_displayedValues[i]=_values[index];index+=incr;continue;}
-        _displayedValues[i]= _values[floor(index)]*(ceil(index)-index)+_values[ceil(index)]*(index-floor(index));
+    for (U32 i =0; i< _displayedValues.size(); ++i) {
+        if (std::ceil(index) >= _values.size()) {
+            _displayedValues[i]=_values.back();
+        } else if (std::floor(index) <= 0) {
+            _displayedValues[i]=_values[0];
+        } else if (std::floor(index) == index) {
+            _displayedValues[i]=_values[(int)index];
+        } else {
+            _displayedValues[i]= _values[(int)std::floor(index)]*(std::ceil(index)-index)
+                               + _values[(int)std::ceil(index)]*(index-std::floor(index));
+        }
         index+=incr;
     }
 }
@@ -83,15 +89,16 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     // drawing ticks & sub-ticks   
     for(unsigned int i =0;i<_displayedValues.size();++i) {
         p.drawText(pos, QString::number(_displayedValues[i],'g',3));
-        if(pos.x()-incr > 2) p.drawLine(pos.x()-incr/2,2+BORDER_HEIGHT,pos.x()-incr/2,BORDER_HEIGHT-TICK_HEIGHT/2);
-
+        if(pos.x()-incr > 2) {
+            p.drawLine((int)(pos.x()-incr/2+0.5),2+BORDER_HEIGHT,(int)(pos.x()-incr/2+0.5),BORDER_HEIGHT-TICK_HEIGHT/2);
+        }
         if(i>0 && i<_displayedValues.size()-1){
-            p.drawLine(pos.x(),2+BORDER_HEIGHT,pos.x(),2+BORDER_HEIGHT-TICK_HEIGHT);
+            p.drawLine((int)(pos.x()+0.5),2+BORDER_HEIGHT,(int)(pos.x()+0.5),2+BORDER_HEIGHT-TICK_HEIGHT);
         }
         pos.setX(pos.x()+incr);
     }
     //drawing cursor
-    double cursorPos = getCoordPosition(_position);
+    int cursorPos = (int)(getCoordPosition(_position) + 0.5);
     p.fillRect(cursorPos-2, BORDER_HEIGHT-TICK_HEIGHT, 4, 2*TICK_HEIGHT,QColor(97,83,30));
     p.setPen(Qt::black);
     p.drawRect(cursorPos-3,BORDER_HEIGHT-TICK_HEIGHT-1,5,2*TICK_HEIGHT+2);

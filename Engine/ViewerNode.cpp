@@ -175,7 +175,9 @@ std::string ViewerNode::description(){
 void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
     Row* row = input(_activeInput)->get(y,offset,range);
     if(row){
-        row->zoomedY(out->zoomedY());
+        int zoomedY = out->zoomedY();
+        //assert(zoomedY > 0.);
+        row->set_zoomedY(zoomedY);
         /*drawRow will fill a portion of the RAM buffer holding the frame.
          This will write at the appropriate offset in the buffer thanks
          to the zoomedY(). Note that this can be called concurrently since

@@ -489,16 +489,14 @@ void ReadExr::make_preview(){
     float zoomFactor = (float)h/(float)dh;
     for (int i =0 ; i < h; ++i) {
         float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        readScanLine(nearest);
+        int nearestY = (int)(y+0.5);
+        readScanLine(nearestY);
     }
     QImage* img=new QImage(w,h,QImage::Format_ARGB32);
     for (int i=0; i< h; ++i) {
-        float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        int exrY = dispWindow.max.y+1 - nearest;
+        double y = i*1.f/zoomFactor;
+        int nearestY = (int)(y+0.5);
+        int exrY = dispWindow.max.y+1 - nearestY;
         if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
         Row* from = _img[exrY];
         QRgb *dst_pixels = (QRgb *) img->scanLine(h-1-i);
@@ -511,9 +509,8 @@ void ReadExr::make_preview(){
         if(blue) blue+=from->offset();
         if(alpha) alpha+=from->offset();
         for (int j=0; j<w; ++j) {
-            float x = (float)j*1.f/zoomFactor;
-            int nearestX;
-            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            double x = j*1.f/zoomFactor;
+            int nearestX = (int)(x+0.5);
             float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
             float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
             float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;

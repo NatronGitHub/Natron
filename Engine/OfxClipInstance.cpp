@@ -230,10 +230,10 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         assert(input);
         if(input->isOpenFXNode()){
             OfxRectI roiInput;
-            roiInput.x1 = roi.x1;
-            roiInput.x2 = roi.x2;
-            roiInput.y1 = roi.y1;
-            roiInput.y2 = roi.y2;
+            roiInput.x1 = (int)std::floor(roi.x1);
+            roiInput.x2 = (int)std::ceil(roi.x2);
+            roiInput.y1 = (int)std::floor(roi.y1);
+            roiInput.y2 = (int)std::ceil(roi.y2);
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
             OfxNode* ofxInputNode = dynamic_cast<OfxNode*>(input);
@@ -244,13 +244,13 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
             assert(clip);
             return clip->getImage(time, optionalBounds);
-        }else{
-            ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
+        } else {
+            ImageFetcher srcImg(input, (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2)-1, (int)std::ceil(roi.y2)-1,Mask_RGBA);
             srcImg.claimInterest(true);
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
-            for (int y = roi.y1; y < roi.y2; ++y) {
+            for (int y = (int)std::floor(roi.y1); y < (int)std::ceil(roi.y2); ++y) {
                 OfxRGBAColourF* dstImg = ret->pixelF(0, y);
                 assert(dstImg);
                 Row* row = srcImg.at(y);

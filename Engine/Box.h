@@ -34,7 +34,7 @@ public:
         int y;
         int x;
         
-        iterator(int y, int x, int l, int r) : y(y), x(x), l(l), r(r) { }
+        iterator(int y_, int x_, int l_, int r_) : y(y_), x(x_), l(l_), r(r_) { }
         
         void operator++() {
             ++x;

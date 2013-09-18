@@ -172,8 +172,8 @@ public:
         **/
         class Descriptor{
         public:
-            Descriptor(Read* readHandle, const std::string& filename)
-            : _readHandle(readHandle)
+            Descriptor(Read* readHandle_, const std::string& filename)
+            : _readHandle(readHandle_)
             , _filename(filename){}
             
             Descriptor()
@@ -211,9 +211,9 @@ public:
          */
         class ScanLineDescriptor : public Reader::Buffer::Descriptor{
         public:
-            ScanLineDescriptor(Read* readHandle,
+            ScanLineDescriptor(Read* readHandle_,
                        std::string filename,ScanLineContext *slContext):
-            Reader::Buffer::Descriptor(readHandle, filename),_slContext(slContext),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle_, filename),_slContext(slContext),_hasRead(false){}
             
             ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0),_hasRead(false){}
             
@@ -234,9 +234,9 @@ public:
         
         class FullFrameDescriptor : public Reader::Buffer::Descriptor{
         public:
-            FullFrameDescriptor(Read* readHandle,
+            FullFrameDescriptor(Read* readHandle_,
                                std::string filename):
-            Reader::Buffer::Descriptor(readHandle, filename),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle_, filename),_hasRead(false){}
             
             FullFrameDescriptor(): Reader::Buffer::Descriptor(),_hasRead(false){}
             

@@ -115,9 +115,9 @@ public:
     
 private:
 
-    QMutex _lock; // lock used in engine(...) function
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
+    QMutex _firstTimeMutex; // lock used in engine(...) function, protects _firstTime
     bool _firstTime; //used in engine(...) to operate once per frame
     bool _isOutput;
     QImage* _preview;

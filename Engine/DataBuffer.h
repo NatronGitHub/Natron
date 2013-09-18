@@ -47,7 +47,7 @@ public:
     >// -1 is returned if the buffer is NULL.
     >// the step parameter specifies the step(in bytes) in the src buffer of each element desired to be copied.
      */
-    size_t fillBuffer(const void* src,size_t nb_bytes,size_t step=1);
+    ssize_t fillBuffer(const void* src,size_t nb_bytes,size_t step=1);
 
     bool valid(){return _buffer!=NULL;}
 

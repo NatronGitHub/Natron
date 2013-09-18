@@ -301,7 +301,7 @@ void Gui::setupUi()
     QDesktopWidget* desktop=QApplication::desktop();
     QRect screen=desktop->screenGeometry();
     assert(!isFullScreen());
-    resize(0.93*screen.width(),0.93*screen.height()); // leave some space
+    resize((int)(0.93*screen.width()),(int)(0.93*screen.height())); // leave some space
     assert(!isDockNestingEnabled()); // should be false by default
     
     loadStyleSheet();

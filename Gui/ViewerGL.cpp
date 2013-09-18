@@ -344,9 +344,9 @@ void ViewerGL::resizeGL(int width, int height){
         height=1;
     float ap = displayWindow().pixel_aspect();
     if(ap > 1.f){
-        glViewport (0, 0, width*ap, height);
+        glViewport (0, 0, (int)(width*ap), height);
     }else{
-        glViewport (0, 0, width, height/ap);
+        glViewport (0, 0, width, (int)(height/ap));
     }
     checkGLErrors();
     _ms = UNDEFINED;
@@ -605,7 +605,7 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
     }
     while(y >= 0 && res >= displayWindow.bottom() && res < displayWindow.top()){
         /*y is a valid line in widget coord && res contains the image y coord.*/
-        int row = std::floor(res);
+        int row = (int)std::floor(res);
         assert(row >= displayWindow.bottom() && row < displayWindow.top());
         if(row != prev){
             rows->push_back(row);
@@ -651,7 +651,7 @@ std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::
     }
     while(x < width() && res >= displayWindow.left() && res < displayWindow.right()) {
         /*y is a valid column in widget coord && res contains the image x coord.*/
-        int column = std::floor(res);
+        int column = (int)std::floor(res);
         assert(column >= displayWindow.left() && column < displayWindow.right());
         if(column != prev){
             columns->push_back(column);
@@ -914,7 +914,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         int start = (int)(rand() % row_width);
         /* go fowards from starting point to end of line: */
         for(unsigned int i = start ; i < row_width; ++i) {
-            float _r,_g,_b,_a;
+            double _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
             _r = (r != NULL) ? r[col] : 0.f;
@@ -928,15 +928,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             }
             _r*=_a;_g*=_a;_b*=_a;
             _r*=exposure;_g*=exposure;_b*=exposure;
-            a_ = _a*255;
-            r_ = _r*255;
-            g_ = _g*255;
-            b_ = _b*255;
+            a_ = (U8)std::min((int)(_a*256),255);
+            r_ = (U8)std::min((int)(_r*256),255);
+            g_ = (U8)std::min((int)(_g*256),255);
+            b_ = (U8)std::min((int)(_b*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
         for(int i = start-1 ; i >= 0 ; --i){
-            float _r,_g,_b,_a;
+            double _r,_g,_b,_a;
             U8 r_,g_,b_,a_;
             int col = columnSpan[i];
             _r = (r != NULL) ? r[col] : 0.f;
@@ -949,10 +949,10 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             }
             _r*=_a;_g*=_a;_b*=_a;
             _r*=exposure;_g*=exposure;_b*=exposure;
-            a_ = _a*255;
-            r_ = _r*255;
-            g_ = _g*255;
-            b_ = _b*255;
+            a_ = (U8)std::min((int)(_a*256),255);
+            r_ = (U8)std::min((int)(_r*256),255);
+            g_ = (U8)std::min((int)(_g*256),255);
+            b_ = (U8)std::min((int)(_b*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }else{ // !linear
@@ -971,7 +971,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         float *row_a = new float[row_width];
         for (unsigned int i = 0 ; i < row_width; ++i) {
             int col = columnSpan[i];
-            float _r,_g,_b,_a;
+            double _r,_g,_b,_a;
             _r = (r != NULL) ? r[col] : 0.f;
             _g = (g != NULL) ? g[col] : 0.f;
             _b = (b != NULL) ? b[col] : 0.f;
@@ -983,7 +983,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         }
         if (!rgbMode()) { // FIXME-seeabove: what does !rgbMode() mean?
             for(unsigned int i = 0 ; i < row_width; ++i) {
-                float _r,_g,_b;
+                double _r,_g,_b;
                 _r = row_r[i];
                 _r = (_r + 1.0)*_r;
                 _g = _r; _b = _r;
@@ -1003,13 +1003,13 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
             U8 r_,g_,b_,a_;
 
-            error_r = (error_r&0xff) + row_r_out[i];
-            error_g = (error_g&0xff) + row_g_out[i];
-            error_b = (error_b&0xff) + row_b_out[i];
-            a_ = (row_a[i]/exposure)*255;
-            r_ = error_r >> 8;
-            g_ = error_g >> 8;
-            b_ = error_b >> 8;
+            error_r = (error_r&0xff) + (unsigned)row_r_out[i];
+            error_g = (error_g&0xff) + (unsigned)row_g_out[i];
+            error_b = (error_b&0xff) + (unsigned)row_b_out[i];
+            a_ = (U8)std::min((int)((row_a[i]/exposure)*256),255);
+            r_ = (U8)(error_r >> 8);
+            g_ = (U8)(error_g >> 8);
+            b_ = (U8)(error_b >> 8);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
@@ -1020,13 +1020,13 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         for (int i = start-1 ; i >= 0 ; --i) {
             U8 r_,g_,b_,a_;
             
-            error_r = (error_r&0xff) + row_r_out[i];
-            error_g = (error_g&0xff) + row_g_out[i];
-            error_b = (error_b&0xff) + row_b_out[i];
-            a_ = (row_a[i]/exposure)*255;
-            r_ = error_r >> 8;
-            g_ = error_g >> 8;
-            b_ = error_b >> 8;
+            error_r = (error_r&0xff) + (unsigned)row_r_out[i];
+            error_g = (error_g&0xff) + (unsigned)row_g_out[i];
+            error_b = (error_b&0xff) + (unsigned)row_b_out[i];
+            a_ = (U8)std::min((int)((row_a[i]/exposure)*256),255);
+            r_ = (U8)(error_r >> 8);
+            g_ = (U8)(error_g >> 8);
+            b_ = (U8)(error_b >> 8);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         delete [] row_r;
@@ -1083,7 +1083,7 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPointF pos;
-    pos = toImgCoordinates_fast((float)event->x(), event->y());
+    pos = toImgCoordinates_fast(event->x(), event->y());
     const Format& dispW = displayWindow();
     if(pos.x() >= dispW.left() &&
        pos.x() <= dispW.width() &&
@@ -1098,7 +1098,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
         if(videoEngine && !videoEngine->isWorking()){
             updateColorPicker(event->x(),event->y());
         }
-        _infoViewer->setMousePos(QPoint(pos.x(),pos.y()));
+        _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
         emit infoMousePosChanged();
     }else{
         if(_infoViewer->colorAndMouseVisible()){
@@ -1177,7 +1177,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     updateGL();
     
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
-    int zoomValue = 100*_zoomCtx._zoomFactor;
+    int zoomValue = (int)(100*_zoomCtx._zoomFactor);
     if (zoomValue == 0) {
         zoomValue = 1; // sometimes, floor(100*0.01) makes 0
     }
@@ -1187,7 +1187,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
 void ViewerGL::setZoomFactor(double f){
     assert(f>0. && f <= 1024);
     _zoomCtx.setZoomFactor(f);
-    emit zoomChanged(f*100);
+    emit zoomChanged((int)(f*100));
 }
 
 void ViewerGL::zoomSlot(int v){
@@ -1216,13 +1216,13 @@ void ViewerGL::zoomSlot(QString str){
 }
 
 QPoint ViewerGL::toWidgetCoordinates(int x, int y){
-    float w = (float)width() ;
-    float h = (float)height();
-    float bottom = _zoomCtx._bottom;
-    float left = _zoomCtx._left;
-    float top =  bottom +  h / _zoomCtx._zoomFactor;
-    float right = left +  w / _zoomCtx._zoomFactor;
-    return QPoint((((float)x - left)/(right - left))*w,(((float)y - top)/(bottom - top))*h);
+    double w = width() ;
+    double h = height();
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / _zoomCtx._zoomFactor;
+    double right = left +  w / _zoomCtx._zoomFactor;
+    return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
 /*Returns coordinates with 0,0 at top left, Powiter inverts
  y as such : y= displayWindow().height() - y  to get the coordinates
@@ -1238,7 +1238,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
     glGetIntegerv( GL_VIEWPORT, viewport );
     winX = (float)x;
     winY = viewport[3]- y;
-    glReadPixels( x, winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
+    glReadPixels( x, (int)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ );
     gluUnProject( winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
     checkGLErrors();
     return QVector3D(posX,posY,posZ);
@@ -1272,8 +1272,11 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
 void ViewerGL::fitToFormat(Format displayWindow){
     double h = displayWindow.height();
     double w = displayWindow.width();
+    assert(h > 0. && w > 0.);
     double zoomFactor = height()/h;
-    setZoomFactor( (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01) );
+    zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
+    assert(zoomFactor>=0.01 && zoomFactor <= 1024);
+    setZoomFactor(zoomFactor);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));

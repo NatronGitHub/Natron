@@ -44,12 +44,15 @@ void Row::turnOn(Channel c) {
 
 
 
-Row::Row(int x,int y, int range, ChannelSet channels)
-:_cacheWillDelete(false){
-    this->x=x;
-	this->_y=y;
-    this->r=range;
-    _channels = channels;
+Row::Row(int x_,int y_, int range, ChannelSet channels)
+: _cacheWillDelete(false)
+, _y(y_)
+, _zoomedY(-1)
+, _channels(channels)
+, x(x_)
+, r(range)
+, buffers(NULL)
+{
     buffers = (float**)malloc(POWITER_MAX_BUFFERS_PER_ROW*sizeof(float*));
     assert(buffers);
     memset(buffers, 0, sizeof(float*)*POWITER_MAX_BUFFERS_PER_ROW);
@@ -115,16 +118,16 @@ float* Row::writable(Channel c) {
     }
 }
 
-void Row::copy(const Row *source,ChannelSet channels,int o,int r){
+void Row::copy(const Row *source,ChannelSet channels,int o,int r_){
     _channels = channels;
-    range(o, r); // does nothing if the range is smaller
+    range(o, r_); // does nothing if the range is smaller
     foreachChannels(z, channels){
         if(!buffers[z]){
             turnOn(z);
         }
         const float* sourcePtr = (*source)[z] + o;
         float* to = buffers[z] -x + o;
-        float* end = to + r;
+        float* end = to + r_;
         while (to != end) {
             *to = *sourcePtr;
             ++to;

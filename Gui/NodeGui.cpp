@@ -35,22 +35,30 @@ using namespace std;
 static const double pi=3.14159265358979323846264338327950288419717;
 
 NodeGui::NodeGui(NodeGraph* dag,
-                 QVBoxLayout *dockContainer,
-                 Node *node,
+                 QVBoxLayout *dockContainer_,
+                 Node *node_,
                  qreal x, qreal y,
                  QGraphicsItem *parent,
                  QGraphicsScene* scene,
-                 QObject* parentObj):
-QObject(parentObj),
-QGraphicsItem(parent),
-_dag(dag),
-node(node),
-_selected(false),
-sc(scene),
-settings(0)
+                 QObject* parentObj)
+: QObject(parentObj)
+, QGraphicsItem(parent)
+, _dag(dag)
+, node(node_)
+, _selected(false)
+, name(NULL)
+, dockContainer(dockContainer_)
+, sc(scene)
+, rectangle(NULL)
+, channels(NULL)
+, prev_pix(NULL)
+, inputs()
+, _knobs()
+, settingsPanel_displayed(false)
+, settings(0)
 {
-    
-    
+
+
     QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
     QObject::connect(this, SIGNAL(nameChanged(QString)), this, SLOT(onLineEditNameChanged(QString)));
     QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
@@ -147,7 +155,7 @@ settings(0)
     /*building settings panel*/
 	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
-		this->dockContainer=dockContainer;
+		assert(dockContainer);
 		settings=new SettingsPanel(this,dockContainer->parentWidget());
         
 		dockContainer->addWidget(settings);
@@ -361,9 +369,9 @@ bool NodeGui::isNearby(QPointF &point){
     return r.contains(point);
 }
 
-void NodeGui::setName(const QString& name){
-    onInternalNameChanged(name);
-    emit nameChanged(name);
+void NodeGui::setName(const QString& name_){
+    onInternalNameChanged(name_);
+    emit nameChanged(name_);
 }
 void NodeGui::onLineEditNameChanged(const QString& s){
     name->setText(s);
