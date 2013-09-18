@@ -21,8 +21,7 @@
 #include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
-
-#include "Engine/Singleton.h"
+#include "Global/AppManager.h"
 
 class Knob;
 class Node;
@@ -144,28 +143,26 @@ typedef unsigned int Knob_Mask;
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
 class KnobGui;
-class KnobFactory : public Singleton<KnobFactory>{
+class KnobFactory{
     
     std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
+    
+public:
+    KnobFactory();
+    
+    ~KnobFactory();
+    
+    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
+   
+    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
+    
+    KnobGui* createGuiForKnob(Knob* knob);
+    
+private:
     
     void loadKnobPlugins();
     
     void loadBultinKnobs();
-    
-public:
-    
-    
-    KnobFactory();
-    
-    virtual ~KnobFactory();
-    
-    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
-    
-    /*Calls the unique instance of the KnobFactory and
-     calls the appropriate pointer to function to create a knob.*/
-    static Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
-    
-    static KnobGui* createGuiForKnob(Knob* knob);
     
 };
 

@@ -36,9 +36,9 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
 {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Button_Knob*>(KnobFactory::createKnob("Button", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", node, name,1, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -92,9 +92,9 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
 {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name,1, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -154,9 +154,9 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
 :OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -225,9 +225,9 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
 :OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", node, name, 1,Knob::NONE));
+    _knob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", node, name, 1,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -288,9 +288,9 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
 :OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name) {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", node, name,1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -369,9 +369,9 @@ _descriptor(descriptor),
 _paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", node, name, 1,Knob::NONE));
+    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name, 1,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -452,9 +452,9 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
 :OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(KnobFactory::createKnob("RGBA", node, name,1, Knob::NO_ALPHA));
+    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name,1, Knob::NO_ALPHA));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -531,9 +531,9 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
 :OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(KnobFactory::createKnob("Double", node, name,2, Knob::NONE));
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, name,2, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -618,9 +618,9 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
 :OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(KnobFactory::createKnob("Int", node, name, 2,Knob::NONE));
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name, 2,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -707,13 +707,13 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
         if(!_tabKnob){
-            _tabKnob = dynamic_cast<Tab_Knob*>(KnobFactory::createKnob("Tab", node, name,1, Knob::NONE));
+            _tabKnob = dynamic_cast<Tab_Knob*>(appPTR->getKnobFactory()->createKnob("Tab", node, name,1, Knob::NONE));
             _node->setTabKnob(_tabKnob);
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
     }else{
-        _groupKnob = dynamic_cast<Group_Knob*>(KnobFactory::createKnob("Group", node, name,1, Knob::NONE));
+        _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, name,1, Knob::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
     }
@@ -743,11 +743,11 @@ _fileKnob(0),_outputFileKnob(0){
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        KnobFactory::createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
-            _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", node, name, 1,Knob::NONE));
+            _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", node, name, 1,Knob::NONE));
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
@@ -755,7 +755,7 @@ _fileKnob(0),_outputFileKnob(0){
             _fileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", node, name,1, Knob::NONE));
+            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, name,1, Knob::NONE));
             QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
             if(layoutHint == 2){
                 _outputFileKnob->turnOffNewLine();
@@ -767,7 +767,7 @@ _fileKnob(0),_outputFileKnob(0){
         if(mode == kOfxParamStringIsLabel){
             flags = Knob::READ_ONLY;
         }
-        _stringKnob = dynamic_cast<String_Knob*>(KnobFactory::createKnob("String", node, name,1, flags));
+        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory()->createKnob("String", node, name,1, flags));
         QObject::connect(_stringKnob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
         if(layoutHint == 2){
             _stringKnob->turnOffNewLine();

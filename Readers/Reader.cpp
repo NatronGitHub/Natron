@@ -73,7 +73,7 @@ std::string Reader::description() {
 
 void Reader::initKnobs(){
     std::string desc("File");
-    _fileKnob = dynamic_cast<File_Knob*>(KnobFactory::createKnob("InputFile", this, desc,1, Knob::NONE));
+    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", this, desc,1, Knob::NONE));
     QObject::connect(_fileKnob, SIGNAL(valueChangedByUser()), this, SLOT(showFilePreview()));
     assert(_fileKnob);
 }

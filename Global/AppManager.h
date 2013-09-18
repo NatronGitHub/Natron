@@ -32,7 +32,9 @@
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
-
+class KnobFactory;
+class NodeCache;
+class ViewerCache;
 class NodeGui;
 class Node;
 class Model;
@@ -243,6 +245,12 @@ public:
      their name in "functions".*/
     static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
                                                                             const std::vector<std::string>& functions);
+    
+    ViewerCache* getViewerCache() const {return _viewerCache;}
+    
+    NodeCache* getNodeCache() const {return _nodeCache;}
+    
+    KnobFactory* getKnobFactory() const {return _knobFactory;}
  
 public slots:
     
@@ -299,6 +307,12 @@ private:
     boost::scoped_ptr<Powiter::OfxHost> ofxHost;
     
     std::vector<PluginToolButton*> _toolButtons;
+    
+    KnobFactory* _knobFactory;
+    
+    NodeCache* _nodeCache;
+    
+    ViewerCache* _viewerCache;
     
 };
 

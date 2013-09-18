@@ -124,21 +124,21 @@ void Writer::createKnobDynamically(){
 }
 void Writer::initKnobs(){
     std::string fileDesc("File");
-    _fileKnob = dynamic_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", this, fileDesc,1, Knob::NONE));
+    _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", this, fileDesc,1, Knob::NONE));
     QObject::connect(_fileKnob,SIGNAL(filesSelected()),this,SLOT(onFilesSelected()));
     assert(_fileKnob);
     
     std::string renderDesc("Render");
-    Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", this, renderDesc, 1,Knob::NONE));
+    Button_Knob* renderButton = static_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", this, renderDesc, 1,Knob::NONE));
     assert(renderButton);
     QObject::connect(renderButton, SIGNAL(valueChangedByUser()), this, SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", this, premultString, 1,Knob::NONE));
+    Bool_Knob* premult = static_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", this, premultString, 1,Knob::NONE));
     premult->setValue(_premult);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", this, filetypeStr, 1,Knob::NONE));
+    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", this, filetypeStr, 1,Knob::NONE));
     QObject::connect(_filetypeCombo, SIGNAL(valueChangedByUser()), this, SLOT(fileTypeChanged()));
     const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();

@@ -431,7 +431,7 @@ void Node::createKnobDynamically(){
 
 
 Row* Node::get(int y,int x,int r){
-    NodeCache* cache = NodeCache::getNodeCache();
+    NodeCache* cache = appPTR->getNodeCache();
     std::string filename;
     Reader* reader = dynamic_cast<Reader*>(this);
     if(reader){

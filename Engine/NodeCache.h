@@ -13,7 +13,6 @@
 #define POWITER_ENGINE_NODECACHE_H_
 
 #include "Engine/AbstractCache.h"
-#include "Engine/Singleton.h"
 
 class ChannelSet;
 class Row;
@@ -36,7 +35,7 @@ class Row;
  */
 #include <QtCore/QString>
 
-class NodeCache : public AbstractMemoryCache, public Singleton<NodeCache> {
+class NodeCache : public AbstractMemoryCache {
     
 public:
     NodeCache();
@@ -47,8 +46,6 @@ public:
     
     virtual std::string cacheVersion(){return "v1.0.0";}
     
-    static NodeCache* getNodeCache();
-        
     /*Returns a valid pair<key,row> if the cache was able to find a row represented
      by the nodeKey, the filename and the range (x,r). 
      Returns <key,NULL> if nothing was found, key being the key that was computed to find the entry.*/
@@ -60,8 +57,5 @@ public:
 
     
 };
-
-/*special macro to get the unique pointer to the node cache*/
-#define nodeCache NodeCache::getNodeCache()
 
 #endif /* defined(POWITER_ENGINE_NODECACHE_H_) */

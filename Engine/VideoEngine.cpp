@@ -303,7 +303,6 @@ void VideoEngine::run(){
             } else { // if the call is recursive, i.e: the next frame in the sequence
                 /*clear the node cache, as it is very unlikely the user will re-use
                  data from previous frame.*/
-                //  NodeCache::getNodeCache()->clear();
                 lastFrame = _dag.lastFrame();
                 firstFrame = _dag.firstFrame();
                 assert(_dag.outputAsViewer());
@@ -422,7 +421,7 @@ void VideoEngine::run(){
             r = columnSpan.second+1;
             
             
-            iscached = ViewerCache::getViewerCache()->get(key);
+            iscached = appPTR->getViewerCache()->get(key);
             /*Found in viewer cache, we execute the cached engine and leave*/
             if (iscached) {
                 _lastFrameInfos._cachedEntry = iscached;
@@ -480,8 +479,8 @@ void VideoEngine::run(){
         }
 
         if (!_lastRunArgs._sameFrame) {
-            assert(NodeCache::getNodeCache());
-            NodeCache::getNodeCache()->clear();
+            assert(appPTR->getNodeCache());
+            appPTR->getNodeCache()->clear();
         }
         ChannelSet outChannels;
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
@@ -529,8 +528,8 @@ void VideoEngine::run(){
             assert(viewer->getUiContext());
             assert(viewer->getUiContext()->viewer);
             viewer->getUiContext()->viewer->stopDisplayingProgressBar();
-            assert(ViewerCache::getViewerCache());
-            FrameEntry* entry = ViewerCache::getViewerCache()->addFrame(key,
+            assert(appPTR->getViewerCache());
+            FrameEntry* entry = appPTR->getViewerCache()->addFrame(key,
                                                                         _treeVersion,
                                                                         zoomFactor,
                                                                         exposure,

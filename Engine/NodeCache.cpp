@@ -28,9 +28,6 @@ NodeCache::NodeCache() : AbstractMemoryCache() {
 NodeCache::~NodeCache() {    
 }
 
-NodeCache* NodeCache::getNodeCache(){
-   return NodeCache::instance();
-}
 
 
 std::pair<U64,Row*> NodeCache::get(U64 nodeKey, const std::string& filename, int x, int r, int y, const ChannelSet& ){

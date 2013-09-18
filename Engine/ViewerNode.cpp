@@ -39,14 +39,14 @@ _activeInput(0)
 }
 
 void ViewerNode::connectSlotsToViewerCache(){
-    ViewerCache* cache = ViewerCache::getViewerCache();
+    ViewerCache* cache = appPTR->getViewerCache();
     QObject::connect(cache, SIGNAL(addedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(cache, SIGNAL(removedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));
 }
 
 void ViewerNode::disconnectSlotsToViewerCache(){
-    ViewerCache* cache = ViewerCache::getViewerCache();
+    ViewerCache* cache = appPTR->getViewerCache();
     QObject::disconnect(cache, SIGNAL(addedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::disconnect(cache, SIGNAL(removedFrame()), this, SLOT(onCachedFrameAdded()));
     QObject::disconnect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));

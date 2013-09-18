@@ -15,7 +15,6 @@
 #include <QtCore/QObject>
 
 #include "Engine/AbstractCache.h" // for MemoryMappedEntry
-#include "Engine/Singleton.h"
 
 #include "Gui/Texture.h" // for TextureRect
 
@@ -72,16 +71,14 @@ public:
 
 class ReaderInfo;
 class MemoryMappedEntry;
-class ViewerCache :public QObject, public AbstractDiskCache , public Singleton<ViewerCache>
+class ViewerCache :public QObject, public AbstractDiskCache
 {
        Q_OBJECT
 public:
     
     
 	ViewerCache();
-    
-    static ViewerCache* getViewerCache() {return ViewerCache::instance();}
-    
+        
 	virtual ~ViewerCache();
     
 	virtual std::string cacheName(){std::string str("ViewerCache");return str;}

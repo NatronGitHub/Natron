@@ -503,7 +503,7 @@ void NodeGui::initializeKnobs(){
 KnobGui* NodeGui::findKnobGuiOrCreate(Knob* knob){
     map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
     if (it == _knobs.end()) {
-        KnobGui* ret =  KnobFactory::createGuiForKnob(knob);
+        KnobGui* ret =  appPTR->getKnobFactory()->createGuiForKnob(knob);
         if(!ret){
             std::cout << "Failed to create gui for Knob" << std::endl;
             return NULL;

@@ -455,18 +455,18 @@ void AppInstance::clearPlaybackCache(){
     if (!_model->getCurrentOutput()) { // FIXME: the playback cache is global, why should this action depend on this model's output?
         return;
     }
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
+    appPTR->getViewerCache()->clearInMemoryPortion();
 }
 
 
 void AppInstance::clearDiskCache(){
-    ViewerCache::getViewerCache()->clearInMemoryPortion();
-    ViewerCache::getViewerCache()->clearDiskCache();
+    appPTR->getViewerCache()->clearInMemoryPortion();
+    appPTR->getViewerCache()->clearDiskCache();
 }
 
 
 void  AppInstance::clearNodeCache(){
-    NodeCache::getNodeCache()->clear();
+    appPTR->getNodeCache()->clear();
 }
 
 
@@ -533,6 +533,9 @@ AppManager::AppManager()
 , _nodeNames()
 , ofxHost(new Powiter::OfxHost())
 , _toolButtons()
+, _knobFactory(new KnobFactory())
+, _nodeCache(new NodeCache())
+, _viewerCache(new ViewerCache())
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
                      this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -543,25 +546,20 @@ AppManager::AppManager()
     loadBuiltinFormats();
     
     /*node cache initialisation & restoration*/
-    NodeCache* nc = NodeCache::getNodeCache();
     U64 nodeCacheMaxSize = (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent-
                             Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*
     getSystemTotalRAM();
-    nc->setMaximumCacheSize(nodeCacheMaxSize);
+    _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);
     
     
     /*viewer cache initialisation & restoration*/
-    ViewerCache* viewerCache = ViewerCache::getViewerCache();
-    viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
-    viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
-    viewerCache->restore();
-    
-    KnobFactory::instance();
+    _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
+    _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
+    _viewerCache->restore();
     
 }
 
 AppManager::~AppManager(){
-    ViewerCache::getViewerCache()->save();
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -575,6 +573,10 @@ AppManager::~AppManager(){
     foreach(PluginToolButton* p,_toolButtons){
         delete p;
     }
+    delete _knobFactory;
+    delete _nodeCache;
+    _viewerCache->save();
+    delete _viewerCache;
 }
 
 void AppManager::loadAllPlugins() {

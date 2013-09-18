@@ -197,12 +197,10 @@ void KnobFactory::loadBultinKnobs(){
     
 }
 
-/*Calls the unique instance of the KnobFactory and
- calls the appropriate pointer to function to create a knob.*/
+
 Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags){
-    const std::map<std::string,LibraryBinary*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
-    std::map<std::string,LibraryBinary*>::const_iterator it = loadedPlugins.find(name);
-    if(it == loadedPlugins.end()){
+    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(name);
+    if(it == _loadedKnobs.end()){
         return NULL;
     }else{
         std::pair<bool,KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("BuildKnob");
@@ -220,9 +218,8 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
     }
 }
 KnobGui* KnobFactory::createGuiForKnob(Knob* knob){
-    const std::map<std::string,LibraryBinary*>& loadedPlugins = KnobFactory::instance()->getLoadedKnobs();
-    std::map<std::string,LibraryBinary*>::const_iterator it = loadedPlugins.find(knob->name());
-    if(it == loadedPlugins.end()){
+    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(knob->name());
+    if(it == _loadedKnobs.end()){
         return NULL;
     }else{
         std::pair<bool,KnobGuiBuilder> guiBuilderFunc = it->second->findFunction<KnobGuiBuilder>("BuildKnobGui");
