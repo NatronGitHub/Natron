@@ -254,7 +254,8 @@ bool Node::validate(bool doFullWork){
     return true;
 }
 
-bool Node::connectInput(Node* input,int inputNumber){
+bool Node::connectInput(Node* input,int inputNumber) {
+    assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
         return false;
@@ -276,7 +277,7 @@ void Node::connectOutput(Node* output,int outputNumber ){
     _outputs.insert(make_pair(outputNumber,output));
 }
 
-int Node::disconnectInput(int inputNumber){
+int Node::disconnectInput(int inputNumber) {
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
@@ -288,7 +289,8 @@ int Node::disconnectInput(int inputNumber){
     }
 }
 
-int Node::disconnectInput(Node* input){
+int Node::disconnectInput(Node* input) {
+    assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
             return -1;
@@ -303,7 +305,8 @@ int Node::disconnectInput(Node* input){
     return -1;
 }
 
-int Node::disconnectOutput(Node* output){
+int Node::disconnectOutput(Node* output) {
+    assert(output);
     for (OutputMap::iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
         if (it->second == output) {
             int outputNumber = it->first;;
@@ -502,7 +505,12 @@ bool Node::hasOutputConnected() const{
 }
 
 void Node::removeKnob(Knob* knob) {
-    _knobs.erase( std::remove(_knobs.begin(), _knobs.end(), knob), _knobs.end()); // erase all elements with value knobs
+    assert(knob);
+    //_knobs.erase( std::remove(_knobs.begin(), _knobs.end(), knob), _knobs.end()); // erase all elements with value knobs
+    std::vector<Knob*>::iterator it = std::find(_knobs.begin(), _knobs.end(), knob);
+    if (it != _knobs.end()) {
+        _knobs.erase(it);
+    }
 }
 
 void Node::initializeKnobs(){
