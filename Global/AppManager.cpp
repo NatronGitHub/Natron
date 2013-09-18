@@ -559,6 +559,9 @@ AppManager::AppManager()
 }
 
 AppManager::~AppManager(){
+    
+}
+void AppManager::quit(){
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }

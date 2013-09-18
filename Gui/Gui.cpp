@@ -129,6 +129,7 @@ bool Gui::exit(){
         return false;
     } else {
         delete this;
+        appPTR->quit();
         qApp->quit();
         return true;
     }

@@ -251,6 +251,8 @@ public:
     NodeCache* getNodeCache() const {return _nodeCache;}
     
     KnobFactory* getKnobFactory() const {return _knobFactory;}
+    
+    
  
 public slots:
     
@@ -258,7 +260,8 @@ public slots:
                                 const QString& pluginName,
                                 const QString& pluginIconPath,
                                 const QString& groupIconPath);
-    
+    /*Quit the app*/
+    void quit();
 private:
     
     /*Loads all kind of plugins*/
