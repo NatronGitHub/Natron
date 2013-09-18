@@ -82,10 +82,6 @@ public:
     
     bool isSelected() const {return _selected;}
     
-	void addKnobDynamically(KnobGui* knob);
-    
-    void removeAndDeleteKnob(KnobGui* knob);
-    
     bool isMinimized() const {return _minimized;}
     
     virtual void mousePressEvent(QMouseEvent* e);

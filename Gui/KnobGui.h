@@ -18,7 +18,6 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QUndoCommand>
-#include <QWidget>
 #include <QLineEdit>
 #include <QLabel>
 
@@ -42,7 +41,7 @@ class Knob;
 class QVBoxLayout;
 class QHBoxLayout;
 class QGridLayout;
-class KnobGui : public QWidget
+class KnobGui : public QObject
 {
     Q_OBJECT
     
@@ -51,7 +50,7 @@ public:
     
     friend class KnobUndoCommand;
     
-    KnobGui(Knob* knob,QWidget* parent = NULL);
+    KnobGui(Knob* knob);
     
     virtual ~KnobGui();
         
@@ -72,9 +71,19 @@ public:
         updateGUI(_knob->getValueAsVariant());
     }
     
+    void moveToLayout(QVBoxLayout* layout);
+    
+    /*Used by Tab_KnobGui to insert already existing widgets
+     in a tab.*/
+    virtual void addToLayout(QHBoxLayout* layout)=0;
+    
+    
     void pushUndoCommand(QUndoCommand* cmd);
     
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
+    
+    virtual void hide() =0;
+    virtual void show() =0;
     
 public slots:
     /*Called when the value held by the knob is changed internally.
@@ -95,6 +104,7 @@ protected:
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset)=0;
     
+   
     /*Called by the onInternalValueChanged slot. This should update
      the widget to reflect the new internal value held by variant.*/
     virtual void updateGUI(const Variant& variant)=0;
@@ -133,6 +143,12 @@ public:
             
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     void open_file();
     void onReturnPressed();
@@ -149,6 +165,9 @@ private:
     
     
     LineEdit* _lineEdit;
+    QLabel* _descriptionLabel;
+    Button* _openFileButton;
+    
     QString _lastOpened;
 };
 
@@ -167,6 +186,12 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     void open_file();
     void onReturnPressed();
@@ -181,6 +206,8 @@ private:
 
     
     LineEdit* _lineEdit;
+    QLabel* _descriptionLabel;
+    Button* _openFileButton;
     QString _lastOpened;
 };
 
@@ -206,6 +233,12 @@ public:
     void setMaximum(int);
     void setMinimum(int);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     void onSpinBoxValueChanged();
  
@@ -214,7 +247,9 @@ protected:
     virtual void updateGUI(const Variant& variant);
     
 private:
-    std::vector<FeedbackSpinBox*> _spinBoxes;
+    std::vector<std::pair<FeedbackSpinBox*,QLabel*> > _spinBoxes;
+    QLabel* _descriptionLabel;
+
 };
 
 //================================
@@ -232,6 +267,12 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     
     void onCheckBoxStateChanged(bool);
@@ -243,6 +284,7 @@ protected:
 private:
 
 	QCheckBox* _checkBox;
+    QLabel* _descriptionLabel;
 };
 
 
@@ -264,6 +306,12 @@ public:
     void setMaximum(int);
     void setMinimum(int);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
     public slots:
     void onSpinBoxValueChanged();
     
@@ -272,7 +320,8 @@ protected:
     virtual void updateGUI(const Variant& variant);
     
 private:
-    std::vector<FeedbackSpinBox*> _spinBoxes;
+    std::vector<std::pair<FeedbackSpinBox*,QLabel*> > _spinBoxes;
+    QLabel* _descriptionLabel;
 };
 
 //================================
@@ -290,6 +339,11 @@ public:
 
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
     
@@ -317,7 +371,12 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
-        
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     
     void onCurrentIndexChanged(int i);
@@ -329,6 +388,7 @@ protected:
 private:
     std::vector<std::string> _entries;
     ComboBox* _comboBox;
+    QLabel* _descriptionLabel;
 };
 
 //=========================
@@ -343,11 +403,18 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 protected:
     
     virtual void updateGUI(const Variant& variant){(void)variant;}
 private:
     QFrame* _line;
+    QLabel* _descriptionLabel;
 };
 
 /******************************/
@@ -365,6 +432,12 @@ public:
     
     void disablePermantlyAlpha();
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 public slots:
     
     void onColorChanged();
@@ -379,7 +452,7 @@ private:
     
     void updateLabel(const QColor& color);
     
-    
+    QLabel* _descriptionLabel;
     
     QLabel* _rLabel;
     QLabel* _gLabel;
@@ -410,6 +483,12 @@ public:
     
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
     public slots:
     void onStringChanged(const QString& str);
     
@@ -419,6 +498,8 @@ protected:
     
 private:
 	LineEdit* _lineEdit;
+    QLabel* _descriptionLabel;
+
 };
 
 
@@ -437,6 +518,7 @@ public:
     virtual void mousePressEvent(QMouseEvent*){
         emit checked(!_checked);
     }
+    
     
     bool isChecked() const {return _checked;}
     
@@ -471,6 +553,12 @@ public:
     
     bool isChecked() const {return _button->isChecked();}
     
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
 protected:
     
     
@@ -485,7 +573,7 @@ private:
     bool _checked;
     QGridLayout* _layout;
     GroupBoxLabel* _button;
-    QLabel* _name;
+    QLabel* _descriptionLabel;
     std::vector< std::pair< KnobGui*,std::pair<int,int> > > _children;
 };
 
@@ -506,6 +594,12 @@ public:
     virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
     
     void addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs);
+    
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void addToLayout(QHBoxLayout* layout);
     
 protected:
     

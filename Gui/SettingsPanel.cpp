@@ -173,7 +173,11 @@ void SettingsPanel::initialize_knobs(){
                 if(parentKnob){
                     Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_nodeGUI->findKnobGuiOrCreate(parentKnob));
                     parentGui->addKnob(gui,row,offsetColumn);
-                    gui->setVisible(parentGui->isChecked());
+                    if (parentGui->isChecked()) {
+                        gui->show();
+                    }else{
+                        gui->hide();
+                    }
                 }
             }
         }
@@ -182,13 +186,6 @@ void SettingsPanel::initialize_knobs(){
             maxSpacing = knobSpacing;
     }
     _layoutSettings->setHorizontalSpacing(maxSpacing);
-}
-void SettingsPanel::addKnobDynamically(KnobGui* knob){
-	_layoutSettings->addWidget(knob);
-}
-void SettingsPanel::removeAndDeleteKnob(KnobGui* knob){
-    _layoutSettings->removeWidget(knob);
-    delete knob;
 }
 void SettingsPanel::close(){
     
