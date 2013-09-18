@@ -261,7 +261,7 @@ public slots:
                                 const QString& pluginIconPath,
                                 const QString& groupIconPath);
     /*Quit the app*/
-    void quit();
+    static void quit();
 private:
     
     /*Loads all kind of plugins*/

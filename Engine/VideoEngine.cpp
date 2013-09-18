@@ -944,12 +944,9 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
 }
 
 void VideoEngine::_changeDAGAndStartEngine(int , int , bool initViewer,bool,bool ,OutputNode* output){
-    bool isViewer = false;
-    if(dynamic_cast<ViewerNode*>(output)){
-        isViewer = true;
-    }
-    _dag.resetAndSort(output,isViewer);
-    if(isViewer){
+    ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
+    _dag.resetAndSort(output,viewer!=NULL);
+    if(viewer){
         const std::vector<Node*>& inputs = _dag.getInputs();
         bool hasFrames = false;
         bool hasInputDifferentThanReader = false;
@@ -967,7 +964,7 @@ void VideoEngine::_changeDAGAndStartEngine(int , int , bool initViewer,bool,bool
         if(hasInputDifferentThanReader || hasFrames){
             repeatSameFrame(initViewer);
         }else{
-            dynamic_cast<ViewerNode*>(output)->disconnectViewer();
+            viewer->disconnectViewer();
         }
     }
 }

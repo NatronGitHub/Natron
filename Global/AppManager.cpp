@@ -559,9 +559,6 @@ AppManager::AppManager()
 }
 
 AppManager::~AppManager(){
-    
-}
-void AppManager::quit(){
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -579,6 +576,9 @@ void AppManager::quit(){
     delete _nodeCache;
     _viewerCache->save();
     delete _viewerCache;
+}
+void AppManager::quit(){
+    delete appPTR;
 }
 
 void AppManager::loadAllPlugins() {
