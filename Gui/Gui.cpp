@@ -566,17 +566,18 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::maximize(TabWidget* what){
-    for (U32 i =0; i < _panes.size(); ++i) {
-        if (_panes[i] != what) {
-            _panes[i]->hide();
+void Gui::maximize(TabWidget* what) {
+    assert(what);
+    for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
+        if (*it != what) {
+            (*it)->hide();
         }
     }
 }
 
 void Gui::minimize(){
-    for (U32 i =0; i < _panes.size(); ++i) {
-        _panes[i]->show();
+    for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
+        (*it)->show();
     }
 }
 
@@ -587,29 +588,25 @@ ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
     where->appendTab(node->getName().c_str(),tab);
     return tab;
 }
-void Gui::addViewerTab(ViewerTab* tab,TabWidget* where){
-    bool found = false;
-    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
-        if (_viewerTabs[i] == tab) {
-            found = true;
-            break;
-        }
-    }
-    if(!found)
+
+void Gui::addViewerTab(ViewerTab* tab, TabWidget* where) {
+    assert(tab);
+    assert(where);
+    std::list<ViewerTab*>::iterator it = std::find(_viewerTabs.begin(), _viewerTabs.end(), tab);
+    if (it == _viewerTabs.end()) {
         _viewerTabs.push_back(tab);
+    }
     where->appendTab(tab->getInternalNode()->getName().c_str(), tab);
     
 }
 
 void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData){
     assert(tab);
-    for (U32 i = 0; i < _viewerTabs.size(); ++i) {
-        if (_viewerTabs[i] == tab) {
-            _viewerTabs.erase(_viewerTabs.begin()+i);
-            break;
-        }
+    std::list<ViewerTab*>::iterator it = std::find(_viewerTabs.begin(), _viewerTabs.end(), tab);
+    if (it != _viewerTabs.end()) {
+        _viewerTabs.erase(it);
     }
-    
+
     if(deleteData){
         if (!initiatedFromNode) {
             assert(_nodeGraphTab);
@@ -751,16 +748,16 @@ void Gui::floatWidget(QWidget* what){
     
 }
 
-void Gui::closePane(TabWidget* what){
+void Gui::closePane(TabWidget* what) {
+    assert(what);
     QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
-    if(!container) return;
-    
+    if(!container) {
+        return;
+    }
     /*Removing it from the _panes vector*/
-    for (U32 i = 0; i < _panes.size(); ++i) {
-        if (_panes[i] == what) {
-            _panes.erase(_panes.begin()+i);
-            break;
-        }
+    std::list<TabWidget*>::iterator it = std::find(_panes.begin(), _panes.end(), what);
+    if (it != _panes.end()) {
+        _panes.erase(it);
     }
     
     /*If it is floating we do not need to re-arrange the splitters containing the tab*/
@@ -774,7 +771,9 @@ void Gui::closePane(TabWidget* what){
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/
     QSplitter* mainContainer = dynamic_cast<QSplitter*>(container->parentWidget());
-    if(!mainContainer) return;
+    if(!mainContainer) {
+        return;
+    }
     
     /*identifying the other tab*/
     TabWidget* other = 0;

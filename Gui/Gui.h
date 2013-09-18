@@ -287,7 +287,7 @@ public:
     
 	/*VIEWERS*/
 	//======================
-    std::vector<ViewerTab*> _viewerTabs;
+    std::list<ViewerTab*> _viewerTabs;
     
     /*GRAPH*/
     //======================
@@ -319,7 +319,7 @@ public:
     
     
     /*all TabWidget's : used to know what to hide/show for fullscreen mode*/
-    std::vector<TabWidget*> _panes;
+    std::list<TabWidget*> _panes;
     
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
