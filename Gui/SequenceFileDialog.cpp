@@ -81,6 +81,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
                                        const std::string& currentDirectory) // the directory to show first
 : QDialog(parent)
 , _frameSequences()
+, _nameMappingMutex()
 , _nameMapping()
 , _filters(filters)
 , _view(0)
@@ -456,6 +457,7 @@ void SequenceFileDialog::enableSequenceMode(bool b){
     _frameSequences.clear();
     _proxy->clear();
     if(!b){
+        QMutexLocker locker(&_nameMappingMutex);
         _nameMapping.clear();
         _view->updateNameMapping(_nameMapping);
     }
@@ -481,10 +483,13 @@ void SequenceFileDialog::selectionChanged(){
         }
     
     QString finalFiles = allFiles.join(QString(QLatin1Char(' ')));
-    for(unsigned int i = 0 ; i < _nameMapping.size(); ++i) {
-        if(finalFiles == _nameMapping[i].first){
-            finalFiles =  _nameMapping[i].second.second;
-            break;
+    {
+        QMutexLocker locker(&_nameMappingMutex);
+        for(unsigned int i = 0 ; i < _nameMapping.size(); ++i) {
+            if(finalFiles == _nameMapping[i].first){
+                finalFiles =  _nameMapping[i].second.second;
+                break;
+            }
         }
     }
     if (!finalFiles.isEmpty())
@@ -734,21 +739,27 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 }
                 name.append(" ) ");
             }
-            bool foundExistingMapping = false;
-            for(unsigned int j = 0 ; j < _nameMapping.size();++j) {
-                if(_nameMapping[j].first == originalName){
-                    foundExistingMapping = true;
-                    break;
+            {
+                QMutexLocker locker(&_nameMappingMutex);
+                bool foundExistingMapping = false;
+                for(unsigned int j = 0 ; j < _nameMapping.size();++j) {
+                    if(_nameMapping[j].first == originalName){
+                        foundExistingMapping = true;
+                        break;
+                    }
                 }
-            }
-            if(!foundExistingMapping){
-                //        cout << "mapping: " << originalName.toStdString() << " TO " << name.toStdString() << endl;
-                _nameMapping.push_back(make_pair(originalName,make_pair(frameRanges._totalSize,name)));
+                if(!foundExistingMapping){
+                    //        cout << "mapping: " << originalName.toStdString() << " TO " << name.toStdString() << endl;
+                    _nameMapping.push_back(make_pair(originalName,make_pair(frameRanges._totalSize,name)));
+                }
             }
         }
     }
     
-    _view->updateNameMapping(_nameMapping);
+    {
+        QMutexLocker locker(&_nameMappingMutex);
+        _view->updateNameMapping(_nameMapping);
+    }
 }
 void SequenceFileDialog::setRootIndex(const QModelIndex& index){
     _view->setRootIndex(index);
@@ -816,20 +827,20 @@ SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
     setDragDropMode(QAbstractItemView::InternalMove);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
 }
-void SequenceDialogView::updateNameMapping(std::vector<std::pair<QString, std::pair<qint64, QString> > > nameMapping){
+void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
 }
 
 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_maxW(200),_fd(fd){}
 
-void SequenceItemDelegate::setNameMapping(std::vector<std::pair<QString, std::pair<qint64, QString> > > nameMapping){
+void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping) {
     _nameMapping.clear();
     _maxW = 200;
     QFont f("Times",6);
     QFontMetrics metric(f);
     for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
-        pair<QString,pair<qint64,QString> >& p = nameMapping[i];
+        const pair<QString,pair<qint64,QString> >& p = nameMapping[i];
         _nameMapping.push_back(p);
         int w = metric.width(p.second.second);
         if(w > _maxW) _maxW = w;

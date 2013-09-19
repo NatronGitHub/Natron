@@ -66,13 +66,13 @@ public:
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
-        Powiter::LibraryBinary* decoderForFiletype(const std::string& type);
+        Powiter::LibraryBinary* decoderForFiletype(const std::string& type) const;
         
         /*changes the decoder for files identified by the filetype*/
         void changeMapping(const std::string& filetype,Powiter::LibraryBinary* decoder);
         
         /*use to initialise default mapping*/
-        void fillMap(std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
+        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
         
         std::vector<std::string> supportedFileTypes() const;
     private:
@@ -92,7 +92,7 @@ public:
         void changeMapping(const std::string& filetype, Powiter::LibraryBinary* encoder);
         
         /*use to initialise default mapping*/
-        void fillMap(std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
+        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
         
         const std::map<std::string,Powiter::LibraryBinary*>& getFileTypesMap(){return _fileTypesMap;}
         

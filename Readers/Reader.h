@@ -98,17 +98,18 @@ public:
         public:
 
             typedef std::vector<int>::iterator ScanLineIterator;
+            typedef std::vector<int>::const_iterator ScanLineConstIterator;
             typedef std::vector<int>::reverse_iterator ScanLineReverseIterator;
             
             ScanLineContext(){}
 
             /** @brief Construct a new ScanLineContext with the rows passed in parameters.
             **/
-            ScanLineContext(std::vector<int> rows):_rows(rows){}
+            ScanLineContext(const std::vector<int>& rows):_rows(rows) {}
             
             /** @brief Set the base scan-lines that represents the context*
              **/
-            void setRows(std::vector<int> rows){_rows=rows;}
+            void setRows(const std::vector<int>& rows) { _rows=rows; }
 
             /**
              * @brief getRows
@@ -125,7 +126,7 @@ public:
             /**
              * @brief  Adds to _rowsToRead the rows in others that are missing to _rows
             **/
-            void computeIntersectionAndSetRowsToRead(std::vector<int>& others);
+            void computeIntersectionAndSetRowsToRead(const std::vector<int>& others);
             
             /**
              *@brief merges _rowsToRead and _rows and clears out _rowsToRead

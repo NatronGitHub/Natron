@@ -46,14 +46,14 @@ void Settings::ReadersSettings::changeMapping(const std::string& filetype, Libra
 }
 
 /*use to initialise default mapping*/
-void Settings::ReadersSettings::fillMap(std::map<std::string,LibraryBinary*>& defaultMap){
-    for(std::map<std::string,LibraryBinary*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
+void Settings::ReadersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap){
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
 
-LibraryBinary* Settings::ReadersSettings::decoderForFiletype(const std::string& type){
-    for(std::map<std::string,LibraryBinary*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+LibraryBinary* Settings::ReadersSettings::decoderForFiletype(const std::string& type) const {
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
         QString sType(type.c_str());
         QString curType(it->first.c_str());
         sType = sType.toUpper();
@@ -88,8 +88,8 @@ void Settings::WritersSettings::changeMapping(const std::string& filetype,Librar
 }
 
 /*use to initialise default mapping*/
-void Settings::WritersSettings::fillMap(std::map<std::string,LibraryBinary*>& defaultMap){
-    for(std::map<std::string,LibraryBinary*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
+void Settings::WritersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap) {
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
