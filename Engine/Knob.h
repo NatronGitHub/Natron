@@ -211,22 +211,6 @@ public:
         tryStartRendering();
     }
     
-    /*to allow implicit cast*/
-#if 0
-    void setValue(const QVariant& variant){
-        _value = variant;
-        emit valueChanged(_value);
-        tryStartRendering();
-    }
-    
-    
-    /*Set the value of the knob and emits the valueChanged signal*/
-    void setValue(const Variant& variant){
-        _value = variant;
-        emit valueChanged(_value);
-        tryStartRendering();
-    }
-#endif
     template<typename T>
     void setValue(const T &value) {
         _value.setValue(value);

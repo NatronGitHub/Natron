@@ -378,11 +378,17 @@ void Int_KnobGui::updateGUI(const Variant& variant){
 }
 
 void Int_KnobGui::onSpinBoxValueChanged(){
-    QList<QVariant> list;
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        list << QVariant(_spinBoxes[i].first->value());
+    Variant v;
+    if(_knob->getDimension() > 1){
+        QList<QVariant> list;
+        for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+            list << QVariant(_spinBoxes[i].first->value());
+        }
+        v.setValue(list);
+    }else{
+        v.setValue(_spinBoxes[0].first->value());
     }
-    pushUndoCommand(new KnobUndoCommand(this,Variant(_knob->getValueAsVariant().toStringList()),Variant(list)));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),v));
 }
 void Int_KnobGui::hide(){
     _descriptionLabel->hide();
@@ -538,11 +544,17 @@ void Double_KnobGui::updateGUI(const Variant& variant){
 }
 
 void Double_KnobGui::onSpinBoxValueChanged(){
-    QList<QVariant> list;
-    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-        list << QVariant(_spinBoxes[i].first->value());
+    Variant v;
+    if(_knob->getDimension() > 1){
+        QList<QVariant> list;
+        for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+            list << QVariant(_spinBoxes[i].first->value());
+        }
+        v.setValue(list);
+    }else{
+        v.setValue(_spinBoxes[0].first->value());
     }
-    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(list)));
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),v));
 }
 void Double_KnobGui::hide(){
     _descriptionLabel->hide();

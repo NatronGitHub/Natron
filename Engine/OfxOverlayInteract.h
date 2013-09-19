@@ -11,7 +11,6 @@
 #ifndef OFXOVERLAYINTERACT_H
 #define OFXOVERLAYINTERACT_H
 
-#include <QObject>
 #include <ofxhImageEffect.h>
 
 class OfxNode;
