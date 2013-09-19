@@ -98,6 +98,7 @@ public:
         public:
 
             typedef std::vector<int>::iterator ScanLineIterator;
+            typedef std::vector<int>::const_iterator ScanLineConstIterator;
             typedef std::vector<int>::reverse_iterator ScanLineReverseIterator;
             
             ScanLineContext(){}
@@ -125,7 +126,7 @@ public:
             /**
              * @brief  Adds to _rowsToRead the rows in others that are missing to _rows
             **/
-            void computeIntersectionAndSetRowsToRead(std::vector<int>& others);
+            void computeIntersectionAndSetRowsToRead(const std::vector<int>& others);
             
             /**
              *@brief merges _rowsToRead and _rows and clears out _rowsToRead
