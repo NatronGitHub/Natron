@@ -160,7 +160,7 @@ class SequenceItemDelegate : public QStyledItemDelegate {
 public:
     explicit SequenceItemDelegate(SequenceFileDialog* fd);
 
-    void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
+    void setNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
 
 protected:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
@@ -175,7 +175,7 @@ class SequenceDialogView: public QTreeView{
 public:
     explicit SequenceDialogView(QWidget* parent);
     
-    void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
+    void updateNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
 
     inline void expandColumnsToFullWidth(){
         int size = width() - columnWidth(1) - columnWidth(2) - columnWidth(3);
@@ -306,6 +306,7 @@ public:
 private:
     
     FrameSequences _frameSequences;
+    QMutex _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
