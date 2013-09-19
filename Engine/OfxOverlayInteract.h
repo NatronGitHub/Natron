@@ -11,10 +11,44 @@
 #ifndef OFXOVERLAYINTERACT_H
 #define OFXOVERLAYINTERACT_H
 
-class OfxOverlayInteract
+#include <QObject>
+#include <ofxhImageEffect.h>
+
+class OfxNode;
+namespace Powiter {
+   
+    
+class OfxImageEffectInstance;
+class OfxOverlayInteract :  public OFX::Host::ImageEffect::OverlayInteract
 {
+    
+    OfxNode* _node;
+    
 public:
-    OfxOverlayInteract();
+    
+    OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent = 8, bool hasAlpha = false);
+    
+    virtual ~OfxOverlayInteract(){}
+    
+    /*Swaps the buffer of the attached viewer*/
+    virtual OfxStatus swapBuffers();
+    
+    /*Calls updateGL() on the attached viewer*/
+    virtual OfxStatus redraw();
+    
+    /// hooks to kOfxInteractPropViewportSize in the property set
+    /// this is actually redundant and is to be deprecated
+    virtual void getViewportSize(double &width, double &height) const ;
+    
+    // hooks to live kOfxInteractPropPixelScale in the property set
+    virtual void getPixelScale(double& xScale, double& yScale) const ;
+    
+    // hooks to kOfxInteractPropBackgroundColour in the property set
+    virtual void getBackgroundColour(double &r, double &g, double &b) const ;
+
+
 };
+
+}
 
 #endif // OFXOVERLAYINTERACT_H

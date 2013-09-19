@@ -642,27 +642,6 @@ void VideoEngine::allocateFrameStorage(){
     _openGLCondition.wakeOne();
 }
 
-
-
-
-
-
-
-void VideoEngine::drawOverlay() const{
-    if(_dag.getOutput())
-        _drawOverlay(_dag.getOutput());
-}
-
-void VideoEngine::_drawOverlay(Node *output) const{
-    output->drawOverlay();
-    const Node::InputMap& inputs = output->getInputs();
-    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second)
-            _drawOverlay(it->second);
-    }
-}
-
-
 void RowRunnable::run() {
     _output->engine(_row->y(), _row->offset(), _row->right(), _row->channels(), _row);
     emit finished(_row->y(),_row->zoomedY());

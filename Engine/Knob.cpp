@@ -14,6 +14,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/Model.h"
+#include "Engine/ViewerNode.h"
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -24,7 +25,6 @@
 
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/KnobGui.h"
-#include "Gui/NodeGui.h"
 
 using namespace std;
 using namespace Powiter;
@@ -257,9 +257,9 @@ Knob_Mask Knob::getFlags() const{
 }
 
 void Knob::startRendering(bool initViewer){
-    Node* viewer = Node::hasViewerConnected(_node);
+    ViewerNode* viewer = Node::hasViewerConnected(_node);
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(initViewer);
+        viewer->updateDAG(initViewer);
     }
 }
 

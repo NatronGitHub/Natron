@@ -576,12 +576,6 @@ public:
     virtual ~VideoEngine();
     
     /**
-     *@brief Tells all the nodes in the grpah to draw their overlays
-     **/
-    void drawOverlay() const;
-	
-    
-    /**
      *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
      *frame indicated on the timeline in case the output of the graph is a viewer. If it is a writer then is starts
      *off at Writer::firstFrame().
@@ -631,11 +625,6 @@ private:
      */
     void updateDisplay();
     
-    /**
-     *@brief Called by VideoEngine::drawOverlay().
-     *@param output[in] The output node of the graph
-     **/
-    void _drawOverlay(Node *output) const;
     
     /**
      *@brief Called by almost all VideoEngine slots that respond to a user request(Seek,play,pause etc..).

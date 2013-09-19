@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -28,8 +29,10 @@
 class Tab_Knob;
 class QHBoxLayout;
 class QImage;
+class QKeyEvent;
 namespace Powiter {
     class OfxImageEffectInstance;
+    class OfxOverlayInteract;
 }
 
 // FIXME: OFX::Host::ImageEffect::Instance should be a member
@@ -74,7 +77,23 @@ public:
     
     virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
 
-
+    virtual void drawOverlay();
+    
+    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos);
+    
+    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    
+    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
+    
+    virtual void onOverlayKeyDown(QKeyEvent* e);
+    
+    virtual void onOverlayKeyUp(QKeyEvent* e);
+    
+    virtual void onOverlayKeyRepeat(QKeyEvent* e);
+    
+    virtual void onOverlayFocusGained();
+    
+    virtual void onOverlayFocusLost();
     
 
     bool isInputOptional(int inpubNb) const;
@@ -113,6 +132,18 @@ public:
 
     void openFilesForAllFileParams();
     
+    void swapBuffersOfAttachedViewer();
+    
+    void redrawInteractOnAttachedViewer();
+    
+    void pixelScaleOfAttachedViewer(double &x,double &y);
+    
+    void viewportSizeOfAttachedViewer(double &w,double &h);
+    
+    void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
+
+    void tryInitializeOverlayInteracts();
+    
 private:
 
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
@@ -123,6 +154,7 @@ private:
     QImage* _preview;
     bool _canHavePreview;
     Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)
+    Powiter::OfxOverlayInteract* _overlayInteract;
 };
 
 

@@ -10,6 +10,36 @@
  */
 #include "OfxOverlayInteract.h"
 
-OfxOverlayInteract::OfxOverlayInteract()
+
+#include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OfxNode.h"
+
+using namespace Powiter;
+
+OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v, int bitDepthPerComponent, bool hasAlpha):
+OFX::Host::ImageEffect::OverlayInteract(v,bitDepthPerComponent,hasAlpha)
+, _node(v.node())
 {
+}
+
+OfxStatus OfxOverlayInteract::swapBuffers(){
+    _node->swapBuffersOfAttachedViewer();
+    return kOfxStatOK;
+}
+
+OfxStatus OfxOverlayInteract::redraw(){
+    _node->redrawInteractOnAttachedViewer();
+    return kOfxStatOK;
+}
+
+void OfxOverlayInteract::getViewportSize(double &width, double &height) const{
+    _node->viewportSizeOfAttachedViewer(width, height);
+}
+
+void OfxOverlayInteract::getPixelScale(double& xScale, double& yScale) const{
+    _node->pixelScaleOfAttachedViewer(xScale, yScale);
+}
+
+void OfxOverlayInteract::getBackgroundColour(double &r, double &g, double &b) const{
+    _node->backgroundColorOfAttachedViewer(r, g, b);
 }

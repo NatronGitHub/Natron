@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "ViewerNode.h"
 
@@ -23,6 +23,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/OfxNode.h"
 
 #include "Readers/Reader.h"
 
@@ -52,7 +53,7 @@ void ViewerNode::disconnectSlotsToViewerCache(){
     QObject::disconnect(cache, SIGNAL(clearedInMemoryFrames()), this, SLOT(onViewerCacheCleared()));
 }
 void ViewerNode::initializeViewerTab(TabWidget* where){
-   _uiContext = _model->getApp()->addNewViewerTab(this,where);
+    _uiContext = _model->getApp()->addNewViewerTab(this,where);
 }
 
 ViewerNode::~ViewerNode(){
@@ -304,5 +305,132 @@ void ViewerNode::setActiveInputAndRefresh(int inputNb){
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
         updateDAG(false);
+    }
+}
+
+void ViewerNode::redrawViewer(){
+    emit mustRedraw();
+}
+
+void ViewerNode::swapBuffers(){
+    emit mustSwapBuffers();
+}
+
+void ViewerNode::pixelScale(double &x,double &y){
+    x = _uiContext->viewer->displayWindow().pixel_aspect();
+    y = 2. - x;
+}
+
+void ViewerNode::backgroundColor(double &r,double &g,double &b){
+    _uiContext->viewer->backgroundColor(r, g, b);
+}
+void ViewerNode::viewportSize(double &w,double &h){
+    const Format& f = _uiContext->viewer->displayWindow();
+    w = f.width();
+    h = f.height();
+}
+
+void ViewerNode::drawOverlays() const{
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->drawOverlay();
+        }
+    }
+}
+
+bool ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.begin() == _dag.end())
+        return false;
+    bool ret = false;
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            if(!(*it)->onOverlayPenDown(viewportPos, pos))
+                ret = true;
+        }
+    }
+    return ret;
+}
+
+bool ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.begin() == _dag.end())
+        return false;
+    bool ret = false;
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            if(!(*it)->onOverlayPenMotion(viewportPos, pos))
+                ret = true;;
+        }
+    }
+    return ret;
+}
+
+bool ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.begin() == _dag.end())
+        return false;
+    bool ret = false;
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            if(!(*it)->onOverlayPenUp(viewportPos, pos))
+                ret = true;
+        }
+    }
+    return ret;
+}
+
+void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->onOverlayKeyDown(e);
+        }
+    }
+}
+
+void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->onOverlayKeyUp(e);
+        }
+    }
+}
+
+void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->onOverlayKeyRepeat(e);
+        }
+    }
+}
+
+void ViewerNode::notifyOverlaysFocusGained(){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->onOverlayFocusGained();
+        }
+    }
+}
+
+void ViewerNode::notifyOverlaysFocusLost(){
+    const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    if(_dag.getOutput()){
+        for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+            assert(*it);
+            (*it)->onOverlayFocusLost();
+        }
     }
 }

@@ -13,6 +13,7 @@
 
 #include <locale>
 #include <QImage>
+#include <QKeyEvent>
 
 #include "Global/AppManager.h"
 
@@ -20,6 +21,7 @@
 #include "Engine/Row.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OfxOverlayInteract.h"
 #include "Engine/Model.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
@@ -63,6 +65,7 @@ OfxNode::OfxNode(Model* model,
 , _preview(NULL)
 , _canHavePreview(false)
 , effect_(NULL)
+, _overlayInteract(NULL)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
      We need to pass more parameters to the constructor of OfxNode. That means we cannot
@@ -97,11 +100,24 @@ OfxNode::OfxNode(Model* model,
     if(context == kOfxImageEffectContextGenerator){
         _canHavePreview = true;
     }
+    
+    
 }
 
-
 OfxNode::~OfxNode() {
+    // An interact instance must always be associated with an effect instance. So it gets created after an effect and destroyed before one.
+    if(_overlayInteract)
+        delete _overlayInteract;
     delete effect_;
+}
+
+void OfxNode::tryInitializeOverlayInteracts(){
+    /*create overlay instance if any*/
+    OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
+    if(overlayEntryPoint){
+        _overlayInteract = new OfxOverlayInteract(*effect_,8,true);
+        _overlayInteract->createInstanceAction();
+    }
 }
 
 ChannelSet OfxNode::supportedComponents() {
@@ -451,4 +467,143 @@ const std::string& OfxNode::getShortLabel() const {
 const std::string& OfxNode::getPluginGrouping() const {
     return effect_->getPluginGrouping();
 }
+void OfxNode::swapBuffersOfAttachedViewer(){
+    ViewerNode* n = hasViewerConnected(this);
+    if(n){
+        n->swapBuffers();
+    }
+}
 
+void OfxNode::redrawInteractOnAttachedViewer(){
+    ViewerNode* n = hasViewerConnected(this);
+    if(n){
+        n->redrawViewer();
+    }
+}
+
+void OfxNode::pixelScaleOfAttachedViewer(double &x,double &y){
+    ViewerNode* n = hasViewerConnected(this);
+    if(n){
+        n->pixelScale(x, y);
+    }
+}
+
+void OfxNode::viewportSizeOfAttachedViewer(double &w,double &h){
+    ViewerNode* n = hasViewerConnected(this);
+    if(n){
+        n->viewportSize(w, h);
+    }
+}
+void OfxNode::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
+    ViewerNode* n = hasViewerConnected(this);
+    if(n){
+        n->backgroundColor(r, g, b);
+    }
+}
+
+void OfxNode::drawOverlay(){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->drawAction(1.0, rs);
+    }
+}
+
+
+bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        OfxPointD penPos;
+        penPos.x = pos.x();
+        penPos.y = pos.y();
+        OfxPointI penPosViewport;
+        penPosViewport.x = viewportPos.x();
+        penPosViewport.y = viewportPos.y();
+        
+        OfxStatus st = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
+        if(st == kOfxStatOK){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        OfxPointD penPos;
+        penPos.x = pos.x();
+        penPos.y = pos.y();
+        OfxPointI penPosViewport;
+        penPosViewport.x = viewportPos.x();
+        penPosViewport.y = viewportPos.y();
+        
+        OfxStatus st = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
+        if(st == kOfxStatOK){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        OfxPointD penPos;
+        penPos.x = pos.x();
+        penPos.y = pos.y();
+        OfxPointI penPosViewport;
+        penPosViewport.x = viewportPos.x();
+        penPosViewport.y = viewportPos.y();
+        
+        OfxStatus st= _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
+        if(st == kOfxStatOK){
+            return true;
+        }
+    }
+    return false;
+}
+
+void OfxNode::onOverlayKeyDown(QKeyEvent* e){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+    }
+}
+
+void OfxNode::onOverlayKeyUp(QKeyEvent* e){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->keyUpAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+    }
+}
+
+void OfxNode::onOverlayKeyRepeat(QKeyEvent* e){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+    }
+}
+
+void OfxNode::onOverlayFocusGained(){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->gainFocusAction(1., rs);
+    }
+}
+
+void OfxNode::onOverlayFocusLost(){
+    if(_overlayInteract){
+        OfxPointD rs;
+        rs.x = rs.y = 1.;
+        _overlayInteract->loseFocusAction(1., rs);
+    }
+}

@@ -480,9 +480,9 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     
     
     if(cont){
-        Node* viewer = Node::hasViewerConnected(first->getDest()->getNode());
+        ViewerNode* viewer = Node::hasViewerConnected(first->getDest()->getNode());
         if(viewer){
-            _gui->getApp()->updateDAG(dynamic_cast<OutputNode*>(viewer),false);
+            _gui->getApp()->updateDAG(viewer,false);
         }
     }
 }
@@ -745,9 +745,9 @@ void ConnectCommand::undo(){
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
-    Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
+    ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(false);
+        viewer->updateDAG(false);
     }
     
     
@@ -790,9 +790,9 @@ void ConnectCommand::redo(){
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
-    Node* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
+    ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        dynamic_cast<OutputNode*>(viewer)->updateDAG(false);
+        viewer->updateDAG(false);
     }
 
     

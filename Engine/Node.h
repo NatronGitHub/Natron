@@ -29,6 +29,8 @@ class Model;
 class SettingsPanel;
 class Knob;
 class QUndoCommand;
+class ViewerNode;
+class QKeyEvent;
 class QUndoStack;
 
 class Node : public QObject
@@ -150,7 +152,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*============================*/
     /*Returns a pointer to the Viewer node ptr if this node has a viewer connected,
      otherwise returns NULL.*/
-    static Node* hasViewerConnected(Node* node);
+    static ViewerNode* hasViewerConnected(Node* node);
     /*============================*/
     
     /*DAG related (topological sorting)*/
@@ -274,6 +276,39 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
      */
     virtual void drawOverlay(){}
     
+    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+        Q_UNUSED(viewportPos);
+        Q_UNUSED(pos);
+        return false;
+    }
+    
+    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+        Q_UNUSED(viewportPos);
+        Q_UNUSED(pos);
+        return false;
+    }
+    
+    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+        Q_UNUSED(viewportPos);
+        Q_UNUSED(pos);
+        return false;
+    }
+    
+    virtual void onOverlayKeyDown(QKeyEvent* e){
+        Q_UNUSED(e);
+    }
+    
+    virtual void onOverlayKeyUp(QKeyEvent* e){
+        Q_UNUSED(e);
+    }
+    
+    virtual void onOverlayKeyRepeat(QKeyEvent* e){
+        Q_UNUSED(e);
+    }
+    
+    virtual void onOverlayFocusGained(){}
+    
+    virtual void onOverlayFocusLost(){}
     /*cache related*/
     
     /*Returns in row, a row containing the results expected of this node

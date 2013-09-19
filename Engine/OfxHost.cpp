@@ -191,7 +191,8 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
         delete node;
         node = NULL;
     }
-
+    /*must be called AFTER createInstanceAction!*/
+    node->tryInitializeOverlayInteracts();
     return node;
 }
 

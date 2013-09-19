@@ -464,12 +464,12 @@ Row* Node::get(int y,int x,int r){
     return out;
 }
 
-Node* Node::hasViewerConnected(Node* node){
+ViewerNode* Node::hasViewerConnected(Node* node){
     Node* out = 0;
     bool ok=false;
     _hasViewerConnected(node,&ok,out);
     if (ok) {
-        return out;
+        return dynamic_cast<ViewerNode*>(out);
     }else{
         return NULL;
     }

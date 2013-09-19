@@ -289,6 +289,8 @@ class ViewerTab;
             bool _updatingTexture;
             
             int _progressBarY;
+            
+            QColor _clearColor;
                         
         public:
             
@@ -597,6 +599,8 @@ class ViewerTab;
             
             void stopDisplayingProgressBar() {_drawProgressBar = false;}
             
+            void backgroundColor(double &r,double &g,double &b);
+            
             public slots:
             /**
              *@brief Slot used by the GUI to change the current viewer process applied to all pixels.
@@ -634,6 +638,11 @@ class ViewerTab;
              *@brief Updates the Viewer with what has been computed so far in the texture.
              **/
             void updateProgressOnViewer(const TextureRect& region,int y , int texY);
+            
+            void doSwapBuffers();
+            
+            void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
+            
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -688,6 +697,10 @@ class ViewerTab;
             virtual void enterEvent(QEvent *event);
             
             virtual void leaveEvent(QEvent *event);
+            
+            virtual void keyPressEvent(QKeyEvent* event);
+            
+            virtual void keyReleaseEvent(QKeyEvent* event);
             
             /**
              *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.

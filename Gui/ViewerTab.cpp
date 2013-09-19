@@ -447,6 +447,10 @@ _maximized(false)
     
     QObject::connect(vengine, SIGNAL(engineStarted(bool)), this, SLOT(onEngineStarted(bool)));
     QObject::connect(vengine, SIGNAL(engineStopped()), this, SLOT(onEngineStopped()));
+    
+    
+    QObject::connect(_viewerNode, SIGNAL(mustRedraw()), viewer, SLOT(updateGL()));
+    QObject::connect(_viewerNode, SIGNAL(mustSwapBuffers()), viewer, SLOT(doSwapBuffers()));
 }
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);

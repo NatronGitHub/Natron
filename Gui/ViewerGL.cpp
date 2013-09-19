@@ -281,6 +281,7 @@ ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareW
 , _viewerTab(parent)
 , _drawing(false)
 , _must_initBlackTex(true)
+, _clearColor(0,0,0,255)
 { 
     initConstructor();
 }
@@ -293,6 +294,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* s
 , _viewerTab(parent)
 , _drawing(false)
 , _must_initBlackTex(true)
+, _clearColor(0,0,0,255)
 {
     initConstructor();
 }
@@ -305,6 +307,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _viewerTab(parent)
 , _drawing(false)
 , _must_initBlackTex(true)
+, _clearColor(0,0,0,255)
 {
     initConstructor();
 }
@@ -405,9 +408,7 @@ void ViewerGL::paintGL()
         
     }
     checkGLErrors();
-
-    glClearColor(0.0,0.0,0.0,1.0);
-    glClear (GL_COLOR_BUFFER_BIT);
+    clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
     checkGLErrors();
     drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -432,8 +433,15 @@ void ViewerGL::paintGL()
 }
 
 
-
-
+void ViewerGL::clearColorBuffer(double r ,double g ,double b ,double a ){
+    glClearColor(r,g,b,a);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+void ViewerGL::backgroundColor(double &r,double &g,double &b){
+    r = _clearColor.redF();
+    g = _clearColor.greenF();
+    b = _clearColor.blueF();
+}
 void ViewerGL::drawOverlay(){
     
     ///TODO: use glVertexArrays instead!
@@ -492,11 +500,9 @@ void ViewerGL::drawOverlay(){
         glPopAttrib();
         checkGLErrors();
     }
-    VideoEngine* vengine = _viewerTab->getInternalNode()->getVideoEngine();
-    if(vengine)
-        vengine->drawOverlay();
+    _viewerTab->getInternalNode()->drawOverlays();
     //reseting color for next pass
-    glColor4f(1, 1, 1, 1);
+    glColor4f(1., 1., 1., 1.);
     checkGLErrors();
 }
 void ViewerGL::drawProgressBar(){
@@ -515,8 +521,6 @@ void ViewerGL::drawProgressBar(){
 
 void ViewerGL::initializeGL(){
 	initAndCheckGlExtensions();
- 	//glClearColor(0.0,0.0,0.0,1.0);
-	//glClear(GL_COLOR_BUFFER_BIT);
     _blackTex = new Texture;
     _defaultDisplayTexture = new Texture;
     glGenBuffersARB(2, &_pboIds[0]);
@@ -1073,56 +1077,68 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     _zoomCtx._oldClick = event->pos();
     if(event->button() != Qt::MiddleButton ){
-        _ms = DRAGGING;
+        if(!_viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
+                                                                 toImgCoordinates_fast(event->x(), event->y()))){
+            
+            _ms = DRAGGING;
+        }
     }
     QGLWidget::mousePressEvent(event);
 }
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
+    _viewerTab->getInternalNode()->notifyOverlaysPenUp(event->posF(),
+                                                         toImgCoordinates_fast(event->x(), event->y()));
     QGLWidget::mouseReleaseEvent(event);
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
-    QPointF pos;
-    pos = toImgCoordinates_fast(event->x(), event->y());
-    const Format& dispW = displayWindow();
-    if(pos.x() >= dispW.left() &&
-       pos.x() <= dispW.width() &&
-       pos.y() >= dispW.bottom() &&
-       pos.y() <= dispW.height() &&
-       event->x() >= 0 && event->x() < width() &&
-       event->y() >= 0 && event->y() < height()){
-        if(!_infoViewer->colorAndMouseVisible()){
-            _infoViewer->showColorAndMouseInfo();
-        }
-        VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
-        if(videoEngine && !videoEngine->isWorking()){
-            updateColorPicker(event->x(),event->y());
-        }
-        _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
-        emit infoMousePosChanged();
-    }else{
-        if(_infoViewer->colorAndMouseVisible()){
-            _infoViewer->hideColorAndMouseInfo();
-        }
-    }
+    QPointF pos = toImgCoordinates_fast(event->x(), event->y());
     
-    
-    if(_ms == DRAGGING){
-        // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
-        QPoint newClick =  event->pos();
-        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
-        float dy = (oldClick_opengl.y() - newClick_opengl.y());
-        _zoomCtx._bottom += dy;
-        _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-        _zoomCtx._oldClick = newClick;
-        if(_drawing){
-            emit engineNeeded();
-        }
-        //    else
-        updateGL();
-        //  }
+    if(!_viewerTab->getInternalNode()->notifyOverlaysPenMotion(event->posF(),pos)){
         
+        const Format& dispW = displayWindow();
+        if(pos.x() >= dispW.left() &&
+           pos.x() <= dispW.width() &&
+           pos.y() >= dispW.bottom() &&
+           pos.y() <= dispW.height() &&
+           event->x() >= 0 && event->x() < width() &&
+           event->y() >= 0 && event->y() < height()){
+            if(!_infoViewer->colorAndMouseVisible()){
+                _infoViewer->showColorAndMouseInfo();
+            }
+            VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
+            if(videoEngine && !videoEngine->isWorking()){
+                updateColorPicker(event->x(),event->y());
+            }
+            _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
+            emit infoMousePosChanged();
+            
+            
+            
+        }else{
+            if(_infoViewer->colorAndMouseVisible()){
+                _infoViewer->hideColorAndMouseInfo();
+            }
+        }
+        
+        
+        if(_ms == DRAGGING){
+            // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+            QPoint newClick =  event->pos();
+            QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+            QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+            float dy = (oldClick_opengl.y() - newClick_opengl.y());
+            _zoomCtx._bottom += dy;
+            _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
+            _zoomCtx._oldClick = newClick;
+            if(_drawing){
+                emit engineNeeded();
+            }
+            //    else
+            updateGL();
+            //  }
+            
+        }
     }
 }
 void ViewerGL::updateColorPicker(int x,int y){
@@ -1726,21 +1742,33 @@ void ViewerGL::clearViewer(){
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
     setFocus();
-    // grabMouse();
-    // grabKeyboard();
+    _viewerTab->getInternalNode()->notifyOverlaysFocusGained();
+
 }
 void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
-    //setFocus(); // ??
-    // releaseMouse();
-    //releaseKeyboard();
+    _viewerTab->getInternalNode()->notifyOverlaysFocusLost();
+
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
                                                  // if(isVisible()){
     QGLWidget::resizeEvent(event);
     // }
     
+}
+
+void ViewerGL::keyPressEvent(QKeyEvent* event){
+    if(event->isAutoRepeat())
+        _viewerTab->getInternalNode()->notifyOverlaysKeyRepeat(event);
+    else{
+        _viewerTab->getInternalNode()->notifyOverlaysKeyDown(event);
+    }
+}
+
+
+void ViewerGL::keyReleaseEvent(QKeyEvent* event){
+    _viewerTab->getInternalNode()->notifyOverlaysKeyUp(event);
 }
 
 
@@ -1790,4 +1818,8 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
     _pBOmapped = true;
 
     _updatingTexture = false;
+}
+
+void ViewerGL::doSwapBuffers(){
+    swapBuffers();
 }

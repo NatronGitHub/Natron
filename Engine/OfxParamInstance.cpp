@@ -22,6 +22,7 @@
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/Model.h"
 
 using namespace std;
@@ -74,9 +75,9 @@ void OfxPushButtonInstance::onInstanceChanged() {
         stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
         assert(stat == kOfxStatOK);
     }
-    Node* viewer = Node::hasViewerConnected(_node);
-    if(viewer && _node!=viewer){
-        _node->getModel()->updateDAG(dynamic_cast<OutputNode*>(viewer),false);
+    ViewerNode* viewer = Node::hasViewerConnected(_node);
+    if(viewer){
+        _node->getModel()->updateDAG(viewer,false);
     }else if(_node->isOutputNode()){
         OutputNode* n = dynamic_cast<OutputNode*>(_node);
         n->updateDAG(false);

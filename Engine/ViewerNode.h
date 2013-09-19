@@ -23,6 +23,7 @@ class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
+class QKeyEvent;
 class ViewerNode: public OutputNode
 {
     Q_OBJECT
@@ -100,8 +101,37 @@ public:
     void connectSlotsToViewerCache();
     
     void disconnectSlotsToViewerCache();
+
+    void redrawViewer();
     
+    void swapBuffers();
     
+    void pixelScale(double &x,double &y);
+    
+    void backgroundColor(double &r,double &g,double &b);
+    
+    void viewportSize(double &w,double &h);
+    
+    /**
+     *@brief Tells all the nodes in the grpah to draw their overlays
+     **/
+    void drawOverlays() const;
+    
+    bool notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    
+    bool notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    
+    bool notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysKeyDown(QKeyEvent* e);
+    
+    void notifyOverlaysKeyUp(QKeyEvent* e);
+    
+    void notifyOverlaysKeyRepeat(QKeyEvent* e);
+    
+    void notifyOverlaysFocusGained();
+    
+    void notifyOverlaysFocusLost();
     
 public slots:
     void onCachedFrameAdded();
@@ -118,6 +148,8 @@ signals:
     void removedCachedFrame();
     void clearedViewerCache();
     
+    void mustSwapBuffers();
+    void mustRedraw();
 private:
     
     virtual bool _validate(bool doFullWork);
