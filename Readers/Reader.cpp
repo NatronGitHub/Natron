@@ -438,10 +438,9 @@ void Reader::setPreview(QImage* img){
 
 /*Adds to _rowsToRead the rows in others that are missing to _rows*/
 void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(const std::vector<int>& others){
-    ScanLineConstIterator it = others.begin();
-    std::vector<int> rowsCopy = _rows;
-    for (; it!=others.end(); ++it) {
-        ScanLineConstIterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
+    std::list<int> rowsCopy (_rows.begin(), _rows.end()); // std::list is more efficient with respect to erase()
+    for (ScanLineConstIterator it = others.begin(); it!=others.end(); ++it) {
+        std::list<int>::iterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
         if(found == rowsCopy.end()){ // if not found, we add the row to rows
             _rowsToRead.push_back(*it);
         }else{
