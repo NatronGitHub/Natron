@@ -117,11 +117,11 @@ public:
      **/
     void drawOverlays() const;
     
-    bool notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
     
-    bool notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    void notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
     
-    bool notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    void notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
     
     void notifyOverlaysKeyDown(QKeyEvent* e);
     

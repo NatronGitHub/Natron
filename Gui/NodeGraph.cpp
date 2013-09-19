@@ -163,6 +163,11 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             
         }
     }
+    if(_evtState == MOVING_AREA){
+        if(!event->modifiers().testFlag(Qt::AltModifier)){
+            _evtState = DEFAULT;
+        }
+    }
 }
 void NodeGraph::deselect(){
     for(U32 i = 0 ; i < _nodes.size() ;++i) {

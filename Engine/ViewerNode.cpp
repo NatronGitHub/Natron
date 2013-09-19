@@ -340,49 +340,34 @@ void ViewerNode::drawOverlays() const{
     }
 }
 
-bool ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
+void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
-    if(_dag.begin() == _dag.end())
-        return false;
-    bool ret = false;
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
-            if(!(*it)->onOverlayPenDown(viewportPos, pos))
-                ret = true;
+            (*it)->onOverlayPenDown(viewportPos, pos);
         }
     }
-    return ret;
 }
 
-bool ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
+void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
-    if(_dag.begin() == _dag.end())
-        return false;
-    bool ret = false;
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
-            if(!(*it)->onOverlayPenMotion(viewportPos, pos))
-                ret = true;;
+            (*it)->onOverlayPenMotion(viewportPos, pos);
         }
     }
-    return ret;
 }
 
-bool ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
+void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
-    if(_dag.begin() == _dag.end())
-        return false;
-    bool ret = false;
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
-            if(!(*it)->onOverlayPenUp(viewportPos, pos))
-                ret = true;
+            (*it)->onOverlayPenUp(viewportPos, pos);
         }
     }
-    return ret;
 }
 
 void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
