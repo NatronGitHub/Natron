@@ -29,7 +29,7 @@ Powiter::OfxHost::OfxHost()
     _properties.setStringProperty(kOfxPropName, "PowiterHost");
     _properties.setStringProperty(kOfxPropLabel, "Powiter");
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, 1);
     _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 1);

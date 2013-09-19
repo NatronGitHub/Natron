@@ -131,6 +131,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    Engine/OfxOverlayInteract.cpp
 
 
 
@@ -235,6 +236,7 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
     Engine/Knob.h \
+    Engine/OfxOverlayInteract.h
 
 
 INSTALLS += target
