@@ -155,6 +155,7 @@ private:
 class SequenceItemDelegate : public QStyledItemDelegate {
     
     int _maxW;
+    mutable QMutex _nameMappingMutex; // protects _nameMapping
     std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
     SequenceFileDialog* _fd;
 public:
@@ -306,7 +307,7 @@ public:
 private:
     
     FrameSequences _frameSequences;
-    QMutex _nameMappingMutex; // protects _nameMapping
+    mutable QMutex _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
