@@ -74,6 +74,26 @@ static inline bool nocase_equal_string (const std::string &s1, const std::string
                 nocase_equal_char);
 }
 
+namespace {
+    struct NameMappingCompareFirst {
+        NameMappingCompareFirst(const QString &val) : val_(val) {}
+      bool operator()(const SequenceFileDialog::NameMappingElement& elem) const {
+            return val_ == elem.first;
+        }
+    private:
+        QString val_;
+    };
+
+    struct NameMappingCompareFirstNoPath {
+        NameMappingCompareFirstNoPath(const QString &val) : val_(val) {}
+        bool operator()(const SequenceFileDialog::NameMappingElement& elem) const {
+            return val_ == SequenceFileDialog::removePath(elem.first);
+        }
+    private:
+        QString val_;
+    };
+}
+
 SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
                                        const std::vector<std::string>& filters, // the user accepted file types
                                        bool isSequenceDialog, // true if this dialog can display sequences
@@ -485,11 +505,9 @@ void SequenceFileDialog::selectionChanged(){
     QString finalFiles = allFiles.join(QString(QLatin1Char(' ')));
     {
         QMutexLocker locker(&_nameMappingMutex);
-        for(unsigned int i = 0 ; i < _nameMapping.size(); ++i) {
-            if(finalFiles == _nameMapping[i].first){
-                finalFiles =  _nameMapping[i].second.second;
-                break;
-            }
+        NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(finalFiles));
+        if (it != _nameMapping.end()) {
+            finalFiles =  it->second.second;
         }
     }
     if (!finalFiles.isEmpty())
@@ -741,14 +759,8 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
             }
             {
                 QMutexLocker locker(&_nameMappingMutex);
-                bool foundExistingMapping = false;
-                for(unsigned int j = 0 ; j < _nameMapping.size();++j) {
-                    if(_nameMapping[j].first == originalName){
-                        foundExistingMapping = true;
-                        break;
-                    }
-                }
-                if(!foundExistingMapping){
+                NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(originalName));
+                if (it == _nameMapping.end()) {
                     //        cout << "mapping: " << originalName.toStdString() << " TO " << name.toStdString() << endl;
                     _nameMapping.push_back(make_pair(originalName,make_pair(frameRanges._totalSize,name)));
                 }
@@ -842,7 +854,7 @@ void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, s
         QMutexLocker locker(&_nameMappingMutex);
         _nameMapping.clear();
         for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
-            const pair<QString,pair<qint64,QString> >& p = nameMapping[i];
+            const SequenceFileDialog::NameMappingElement& p = nameMapping[i];
             _nameMapping.push_back(p);
             int w = metric.width(p.second.second);
             if(w > _maxW) _maxW = w;
@@ -874,8 +886,6 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     if(index.column() != 0 && index.column() != 1) {
         return QStyledItemDelegate::paint(painter,option,index);
     }
-    bool found = false;
-    size_t found_index;
     QString str;
     if (index.column() == 0) {
         str = index.data().toString();
@@ -885,32 +895,28 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
         str = idx.data().toString();
     }
-    // found_index, which is an index in _nameMapping, has to be valid from here to the end
-    // of the function, thus we have to lock _nameMapping here
-    QMutexLocker locker(&_nameMappingMutex);
-    for (size_t i =0 ;i < _nameMapping.size() ;++i) {
-        if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
-            found = true;
-            found_index = i;
-            break;
+    std::pair<qint64,QString> found_item;
+    {
+        QMutexLocker locker(&_nameMappingMutex);
+        SequenceFileDialog::NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirstNoPath(str));
+        if (it == _nameMapping.end()) { // probably a directory or a single image file
+            return QStyledItemDelegate::paint(painter,option,index);
         }
-    }
-    if(!found) { // probably a directory or a single image file
-        return QStyledItemDelegate::paint(painter,option,index);
+        found_item = it->second;
     }
     // get the proper subrect from the style
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     // QRect geom = option.rect;
     
-    // FIXME: with the default delegate (QStyledItemDelegate), there is a margins
+    // FIXME: with the default delegate (QStyledItemDelegate), there is a margin
     // of a few more pixels between border and icon, and between icon and text, not with this one
     if (index.column() == 0) {
         QRect r;
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        QString nameToPaint = SequenceFileDialog::removePath(_nameMapping[found_index].second.second);
+        QString nameToPaint = SequenceFileDialog::removePath(found_item.second);
         int totalSize = geom.width();
         int iconWidth = option.decorationSize.width();
         int textSize = totalSize - iconWidth;
@@ -931,7 +937,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         if (option.state & QStyle::State_Selected){
             painter->fillRect(geom, option.palette.highlight());
         }
-        QString nameToPaint(QDirModelPrivate_size(_nameMapping[found_index].second.first));
+        QString nameToPaint(QDirModelPrivate_size(found_item.first));
         painter->drawText(geom,Qt::TextSingleLine|Qt::AlignRight,nameToPaint,&r);
     }
 
