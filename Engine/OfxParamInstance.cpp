@@ -764,11 +764,11 @@ _fileKnob(0),_outputFileKnob(0){
             _outputFileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
-        Knob::Knob_Flags flags = Knob::NONE;
+        
+        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory()->createKnob("String", node, name,1, Knob::NONE));
         if(mode == kOfxParamStringIsLabel){
-            flags = Knob::READ_ONLY;
+            _stringKnob->setEnabled(false);
         }
-        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory()->createKnob("String", node, name,1, flags));
         QObject::connect(_stringKnob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
         if(layoutHint == 2){
             _stringKnob->turnOffNewLine();

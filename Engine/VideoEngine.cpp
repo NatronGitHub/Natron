@@ -37,7 +37,7 @@
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
-#include "Gui/FeedbackSpinBox.h"
+#include "Gui/SpinBox.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Button.h"
 

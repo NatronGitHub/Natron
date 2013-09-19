@@ -244,7 +244,9 @@ _description(description),
 _flags(flags),
 _newLine(true),
 _itemSpacing(0),
-_parentKnob(NULL)
+_parentKnob(NULL),
+_visible(true),
+_enabled(true)
 {
     //_value.setValue(0); // it is better to keep it as an invalid variant
 }
@@ -275,11 +277,13 @@ void Knob::setSpacingBetweenItems(int spacing){
     _itemSpacing = spacing;
 }
 void Knob::setEnabled(bool b){
-    emit enabledStateChanged(b);
+    _enabled = b;
+    emit enabled(b);
 }
 
 void Knob::setVisible(bool b){
-    emit visibleStateChanged(b);
+    _visible = b;
+    emit visible(b);
 }
 
 int Knob::determineHierarchySize() const{

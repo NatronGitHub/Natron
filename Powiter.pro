@@ -95,7 +95,7 @@ SOURCES += \
     Global/LibraryBinary.cpp \
     Gui/ComboBox.cpp \
     Gui/Edge.cpp \
-    Gui/FeedbackSpinBox.cpp \
+    Gui/SpinBox.cpp \
     Gui/Gui.cpp \
     Gui/InfoViewerWidget.cpp \
     Gui/KnobGui.cpp \
@@ -173,7 +173,7 @@ HEADERS += \
     Gui/Button.h \
     Gui/ComboBox.h \
     Gui/Edge.h \
-    Gui/FeedbackSpinBox.h \
+    Gui/SpinBox.h \
     Gui/Gui.h \
     Gui/InfoViewerWidget.h \
     Gui/KnobGui.h \

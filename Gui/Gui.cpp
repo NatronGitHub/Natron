@@ -40,7 +40,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
-#include "Gui/FeedbackSpinBox.h"
+#include "Gui/SpinBox.h"
 #include "Gui/Timeline.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"

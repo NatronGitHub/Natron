@@ -36,7 +36,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Gui/FeedbackSpinBox.h"
+#include "Gui/SpinBox.h"
 #include "Gui/Timeline.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/ComboBox.h"
@@ -119,7 +119,7 @@ _maximized(false)
   //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_secondSettingsRow);
     
-    _gainBox = new FeedbackSpinBox(_secondSettingsRow,true);
+    _gainBox = new SpinBox(_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
     _gainBox->setMinimum(-99.0);
@@ -167,7 +167,7 @@ _maximized(false)
  //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
-	_currentFrameBox=new FeedbackSpinBox(_playerButtonsContainer,true);
+	_currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);
@@ -291,7 +291,7 @@ _maximized(false)
 	_playerLayout->addWidget(previousIncrement_Button);
     
     
-    incrementSpinBox=new FeedbackSpinBox(_playerButtonsContainer);
+    incrementSpinBox=new SpinBox(_playerButtonsContainer);
     incrementSpinBox->setValue(10);
     incrementSpinBox->setToolTip("<p></br><b>Frame increment: \n</b></p>"
                                  "The previous/next increment buttons step"
@@ -321,7 +321,7 @@ _maximized(false)
     
     fpsName = new QLabel("fps",_playerButtonsContainer);
     _playerLayout->addWidget(fpsName);
-    fpsBox = new FeedbackSpinBox(_playerButtonsContainer,true);
+    fpsBox = new SpinBox(_playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
     fpsBox->decimals(1);
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);

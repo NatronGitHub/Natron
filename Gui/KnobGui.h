@@ -32,7 +32,7 @@ class QCheckBox;
 class Node;
 class LineEdit;
 class Button;
-class FeedbackSpinBox;
+class SpinBox;
 class ComboBox;
 class QFrame;
 class QLabel;
@@ -69,6 +69,8 @@ public:
         createWidget(layout, row,offset);
         _widgetCreated = true;
         updateGUI(_knob->getValueAsVariant());
+        setEnabled(_knob->isEnabled());
+        setVisible(_knob->isVisible());
     }
     
     void moveToLayout(QVBoxLayout* layout);
@@ -83,6 +85,7 @@ public:
     bool hasWidgetBeenCreated() const {return _widgetCreated;}
     
     virtual void hide() =0;
+    
     virtual void show() =0;
     
 public slots:
@@ -93,6 +96,16 @@ public slots:
         if(_widgetCreated)
             updateGUI(variant);
     }
+    
+    virtual void setVisible(bool b){
+        if(b){
+            show();
+        }else{
+            hide();
+        }
+    }
+    
+    virtual void setEnabled(bool b) =0;
     
 signals:
     
@@ -147,6 +160,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b){(void)b;}
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
@@ -189,6 +204,8 @@ public:
     virtual void hide();
     
     virtual void show();
+    
+    virtual void setEnabled(bool b){(void)b;}
     
     virtual void addToLayout(QHBoxLayout* layout);
     
@@ -237,6 +254,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b);
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
@@ -247,7 +266,7 @@ protected:
     virtual void updateGUI(const Variant& variant);
     
 private:
-    std::vector<std::pair<FeedbackSpinBox*,QLabel*> > _spinBoxes;
+    std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
     QLabel* _descriptionLabel;
 
 };
@@ -270,6 +289,8 @@ public:
     virtual void hide();
     
     virtual void show();
+    
+    virtual void setEnabled(bool b);
     
     virtual void addToLayout(QHBoxLayout* layout);
     
@@ -310,6 +331,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b);
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
     public slots:
@@ -320,7 +343,7 @@ protected:
     virtual void updateGUI(const Variant& variant);
     
 private:
-    std::vector<std::pair<FeedbackSpinBox*,QLabel*> > _spinBoxes;
+    std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
     QLabel* _descriptionLabel;
 };
 
@@ -342,6 +365,8 @@ public:
     virtual void hide();
     
     virtual void show();
+    
+    virtual void setEnabled(bool b);
     
     virtual void addToLayout(QHBoxLayout* layout);
     
@@ -375,6 +400,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b);
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
@@ -407,6 +434,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b){(void)b;}
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 protected:
@@ -436,6 +465,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b);
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
@@ -459,10 +490,10 @@ private:
     QLabel* _bLabel;
     QLabel* _aLabel;
     
-    FeedbackSpinBox* _rBox;
-    FeedbackSpinBox* _gBox;
-    FeedbackSpinBox* _bBox;
-    FeedbackSpinBox* _aBox;
+    SpinBox* _rBox;
+    SpinBox* _gBox;
+    SpinBox* _bBox;
+    SpinBox* _aBox;
     
     QLabel* _colorLabel;
     Button* _colorDialogButton;
@@ -486,6 +517,8 @@ public:
     virtual void hide();
     
     virtual void show();
+    
+    virtual void setEnabled(bool b);
     
     virtual void addToLayout(QHBoxLayout* layout);
     
@@ -557,6 +590,8 @@ public:
     
     virtual void show();
     
+    virtual void setEnabled(bool b){(void)b;}
+    
     virtual void addToLayout(QHBoxLayout* layout);
     
 protected:
@@ -598,6 +633,8 @@ public:
     virtual void hide();
     
     virtual void show();
+    
+    virtual void setEnabled(bool b);
     
     virtual void addToLayout(QHBoxLayout* layout);
     

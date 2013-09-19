@@ -40,7 +40,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Global/AppManager.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Engine/Model.h"
-#include "Gui/FeedbackSpinBox.h"
+#include "Gui/SpinBox.h"
 #include "Gui/Timeline.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/Settings.h"

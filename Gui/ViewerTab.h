@@ -32,7 +32,7 @@ class QGroupBox;
 class ViewerGL;
 class InfoViewerWidget;
 class AppInstance;
-class FeedbackSpinBox;
+class SpinBox;
 class ScaleSlider;
 class TimeLineGui;
 class ViewerNode;
@@ -72,7 +72,7 @@ public:
     Button* _centerViewerButton;
 
     /*2nd row*/
-    FeedbackSpinBox* _gainBox;
+    SpinBox* _gainBox;
     ScaleSlider* _gainSlider;
     Button* _refreshButton;
     ComboBox* _viewerColorSpace;
@@ -86,7 +86,7 @@ public:
 	/*TimeLine buttons*/
     QWidget* _playerButtonsContainer;
 	QHBoxLayout* _playerLayout;
-	FeedbackSpinBox* _currentFrameBox;
+	SpinBox* _currentFrameBox;
 	Button* firstFrame_Button;
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
@@ -97,12 +97,12 @@ public:
     Button* nextKeyFrame_Button;
 	Button* lastFrame_Button;
     Button* previousIncrement_Button;
-    FeedbackSpinBox* incrementSpinBox;
+    SpinBox* incrementSpinBox;
     Button* nextIncrement_Button;
     Button* loopMode_Button;
     
     QLabel* fpsName;
-    FeedbackSpinBox* fpsBox;
+    SpinBox* fpsBox;
     
 	/*frame seeker*/
 	TimeLineGui* frameSeeker;

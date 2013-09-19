@@ -14,41 +14,62 @@
 
 #include "Gui/LineEdit.h"
 
-class FeedbackSpinBox : public LineEdit
+
+class QDoubleValidator;
+class QIntValidator;
+
+
+class SpinBox : public LineEdit
 {
     Q_OBJECT
     
-    bool _mode; // 0 = int, 1 = double
-    int _decimals; // for the double spinbox only
-    double _increment;
-    double _mini,_maxi;
 public:
-    explicit FeedbackSpinBox(QWidget* parent=0, bool mode=false);
-    void decimals(int d){
-        _decimals=d;
-        setMaxLength(_decimals+3);
-    }
-    void setMaximum(double t){
-        _maxi=t;
-    }
-    void setMinimum(double b){
-        _mini=b;
-    }
-    double value(){bool ok;return text().toDouble(&ok);}
+    
+    enum SPINBOX_TYPE{INT_SPINBOX = 0,DOUBLE_SPINBOX};
+    
+    explicit SpinBox(QWidget* parent=0,SPINBOX_TYPE type = INT_SPINBOX);
+    
+    virtual ~SpinBox();
+    
+    void decimals(int d);
+    
+    void setMaximum(double t);
+    
+    void setMinimum(double b);
+    
+    double value(){return text().toDouble();}
+    
     void setIncrement(double d){_increment=d;}
    
     
 protected:
+    
     virtual void wheelEvent(QWheelEvent* e);
+    
     virtual void keyPressEvent(QKeyEvent* e);
+    
 signals:
+    
     void valueChanged(double d);
 
 public slots:
+    
     void setValue(double d);
+    
     void setValue(int d){setValue((double)d);}
+    
+    /*Used internally when the user pressed enter*/
     void interpretReturn();
  
+
+private:
+    
+    SPINBOX_TYPE _type;
+    int _decimals; // for the double spinbox only
+    double _increment;
+    double _mini,_maxi;
+    QDoubleValidator* _doubleValidator;
+    QIntValidator* _intValidator;
 
     
 };

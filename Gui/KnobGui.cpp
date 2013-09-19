@@ -51,7 +51,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"
 #include "Gui/NodeGui.h"
-#include "Gui/FeedbackSpinBox.h"
+#include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
 
@@ -69,6 +69,8 @@ _widgetCreated(false)
 {
     QObject::connect(knob,SIGNAL(valueChanged(const Variant&)),this,SLOT(onInternalValueChanged(const Variant&)));
     QObject::connect(this,SIGNAL(valueChanged(const Variant&)),knob,SLOT(onValueChanged(const Variant&)));
+    QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
+    QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
 }
 
 KnobGui::~KnobGui(){
@@ -338,7 +340,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
             subDesc = new QLabel(subLabelDesc,boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
-        FeedbackSpinBox* box = new FeedbackSpinBox(layout->parentWidget(),false);
+        SpinBox* box = new SpinBox(layout->parentWidget(),SpinBox::INT_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         if(_knob->getDimension() > 1){
             if(maximums.size() > i)
@@ -351,12 +353,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
         }
         
         boxContainerLayout->addWidget(box);
-        if(flags & Knob::READ_ONLY){
-            box->setReadOnly(true);
-        }
-        if(flags & Knob::INVISIBLE){
-            box->setVisible(false);
-        }
+       
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back(make_pair(box,subDesc));
     }
@@ -407,6 +404,16 @@ void Int_KnobGui::show(){
             _spinBoxes[i].second->show();
     }
 }
+
+void Int_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setReadOnly(!b);
+        if(_spinBoxes[i].second)
+            _spinBoxes[i].second->setEnabled(b);
+    }
+
+}
 void Int_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
@@ -424,13 +431,6 @@ void Bool_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));    
     layout->addWidget(_descriptionLabel,row,0+columnOffset);
     layout->addWidget(_checkBox,row,1+columnOffset);
-    Knob_Mask flags = _knob->getFlags();
-    if(flags & Knob::READ_ONLY){
-        _checkBox->setEnabled(false);
-    }
-    if(flags & Knob::INVISIBLE){
-        _checkBox->setVisible(false);
-    }
 }
 
 void Bool_KnobGui::updateGUI(const Variant& variant){
@@ -450,6 +450,10 @@ void Bool_KnobGui::hide(){
 void Bool_KnobGui::show(){
     _descriptionLabel->show();
     _checkBox->show();
+}
+void Bool_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    _checkBox->setEnabled(b);
 }
 void Bool_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
@@ -491,7 +495,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
             subDesc = new QLabel(subLabelDesc,boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
-        FeedbackSpinBox* box = new FeedbackSpinBox(layout->parentWidget(),true);
+        SpinBox* box = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
         QObject::connect(box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()));
         if(_knob->getDimension() > 1){
             if(maximums.size() > i)
@@ -512,12 +516,6 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
         }
         
         boxContainerLayout->addWidget(box);
-        if(flags & Knob::READ_ONLY){
-            box->setReadOnly(true);
-        }
-        if(flags & Knob::INVISIBLE){
-            box->setVisible(false);
-        }
         int offset = _knob->determineHierarchySize();
         if(_knob->getParentKnob()){
             ++offset;
@@ -573,6 +571,15 @@ void Double_KnobGui::show(){
             _spinBoxes[i].second->show();
     }
 }
+void Double_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setReadOnly(!b);
+        if(_spinBoxes[i].second)
+            _spinBoxes[i].second->setEnabled(b);
+    }
+    
+}
 void Double_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
@@ -589,10 +596,6 @@ void Button_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
     QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
     
     layout->addWidget(_button,row,0+columnOffset);
-    Knob_Mask flags = _knob->getFlags();
-    if(flags & Knob::INVISIBLE){
-        _button->setVisible(false);
-    }
 }
 
 void Button_KnobGui::emitValueChanged(){
@@ -604,6 +607,9 @@ void Button_KnobGui::hide(){
 
 void Button_KnobGui::show(){
     _button->show();
+}
+void Button_KnobGui::setEnabled(bool b){
+    _button->setEnabled(b);
 }
 void Button_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_button);
@@ -627,10 +633,6 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffse
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));    
     layout->addWidget(_descriptionLabel,row,0+columnOffset);
     layout->addWidget(_comboBox,row,1+columnOffset);
-    Knob_Mask flags = _knob->getFlags();
-    if(flags & Knob::INVISIBLE){
-        _comboBox->setVisible(false);
-    }
 }
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));    
@@ -650,6 +652,10 @@ void ComboBox_KnobGui::hide(){
 void ComboBox_KnobGui::show(){
     _descriptionLabel->show();
     _comboBox->show();
+}
+void ComboBox_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    _comboBox->setEnabled(b);
 }
 void ComboBox_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
@@ -677,6 +683,7 @@ void Separator_KnobGui::show(){
     _line->show();
 }
 
+
 void Separator_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_descriptionLabel);
     layout->addWidget(_line);
@@ -684,13 +691,13 @@ void Separator_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 //=============================RGBA_KNOB_GUI===================================
 void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
-    _rBox = new FeedbackSpinBox(layout->parentWidget(),true);
+    _rBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _gBox = new FeedbackSpinBox(layout->parentWidget(),true);
+    _gBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _bBox = new FeedbackSpinBox(layout->parentWidget(),true);
+    _bBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _aBox = new FeedbackSpinBox(layout->parentWidget(),true);
+    _aBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     
     
@@ -753,6 +760,14 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     if (flags  & Knob::NO_ALPHA) {
         disablePermantlyAlpha();
     }
+
+}
+void RGBA_KnobGui::setEnabled(bool b){
+    _rBox->setEnabled(b);
+    _gBox->setEnabled(b);
+    _bBox->setEnabled(b);
+    _aBox->setEnabled(b);
+    _colorDialogButton->setEnabled(b);
 }
 void RGBA_KnobGui::updateGUI(const Variant& variant){
     QVector4D v = variant.value<QVector4D>();
@@ -875,13 +890,6 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
     _lineEdit = new LineEdit(layout->parentWidget());
     layout->addWidget(_lineEdit,row,1+columnOffset);
     QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
-    Knob_Mask flags = _knob->getFlags();
-    if(flags & Knob::READ_ONLY){
-        _lineEdit->setReadOnly(true);
-    }
-    if(flags & Knob::INVISIBLE){
-        _lineEdit->setVisible(false);
-    }
 
 }
 
@@ -899,6 +907,10 @@ void String_KnobGui::hide(){
 void String_KnobGui::show(){
     _descriptionLabel->show();
     _lineEdit->show();
+}
+void String_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    _lineEdit->setEnabled(b);
 }
 
 void String_KnobGui::addToLayout(QHBoxLayout* layout){
@@ -1031,6 +1043,9 @@ void Tab_KnobGui::show(){
 void Tab_KnobGui::hide(){
     _tabWidget->hide();
     
+}
+void Tab_KnobGui::setEnabled(bool b){
+    _tabWidget->setEnabled(b);
 }
 void Tab_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_tabWidget);

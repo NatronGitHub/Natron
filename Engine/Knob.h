@@ -174,7 +174,7 @@ class Knob : public QObject
     Q_OBJECT
     
 public:
-    enum Knob_Flags{NONE=0x0,INVISIBLE=0x1,READ_ONLY=0x2,RGBA_STYLE_SCALAR=0x4,NO_ALPHA=0x8};
+    enum Knob_Flags{NONE=0x0,RGBA_STYLE_SCALAR=0x2,NO_ALPHA=0x4};
     
     
     Knob(Node* node,const std::string& description,int dimension = 1,Knob_Mask flags = 0);
@@ -291,6 +291,10 @@ public:
     
     int determineHierarchySize() const;
     
+    bool isVisible() const {return _visible;}
+    
+    bool isEnabled() const {return _enabled;}
+    
 public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
@@ -312,13 +316,18 @@ signals:
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
     
-    /*emitted by deleteKnob()*/
+    /*emitted by deleteKnob().
+     WARNING: To properly delete the gui
+     associated, NodeGui::initializeKnobs must 
+     have been called. That means you should
+     never call this function right away after
+     KnobFactory::createKnob().*/
     void deleteWanted();
-   
-    void enabledStateChanged(bool);
-    
-    void visibleStateChanged(bool);
-    
+
+    void visible(bool);
+        
+    void enabled(bool);
+        
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
@@ -338,7 +347,7 @@ protected:
     Variant _value;
     std::vector<U64> _hashVector;
     int _dimension;
-
+   
     
 private:
     
@@ -353,6 +362,8 @@ private:
     Variant _maximum,_minimum;
     Variant _increment;
     Knob* _parentKnob;
+    bool _visible;
+    bool _enabled;
 };
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
