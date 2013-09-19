@@ -835,15 +835,18 @@ void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd) : QStyledItemDelegate(),_maxW(200),_fd(fd){}
 
 void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping) {
-    _nameMapping.clear();
     _maxW = 200;
     QFont f("Times",6);
     QFontMetrics metric(f);
-    for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
-        const pair<QString,pair<qint64,QString> >& p = nameMapping[i];
-        _nameMapping.push_back(p);
-        int w = metric.width(p.second.second);
-        if(w > _maxW) _maxW = w;
+    {
+        QMutexLocker locker(&_nameMappingMutex);
+        _nameMapping.clear();
+        for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
+            const pair<QString,pair<qint64,QString> >& p = nameMapping[i];
+            _nameMapping.push_back(p);
+            int w = metric.width(p.second.second);
+            if(w > _maxW) _maxW = w;
+        }
     }
 }
 
@@ -882,6 +885,9 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         QModelIndex idx = model->index(modelIndex.row(),0,modelIndex.parent());
         str = idx.data().toString();
     }
+    // found_index, which is an index in _nameMapping, has to be valid from here to the end
+    // of the function, thus we have to lock _nameMapping here
+    QMutexLocker locker(&_nameMappingMutex);
     for (size_t i =0 ;i < _nameMapping.size() ;++i) {
         if(SequenceFileDialog::removePath(_nameMapping[i].first) == str){
             found = true;
