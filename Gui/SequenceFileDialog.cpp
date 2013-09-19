@@ -477,7 +477,7 @@ void SequenceFileDialog::enableSequenceMode(bool b){
     _frameSequences.clear();
     _proxy->clear();
     if(!b){
-        QMutexLocker locker(&_nameMappingMutex);
+        QWriteLocker locker(&_nameMappingMutex);
         _nameMapping.clear();
         _view->updateNameMapping(_nameMapping);
     }
@@ -504,7 +504,7 @@ void SequenceFileDialog::selectionChanged(){
     
     QString finalFiles = allFiles.join(QString(QLatin1Char(' ')));
     {
-        QMutexLocker locker(&_nameMappingMutex);
+        QReadLocker locker(&_nameMappingMutex);
         NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(finalFiles));
         if (it != _nameMapping.end()) {
             finalFiles =  it->second.second;
@@ -622,7 +622,7 @@ void FileSequence::addToSequence(int frameIndex,const QString& path){
 }
 
 /*Complex filter to actually extract the sequences from the file system*/
-bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const{
+bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const {
     
     
     /*the item to filter*/
@@ -655,7 +655,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     }
     
     /*Locking the access to the frame sequences multi-map*/
-    QMutexLocker g(&_lock);
+    QMutexLocker g(&_frameSequencesMutex);
     pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
         /*we found a matching sequence name, we need to figure out if it has the same file type*/
@@ -758,7 +758,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 name.append(" ) ");
             }
             {
-                QMutexLocker locker(&_nameMappingMutex);
+                QWriteLocker locker(&_nameMappingMutex);
                 NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(originalName));
                 if (it == _nameMapping.end()) {
                     //        cout << "mapping: " << originalName.toStdString() << " TO " << name.toStdString() << endl;
@@ -769,7 +769,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     }
     
     {
-        QMutexLocker locker(&_nameMappingMutex);
+        QReadLocker locker(&_nameMappingMutex);
         _view->updateNameMapping(_nameMapping);
     }
 }
@@ -851,7 +851,7 @@ void SequenceItemDelegate::setNameMapping(const std::vector<std::pair<QString, s
     QFont f("Times",6);
     QFontMetrics metric(f);
     {
-        QMutexLocker locker(&_nameMappingMutex);
+        QWriteLocker locker(&_nameMappingMutex);
         _nameMapping.clear();
         for(unsigned int i = 0 ; i < nameMapping.size() ; ++i) {
             const SequenceFileDialog::NameMappingElement& p = nameMapping[i];
@@ -897,7 +897,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     }
     std::pair<qint64,QString> found_item;
     {
-        QMutexLocker locker(&_nameMappingMutex);
+        QReadLocker locker(&_nameMappingMutex);
         SequenceFileDialog::NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirstNoPath(str));
         if (it == _nameMapping.end()) { // probably a directory or a single image file
             return QStyledItemDelegate::paint(painter,option,index);
