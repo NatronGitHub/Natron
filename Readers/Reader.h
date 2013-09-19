@@ -105,11 +105,11 @@ public:
 
             /** @brief Construct a new ScanLineContext with the rows passed in parameters.
             **/
-            ScanLineContext(std::vector<int> rows):_rows(rows){}
+            ScanLineContext(const std::vector<int>& rows):_rows(rows) {}
             
             /** @brief Set the base scan-lines that represents the context*
              **/
-            void setRows(std::vector<int> rows){_rows=rows;}
+            void setRows(const std::vector<int>& rows) { _rows=rows; }
 
             /**
              * @brief getRows
