@@ -906,6 +906,9 @@ void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool f
 }
 
 void VideoEngine::runTasks(){
+    if(_working){
+        return;
+    }
     if(_waitingTasks.size() > 0){
         Task _t = _waitingTasks.back();
         VengineFunction f = _t._func;
@@ -1048,6 +1051,8 @@ OfxNode* VideoEngine::DAG::outputAsOpenFXNode() const{
 }
 
 void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
+    
+    assert(!out->getVideoEngine()->isWorking());
     _output = out;
     _isViewer = isViewer;
     if(out && out->isOpenFXNode()){
