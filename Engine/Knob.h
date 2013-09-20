@@ -295,6 +295,10 @@ public:
     
     bool isEnabled() const {return _enabled;}
     
+    void turnOffUndoRedo() {_canUndo = false;}
+    
+    bool canBeUndone() const {return _canUndo;}
+    
 public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
@@ -364,6 +368,7 @@ private:
     Knob* _parentKnob;
     bool _visible;
     bool _enabled;
+    bool _canUndo;
 };
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);

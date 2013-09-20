@@ -246,7 +246,8 @@ _newLine(true),
 _itemSpacing(0),
 _parentKnob(NULL),
 _visible(true),
-_enabled(true)
+_enabled(true),
+_canUndo(true)
 {
     //_value.setValue(0); // it is better to keep it as an invalid variant
 }

@@ -45,6 +45,9 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
     
 }
 
@@ -101,7 +104,10 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
     int max = getProperties().getIntProperty(kOfxParamPropDisplayMax);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
@@ -162,7 +168,10 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
@@ -234,7 +243,10 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -296,7 +308,10 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
@@ -378,7 +393,10 @@ _paramName(name){
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
@@ -461,7 +479,10 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
@@ -540,7 +561,10 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     double minimum[2];
     double maximum[2];
     double increment[2];
@@ -627,7 +651,10 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
         _knob->turnOffNewLine();
     }
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    
+    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _knob->turnOffUndoRedo();
+    }
+
     int minimum[2];
     int maximum[2];
     int increment[2];
@@ -713,11 +740,20 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
+        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+            _tabKnob->turnOffUndoRedo();
+        }
+
     }else{
         _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, name,1, Knob::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
+        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+            _groupKnob->turnOffUndoRedo();
+        }
+
     }
+    
     
 }
 void OfxGroupInstance::addKnob(Knob *k) {
@@ -754,6 +790,10 @@ _fileKnob(0),_outputFileKnob(0){
                 _fileKnob->turnOffNewLine();
             }
             _fileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+            if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+                _fileKnob->turnOffUndoRedo();
+            }
+
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, name,1, Knob::NONE));
@@ -762,6 +802,10 @@ _fileKnob(0),_outputFileKnob(0){
                 _outputFileKnob->turnOffNewLine();
             }
             _outputFileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+            if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+                _outputFileKnob->turnOffUndoRedo();
+            }
+
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
         
@@ -774,9 +818,14 @@ _fileKnob(0),_outputFileKnob(0){
             _stringKnob->turnOffNewLine();
         }
         _stringKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
+        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+            _stringKnob->turnOffUndoRedo();
+        }
+
         _returnValue = getProperties().getStringProperty(kOfxParamPropDefault,1);
         set(_returnValue.c_str());
     }
+    
     
 }
 OfxStatus OfxStringInstance::get(std::string &str) {

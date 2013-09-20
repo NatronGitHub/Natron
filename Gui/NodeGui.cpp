@@ -26,6 +26,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
+#include "Engine/OfxImageEffectInstance.h"
 
 #include "Global/AppManager.h"
 
@@ -157,8 +158,11 @@ NodeGui::NodeGui(NodeGraph* dag,
 		settingsPanel_displayed=true;
 		assert(dockContainer);
 		settings=new SettingsPanel(this,dockContainer->parentWidget());
-        
 		dockContainer->addWidget(settings);
+        if(node->isOpenFXNode()){
+            OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+            ofxNode->effectInstance()->beginInstanceEditAction();
+        }
 	}
     
 }
@@ -475,6 +479,10 @@ void NodeGui::activate(){
         _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
+    if(node->isOpenFXNode()){
+        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+        ofxNode->effectInstance()->beginInstanceEditAction();
+    }
     
 }
 
@@ -498,6 +506,10 @@ void NodeGui::deactivate(){
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
         _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
+    }
+    if(node->isOpenFXNode()){
+        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+        ofxNode->effectInstance()->beginInstanceEditAction();
     }
     
 }

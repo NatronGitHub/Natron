@@ -120,9 +120,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _labelWidget->setLayout(_layoutLabel);
     _tabWidget->addTab(_labelWidget,"Label");
     
-    
-    //initialize_knobs();
-    
 }
 SettingsPanel::~SettingsPanel(){}
 
