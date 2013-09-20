@@ -8,17 +8,10 @@
 *
 */
 
- 
+#ifndef POWITER_GLOBAL_ENUMS_H_
+#define POWITER_GLOBAL_ENUMS_H_
 
- 
-
-
-
-
-#ifndef INCLUDED_ENUMS_H
-#define INCLUDED_ENUMS_H
-
-#define MAX_CHANNEL_COUNT 7
+#define POWITER_MAX_CHANNEL_COUNT 7
 
 namespace Powiter{
     
@@ -27,14 +20,18 @@ namespace Powiter{
     enum Scale_Type{LINEAR_SCALE,LOG_SCALE,EXP_SCALE};
         
     enum TIMELINE_STATE{IDLE,DRAGGING_CURSOR,DRAGGING_BOUNDARY};
-    
-    enum Channel{
+
+    // when adding more standard channels,
+    // update the functions getChannelByName() and getChannelName() in ChannelSet.cpp
+    enum Channel {
         Channel_black = 0,
         Channel_red=1,
         Channel_green=2,
         Channel_blue=3,
         Channel_alpha=4,
         Channel_Z=5,
+        // note: Channel_unused is not a channel per se, it is just the first unused channel,
+        // and its index may thus change between versions
         Channel_unused=6
     };
     
@@ -63,4 +60,4 @@ namespace Powiter{
 
 
 
-#endif // INCLUDED_ENUMS_H
+#endif // POWITER_GLOBAL_ENUMS_H_

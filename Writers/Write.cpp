@@ -9,19 +9,15 @@
 *
 */
 
- 
-
- 
-
-
-
-
 #include "Write.h"
+
 #include "Engine/Row.h"
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
+
 using namespace Powiter;
+
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
  initializeColorSpace. This function is called after the constructor and before any
@@ -48,7 +44,7 @@ void Write::to_byte(Channel z, uchar* to, const float* from, const float* alpha,
             _lut->to_byte(to, from, W,delta);
         }
     }else{
-        Linear::to_byte(to, from, W,delta);
+        Color::linear_to_byte(to, from, W,delta);
     }
 }
 void Write::to_short(Channel z, U16* to, const float* from, const float* alpha, int W, int , int delta){
@@ -59,7 +55,7 @@ void Write::to_short(Channel z, U16* to, const float* from, const float* alpha, 
             _lut->to_short(to, from, W,delta);
         }
     }else{
-        Linear::to_short(to, from, W,delta);
+        Color::linear_to_short(to, from, W,delta);
     }
 }
 void Write::to_float(Channel z, float* to, const float* from, const float* alpha, int W, int delta ){
@@ -70,11 +66,11 @@ void Write::to_float(Channel z, float* to, const float* from, const float* alpha
             _lut->to_float(to, from, W,delta);
         }
     }else{
-        Linear::to_float(to, from, W,delta);
+        Color::linear_to_float(to, from, W,delta);
     }
 }
 
-void WriteKnobs::initKnobs(KnobCallback*,std::string&){
+void WriteKnobs::initKnobs(const std::string&){
     
     _op->createKnobDynamically();
 }

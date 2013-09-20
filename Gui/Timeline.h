@@ -9,33 +9,30 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TIMELINE_H_
+#define POWITER_GUI_TIMELINE_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__timeline__
-#define __PowiterOsX__timeline__
-
-#include <iostream>
+#include <vector>
+#include <QtCore/QList>
+#include <QtCore/QPointF>
 #include <QWidget>
-#include "Global/GlobalDefines.h"
+
+#include "Global/Macros.h"
+#include "Global/Enums.h"
+
 #define BORDER_HEIGHT_ 10
 #define BORDER_OFFSET_ 10
 #define LINE_START 15
 #define TICK_HEIGHT_ 7
 #define CURSOR_WIDTH 15
 #define CURSOR_HEIGHT 8
-
+class ViewerTab;
 class QMouseEvent;
-class TimeLine : public QWidget{
+class TimeLine;
+class TimeLineGui : public QWidget{
     Q_OBJECT
     
     int _first,_last; // the first and last frames, bounded by the user
-    int _minimum,_maximum; // the extremas displayed on the timeline
-    int _current; // the current frame
     
     std::vector<int> _values;
     QList<int> _displayedValues;
@@ -47,8 +44,21 @@ class TimeLine : public QWidget{
     
     std::vector<int> _cached;
     
+    TimeLine& _timeLine;
+    
+    ViewerTab* _viewerTab;//ptr to the viewer tab holding this timeline
+    
+    QColor _cursorColor;
+    QColor _boundsColor;
+    QColor _cachedLineColor;
+    QColor _backgroundColor;
+    QColor _ticksColor;
+    QColor _scaleColor;
+    
 signals:
     void positionChanged(int);
+    void currentFrameChanged(int);
+    
 public slots:
     void seek(int);
     void seek(double d){seek((int)d);}
@@ -56,8 +66,8 @@ public slots:
         
 public:
     
-    TimeLine(QWidget* parent=0);
-    virtual ~TimeLine(){}
+    explicit TimeLineGui(TimeLine& timeLine,ViewerTab* parentTab);
+    virtual ~TimeLineGui(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/
     void addCachedFrame(int f);
@@ -76,9 +86,15 @@ public:
     
     int firstFrame() const{return _first;}
     int lastFrame() const{return _last;}
-    int currentFrame() const{return _current;}
+    int currentFrame() const;
 
-
+    void setCursorColor(const QColor& cursorColor);
+    void setBoundsColor(const QColor& boundsColor);
+    void setCachedLineColor(const QColor& cachedLineColor);
+    void setTicksColor(const QColor& ticksColor);
+    void setBackGroundColor(const QColor& backgroundColor);
+    void setScaleColor(const QColor& scaleColor);
+    
     void seek_notSlot(int);
     
 protected:
@@ -93,7 +109,6 @@ protected:
 private:
     double getScalePosition(double); // input: scale value, output: corresponding coordinate on scale
     double getCoordPosition(double); // opposite
-    void fillCoordLut();
     void updateScale();
     void drawTicks(QPainter* p,QColor& scaleColor);
     void changeFirst(int);
@@ -101,4 +116,4 @@ private:
 
 };
 
-#endif /* defined(__PowiterOsX__timeline__) */
+#endif /* defined(POWITER_GUI_TIMELINE_H_) */

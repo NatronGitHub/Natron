@@ -9,26 +9,22 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITE_H_
+#define POWITER_WRITERS_WRITE_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__Write__
-#define __PowiterOsX__Write__
-
-#include <iostream>
+#include <string>
+#include <vector>
 #include "Engine/ChannelSet.h"
 
 
-class Lut;
+namespace Powiter {
+    namespace Color {
+        class Lut;
+    }
+}
 class Writer;
 class Row;
 class Separator_Knob;
-class KnobCallback;
 
 /** @class This class is used by Writer to load the filetype-specific knobs.
 * Due to the lifetime of Write objects, it's not possible to use the
@@ -52,7 +48,7 @@ public:
     * at the end of the function,
     * so they are properly added to the settings panel.
     **/
-    virtual void initKnobs(KnobCallback* callback, std::string& fileType);
+    virtual void initKnobs(const std::string& fileType);
     
     
     /** @brief Must be overloaded to tell the callback to
@@ -78,7 +74,7 @@ class Write {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
-    Lut* _lut; /// the lut used by the Write to apply colorspace conversion
+    const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* op; /// a pointer to the Writer
     WriteKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
 public:
@@ -114,55 +110,56 @@ public:
     /**
      *@brief Should return the list of file types supported by the encoder: "png","jpg", etc..
     **/
-    virtual std::vector<std::string> fileTypesEncoded()=0;
+    virtual std::vector<std::string> fileTypesEncoded() const = 0;
     
     /**
      *@brief Should return the name of the write handle : "ffmpeg", "OpenEXR" ...
      * It will serve to identify the encoder afterwards in the software.
     **/
-    virtual std::string encoderName()=0;
+    virtual std::string encoderName() const = 0;
     
     /** @brief Must be implemented to tell whether this file type supports stereovision
     **/
-	virtual bool supports_stereo()=0;
+	virtual bool supports_stereo() const = 0;
     
     
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
      * within the range specified by (offset,range) and for all the channels.
     **/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out)=0;
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) = 0;
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
-    * function Lut::getLut(datatype)
+    * function Powiter::Color::getLut(datatype)
     **/
-    virtual void initializeColorSpace()=0;
+    virtual void initializeColorSpace() = 0;
     
     /** @brief This function initialises the output file/output storage structure and put necessary info in it, like
      * meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      * otherwise it would stall the GUI.
     **/
-    virtual void setupFile(const std::string& filename)=0;
+    virtual void setupFile(const std::string& filename) = 0;
     
     /** @brief This function must fill the pre-allocated structure with the data calculated by engine.
      * This function must close the file as writeAllData is the LAST function called before the
      * destructor of Write.
     **/
-    virtual void writeAllData()=0;
+    virtual void writeAllData() = 0;
     
     /** @brief Must return true if this encoder can encode all the channels in channels.
     * Otherwise must throw a descriptive exception
     * so it can be returned to the user.
     **/
-    virtual void supportsChannelsForWriting(ChannelSet& channels)=0;
+    // FIXME: the above doc is obviously wrong.
+    virtual void supportsChannelsForWriting(ChannelSet& channels) const = 0;
     
     /** @return Returns the reader colorspace*/
-    Lut* lut(){return _lut;}
+    const Powiter::Color::Lut* lut() const {return _lut;}
     
     /** @brief Overload it if you need fileType specific knobs. See the
     * comment in WriteKnobs.
     **/
-    virtual WriteKnobs* initSpecificKnobs(){return NULL;}
+    virtual WriteKnobs* initSpecificKnobs() {return NULL;}
     
     /**
      * @brief to_byte converts a buffer of float to a buffer of bytes to the output color-space.
@@ -189,4 +186,4 @@ typedef Write* (*WriteBuilder)(void*);
 
 
 
-#endif /* defined(__PowiterOsX__Write__) */
+#endif /* defined(POWITER_WRITERS_WRITE_H_) */

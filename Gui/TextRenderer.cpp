@@ -33,13 +33,17 @@
 //
 //Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is
 //a trademark of Bitstream, Inc.
-#include "Gui/TextRenderer.h"
+#include "TextRenderer.h"
+
 #include <iostream>
 #include <QtGui/QPainter>
 #include <QtCore/QFile>
+#include <FTGL/ftgl.h>
 
 #include "Gui/ViewerGL.h"
+
 using namespace std;
+
 TextRenderer::TextRenderer(ViewerGL *glwidget)
 {
 	m_glwidget = glwidget;

@@ -1,7 +1,3 @@
-
-#ifndef VIEWERNODE_H
-#define VIEWERNODE_H
-
 //  Powiter
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,46 +9,62 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_VIEWERNODE_H_
+#define POWITER_ENGINE_VIEWERNODE_H_
 
- 
-
-
-
-#include <cmath>
-#include "Global/GlobalDefines.h"
-#include "Engine/Node.h"
-#include <QtCore/QFuture>
-#include "Gui/Texture.h"
+#include <string>
 #include <QtCore/QFutureWatcher>
-class ViewerCache;
+
+#include "Global/Macros.h"
+#include "Engine/Node.h"
+
+
 class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 class FrameEntry;
-class ViewerNode: public Node
+class QKeyEvent;
+class ViewerNode: public OutputNode
 {
+    Q_OBJECT
     
     ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
-    ViewerCache* _viewerCache;
     int _pboIndex;
-    QFutureWatcher<void> *_cacheWatcher;
-    
+    int _inputsCount;
+    int _activeInput;
 public:
     
         
-    ViewerNode(ViewerCache* cache);
+    ViewerNode(Model* model);
     
     virtual ~ViewerNode();
     
-    virtual bool isOutputNode(){return true;}
+    virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
     
-    virtual int maximumInputs(){return 1;}
+    virtual int minimumInputs() const OVERRIDE { return 1; }
     
-    virtual int minimumInputs(){return 1;}
+    virtual bool cacheData() const OVERRIDE { return false; }
     
-    virtual bool cacheData(){return false;}
+    virtual std::string setInputLabel(int inputNb){
+        return QString::number(inputNb+1).toStdString();
+    }
+    
+    bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
+    
+    virtual int disconnectInput(int inputNumber);
+    
+    virtual int disconnectInput(Node* input);
+    
+    bool tryAddEmptyInput();
+    
+    void addEmptyInput();
+
+    void removeEmptyInputs();
+    
+    void setActiveInputAndRefresh(int inputNb);
+    
+    int activeInput() const {return _activeInput;}
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
@@ -64,9 +76,11 @@ public:
     
     ViewerTab* getUiContext(){return _uiContext;}
     
-    virtual const std::string className(){return "Viewer";}
+    void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
     
-    virtual const std::string description();
+    virtual std::string className() OVERRIDE { return "Viewer"; }
+    
+    virtual std::string description() OVERRIDE;
     
     void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
@@ -76,20 +90,69 @@ public:
     int lastFrame() const;
     
     int currentFrame() const;
-    
-    FrameEntry* get(U64 key);
-        
+            
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
+    
+    void disconnectViewer(){
+        emit viewerDisconnected();
+    }
+    
+    void connectSlotsToViewerCache();
+    
+    void disconnectSlotsToViewerCache();
+
+    void redrawViewer();
+    
+    void swapBuffers();
+    
+    void pixelScale(double &x,double &y);
+    
+    void backgroundColor(double &r,double &g,double &b);
+    
+    void viewportSize(double &w,double &h);
+    
+    /**
+     *@brief Tells all the nodes in the grpah to draw their overlays
+     **/
+    void drawOverlays() const;
+    
+    void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos);
+    
+    void notifyOverlaysKeyDown(QKeyEvent* e);
+    
+    void notifyOverlaysKeyUp(QKeyEvent* e);
+    
+    void notifyOverlaysKeyRepeat(QKeyEvent* e);
+    
+    void notifyOverlaysFocusGained();
+    
+    void notifyOverlaysFocusLost();
+    
+public slots:
+    void onCachedFrameAdded();
+    void onCachedFrameRemoved();
+    void onViewerCacheCleared();
     
 protected:
     
     virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
-	
+    
+signals:
+    void viewerDisconnected();
+    void addedCachedFrame(int);
+    void removedCachedFrame();
+    void clearedViewerCache();
+    
+    void mustSwapBuffers();
+    void mustRedraw();
 private:
     
-    void retrieveCachedFrame(const char* cachedFrame,void* dst,size_t dataSize);
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool doFullWork);
     
     
 };
@@ -107,4 +170,4 @@ private:
  #endif*/
 
 
-#endif // VIEWERNODE_H
+#endif // POWITER_ENGINE_VIEWERNODE_H_

@@ -9,37 +9,54 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_VIEWERGL_H_
+#define POWITER_GUI_VIEWERGL_H_
 
- 
-
-
-
-#ifndef GL_VIEWER_HEADER__
-#define GL_VIEWER_HEADER__
-
-#define NOMINMAX ///< Eigen workaround with min/max. It has nothing to do with the Qt5 bug but is the same #define
+#include <cmath>
+#include <vector>
+#include <utility>
+#include <cassert>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include <cmath>
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
+
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/Texture.h"
 
-#include <Eigen/Dense>
-#ifndef PW_DEBUG
+class QKeyEvent;
+class QEvent;
+class QGLShaderProgram;
+namespace Powiter {
+    namespace Color {
+        class Lut;
+    }
+}
+class InfoViewerWidget;
+class AppInstance;
+class ViewerNode;
+class ViewerTab;
+
+#ifndef POWITER_DEBUG
 #define checkGLErrors() ((void)0)
+#define assert_checkGLErrors() ((void)0)
 #else
 #define checkGLErrors() \
 { \
-	GLenum error = glGetError(); \
-	if(error != GL_NO_ERROR) { \
-        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(error) << std::endl; \
+    GLenum _glerror_ = glGetError(); \
+    if(_glerror_ != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
         } \
-		}
+        }
+#define assert_checkGLErrors() \
+{ \
+    GLenum _glerror_ = glGetError(); \
+    if(_glerror_ != GL_NO_ERROR) { \
+        std::cout << "GL_ERROR :" << __FILE__ << " "<< __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
+        } \
+        }
 #endif
                 
         
@@ -48,59 +65,54 @@
          *@brief Holds info necessary to render like channels,display window...See the documentation of
          *Node::Info for a more complete documentation.
          **/
-        class ViewerInfos : public Box2D{
+        class ViewerInfos {
             
             int _firstFrame; /*!< first frame in the sequence*/
             int _lastFrame; /*!< last frame in the sequence*/
             bool _rgbMode; /*!< true if displaying RGB image, otherwise it assumes YCbCr*/
+            Box2D _dataWindow;
             Format _displayWindow; /*!< display window of the data, for the data window see x,y,range,offset parameters*/
             ChannelSet _channels; /*!< all channels defined by the current Node ( that are allocated)*/
             
         public:
             
-            ViewerInfos():Box2D(),_firstFrame(-1),_lastFrame(-1),_rgbMode(true),_displayWindow(),_channels(){}
+            ViewerInfos():_firstFrame(-1),_lastFrame(-1),_rgbMode(true),_dataWindow(),_displayWindow(),_channels(){}
             
             virtual ~ViewerInfos(){}
             
-            void setDisplayWindow(Format format){_displayWindow=format;}
+            void set_displayWindow(const Format& format) { _displayWindow=format; }
             
-            const Format& getDisplayWindow() const {return _displayWindow;}
+            const Format& displayWindow() const { return _displayWindow; }
             
-            void mergeDisplayWindow(const Format& other);
+            void merge_displayWindow(const Format& other);
             
-            const Box2D& getDataWindow() const {return dynamic_cast<const Box2D&>(*this);}
+            void set_dataWindow(const Box2D& win) { _dataWindow = win; }
+
+            const Box2D& dataWindow() const { return _dataWindow; }
             
             bool operator==(const ViewerInfos& other);
             
             void operator=(const ViewerInfos &other);
             
-            void firstFrame(int nb){_firstFrame=nb;}
+            void set_firstFrame(int nb) { _firstFrame=nb; }
             
-            void lastFrame(int nb){_lastFrame=nb;}
+            void set_lastFrame(int nb) { _lastFrame=nb; }
             
-            int firstFrame() const {return _firstFrame;}
+            int firstFrame() const { return _firstFrame; }
             
-            int lastFrame() const {return _lastFrame;}
+            int lastFrame() const { return _lastFrame; }
             
-            void setChannels(ChannelSet mask){_channels=mask;}
+            void set_channels(ChannelSet mask) { _channels=mask; }
             
-            const ChannelSet& channels() const {return _channels;}
+            const ChannelSet& channels() const { return _channels; }
             
-            void rgbMode(bool m){_rgbMode=m;}
+            void set_rgbMode(bool m) { _rgbMode=m; }
             
-            bool rgbMode() const {return _rgbMode;}
+            bool rgbMode() const { return _rgbMode; }
             
             void reset();
         };
         
-        class QKeyEvent;
-        class QEvent;
-        class QGLShaderProgram;
-        class Lut;
-        class InfoViewerWidget;
-        class Controler;
-        class ViewerNode;
-        class ViewerTab;
         
         /**
          *@class ViewerGL
@@ -190,7 +202,7 @@
                 double _zoomFactor; /// the zoom factor applied to the current image
                                                 
                 /*!< the level of zoom used to display the frame*/
-                void setZoomFactor(double f){_zoomFactor = f;}
+                void setZoomFactor(double f){assert(f>0.); _zoomFactor = f;}
                 
                 double getZoomFactor() const {return _zoomFactor;}
             };
@@ -227,13 +239,15 @@
             float _lut; /*!< a value coding the current color-space used to render.
                          0 = NONE , 1 = sRGB , 2 = Rec 709*/
             
-            Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
+            const Powiter::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
             
             bool _usingColorSpace;/*!< True when the viewer is using the Lut. It locks it so
                                    the the software will not try to change the current lut at
                                    the same time.*/
             
             InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
+            
+            ViewerTab* _viewerTab;/*!< Pointer to the viewer tab GUI*/
             
             double exposure ;/*!< Current exposure setting, all pixels are multiplied
                              by pow(2,expousre) before they appear on the screen.*/
@@ -243,7 +257,8 @@
             ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
             bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
-            
+            bool _must_initBlackTex;
+
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
                         
             std::vector<int> _textureColumns; /*!< The last columns computed by computeColumnSpan. This member is
@@ -266,13 +281,17 @@
             
             bool _pBOmapped; /*!< True if the main PBO (_pbosId[0]) is currently mapped*/
             
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float _displayChannels;
                         
             bool _drawProgressBar;
             
+            bool _updatingTexture;
+            
             int _progressBarY;
             
+            QColor _clearColor;
+                        
         public:
             
             
@@ -280,9 +299,9 @@
              When constructing a viewer for the 1st time in the app, you must pass a NULL shareWidget. Otherwise,you
              can pass a pointer to the 1st viewer you created. It allows the viewers to share the same OpenGL context.
              */
-            ViewerGL(QWidget* parent=0, const QGLWidget* shareWidget=NULL);
-            ViewerGL(const QGLFormat& format,QWidget* parent=NULL, const QGLWidget* shareWidget=NULL);
-            ViewerGL(QGLContext* context,QWidget* parent=0, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(ViewerTab* parent, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(const QGLFormat& format,ViewerTab* parent, const QGLWidget* shareWidget=NULL);
+            explicit ViewerGL(QGLContext* context,ViewerTab* parent, const QGLWidget* shareWidget=NULL);
             
             virtual ~ViewerGL();
             
@@ -305,7 +324,7 @@
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void drawing(bool d){_drawing=d;if(!_drawing) initBlackTex();}
+            void drawing(bool d){_drawing=d;if(!_drawing) { _must_initBlackTex = true; };}
             
             /**
              *@returns Returns true if the viewer is displaying something.
@@ -358,7 +377,7 @@
              *0 = NONE , 1 = sRGB , 2 = Rec 709.
              *Not that this will probably change in the future,allowing the user to add custom a viewer process.
              **/
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float lutType() const {return _lut;}
             
             /**
@@ -371,7 +390,7 @@
              *@returns Returns 1.f if the viewer is using 8bit textures.
              *Returns 0.f if the viewer is using 32bit f.p textures.
              **/
-            // FIXME: why a float to really represent an enum????
+            // FIXME-seeabove: why a float to really represent an enum????
             float byteMode() const;
             
             /**
@@ -383,17 +402,17 @@
             /**
              *@returns Returns the height of the frame with the scale factor applied to it.
              **/
-            double zoomedHeight(){return std::floor(displayWindow().h()*_zoomCtx._zoomFactor);}
+            double zoomedHeight(){return std::floor(displayWindow().height()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
-            double zoomedWidth(){return std::floor(displayWindow().w()*_zoomCtx._zoomFactor);}
+            double zoomedWidth(){return std::floor(displayWindow().width()*_zoomCtx._zoomFactor);}
             
             /**
              *@brief Set the zoom factor used to render.
              **/
-            void setZoomFactor(double f){_zoomCtx.setZoomFactor(f); emit zoomChanged(f*100);}
+            void setZoomFactor(double f);
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
@@ -414,12 +433,12 @@
              *@param zoomFactor[in] The zoom factor applied to the display window.
              *@return Returns a pair with the first row index and the last row indexes.
              **/
-            std::pair<int,int> computeRowSpan(std::vector<int>& rows,const Box2D& displayWindow);
+            std::pair<int,int> computeRowSpan(const Box2D& displayWindow, std::vector<int>* rows);
             
             /**
              *@brief same as computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow) but for columns.
              **/
-            std::pair<int,int> computeColumnSpan(std::vector<int>& columns,const Box2D& displayWindow);
+            std::pair<int,int> computeColumnSpan(const Box2D& displayWindow, std::vector<int>* columns);
             
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
@@ -496,6 +515,8 @@
              **/
             ViewerInfos* getCurrentViewerInfos() const {return _currentViewerInfos;}
             
+            ViewerTab* getViewerTab() const {return _viewerTab;}
+            
             /**
              *@brief Turns on the overlays on the viewer.
              **/
@@ -552,13 +573,6 @@
             bool hasPBOCurrentlyMapped() const {return _pBOmapped;}
             
             /**
-             *@brief Unmap the currently mapped PBO if any.
-             **/
-            void forceUnmapPBO(){glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);}
-            
-
-            
-            /**
              *@returns A vector with the columns indexes of the full-size image that are
              *really contained in the texture.
              **/
@@ -584,6 +598,8 @@
             void setDisplayChannel(const ChannelSet& channels,bool yMode = false);
             
             void stopDisplayingProgressBar() {_drawProgressBar = false;}
+            
+            void backgroundColor(double &r,double &g,double &b);
             
             public slots:
             /**
@@ -615,11 +631,18 @@
              **/
             void updateExposure(double);
             
+            void updateColorPicker(int x = INT_MAX,int y = INT_MAX);
+            
             
             /**
              *@brief Updates the Viewer with what has been computed so far in the texture.
              **/
             void updateProgressOnViewer(const TextureRect& region,int y , int texY);
+            
+            void doSwapBuffers();
+            
+            void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
+            
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -674,6 +697,10 @@
             virtual void enterEvent(QEvent *event);
             
             virtual void leaveEvent(QEvent *event);
+            
+            virtual void keyPressEvent(QKeyEvent* event);
+            
+            virtual void keyReleaseEvent(QKeyEvent* event);
             
             /**
              *@brief initiliazes OpenGL context related stuff. This is called once after widget creation.
@@ -808,58 +835,5 @@
              *@brief Resets the mouse position
              **/
             void resetMousePos(){_zoomCtx._oldClick.setX(0); _zoomCtx._oldClick.setY(0);}
-            
-            
-            /**
-             *@typedef Typedef used by all _gl functions. It defines an Eigen 4x4 matrix of floats.
-             **/
-            typedef Eigen::Matrix4f M44f;
-            
-            /**
-             *@brief Computes the inverse matrix of m and stores it in out
-             **/
-            static bool _glInvertMatrix(float* m ,float* invOut);
-            
-            /**
-             *@brief Multiplys matrix1 by matrix2 and stores the result in result
-             **/
-            static void _glMultMats44(float *result, float *matrix1, float *matrix2);
-            
-            /**
-             *@brief Multiply the matrix by the vector and stores it in resultvector
-             **/
-            static void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
-            
-            /**
-             *@brief Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)
-             **/
-            static int _glMultMat44Vect_onlyYComponent(float *yComponent, const M44f& matrix, const Eigen::Vector4f&);
-            
-            /**
-             *@brief Replicate of the glOrtho func, but for an identity matrix.
-             WARNING: All the content of matrix will be modified when returning from this function.
-             **/
-            static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_);
-            
-            /**
-             *@brief Replicate of the glScale function but for a custom matrix
-             **/
-            static void _glScale(M44f& result,const M44f& matrix,float x,float y,float z);
-            
-            /**
-             *@brief Replicate of the glTranslate function but for a custom matrix
-             **/
-            static void _glTranslate(M44f& result,const M44f& matrix,float x,float y,float z);
-            
-            /**
-             *@brief Replicate of the glRotate function but for a custom matrix.
-             **/
-            static void _glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z);
-            
-            /**
-             *@briefReplicate of the glLoadIdentity function but for a custom matrix
-             **/
-            static void _glLoadIdentity(M44f& matrix);
-            
         };
 #endif // GLVIEWER_H

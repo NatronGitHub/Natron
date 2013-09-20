@@ -9,73 +9,87 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_ABSTRACTCACHE_H_
+#define POWITER_ENGINE_ABSTRACTCACHE_H_
 
- 
-
-
-
-//
-
-#ifndef __PowiterOsX__abstractCache__
-#define __PowiterOsX__abstractCache__
-
-#include "Engine/LRUcache.h"
-#include "Global/GlobalDefines.h"
-#include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
 #include <vector>
+#include <QtCore/QMutex>
+
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/LRUcache.h"
 
 class MemoryFile;
-/*Base class for cache entries. This can be overloaded to fit parameters you'd
+/* Abstract class/interface for cache entries. This can be overloaded to fit parameters you'd
  like to track like offset in files, list of elements etc...
  Entries are not copyable, you must create a new object if you want to copy infos.*/
 class CacheEntry {
+public:
+    CacheEntry() {};
+    virtual ~CacheEntry() {};
+    virtual int refCount() const = 0;
+    virtual void addReference() = 0;
+    virtual void removeReference() = 0;
+
+    /*Returns true if the cache can delete this entry*/
+    virtual bool isRemovable() const = 0;
+
+    /*Returns the size of the entry in bytes.*/
+    virtual U64 size() const = 0;
+
+    virtual bool isMemoryMappedEntry () const  = 0;
+
+protected:
+    /*Must be implemented to handle the allocation of the entry.
+     Must return true on success,false otherwise.*/
+    virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
+
+    /*Must implement the deallocation of the entry*/
+    virtual void deallocate() = 0;
+};
+
+// a helper for CacheEntry, holding a reference count and size
+class CacheEntryHelper : public CacheEntry {
     int _refCount;
 public:
+    CacheEntryHelper():_refCount(0),_size(0) {}
+    virtual ~CacheEntryHelper() {};
     
-    CacheEntry():_refCount(0),_size(0){}
+    virtual int refCount() const {return _refCount;}
     
-    virtual ~CacheEntry(){}
+    virtual void addReference() {++_refCount; assert(_refCount >= 0);}
     
-    int refCount() const {return _refCount;}
-    
-    void addReference() {++_refCount; assert(_refCount >= 0);}
-    
-    void removeReference() {--_refCount; assert(_refCount >= 0);}
+    virtual void removeReference() {--_refCount; assert(_refCount >= 0);}
     
     /*Returns true if the cache can delete this entry*/
-    bool isRemovable() const {return !_refCount;}
+    virtual bool isRemovable() const {return _refCount == 0;}
     
     /*Returns the size of the entry in bytes.*/
-    U64 size() const {return _size;}
+    virtual U64 size() const {return _size;}
     
     virtual bool isMemoryMappedEntry () const =0;
     
-protected:
-    U64 _size; //the size in bytes of the entry
-
-    
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
-    virtual bool allocate(U64 byteCount, const char* path= 0)=0;
-    
+    virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
+
     /*Must implement the deallocation of the entry*/
-    virtual void deallocate()=0;
-    
+    virtual void deallocate() = 0;
+
+protected:
+    U64 _size; //the size in bytes of the entry
 };
 
 /*A memory-mapped cache entry
  */
-class MemoryMappedEntry: public CacheEntry{
-    
+class MemoryMappedEntry: public CacheEntryHelper {
 protected:
     std::string _path; // < the path of the file backing the entry
     MemoryFile* _mappedFile; // < the object holding mapped datas
 public:
-    
     MemoryMappedEntry();
-    
+    virtual ~MemoryMappedEntry();
+
     /*Returns a pointer to the memory mapped object*/
     const MemoryFile* getMappedFile() const {return _mappedFile;}
     
@@ -100,24 +114,22 @@ public:
      if it couldn't open it.*/
     bool reOpen();
     
-    virtual ~MemoryMappedEntry();
 };
 
-class InMemoryEntry : public CacheEntry{
+class InMemoryEntry : public CacheEntryHelper {
 protected:
     char* _data; // < the buffer holding data
 public:
     InMemoryEntry();
+    virtual ~InMemoryEntry();
+
+    virtual bool isMemoryMappedEntry () const {return false;};
     
     /*allocates the buffer*/
     virtual bool allocate(U64 byteCount,const char* path = 0);
-    
-    virtual bool isMemoryMappedEntry () const {return false;};
-    
+
     /*deallocate the buffer*/
     virtual void deallocate();
-    
-    virtual ~InMemoryEntry();
 };
 
 
@@ -149,8 +161,8 @@ public:
     
 #ifdef USE_VARIADIC_TEMPLATES
     
-#ifdef CACHE_USE_BOOST
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
     typedef BoostLRUCacheContainer<U64, CacheEntry* , boost::bimaps::unordered_set_of> CacheContainer;
 #else
     typedef BoostLRUCacheContainer<U64, CacheEntry* , boost::bimaps::set_of> CacheContainer;
@@ -161,7 +173,7 @@ public:
     
 #else // cache use STL
     
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_HASH
     typedef StlLRUCache<U64,CacheEntry*, std::unordered_map> CacheContainer;
 #else
     typedef StlLRUCache<U64,CacheEntry*, std::map> CacheContainer;
@@ -169,12 +181,12 @@ public:
     typedef CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second;}
-#endif // CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_BOOST
     
 #else // USE_VARIADIC_TEMPLATES
     
-#ifdef CACHE_USE_BOOST
-#ifdef CACHE_USE_HASH
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
     typedef BoostLRUHashCache<U64, CacheEntry*> CacheContainer;
 #else
     typedef BoostLRUTreeCache<U64, CacheEntry* > CacheContainer;
@@ -189,32 +201,20 @@ public:
     typedef CacheContainer::key_to_value_type::iterator CacheIterator;
     typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
     static CacheEntry*  getValueFromIterator(CacheIterator it){return it->second.first;}
-#endif // CACHE_USE_BOOST
+#endif // POWITER_CACHE_USE_BOOST
     
 #endif // USE_VARIADIC_TEMPLATES
     
-private:
-    
-    
-    U64 _maximumCacheSize; // maximum size allowed for the cache
-    
-protected:
-    //protected so derived class can modify it
-    U64 _size; // current size of the cache in bytes
-    
-    QMutex _lock;
-    CacheContainer _cache; // the actual cache 
-
 public:
     
-    AbstractCache();
+    AbstractCache() {};
     
-    ~AbstractCache();
+    virtual ~AbstractCache() {};
     
     /*Adds a new entry to the cache. Returns true if it removed
      another entry before inserting the new one, false otherwise.
      */
-    virtual bool add(U64 key,CacheEntry* entry);
+    virtual bool add(U64 key,CacheEntry* entry) = 0;
     
     
     /*clears the content of the cache (and deletes cache entries).
@@ -222,54 +222,89 @@ public:
      (because someone explicitly called preventFromDeletion() on them)
      will not get deleted. The size remaining will be 0 if there're no
      unremovable entries, otherwise it will be the size of these entries.*/
-    void clear();
+    virtual void clear() = 0;
     
     
     /*Returns the name  of the cache. It will
      serve as the root folder for this cache, and will
      be located under <CacheRoot>/<cacheName()>*/
-    virtual std::string cacheName()=0;
+    virtual std::string cacheName() = 0;
     
     
     /*Set the maximum cache size in bytes. It does not shrink the content of the cache,
      but prevent it to grow. You must clear it if you want to remove the data
      exceeding the size.*/
-    void setMaximumCacheSize(U64 size){_maximumCacheSize = size;}
+    virtual void setMaximumCacheSize(U64 size) = 0;
     
-    const U64& getMaximumSize() const {return _maximumCacheSize;}
+    virtual U64 getMaximumSize() const = 0;
     
-    const U64& getCurrentSize() const {return _size;}
+    virtual U64 getCurrentSize() const = 0;
     
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.
      */
-    CacheEntry* getCacheEntry(const U64& key) ;
-    
+    virtual CacheEntry* getCacheEntry(U64 key) = 0;
+};
+
+class AbstractCacheHelper : public AbstractCache {
+
+private:
+
+
+    U64 _maximumCacheSize; // maximum size allowed for the cache
 
 protected:
-    
+    //protected so derived class can modify it
+    U64 _size; // current size of the cache in bytes
+
+    QMutex _lock;
+    CacheContainer _cache; // the actual cache
+
+public:
+
+    AbstractCacheHelper();
+
+    virtual ~AbstractCacheHelper();
+
+    virtual bool add(U64 key,CacheEntry* entry) OVERRIDE;
+    virtual void clear() OVERRIDE FINAL;
+    virtual std::string cacheName() = 0;
+    virtual void setMaximumCacheSize(U64 size) OVERRIDE FINAL {_maximumCacheSize = size;}
+
+    virtual U64 getMaximumSize() const OVERRIDE FINAL {return _maximumCacheSize;}
+
+    virtual U64 getCurrentSize() const OVERRIDE FINAL {return _size;}
+
+    /*Returns an iterator to the cache. If found it points
+     to a valid cache entry, otherwise it points  to end.
+     */
+    CacheEntry* getCacheEntry(U64 key) ;
+
+
+protected:
+
     /*Erase one element from the cache. It is used
      by the implementation of clear(), and shouldn't be
      called elsewhere.*/
     void erase(CacheIterator it);
-    
+
     
 };
 
 /*AbstractMemoryCache represents an abstract cache living solely in-memory.
  These are solely using malloc/free and reside only in-memory. Beware when
  using these caches that they do not consume all the memory as it would make the OS run very slow.*/
-class AbstractMemoryCache : public AbstractCache{
+class AbstractMemoryCache : public AbstractCacheHelper {
 public:
     
-    AbstractMemoryCache(){}
-    virtual ~AbstractMemoryCache(){}
+    AbstractMemoryCache() {}
+    virtual ~AbstractMemoryCache() {}
     
     /*type-check for the entry and call the super-class version
      of add.*/
-    virtual bool add(U64 key,CacheEntry* entry);
+    virtual bool add(U64 key,CacheEntry* entry) OVERRIDE FINAL;
     
-    virtual std::string cacheName()=0;
+    virtual std::string cacheName() OVERRIDE = 0;
     
     
 };
@@ -279,7 +314,7 @@ public:
  and an "on-disk" portion (backed with files). They have the advantage to store physically data
  on disk so they can survive several runs. These caches can handle a bigger amount of data than
  in-memory caches, but are a bit slower.*/
-class AbstractDiskCache : public AbstractCache {
+class AbstractDiskCache : public AbstractCacheHelper {
     
     U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
     double _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
@@ -292,7 +327,7 @@ public:
     /*Constructs an empty disk cache of size 0. You must explicitly call
      setMaximumCacheSize to allow the cache to grow. The inMemoryUsage indicates
      the percentage of the maximumCacheSize that you allow to be in memory.*/
-    AbstractDiskCache(double inMemoryUsage);
+    explicit AbstractDiskCache(double inMemoryUsage);
     virtual ~AbstractDiskCache();
     
     /*Creates empty sub-directories for the cache, counting them
@@ -304,19 +339,19 @@ public:
     /*Returns the name of the cache with its path preprended*/
     QString getCachePath();
     
-    virtual std::string cacheName()=0;
+    virtual std::string cacheName() OVERRIDE = 0;
     
     /*Returns the cache version as a string. This is
      used to know whether a cache is still valid when
      restoring*/
-    virtual std::string cacheVersion()=0;
+    virtual std::string cacheVersion() = 0;
     
     /*Recover an entry from string*/
     virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str)=0;
     
     /*type-check for the entry, add the entry to the in-memory cache and
      call the super-class version of add.*/
-    virtual bool add(U64 key,CacheEntry* entry);
+    virtual bool add(U64 key,CacheEntry* entry) OVERRIDE;
     
     /*Clears-out entirely the cache (RAM+disk)*/
     void clearDiskCache();
@@ -329,9 +364,9 @@ public:
      maximum cache size).*/
     void setMaximumInMemorySize(double percentage){ _maximumInMemorySize = percentage;}
     
-    const double& getMaximumInMemorySize() const {return _maximumInMemorySize;}
+    double getMaximumInMemorySize() const {return _maximumInMemorySize;}
     
-    const U64& getCurrentInMemoryPortionSize() const {return _inMemorySize;}
+    U64 getCurrentInMemoryPortionSize() const {return _inMemorySize;}
     
     /*Saves cache to disk as a settings file.
      */
@@ -350,7 +385,7 @@ protected:
      to a valid cache entry, otherwise it points to to end.
      Protected so the derived class must explicitly encapsulate
      this function: the CacheIterator should be opaque to the end user.*/
-    CacheEntry* isInMemory(const U64& key);
+    CacheEntry* isInMemory(U64 key);
     
     
 private:
@@ -360,4 +395,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__abstractCache__) */
+#endif /* defined(POWITER_ENGINE_ABSTRACTCACHE_H_) */

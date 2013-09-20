@@ -34,29 +34,26 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
-#include <Engine/Timer.h>
+#include "Timer.h"
+
 #include <time.h>
 
 #ifdef _WIN32
-
-    #include <windows.h>
-
-    static int
-    gettimeofday (struct timeval *tv, void *tz)
+int
+gettimeofday (struct timeval *tv, void *tz)
+{
+    union
     {
-	union
-	{
-	    ULONGLONG ns100;  // time since 1 Jan 1601 in 100ns units
-	    FILETIME ft;
-	} now;
-    
-	GetSystemTimeAsFileTime (&now.ft);
-	tv->tv_usec = long ((now.ns100 / 10LL) % 1000000LL);
-	tv->tv_sec = long ((now.ns100 - 116444736000000000LL) / 10000000LL);
+        ULONGLONG ns100;  // time since 1 Jan 1601 in 100ns units
+        FILETIME ft;
+    } now;
 
-	return 0;
-    } 
+    GetSystemTimeAsFileTime (&now.ft);
+    tv->tv_usec = long ((now.ns100 / 10LL) % 1000000LL);
+    tv->tv_sec = long ((now.ns100 - 116444736000000000LL) / 10000000LL);
 
+    return 0;
+}
 #endif
 
 

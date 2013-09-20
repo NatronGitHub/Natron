@@ -8,11 +8,16 @@
  *contact: immarespond at gmail dot com
  *
  */
-#ifndef OFXPARAMINSTANCE_H
-#define OFXPARAMINSTANCE_H
+#ifndef POWITER_ENGINE_OFXPARAMINSTANCE_H_
+#define POWITER_ENGINE_OFXPARAMINSTANCE_H_
 
+#include <map>
+#include <string>
+#include <vector>
 #include <QtCore/QObject>
 #include <QStringList>
+#include <QVector4D>
+
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -22,7 +27,6 @@
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).
  */
-class Knob;
 class String_Knob;
 class File_Knob;
 class OutputFile_Knob;
@@ -30,18 +34,14 @@ class Button_Knob;
 class Tab_Knob;
 class RGBA_Knob;
 class Int_Knob;
-class Int2D_Knob;
 class Double_Knob;
-class Double2D_Knob;
 class Bool_Knob;
 class ComboBox_Knob;
 class Group_Knob;
 class OfxNode;
+class Knob;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
     Q_OBJECT
-    
-signals:
-    void buttonPressed(QString);
     
 public:
     
@@ -53,14 +53,15 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void emitInstanceChanged();
+public slots:
+    void onInstanceChanged();
+
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     Button_Knob *_knob;
     OFX::Host::Param::Descriptor& _descriptor;
 public:
-    OfxPushButtonInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxPushButtonInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
 };
 
 
@@ -68,14 +69,13 @@ public:
 class OfxIntegerInstance : public QObject,public OFX::Host::Param::IntegerInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    int _value;
     Int_Knob* _knob;
     std::string _paramName;
 public:
     
-    OfxIntegerInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxIntegerInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
     OfxStatus get(OfxTime time, int&);
     OfxStatus set(int);
@@ -98,13 +98,12 @@ public:
 class OfxDoubleInstance :public QObject, public OFX::Host::Param::DoubleInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    double _value;
     std::string _paramName;
     Double_Knob* _knob;
 public:
-    OfxDoubleInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxDoubleInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&);
     OfxStatus get(OfxTime time, double&);
     OfxStatus set(double);
@@ -128,13 +127,12 @@ public:
 class OfxBooleanInstance : public QObject,public OFX::Host::Param::BooleanInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    bool _value;
     Bool_Knob* _knob;
     std::string _paramName;
 public:
-    OfxBooleanInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxBooleanInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(bool&);
     OfxStatus get(OfxTime time, bool&);
     OfxStatus set(bool);
@@ -158,14 +156,13 @@ public:
 class OfxChoiceInstance :public QObject, public OFX::Host::Param::ChoiceInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-    std::string _currentEntry;
     std::vector<std::string> _entries;
     ComboBox_Knob* _knob;
     std::string _paramName;
 public:
-    OfxChoiceInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxChoiceInstance(OfxNode* node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&);
     OfxStatus get(OfxTime time, int&);
     OfxStatus set(int);
@@ -187,13 +184,12 @@ public:
 class OfxRGBAInstance :public QObject, public OFX::Host::Param::RGBAInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _r,_g,_b,_a;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
-    OfxRGBAInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxRGBAInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&,double&);
     OfxStatus get(OfxTime time, double&,double&,double&,double&);
     OfxStatus set(double,double,double,double);
@@ -216,13 +212,12 @@ public:
 class OfxRGBInstance :public QObject, public OFX::Host::Param::RGBInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _r,_g,_b;
     RGBA_Knob* _knob;
     std::string _paramName;
 public:
-    OfxRGBInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxRGBInstance(OfxNode* node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&,double&);
     OfxStatus get(OfxTime time, double&,double&,double&);
     OfxStatus set(double,double,double);
@@ -244,13 +239,12 @@ public:
 class OfxDouble2DInstance : public QObject,public OFX::Host::Param::Double2DInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	double _x1,_x2;
-    Double2D_Knob* _knob;
+    Double_Knob* _knob;
     std::string _paramName;
 public:
-    OfxDouble2DInstance(OfxNode* effect, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxDouble2DInstance(OfxNode* node, const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(double&,double&);
     OfxStatus get(OfxTime time,double&,double&);
     OfxStatus set(double,double);
@@ -273,13 +267,12 @@ public:
 class OfxInteger2DInstance :public QObject, public OFX::Host::Param::Integer2DInstance {
     Q_OBJECT
 protected:
-    OfxNode*   _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
-	int _x1,_x2;
-    Int2D_Knob *_knob;
+    Int_Knob *_knob;
     std::string _paramName;
 public:
-    OfxInteger2DInstance(OfxNode* effect,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
+    OfxInteger2DInstance(OfxNode* node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor);
     OfxStatus get(int&,int&);
     OfxStatus get(OfxTime time,int&,int&);
     OfxStatus set(int,int);
@@ -299,13 +292,13 @@ public:
 };
 class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
     Q_OBJECT
-    OfxNode* _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
     std::string _paramName;
     Group_Knob* _groupKnob;
 public:
     
-    OfxGroupInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
+    OfxGroupInstance(OfxNode* node,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
     void addKnob(Knob* k);
     
@@ -316,24 +309,23 @@ public:
 
 class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance{
     Q_OBJECT
-    OfxNode* _effect;
+    OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
     std::string _paramName;
         
-    QStringList _filesList;
     std::map<int,QString> _files;
-    
+        
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
 public:
     
-    OfxStringInstance(OfxNode* effect,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
+    OfxStringInstance(OfxNode* node,const std::string& name,OFX::Host::Param::Descriptor& descriptor);
     
-    virtual OfxStatus get(std::string &) ;
-    virtual OfxStatus get(OfxTime time, std::string &) ;
-    virtual OfxStatus set(const char*) ;
-    virtual OfxStatus set(OfxTime time, const char*) ;
+    virtual OfxStatus get(std::string&);
+    virtual OfxStatus get(OfxTime time, std::string&);
+    virtual OfxStatus set(const char*);
+    virtual OfxStatus set(OfxTime time, const char*);
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled();
@@ -341,6 +333,14 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret();
 
+    // returns true if it is a file param and that it is not empty
+    bool isValid() const;
+    
+    void ifFileKnobPopDialog();
+    
+    /*Returns the frame name according to the current pattern stored by this param
+     for the frame frameIndex.*/
+    std::string filenameFromPattern(int frameIndex) const;
     
     Knob* getKnob() const;
     
@@ -354,8 +354,9 @@ private:
     int firstFrame();
     int lastFrame();
     int clampToRange(int f);
+    
 };
 
 
-#endif // OFXPARAMINSTANCE_H
+#endif // POWITER_ENGINE_OFXPARAMINSTANCE_H_
 

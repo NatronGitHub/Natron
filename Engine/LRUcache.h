@@ -31,12 +31,12 @@
 //ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 //OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-#ifndef PowiterOsX_LRUcache_h
-#define PowiterOsX_LRUcache_h
+#ifndef POWITER_ENGINE_LRUCACHE_H_
+#define POWITER_ENGINE_LRUCACHE_H_
 
 #include <map>
 #include <list>
-#include <iostream>
+#include <utility>
 #ifndef Q_MOC_RUN
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/set_of.hpp>
@@ -45,8 +45,8 @@
 #endif
 
 //#define USE_VARIADIC_TEMPLATES
-#define CACHE_USE_HASH
-#define CACHE_USE_BOOST
+#define POWITER_CACHE_USE_HASH
+#define POWITER_CACHE_USE_BOOST
 
 
 /**@brief 4 types of LRU caches are defined here:
@@ -64,15 +64,15 @@
  *reduce the line of codes necessary, and it will also make it possible
  *to use STL with hashing (std::unordered_map), as it is defined in c++11
  *
- *CACHE_USE_BOOST : define this to tell the compiler to use boost internally
+ *POWITER_CACHE_USE_BOOST : define this to tell the compiler to use boost internally
  *for caches. Otherwise it will fallback on a STL version
  *
- *CACHE_USE_HASH : define this to tell the compiler to use hashing
+ *POWITER_CACHE_USE_HASH : define this to tell the compiler to use hashing
  *(std::unordered_map or boost::unordered_set_of) instead of a
  *tree-based version (std::map or boost::set_of).
  *
- *WARNING:  definining CACHE_USE_HASH and not defining
- *CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
+ *WARNING:  definining POWITER_CACHE_USE_HASH and not defining
+ *POWITER_CACHE_USE_BOOST will require USE_VARIADIC_TEMPLATES to be
  *defined otherwise it will not compile. (no std::unordered_map
  *support on c++98)
  *
@@ -80,7 +80,7 @@
 
 #ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
 
-#ifndef CACHE_USE_BOOST
+#  ifndef POWITER_CACHE_USE_BOOST
 
 #include <unordered_map>
 
@@ -110,7 +110,7 @@ public:
     StlLRUCache(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k)  {
+    value_type operator()(const key_type& k) {
         typename key_to_value_type::iterator it;
         {
             // Attempt to find existing record
@@ -124,35 +124,36 @@ public:
             return it->second;
 
         }
-        return NULL;
+        return value_type();
     }
-    typename key_to_value_type::iterator end(){return _key_to_value.end();}
-    typename key_to_value_type::iterator begin(){return _key_to_value.begin();}
+
+    typename key_to_value_type::iterator end() { return _key_to_value.end(); }
+
+    typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
+    
     // Record a fresh key-value pair in the cache
     // Return value is the value evicted from cache space was necessary.
     std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret ;
+        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
         // Make space if necessary
-        if (mustEvict)
+        if (mustEvict && _key_to_value.size() > 0) {
             ret =  evict();
-        
+        }
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
         // Create the key-value entry,
         // linked to the usage record.
         _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
-        if(mustEvict){
-            return ret;
-        }else{
-            return std::make_pair(0,(value_type)NULL);
-        }
+
+        return ret;
     }
-    void erase(typename key_tracker_type::iterator it){
+    
+    void erase(typename key_tracker_type::iterator it) {
         _key_tracker.erase(it);
     }
     
-    void clear(){
+    void clear() {
         _key_to_value.clear();
         _key_tracker.clear();
     }
@@ -176,7 +177,8 @@ public:
         }
         return ret;
     }
-    unsigned int size(){return _container.size();}
+    
+    unsigned int size() { return _container.size(); }
 
 
     
@@ -188,7 +190,7 @@ private:
     key_to_value_type _key_to_value;
 };
 
-#else // ! CACHE_USE_BOOST
+#  else // POWITER_CACHE_USE_BOOST
 // Class providing fixed-size (by number of records)
 // LRU-replacement cache of a function with signature
 // V f(K).
@@ -205,7 +207,7 @@ public:
     BoostLRUCacheContainer(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k)  {
+    value_type operator()(const key_type& k) {
         typename container_type::left_iterator it;
         {
             // Attempt to find existing record
@@ -217,8 +219,9 @@ public:
             _container.right.relocate(_container.right.end(),_container.project_right(it));
             return it->second;
         }
-        return NULL;
+        return value_type();
     }
+    
     // return end of the iterator
     typename container_type::left_iterator end() {
         return _container.left.end();
@@ -228,10 +231,11 @@ public:
     typename container_type::left_iterator begin() {
         return _container.left.begin();
     }
+    
     // Return value is the value evicted from cache space was necessary.
     std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret;
-        if(mustEvict){
+        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
+        if (mustEvict && _container.right.size() > 0) {
             ret = evict();
         }
         // Create a new record from the key and the value
@@ -239,28 +243,26 @@ public:
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
         
-        if(mustEvict){
-            return ret;
-        }else{
-            return std::make_pair(0,(value_type)NULL);
-        }
+        return ret;
     }
-    void erase(typename container_type::left_iterator it){
+    
+    void erase(typename container_type::left_iterator it) {
         typename container_type::right_iterator itRight = _container.project_right(it);
+        assert(itRight != _container.right.end());
         _container.right.erase(itRight);
     }
     
     
-    void clear(){
+    void clear() {
         _container.clear();
     }
     
-    std::pair<key_type,value_type> evict(){
+    std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
+        assert(it != _container.right.end());
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
         return ret;
-        
     }
 
     unsigned int size(){return _container.size();}
@@ -269,11 +271,13 @@ public:
 private:
         container_type _container;
 };
-#endif // CACHE_USE_BOOST
+#  endif // POWITER_CACHE_USE_BOOST
 
-#else // c++98 no support for stl unordered_map + no variadic templates
+#else // !USE_VARIADIC_TEMPLATES
 
-#ifndef CACHE_USE_BOOST
+// c++98 does not support stl unordered_map + variadic templates
+
+#  ifndef POWITER_CACHE_USE_BOOST
 template <typename K,typename V>
 class StlLRUTreeCache{
 public:
@@ -302,34 +306,34 @@ public:
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
             return it->second.first;
         }
-         return NULL;
+         return value_type();
     }
-    typename key_to_value_type::iterator end(){return _key_to_value.end();}
-    typename key_to_value_type::iterator begin(){return _key_to_value.begin();}
+    
+    typename key_to_value_type::iterator end() { return _key_to_value.end(); }
+    typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
     // Record a fresh key-value pair in the cache
     // Return value is the value evicted from cache space was necessary.
     std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret ;
+        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
         // Make space if necessary
-        if (mustEvict)
+        if (mustEvict && _key_to_value.size() > 0) {
             ret =  evict();
-        
+        }
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
         // Create the key-value entry,
         // linked to the usage record.
         _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
-        if(mustEvict){
-            return ret;
-        }else{
-            return std::make_pair(0,(value_type)NULL);
-        }
+
+        return ret;
     }
-    void erase(typename key_tracker_type::iterator it){
+    
+    void erase(typename key_tracker_type::iterator it) {
         _key_tracker.erase(it);
     }
-    void clear(){
+    
+    void clear() {
         _key_to_value.clear();
         _key_tracker.clear();
     }
@@ -353,7 +357,8 @@ public:
         }
         return ret;
     }
-    unsigned int size(){return _key_to_value.size();}
+    
+    unsigned int size() { return _key_to_value.size(); }
   
     
 private:
@@ -362,11 +367,11 @@ private:
     
     // Key-to-value lookup
     key_to_value_type _key_to_value;
-    
 };
-#else // boost
 
-#ifdef CACHE_USE_HASH
+#  else // POWITER_CACHE_USE_BOOST
+
+#    ifdef POWITER_CACHE_USE_HASH
 template <typename K,typename V>
 class BoostLRUHashCache{
 public:
@@ -377,7 +382,7 @@ public:
     BoostLRUHashCache(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k)  {
+    value_type operator()(const key_type& k) {
         typename container_type::left_iterator it;
         {
             // Attempt to find existing record
@@ -389,8 +394,9 @@ public:
             _container.right.relocate(_container.right.end(),_container.project_right(it));
             return it->second;
         }
-        return NULL;
+        return value_type();
     }
+
     // return end of the iterator
     typename container_type::left_iterator end() {
         return _container.left.end();
@@ -400,10 +406,11 @@ public:
     typename container_type::left_iterator begin() {
         return _container.left.begin();
     }
+    
     // Return value is the value evicted from cache space was necessary.
     std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret;
-        if(mustEvict){
+        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
+        if (mustEvict && _container.right.size() > 0) {
             ret = evict();
         }
         // Create a new record from the key and the value
@@ -411,35 +418,36 @@ public:
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
         
-        if(mustEvict){
-            return ret;
-        }else{
-            return std::make_pair(0,(value_type)NULL);
-        }
+        return ret;
     }
-    void erase(typename container_type::left_iterator it){
+    
+    void erase(typename container_type::left_iterator it) {
         typename container_type::right_iterator itRight = _container.project_right(it);
+        assert(itRight != _container.right.end());
         _container.right.erase(itRight);
     }
     
-    void clear(){
+    void clear() {
         _container.clear();
     }
     
-    std::pair<key_type,value_type> evict(){
+    std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
+        assert(it != _container.right.end());
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
         return ret;
         
     }
     
-    unsigned int size(){return _container.size();}
+    unsigned int size() { return _container.size(); }
 
 private:
-        container_type _container;
+    container_type _container;
 };
-#else // CACHE_USE_HASH
+
+#    else // !POWITER_CACHE_USE_HASH
+
 template <typename K,typename V>
 class BoostLRUTreeCache{
 public:
@@ -450,7 +458,7 @@ public:
     BoostLRUTreeCache(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k)  {
+    value_type operator()(const key_type& k) {
         typename container_type::left_iterator it;
         {
             // Attempt to find existing record
@@ -463,7 +471,7 @@ public:
             return it->second;
 
         }
-        return NULL;
+        return value_type();
     }
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -476,8 +484,8 @@ public:
     }
     // Return value is the value evicted from cache space was necessary.
     std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret;
-        if(mustEvict){
+        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
+        if (mustEvict && _container.right.size() > 0) {
             ret = evict();
         }
         // Create a new record from the key and the value
@@ -485,38 +493,36 @@ public:
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
         
-        if(mustEvict){
-            return ret;
-        }else{
-            return std::make_pair(0,(value_type)NULL);
-        }
+        return ret;
     }
-    void erase(typename container_type::left_iterator it){
+
+    void erase(typename container_type::left_iterator it) {
         typename container_type::right_iterator itRight = _container.project_right(it);
+        assert(itRight != _container.right.end());
         _container.right.erase(itRight);
     }
 
     
-    void clear(){
+    void clear() {
         _container.clear();
     }
     
-    std::pair<key_type,value_type> evict(){
+    std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
+        assert(it != _container.right.end());
         std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
         _container.right.erase(it);
         return ret;
         
     }
     
-    unsigned int size(){return _container.size();}
+    unsigned int size() { return _container.size(); }
   
 private:
-    
     container_type _container;
 };
-#endif // CACHE_USE_HASH
-#endif // !CACHE_USE_BOOST
+#    endif // !POWITER_CACHE_USE_HASH
+#  endif // POWITER_CACHE_USE_BOOST
 
 #endif // !USE_VARIADIC_TEMPLATES
 

@@ -9,40 +9,36 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_NODEGRAPH_H_
+#define POWITER_GUI_NODEGRAPH_H_
 
- 
-
-
-
-#ifndef NODEGRAPH_H
-#define NODEGRAPH_H
-#include <cmath>
+#include <vector>
+#include <map>
 #include <QGraphicsView>
-#include <iostream>
 #include <QtCore/QRectF>
-#include <QtCore/QEvent>
-#include <QtGui/QKeyEvent>
-#include <QInputDialog>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-#include "Global/GlobalDefines.h"
+
+#include "Global/Macros.h"
 
 class QVBoxLayout;
-class Node;
-class NodeGui;
 class QScrollArea;
-class Controler;
-class Edge;
-class SmartInputDialog;
 class QGraphicsProxyWidget;
-class SettingsPanel;
 class QUndoStack;
 class QComboBox;
+class QEvent;
+class QKeyEvent;
+class Gui;
+class SettingsPanel;
+class NodeGui;
+class Node;
+class AppInstance;
+class Edge;
+class SmartInputDialog;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
@@ -52,7 +48,7 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
         int _w,_h;
     public:
         
-        NodeGraphNavigator(QWidget* parent = 0);
+        explicit NodeGraphNavigator(QWidget* parent = 0);
         
         void setImage(const QImage& img);
         
@@ -63,13 +59,15 @@ class NodeGraph: public QGraphicsView , public boost::noncopyable{
 
 public:
 
-    NodeGraph(QGraphicsScene* scene=0,QWidget *parent=0);
+    explicit NodeGraph(Gui* gui,QGraphicsScene* scene=0,QWidget *parent=0);
 
     virtual ~NodeGraph();
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    void createNodeGUI(QVBoxLayout *dockContainer,Node *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Node *node);
+    
+    NodeGui* getSelectedNode() const {return _nodeSelected;}
     
     void removeNode(NodeGui* n);
 
@@ -84,8 +82,6 @@ public:
     void autoConnect(NodeGui* selected,NodeGui* created);
     
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
-
-    void checkIfViewerConnectedAndRefresh(NodeGui* n);
     
     void selectNode(NodeGui* n);
     
@@ -110,12 +106,19 @@ public:
     void restoreFromTrash(NodeGui* node);
     
     /*Effectivly deletes all nodes. Called on load/save*/
-    void clear();
+  //  void clear();
     
     /*Returns true if the graph has no value, i.e:
      this is just output nodes*/
     bool isGraphWorthLess() const;
+        
+    Gui* getGui() const {return _gui;}
     
+    void refreshAllEdges();
+    
+public slots:
+    void connectCurrentViewerToSelection(int inputNB);
+
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -137,6 +140,8 @@ private:
     void autoResizeScene();
     
     bool smartNodeCreationEnabled;
+    
+    Gui* _gui;
     QPointF old_pos;
     QPointF oldp;
     QPointF _lastNodeDragStartPoint;
@@ -184,8 +189,8 @@ public:
     virtual void redo();
     
 private:
-    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
-    std::vector<NodeGui*> _parents;
+    std::multimap<int,Node*> _outputs;
+    std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -199,8 +204,8 @@ public:
     virtual void redo();
     
 private:
-    std::vector<NodeGui*> _children; //edges of the children that are pointing to this node
-    std::vector<NodeGui*> _parents;
+    std::multimap<int,Node*> _outputs;
+    std::map<int,Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };
@@ -223,7 +228,7 @@ class SmartInputDialog:public QDialog
 Q_OBJECT
 
 public:
-    SmartInputDialog(NodeGraph* graph);
+    explicit SmartInputDialog(NodeGraph* graph);
     virtual ~SmartInputDialog(){}
     void keyPressEvent(QKeyEvent *e);
     bool eventFilter(QObject * obj, QEvent * e);
@@ -233,4 +238,4 @@ private:
     QLabel* textLabel;
     QComboBox* textEdit;
 };
-#endif // NODEGRAPH_H
+#endif // POWITER_GUI_NODEGRAPH_H_

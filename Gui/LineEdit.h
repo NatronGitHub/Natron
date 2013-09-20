@@ -9,21 +9,15 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_LINEEDIT_H_
+#define POWITER_GUI_LINEEDIT_H_
 
- 
-
-
-
-
-#ifndef PowiterOsX_lineEdit_h
-#define PowiterOsX_lineEdit_h
 #include <QLineEdit>
 
 class QPaintEvent;
 class LineEdit : public QLineEdit {
 public:
-    LineEdit(QWidget* parent = 0):QLineEdit(parent){ setAttribute(Qt::WA_MacShowFocusRect,0);}
+    explicit LineEdit(QWidget* parent = 0):QLineEdit(parent){ setAttribute(Qt::WA_MacShowFocusRect,0);}
     virtual ~LineEdit(){}
     
     virtual void paintEvent(QPaintEvent* e){

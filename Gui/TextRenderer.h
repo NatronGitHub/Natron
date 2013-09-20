@@ -9,23 +9,13 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TEXTRENDERER_H
+#define POWITER_GUI_TEXTRENDERER_H
 
- 
-
-
-
-
-#ifndef __PowiterOsX__textRenderer__
-#define __PowiterOsX__textRenderer__
 #include <QtGui/QColor>
-#include <iostream>
-#include <FTGL/ftgl.h>
-
 
 class ViewerGL;
-
-
+class FTTextureFont;
 
 class TextRenderer
 {
@@ -37,12 +27,12 @@ protected:
     void do_end();
     
 public:
-    TextRenderer(ViewerGL *glwidget);
+    explicit TextRenderer(ViewerGL* glwidget);
     ~TextRenderer();
     
-    void print( int x, int y, const QString &string,QColor color);
+    void print( int x, int y, const QString&string, QColor color);
     
 };
 
 
-#endif /* defined(__PowiterOsX__textRenderer__) */
+#endif /* defined(POWITER_GUI_TEXTRENDERER_H) */

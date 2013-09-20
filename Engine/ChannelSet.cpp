@@ -9,59 +9,69 @@
 *
 */
 
- 
+#include "ChannelSet.h"
 
- 
-
-#include "Engine/ChannelSet.h"
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
+
 using namespace std;
 using namespace Powiter;
-Channel getChannelByName(const char *name){
-    if(strcmp(name,"Channel_unused")==0){
-        return Channel_unused;
-    }else if(strcmp(name,"Channel_red")==0){
+
+Channel getChannelByName(const std::string &name){
+    if (name == "Channel_red") {
         return Channel_red;
-    }else if(strcmp(name,"Channel_green")==0){
+    }
+    if (name == "Channel_green") {
         return Channel_green;
-    }else if(strcmp(name,"Channel_blue")==0){
+    }
+    if (name == "Channel_blue") {
         return Channel_blue;
-    }else if(strcmp(name,"Channel_alpha")==0){
+    }
+    if (name == "Channel_alpha") {
         return Channel_alpha;
-    }else if(strcmp(name,"Channel_Z")==0){
+    }
+    if (name == "Channel_Z") {
         return Channel_Z;
-    }else{
-        throw std::string("(getChannelByName):Bad channel name");
     }
+    std::string c("Channel_");
+    if (name.compare(0, c.length(), c) == 0) {
+        int id;
+        std::istringstream iss(name.substr(c.length(), name.length()-c.length()));
+        if (iss >> id) {
+            return (Channel)id;
+        }
+    }
+    throw std::runtime_error("(getChannelByName):Bad channel name");
 }
+
 std::string getChannelName(Channel c){
-    if(c==Channel_red){
-        return "Channel_red";
-    }else if(c==Channel_green){
-        return "Channel_green";
-    }else if(c==Channel_blue){
-        return "Channel_blue";
-        
-    }else if(c==Channel_alpha){
-        return "Channel_alpha";
-        
-    }else if(c==Channel_unused){
-        return "Channel_unused";
-        
-    }else if(c==Channel_Z){
-        return "Channel_Z";
-        
-    }else if(c==Channel_black){
-        return "Channel_black";
+    switch (c) {
+        case Channel_black:
+            return "Channel_black";
+        case Channel_red:
+            return "Channel_red";
+        case Channel_green:
+            return "Channel_green";
+        case Channel_blue:
+            return "Channel_blue";
+        case Channel_alpha:
+            return "Channel_alpha";
+        case Channel_Z:
+            return "Channel_Z";
+        case Channel_unused:
+            ; // do the default action below
     }
-    return "";
+    std::ostringstream s;
+    s << "Channel_" << (int)c;
+    return s.str();
 }
 
 ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.size()){}
 ChannelSet::ChannelSet(ChannelMask v) {
     if(v == Mask_All){
         mask = Mask_All;
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         return;
     }
     mask = (v << 1);
@@ -86,7 +96,7 @@ const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
 const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     if(source == Mask_All){
         mask = Mask_All;
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         return *this;
     }
     mask = (source << 1);
@@ -167,7 +177,7 @@ void ChannelSet::operator+=(ChannelMask source) {
         return;
     }
     if((source & Mask_All) == Mask_All){// mask all
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
         mask = 1;
         return;
     }
@@ -221,8 +231,8 @@ void ChannelSet::operator-=(ChannelMask source) {
 
 void ChannelSet::operator-=(Channel z){
     if(z < 31 && *this&z){// if it is a valid channel and it is effectivly contained
-        mask &= ~1; // removing the flag all if it was set
-        mask &= ~(1 << z); // setting to 0 the channel z
+        mask &= ~1U; // removing the flag all if it was set
+        mask &= ~(1U << z); // setting to 0 the channel z
         --_size; // decrementing channels count
     }
     
@@ -230,7 +240,7 @@ void ChannelSet::operator-=(Channel z){
 void ChannelSet::operator&=(const ChannelSet& source){
     mask &= source.value();
     if(source.value() & 1){
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
         for(unsigned int i = 1; i < 32 ; ++i) {
@@ -244,7 +254,7 @@ void ChannelSet::operator&=(const ChannelSet& source){
 void ChannelSet::operator&=(ChannelMask source) {
     mask &= (source << 1);
     if(source & 1){
-        _size = MAX_CHANNEL_COUNT;
+        _size = POWITER_MAX_CHANNEL_COUNT;
     }else{
         _size = 0;
         for(unsigned int i = 1; i < 32 ; ++i) {

@@ -9,33 +9,24 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITER_H_
+#define POWITER_WRITERS_WRITER_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__Writer__
-#define __PowiterOsX__Writer__
-
-#include <map>
-#include <iostream>
-#include "Global/GlobalDefines.h"
-#include "Engine/Node.h"
-#include <QtCore/QStringList>
 #include <QtCore/QFuture>
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QObject>
+#include <QtCore/QStringList>
+
+#include "Global/Macros.h"
+#include "Engine/Node.h"
+
 class Write;
 class QMutex;
 class Row;
 class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
-class KnobCallback;
-class Writer: public QObject, public Node{
+class Writer: public OutputNode{
     
     Q_OBJECT
     
@@ -71,20 +62,20 @@ public:
     };
     
     
-    Writer();
+    Writer(Model* model);
         
     virtual ~Writer();
     
-    virtual const std::string className();
+    virtual std::string className();
     
-    virtual const std::string description();
+    virtual std::string description();
     
-    /*If forReal is true, it creates a new Write and set _writeHandle
+    /*If doFullWork is true, it creates a new Write and set _writeHandle
      to this newly created Write. It also calls Write::setupFile with 
      the filename selected in the GUI. If the buffer is full, it appends
      the Write task to the _queuedTasks vector. They will be launched
      by the notifyWriterForCompletion() function.*/
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool doFullWork);
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
 	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
@@ -111,42 +102,28 @@ public:
      This is used to know whether it should start the engine or not.*/
     bool validInfosForRendering();
     
-    int currentFrame(){return _currentFrame;}
+    const ChannelSet& requestedChannels() const {return _requestedChannels;}    
     
-    int firstFrame(){return _frameRange.first;}
+    virtual int maximumInputs() const OVERRIDE {return 1;}
     
-    int lastFrame(){return _frameRange.second;}
+    virtual int minimumInputs() const OVERRIDE {return 1;}
     
-    void setCurrentFrameToStart(){_currentFrame = _frameRange.first;}
-    
-    void incrementCurrentFrame(){++_currentFrame;}
-    
-    const ChannelSet& requestedChannels() const {return _requestedChannels;}
-    
-    virtual bool isOutputNode(){return true;}
-    
-    virtual int maximumInputs(){return 1;}
-    
-    virtual int minimumInputs(){return 1;}
-    
-    virtual bool cacheData(){return false;}
+    virtual bool cacheData() const OVERRIDE {return false;}
     
 public slots:
     void notifyWriterForCompletion();
-    void fileTypeChanged(int);
-    void startRendering();
     void onFilesSelected();
+    void fileTypeChanged();
+    void startRendering();
     
 protected:
-	virtual void initKnobs(KnobCallback *cb);
+	virtual void initKnobs() OVERRIDE;
     
-    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
+    virtual ChannelSet supportedComponents() OVERRIDE {return Powiter::Mask_All;}
     
 private:
     
     ChannelSet _requestedChannels;
-    int _currentFrame; // the current frame being rendered
-    std::pair<int,int> _frameRange; // the range to render
     QMutex* _lock;
     bool _premult;
     Buffer _buffer;
@@ -163,4 +140,4 @@ private:
     
 };
 
-#endif /* defined(__PowiterOsX__Writer__) */
+#endif /* defined(POWITER_WRITERS_WRITER_H_) */

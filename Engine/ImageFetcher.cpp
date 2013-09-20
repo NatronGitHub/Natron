@@ -9,68 +9,78 @@
  *
  */
 
+#include "ImageFetcher.h"
 
-
-
-
-
-
-#ifndef Q_MOC_RUN
-
-#include "Engine/ImageFetcher.h"
-
+#include <stdexcept>
+#if QT_VERSION < 0x050000
 #include <QtConcurrentMap>
+#else
+#include <QtConcurrent>
+#endif
 #include <QtGui/QImage>
 #include <boost/bind.hpp>
+
 #include "Engine/Node.h"
-#endif
 
 using namespace std;
 using namespace Powiter;
+
 ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels):
 _x(x),_y(y),_r(r),_t(t),_channels(channels),_node(node),_isFinished(false),_results(0){
     for (int i = y; i <= t; ++i) {
-        InputRow* row = new InputRow(i,x,r);
-        _interest.insert(std::make_pair(i,row));
-        _sequence.push_back(row);
+        _sequence.push_back(i);
     }
 }
 
 void ImageFetcher::claimInterest(bool blocking){
-    _results = new QFutureWatcher<void>;
+    _results = new QFutureWatcher<Row*>;
     QObject::connect(_results, SIGNAL(resultReadyAt(int)), this, SLOT(notifyFinishedAt(int)));
-    QObject::connect(_results, SIGNAL(finished()), this, SLOT(setFinished()));
+    QObject::connect(_results, SIGNAL(finished()), this, SLOT(onCompletion()));
     if(!blocking){
-        QFuture<void> future = QtConcurrent::map(_sequence.begin(),_sequence.end(),boost::bind(&ImageFetcher::getInputRow,this,_node,_1));
+        QFuture<Row*> future = QtConcurrent::mapped(_sequence.begin(),_sequence.end(),
+                                                    boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
         _results->setFuture(future);
     }else{
-        QtConcurrent::blockingMap(_sequence, boost::bind(&ImageFetcher::getInputRow,this,_node,_1));
+        QVector<Row*> ret = QtConcurrent::blockingMapped(_sequence, boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
+        for (int i = 0; i < ret.size(); i++) {
+            _interest.insert(make_pair(ret.at(i)->y(),ret.at(i)));
+        }
     }
 }
 
-void ImageFetcher::getInputRow(Node* node,InputRow* row){
-    node->get(*row);
+Row* ImageFetcher::getInputRow(Node* node,int y,int x,int r){
+    Row* row = node->get(y,x,r);
+    if(!row){
+        cout << "Interest failure for row " << y << endl;
+        return NULL;
+    }
+    return row;
 }
 
-const InputRow& ImageFetcher::at(int y) const {
-    std::map<int,InputRow*>::const_iterator it = _interest.find(y);
+Row* ImageFetcher::at(int y) const {
+    
+    std::map<int,Row*>::const_iterator it = _interest.find(y);
     if(it != _interest.end()){
-        return *(it->second);
+        return it->second;
     }else{
-        
-        QString toThrow("Interest::at : Couldn't return a valid row for y = ");
-        toThrow.append(QString::number(y));
-        throw toThrow.toStdString();
+        return NULL;
     }
 }
 
 ImageFetcher::~ImageFetcher(){
-    for (U32 i = 0; i < _sequence.size(); ++i) {
-        delete _sequence[i]; // deleting will decrease ref counting and allow the cache to free these elements again
+    for (std::map<int,Row*>::const_iterator it = _interest.begin(); it!=_interest.end(); ++it) {
+        it->second->release();
     }
     delete _results;
 }
-void ImageFetcher::setFinished(){_isFinished = true; emit hasFinishedCompletly();}
+void ImageFetcher::onCompletion(){
+    _isFinished = true;
+    for (int i = 0; i < _sequence.size(); i++) {
+        Row* row = _results->resultAt(i);
+        _interest.insert(make_pair(row->y(), row));
+    }
+    emit hasFinishedCompletly();
+}
 
 void ImageFetcher::notifyFinishedAt(int y){
     emit hasFinishedAt(y);
@@ -81,13 +91,13 @@ void ImageFetcher::debugImageFetcher(const std::string& filename){
     QImage img(w,h,QImage::Format_ARGB32);
     for (int i = _y; i < h+_y; ++i) {
         QRgb* dstPixels = (QRgb*)img.scanLine(i);
-        map<int,InputRow*>::const_iterator it = _interest.find(i);
+        map<int,Row*>::const_iterator it = _interest.find(i);
         if(it!=_interest.end()){
-            const InputRow& srcPixels = (*it->second);
-            const float* r = srcPixels[Channel_red];
-            const float* g = srcPixels[Channel_green];
-            const float* b = srcPixels[Channel_blue] ;
-            const float* a = srcPixels[Channel_alpha] ;
+            Row* srcPixels = it->second;
+            const float* r = (*srcPixels)[Channel_red];
+            const float* g = (*srcPixels)[Channel_green];
+            const float* b = (*srcPixels)[Channel_blue] ;
+            const float* a = (*srcPixels)[Channel_alpha] ;
             for (int j = _x; j < w+_x ; ++j) {
                 dstPixels[j] = qRgba(r ? (int)(r[i]*255.f) : 0,
                                      g ? (int)(g[i]*255.f) : 0,

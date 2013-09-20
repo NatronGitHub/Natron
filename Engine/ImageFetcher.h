@@ -9,21 +9,13 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_IMAGEFETCHER_H_
+#define POWITER_ENGINE_IMAGEFETCHER_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__interest__
-#define __PowiterOsX__interest__
-
-#include <iostream>
 #include <map>
-#include <vector>
+#include <string>
 #include <QtCore/QFutureWatcher>
-#include <QtCore/QFuture>
+
 #include "Engine/Row.h"
 #include "Engine/ChannelSet.h"
 
@@ -39,9 +31,9 @@ class ImageFetcher : public QObject{
     ChannelSet _channels;
     Node* _node;
     bool _isFinished;
-    std::map<int,InputRow*> _interest;
-    std::vector<InputRow*> _sequence;
-    QFutureWatcher<void>* _results;
+    std::map<int,Row*> _interest;
+    QVector<int> _sequence;
+    QFutureWatcher<Row*>* _results;
 public:
     /*Construct an image fetcher object that will fetch all the row in the range (y,t)
      for the given channels for the node specified in parameters. No fetching
@@ -50,9 +42,9 @@ public:
      connect to the signal hasFinishedAt(int) to maybe update your piece
      of code for a specific row, or to signal the GUI of some modifications.
      
-     !!WARNING: When the image fetcher object is deleted, all the InputRows will be
+     !!WARNING: When the image fetcher object is deleted, all the Rows will be
      deleted too, it's important to maintain the image fetcher living thoughout the
-     entire duration you need to use the InputRows contained in that object.*/
+     entire duration you need to use the Rows contained in that object.*/
     ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels);
     
     
@@ -76,16 +68,16 @@ public:
     
     bool isFinished() const {return _isFinished;}
     
-    /*Returns the row  y computed by the node. Throws an exception
+    /*Returns the row  y computed by the node.Returns NULL
      if it couldn't find it.
      !!WARNING: calling at() while isFinished still returns false
-     can produce undefined results and garbage data!*/
-    const InputRow& at(int y) const;
+     will block until the results are available for this row*/
+    Row* at(int y) const;
     
     /*write the rows to an image on disk using QImage.*/
     void debugImageFetcher(const std::string& filename);
     
-    /*Deletes all the InputRows in the image fetcher, and tell the cache they are
+    /*Deletes all the Rows in the image fetcher, and tell the cache they are
      no longer protected (i.e : they return to normal priority and can be evicted).*/
     ~ImageFetcher();
     
@@ -93,7 +85,7 @@ public:
     
     void notifyFinishedAt(int);
     
-    void setFinished();
+    void onCompletion();
     
 signals:
     /*Thrown when a row has been computed by the image fetcher. The parameter is the y
@@ -102,7 +94,7 @@ signals:
     void hasFinishedCompletly();
     
 private:
-    void getInputRow(Node* node,InputRow* row);
+    Row* getInputRow(Node* node,int y, int x,int r);
 };
 
-#endif /* defined(__PowiterOsX__interest__) */
+#endif /* defined(POWITER_ENGINE_IMAGEFETCHER_H_) */

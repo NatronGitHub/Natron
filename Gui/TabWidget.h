@@ -9,22 +9,16 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_TABWIDGET_H_
+#define POWITER_GUI_TABWIDGET_H_
 
- 
-
-
-
-
-#ifndef __PowiterOsX__tabwidget__
-#define __PowiterOsX__tabwidget__
-
-#include <iostream>
 #include <vector>
-#include <QWidget>
 #include <QFrame>
-#include <QtCore/QPoint>
 #include <QTabBar>
+
+#include "Global/Macros.h"
+
+class QWidget;
 class QStyle;
 class QHBoxLayout;
 class QPushButton;
@@ -38,7 +32,7 @@ class QDragEnterEvent;
 class QDragLeaveEvent;
 class TabWidget;
 class QPaintEvent;
-
+class Gui;
 //class Tab : public QFrame{
 //    
 //    Q_OBJECT
@@ -89,7 +83,7 @@ class TabBar : public QTabBar{
     
 public:
     
-    TabBar(TabWidget* tabWidget,QWidget* parent = 0);
+    explicit TabBar(TabWidget* tabWidget,QWidget* parent = 0);
     
 //    void addTab(const QString& text);
 //    
@@ -136,6 +130,7 @@ public:
         CLOSABLE=2 // the pane can be removed as well as tabs.
     };
 private:
+    Gui* _gui;
     
     QVBoxLayout* _mainLayout;
     
@@ -159,7 +154,7 @@ private:
 public:
     
         
-    TabWidget(TabWidget::Decorations decorations,QWidget* parent = 0);
+    explicit TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent = 0);
     
     virtual ~TabWidget();
     
@@ -240,4 +235,4 @@ private:
 
 };
 
-#endif /* defined(__PowiterOsX__tabwidget__) */
+#endif /* defined(POWITER_GUI_TABWIDGET_H_) */

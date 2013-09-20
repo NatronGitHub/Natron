@@ -9,32 +9,25 @@
 *
 */
 
- 
+#include "NodeCache.h"
 
- 
-
-
-
-#include "Engine/NodeCache.h"
-#include "Engine/Row.h"
-#include "Engine/MemoryFile.h"
-#include "Engine/ChannelSet.h"
-#include "Engine/Hash.h"
 #include <sstream>
 #include <cassert>
 #include <QtCore/QDir>
+
+#include "Engine/Row.h"
+#include "Engine/MemoryFile.h"
+#include "Engine/ChannelSet.h"
+#include "Engine/Hash64.h"
+
 using namespace std;
 
 NodeCache::NodeCache() : AbstractMemoryCache() {
-    
-}
-NodeCache::~NodeCache(){
-    
 }
 
-NodeCache* NodeCache::getNodeCache(){
-   return NodeCache::instance();
+NodeCache::~NodeCache() {    
 }
+
 
 
 std::pair<U64,Row*> NodeCache::get(U64 nodeKey, const std::string& filename, int x, int r, int y, const ChannelSet& ){
@@ -52,8 +45,8 @@ Row* NodeCache::addRow(U64 key,int x, int r, int y, const ChannelSet &channels,c
     Row* out = 0;
     try{
        out = new Row(x,y,r,channels);
-    }catch(const char* str){
-        cout << "Failed to create row: " << str << endl;
+    } catch (const std::exception &e) {
+        cout << "Failed to create row: " << e.what() << endl;
         delete out;
         return NULL;
     }

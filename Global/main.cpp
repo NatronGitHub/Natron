@@ -23,10 +23,10 @@
 #include <QtCore/QString>
 #include <QLabel>
 #include <QtGui/QPixmap>
-#include "Global/GlobalDefines.h"
-#include "Global/Controler.h"
+#include "Global/Macros.h"
+#include "Global/AppManager.h"
 #include "Engine/Model.h"
-
+#include "Engine/Knob.h"
 
 using namespace std;
 
@@ -37,23 +37,23 @@ int main(int argc, char *argv[])
 	//VLDReportLeaks();
 #endif
     QApplication app(argc, argv);
+    
+    qRegisterMetaType<Variant>();
+    
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
-    filename.append(IMAGES_PATH"splashscreen.png");
+    filename.append(POWITER_IMAGES_PATH"splashscreen.png");
     QPixmap pixmap(filename);
     pixmap=pixmap.scaled(640, 400);
     QLabel* splashScreen = new QLabel;
     splashScreen->setWindowFlags(Qt::SplashScreen);
     splashScreen->setPixmap(pixmap);
-#ifndef PW_DEBUG
+#ifndef POWITER_DEBUG
     splashScreen->show();
 #endif
     QCoreApplication::processEvents();
-	/*instanciating the core*/
-    Model* coreEngine=new Model();
-	/*instancating the controler, that will in turn create the GUI*/
-    Controler* ctrl= Controler::instance();
-	/*we create the GUI in the initControler function*/
+    
+    AppManager* manager = AppManager::instance();
     
     QString projectFile;
     QStringList args = QCoreApplication::arguments();
@@ -62,8 +62,11 @@ int main(int argc, char *argv[])
             projectFile = args.at(i);
         }
     }
-    ctrl->initControler(coreEngine,splashScreen,projectFile);
 
+    manager->newAppInstance(projectFile);
+	    
+    splashScreen->hide();
+    delete splashScreen;
     
     
     return app.exec();

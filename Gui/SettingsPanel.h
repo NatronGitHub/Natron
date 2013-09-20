@@ -9,24 +9,17 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef SETTINGSPANEL_H
-#define SETTINGSPANEL_H
-
+#ifndef POWITER_GUI_SETTINGSPANEL_H_
+#define POWITER_GUI_SETTINGSPANEL_H_
 
 #include <QFrame>
 
 class LineEdit;
 class Node;
-class Knob;
+class KnobGui;
 class NodeGui;
-class KnobCallback;
 class QVBoxLayout;
+class QGridLayout;
 class QTabWidget;
 class Button;
 class QHBoxLayout;
@@ -50,9 +43,6 @@ class SettingsPanel:public QFrame
     /*Pointer to the node GUI*/
     NodeGui* _nodeGUI;
     
-    /*Pointer to the knob_callback*/
-    KnobCallback *_cb;
-
     /*Header related*/
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
@@ -68,7 +58,7 @@ class SettingsPanel:public QFrame
     
     /*settings related*/
     QWidget* _settingsTab;
-    QVBoxLayout* _layoutSettings;
+    QGridLayout* _layoutSettings;
     
     /*labels related*/
     QVBoxLayout* _layoutLabel;
@@ -84,17 +74,13 @@ class SettingsPanel:public QFrame
 
 public:
 
-    SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
+    explicit SettingsPanel(NodeGui* NodeUi, QWidget *parent=0);
     
     virtual ~SettingsPanel();
     
     void setSelected(bool s);
     
     bool isSelected() const {return _selected;}
-    
-	void addKnobDynamically(Knob* knob);
-    
-    void removeAndDeleteKnob(Knob* knob);
     
     bool isMinimized() const {return _minimized;}
     
@@ -111,6 +97,9 @@ public:
     
     void setEnabledRedoButton(bool);
     
+    void initialize_knobs();
+
+    
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);
@@ -118,8 +107,7 @@ public slots:
 private:
     
 
-    void initialize_knobs();
 	
 };
 
-#endif // SETTINGSPANEL_H
+#endif // POWITER_GUI_SETTINGSPANEL_H_

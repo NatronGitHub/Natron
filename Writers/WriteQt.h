@@ -9,21 +9,11 @@
 *
 */
 
- 
+#ifndef POWITER_WRITERS_WRITEQT_H_
+#define POWITER_WRITERS_WRITEQT_H_
 
- 
-
-
-
-
-
-#ifndef __PowiterOsX__writeQt__
-#define __PowiterOsX__writeQt__
-
-#include <iostream>
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
 #include "Writers/Write.h"
-#include <QtGui/QImage>
 
 class WriteQt :public Write{
     
@@ -35,36 +25,36 @@ public:
     static Write* BuildWrite(Writer* writer){return new WriteQt(writer);}
     
     /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesEncoded();
+    virtual std::vector<std::string> fileTypesEncoded() const OVERRIDE;
     
     /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
-    virtual std::string encoderName();
+    virtual std::string encoderName() const OVERRIDE;
     
     /*Must be implemented to tell whether this file type supports stereovision*/
-	virtual bool supports_stereo();
+	virtual bool supports_stereo() const OVERRIDE;
        
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
-     function Lut::getLut(datatype) */
-    virtual void initializeColorSpace();
+     function Powiter::Color::getLut(datatype) */
+    virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual void setupFile(const std::string& filename);
+    virtual void setupFile(const std::string& filename) OVERRIDE;
     
     /*This function must fill the pre-allocated structure with the data calculated by engine.
      This function must close the file as writeAllData is the LAST function called before the
      destructor of Write.*/
-    virtual void writeAllData();
+    virtual void writeAllData() OVERRIDE;
 
-    virtual void supportsChannelsForWriting(ChannelSet& channels);
+    virtual void supportsChannelsForWriting(ChannelSet& channels) const OVERRIDE;
     
     WriteQt(Writer* writer);
     virtual ~WriteQt();
 };
 
-#endif /* defined(__PowiterOsX__writeQt__) */
+#endif /* defined(POWITER_WRITERS_WRITEQT_H_) */

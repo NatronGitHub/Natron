@@ -9,34 +9,30 @@
 *
 */
 
- 
-
- 
-
-
-
-
-
-#include "Writers/Writer.h"
+#include "Writer.h"
 
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtConcurrentRun>
 
+#include "Global/LibraryBinary.h"
+#include "Global/AppManager.h"
+
 #include "Engine/Row.h"
-#include "Writers/Write.h"
-#include "Gui/Knob.h"
 #include "Engine/Settings.h"
-#include "Global/Controler.h"
 #include "Engine/Model.h"
 #include "Engine/Settings.h"
+#include "Engine/Knob.h"
+
+#include "Writers/Write.h"
+
 
 using namespace std;
 using namespace Powiter;
-Writer::Writer():
-Node(),
+
+Writer::Writer(Model* model):
+OutputNode(model),
 _requestedChannels(Mask_RGB), // temporary
-_currentFrame(0),
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
 _writeHandle(0),
@@ -54,32 +50,40 @@ Writer::~Writer(){
     delete _lock;
 }
 
-const std::string Writer::className(){
+std::string Writer::className() {
     return "Writer";
 }
 
-const std::string Writer::description(){
+std::string Writer::description() {
     return "OutputNode";
 }
 
-void Writer::_validate(bool forReal){
+bool Writer::_validate(bool doFullWork){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
-    _frameRange.first = _info->firstFrame();
-    _frameRange.second = _info->lastFrame();
+    _timeline.setFirstFrame(info().firstFrame());
+    _timeline.setLastFrame(info().lastFrame());
     
-    if (forReal) {
+    if (doFullWork) {
         
         
         if(_filename.size() > 0){
             
             Write* write = 0;
-            PluginID* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+            Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
             if(!encoder){
-                cout << "Writer: couldn't find an appropriate encoder for filetype: " << _fileType << endl;
+                cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
+                return false;
             }else{
-                WriteBuilder builder = (WriteBuilder)(encoder->first);
-                write = builder(this);
+                
+
+                pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+                if(func.first)
+                    write = func.second(this);
+                else{
+                    cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
+                    return false;
+                }
                 write->premultiplyByAlpha(_premult);
                 /*check if the filename already contains the extension, otherwise appending it*/
                 QString extension;
@@ -93,7 +97,7 @@ void Writer::_validate(bool forReal){
                 }
                 
                 i = filename.lastIndexOf(QChar('#'));
-                QString n = QString::number(_currentFrame);
+                QString n = QString::number(_timeline.currentFrame());
                 if(i != -1){
                     filename = filename.replace(i,1,n);
                 }else{
@@ -108,6 +112,7 @@ void Writer::_validate(bool forReal){
             }
         }
     }
+    return true;
 }
 
 void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
@@ -117,33 +122,30 @@ void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
 void Writer::createKnobDynamically(){
     Node::createKnobDynamically();
 }
-void Writer::initKnobs(KnobCallback *cb){
+void Writer::initKnobs(){
     std::string fileDesc("File");
-    _fileKnob = static_cast<OutputFile_Knob*>(KnobFactory::createKnob("OutputFile", cb, fileDesc, Knob::NONE));
+    _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", this, fileDesc,1, Knob::NONE));
+    QObject::connect(_fileKnob,SIGNAL(filesSelected()),this,SLOT(onFilesSelected()));
     assert(_fileKnob);
-	_fileKnob->setPointer(&_filename);
-    QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onFilesSelected()));
     
     std::string renderDesc("Render");
-    Button_Knob* renderButton = static_cast<Button_Knob*>(KnobFactory::createKnob("Button", cb, renderDesc, Knob::NONE));
+    Button_Knob* renderButton = static_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", this, renderDesc, 1,Knob::NONE));
     assert(renderButton);
-    renderButton->connectButtonToSlot(dynamic_cast<QObject*>(this),SLOT(startRendering()));
+    QObject::connect(renderButton, SIGNAL(valueChangedByUser()), this, SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = static_cast<Bool_Knob*>(KnobFactory::createKnob("Bool", cb, premultString, Knob::NONE));
-    premult->setPointer(&_premult);
+    Bool_Knob* premult = static_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", this, premultString, 1,Knob::NONE));
+    premult->setValue(_premult);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", cb, filetypeStr, Knob::NONE));
-    QObject::connect(_filetypeCombo, SIGNAL(entryChanged(int)), this, SLOT(fileTypeChanged(int)));
-    const std::map<std::string,PluginID*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
-    std::map<std::string,PluginID*>::const_iterator it = _encoders.begin();
+    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", this, filetypeStr, 1,Knob::NONE));
+    QObject::connect(_filetypeCombo, SIGNAL(valueChangedByUser()), this, SLOT(fileTypeChanged()));
+    const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
+    std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
-        _allFileTypes.push_back(it->first);
+        _allFileTypes.push_back(it->first.c_str());
     }
-    _filetypeCombo->setPointer(&_fileType);
     _filetypeCombo->populate(_allFileTypes);
-    Node::initKnobs(cb);
 }
 
 
@@ -214,21 +216,21 @@ Writer::Buffer::~Buffer(){
 
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/
-    PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!isValid) return false;
     
     /*checking if channels are supported*/
-    WriteBuilder builder = (WriteBuilder)isValid->first;
-    Write* write = builder(NULL);
-    try{
+    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    Write* write = func.second(this);
+    try {
         write->supportsChannelsForWriting(_requestedChannels);
-    }catch(const char* str){
-        cout << "ERROR: " << str << endl;
+    } catch (const std::exception &e) {
+        cout << "ERROR: " << e.what() << endl;
     }
     delete write;
     
     /*check if frame range makes sense*/
-    if(_frameRange.first > _frameRange.second) return false;
+    if(_timeline.firstFrame() > _timeline.lastFrame()) return false;
     
     /*check if write specific knobs have valid values*/
     if (_writeOptions) {
@@ -241,44 +243,43 @@ bool Writer::validInfosForRendering(){
 }
 
 void Writer::startRendering(){
+    _fileType = _allFileTypes[_filetypeCombo->value<int>()];
+    _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
-        ctrlPTR->getModel()->setVideoEngineRequirements(this,false);
-        ctrlPTR->getModel()->startVideoEngine();
+        _model->updateDAG(this,false);
+        _model->startVideoEngine();
     }
 }
 
-void Writer::fileTypeChanged(int fileTypeIndex){
-    string fileType = _allFileTypes[fileTypeIndex];
+void Writer::fileTypeChanged(){
+    int index = _filetypeCombo->value<int>();
+    assert(index < (int)_allFileTypes.size());
+    _fileType = _allFileTypes[index];
     if(_writeOptions){
         _writeOptions->cleanUpKnobs();
         delete _writeOptions;
         _writeOptions = 0;
     }
-    PluginID* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!isValid) return;
     
     QString file(_filename.c_str());
     int pos = file.lastIndexOf(QChar('.'));
     ++pos;
     file.replace(pos, file.size() - pos, _fileType.c_str());
-    _fileKnob->setStr(file);
+    _fileKnob->setValue(file);
     
     /*checking if channels are supported*/
-    WriteBuilder builder = (WriteBuilder)isValid->first;
-    Write* write = builder(this);
-    _writeOptions = write->initSpecificKnobs();
-    if(_writeOptions)
-        _writeOptions->initKnobs(getKnobCallBack(),fileType);
-    delete write;
-}
-void Writer::onFilesSelected(){
-    QString file(_filename.c_str());
-    int pos = file.lastIndexOf(QChar('.'));
-    string ext = _filename.substr(pos+1).c_str();
-    for (U32 i = 0; i < _allFileTypes.size(); i++) {
-        if (_allFileTypes[i] == ext) {
-            _filetypeCombo->setCurrentItem(i);
-            break;
-        }
+    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    if(func.first){
+        Write* write = func.second(this);
+        _writeOptions = write->initSpecificKnobs();
+        if(_writeOptions)
+            _writeOptions->initKnobs(_fileType);
+        delete write;
     }
+}
+
+void Writer::onFilesSelected(){
+    _filename = _fileKnob->getValueAsVariant().toString().toStdString();
 }

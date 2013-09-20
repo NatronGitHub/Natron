@@ -4,53 +4,93 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
- *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
- *contact: immarespond at gmail dot com
- *
- */
+*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
+*contact: immarespond at gmail dot com
+*
+*/
 
 #include "ReadExr.h"
 
-#include <string>
+#ifdef __POWITER_WIN32__
+#include <fstream>
+#endif
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <ImfPixelType.h>
 #include <ImfInputFile.h>
 #include <ImfChannelList.h>
+#ifdef __POWITER_WIN32__
+#include <ImfStdIO.h>
+#endif
+
 #include "Readers/Reader.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Engine/Node.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
 
 namespace EXR {
-    static Powiter::Channel fromExrChannel(const std::string& from)
-    {
-        if (from == "R" || from == "r" || from == "Red" || from == "RED" || from == "red" || from == "y" || from == "Y")
-            return Powiter::Channel_red;
-        if (from == "G" || from == "g" || from == "Green" || from == "GREEN" || from == "green" || from == "ry" || from == "RY")
-            return Powiter::Channel_green;
-        if (from == "B" || from == "b" || from == "Blue" || from == "BLUE" || from == "blue" || from == "by" || from == "BY")
-            return Powiter::Channel_blue;
-        if (from == "A" || from == "a" || from == "Alpha" || from == "ALPHA" || from == "alpha")
-            return Powiter::Channel_alpha;
-        if (from == "Z" || from == "z" || from == "Depth" || from == "DEPTH" || from == "depth")
-            return Powiter::Channel_Z;
-        try{
-            Powiter::Channel ret = getChannelByName(from.c_str());
-            return ret;
-        }catch(const char* str){
-            throw str; // forward exception
-            return Powiter::Channel_black;
-        }
+static Powiter::Channel fromExrChannel(const std::string& from)
+{
+    if (from == "R" ||
+        from == "r" ||
+        from == "Red" ||
+        from == "RED" ||
+        from == "red" ||
+        from == "y" ||
+        from == "Y") {
+        return Powiter::Channel_red;
     }
+    if (from == "G" ||
+        from == "g" ||
+        from == "Green" ||
+        from == "GREEN" ||
+        from == "green" ||
+        from == "ry" ||
+        from == "RY") {
+        return Powiter::Channel_green;
+    }
+    if (from == "B" ||
+        from == "b" ||
+        from == "Blue" ||
+        from == "BLUE" ||
+        from == "blue" ||
+        from == "by" ||
+        from == "BY") {
+        return Powiter::Channel_blue;
+    }
+    if (from == "A" ||
+        from == "a" ||
+        from == "Alpha" ||
+        from == "ALPHA" ||
+        from == "alpha") {
+        return Powiter::Channel_alpha;
+    }
+    if (from == "Z" ||
+        from == "z" ||
+        from == "Depth" ||
+        from == "DEPTH" ||
+        from == "depth") {
+        return Powiter::Channel_Z;
+    }
+    // The following may throw if from is not a channel name which begins with "Channel_"
+    return getChannelByName(from);
+}
 } // namespace EXR
 
-std::vector<std::string> split(const std::string& str, char splitChar)
+static float clamp(float v, float min = 0.f, float max= 1.f){
+    if(v > max) v = max;
+    if(v < min) v = min;
+    return v;
+}
+
+
+static std::vector<std::string> split(const std::string& str, char splitChar)
 {
     std::vector<std::string> ret;
     size_t i = str.find(splitChar);
@@ -69,9 +109,9 @@ std::vector<std::string> split(const std::string& str, char splitChar)
     return ret;
 }
 
-bool IsView(const std::string& name, const std::vector<std::string>& views)
+static bool IsView(const std::string& name, const std::vector<std::string>& views)
 {
-    for ( size_t i = 0; i < views.size(); i++ ){
+    for ( size_t i = 0; i < views.size(); ++i ){
         if ( views[i] == name ){
             return true;
         }
@@ -79,24 +119,24 @@ bool IsView(const std::string& name, const std::vector<std::string>& views)
     
     return false;
 }
-std::string removedigitsfromfront(const std::string& str)
+static std::string removedigitsfromfront(const std::string& str)
 {
     std::string ret = "";
     size_t len = str.length();
     size_t i = 0;
     while (isdigit(str[i]) && (i < len))
-        i++;
-    for (; i < len; i++ )
+        ++i;
+    for (; i < len; ++i )
         ret += (str[i]);
     
     return ret;
 }
 
-std::string removeNonAlphaCharacters(const std::string& str)
+static std::string removeNonAlphaCharacters(const std::string& str)
 {
     std::string ret = "";
     size_t len = str.length();
-    for ( size_t i = 0; i < len; i++ ){
+    for ( size_t i = 0; i < len; ++i ){
         if (!isalnum(str[i]))
             ret += '_';
         else
@@ -104,14 +144,6 @@ std::string removeNonAlphaCharacters(const std::string& str)
     }
     
     return ret;
-}
-std::string tolower(const std::string& s)
-{
-    std::string r = s;
-    for (size_t i = 0; i < r.size(); i++) {
-        r[i] = tolower(r[i]);
-    }
-    return r;
 }
 
 bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const std::vector<std::string>& views)
@@ -125,7 +157,7 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     
     // remove digits from the front, and remove empty strings
     std::vector<std::string> newsplits;
-    for ( size_t i = 0; i < splits.size(); i++ ){
+    for ( size_t i = 0; i < splits.size(); ++i ){
         std::string s = removedigitsfromfront(splits[i]);
         if ( s.length() > 0 )
             newsplits.push_back(removeNonAlphaCharacters(s));
@@ -134,9 +166,9 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     // get the names out
     //size_t offset = 0;
     if ( newsplits.size() > 1 ){
+
         
-        
-        for (U32 i = 0 ; i < (newsplits.size() - 1); i++) {
+        for (U32 i = 0 ; i < (newsplits.size() - 1); ++i) {
             if (IsView(newsplits[i], views)) {
                 _view = newsplits[i];
             } else {
@@ -152,28 +184,28 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
     }
     
     // std::string viewpart = (channelName._view.length() > 0) ? channelName._view : heroview;
-    
-    //if (viewname(view) == viewpart) {
-    //is_stereo= true;
-    Channel chan;
-    try{
-        chan = EXR::fromExrChannel(_chan);
-    }catch(const char* e){
-        std::cout << e << endl;
-        return false;
-    }
-    _mappedChannel = chan;
-    return true;
-    //}
-    
-    //    if (viewpart != "" && viewpart != heroview) {
-    //        return false;
-    //    }
-    
-    //    exrToPowiterChannelMapping(channel, otherpart.c_str());
-    
-    //    return true;
-    
+
+     //if (viewname(view) == viewpart) {
+     //is_stereo= true;
+     Channel chan;
+     try{
+         chan = EXR::fromExrChannel(_chan);
+     } catch (const std::exception &e) {
+         std::cout << e.what() << endl;
+         return false;
+     }
+     _mappedChannel = chan;
+     return true;
+     //}
+
+     //    if (viewpart != "" && viewpart != heroview) {
+     //        return false;
+     //    }
+
+     //    exrToPowiterChannelMapping(channel, otherpart.c_str());
+
+     //    return true;
+
     //	std::cout << "Turned '"<<channelname<<"' into "<<layer<<"."<<chan<<std::endl;
     
 }
@@ -184,7 +216,7 @@ std::string ExrChannelExctractor::exrName() const
         return _layer + "." + _chan;
     return _chan;
 }
-void ReadExr::readHeader(const QString filename,bool){
+void ReadExr::readHeader(const QString& filename, bool){
     
     channel_map.clear();
     views.clear();
@@ -211,10 +243,10 @@ void ReadExr::readHeader(const QString filename,bool){
         }
         inputfile = new Imf::InputFile(ba.constData());
 #endif
-        
+
         // multiview is only supported with OpenEXR >= 1.7.0
 #ifdef INCLUDED_IMF_STRINGVECTOR_ATTRIBUTE_H // use ImfStringVectorAttribute.h's #include guard
-                                             //int view = r->view_for_reader();
+        //int view = r->view_for_reader();
         const Imf::StringAttribute* stringMultiView = 0;
         const Imf::StringVectorAttribute* vectorMultiView = 0;
         
@@ -229,7 +261,7 @@ void ReadExr::readHeader(const QString filename,bool){
             
             stringMultiView = inputfile->header().findTypedAttribute<Imf::StringAttribute>("multiView");
         }
-        catch (...) {
+        catch (...) { // FIXME: wow wow wow why ignore all exceptions and continue?
         }
         
         if (vectorMultiView) {
@@ -237,7 +269,7 @@ void ReadExr::readHeader(const QString filename,bool){
             
             bool setHero = false;
             
-            for (size_t i = 0; i < s.size(); i++) {
+            for (size_t i = 0; i < s.size(); ++i) {
                 if (s[i].length()) {
                     views.push_back(s[i]);
                     if (!setHero) {
@@ -248,7 +280,7 @@ void ReadExr::readHeader(const QString filename,bool){
             }
         }
 #endif // !OPENEXR_NO_MULTIVIEW
-        
+
         // handling channels in the exr file to convert them to powiter channels
         ChannelSet mask;
         bool rgb= true;
@@ -266,7 +298,7 @@ void ReadExr::readHeader(const QString filename,bool){
                 if (!channels.empty()) {
                     for (std::set<Channel>::iterator it = channels.begin();
                          it != channels.end();
-                         it++) {
+                         ++it) {
                         Channel channel = *it;
                         //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
                         bool writeChannelMapping = true;
@@ -293,7 +325,7 @@ void ReadExr::readHeader(const QString filename,bool){
                 }
             }
         }
-        
+
         const Imath::Box2i& datawin = inputfile->header().dataWindow();
         const Imath::Box2i& dispwin = inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
@@ -315,12 +347,12 @@ void ReadExr::readHeader(const QString filename,bool){
         int br = datawin.max.x + dataOffset;
         int bt = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
-            datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
+                datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
             bx--;
             by--;
             br++;
             bt++;
-            _readInfo->blackOutside(true);
+            _readerInfo.set_blackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
         
@@ -328,7 +360,7 @@ void ReadExr::readHeader(const QString filename,bool){
         if (inputfile->header().lineOrder() != Imf::INCREASING_Y){
             ydirection=1;
         }
-        setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+        set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
@@ -343,13 +375,13 @@ void ReadExr::readScanLine(int y){
     
     // Invert to EXR y coordinate:
     int exrY = dispwin.max.y - y;
-    const Box2D& bbox = _readInfo->getDataWindow();
-    // const Format& dispW = _readInfo->getDisplayWindow();
+    const Box2D& bbox = readerInfo().dataWindow();
+    // const Format& dispW = readerInfo().displayWindow();
     int r = bbox.right();
     //bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
-    int x= bbox.x();
+    int x= bbox.left();
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
-    const ChannelSet& channels = _readInfo->channels();
+    const ChannelSet& channels = readerInfo().channels();
     Row* out = new Row(x,y,r,channels);
     out->allocateRow();
     _img.insert(make_pair(exrY,out));
@@ -386,7 +418,7 @@ void ReadExr::readScanLine(int y){
             //iop->error(exc.what());
         }
     }
-    
+
 }
 
 ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
@@ -397,7 +429,7 @@ ReadExr::ReadExr(Reader* op):Read(op),inputfile(0),dataOffset(0){
 }
 
 void ReadExr::initializeColorSpace(){
-    _lut=Lut::getLut(Lut::FLOAT); // linear color-space for exr files
+    _lut=Color::getLut(Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
 }
 
 ReadExr::~ReadExr(){
@@ -405,7 +437,9 @@ ReadExr::~ReadExr(){
     delete inputStr ;
     delete inputStdStream ;
 #endif
-    for(map<int,Row*>::iterator it =_img.begin();it!= _img.end();it++) delete it->second;
+    for(map<int,Row*>::iterator it =_img.begin(); it!= _img.end(); ++it) {
+        delete it->second;
+    }
     _img.clear();
     delete inputfile;
 }
@@ -453,18 +487,16 @@ void ReadExr::make_preview(){
     dh < 64 ? h = dh : h = 64;
     dw < 64 ? w = dw : w = 64;
     float zoomFactor = (float)h/(float)dh;
-    for(int i =0 ; i < h ; i++){
+    for (int i =0 ; i < h; ++i) {
         float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        readScanLine(nearest);
+        int nearestY = (int)(y+0.5);
+        readScanLine(nearestY);
     }
     QImage* img=new QImage(w,h,QImage::Format_ARGB32);
-    for(int i=0;i< h;i++){
-        float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        int exrY = dispWindow.max.y+1 - nearest;
+    for (int i=0; i< h; ++i) {
+        double y = i*1.f/zoomFactor;
+        int nearestY = (int)(y+0.5);
+        int exrY = dispWindow.max.y+1 - nearestY;
         if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
         Row* from = _img[exrY];
         QRgb *dst_pixels = (QRgb *) img->scanLine(h-1-i);
@@ -476,13 +508,12 @@ void ReadExr::make_preview(){
         if(green) green+=from->offset();
         if(blue) blue+=from->offset();
         if(alpha) alpha+=from->offset();
-        for(int j=0;j<w;j++){
-            float x = (float)j*1.f/zoomFactor;
-            int nearestX;
-            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
-            float r = red ? Lut::clamp(sRGB::toSRGB(red[nearestX])) : 0.f;
-            float g = green ? Lut::clamp(sRGB::toSRGB(green[nearestX])) : 0.f;
-            float b = blue ? Lut::clamp(sRGB::toSRGB(blue[nearestX])) : 0.f;
+        for (int j=0; j<w; ++j) {
+            double x = j*1.f/zoomFactor;
+            int nearestX = (int)(x+0.5);
+            float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
+            float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
+            float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
             float a = alpha ? alpha[nearestX] : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
@@ -505,7 +536,7 @@ void ReadExr::make_preview(){
 //     MakeNeededViews(views);*/
 //    for (Imf::Header::ConstIterator i = header.begin();
 //         i != header.end();
-//         i++) {
+//         ++i) {
 //        //const char* type = i.attribute().typeName();
 //
 //        /*std::string key = std::string(MetaData::EXR::EXR_PREFIX) + i.name();
@@ -591,8 +622,8 @@ void ReadExr::make_preview(){
 //         else if (!strcmp(type, "m33f")) {
 //         const Imf::M33fAttribute* attr = static_cast<const Imf::M33fAttribute*>(&i.attribute());
 //         std::vector<float> values;
-//         for (int i = 0; i < 3; i++) {
-//         for (int j = 0; j < 3; j++) {
+//         for (int i = 0; i < 3; ++i) {
+//         for (int j = 0; j < 3; ++j) {
 //         values.push_back((attr->value())[i][j]);
 //         }
 //         }
@@ -601,8 +632,8 @@ void ReadExr::make_preview(){
 //         else if (!strcmp(type, "m44f")) {
 //         const Imf::M44fAttribute* attr = static_cast<const Imf::M44fAttribute*>(&i.attribute());
 //         std::vector<float> values;
-//         for (int i = 0; i < 4; i++) {
-//         for (int j = 0; j < 4; j++) {
+//         for (int i = 0; i < 4; ++i) {
+//         for (int j = 0; j < 4; ++j) {
 //         values.push_back((attr->value())[i][j]);
 //         }
 //         }
@@ -638,16 +669,17 @@ void ReadExr::debug(){
     int h =_img.size();
     map<int,Row*>::iterator it = _img.begin();
     QImage img(w,h,QImage::Format_ARGB32);
-    for(int i =0 ; i < h ; i++){
+    for (int i =0; i < h; ++i) {
         Row* row = it->second;
         const float* r = (*row)[Channel_red] + row->offset();
         const float* g = (*row)[Channel_green] + row->offset();
         const float* b = (*row)[Channel_blue] + row->offset();
-        for(int j = 0 ; j < w ; j++){
-            QColor c(Lut::clamp(*r++)*255,Lut::clamp(*g++)*255,Lut::clamp(*b++)*255);
+        for (int j = 0; j < w; ++j) {
+            QColor c(clamp(*r++)*255,clamp(*g++)*255,clamp(*b++)*255);
             img.setPixel(j, i, c.rgb());
         }
-        it++;
+        ++it;
     }
     img.save("debug.jpg");
 }
+

@@ -16,10 +16,14 @@
 #include <QLabel>
 #include <QMenu>
 #include <QStyle>
+#include <QFont>
+#include <QFontMetrics>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 using namespace std;
+
 ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumTextSize(0),pressed(false){
     
     _mainLayout = new QHBoxLayout(this);
@@ -34,7 +38,7 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     _mainLayout->addWidget(_currentText);
         
     _dropDownIcon = new QLabel(this);
-    QImage imgC(IMAGES_PATH"combobox.png");
+    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -55,7 +59,7 @@ void ComboBox::paintEvent(QPaintEvent *e)
 }
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
-    QImage imgC(IMAGES_PATH"pressed_combobox.png");
+    QImage imgC(POWITER_IMAGES_PATH"pressed_combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -67,7 +71,7 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
 }
 
 void ComboBox::mouseReleaseEvent(QMouseEvent* e){
-    QImage imgC(IMAGES_PATH"combobox.png");
+    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -96,7 +100,7 @@ void ComboBox::createMenu(){
         }
     }
     
-    QImage imgC(IMAGES_PATH"combobox.png");
+    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -129,6 +133,7 @@ void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence 
 
 void ComboBox::addItem(const QString& item,QIcon icon ,QKeySequence key){
     QAction* action =  new QAction(this);
+    
     action->setText(item);
     if (!icon.isNull()) {
         action->setIcon(icon);
@@ -161,6 +166,11 @@ void ComboBox::setCurrentText(const QString& text){
             break;
         }
     }
+    adjustSize(str);
+}
+void ComboBox::adjustSize(const QString& str){
+    int w = _currentText->fontMetrics().width(str);
+    setMaximumWidth(w+20);
 }
 QString ComboBox::text() const{
     return _currentText->text();
@@ -173,7 +183,7 @@ int ComboBox::activeIndex() const{
 void ComboBox::setCurrentIndex(int index){
     QString str;
     QString rawStr;
-    if(index >= 0){
+    if(index >= 0 && index < (int)_actions.size()){
         str = _actions[index]->text();
         rawStr = str;
         /*before displaying,prepend and append the text by some spacing.
@@ -190,6 +200,7 @@ void ComboBox::setCurrentIndex(int index){
     }
     _currentIndex = index;
     _currentText->setText(str);
+    adjustSize(str);
     emit currentIndexChanged(index);
     emit currentIndexChanged(rawStr);
 }
@@ -210,7 +221,7 @@ QString ComboBox::itemText(int index) const{
     }
 }
 int ComboBox::itemIndex(const QString& str) const{
-    for (U32 i = 0; i < _actions.size(); i++) {
+    for (U32 i = 0; i < _actions.size(); ++i) {
         if (_actions[i]->text() == str) {
             return i;
         }

@@ -9,37 +9,40 @@
 *
 */
 
- 
+#include "ReadQt.h"
 
- 
-
-
-
-
-#include "Readers/ReadQt.h"
-#include "Gui/ViewerGL.h"
 #include <QtGui/QImage>
 #include <QtGui/QColor>
+
+#include "Gui/ViewerGL.h"
 #include "Readers/Reader.h"
 #include "Gui/NodeGui.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
+
 using namespace std;
 using namespace Powiter;
-ReadQt::ReadQt(Reader* op) : Read(op), _img(0){}
+
+ReadQt::ReadQt(Reader* op)
+: Read(op)
+, _img(0)
+, filename()
+{
+}
 
 void ReadQt::initializeColorSpace(){
-    _lut=Lut::getLut(Lut::VIEWER);
+    _lut=Color::getLut(Color::LUT_DEFAULT_VIEWER);
 }
+
 ReadQt::~ReadQt(){
     if(_img)
         delete _img;
 }
-void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    uchar* buffer;
-    int h = op->getInfo()->getDisplayWindow().h();
+
+void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
+    int h = op->info().displayWindow().height();
     int Y = h - y - 1;
-    buffer = _img->scanLine(Y);
+    const uchar* buffer = _img->scanLine(Y);
     if(autoAlpha() && !_img->hasAlphaChannel()){
         out->turnOn(Channel_alpha);
     }
@@ -51,12 +54,13 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out){
         }
     }     
 }
-bool ReadQt::supports_stereo(){
+bool ReadQt::supports_stereo() const {
     return false;
 }
 
-void ReadQt::readHeader(const QString filename,bool){
-    this->filename = filename;
+void ReadQt::readHeader(const QString& filename_, bool)
+{
+    filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/
     _img= new QImage(filename);
@@ -101,7 +105,7 @@ void ReadQt::readHeader(const QString filename,bool){
     
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
-    setReaderInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+    set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
 }
 void ReadQt::readAllData(bool){
 // does nothing
@@ -118,14 +122,12 @@ void ReadQt::make_preview(){
     QImage* img = new QImage(w,h,_img->format());
     for(int i =0 ; i < h ; ++i) {
         float y = (float)i*1.f/zoomFactor;
-        int nearest;
-        (y-floor(y) < ceil(y) - y) ? nearest = floor(y) : nearest = ceil(y);
-        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearest);
+        int nearestY = (int)(y+0.5);
+        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearestY);
         QRgb *dst_pixels = (QRgb *) img->scanLine(i);
         for(int j = 0 ; j < w ; ++j) {
             float x = (float)j*1.f/zoomFactor;
-            int nearestX;
-            (x-floor(x) < ceil(x) - x) ? nearestX = floor(x) : nearestX = ceil(x);
+            int nearestX = (int)(x+0.5);
             dst_pixels[j] = src_pixels[nearestX];
         }
     }

@@ -9,22 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_COMBOBOX_H_
+#define POWITER_GUI_COMBOBOX_H_
 
- 
-
-
-
-
-
-#ifndef PowiterOsX_comboBox_h
-#define PowiterOsX_comboBox_h
-
-#include <QFrame>
-#include <QtCore/QStringList>
 #include <vector>
+#include <QFrame>
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
+
 class QHBoxLayout;
 class QLabel;
 class QMouseEvent;
@@ -53,7 +45,7 @@ class ComboBox : public QFrame
 
 public:
     
-    ComboBox(QWidget* parent = 0);
+    explicit ComboBox(QWidget* parent = 0);
     
     virtual ~ComboBox(){}
     
@@ -112,7 +104,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* e);
     
 private:
-    
+    void adjustSize(const QString& str);
     void createMenu();
     
 };

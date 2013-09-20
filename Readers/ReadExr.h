@@ -9,24 +9,19 @@
  *
  */
 
+#ifndef POWITER_READERS_READEXR_H_
+#define POWITER_READERS_READEXR_H_
 
-
-
-
-
-
-#ifndef __READ_EXR_H__
-#define __READ_EXR_H__
-#include <QtCore/QMutexLocker>
-#include <QtCore/QMutex>
-#include <fstream>
-#include "Global/GlobalDefines.h"
+#include <string>
+#include <vector>
 #ifdef __POWITER_WIN32__
-#include <ImfStdIO.h>
+#include <fstream>
 #endif
 #include "Readers/Read.h"
+#include "Global/Macros.h"
 
 namespace Imf {
+    class StdIFStream;
     class InputFile;
 }
 
@@ -69,22 +64,22 @@ public:
     
 	
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesDecoded(){
+    virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE {
         std::vector<std::string> out;
         out.push_back("exr");
         return out;
-    };
+    }
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
-    virtual std::string decoderName(){return "OpenEXR";}
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
-    virtual bool supportsScanLine(){return true;}
-    virtual int scanLinesCount(){return (int)_img.size();}
-    virtual void readHeader(const QString filename,bool openBothViews);
-    virtual void readScanLine(int y);
-    virtual bool supports_stereo(){return true;}
-    virtual void make_preview();
-    virtual void initializeColorSpace();
+    virtual std::string decoderName() const OVERRIDE {return "OpenEXR";}
+    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+    virtual bool supportsScanLine() const OVERRIDE {return true;}
+    virtual int scanLinesCount() const OVERRIDE {return (int)_img.size();}
+    virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
+    virtual void readScanLine(int y) OVERRIDE;
+    virtual bool supports_stereo() const OVERRIDE {return true;}
+    virtual void make_preview() OVERRIDE;
+    virtual void initializeColorSpace() OVERRIDE;
     void debug();
     
 private:
@@ -95,11 +90,12 @@ private:
 	int dataOffset;
     std::map< int, Row* > _img;
 #ifdef __POWITER_WIN32__
-    std::ifstream *inputStr;
+    // FIXME: this kind of system-dependent members should really be put in a PIMPL
+    std::ifstream* inputStr;
     Imf::StdIFStream* inputStdStream;
 #endif
 	
     
 };
 
-#endif // __READ_EXR_H__
+#endif // POWITER_READERS_READEXR_H_

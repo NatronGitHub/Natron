@@ -5,18 +5,18 @@
 
 TARGET = Powiter
 TEMPLATE = app
-CONFIG += app
+CONFIG += app warn_on
 CONFIG += moc rcc
 CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
-QT += gui core opengl concurrent
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += gui core opengl
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
 
 win32{
     CONFIG += glew
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC
+    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC OPENEXR_DLL FTGL_LIBRARY_STATIC NOMINMAX
     DEFINES -= _UNICODE UNICODE
 }
 
@@ -32,7 +32,8 @@ unix {
      expat:     PKGCONFIG += expat
 } #unix
 
-linux {
+linux-g++ {
+     QMAKE_CXXFLAGS_WARN_ON += -Wextra
      LIBS += -lGLU -ldl
 }
 
@@ -66,94 +67,95 @@ INCLUDEPATH += $$PWD/
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
-    Global/main.cpp \
-    Gui/Edge.cpp \
-    Gui/NodeGraph.cpp \
-    Gui/SettingsPanel.cpp \
-    Gui/FeedbackSpinBox.cpp \
-    Gui/ViewerGL.cpp \
-    Gui/InfoViewerWidget.cpp \
-    Gui/Knob.cpp \
-    Gui/Gui.cpp \
-    Gui/NodeGui.cpp \
-    Gui/ScaleSlider.cpp \
-    Gui/TextRenderer.cpp \
-    Gui/Timeline.cpp \
-    Gui/ViewerTab.cpp \
-    Engine/Box.cpp \
+    Engine/AbstractCache.cpp \
     Engine/ChannelSet.cpp \
     Engine/DataBuffer.cpp \
     Engine/Format.cpp \
-    Engine/Hash.cpp \
+    Engine/Hash64.cpp \
+    Engine/ImageFetcher.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
     Engine/Model.cpp \
     Engine/Node.cpp \
+    Engine/NodeCache.cpp \
+    Engine/OfxClipInstance.cpp \
+    Engine/OfxHost.cpp \
+    Engine/OfxImageEffectInstance.cpp \
+    Engine/OfxNode.cpp \
+    Engine/OfxOverlayInteract.cpp \
+    Engine/OfxParamInstance.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/Timer.cpp \
     Engine/VideoEngine.cpp \
+    Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
+    Engine/Knob.cpp \
+    Global/AppManager.cpp \
+    Global/main.cpp \
+    Global/LibraryBinary.cpp \
+    Gui/ComboBox.cpp \
+    Gui/Edge.cpp \
+    Gui/SpinBox.cpp \
+    Gui/Gui.cpp \
+    Gui/InfoViewerWidget.cpp \
+    Gui/KnobGui.cpp \
+    Gui/NodeGraph.cpp \
+    Gui/NodeGui.cpp \
+    Gui/ScaleSlider.cpp \
+    Gui/SequenceFileDialog.cpp \
+    Gui/SettingsPanel.cpp \
+    Gui/TabWidget.cpp \
+    Gui/TextRenderer.cpp \
+    Gui/Texture.cpp \
+    Gui/Timeline.cpp \
+    Gui/ViewerGL.cpp \
+    Gui/ViewerTab.cpp \
     Readers/Read.cpp \
-    Readers/Reader.cpp \
     Readers/ReadExr.cpp \
     Readers/ReadFfmpeg_deprecated.cpp \
     Readers/ReadQt.cpp \
-    Global/Controler.cpp \
-    Engine/ViewerCache.cpp \
-    Gui/SequenceFileDialog.cpp \
-    Writers/Writer.cpp \
-    Writers/WriteQt.cpp \
-    Writers/WriteExr.cpp \
+    Readers/Reader.cpp \
     Writers/Write.cpp \
-    Gui/TabWidget.cpp \
-    Gui/ComboBox.cpp \
-    Engine/AbstractCache.cpp \
-    Engine/ImageFetcher.cpp \
-    Engine/Nodecache.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
-    libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
-    libs/OpenFX/HostSupport/src/ofxhParam.cpp \
-    libs/OpenFX/HostSupport/src/ofxhMemory.cpp \
-    libs/OpenFX/HostSupport/src/ofxhInteract.cpp \
-    libs/OpenFX/HostSupport/src/ofxhImageEffectAPI.cpp \
-    libs/OpenFX/HostSupport/src/ofxhImageEffect.cpp \
-    libs/OpenFX/HostSupport/src/ofxhHost.cpp \
-    libs/OpenFX/HostSupport/src/ofxhClip.cpp \
+    Writers/WriteExr.cpp \
+    Writers/WriteQt.cpp \
+    Writers/Writer.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
-    Gui/Texture.cpp \
-    Engine/OfxNode.cpp \
-    Engine/OfxClipInstance.cpp \
-    Engine/OfxParamInstance.cpp
+    libs/OpenFX/HostSupport/src/ofxhClip.cpp \
+    libs/OpenFX/HostSupport/src/ofxhHost.cpp \
+    libs/OpenFX/HostSupport/src/ofxhImageEffect.cpp \
+    libs/OpenFX/HostSupport/src/ofxhImageEffectAPI.cpp \
+    libs/OpenFX/HostSupport/src/ofxhInteract.cpp \
+    libs/OpenFX/HostSupport/src/ofxhMemory.cpp \
+    libs/OpenFX/HostSupport/src/ofxhParam.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
+    libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+
 
 
 HEADERS += \
-    Gui/Edge.h \
-    Gui/ComboBox.h \
-    Gui/NodeGraph.h \
-    Gui/SettingsPanel.h \
-    Gui/FeedbackSpinBox.h \
-    Gui/ViewerGL.h \
-    Gui/InfoViewerWidget.h \
-    Gui/Knob.h \
-    Gui/Gui.h \
-    Gui/NodeGui.h \
-    Gui/ScaleSlider.h \
-    Gui/Shaders.h \
-    Gui/TextRenderer.h \
-    Gui/Timeline.h \
-    Gui/ViewerTab.h \
+    Engine/AbstractCache.h \
     Engine/Box.h \
     Engine/ChannelSet.h \
     Engine/DataBuffer.h \
     Engine/Format.h \
-    Engine/Hash.h \
+    Engine/Hash64.h \
+    Engine/ImageFetcher.h \
+    Engine/LRUcache.h \
     Engine/Lut.h \
     Engine/MemoryFile.h \
     Engine/Model.h \
     Engine/Node.h \
+    Engine/NodeCache.h \
+    Engine/OfxClipInstance.h \
+    Engine/OfxHost.h \
+    Engine/OfxNode.h \
+    Engine/OfxOverlayInteract.h \
+    Engine/OfxImageEffectInstance.h \
+    Engine/OfxParamInstance.h \
+    Engine/Knob.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \
@@ -161,34 +163,44 @@ HEADERS += \
     Engine/Sleeper.h \
     Engine/Timer.h \
     Engine/VideoEngine.h \
+    Engine/ViewerCache.h \
     Engine/ViewerNode.h \
+    Global/AppManager.h \
+    Global/Enums.h \
+    Global/GLIncludes.h \
+    Global/GlobalDefines.h \
+    Global/LibraryBinary.h \
+    Global/Macros.h \
+    Global/MemoryInfo.h \
+    Gui/Button.h \
+    Gui/ComboBox.h \
+    Gui/Edge.h \
+    Gui/SpinBox.h \
+    Gui/Gui.h \
+    Gui/InfoViewerWidget.h \
+    Gui/KnobGui.h \
+    Gui/LineEdit.h \
+    Gui/NodeGraph.h \
+    Gui/NodeGui.h \
+    Gui/ScaleSlider.h \
+    Gui/SequenceFileDialog.h \
+    Gui/SettingsPanel.h \
+    Gui/Shaders.h \
+    Gui/TabWidget.h \
+    Gui/TextRenderer.h \
+    Gui/Texture.h \
+    Gui/Timeline.h \
+    Gui/ViewerGL.h \
+    Gui/ViewerTab.h \
     Readers/Read.h \
-    Readers/Reader.h \
     Readers/ReadExr.h \
     Readers/ReadFfmpeg_deprecated.h \
     Readers/ReadQt.h \
-    Global/Controler.h \
-    Global/Enums.h \
-    Global/GLIncludes.h \
-    Global/MemoryInfo.h \
-    Global/GlobalDefines.h \
-    Engine/ViewerCache.h \
-    Gui/SequenceFileDialog.h \
-    Gui/TabWidget.h \
-    Engine/LRUcache.h \
-    Engine/ImageFetcher.h \
-    Writers/Writer.h \
-    Writers/WriteQt.h \
-    Writers/WriteExr.h \
+    Readers/Reader.h \
     Writers/Write.h \
-    Gui/LineEdit.h \
-    Engine/AbstractCache.h \
-    Engine/Nodecache.h \
-    Gui/Button.h \
-    Gui/Texture.h \
-    Engine/OfxNode.h \
-    Engine/OfxClipInstance.h \
-    Engine/OfxParamInstance.h \
+    Writers/WriteExr.h \
+    Writers/WriteQt.h \
+    Writers/Writer.h \
     libs/OpenFX/HostSupport/include/ofxhBinary.h \
     libs/OpenFX/HostSupport/include/ofxhClip.h \
     libs/OpenFX/HostSupport/include/ofxhHost.h \

@@ -9,36 +9,32 @@
 *
 */
 
+#ifndef POWITER_GUI_SEQUENCEFILEDIALOG_H_
+#define POWITER_GUI_SEQUENCEFILEDIALOG_H_
 
-
-
-
-
-
-
-#ifndef __PowiterOsX__filedialog__
-#define __PowiterOsX__filedialog__
+#include <vector>
+#include <string>
+#include <map>
+#include <utility>
 
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
 #include <QSortFilterProxyModel>
 #include <QFileSystemModel>
-#include <QDialogButtonBox>
 #include <QtCore/QByteArray>
 #include <QtGui/QStandardItemModel>
+#include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QUrl>
-#include <QtCore/QString>
 #include <QtCore/QLatin1Char>
 #include <QComboBox>
 #include <QListView>
-#include <vector>
-#include <string>
-#include <iostream>
+
+#include "Global/Macros.h"
 
 class LineEdit;
 class Button;
@@ -51,7 +47,7 @@ class QVBoxLayout;
 class QSplitter;
 class QAction;
 class SequenceFileDialog;
-
+class SequenceItemDelegate;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -66,7 +62,7 @@ public:
         EnabledRole = Qt::UserRole + 2
     };
     
-    UrlModel(QObject *parent = 0);
+    explicit UrlModel(QObject *parent = 0);
     
     QStringList mimeTypes() const;
     virtual QMimeData *mimeData(const QModelIndexList &indexes) const;
@@ -117,7 +113,7 @@ signals:
     void urlRequested(const QUrl &url);
     
 public:
-    FavoriteView(QWidget *parent = 0);
+    explicit FavoriteView(QWidget *parent = 0);
     void setModelAndUrls(QFileSystemModel *model, const std::vector<QUrl> &newUrls);
     ~FavoriteView();
     
@@ -150,26 +146,9 @@ protected:
     }
 private:
     UrlModel *urlModel;
+    FavoriteItemDelegate *_itemDelegate;
 };
 
-/**
- * @brief The SequenceItemDelegate class is used to alterate the rendering of the cells in the filesystem view
- *within the file dialog. Mainly it transforms the text to draw for an item and also the size.
- */
-class SequenceItemDelegate : public QStyledItemDelegate {
-    
-    int _maxW;
-    std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
-    SequenceFileDialog* _fd;
-public:
-    SequenceItemDelegate(SequenceFileDialog* fd);
-
-    void setNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
-
-protected:
-    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
-    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
-};
 
 /**
  * @brief The SequenceDialogView class is the view of the filesystem within the dialog.
@@ -177,9 +156,9 @@ protected:
 class SequenceDialogView: public QTreeView{
     
 public:
-    SequenceDialogView(QWidget* parent);
+    explicit SequenceDialogView(QWidget* parent);
     
-    void updateNameMapping(std::vector<std::pair<QString,std::pair<qint64,QString> > > nameMapping);
+    void updateNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
 
     inline void expandColumnsToFullWidth(){
         int size = width() - columnWidth(1) - columnWidth(2) - columnWidth(3);
@@ -242,16 +221,16 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
     /*multimap of <sequence name, FileSequence >
      *Several sequences can have a same name but a different file extension within a same directory.
      */
+    mutable QMutex _frameSequencesMutex; // protects _frameSequences
     mutable std::multimap<std::string, FileSequence > _frameSequences;
     SequenceFileDialog* _fd;
-    mutable QMutex _lock;
     QString _filter;
 
 public:
     typedef std::multimap<std::string, FileSequence >::iterator SequenceIterator;
     typedef std::multimap<std::string, FileSequence >::const_iterator ConstSequenceIterator;
     
-    SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
+    explicit SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
     void clear(){_frameSequences.clear();}
     
     
@@ -281,7 +260,7 @@ private:
 class FileDialogComboBox : public QComboBox
 {
 public:
-    FileDialogComboBox(QWidget *parent = 0) : QComboBox(parent), urlModel(0) {}
+    explicit FileDialogComboBox(QWidget *parent = 0) : QComboBox(parent), urlModel(0) {}
     void setFileDialogPointer(SequenceFileDialog *p);
     void showPopup();
     void setHistory(const QStringList &paths);
@@ -305,11 +284,13 @@ public:
     enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
 
     typedef std::multimap<std::string, FileSequence > FrameSequences;
-    typedef std::vector<std::pair<QString,std::pair<qint64,QString> > > NameMapping;
+    typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
+    typedef std::vector<NameMappingElement> NameMapping;
     
 private:
     
     FrameSequences _frameSequences;
+    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
@@ -446,8 +427,9 @@ public:
         QString n(path);
         n.replace(QLatin1Char('\\'),QLatin1Char('/'));
 #if defined(Q_OS_WINCE)
-        if((n.size() > 1) && n.startsWith(QLatin1String("//"))))
+        if((n.size() > 1) && n.startsWith(QLatin1String("//"))) {
             n = n.mid(1);
+        }
 #endif
         return n;
 #else
@@ -514,5 +496,24 @@ private:
     
 };
 
+/**
+ * @brief The SequenceItemDelegate class is used to alterate the rendering of the cells in the filesystem view
+ *within the file dialog. Mainly it transforms the text to draw for an item and also the size.
+ */
+class SequenceItemDelegate : public QStyledItemDelegate {
 
-#endif /* defined(__PowiterOsX__filedialog__) */
+    int _maxW;
+    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
+    SequenceFileDialog::NameMapping _nameMapping;
+    SequenceFileDialog* _fd;
+public:
+    explicit SequenceItemDelegate(SequenceFileDialog* fd);
+
+    void setNameMapping(const SequenceFileDialog::NameMapping& nameMapping);
+
+protected:
+    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
+};
+
+#endif /* defined(POWITER_GUI_SEQUENCEFILEDIALOG_H_) */

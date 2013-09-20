@@ -9,27 +9,28 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_SETTINGS_H_
+#define POWITER_ENGINE_SETTINGS_H_
 
- 
-
-
-
-#ifndef PROJECT_H
-#define PROJECT_H
-#include <vector>
-#include <QtCore/qglobal.h>
-#include "Global/GlobalDefines.h"
-#include "Engine/Singleton.h"
+#include <string>
 #include <map>
 #include <vector>
-class PluginID;
+
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
+#include "Engine/Singleton.h"
+
 /*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
  that means the powiter settings are unique and there cannot be 2 instances living at the same time.
  
  
  
  @todo Move this class to QSettings instead*/
+
+
+namespace Powiter {
+    class LibraryBinary;
+}
 
 class Settings : public Singleton<Settings>
 {
@@ -65,18 +66,18 @@ public:
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* decoderForFiletype(const std::string& type);
+        Powiter::LibraryBinary* decoderForFiletype(const std::string& type) const;
         
         /*changes the decoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype,PluginID* decoder);
+        void changeMapping(const std::string& filetype,Powiter::LibraryBinary* decoder);
         
         /*use to initialise default mapping*/
-        void fillMap(std::map<std::string,PluginID*>& defaultMap);
+        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
         
         std::vector<std::string> supportedFileTypes() const;
     private:
         
-        std::map<std::string,PluginID*> _fileTypesMap;
+        std::map<std::string,Powiter::LibraryBinary* > _fileTypesMap;
     };
     
     class WritersSettings{
@@ -85,15 +86,15 @@ public:
         
         /*Returns a pluginID if it could find an encoder for the filetype,
          otherwise returns NULL.*/
-        PluginID* encoderForFiletype(const std::string& type);
+        Powiter::LibraryBinary* encoderForFiletype(const std::string& type);
         
         /*changes the encoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype, PluginID* encoder);
+        void changeMapping(const std::string& filetype, Powiter::LibraryBinary* encoder);
         
         /*use to initialise default mapping*/
-        void fillMap(std::map<std::string,PluginID*>& defaultMap);
+        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
         
-        const std::map<std::string,PluginID*>& getFileTypesMap(){return _fileTypesMap;}
+        const std::map<std::string,Powiter::LibraryBinary*>& getFileTypesMap(){return _fileTypesMap;}
         
         
         int _maximumBufferSize;
@@ -101,7 +102,7 @@ public:
     private:
         
         
-        std::map<std::string,PluginID*> _fileTypesMap;
+        std::map<std::string,Powiter::LibraryBinary*> _fileTypesMap;
         
     };
     
@@ -112,4 +113,4 @@ public:
     WritersSettings _writersSettings;
 };
 
-#endif // PROJECT_H
+#endif // POWITER_ENGINE_SETTINGS_H_

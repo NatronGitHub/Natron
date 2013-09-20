@@ -9,21 +9,14 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_DATABUFFER_H_
+#define POWITER_ENGINE_DATABUFFER_H_
 
- 
-
-
-
-#ifndef __PowiterOsX__DataBuffer__
-#define __PowiterOsX__DataBuffer__
-
-#include <iostream>
-#include <QtCore/QMutex>
 #include <map>
-#include "Engine/ReferenceCountedObject.h"
 #include <string>
-#include <cstring>
+#include <QtCore/QMutex>
+
+#include "Engine/ReferenceCountedObject.h"
 
 /*This class implements a generic Buffer with reference counting.
  *When using it you should not directly use the DataBuffer class
@@ -54,7 +47,7 @@ public:
     >// -1 is returned if the buffer is NULL.
     >// the step parameter specifies the step(in bytes) in the src buffer of each element desired to be copied.
      */
-    size_t fillBuffer(const void* src,size_t nb_bytes,size_t step=1);
+    ssize_t fillBuffer(const void* src,size_t nb_bytes,size_t step=1);
 
     bool valid(){return _buffer!=NULL;}
 
@@ -94,4 +87,4 @@ public:
 
 static DataBufferManager _dataBufferManager;
 
-#endif /* defined(__PowiterOsX__DataBuffer__) */
+#endif /* defined(POWITER_ENGINE_DATABUFFER_H_) */

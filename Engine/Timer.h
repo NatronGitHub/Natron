@@ -33,8 +33,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef INCLUDED_TIMER_H
-#define INCLUDED_TIMER_H
+#ifndef POWITER_ENGINE_TIMER_H_
+#define POWITER_ENGINE_TIMER_H_
 
 //----------------------------------------------------------------------------
 //
@@ -46,6 +46,10 @@
     #include <windows.h>
 #else
     #include <sys/time.h>
+#endif
+
+#ifdef _WIN32
+int gettimeofday (struct timeval *tv, void *tz);
 #endif
 
 enum PlayState

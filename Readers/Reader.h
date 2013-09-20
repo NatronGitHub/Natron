@@ -9,21 +9,18 @@
 *
 */
 
- 
-
- 
-
-
-
-#ifndef READER_H
-#define READER_H
-#include <QImage>
+#ifndef POWITER_READERS_READER_H_
+#define POWITER_READERS_READER_H_
+#include <QString>
 #include <QStringList>
 
+#include "Global/Macros.h"
 #include "Engine/Node.h"
 
-
+class QImage;
 class FrameEntry;
+class File_Knob;
+class QMutex;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
@@ -48,7 +45,7 @@ public:
     /**
      *@brief Constructs a new ReaderInfo from string
     **/
-    static ReaderInfo* fromString(QString from);
+    static ReaderInfo* fromString(const QString& from);
     
     void operator=(const ReaderInfo& other){
         dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
@@ -70,6 +67,7 @@ class ViewerCache;
 **/
 class Reader : public Node
 {
+    Q_OBJECT
     
 public:
         
@@ -100,17 +98,18 @@ public:
         public:
 
             typedef std::vector<int>::iterator ScanLineIterator;
+            typedef std::vector<int>::const_iterator ScanLineConstIterator;
             typedef std::vector<int>::reverse_iterator ScanLineReverseIterator;
             
             ScanLineContext(){}
 
             /** @brief Construct a new ScanLineContext with the rows passed in parameters.
             **/
-            ScanLineContext(std::vector<int> rows):_rows(rows){}
+            ScanLineContext(const std::vector<int>& rows):_rows(rows) {}
             
             /** @brief Set the base scan-lines that represents the context*
              **/
-            void setRows(std::vector<int> rows){_rows=rows;}
+            void setRows(const std::vector<int>& rows) { _rows=rows; }
 
             /**
              * @brief getRows
@@ -127,7 +126,7 @@ public:
             /**
              * @brief  Adds to _rowsToRead the rows in others that are missing to _rows
             **/
-            void computeIntersectionAndSetRowsToRead(std::vector<int>& others);
+            void computeIntersectionAndSetRowsToRead(const std::vector<int>& others);
             
             /**
              *@brief merges _rowsToRead and _rows and clears out _rowsToRead
@@ -174,16 +173,19 @@ public:
         **/
         class Descriptor{
         public:
-            Descriptor(Read* readHandle,ReaderInfo* readInfo, const std::string& filename):
-            _readHandle(readHandle),_readInfo(readInfo),
-            _filename(filename){}
+            Descriptor(Read* readHandle_, const std::string& filename)
+            : _readHandle(readHandle_)
+            , _filename(filename){}
             
-            Descriptor():_readHandle(0),_readInfo(0)
-            ,_filename(""){}
+            Descriptor()
+            : _readHandle(0)
+            , _filename("")
+            {}
             
-            Descriptor(const Descriptor& other):
-           _readHandle(other._readHandle),_readInfo(other._readInfo),
-            _filename(other._filename){}
+            Descriptor(const Descriptor& other)
+            : _readHandle(other._readHandle)
+            , _filename(other._filename)
+            {}
             
             virtual ~Descriptor(){}
             
@@ -200,9 +202,6 @@ public:
              Read handle that operated/is operating the decoding.*/
             Read* _readHandle;
             
-            /*!< info read from the Read. This is redundant and could be accessed with _readHandle->getReaderInfo(). */
-            ReaderInfo* _readInfo;
-            
             /*!< The name of the frame in the buffer.*/
             std::string _filename;
             
@@ -213,9 +212,9 @@ public:
          */
         class ScanLineDescriptor : public Reader::Buffer::Descriptor{
         public:
-            ScanLineDescriptor(Read* readHandle,ReaderInfo* readInfo,
+            ScanLineDescriptor(Read* readHandle_,
                        std::string filename,ScanLineContext *slContext):
-            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_slContext(slContext),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle_, filename),_slContext(slContext),_hasRead(false){}
             
             ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0),_hasRead(false){}
             
@@ -236,9 +235,9 @@ public:
         
         class FullFrameDescriptor : public Reader::Buffer::Descriptor{
         public:
-            FullFrameDescriptor(Read* readHandle,ReaderInfo* readInfo,
+            FullFrameDescriptor(Read* readHandle_,
                                std::string filename):
-            Reader::Buffer::Descriptor(readHandle,readInfo,filename),_hasRead(false){}
+            Reader::Buffer::Descriptor(readHandle_, filename),_hasRead(false){}
             
             FullFrameDescriptor(): Reader::Buffer::Descriptor(),_hasRead(false){}
             
@@ -351,13 +350,9 @@ public:
         int _bufferSize; /// maximum size of the buffer
     };
     
-    Reader();
+    Reader(Model* model);
 
-    /**
-     * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
-     *The preview will appear on the Reader's node GUI.
-     */
-    void showFilePreview();
+    virtual ~Reader();
 
     /**
      * @brief Extracts the video sequence from the files list returned by the file dialog.
@@ -375,7 +370,7 @@ public:
      * @param current_frame The index of the frame to read.
      * @return True if it could decode the header.
      */
-    bool readCurrentHeader(int current_frame);
+    bool readCurrentHeader(int current_frame) WARN_UNUSED_RETURN;
     
     /**
      * @brief Reads the data of the file associated to the current frame.
@@ -398,7 +393,7 @@ public:
     
     /**
      * @brief clampToRange
-     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame() ].
+     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
      * @param f The index of the frame to clamp.
      */
     int clampToRange(int f);
@@ -434,40 +429,39 @@ public:
      */
 	QImage* getPreview(){return preview;}
 
-    virtual ~Reader();
 
     /**
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual const std::string className();
+    virtual std::string className() OVERRIDE;
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual const std::string description();
+    virtual std::string description() OVERRIDE;
 
     /**
      * @brief Not documented yet as it will be revisited soon.
      */
-    virtual void _validate(bool forReal);
+    virtual bool _validate(bool doFullWork) OVERRIDE;
 	
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)
      */
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
     
     /**
      * @brief cacheData
      * @return true, indicating that the reader caches data.
      */
-    virtual bool cacheData(){return true;}
+    virtual bool cacheData() const OVERRIDE {return true;}
     
     /**
      * @brief Calls the base class version.
      */
-	virtual void createKnobDynamically();
+	virtual void createKnobDynamically() OVERRIDE;
     
     /**
      * @brief isVideoSequence
@@ -489,25 +483,27 @@ public:
         _buffer.setSize(size);
     }
     
-    /**
-     *@returns Returns false if it couldn't find the current frame in the buffer or if
-     * the frame is not finished
-     **/
-    bool makeCurrentDecodedFrame(bool forReal);
     
     void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
-    virtual int maximumInputs(){return 0;}
+    virtual int maximumInputs() const OVERRIDE {return 0;}
+
+    virtual int minimumInputs() const OVERRIDE {return 0;}
     
-    virtual int minimumInputs(){return 0;}
+    virtual bool isInputNode() const OVERRIDE {return true;}
     
-    bool isInputNode() {return true;}
+public slots:
+    /**
+     * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
+     *The preview will appear on the Reader's node GUI.
+     */
+    void showFilePreview();
 
 protected:
 
-	virtual void initKnobs(KnobCallback *cb);
+	virtual void initKnobs() OVERRIDE;
     
-    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
+    virtual ChannelSet supportedComponents() OVERRIDE { return ChannelSet(Powiter::Mask_All); }
 private:
 	QImage *preview;
 	bool has_preview;
@@ -519,9 +515,11 @@ private:
 	Read* readHandle;
     std::map<int,QString> files; // frames
     Buffer _buffer;
+    File_Knob* _fileKnob;
+    QMutex* _readMutex;
 };
 
 
 
 
-#endif // READER_H
+#endif // POWITER_READERS_READER_H_

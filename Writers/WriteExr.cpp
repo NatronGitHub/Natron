@@ -11,13 +11,16 @@
 
 #include "WriteExr.h"
 
+#include <stdexcept>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QMutex>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
+#include <half.h>
+
 #include "Writers/Writer.h"
 #include "Engine/Lut.h"
-#include "Gui/Knob.h"
+#include "Gui/KnobGui.h"
 #include "Engine/Row.h"
 
 using namespace std;
@@ -62,19 +65,22 @@ static int depthNameToInt(const std::string& name){
 }
 
 static std::string toExrChannel(Powiter::Channel from){
-    if(from == Powiter::Channel_red) return "R";
-    if(from == Powiter::Channel_green) return "G";
-    if(from == Powiter::Channel_blue) return "B";
-    if(from == Powiter::Channel_alpha) return "A";
-    if(from == Powiter::Channel_Z) return "Z";
-    std::string ret = getChannelName(from);
-    if(ret.empty()){
-        throw "Couldn't find an appropriate OpenEXR channel for this channel"; // forward exception
-        return "";
-    }else{
-        return ret;
+    if (from == Powiter::Channel_red) {
+        return "R";
     }
-
+    if (from == Powiter::Channel_green) {
+        return "G";
+    }
+    if (from == Powiter::Channel_blue) {
+        return "B";
+    }
+    if (from == Powiter::Channel_alpha) {
+        return "A";
+    }
+    if (from == Powiter::Channel_Z) {
+        return "Z";
+    }
+    return getChannelName(from);
 }
 
 #if 0 // unused functions
@@ -129,44 +135,44 @@ WriteExr::~WriteExr(){
 
 }
 
-std::vector<std::string> WriteExr::fileTypesEncoded(){
+std::vector<std::string> WriteExr::fileTypesEncoded() const {
     vector<string> out;
     out.push_back("exr");
     return out;
 }
 
-void ExrWriteKnobs::initKnobs(KnobCallback* callback,std::string& fileType){
+void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = static_cast<Separator_Knob*>(KnobFactory::createKnob("Separator", callback, separatorDesc, Knob::NONE));
+    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory()->createKnob("Separator", _op, separatorDesc,1, Knob::NONE));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                            compressionCBDesc, Knob::NONE));
-    vector<string> compressionEntries;
+    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,
+                                                                            compressionCBDesc, 1,Knob::NONE));
+    std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
-        compressionEntries.push_back(EXR::compressionNames[i]);
+        list.push_back(EXR::compressionNames[i].c_str());
     }
-    compressionCBKnob->setPointer(&_compression);
-    compressionCBKnob->populate(compressionEntries);
+    compressionCBKnob->populate(list);
+    compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(KnobFactory::createKnob("ComboBox", callback,
-                                                                      depthCBDesc, Knob::NONE));
-    vector<string> depthEntries;
+    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,
+                                                                      depthCBDesc,1, Knob::NONE));
+    list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
-        depthEntries.push_back(EXR::depthNames[i]);
+        list.push_back(EXR::depthNames[i].c_str());
     }
-    depthCBKnob->setPointer(&_dataType);
-    depthCBKnob->populate(depthEntries);
+    depthCBKnob->populate(list);
+    depthCBKnob->setValue(1);
     
     /*calling base-class version at the end*/
-    WriteKnobs::initKnobs(callback,fileType);
+    WriteKnobs::initKnobs(fileType);
 }
 void ExrWriteKnobs::cleanUpKnobs(){
-    sepKnob->enqueueForDeletion();
-    compressionCBKnob->enqueueForDeletion();
-    depthCBKnob->enqueueForDeletion();
+    sepKnob->deleteKnob();
+    compressionCBKnob->deleteKnob();
+    depthCBKnob->deleteKnob();
 }
 
 bool ExrWriteKnobs::allValid(){
@@ -175,28 +181,28 @@ bool ExrWriteKnobs::allValid(){
 
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
- function Lut::getLut(datatype) */
+ function getLut(datatype) */
 void WriteExr::initializeColorSpace(){
-    _lut = Lut::getLut(Lut::FLOAT);
+    _lut = Color::getLut(Color::LUT_DEFAULT_FLOAT);
 }
 
 /*This must be implemented to do the output colorspace conversion*/
 void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
-    InputRow row(y, offset, range);
-    op->input(0)->get(row);
-    const float* a = row[Channel_alpha];
+    Row* row = op->input(0)->get(y,offset,range);
+    const float* a = (*row)[Channel_alpha];
     if (a) {
-        a+=row.offset();
+        a+=row->offset();
     }
     Row* toRow = new Row(offset,y,range,channels);
     toRow->allocateRow();
     foreachChannels(z, channels){
-        const float* from = row[z] + row.offset();
-        float* to = toRow->writable(z)+row.offset();
-        to_float(z, to , from, a, row.right()- row.offset());
+        const float* from = (*row)[z] + row->offset();
+        float* to = toRow->writable(z)+row->offset();
+        to_float(z, to , from, a, row->right()- row->offset());
     }
     QMutexLocker g(_lock);
     _img.insert(make_pair(y,toRow));
+    row->release();
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
@@ -209,33 +215,33 @@ void WriteExr::setupFile(const std::string& filename){
     ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
-    const Format& dispW = op->getInfo()->getDisplayWindow();
-    const Box2D& dataW = op->getInfo()->getDataWindow();
+    const Format& dispW = op->info().displayWindow();
+    const Box2D& dataW = op->info().dataWindow();
     const ChannelSet& channels = op->requestedChannels();
     _dataW = new Box2D;
-    if(op->getInfo()->blackOutside()){
-        if(dataW.x() +2 < dataW.right()){
-            _dataW->x(dataW.x()+1);
-            _dataW->right(dataW.right()-1);
+    if(op->info().blackOutside()){
+        if(dataW.left() + 2 < dataW.right()){
+            _dataW->set_left(dataW.left()+1);
+            _dataW->set_right(dataW.right()-1);
         }
-        if(dataW.y() +2 < dataW.top()){
-            _dataW->y(dataW.y()+1);
-            _dataW->top(dataW.top()-1);
+        if(dataW.bottom() +2 < dataW.top()){
+            _dataW->set_bottom(dataW.bottom()+1);
+            _dataW->set_top(dataW.top()-1);
         }
     }else{
         _dataW->set(dataW);
     }
     exrDataW = new Imath::Box2i;
     exrDispW = new Imath::Box2i;
-    exrDataW->min.x = _dataW->x();
-    exrDataW->min.y = dispW.h() - _dataW->top();
-    exrDataW->max.x = _dataW->right()-1;
-    exrDataW->max.y = dispW.h() -  _dataW->y() -1;
+    exrDataW->min.x = _dataW->left();
+    exrDataW->min.y = dispW.height() - _dataW->top();
+    exrDataW->max.x = _dataW->right() - 1;
+    exrDataW->max.y = dispW.height() - _dataW->bottom() - 1;
     
     exrDispW->min.x = 0;
     exrDispW->min.y = 0;
-    exrDispW->max.x = dispW.w() -1;
-    exrDispW->max.y = dispW.h() -1;
+    exrDispW->max.x = dispW.width() - 1;
+    exrDispW->max.y = dispW.height() - 1;
     
     header=new Imf::Header(*exrDispW, *exrDataW,dispW.pixel_aspect(),
                           Imath::V2f(0, 0), 1, Imf::INCREASING_Y, compression);
@@ -264,7 +270,7 @@ void WriteExr::writeAllData(){
         outfile = new Imf::OutputFile(_filename.c_str(), *header);
         const ChannelSet& channels = op->requestedChannels();
 
-        for (int y = _dataW->top()-1; y >= _dataW->y(); y--) {
+        for (int y = _dataW->top()-1; y >= _dataW->bottom(); y--) {
             Imf::FrameBuffer fbuf;
             Imf::Array2D<half>* halfwriterow = 0 ;
             Row* row = _img[y];
@@ -277,7 +283,7 @@ void WriteExr::writeAllData(){
                                            sizeof(float), 0));
                 }
             }else{
-                halfwriterow = new Imf::Array2D<half>(channels.size() , _dataW->right() - _dataW->x());
+                halfwriterow = new Imf::Array2D<half>(channels.size() , _dataW->width());
                 
                 int cur = 0;
                 foreachChannels(z, channels){

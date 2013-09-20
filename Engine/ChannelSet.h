@@ -9,23 +9,12 @@
 *
 */
 
- 
-
- 
-
-
-
-
-#ifndef CHANNELS_H
-#define CHANNELS_H
+#ifndef POWITER_ENGINE_CHANNELSET_H_
+#define POWITER_ENGINE_CHANNELSET_H_
 
 #include <string>
-#include <cstring>
-#include <vector>
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-
-
-
 
 class ChannelSet{
     U32 mask; // 1 bit per channel and LSB is for "all" channels
@@ -38,9 +27,9 @@ public:
         U32 _mask;
     public:
         iterator(const iterator& other):_cur(other._cur),_mask(other._mask){}
-        iterator(U32 mask,Powiter::Channel cur){
+        iterator(U32 mask_, Powiter::Channel cur) {
             _cur = cur;
-            _mask = mask;
+            _mask = mask_;
         }
         Powiter::Channel operator *() const{return _cur;}
         Powiter::Channel operator->() const{return _cur;}
@@ -114,7 +103,7 @@ public:
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
     bool operator<(const ChannelSet& source) const;
     bool operator==(Powiter::ChannelMask v) const { return mask == U32(v << 1); }
-    bool operator!=(Powiter::ChannelMask v) const { return !(*this == (v << 1)); }
+    bool operator!=(Powiter::ChannelMask v) const { return mask != U32(v << 1); }
     bool operator==(Powiter::Channel z) const;
     bool operator!=(Powiter::Channel z) const { return !(*this == z); }
     
@@ -166,7 +155,7 @@ public:
 
 
 /*returns the channel of name "name"*/
-Powiter::Channel getChannelByName(const char *name);
+Powiter::Channel getChannelByName(const std::string &name);
 
 /*Return a cstring with the name of the channel c*/
 std::string getChannelName(Powiter::Channel c);
@@ -175,4 +164,4 @@ std::string getChannelName(Powiter::Channel c);
 bool hasAlpha(ChannelSet mask);
 
 
-#endif // CHANNELS_H
+#endif // POWITER_ENGINE_CHANNELSET_H_

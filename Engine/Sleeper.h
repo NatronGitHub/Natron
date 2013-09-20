@@ -9,15 +9,11 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_SLEEPER_H_
+#define POWITER_ENGINE_SLEEPER_H_
 
- 
-
-
-
-#ifndef __SLEEPER_H_INCLUDED__
-#define __SLEEPER_H_INCLUDED__
 #include <QtCore/QThread>
+
 // utility class to call QThread:sleep since these methods are protected within QThread...
 class Sleeper : public QThread
 {
@@ -36,5 +32,5 @@ public:
 	}
 };
 
-#endif // __SLEEPER_H_INCLUDED__
+#endif // POWITER_ENGINE_SLEEPER_H_
 

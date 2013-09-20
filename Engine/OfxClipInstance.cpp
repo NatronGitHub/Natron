@@ -11,34 +11,29 @@
 #include "OfxClipInstance.h"
 
 #include <cfloat>
+
 #include "Engine/OfxNode.h"
+#include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
-#include "Global/GlobalDefines.h"
-//#include <QtGui/QImage>
+#include "Engine/Model.h"
+
+#include "Global/AppManager.h"
+#include "Global/Macros.h"
+
 using namespace Powiter;
 using namespace std;
 
-
-OfxClipInstance::OfxClipInstance(int index,OfxNode* effect, OFX::Host::ImageEffect::ClipDescriptor* desc):
-OFX::Host::ImageEffect::ClipInstance(effect, *desc),
-_node(effect),_clipIndex(index),_outputImage(NULL)
+OfxClipInstance::OfxClipInstance(OfxNode* node,
+                                 Powiter::OfxImageEffectInstance* effect,
+                                 int /*index*/,
+                                 OFX::Host::ImageEffect::ClipDescriptor* desc)
+: OFX::Host::ImageEffect::ClipInstance(effect, *desc)
+, _node(node)
+, _effect(effect)
+//, _clipIndex(index)
+, _outputImage(NULL)
 {
-}
-Node* OfxClipInstance::getAssociatedNode() const{
-    if(isOutput())
-        return _node;
-    else{
-        int index = 0;
-        OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i]->getName() == getName()) {
-                index = i;
-                break;
-            }
-        }
-        return _node->input(index);
-    }
 }
 
 /// Get the Raw Unmapped Pixel Depth from the host. We are always 8 bits in our example
@@ -57,12 +52,12 @@ const std::string &OfxClipInstance::getUnmappedComponents() const
     static const string rgbaStr(kOfxImageComponentRGBA);
     static const string alphaStr(kOfxImageComponentAlpha);
     
-    bool rgb = false;
-    bool alpha = false;
+    //bool rgb = false;
+    //bool alpha = false;
     
-    const ChannelSet& channels = _node->getInfo()->channels();
-    if(channels & alpha) alpha = true;
-    if(channels & Mask_RGB) rgb = true;
+    //const ChannelSet& channels = _effect->info().channels();
+    //if(channels & alpha) alpha = true;
+    //if(channels & Mask_RGB) rgb = true;
     
 //    if(!rgb && !alpha) return noneStr;
 //    else if(rgb && !alpha) return rgbStr;
@@ -88,13 +83,13 @@ const std::string &OfxClipInstance::getPremult() const
 //  The pixel aspect ratio of a clip or image.
 double OfxClipInstance::getAspectRatio() const
 {
-    return _node->getProjectPixelAspectRatio();
+    return _effect->getProjectPixelAspectRatio();
 }
 
 // Frame Rate -
 double OfxClipInstance::getFrameRate() const
 {
-    return _node->getFrameRate();
+    return _effect->getFrameRate();
 }
 
 // Frame Range (startFrame, endFrame) -
@@ -102,12 +97,12 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
-    if (_node->getContext() == kOfxImageEffectContextGenerator) {
+    if (_effect->getContext() == kOfxImageEffectContextGenerator) {
         startFrame = 0;
         endFrame = 0;
     }else{
-        startFrame = _node->getInfo()->firstFrame();
-        endFrame = _node->getInfo()->lastFrame();
+        startFrame = _node->info().firstFrame();
+        endFrame = _node->info().lastFrame();
     }
 }
 
@@ -118,7 +113,7 @@ void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 ///  - kOfxImageFieldUpper - the clip material is fielded, with image rows line 1,3,5.... occuring first in a frame
 const std::string &OfxClipInstance::getFieldOrder() const
 {
-    return _node->getDefaultOutputFielding();
+    return _effect->getDefaultOutputFielding();
 }
 
 // Connected -
@@ -126,7 +121,10 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    return _node->inputCount() > 0;
+    if(!_node->isOutputNode())
+        return _node->hasOutputConnected();
+    else
+        return true;
 }
 
 // Unmapped Frame Rate -
@@ -162,11 +160,21 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime) const
 {
     OfxRectD v;
-    const Box2D& bbox = _node->getInfo()->getDataWindow();
-    v.x1 = bbox.x();
-    v.y1 = bbox.y();
-    v.x2 = bbox.right();
-    v.y2 = bbox.top();
+    if((_node->isInputNode() && getName() == kOfxImageEffectOutputClipName)
+       || !_node->isInputNode()){
+        const Box2D& bbox = _node->info().dataWindow();
+        v.x1 = bbox.left();
+        v.y1 = bbox.bottom();
+        v.x2 = bbox.right();
+        v.y2 = bbox.top();
+//        cout << "RoD output clip with w = " << v.x2-v.x1 << " and h = " << v.y2-v.y1 << endl;
+    }else{
+        const Format& format = _node->getModel()->getApp()->getProjectFormat();
+        v.x1 = format.left();
+        v.y1 = format.bottom();
+        v.x2 = format.right();
+        v.y2 = format.top();
+    }
     return v;
 }
 
@@ -184,8 +192,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         roi = *optionalBounds;
     }else{
         double w,h,x,y;
-        _node->getProjectExtent(w, h);
-        _node->getProjectOffset(x, y);
+        _effect->getProjectExtent(w, h);
+        _effect->getProjectOffset(x, y);
         roi.x1 = x;
         roi.x2 = x+w;
         roi.y1 = y;
@@ -198,71 +206,87 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     }
     
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
-     _node->isPixelDepthSupported(...)
+     _effect->isPixelDepthSupported(...)
      */
 
     if(isOutput()){
         if (!_outputImage) {
+            //   cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;
             _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
+        }else{
+            OfxRectI outputImageBounds = _outputImage->getROD();
+            if(outputImageBounds.x1 != roi.x1 ||
+               outputImageBounds.x2 != roi.x2 ||
+               outputImageBounds.y1 != roi.y1 ||
+               outputImageBounds.y2 != roi.y2){
+                delete _outputImage;
+                _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
+            }
         }
         _outputImage->addReference();
         return _outputImage;
     }else{
         Node* input = getAssociatedNode();
+        assert(input);
         if(input->isOpenFXNode()){
             OfxRectI roiInput;
-            roiInput.x1 = roi.x1;
-            roiInput.x2 = roi.x2;
-            roiInput.y1 = roi.y1;
-            roiInput.y2 = roi.y2;
+            roiInput.x1 = (int)std::floor(roi.x1);
+            roiInput.x2 = (int)std::ceil(roi.x2);
+            roiInput.y1 = (int)std::floor(roi.y1);
+            roiInput.y2 = (int)std::ceil(roi.y2);
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.0;
             OfxNode* ofxInputNode = dynamic_cast<OfxNode*>(input);
-            ofxInputNode->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
-            OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->getClip("Output");
+            assert(ofxInputNode);
+            assert(ofxInputNode->effectInstance());
+            OfxStatus stat = ofxInputNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
+            assert(stat == kOfxStatOK);
+            OFX::Host::ImageEffect::ClipInstance* clip = ofxInputNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
+            assert(clip);
             return clip->getImage(time, optionalBounds);
-        }else{
-            ImageFetcher srcImg(input,roi.x1,roi.y1,roi.x2-1,roi.y2-1,Mask_RGBA);
+        } else {
+            ImageFetcher srcImg(input, (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2)-1, (int)std::ceil(roi.y2)-1,Mask_RGBA);
             srcImg.claimInterest(true);
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
-            try{
-                for (int y = roi.y1; y < roi.y2; ++y) {
-                    OfxRGBAColourF* dstImg = ret->pixelF(0, y);
-                    assert(dstImg);
-                    const InputRow& row = srcImg.at(y);
-                    const float* r = row[Channel_red];
-                    const float* g = row[Channel_green];
-                    const float* b = row[Channel_blue];
-                    const float* a = row[Channel_alpha];
-                    if(r)
-                        rowPlaneToOfxPackedBuffer(Channel_red, r+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_red, NULL , row.right()-row.offset(), dstImg);
-                    if(g)
-                        rowPlaneToOfxPackedBuffer(Channel_green, g+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_green, NULL , row.right()-row.offset(), dstImg);
-                    if(b)
-                        rowPlaneToOfxPackedBuffer(Channel_blue, b+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row.right()-row.offset(), dstImg);
-                    if(a)
-                        rowPlaneToOfxPackedBuffer(Channel_alpha, a+row.offset(), row.right()-row.offset(), dstImg);
-                    else
-                        rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row.right()-row.offset(), dstImg);
+            for (int y = (int)std::floor(roi.y1); y < (int)std::ceil(roi.y2); ++y) {
+                OfxRGBAColourF* dstImg = ret->pixelF(0, y);
+                assert(dstImg);
+                Row* row = srcImg.at(y);
+                if(!row){
+                    cout << "Couldn't find row for index " << y << "...skipping this row" << endl;
+                    continue;
                 }
-            }catch(const std::string& str){
-                cout << str << endl;
+                const float* r = (*row)[Channel_red];
+                const float* g = (*row)[Channel_green];
+                const float* b = (*row)[Channel_blue];
+                const float* a = (*row)[Channel_alpha];
+                if(r)
+                    rowPlaneToOfxPackedBuffer(Channel_red, r+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_red, NULL , row->right()-row->offset(), dstImg);
+                if(g)
+                    rowPlaneToOfxPackedBuffer(Channel_green, g+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_green, NULL , row->right()-row->offset(), dstImg);
+                if(b)
+                    rowPlaneToOfxPackedBuffer(Channel_blue, b+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row->right()-row->offset(), dstImg);
+                if(a)
+                    rowPlaneToOfxPackedBuffer(Channel_alpha, a+row->offset(), row->right()-row->offset(), dstImg);
+                else
+                    rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row->right()-row->offset(), dstImg);
             }
+            
             return ret;
         }
     }
     return NULL;
 }
 
-OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t):
+OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime /*t*/):
 OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     size_t pixSize = 0;
     if(bitDepth == eBitDepthUByte){
@@ -272,34 +296,43 @@ OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     }else if(bitDepth == eBitDepthFloat){
         pixSize = 16;
     }
-    _data = malloc((int)((bounds.x2-bounds.x1) * (bounds.y2-bounds.y1))*pixSize) ;
+    assert(bounds.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
+    assert(bounds.y1 != kOfxFlagInfiniteMin);
+    assert(bounds.x2 != kOfxFlagInfiniteMax);
+    assert(bounds.y2 != kOfxFlagInfiniteMax);
+    int xmin = (int)std::floor(bounds.x1);
+    int xmax = (int)std::ceil(bounds.x2);
+    _rowBytes = (xmax - xmin) * pixSize;
+    int ymin = (int)std::floor(bounds.y1);
+    int ymax = (int)std::ceil(bounds.y2);
+
+    _data = malloc(_rowBytes * (ymax-ymin)) ;
     // render scale x and y of 1.0
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 1);
     // data ptr
     setPointerProperty(kOfxImagePropData,_data);
     // bounds and rod
-    setIntProperty(kOfxImagePropBounds, bounds.x1, 0);
-    setIntProperty(kOfxImagePropBounds, bounds.y1, 1);
-    setIntProperty(kOfxImagePropBounds, bounds.x2, 2);
-    setIntProperty(kOfxImagePropBounds, bounds.y2, 3);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x1, 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y1, 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.x2, 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, bounds.y2, 3);
+    setIntProperty(kOfxImagePropBounds, xmin, 0);
+    setIntProperty(kOfxImagePropBounds, ymin, 1);
+    setIntProperty(kOfxImagePropBounds, xmax, 2);
+    setIntProperty(kOfxImagePropBounds, ymax, 3);
+    setIntProperty(kOfxImagePropRegionOfDefinition, xmin, 0);
+    setIntProperty(kOfxImagePropRegionOfDefinition, ymin, 1);
+    setIntProperty(kOfxImagePropRegionOfDefinition, xmax, 2);
+    setIntProperty(kOfxImagePropRegionOfDefinition, ymax, 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, (bounds.x2-bounds.x1) * pixSize);
+    setIntProperty(kOfxImagePropRowBytes, _rowBytes);
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
-
 
 OfxRGBAColourB* OfxImage::pixelB(int x, int y) const{
     assert(_bitDepth == eBitDepthUByte);
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }
@@ -308,8 +341,8 @@ OfxRGBAColourS* OfxImage::pixelS(int x, int y) const{
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }
@@ -318,26 +351,25 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     OfxRectI bounds = getBounds();
     if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
     {
-        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>(_data);
-        return &(p[(y - bounds.y1) * (bounds.x2-bounds.x1) + (x - bounds.x1)]);
+        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>((U8*)_data + (y-bounds.y1)*_rowBytes);
+        return &(p[x - bounds.x1]);
     }
     return 0;
 }
 
-//void OfxImage::writeToQImage_debug(const std::string& filename){
-//    OfxRectI bounds = getBounds();
-//    int w = (bounds.x2-bounds.x1);
-//    int h = (bounds.y2-bounds.y1);
-//    QImage* out = new QImage(w,h,QImage::Format_ARGB32_Premultiplied);
-//    for (int i = 0 ; i < h ; ++i) {
-//        QRgb* row = (QRgb*)out->scanLine(i);
-//        for (int j = 0; j < w; ++j) {
-//            OfxRGBAColourF pix = _data[i*w+j];
-//            row[j] = qRgba(pix.r*255, pix.g*255, pix.b*255, pix.a*255);
-//        }
-//    }
-//    out->save(filename.c_str());
-//    delete out;
-//}
-
+Node* OfxClipInstance::getAssociatedNode() const {
+    if(isOutput())
+        return _node;
+    else{
+        int index = 0;
+        OfxNode::MappedInputV inputs = _node->inputClipsCopyWithoutOutput();
+        for (U32 i = 0; i < inputs.size(); ++i) {
+            if (inputs[i]->getName() == getName()) {
+                index = i;
+                break;
+            }
+        }
+        return _node->input(inputs.size()-1-index);
+    }
+}
 

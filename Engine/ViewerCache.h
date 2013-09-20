@@ -9,22 +9,19 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_VIEWERCACHE_H_
+#define POWITER_ENGINE_VIEWERCACHE_H_
 
- 
+#include <QtCore/QObject>
 
+#include "Engine/AbstractCache.h" // for MemoryMappedEntry
 
+#include "Gui/Texture.h" // for TextureRect
 
-
-#ifndef DISKCACHE_H
-#define DISKCACHE_H
-
-#include "Engine/AbstractCache.h"
-#include "Gui/Texture.h"
-#include "Engine/Singleton.h"
 class Format;
 class ChannelSet;
 class Box2D;
+class Model;
 class ReaderInfo;
 
 /*The class associated to a Frame in cache.
@@ -74,22 +71,20 @@ public:
 
 class ReaderInfo;
 class MemoryMappedEntry;
-class ViewerCache : public AbstractDiskCache , public Singleton<ViewerCache>
+class ViewerCache :public QObject, public AbstractDiskCache
 {
-    
+       Q_OBJECT
 public:
     
     
 	ViewerCache();
-    
+        
 	virtual ~ViewerCache();
     
 	virtual std::string cacheName(){std::string str("ViewerCache");return str;}
     
 	virtual std::string cacheVersion(){std::string str("v1.0.0");return str;}
-    
-	static ViewerCache* getViewerCache();
-    
+        
     virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
@@ -110,8 +105,13 @@ public:
     
     
     void clearInMemoryPortion();
+    
+signals:
+    void addedFrame();
+    void removedFrame();
+    void clearedInMemoryFrames();
 };
 
 
 
-#endif // DISKCACHE_H
+#endif // POWITER_ENGINE_VIEWERCACHE_H_

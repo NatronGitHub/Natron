@@ -9,12 +9,8 @@
 *
 */
 
- 
-
- 
-
-
-
+#ifndef POWITER_ENGINE_MEMORYFILE_H_
+#define POWITER_ENGINE_MEMORYFILE_H_
 
 // (C) Copyright 2008 CodeRage, LLC (turkanis at coderage dot com)
 // (C) Copyright 2004-2007 Jonathan Turkanis
@@ -24,11 +20,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt.)
 
-#ifndef __PowiterOsX__mappedfile__
-#define __PowiterOsX__mappedfile__
+#include <string>
 
-#include <iostream>
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+#include "Global/Enums.h"
 
 /*re-writing of the portable mapped-file implementation, as the boost::iostreams::mapped_file does not have the behaviour
 // desired in this case.*/
@@ -173,4 +169,4 @@ private:
 
 
 
-#endif /* defined(__PowiterOsX__mappedfile__) */
+#endif /* defined(POWITER_ENGINE_MEMORYFILE_H_) */

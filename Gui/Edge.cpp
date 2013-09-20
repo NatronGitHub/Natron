@@ -8,12 +8,6 @@
 *
 */
 
- 
-
- 
-
-
-
 #include "Edge.h"
 
 #include <cmath>
@@ -22,41 +16,51 @@
 
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
-
+#include "Engine/ViewerNode.h"
 using namespace std;
+
 const qreal pi= 3.14159265358979323846264338327950288419717;
 static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
-Edge::Edge(int inputNb,double angle,NodeGui *dest, QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent) {
-
-    source = NULL;
-    this->scene=scene;
-    this->inputNb=inputNb;
-    this->angle=angle;
-    this->dest=dest;
-    has_source=false;
+Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent, QGraphicsScene* scene_)
+: QGraphicsLineItem(parent)
+, scene(scene_)
+, inputNb(inputNb_)
+, angle(angle_)
+, label(NULL)
+, has_source(false)
+, arrowHead()
+, dest(dest_)
+, source(NULL)
+{
+    assert(dest);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
+    label = scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(-1.1);
 }
-Edge::Edge(int inputNb,NodeGui *src,NodeGui* dest,QGraphicsItem *parent, QGraphicsScene *scene):QGraphicsLineItem(parent)
-{
 
-    this->inputNb=inputNb;
-    has_source=true;
-    this->source=src;
-    this->dest=dest;
+Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent, QGraphicsScene *scene_)
+: QGraphicsLineItem(parent)
+, scene(scene_)
+, inputNb(inputNb_)
+, angle(0.)
+, label(NULL)
+, has_source(true)
+, arrowHead()
+, dest(dest_)
+, source(src)
+{
+    assert(dest_);
+    assert(src);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     label=scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
     initLine();
-
-
 }
 
 Edge::~Edge(){
@@ -66,22 +70,22 @@ Edge::~Edge(){
 }
 
 void Edge::initLine(){
-    int h = NODE_HEIGHT;
-    int w = NODE_LENGTH;
-    if(dest->getNode()->className() == std::string("Reader")){
-        h += PREVIEW_HEIGHT;
-        w += PREVIEW_LENGTH;
+    int h = NodeGui::NODE_HEIGHT;
+    int w = NodeGui::NODE_LENGTH;
+    if(dest->getNode()->canMakePreviewImage()){
+        h += NodeGui::PREVIEW_HEIGHT;
+        w += NodeGui::PREVIEW_LENGTH;
     }
     QPointF dst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                                            + QPointF(w/2.,h/2.));
     QPointF srcpt;
     if(has_source){
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
+        w = NodeGui::NODE_LENGTH;
 
-        if(source->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+        if(source->getNode()->canMakePreviewImage()){
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         srcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
             + QPointF(w/2.,h/2.);
@@ -92,12 +96,12 @@ void Edge::initLine(){
         QPointF labelSrcpt= mapFromItem(source,QPointF(source->boundingRect().x(),source->boundingRect().y()))
         + QPointF(w/2.,h);
 
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
+        w = NodeGui::NODE_LENGTH;
         
-        if(dest->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+        if(dest->getNode()->canMakePreviewImage()){
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                           + QPointF(w/2.,0));
@@ -128,12 +132,12 @@ void Edge::initLine(){
         }
         
         /*adjusting dst to show label at the middle of the line*/
-        h = NODE_HEIGHT;
-        w = NODE_LENGTH;
+        h = NodeGui::NODE_HEIGHT;
+        w = NodeGui::NODE_LENGTH;
         
-        if(dest->getNode()->className() == std::string("Reader")){
-            h += PREVIEW_HEIGHT;
-            w += PREVIEW_LENGTH;
+        if(dest->getNode()->canMakePreviewImage()){
+            h += NodeGui::PREVIEW_HEIGHT;
+            w += NodeGui::PREVIEW_LENGTH;
         }
         QPointF labelDst = mapFromItem(dest,QPointF(dest->boundingRect().x(),dest->boundingRect().y())
                           + QPointF(w/2.,0));
@@ -147,7 +151,7 @@ void Edge::initLine(){
         QLineF(dstPost.x(),dstPost.y()+h,dstPost.x(),dstPost.y()), // left
         QLineF(dstPost.x(),dstPost.y(),dstPost.x()+w,dstPost.y())}; // top
     
-    for(int i = 0 ; i < 4 ; i++){
+    for (int i = 0; i < 4; ++i) {
         QPointF intersection;
         QLineF::IntersectType type = edges[i].intersect(line(), &intersection);
         if(type == QLineF::BoundedIntersection){
@@ -231,7 +235,17 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      QPen myPen = pen();
 
      myPen.setColor(Qt::black);
-
+     if(dest->getNode()->className() == "Viewer"){
+         ViewerNode* v = dynamic_cast<ViewerNode*>(dest->getNode());
+         if(v->activeInput() != inputNb){
+             QVector<qreal> dashStyle;
+             qreal space = 4;
+             dashStyle << 3 << space;
+             myPen.setDashPattern(dashStyle);
+         }else{
+             myPen.setStyle(Qt::SolidLine);
+         }
+     }
      painter->setPen(myPen);
      painter->setBrush(Qt::black);   
      painter->drawLine(line());

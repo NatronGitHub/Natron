@@ -9,25 +9,15 @@
 *
 */
 
- 
+#ifndef POWITER_ENGINE_ROW_H_
+#define POWITER_ENGINE_ROW_H_
 
- 
+#include <string>
 
-
-
-#ifndef ROW_H
-#define ROW_H
-
-#include <cstdlib>
-#include <map>
 #include "Engine/ChannelSet.h"
-#include "Engine/AbstractCache.h"
-#ifndef Q_MOC_RUN
-#include <boost/noncopyable.hpp>
-#endif
-#define MAX_BUFFERS_PER_ROW 100
+#include "Engine/AbstractCache.h" // for InMemoryEntry
 
-
+#define POWITER_MAX_BUFFERS_PER_ROW 100
 
 
 /*This class represent one line in the image.
@@ -108,7 +98,8 @@ public:
     /*Do not pay heed to these, they're used internally so the viewer
      know how to fill the display texture.*/
     int zoomedY(){return _zoomedY;}
-    void zoomedY(int z){_zoomedY = z;}
+    void set_zoomedY(int z){_zoomedY = z;}
+
     
     /*Called by the NodeCache so the destructor of Row doesn't
      try to double-free the buffers.*/
@@ -132,59 +123,5 @@ private:
 };
 bool compareRows(const Row &a,const Row &b);
 
+#endif // POWITER_ENGINE_ROW_H_
 
-/*A class encapsulating a row memory allocation scheme.
- It is useful so you don't have to call release when you're done
- with the row. This class is used by Node::get and should be used
- in the engine function when accessing the results from nodes upstream.*/
-class InputRow : public boost::noncopyable {
-    Row* _row;
-    int _y,_x,_r;
-public:
-    
-    InputRow(int y,int x, int r):_row(0),_y(y),_x(x),_r(r){}
-    
-    const ChannelSet& channels() const { return _row->channels();}
-    
-    void range(int offset,int right){_row->range(offset,right);}
-    
-    /*Returns a read-only pointer to the channel z.
-	 *WARNING : the pointer returned is pointing to 0.
-	 *if x != 0 then the start of the row can be obtained
-	 *as such : const float* start = (*row)[z]+row->offset()*/
-    const float* operator[](Powiter::Channel z) const{return (*_row)[z];}
-    
-    int y() const {return _y;}
-    
-    int right() const {return _r;}
-    
-    int offset() const {return _x;}
-    
-    /*Returns a writable pointer to the channel c.
-	 *WARNING : the pointer returned is pointing to 0.
-	 *if x != 0 then the start of the row can be obtained
-	 *as such : float* start = row->writable(c)+row->offset()*/
-    float* writable(Powiter::Channel c){return _row->writable(c);}
-    
-	/*Copy into the current row, the channels defined in the source
-	 *in the range [o,r}*/
-    void copy(const Row *source,ChannelSet channels,int o,int r){_row->copy(source,channels,o,r);}
-    
-	/*activate the channel C for this row and allocates memory for it*/
-    void turnOn(Powiter::Channel c){_row->turnOn(c);}
-    
-	/*set to 0s the entirety of the chnnel c*/
-    void erase(Powiter::Channel c){_row->erase(c);}
-    void erase(ChannelSet set){_row->erase(set);}
-        
-    /*DO NOT CALL THESE EVER*/
-    void setInternalRow(Row* ptr){_row = ptr; assert(ptr->offset() == _x && ptr->right() == _r && ptr->y() == _y);}
-    Row* getInternalRow() const {return _row;}
-        
-    ~InputRow(){
-        if(_row)
-            _row->release();
-    }
-};
-
-#endif // ROW_H

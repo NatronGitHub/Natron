@@ -9,30 +9,25 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_GUI_H_
+#define POWITER_GUI_GUI_H_
 
- 
-
-
-
-#ifndef GUI_H
-#define GUI_H
-#include <QtCore/QVariant>
-#include <QToolButton>
-#include <QIcon>
-#include <QAction>
-#include "Global/GlobalDefines.h"
-#include <QMainWindow>
-
+#include <map>
+#include <string>
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #endif
-#include <QDialog>
-#include <map>
+#include <QtCore/QObject>
+#include <QToolButton>
+#include <QIcon>
+#include <QAction>
+#include <QMainWindow>
+
+#include "Global/Macros.h"
+
 class QString;
-class QAction;
 class TabWidget;
-class Controler;
+class AppInstance;
 class QDockWidget;
 class QScrollArea;
 class QWidget;
@@ -45,27 +40,30 @@ class QMenuBar;
 class QProgressBar;
 class QStatusBar;
 class QTreeView;
-class Controler;
+class AppInstance;
 class NodeGraph;
 class ViewerTab;
 class Node;
 class ViewerNode;
 class QToolBar;
 class QGraphicsScene;
-
+class AppInstance;
+class NodeGui;
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
+    
+    AppInstance* _app;
 public:
     
-    ActionRef(QAction* action,const std::string& nodeName):_action(action),_nodeName(nodeName){
+    ActionRef(AppInstance* app,QAction* action,const QString& nodeName):_app(app),_action(action),_nodeName(nodeName){
         QObject::connect(action, SIGNAL(triggered()), this, SLOT(onTriggered()));
     }
     virtual ~ActionRef(){QObject::disconnect(_action, SIGNAL(triggered()), this, SLOT(onTriggered()));}
     
     QAction* _action;
-    std::string _nodeName;
+    QString _nodeName;
     
     public slots:
     void onTriggered();
@@ -73,21 +71,23 @@ public:
 };
 
 class ToolButton : public QToolButton{
+    AppInstance* _app;
     QMenu* _menu;
     std::vector<QMenu*> _subMenus;
     std::vector<ActionRef*> _actions;
 public:
     
-    ToolButton(const std::string& actionName,
-               const std::vector<std::string>& firstElement,
-               const std::string& pluginName,
+    ToolButton(AppInstance* app,
+               const QString& actionName,
+               const QStringList& firstElement,
+               const QString& pluginName,
                QIcon pluginIcon = QIcon(),
                QIcon groupIcon = QIcon(),
                QWidget* parent = 0);
     
-    void addTool(const std::string& actionName,
-                 const std::vector<std::string>& grouping,
-                 const std::string& pluginName,
+    void addTool(const QString& actionName,
+                 const QStringList& grouping,
+                 const QString& pluginName,
                  QIcon pluginIcon = QIcon());
     
     virtual ~ToolButton();
@@ -100,7 +100,7 @@ class FloatingWidget : public QWidget{
     QWidget* _embeddedWidget;
     QVBoxLayout* _layout;
 public:
-    FloatingWidget(QWidget* parent = 0);
+    explicit FloatingWidget(QWidget* parent = 0);
     virtual ~FloatingWidget(){}
     
     /*Set the embedded widget. Only 1 widget can be embedded
@@ -109,32 +109,47 @@ public:
     void setWidget(const QSize& widgetSize,QWidget* w);
 };
 
+class Gui;
 /*This class encapsulate a nodegraph GUI*/
 class NodeGraphTab{
 public:
 
-    QVBoxLayout *_graphEditorLayout;
+    // FIXME: these (public) data members are never deleted
+    // cppcheck message:
+    // "Class 'NodeGraphTab' is unsafe, 'NodeGraphTab::_graphScene' can leak by wrong usage."
     QGraphicsScene* _graphScene;
     NodeGraph *_nodeGraphArea;
     
-    NodeGraphTab(QWidget* parent);
+    NodeGraphTab(Gui* gui,QWidget* parent);
     virtual ~NodeGraphTab(){}
 };
 
 class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
+    
+    ViewerTab* _lastSelectedViewer;
+    
 public:
-    Gui(QWidget* parent=0);
+    explicit Gui(AppInstance* app,QWidget* parent=0);
     
     virtual ~Gui();
     
     void createGui();
     
-    void createNodeGUI(Node *node);
+    NodeGui* createNodeGUI(Node *node);
+    
+    void autoConnect(NodeGui* target,NodeGui* created);
+    
+    NodeGui* getSelectedNode() const;
+    
+    void setLastSelectedViewer(ViewerTab* tab){_lastSelectedViewer = tab;}
+    
+    ViewerTab* getLastSelectedViewer() const {return _lastSelectedViewer;}
     
     bool eventFilter(QObject *target, QEvent *event);
 
+    void createViewerGui(Node* viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
@@ -173,11 +188,11 @@ public:
     
     void loadStyleSheet();
     
-    void addPluginToolButton(const std::string& actionName,
-                             const std::vector<std::string>& groups,
-                             const std::string& pluginName,
-                             const std::string& pluginIconPath,
-                             const std::string& groupIconPath);
+    void addPluginToolButton(const QString& actionName,
+                             const QStringList& groups,
+                             const QString& pluginName,
+                             const QString& pluginIconPath,
+                             const QString& groupIconPath);
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     
@@ -185,12 +200,16 @@ public:
     
     void errorDialog(const QString& title,const QString& text);
     
+    void selectNode(NodeGui* node);
+    
+    AppInstance* getApp() { return _appInstance; }
 private:
 
     void addNodeGraph();
 
 
 public slots:
+    
     bool exit();
     void toggleFullScreen();
     void closeEvent(QCloseEvent *e);
@@ -200,6 +219,17 @@ public slots:
     void saveProjectAs();
     void autoSave();
     
+    void connectInput1();
+    void connectInput2();
+    void connectInput3();
+    void connectInput4();
+    void connectInput5();
+    void connectInput6();
+    void connectInput7();
+    void connectInput8();
+    void connectInput9();
+    void connectInput10();
+    
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -208,6 +238,8 @@ public slots:
      **/
     int saveWarning();
     
+private:
+    AppInstance* _appInstance;
 public:
     /*TOOL BAR ACTIONS*/
     //======================
@@ -219,11 +251,20 @@ public:
     QAction *actionExit;
     QAction *actionProject_settings;
     QAction *actionFullScreen;
-	QAction *actionSplitViewersTab;
     QAction *actionClearDiskCache;
     QAction *actionClearPlayBackCache;
     QAction *actionClearNodeCache;
     
+    QAction* actionConnectInput1;
+    QAction* actionConnectInput2;
+    QAction* actionConnectInput3;
+    QAction* actionConnectInput4;
+    QAction* actionConnectInput5;
+    QAction* actionConnectInput6;
+    QAction* actionConnectInput7;
+    QAction* actionConnectInput8;
+    QAction* actionConnectInput9;
+    QAction* actionConnectInput10;
     
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
@@ -246,7 +287,7 @@ public:
     
 	/*VIEWERS*/
 	//======================
-    std::vector<ViewerTab*> _viewerTabs;
+    std::list<ViewerTab*> _viewerTabs;
     
     /*GRAPH*/
     //======================
@@ -255,7 +296,7 @@ public:
     
     /*TOOLBOX*/
     QToolBar* _toolBox;
-    std::map<std::string,ToolButton*> _toolGroups;
+    std::map<QString,ToolButton*> _toolGroups;
     
     /*PROPERTIES*/
     //======================
@@ -273,11 +314,12 @@ public:
     QMenu *menuDisplay;
     QMenu *menuOptions;
 	QMenu *viewersMenu;
+    QMenu *viewerInputsMenu;
     QMenu *cacheMenu;
     
     
     /*all TabWidget's : used to know what to hide/show for fullscreen mode*/
-    std::vector<TabWidget*> _panes;
+    std::list<TabWidget*> _panes;
     
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
@@ -288,4 +330,4 @@ public:
     
 };
 
-#endif // GUI_H
+#endif // POWITER_GUI_GUI_H_

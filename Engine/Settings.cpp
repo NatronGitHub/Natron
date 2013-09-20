@@ -9,18 +9,18 @@
  *
  */
 
+#include "Settings.h"
 
-
-
-
-
-
-
-#include "Engine/Settings.h"
-#include "Engine/Model.h"
 #include <QDir>
 
+#include "Engine/Model.h"
+#include "Global/LibraryBinary.h"
+
+
+
 using namespace std;
+using namespace Powiter;
+
 Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;
@@ -41,19 +41,19 @@ Settings::ReadersSettings::ReadersSettings(){
 }
 
 /*changes the decoder for files identified by the filetype*/
-void Settings::ReadersSettings::changeMapping(const std::string& filetype, PluginID* decoder){
+void Settings::ReadersSettings::changeMapping(const std::string& filetype, LibraryBinary* decoder){
     _fileTypesMap.insert(make_pair(filetype, decoder));
 }
 
 /*use to initialise default mapping*/
-void Settings::ReadersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
-    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
+void Settings::ReadersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap){
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
 
-PluginID* Settings::ReadersSettings::decoderForFiletype(const std::string& type){
-    for(std::map<std::string,PluginID*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+LibraryBinary* Settings::ReadersSettings::decoderForFiletype(const std::string& type) const {
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
         QString sType(type.c_str());
         QString curType(it->first.c_str());
         sType = sType.toUpper();
@@ -67,10 +67,10 @@ PluginID* Settings::ReadersSettings::decoderForFiletype(const std::string& type)
 
 Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
 
-/*Returns a pluginID if it could find an encoder for the filetype,
+/*Returns a library if it could find an encoder for the filetype,
  otherwise returns NULL.*/
-PluginID* Settings::WritersSettings::encoderForFiletype(const std::string& type){
-    for(std::map<std::string,PluginID*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+LibraryBinary* Settings::WritersSettings::encoderForFiletype(const std::string& type){
+    for(std::map<std::string,LibraryBinary*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
         QString sType(type.c_str());
         QString curType(it->first.c_str());
         sType = sType.toUpper();
@@ -83,20 +83,20 @@ PluginID* Settings::WritersSettings::encoderForFiletype(const std::string& type)
 }
 
 /*changes the encoder for files identified by the filetype*/
-void Settings::WritersSettings::changeMapping(const std::string& filetype,PluginID* encoder){
+void Settings::WritersSettings::changeMapping(const std::string& filetype,LibraryBinary* encoder){
     _fileTypesMap.insert(make_pair(filetype, encoder));
 }
 
 /*use to initialise default mapping*/
-void Settings::WritersSettings::fillMap(std::map<std::string,PluginID*>& defaultMap){
-    for(std::map<std::string,PluginID*>::iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
+void Settings::WritersSettings::fillMap(const std::map<std::string,LibraryBinary*>& defaultMap) {
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = defaultMap.begin();it!=defaultMap.end();++it) {
         _fileTypesMap.insert(*it);
     }
 }
 
 std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
     vector<string> out;
-    for(std::map<std::string,PluginID*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it) {
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it) {
         out.push_back(it->first);
     }
     return out;

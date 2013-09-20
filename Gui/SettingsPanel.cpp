@@ -8,24 +8,22 @@
 *
 */
 
- 
+#include "SettingsPanel.h"
 
- 
-
-
-
-
-#include "Gui/SettingsPanel.h"
-
+#include <iostream>
 #include <QLayout>
 #include <QAction>
 #include <QTabWidget>
 #include <QStyle>
-#include "Gui/NodeGui.h"
+
+#include "Global/Macros.h"
+
 #include "Engine/Node.h"
-#include "Gui/Knob.h"
+
+
+#include "Gui/NodeGui.h"
+#include "Gui/KnobGui.h"
 #include "Gui/LineEdit.h"
-#include "Global/GlobalDefines.h"
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
 
@@ -39,7 +37,6 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     setObjectName(_nodeGUI->getNode()->getName().c_str());
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    
     setFrameShape(QFrame::Box);
     
     _headerWidget = new QFrame(this);
@@ -51,10 +48,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _headerWidget->setLayout(_headerLayout);
     
     
-    QImage imgM(IMAGES_PATH"minimize.png");
+    QImage imgM(POWITER_IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM = pixM.scaled(15,15);
-    QImage imgC(IMAGES_PATH"close.png");
+    QImage imgC(POWITER_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(15,15);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
@@ -65,10 +62,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
     
-    QImage imgUndo(IMAGES_PATH"undo.png");
+    QImage imgUndo(POWITER_IMAGES_PATH"undo.png");
     QPixmap pixUndo = QPixmap::fromImage(imgUndo);
     pixUndo = pixUndo.scaled(15, 15);
-    QImage imgUndo_gray(IMAGES_PATH"undo_grayscale.png");
+    QImage imgUndo_gray(POWITER_IMAGES_PATH"undo_grayscale.png");
     QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
     pixUndo_gray = pixUndo_gray.scaled(15, 15);
     QIcon icUndo;
@@ -78,10 +75,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _undoButton->setToolTip("Undo the last change made to this operator");
     _undoButton->setEnabled(false);
     
-    QImage imgRedo(IMAGES_PATH"redo.png");
+    QImage imgRedo(POWITER_IMAGES_PATH"redo.png");
     QPixmap pixRedo = QPixmap::fromImage(imgRedo);
     pixRedo = pixRedo.scaled(15, 15);
-    QImage imgRedo_gray(IMAGES_PATH"redo_grayscale.png");
+    QImage imgRedo_gray(POWITER_IMAGES_PATH"redo_grayscale.png");
     QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
     pixRedo_gray = pixRedo_gray.scaled(15, 15);
     QIcon icRedo;
@@ -96,7 +93,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
     _nodeName = new LineEdit(_headerWidget);
     _nodeName->setText(_nodeGUI->getNode()->getName().c_str());
-    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SLOT(setName(QString)));
+    QObject::connect(_nodeName,SIGNAL(textEdited(QString)),_nodeGUI,SIGNAL(nameChanged(QString)));
     _headerLayout->addWidget(_nodeName);
     _headerLayout->addStretch();
     _headerLayout->addWidget(_undoButton);
@@ -108,25 +105,20 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _mainLayout->addWidget(_headerWidget);
 
     _tabWidget = new QTabWidget(this);
+    _tabWidget->setObjectName("_tabWidget");
     _mainLayout->addWidget(_tabWidget);
     
-    
-    
     _settingsTab = new QWidget(_tabWidget);
-   // _settingsTab->setStyleSheet("background-color : rgb(50,50,50); color:(200,200,200);");
-    _layoutSettings=new QVBoxLayout(_settingsTab);
+    _settingsTab->setObjectName("_settingsTab");
+    _layoutSettings=new QGridLayout(_settingsTab);
     _layoutSettings->setSpacing(0);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");
-
     
     _labelWidget=new QWidget(_tabWidget);
     _layoutLabel=new QVBoxLayout(_labelWidget);
     _labelWidget->setLayout(_layoutLabel);
     _tabWidget->addTab(_labelWidget,"Label");
-    
-    
-    initialize_knobs();
     
 }
 SettingsPanel::~SettingsPanel(){}
@@ -139,22 +131,58 @@ void SettingsPanel::setEnabledRedoButton(bool b){
 }
 
 void SettingsPanel::initialize_knobs(){
-    
-    _cb=_nodeGUI->getNode()->getKnobCallBack();
-    _cb->setSettingsPanel(this);
-    _nodeGUI->getNode()->initKnobs(_cb);
-    const std::vector<Knob*>& knobs=_nodeGUI->getNode()->getKnobs();
-    foreach(Knob* k,knobs){
-        _layoutSettings->addWidget(k);
+    int maxSpacing = 0;
+    /*We now have all knobs in a vector, just add them to the layout.*/
+    const std::vector<Knob*>& knobs = _nodeGUI->getNode()->getKnobs();
+    for(U32 i = 0 ; i < knobs.size(); ++i){
+        KnobGui* gui = _nodeGUI->findKnobGuiOrCreate(knobs[i]);
+        if(!gui){
+            return;
+        }
+        /*If the GUI doesn't already exist, we create it.*/
+        if(!gui->hasWidgetBeenCreated()){
+            Knob* parentKnob = knobs[i]->getParentKnob();
+            if(knobs[i]->name() == "Tab"){
+                /*create all children*/
+                Tab_Knob* tabKnob = dynamic_cast<Tab_Knob*>(knobs[i]);
+                std::map<std::string,std::vector<KnobGui*> > childrenGui;
+                const std::map<std::string,std::vector<Knob*> >& children = tabKnob->getKnobs();
+                for (std::map<std::string,std::vector<Knob*> >::const_iterator it = children.begin();
+                     it!=children.end();++it) {
+                    std::vector<KnobGui*> tabKnobs;
+                    for (U32 j = 0; j < it->second.size(); ++j) {
+                        KnobGui* child = _nodeGUI->findKnobGuiOrCreate(it->second[j]);
+                        if(child)
+                            tabKnobs.push_back(child);
+                    }
+                    childrenGui.insert(make_pair(it->first, tabKnobs));
+                }
+                dynamic_cast<Tab_KnobGui*>(gui)->addKnobs(childrenGui);
+            }else if(parentKnob && parentKnob->name() == "Tab"){
+                /*the tab widget already created all children*/
+                continue;
+            }else{
+                gui->setParent(_settingsTab);
+                int row = i;
+                int offsetColumn = knobs[i]->determineHierarchySize();
+                if(!gui->triggerNewLine() && i!=0) --i;
+                gui->createGUI(_layoutSettings,i,knobs[i]->determineHierarchySize());
+                if(parentKnob){
+                    Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_nodeGUI->findKnobGuiOrCreate(parentKnob));
+                    parentGui->addKnob(gui,row,offsetColumn);
+                    if (parentGui->isChecked()) {
+                        gui->show();
+                    }else{
+                        gui->hide();
+                    }
+                }
+            }
+        }
+        int knobSpacing  =  gui->getSpacingBetweenItems();
+        if(knobSpacing > maxSpacing)
+            maxSpacing = knobSpacing;
     }
-    
-}
-void SettingsPanel::addKnobDynamically(Knob* knob){
-	_layoutSettings->addWidget(knob);
-}
-void SettingsPanel::removeAndDeleteKnob(Knob* knob){
-    _layoutSettings->removeWidget(knob);
-    delete knob;
+    _layoutSettings->setHorizontalSpacing(maxSpacing);
 }
 void SettingsPanel::close(){
     
@@ -179,7 +207,7 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
         
-        QImage imgM(IMAGES_PATH"maximize.png");
+        QImage imgM(POWITER_IMAGES_PATH"maximize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));
@@ -198,7 +226,7 @@ void SettingsPanel::minimizeOrMaximize(bool toggled){
         }
     
     }else{
-        QImage imgM(IMAGES_PATH"minimize.png");
+        QImage imgM(POWITER_IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));

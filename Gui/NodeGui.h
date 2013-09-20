@@ -9,51 +9,52 @@
 *
 */
 
- 
+#ifndef POWITER_GUI_NODEGUI_H_
+#define POWITER_GUI_NODEGUI_H_
 
- 
+#include <map>
 
-
-
-#ifndef NODE_UI_H
-#define NODE_UI_H
-
-
-//#include <inputarrow.h>
-#include "Global/GlobalDefines.h"
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
-static const int NODE_LENGTH=80;
-static const int NODE_HEIGHT=30;
-static const int PREVIEW_LENGTH=40;
-static const int PREVIEW_HEIGHT=40;
+#include "Global/Macros.h"
+
 class Edge;
 class QPainterPath;
 class QScrollArea;
 class SettingsPanel;
 class QVBoxLayout;
-class Node;
-class Controler;
+class AppInstance;
 class NodeGraph;
 class QAction;
-class QUndoCommand;
-class QUndoStack;
+class KnobGui;
+class Knob;
+class ChannelSet;
+class Node;
+
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
     Q_INTERFACES(QGraphicsItem)
 public:
 
-    NodeGui(NodeGraph* dag,QVBoxLayout *dockContainer,Node *node,qreal x,qreal y , QGraphicsItem *parent=0,QGraphicsScene *sc=0,QObject* parentObj=0);
+    typedef std::map<int,Edge*> InputEdgesMap;
+    
+    NodeGui(NodeGraph* dag,
+            QVBoxLayout *dockContainer,
+            Node *node,
+            qreal x,qreal y ,
+            QGraphicsItem *parent=0,
+            QGraphicsScene *sc=0,
+            QObject* parentObj=0);
 
     ~NodeGui();
     
-    /*returns a ptr to the internal node*/
-    Node* getNode(){return node;}
+    Node* getNode() const {return node;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
+    
     
   
     /*Returns tru if the NodeGUI contains the point*/
@@ -72,12 +73,13 @@ public:
      the node.*/
     virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent);
     
-    /*initialises the input arrows*/
-    void initInputArrows();
+   
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
-    const std::vector<Edge*>& getInputsArrows() const {return inputs;}
+    const std::map<int,Edge*>& getInputsArrows() const {return inputs;}
+    
+   
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
@@ -90,42 +92,14 @@ public:
     /*Set the boolean to true if the settings panel for this node will be displayed.*/
     void setSettingsPanelEnabled(bool enabled){settingsPanel_displayed=enabled;}
     
-    /*Adds a children to the node*/
-    void addChild(NodeGui* c){children.push_back(c);}
-    
-    /*Adds a parent to the node*/
-    void addParent(NodeGui* p){parents.push_back(p);}
-    
-    /*Removes the child c from the children of this node*/
-    void removeChild(NodeGui* c);
-    
-    /*Removes the parent p from the parents of this node*/
-	void removeParent(NodeGui* p);
-    
-    /*Returns a ref to the vector of the parents of this nodes.*/
-    const std::vector<NodeGui*>& getParents(){return parents;}
-    
-    /*Returns a ref to the vector of children of this node.*/
-    const std::vector<NodeGui*>& getChildren(){return children;}
-    
     /*Returns a pointer to the settings panel of this node.*/
     SettingsPanel* getSettingPanel(){return settings;}
     
     /*Returns a pointer to the layout containing settings panels.*/
     QVBoxLayout* getDockContainer(){return dockContainer;}
     
-    /*Updates the preview image if this is a reader node. Can
-     only be called by reader nodes, otherwise does nothing*/
-	void updatePreviewImageForReader();
-    
-    /*Updates the channels tooltip. This is called by Node::validate(),
-     i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip();
-    
-    /*Returns a pointer to the Viewer nodeGUI ptr is this node has a viewer connected,
-     otherwise, returns NULL.*/
-    static NodeGui* hasViewerConnected(NodeGui* node);
-    
+        
+       
     /*toggles selected on/off*/
     void setSelected(bool b);
     
@@ -140,32 +114,66 @@ public:
     
     /*Moves the settings panel on top of the list of panels.*/
     void putSettingsPanelFirst();
-    
-    void remove();
-    
+        
     void markInputNull(Edge* e);
     
-    void pushUndoCommand(QUndoCommand* command);
     
     
+    static const int NODE_LENGTH = 80;
+    static const int NODE_HEIGHT = 30;
+    static const int PREVIEW_LENGTH = 40;
+    static const int PREVIEW_HEIGHT = 40;
     
-private:
-    /*used internally by hasViewerConnected.*/
-    static void _hasViewerConnected(NodeGui* node,bool* ok,NodeGui*& out);
+        
+    /*Returns an edge if the node has an edge close to the
+     point pt. pt is in scene coord.*/
+    Edge* hasEdgeNearbyPoint(const QPointF& pt);
     
+    void setName(const QString& name);
+    
+    void refreshPosition(double x,double y);
+    
+    KnobGui* findKnobGuiOrCreate(Knob* knob);
     
 public slots:
-    void setName(QString);
     void undoCommand();
+    
     void redoCommand();
     
-protected:
-
-    /*children of the node*/
-    std::vector<NodeGui*> children;
+    void onCanUndoChanged(bool);
     
-    /*parents of the node*/
-    std::vector<NodeGui*> parents;
+    void onCanRedoChanged(bool);
+    
+    /*Updates the preview image.*/
+	void updatePreviewImage();
+    
+    /*Updates the channels tooltip. This is called by Node::validate(),
+     i.e, when the channel requested for the node change.*/
+    void updateChannelsTooltip();
+    
+    void onLineEditNameChanged(const QString&);
+    
+    void onInternalNameChanged(const QString&);
+    
+    void deleteNode();
+        
+    void refreshEdges();
+    
+    /*initialises the input edges*/
+    void initializeInputs();
+    
+    void initializeKnobs();
+    
+    void activate();
+    
+    void deactivate();
+    
+    /*Use NULL for src to disconnect.*/
+    bool connectEdge(int edgeNumber);
+signals:
+    void nameChanged(QString);
+    
+protected:
     
     /*pointer to the dag*/
     NodeGraph* _dag;
@@ -195,14 +203,20 @@ protected:
 	QGraphicsPixmapItem* prev_pix;
     
     /*the graphical input arrows*/
-    std::vector<Edge*> inputs;
+    std::map<int,Edge*> inputs;
+    
+    /*the graphical knobs*/
+    std::map<Knob*,KnobGui*> _knobs;
+    
+    /*the graphical output arrows
+     NOT YET USED*/
+    //    std::map<int,Edge*> outputs;
     
     /*settings panel related*/
     bool settingsPanel_displayed;
     SettingsPanel* settings;
 
-    QUndoStack* _undoStack;
   
 };
 
-#endif // NODE_UI_H
+#endif // POWITER_GUI_NODEGUI_H_
