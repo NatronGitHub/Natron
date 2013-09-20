@@ -22,6 +22,7 @@
 class Node;
 class QString;
 
+
 /*The hash of a Node is the checksum of the vector of data containing:
     - the values of the current knob for this node + the name of the node
     - the hash values for the  tree upstream
@@ -36,6 +37,7 @@ public:
     }
     
     U64 value() const {return hash;}
+
     
     void computeHash();
     
@@ -50,6 +52,7 @@ public:
     }
     bool 	operator!= (const Hash64& h) const {
         return this->hash==h.value();
+
     }
     
 private:
@@ -60,3 +63,4 @@ private:
 void Hash64_appendQString(Hash64* hash, const QString& str);
 
 #endif // POWITER_ENGINE_Hash64_H_
+

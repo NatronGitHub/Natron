@@ -12,6 +12,7 @@
 #ifndef POWITER_ENGINE_LUT_H_
 #define POWITER_ENGINE_LUT_H_
 
+
 /*
  *
  * High-speed conversion between 8 bit and floating point image data.
@@ -37,7 +38,6 @@
  * 300 Rose Avenue, Venice, CA 90291 310-314-2800
  *
  */
-
 
 #include <cmath>
 #include <QtGui/QRgb>

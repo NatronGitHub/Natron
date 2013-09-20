@@ -19,6 +19,7 @@
 
 #define POWITER_MAX_BUFFERS_PER_ROW 100
 
+
 /*This class represent one line in the image.
  *One line is a set of buffers (channels) defined
  *in the range [x,r]*/
@@ -98,6 +99,7 @@ public:
      know how to fill the display texture.*/
     int zoomedY(){return _zoomedY;}
     void set_zoomedY(int z){_zoomedY = z;}
+
     
     /*Called by the NodeCache so the destructor of Row doesn't
      try to double-free the buffers.*/
@@ -121,6 +123,5 @@ private:
 };
 bool compareRows(const Row &a,const Row &b);
 
-
-
 #endif // POWITER_ENGINE_ROW_H_
+
