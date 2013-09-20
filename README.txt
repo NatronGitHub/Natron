@@ -16,7 +16,6 @@ Here's the state of the software as of today 09/20/2013:
 *http://www.genarts.com/software/sapphire/overview
 * and many more open-source openfx plugins !
 - Lots of efforts are made to support a wide range of OpenFX plugins! (Temporal plugins are not yet supported but will soon be)
--
 - Linux/OSX/Windows support.
 - Platforms not supporting GLSL are also supported
 - Fast Viewer interaction with no delay (like Nuke does) 
@@ -60,5 +59,5 @@ More publication will come when the name will be final.
 
 The new website will come before the end of the year.
 
-The software already support a large part of OpenFX 1.2 features!  
+The software already supports a large part of OpenFX 1.2 features!  
 The goal is to have a version of the software supporting all OpenFX 1.2 features for November 2013. Stay tuned for a lot of changes.
