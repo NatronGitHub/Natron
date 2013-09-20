@@ -241,10 +241,19 @@ bool OfxNode::_validate(bool doFullWork){
             //This function calculates the merge of the inputs RoD.
             OfxStatus stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
             assert(stat == kOfxStatOK);
-            assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
-            assert(rod.y1 != kOfxFlagInfiniteMin);
-            assert(rod.x2 != kOfxFlagInfiniteMax);
-            assert(rod.y2 != kOfxFlagInfiniteMax);
+            const Format& format = getModel()->getApp()->getProjectFormat();
+            if(rod.x1 == kOfxFlagInfiniteMin){
+                rod.x1 = format.left();
+            }
+            if(rod.x2 == kOfxFlagInfiniteMax){
+                rod.x2 = format.right();
+            }
+            if(rod.y1 == kOfxFlagInfiniteMin){
+                rod.y1 = format.bottom();
+            }
+            if(rod.y2 == kOfxFlagInfiniteMax){
+                rod.y2 = format.top();
+            }
             int xmin = (int)std::floor(rod.x1);
             int ymin = (int)std::floor(rod.y1);
             int xmax = (int)std::ceil(rod.x2);
@@ -400,10 +409,19 @@ void OfxNode::computePreviewImage(){
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
     assert(stat == kOfxStatOK);
-    assert(rod.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
-    assert(rod.y1 != kOfxFlagInfiniteMin);
-    assert(rod.x2 != kOfxFlagInfiniteMax);
-    assert(rod.y2 != kOfxFlagInfiniteMax);
+    const Format& format = getModel()->getApp()->getProjectFormat();
+    if(rod.x1 == kOfxFlagInfiniteMin){
+        rod.x1 = format.left();
+    }
+    if(rod.x2 == kOfxFlagInfiniteMax){
+        rod.x2 = format.right();
+    }
+    if(rod.y1 == kOfxFlagInfiniteMin){
+        rod.y1 = format.bottom();
+    }
+    if(rod.y2 == kOfxFlagInfiniteMax){
+        rod.y2 = format.top();
+    }
     OfxRectI renderW;
     renderW.x1 = (int)std::floor(rod.x1);
     renderW.y1 = (int)std::floor(rod.y1);
