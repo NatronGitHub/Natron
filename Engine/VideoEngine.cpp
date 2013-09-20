@@ -441,6 +441,7 @@ void VideoEngine::run(){
                 assert(iscached->_byteMode == byteMode);
                 assert(iscached->_frameInfo->displayWindow() == _dispW);
                 assert(iscached->_frameInfo->dataWindow() == dataW);
+                assert(iscached->_frameInfo->getCurrentFrameName() == inputFileNames.toStdString());
                 
                 _lastFrameInfos._textureRect = iscached->_textureRect;
                 
@@ -929,6 +930,11 @@ void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool f
 void VideoEngine::_changeDAGAndStartEngine(int , int , bool initViewer,bool,bool ,OutputNode* output){
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
     _dag.resetAndSort(output,viewer!=NULL);
+    if(initViewer){
+        //we probably changed the sequence or at least we change the zoomFactor, we better
+        //clear everything in memory that is most likely not going to be used.
+        _model->getApp()->clearPlaybackCache();
+    }
     if(viewer){
         const std::vector<Node*>& inputs = _dag.getInputs();
         bool hasFrames = false;
