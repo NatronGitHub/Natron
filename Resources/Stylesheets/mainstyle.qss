@@ -242,6 +242,9 @@ border: 2px groove %1;
 border-radius: 4px;
 padding: 2px 4px;
 }
+QLineEdit:!enabled {
+color:black;
+}
 QSplitter::handle:horizontal{
 background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 %3, stop:0.55 %2,stop:0.98 black, stop:1 black);
 border: 0px;

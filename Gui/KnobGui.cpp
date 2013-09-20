@@ -408,6 +408,7 @@ void Int_KnobGui::show(){
 void Int_KnobGui::setEnabled(bool b){
     _descriptionLabel->setEnabled(b);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->setEnabled(b);
@@ -574,6 +575,7 @@ void Double_KnobGui::show(){
 void Double_KnobGui::setEnabled(bool b){
     _descriptionLabel->setEnabled(b);
     for (U32 i = 0; i < _spinBoxes.size(); ++i) {
+        _spinBoxes[i].first->setEnabled(b);
         _spinBoxes[i].first->setReadOnly(!b);
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->setEnabled(b);

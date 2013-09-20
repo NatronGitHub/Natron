@@ -82,6 +82,7 @@ SOURCES += \
     Engine/OfxHost.cpp \
     Engine/OfxImageEffectInstance.cpp \
     Engine/OfxNode.cpp \
+    Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
@@ -130,8 +131,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    Engine/OfxOverlayInteract.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
 
 
 
@@ -152,8 +152,10 @@ HEADERS += \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
     Engine/OfxNode.h \
+    Engine/OfxOverlayInteract.h \
     Engine/OfxImageEffectInstance.h \
     Engine/OfxParamInstance.h \
+    Engine/Knob.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \
@@ -234,9 +236,7 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/Knob.h \
-    Engine/OfxOverlayInteract.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
 
 
 INSTALLS += target

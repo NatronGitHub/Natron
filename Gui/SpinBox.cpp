@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "SpinBox.h"
 
@@ -33,8 +33,12 @@ LineEdit(parent)
     
     if(type == DOUBLE_SPINBOX){
         _doubleValidator = new QDoubleValidator;
+        _doubleValidator->setTop(99);
+        _doubleValidator->setBottom(0);
     }else{
         _intValidator = new QIntValidator;
+        _intValidator->setTop(99);
+        _intValidator->setBottom(0);
     }
     QObject::connect(this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()));
     setValue(0);
@@ -63,72 +67,75 @@ void SpinBox::interpretReturn(){
 }
 
 void SpinBox::wheelEvent(QWheelEvent *e){
-    bool ok;
-    double cur= text().toDouble(&ok);
-    clear();
-    if(e->delta()>0){
-        if(cur+_increment <= _maxi)
-            cur+=_increment;
-    }else{
-        if(cur-_increment >= _mini)
-            cur-=_increment;
+    if(isEnabled() && !isReadOnly()){
+        bool ok;
+        double cur= text().toDouble(&ok);
+        clear();
+        if(e->delta()>0){
+            if(cur+_increment <= _maxi)
+                cur+=_increment;
+        }else{
+            if(cur-_increment >= _mini)
+                cur-=_increment;
+        }
+        QString str;
+        if(_type == DOUBLE_SPINBOX)
+            str.setNum(cur);
+        else
+            str.setNum((int)cur);
+        
+        insert(str);
+        emit valueChanged(cur);
     }
-    QString str;
-    if(_type == DOUBLE_SPINBOX)
-        str.setNum(cur);
-    else
-        str.setNum((int)cur);
-    
-    insert(str);
-    emit valueChanged(cur);
 }
 
 void SpinBox::keyPressEvent(QKeyEvent *e){
-    bool ok;
-    double cur= text().toDouble(&ok);
-    if(e->key() == Qt::Key_Up){
-        clear();
-        if(cur+_increment <= _maxi)
-            cur+=_increment;
-        QString str;
-        if(_type == DOUBLE_SPINBOX)
-            str.setNum(cur);
-        else
-            str.setNum((int)cur);
-        insert(str);
-        emit valueChanged(cur);
-    }else if(e->key() == Qt::Key_Down){
-        clear();
-        if(cur-_increment >= _mini)
-            cur-=_increment;
-        QString str;
-        if(_type == DOUBLE_SPINBOX)
-            str.setNum(cur);
-        else
-            str.setNum((int)cur);
-        insert(str);
-        emit valueChanged(cur);
-    }else{
-        double oldValue = value();
-        QLineEdit::keyPressEvent(e);
-        if (_type == DOUBLE_SPINBOX) {
-            QString txt = text();
-            int tmp;
-            QValidator::State st = _doubleValidator->validate(txt,tmp);
-            if(st == QValidator::Invalid){
-                setValue(oldValue);
-            }
+    if(isEnabled() && !isReadOnly()){
+        bool ok;
+        double cur= text().toDouble(&ok);
+        if(e->key() == Qt::Key_Up){
+            clear();
+            if(cur+_increment <= _maxi)
+                cur+=_increment;
+            QString str;
+            if(_type == DOUBLE_SPINBOX)
+                str.setNum(cur);
+            else
+                str.setNum((int)cur);
+            insert(str);
+            emit valueChanged(cur);
+        }else if(e->key() == Qt::Key_Down){
+            clear();
+            if(cur-_increment >= _mini)
+                cur-=_increment;
+            QString str;
+            if(_type == DOUBLE_SPINBOX)
+                str.setNum(cur);
+            else
+                str.setNum((int)cur);
+            insert(str);
+            emit valueChanged(cur);
         }else{
-            QString txt = text();
-            int tmp;
-            QValidator::State st = _intValidator->validate(txt,tmp);
-            if(st == QValidator::Invalid){
-                setValue(oldValue);
+            double oldValue = value();
+            QLineEdit::keyPressEvent(e);
+            if (_type == DOUBLE_SPINBOX) {
+                QString txt = text();
+                int tmp;
+                QValidator::State st = _doubleValidator->validate(txt,tmp);
+                if(st == QValidator::Invalid){
+                    setValue(oldValue);
+                }
+            }else{
+                QString txt = text();
+                int tmp;
+                QValidator::State st = _intValidator->validate(txt,tmp);
+                if(st == QValidator::Invalid){
+                    setValue(oldValue);
+                }
             }
+            
         }
-        
     }
-
 }
 
 void SpinBox::decimals(int d){
