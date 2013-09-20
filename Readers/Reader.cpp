@@ -47,7 +47,6 @@ using namespace std;
 Reader::Reader(Model* model):Node(model),
 preview(0),
 has_preview(false),
-video_sequence(0),
 readHandle(0),
 _fileKnob(0),
 _readMutex(new QMutex)
@@ -348,11 +347,6 @@ void Reader::Buffer::erase(DecodedFrameIterator it) {
 
 void Reader::getVideoSequenceFromFilesList(){
     files.clear();
-	if(fileNameList.size() > 1 ){
-		video_sequence=true;
-	}else{
-        video_sequence=false;
-    }
     bool first_time=true;
     QString originalName;
     foreach(QString Qfilename,fileNameList)

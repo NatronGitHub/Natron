@@ -337,14 +337,14 @@ void AbstractDiskCache::clearInMemoryCache() {
 #warning "This infinite loop needs to be fixed! The bug is easy to reproduce."
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
         assert(evicted.second);
-        if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
+        // if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
             assert(mmEntry);
             mmEntry->deallocate();
             AbstractCacheHelper::add(evicted.first, evicted.second);
-        } else {
-            add(evicted.first, evicted.second);
-        }
+//        } else {
+//            add(evicted.first, evicted.second);
+//        }
     }
 }
 

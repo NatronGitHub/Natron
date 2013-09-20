@@ -45,7 +45,7 @@ Here's the state of the software as of today 09/20/2013:
 - TimeVarying OpenFX effects supports.
 - Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
 - Meta-data support as well as per-plugin meta-data support by the node-graph
-
+- Rotopainting node
 
 ##Features in long term##
 

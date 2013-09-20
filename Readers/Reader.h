@@ -463,13 +463,6 @@ public:
      */
 	virtual void createKnobDynamically() OVERRIDE;
     
-    /**
-     * @brief isVideoSequence
-     * @return true if the files held by the Reader are a sequence.
-     */
-    bool isVideoSequence(){return video_sequence;}
-
-    
     /** @brief Set the number of frames that a single reader can store.
     * Must be minimum 2. The appropriate way to call this
     * function is in the constructor of your Read*.
@@ -508,7 +501,6 @@ private:
 	QImage *preview;
 	bool has_preview;
     QStringList fileNameList;
-    bool video_sequence;
     /*useful when using readScanLine in the open(..) function, it determines
      how many scanlines we'd need*/
     bool _fitFrameToViewer;
