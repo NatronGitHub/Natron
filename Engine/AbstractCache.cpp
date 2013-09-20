@@ -331,20 +331,24 @@ AbstractDiskCache::~AbstractDiskCache(){
 
 void AbstractDiskCache::clearInMemoryCache() {
     _inMemorySize = 0;
+    U32 evictedNotRemovableCount = 0;
     while (_inMemoryPortion.size() > 0) {
-        // FIXME: infinite loop (it happened to me [FD]! if cache elements are not removable, how could they *become* removable during the execution of this loop?
-        // why not purge everything (it's just a cache)
-#warning "This infinite loop needs to be fixed! The bug is easy to reproduce."
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
         assert(evicted.second);
-        // if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
+        if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
             assert(mmEntry);
             mmEntry->deallocate();
             AbstractCacheHelper::add(evicted.first, evicted.second);
-//        } else {
-//            add(evicted.first, evicted.second);
-//        }
+        } else {
+            /*I think I fixed it with this counter. If all the frames are not removable, we
+             just return. We can't actually remove a frame not removable since it is currently
+             used by the engine, and this is probably during a memcpy call.*/
+            ++evictedNotRemovableCount;
+            if(evictedNotRemovableCount ==  _inMemoryPortion.size())
+                return;
+            add(evicted.first, evicted.second);
+        }
     }
 }
 
