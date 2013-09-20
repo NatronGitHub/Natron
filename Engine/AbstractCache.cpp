@@ -334,6 +334,7 @@ void AbstractDiskCache::clearInMemoryCache() {
     while (_inMemoryPortion.size() > 0) {
         // FIXME: infinite loop (it happened to me [FD]! if cache elements are not removable, how could they *become* removable during the execution of this loop?
         // why not purge everything (it's just a cache)
+#warning "This infinite loop needs to be fixed! The bug is easy to reproduce."
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
         assert(evicted.second);
         if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?

@@ -46,7 +46,7 @@ class QVBoxLayout;
 class QSplitter;
 class QAction;
 class SequenceFileDialog;
-
+class SequenceItemDelegate;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -148,25 +148,6 @@ private:
     FavoriteItemDelegate *_itemDelegate;
 };
 
-/**
- * @brief The SequenceItemDelegate class is used to alterate the rendering of the cells in the filesystem view
- *within the file dialog. Mainly it transforms the text to draw for an item and also the size.
- */
-class SequenceItemDelegate : public QStyledItemDelegate {
-    
-    int _maxW;
-    mutable QMutex _nameMappingMutex; // protects _nameMapping
-    std::vector<std::pair<QString,std::pair<qint64,QString> > > _nameMapping;
-    SequenceFileDialog* _fd;
-public:
-    explicit SequenceItemDelegate(SequenceFileDialog* fd);
-
-    void setNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
-
-protected:
-    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
-    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
-};
 
 /**
  * @brief The SequenceDialogView class is the view of the filesystem within the dialog.
@@ -302,7 +283,8 @@ public:
     enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
 
     typedef std::multimap<std::string, FileSequence > FrameSequences;
-    typedef std::vector<std::pair<QString,std::pair<qint64,QString> > > NameMapping;
+    typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
+    typedef std::vector<NameMappingElement> NameMapping;
     
 private:
     
@@ -513,5 +495,24 @@ private:
     
 };
 
+/**
+ * @brief The SequenceItemDelegate class is used to alterate the rendering of the cells in the filesystem view
+ *within the file dialog. Mainly it transforms the text to draw for an item and also the size.
+ */
+class SequenceItemDelegate : public QStyledItemDelegate {
+
+    int _maxW;
+    mutable QMutex _nameMappingMutex; // protects _nameMapping
+    SequenceFileDialog::NameMapping _nameMapping;
+    SequenceFileDialog* _fd;
+public:
+    explicit SequenceItemDelegate(SequenceFileDialog* fd);
+
+    void setNameMapping(const SequenceFileDialog::NameMapping& nameMapping);
+
+protected:
+    virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+    virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
+};
 
 #endif /* defined(POWITER_GUI_SEQUENCEFILEDIALOG_H_) */
