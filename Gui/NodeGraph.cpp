@@ -350,7 +350,7 @@ void NodeGraph::enterEvent(QEvent *event)
     QGraphicsView::enterEvent(event);
     if (smartNodeCreationEnabled) {
         _nodeCreationShortcutEnabled=true;
-        setFocus(); // grabKeyboard();
+        setFocus(); 
     }
 }
 void NodeGraph::leaveEvent(QEvent *event)
@@ -359,7 +359,6 @@ void NodeGraph::leaveEvent(QEvent *event)
     if(smartNodeCreationEnabled){
         _nodeCreationShortcutEnabled=false;
         setFocus();
-        //releaseKeyboard();
     }
 }
 

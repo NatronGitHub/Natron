@@ -265,7 +265,7 @@ public:
     QAction* actionConnectInput8;
     QAction* actionConnectInput9;
     QAction* actionConnectInput10;
-    
+        
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
     

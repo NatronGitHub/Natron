@@ -1740,7 +1740,6 @@ void ViewerGL::clearViewer(){
 /*overload of QT enter/leave/resize events*/
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
-    setFocus();
     _viewerTab->getInternalNode()->notifyOverlaysFocusGained();
 
 }
@@ -1751,10 +1750,7 @@ void ViewerGL::leaveEvent(QEvent *event)
 
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
-                                                 // if(isVisible()){
-    QGLWidget::resizeEvent(event);
-    // }
-    
+    QGLWidget::resizeEvent(event);    
 }
 
 void ViewerGL::keyPressEvent(QKeyEvent* event){

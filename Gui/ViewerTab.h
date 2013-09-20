@@ -155,6 +155,8 @@ protected:
     
     bool eventFilter(QObject *target, QEvent *event);
     virtual void keyPressEvent(QKeyEvent* e);
+    virtual void enterEvent(QEvent* e);
+    virtual void leaveEvent(QEvent* e);
     
 };
 

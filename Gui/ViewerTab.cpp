@@ -643,3 +643,11 @@ QSize ViewerTab::minimumSizeHint() const{
 QSize ViewerTab::sizeHint() const{
     return QWidget::sizeHint();
 }
+void ViewerTab::enterEvent(QEvent *event)
+{   QWidget::enterEvent(event);
+    setFocus();
+}
+void ViewerTab::leaveEvent(QEvent *event)
+{
+    QWidget::leaveEvent(event);
+}

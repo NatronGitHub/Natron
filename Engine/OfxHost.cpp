@@ -225,8 +225,6 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
     ifs.close();
 
-    //  _imageEffectPluginCache.dumpToStdOut();
-
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < plugins.size(); ++i) {
