@@ -158,8 +158,11 @@ std::string OfxNode::className() { // should be const
     if (label!="Viewer") {
         return label;
     }else{
+        int pluginCount = effectInstance()->getPlugin()->getBinary()->getNPlugins();
+        QString bundlePath;
+        bundlePath = pluginCount  > 1? effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
         QString grouping = effectInstance()->getDescriptor().getPluginGrouping().c_str();
-        QStringList groups = ofxExtractAllPartsOfGrouping(grouping);
+        QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
         return groups[0].toStdString() + effectInstance()->getLongLabel();
     }
 }
@@ -468,8 +471,24 @@ void OfxNode::computePreviewImage(){
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& str) {
+QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundlePath) {
     QStringList out;
+    if(!bundlePath.isEmpty()){
+        int lastDotPos = bundlePath.lastIndexOf('.');
+        QString bundleName = bundlePath.left(lastDotPos);
+        lastDotPos = bundleName.lastIndexOf('.');
+        bundleName = bundleName.left(lastDotPos);
+        lastDotPos = bundleName.lastIndexOf('/');
+        if(lastDotPos == -1){
+            lastDotPos = bundleName.lastIndexOf('\\');
+        }
+        if(lastDotPos != -1){
+            QString toRemove = bundleName.left(lastDotPos+1);
+            bundleName = bundleName.remove(toRemove);
+            out.push_back(bundleName);
+        }
+        
+    }
     int pos = 0;
     while(pos < str.size()){
         QString newPart;

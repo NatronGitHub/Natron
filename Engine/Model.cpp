@@ -35,6 +35,7 @@
 #include "Engine/ViewerCache.h"
 #include "Engine/OfxHost.h"
 #include "Engine/NodeCache.h"
+#include "Engine/OfxImageEffectInstance.h"
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerGL.h"
@@ -102,7 +103,9 @@ Node* Model::createNode(const std::string& name) {
     } else {
         node = appPTR->getOfxHost()->createOfxNode(name,this);
     }
-    assert(node);
+    if(!node){
+        return NULL;
+    }
     _currentNodes.push_back(node);
     return node;
 }
@@ -187,7 +190,10 @@ QString Model::serializeNodeGraph() const{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
             QString name = ofxNode->getShortLabel().c_str();
             QString grouping = ofxNode->getPluginGrouping().c_str();
-            QStringList groups = ofxExtractAllPartsOfGrouping(grouping);
+            int pluginCount = ofxNode->effectInstance()->getPlugin()->getBinary()->getNPlugins();
+            QString bundlePath;
+            bundlePath = pluginCount > 1? ofxNode->effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
+            QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
             if (groups.size() >= 1) {
                 name.append("  [");
                 name.append(groups[0]);

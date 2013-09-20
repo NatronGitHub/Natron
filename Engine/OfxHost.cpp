@@ -241,9 +241,11 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
         QString rawName = name;
         QString id = p->getIdentifier().c_str();
         QString grouping = p->getDescriptor().getPluginGrouping().c_str();
-
-
-        QStringList groups = ofxExtractAllPartsOfGrouping(grouping);
+        
+        int pluginCount = p->getBinary()->getNPlugins();
+        QString bundlePath;
+        bundlePath = pluginCount > 1 ? p->getBinary()->getBundlePath().c_str() : "";
+        QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
         if (groups.size() >= 1) {
             name.append("  [");
             name.append(groups[0]);

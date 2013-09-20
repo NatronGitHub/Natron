@@ -171,6 +171,6 @@ private:
  Toto/Superplugins/blabla
  This functions extracts the all parts of such a grouping, e.g in this case
  it would return [Toto,Superplugins,blabla].*/
-QStringList ofxExtractAllPartsOfGrouping(const QString& group);
+QStringList ofxExtractAllPartsOfGrouping(const QString& group,const QString& bundlePath);
 
 #endif // POWITER_ENGINE_OFXNODE_H_
