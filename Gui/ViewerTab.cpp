@@ -530,7 +530,7 @@ void ViewerTab::lastFrame(){
         _viewerNode->getVideoEngine()->lastFrame();
 }
 void ViewerTab::seekRandomFrame(int f){
-    _gui->getApp()->updateDAG(_viewerNode, true);
+    _gui->getApp()->updateDAG(_viewerNode, false);
     if(_viewerNode->getVideoEngine()->dagHasInputs())
         _viewerNode->getVideoEngine()->seekRandomFrame(f);
 }

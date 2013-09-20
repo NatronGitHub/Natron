@@ -132,7 +132,6 @@ bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
 }
 
 bool Model::connect(int inputNumber,Node* input,Node* output){
-    //output->disconnectInput(inputNumber);
     if(!output->connectInput(input, inputNumber)){
         return false;
     }

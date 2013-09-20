@@ -1094,33 +1094,31 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
-    if(event->modifiers().testFlag(Qt::AltModifier)){
-        const Format& dispW = displayWindow();
-        if(pos.x() >= dispW.left() &&
-           pos.x() <= dispW.width() &&
-           pos.y() >= dispW.bottom() &&
-           pos.y() <= dispW.height() &&
-           event->x() >= 0 && event->x() < width() &&
-           event->y() >= 0 && event->y() < height()){
-            if(!_infoViewer->colorAndMouseVisible()){
-                _infoViewer->showColorAndMouseInfo();
-            }
-            VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
-            if(videoEngine && !videoEngine->isWorking()){
-                updateColorPicker(event->x(),event->y());
-            }
-            _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
-            emit infoMousePosChanged();
-            
-            
-            
-        }else{
-            if(_infoViewer->colorAndMouseVisible()){
-                _infoViewer->hideColorAndMouseInfo();
-            }
+    const Format& dispW = displayWindow();
+    if(pos.x() >= dispW.left() &&
+       pos.x() <= dispW.width() &&
+       pos.y() >= dispW.bottom() &&
+       pos.y() <= dispW.height() &&
+       event->x() >= 0 && event->x() < width() &&
+       event->y() >= 0 && event->y() < height()){
+        if(!_infoViewer->colorAndMouseVisible()){
+            _infoViewer->showColorAndMouseInfo();
         }
+        VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
+        if(videoEngine && !videoEngine->isWorking()){
+            updateColorPicker(event->x(),event->y());
+        }
+        _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
+        emit infoMousePosChanged();
         
         
+        
+    }else{
+        if(_infoViewer->colorAndMouseVisible()){
+            _infoViewer->hideColorAndMouseInfo();
+        }
+    }
+    if(event->modifiers().testFlag(Qt::AltModifier)){
         if(_ms == DRAGGING){
             // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
             QPoint newClick =  event->pos();

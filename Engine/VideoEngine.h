@@ -12,7 +12,6 @@
 #ifndef POWITER_ENGINE_VIDEOENGINE_H_
 #define POWITER_ENGINE_VIDEOENGINE_H_
 
-// FIXME: can the definitions of classes EngineMainEntry, Worker, and RowRunnable be moved to VideoEngine.cpp?
 #include <cassert>
 #include <vector>
 #include <boost/scoped_ptr.hpp>
@@ -53,11 +52,7 @@ class Worker;
 /**
  *@class VideoEngine
  *@brief This is the engine that runs the playback. It handles all graph computations for the time range given by
- *the graph. A lot of optimisations are made in here to keep the main thread refreshing the GUI and also do some
- *OpenGL computations. Take a look at the drawing in the source file if you want to understand the succession of calls
- *that are made by the video engine. This class is non copyable and for now the software can only support 1 engine.
- *That means that you cannot have 2 computations running at the same time. A future version will most likely introduce
- *multi-engine processing but this is not a priority.
+ *the graph.
  **/
 class VideoEngine : public QThread{
     Q_OBJECT
