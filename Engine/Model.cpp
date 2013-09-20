@@ -189,11 +189,7 @@ QString Model::serializeNodeGraph() const{
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
             QString name = ofxNode->getShortLabel().c_str();
-            QString grouping = ofxNode->getPluginGrouping().c_str();
-            int pluginCount = ofxNode->effectInstance()->getPlugin()->getBinary()->getNPlugins();
-            QString bundlePath;
-            bundlePath = pluginCount > 1? ofxNode->effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
-            QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
+            QStringList groups = ofxNode->getPluginGrouping();
             if (groups.size() >= 1) {
                 name.append("  [");
                 name.append(groups[0]);

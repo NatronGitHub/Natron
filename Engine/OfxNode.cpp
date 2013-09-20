@@ -158,11 +158,7 @@ std::string OfxNode::className() { // should be const
     if (label!="Viewer") {
         return label;
     }else{
-        int pluginCount = effectInstance()->getPlugin()->getBinary()->getNPlugins();
-        QString bundlePath;
-        bundlePath = pluginCount  > 1? effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
-        QString grouping = effectInstance()->getDescriptor().getPluginGrouping().c_str();
-        QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
+        const QStringList groups = getPluginGrouping();
         return groups[0].toStdString() + effectInstance()->getLongLabel();
     }
 }
@@ -473,6 +469,16 @@ void OfxNode::computePreviewImage(){
  it would return [Toto,Superplugins,blabla].*/
 QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundlePath) {
     QStringList out;
+    int pos = 0;
+    while(pos < str.size()){
+        QString newPart;
+        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
+            newPart.append(str.at(pos));
+            ++pos;
+        }
+        ++pos;
+        out.push_back(newPart);
+    }
     if(!bundlePath.isEmpty()){
         int lastDotPos = bundlePath.lastIndexOf('.');
         QString bundleName = bundlePath.left(lastDotPos);
@@ -485,19 +491,10 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundl
         if(lastDotPos != -1){
             QString toRemove = bundleName.left(lastDotPos+1);
             bundleName = bundleName.remove(toRemove);
-            out.push_back(bundleName);
+            if(out.size() == 1)
+                out.push_front(bundleName);
         }
         
-    }
-    int pos = 0;
-    while(pos < str.size()){
-        QString newPart;
-        while(pos < str.size() && str.at(pos) != QChar('/') && str.at(pos) != QChar('\\')){
-            newPart.append(str.at(pos));
-            ++pos;
-        }
-        ++pos;
-        out.push_back(newPart);
     }
     return out;
 }
@@ -506,8 +503,13 @@ const std::string& OfxNode::getShortLabel() const {
     return effect_->getShortLabel();
 }
 
-const std::string& OfxNode::getPluginGrouping() const {
-    return effect_->getPluginGrouping();
+const QStringList OfxNode::getPluginGrouping() const {
+    int pluginCount = effectInstance()->getPlugin()->getBinary()->getNPlugins();
+    QString bundlePath;
+    bundlePath = pluginCount  > 1 ? effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
+    QString grouping = effectInstance()->getDescriptor().getPluginGrouping().c_str();
+    QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
+    return groups;
 }
 void OfxNode::swapBuffersOfAttachedViewer(){
     ViewerNode* n = hasViewerConnected(this);

@@ -129,7 +129,11 @@ public:
     
     const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
     
-    const std::string& getPluginGrouping() const; // forwarded to OfxImageEffectInstance
+    /*group is a string as such:
+     Toto/Superplugins/blabla
+     This functions extracts the all parts of such a grouping, e.g in this case
+     it would return [Toto,Superplugins,blabla].*/
+    const QStringList getPluginGrouping() const; 
 
     void openFilesForAllFileParams();
     

@@ -261,6 +261,10 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
             groupIconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
             groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
             groupIconFilename.append(groups[0]);
+//            if(bundlePath.size() > 0 && pluginCount > 1 && groups.size() > 1){
+//                groupIconFilename.append('/');
+//                groupIconFilename.append(groups[1]);
+//            }
             groupIconFilename.append(".png");
         }
         emit toolButtonAdded(groups, rawName, iconFilename, groupIconFilename);
