@@ -28,6 +28,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QUrl>
 #include <QtCore/QLatin1Char>
 #include <QComboBox>
@@ -220,9 +221,9 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
     /*multimap of <sequence name, FileSequence >
      *Several sequences can have a same name but a different file extension within a same directory.
      */
+    mutable QMutex _frameSequencesMutex; // protects _frameSequences
     mutable std::multimap<std::string, FileSequence > _frameSequences;
     SequenceFileDialog* _fd;
-    mutable QMutex _lock;
     QString _filter;
 
 public:
@@ -289,7 +290,7 @@ public:
 private:
     
     FrameSequences _frameSequences;
-    mutable QMutex _nameMappingMutex; // protects _nameMapping
+    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
     
     std::vector<std::string> _filters;
@@ -502,7 +503,7 @@ private:
 class SequenceItemDelegate : public QStyledItemDelegate {
 
     int _maxW;
-    mutable QMutex _nameMappingMutex; // protects _nameMapping
+    mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     SequenceFileDialog::NameMapping _nameMapping;
     SequenceFileDialog* _fd;
 public:
