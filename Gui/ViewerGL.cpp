@@ -500,7 +500,9 @@ void ViewerGL::drawOverlay(){
         glPopAttrib();
         checkGLErrors();
     }
-    _viewerTab->getInternalNode()->drawOverlays();
+    if(_drawing){
+        _viewerTab->getInternalNode()->drawOverlays();
+    }
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
     checkGLErrors();
