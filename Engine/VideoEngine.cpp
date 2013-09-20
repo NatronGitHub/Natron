@@ -94,7 +94,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     cout <<"=============================================" << endl;
     if(sameFrame){
         cout << ">>>Starting engine to refresh the same frame.<<<" << endl;
-    
+        
     }else{
         cout << "Starting engine";
         if(forward){
@@ -103,14 +103,14 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
             cout << " in backward fashion";
         }
         cout << " for " << frameCount << " frames." << endl;
-       
+        
     }
     if(fitFrameToViewer){
         cout << ">>Fitting viewer to the frame<<" << endl;;
     }
     // cout << "+ STARTING ENGINE " << endl;
     _timer->playState=RUNNING;
-   
+    
     _aborted = false;
     
     double zoomFactor;
@@ -150,14 +150,14 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     } else {
         QMutexLocker locker(&_startMutex);
         ++_startCount;
-       _startCondition.wakeOne();
+        _startCondition.wakeOne();
     }
 }
 
 void VideoEngine::stopEngine() {
     if(_dag.isOutputAViewer()){
         emit engineStopped();
-
+        
     }
     // cout << "- STOPPING ENGINE"<<endl;
     _lastRunArgs._frameRequestsCount = 0;
@@ -166,13 +166,13 @@ void VideoEngine::stopEngine() {
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
     cout << ">>>Engine stopped.<<<" << endl;
-
+    
 }
 
 void VideoEngine::run(){
     
     for(;;){ // infinite loop
-
+        
         {
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
@@ -188,12 +188,12 @@ void VideoEngine::run(){
          states of nodes etc...*/
         _model->getGeneralMutex()->lock();
         _working = true;
-
+        
         if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
             stopEngine();
             return;
         }
-
+        
         
         
         /*beginRenderAction for all openFX nodes*/
@@ -362,7 +362,7 @@ void VideoEngine::run(){
         }
         
         _dag.validate(true);
-
+        
         OutputNode* outputNode = _dag.getOutput();
         assert(outputNode);
         const Format &_dispW = outputNode->info().displayWindow();
@@ -378,7 +378,7 @@ void VideoEngine::run(){
             }
             
         }        /*Now that we called validate we can check if the frame is in the cache
-         and return the appropriate EngineStatus code.*/
+                  and return the appropriate EngineStatus code.*/
         vector<int> rows;
         vector<int> columns;
         int x=0,r=0;
@@ -389,6 +389,7 @@ void VideoEngine::run(){
         float exposure = 0.f;
         float zoomFactor = 0.f;
         float byteMode = 0.f;
+        QString inputFileNames;
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             assert(viewer);
             assert(viewer->getUiContext());
@@ -410,7 +411,9 @@ void VideoEngine::run(){
             exposure = viewer->getUiContext()->viewer->getExposure();
             lut =  viewer->getUiContext()->viewer->lutType();
             byteMode = viewer->getUiContext()->viewer->byteMode();
+            inputFileNames = _dag.generateConcatenationOfAllReadersFileNames();
             key = FrameEntry::computeHashKey(currentFrame,
+                                             inputFileNames,
                                              getCurrentTreeVersion(),
                                              zoomFactor,
                                              exposure,
@@ -427,7 +430,7 @@ void VideoEngine::run(){
             /*Found in viewer cache, we execute the cached engine and leave*/
             if (iscached) {
                 _lastFrameInfos._cachedEntry = iscached;
-
+                
                 /*Checking that the entry retrieve matches absolutely what we
                  asked for.*/
                 assert(iscached->_textureRect == textureRect);
@@ -479,7 +482,7 @@ void VideoEngine::run(){
             }
             --_openGLCount;
         }
-
+        
         if (!_lastRunArgs._sameFrame) {
             assert(appPTR->getNodeCache());
             appPTR->getNodeCache()->clear();
@@ -504,7 +507,7 @@ void VideoEngine::run(){
             int counter = 0;
             QVector<Row*> sequence;
             sequence.reserve(rows.size());
-
+            
             for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
                 Row* row = new Row(x,*it,r,outChannels);
                 assert(row);
@@ -532,14 +535,15 @@ void VideoEngine::run(){
             viewer->getUiContext()->viewer->stopDisplayingProgressBar();
             assert(appPTR->getViewerCache());
             FrameEntry* entry = appPTR->getViewerCache()->addFrame(key,
-                                                                        _treeVersion,
-                                                                        zoomFactor,
-                                                                        exposure,
-                                                                        lut,
-                                                                        byteMode,
-                                                                        _lastFrameInfos._textureRect,
-                                                                        dataW,
-                                                                        _dispW);
+                                                                   inputFileNames,
+                                                                   _treeVersion,
+                                                                   zoomFactor,
+                                                                   exposure,
+                                                                   lut,
+                                                                   byteMode,
+                                                                   _lastFrameInfos._textureRect,
+                                                                   dataW,
+                                                                   _dispW);
             
             if(entry){
                 assert(entry->getMappedFile());
@@ -572,7 +576,7 @@ void VideoEngine::run(){
             }
         }
         _model->getGeneralMutex()->unlock();
-
+        
         
     } // end for(;;)
     
@@ -608,7 +612,7 @@ void VideoEngine::engineLoop(){
         _autoSaveOnNextRun = false;
         _model->getApp()->autoSave();
     }
-
+    
 }
 
 void VideoEngine::updateViewer(){
@@ -636,8 +640,8 @@ void VideoEngine::cachedEngine(){
 void VideoEngine::allocateFrameStorage(){
     QMutexLocker locker(&_openGLMutex);
     _lastFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(
-                                                _lastFrameInfos._textureRect.w,
-                                               _lastFrameInfos._textureRect.h);
+                                                                                                    _lastFrameInfos._textureRect.w,
+                                                                                                    _lastFrameInfos._textureRect.h);
     ++_openGLCount;
     _openGLCondition.wakeOne();
 }
@@ -914,9 +918,9 @@ void VideoEngine::runTasks(){
 void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
     if(_dag.getOutput() && _dag.getInputs().size()>0){
         if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
-          return;
+            return;
         _dag.outputAsViewer()->getTimeLine().seek(frameNB);
-
+        
         render(frameCount,initViewer,forward,sameFrame);
         
     }
@@ -1126,4 +1130,12 @@ void VideoEngine::quitEngineThread(){
 
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
+}
+
+const QString VideoEngine::DAG::generateConcatenationOfAllReadersFileNames() const{
+    QString ret;
+    for (U32 i = 0; i < _inputs.size(); ++i) {
+        ret.append(_inputs[i]->getRandomFrameName(_output->getTimeLine().currentFrame()));
+    }
+    return ret;
 }

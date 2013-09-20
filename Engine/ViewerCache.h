@@ -37,8 +37,10 @@ public:
 	ReaderInfo* _frameInfo; //bbox,format,channels,frame name,ydirection
 	float _byteMode;
 	TextureRect _textureRect; // zoomed H&W
+    
 	FrameEntry();
-	FrameEntry(float zoom,float exp,float lut,U64 treeVers,
+    
+	FrameEntry(QString inputFileNames,float zoom,float exp,float lut,U64 treeVers,
                          float byteMode,const Box2D& bbox,const Format& dispW,
                          const ChannelSet& channels,const TextureRect& textureRect);
     
@@ -52,7 +54,8 @@ public:
 	static FrameEntry* recoverFromString(QString str);
     
 	/*Returns a key computed from the parameters.*/
-	static U64 computeHashKey(int frameNB,
+	static U64 computeHashKey(int frameNb,
+                              QString inputFileNames,
                               U64 treeVersion,
                               float zoomFactor,
                               float exposure,
@@ -89,6 +92,7 @@ public:
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 	FrameEntry* addFrame(U64 key,
+                         QString inputFileNames,
                          U64 treeVersion,
                          float zoomFactor,
                          float exposure,

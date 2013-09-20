@@ -303,19 +303,107 @@ std::string File_Knob::serialize() const{
 }
 
 void File_Knob::_restoreFromString(const std::string& str){
-    //    _name->setText(str.c_str());
     QStringList filesList = SequenceFileDialog::filesListFromPattern(str.c_str());
     _value.setValue(filesList);
 }
+void File_Knob::fillHashVector(){
+    //this has nothing to do with the hash key but we need to do this call before the signal
+    // valueChangedByuser is emitted
+    getVideoSequenceFromFilesList();
+}
+
 void File_Knob::tryStartRendering(){
     emit filesSelected();
-    QStringList files = _value.value<QStringList>();
-    if(files.size() > 0){
+    if(_filesSequence.size() > 0){
         const std::string& className = _node->className();
         if(className == "Reader"){
             dynamic_cast<Reader*>(_node)->showFilePreview();
         }
         startRendering(true);
+    }
+}
+
+void File_Knob::getVideoSequenceFromFilesList(){
+    _filesSequence.clear();
+    QStringList fileNameList = _value.toStringList();
+    bool first_time = true;
+    QString originalName;
+    for(int i = 0 ; i < fileNameList.size();++i){
+        QString fileName = fileNameList.at(i);
+        QString unModifiedName = fileName;
+        if(first_time){
+            int extensionPos = fileName.lastIndexOf('.');
+            if(extensionPos != -1){
+                fileName = fileName.left(extensionPos);
+            }else{
+                continue;
+            }
+            int j = fileName.size()-1;
+            QString frameIndexStr;
+            while(j > 0 && fileName.at(j).isDigit()){ frameIndexStr.push_front(fileName.at(j)); --j;}
+            if(j > 0){
+				int frameNumber = 0;
+                if(fileNameList.size() > 1){
+                    frameNumber = frameIndexStr.toInt();
+                }
+				_filesSequence.insert(make_pair(frameNumber,unModifiedName));
+                originalName = fileName.left(fileName.indexOf(frameIndexStr));
+                
+            }else{
+                _filesSequence.insert(make_pair(0,unModifiedName));
+            }
+            first_time=false;
+        }else{
+            if(fileName.contains(originalName)){
+                int extensionPos = fileName.lastIndexOf('.');
+                if(extensionPos != -1){
+                    fileName = fileName.left(extensionPos);
+                }else{
+                    continue;
+                }
+                int j = fileName.size()-1;
+                QString frameIndexStr;
+                while(j > 0 && fileName.at(j).isDigit()){ frameIndexStr.push_front(fileName.at(j)); --j;}
+                if(j > 0){
+                    int number = frameIndexStr.toInt();
+                    _filesSequence.insert(make_pair(number,unModifiedName));
+                }else{
+                    cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << endl;
+                }
+            }
+        }
+    }
+    emit frameRangeChanged(firstFrame(), lastFrame());
+}
+int File_Knob::firstFrame() const{
+    std::map<int,QString>::const_iterator it = _filesSequence.begin();
+    if (it == _filesSequence.end()) {
+        return INT_MIN;
+    }
+    return it->first;
+}
+int File_Knob::lastFrame() const {
+    std::map<int,QString>::const_iterator it = _filesSequence.end();
+    if(it == _filesSequence.begin()) {
+        return INT_MAX;
+    }
+    --it;
+    return it->first;
+}
+int File_Knob::clampToRange(int f) const{
+    int first = firstFrame();
+    int last = lastFrame();
+    if(f < first) return first;
+    if(f > last) return last;
+    return f;
+}
+const QString File_Knob::getRandomFrameName(int f) const{
+    f = clampToRange(f);
+    map<int, QString>::const_iterator it = _filesSequence.find(f);
+    if(it!=_filesSequence.end()){
+        return it->second;
+    }else{
+        return "";
     }
 }
 

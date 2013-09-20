@@ -154,7 +154,7 @@ public:
     
     const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
    
-    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags);
+    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1, Knob_Mask flags = 0);
     
     KnobGui* createGuiForKnob(Knob* knob);
     
@@ -378,6 +378,8 @@ std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
 class File_Knob:public Knob
 {
     Q_OBJECT
+    
+    std::map<int,QString> _filesSequence;///mapping <frameNumber,fileName>
 public:
     
     static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
@@ -388,11 +390,7 @@ public:
     Knob(node,description,dimension,flags)
     {}
     
-    virtual void fillHashVector(){
-        // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache.
-        // explanation: The algorithm doing the look-up in the cache already takes care of the current frame name.
-        // See  VideoEngine::render(...) at line starting with  key = FrameEntry::computeHashKey to understand the call.
-    }
+    virtual void fillHashVector();
     
     virtual const std::string name(){return "InputFile";}
     
@@ -402,9 +400,38 @@ public:
         emit shouldOpenFile();
     }
     
+    /**
+     * @brief firstFrame
+     * @return Returns the index of the first frame in the sequence held by this Reader.
+     */
+    int firstFrame() const;
+    
+    /**
+     * @brief lastFrame
+     * @return Returns the index of the last frame in the sequence held by this Reader.
+     */
+	int lastFrame() const;
+    
+    int frameCount() const{return _filesSequence.size();}
+    
+    /**
+     * @brief clampToRange
+     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
+     * @param f The index of the frame to clamp.
+     */
+    int clampToRange(int f) const;
+    
+    /**
+     * @brief getRandomFrameName
+     * @param f The index of the frame.
+     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
+     */
+    const QString getRandomFrameName(int f) const;
+    
 signals:
     void filesSelected();
     void shouldOpenFile();
+    void frameRangeChanged(int,int);
     
 protected:
     
@@ -412,7 +439,9 @@ protected:
     
     virtual void _restoreFromString(const std::string& str);
     
+private:
     
+    void getVideoSequenceFromFilesList();
     
 };
 

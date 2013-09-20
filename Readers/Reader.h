@@ -355,15 +355,10 @@ public:
     virtual ~Reader();
 
     /**
-     * @brief Extracts the video sequence from the files list returned by the file dialog.
-     */
-    void getVideoSequenceFromFilesList();
-
-    /**
      * @brief hasFrames
      * @return True if the files list contains at list a file.
      */
-	bool hasFrames(){return fileNameList.size()>0;}
+	bool hasFrames() const;
 
     /**
      * @brief Reads the header of the file associated to the current frame.
@@ -403,7 +398,7 @@ public:
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    std::string getRandomFrameName(int f);
+    virtual const QString getRandomFrameName(int /*frame*/) const;
 
     /**
      * @brief hasPreview
@@ -491,6 +486,8 @@ public slots:
      *The preview will appear on the Reader's node GUI.
      */
     void showFilePreview();
+    
+    void onFrameRangeChanged(int first,int last);
 
 protected:
 
@@ -500,12 +497,10 @@ protected:
 private:
 	QImage *preview;
 	bool has_preview;
-    QStringList fileNameList;
     /*useful when using readScanLine in the open(..) function, it determines
      how many scanlines we'd need*/
     bool _fitFrameToViewer;
 	Read* readHandle;
-    std::map<int,QString> files; // frames
     Buffer _buffer;
     File_Knob* _fileKnob;
     QMutex* _readMutex;

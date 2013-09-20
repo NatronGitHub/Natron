@@ -612,3 +612,17 @@ void OfxNode::onOverlayFocusLost(){
         _overlayInteract->loseFocusAction(1., rs);
     }
 }
+
+const QString OfxNode::getRandomFrameName(int f) const{
+    if (effectInstance()->getContext() == kOfxImageEffectContextGenerator) {
+        const map<string,OFX::Host::Param::Instance*>& params = effect_->getParams();
+        for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+            if(it->second->getType() == kOfxParamTypeString){
+                OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+                assert(param);
+                return param->getRandomFrameName(f);
+            }
+        }
+    }
+    return "";
+}

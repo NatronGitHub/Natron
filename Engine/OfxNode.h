@@ -35,9 +35,9 @@ namespace Powiter {
     class OfxOverlayInteract;
 }
 
-// FIXME: OFX::Host::ImageEffect::Instance should be a member
 class OfxNode : public OutputNode
 {
+    
 public:
     OfxNode(Model* model,
              OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -128,6 +128,7 @@ public:
     const Powiter::OfxImageEffectInstance* effectInstance() const { return effect_; }
     
     const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
+    
     const std::string& getPluginGrouping() const; // forwarded to OfxImageEffectInstance
 
     void openFilesForAllFileParams();
@@ -144,17 +145,25 @@ public:
 
     void tryInitializeOverlayInteracts();
     
+    /**
+     * @brief getRandomFrameName Valid only for nodes having a  OfxStringInstance's of type kOfxParamStringIsFilePath with
+     * an OfxImageEffectInstance of type kOfxImageEffectContextGenerator
+     * @param f The index of the frame.
+     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
+     */
+    virtual const QString getRandomFrameName(int f) const;
+            
 private:
 
-    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab
+    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
     QMutex _firstTimeMutex; // lock used in engine(...) function, protects _firstTime
     bool _firstTime; //used in engine(...) to operate once per frame
-    bool _isOutput;
-    QImage* _preview;
-    bool _canHavePreview;
+    bool _isOutput;//if the OfxNode can output a file somehow
+    QImage* _preview; // ptr to the preview if _canHavePreview is true
+    bool _canHavePreview; // does it have a preview? 
     Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)
-    Powiter::OfxOverlayInteract* _overlayInteract;
+    Powiter::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
 };
 
 

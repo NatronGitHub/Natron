@@ -133,6 +133,10 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     
     bool hashChanged();
     
+    /*This function makes sense if the overloaded node is a node that reads a file.
+     You should then return the filename for the frame passed in parameter.*/
+    virtual const QString getRandomFrameName(int /*frame*/) const{ return ""; }
+    
     /*============================*/
     
     /*overload this to init any knobs*/
@@ -264,7 +268,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
         Q_UNUSED(channels);
         Q_UNUSED(out);
     }
-	
+	    
     /*============================*/
     
     /*overlay support:
@@ -372,7 +376,7 @@ public slots:
     void onGUINameChanged(const QString& str){
         _name = str.toStdString();
     }
-    
+    void onFrameRangeChanged(int first,int last);    
 
 signals:
     

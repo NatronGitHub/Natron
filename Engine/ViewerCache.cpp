@@ -44,7 +44,7 @@ FrameEntry::FrameEntry():MemoryMappedEntry(), _exposure(0),_lut(0),_zoom(0),_tre
     _frameInfo = new ReaderInfo;
 }
 
-FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
+FrameEntry::FrameEntry(QString inputFileNames,float zoom,float exp,float lut,U64 treeVers,
                        float byteMode,const Box2D& bbox,const Format& dispW,
                        const ChannelSet& channels,const TextureRect& textureRect):MemoryMappedEntry(),
 _exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
@@ -53,6 +53,7 @@ _byteMode(byteMode),_textureRect(textureRect){
     _frameInfo->set_dataWindow(bbox);
     _frameInfo->set_displayWindow(dispW);
     _frameInfo->set_channels(channels);
+    _frameInfo->setCurrentFrameName(inputFileNames.toStdString());
     
 }
 
@@ -186,6 +187,7 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
 FrameEntry* ViewerCache::addFrame(U64 key,
+                                  QString inputFileNames,
                                   U64 treeVersion,
                                   float zoomFactor,
                                   float exposure,
@@ -196,7 +198,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
                                   const Format& dispW){
     
     
-    FrameEntry* out  = new FrameEntry(zoomFactor,exposure,lut,
+    FrameEntry* out  = new FrameEntry(inputFileNames,zoomFactor,exposure,lut,
                                       treeVersion,byteMode,bbox,dispW,Mask_RGBA,textureRect);
     string name(getCachePath().toStdString());
     {
@@ -271,7 +273,8 @@ FrameEntry* ViewerCache::get(U64 key){
 }
 
 
-U64 FrameEntry::computeHashKey(int frameNB,
+U64 FrameEntry::computeHashKey(int frameNb,
+                               QString inputFileNames,
                                U64 treeVersion,
                                float zoomFactor,
                                float exposure,
@@ -281,7 +284,10 @@ U64 FrameEntry::computeHashKey(int frameNB,
                                const Format& dispW,
                                const TextureRect& frameRect){
     Hash64 _hash;
-    _hash.append(frameNB);
+    _hash.append(frameNb);
+    for (int i = 0; i < inputFileNames.size(); ++i) {
+        _hash.append(inputFileNames.at(i).unicode());
+    }
     _hash.append(treeVersion);
     _hash.append((U64)*(reinterpret_cast<U32*>(&zoomFactor)));
     _hash.append((U64)*(reinterpret_cast<U32*>(&exposure)));

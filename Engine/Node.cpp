@@ -431,14 +431,10 @@ void Node::createKnobDynamically(){
 
 Row* Node::get(int y,int x,int r){
     NodeCache* cache = appPTR->getNodeCache();
-    std::string filename;
-    Reader* reader = dynamic_cast<Reader*>(this);
-    if(reader){
-        int current_frame;
-        const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
-        current_frame = reader->clampToRange(dag.getOutput()->getTimeLine().currentFrame());
-        filename = reader->getRandomFrameName(current_frame);
-    }
+    int current_frame;
+    const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
+    current_frame = dag.getOutput()->getTimeLine().currentFrame();
+    std::string filename =  getRandomFrameName(current_frame).toStdString();
     Row* out = 0;
     U64 key = _hashValue.value();
     pair<U64,Row*> entry = cache->get(key , filename,x,r,y,info().channels());
@@ -547,6 +543,11 @@ int Node::canMakePreviewImage(){
     }else{
         return 0;
     }
+}
+
+void Node::onFrameRangeChanged(int first,int last){
+    _info.set_firstFrame(first);
+    _info.set_lastFrame(last);
 }
 
 OutputNode::OutputNode(Model* model)

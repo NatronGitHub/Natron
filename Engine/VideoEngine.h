@@ -208,6 +208,15 @@ public:
          */
         bool validate(bool doFullWork);
         
+        /**
+         *@brief Generate a string containing the concatenation of all
+         *the current frame file-names in all readers.
+         *For example if Reader_1 has for current frame toto1.jpg and 
+         *Reader_2 has for current frame lala.png, this would return
+         *toto1.jpglala2.jpg
+         **/
+        const QString generateConcatenationOfAllReadersFileNames() const;
+        
         void debug();
     private:
         

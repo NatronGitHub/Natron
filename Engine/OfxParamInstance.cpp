@@ -786,6 +786,7 @@ _fileKnob(0),_outputFileKnob(0){
         if(_node->isInputNode()){
             _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", node, name, 1,Knob::NONE));
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+            QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), _node, SLOT(onFrameRangeChanged(int,int)));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
             }
@@ -831,7 +832,7 @@ _fileKnob(0),_outputFileKnob(0){
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
+        int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
             map<int,QString>::iterator it = _files.find(currentFrame);
             if(it!=_files.end()){
@@ -852,7 +853,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        int currentFrame = clampToRange((int)_node->effectInstance()->timeLineGetTime());
+        int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
         if(currentFrame != INT_MAX && currentFrame != INT_MIN){
             map<int,QString>::iterator it = _files.find(currentFrame);
             if(it!=_files.end()){
@@ -939,10 +940,7 @@ void OfxStringInstance::setSecret(){
 
 void OfxStringInstance::onInstanceChanged() {
     if (_fileKnob) {
-        getVideoSequenceFromFilesList();
-        _returnValue = _fileKnob->value<QString>().toStdString();
          _node->computePreviewImage();
-
     }
     assert(_node->effectInstance());
     OfxStatus stat;
@@ -957,74 +955,8 @@ void OfxStringInstance::onInstanceChanged() {
     }
 }
 
-void OfxStringInstance::getVideoSequenceFromFilesList(){
-    _files.clear();
-    QStringList _filesList = _fileKnob->value<QStringList>();
-    bool first_time=true;
-    QString originalName;
-    foreach(QString Qfilename,_filesList)
-    {	if(Qfilename.at(0) == QChar('.')) continue;
-        QString const_qfilename=Qfilename;
-        if(first_time){
-            Qfilename=Qfilename.remove(Qfilename.length()-4,4);
-            int j=Qfilename.length()-1;
-            QString frameIndex;
-            while(j>0 && Qfilename.at(j).isDigit()){
-                frameIndex.push_front(Qfilename.at(j));
-                --j;
-            }
-            if(j>0){
-				int number=0;
-                if(_filesList.size() > 1){
-                    number = frameIndex.toInt();
-                }
-				_files.insert(make_pair(number,const_qfilename));
-                originalName=Qfilename.remove(j+1,frameIndex.length());
-                
-            }else{
-                _files[0]=const_qfilename;
-            }
-            first_time=false;
-        }else{
-            if(Qfilename.contains(originalName) /*&& (extension)*/){
-                Qfilename.remove(Qfilename.length()-4,4);
-                int j=Qfilename.length()-1;
-                QString frameIndex;
-                while(j>0 && Qfilename.at(j).isDigit()){
-                    frameIndex.push_front(Qfilename.at(j));
-                    --j;
-                }
-                if(j>0){
-                    int number = frameIndex.toInt();
-                    _files[number]=const_qfilename;
-                }else{
-                    cout << " Read handle : WARNING !! several frames read but no frame count found in their name " << endl;
-                }
-            }
-        }
-    }
-    _node->set_firstFrame(firstFrame());
-    _node->set_lastFrame(lastFrame());
-    
-}
-
-int OfxStringInstance::firstFrame(){
-    std::map<int,QString>::iterator it=_files.begin();
-    if(it == _files.end()) return INT_MIN;
-    return it->first;
-}
-int OfxStringInstance::lastFrame(){
-    std::map<int,QString>::iterator it=_files.end();
-    if(it == _files.begin()) return INT_MAX;
-    --it;
-    return it->first;
-}
-int OfxStringInstance::clampToRange(int f){
-    int first = firstFrame();
-    int last = lastFrame();
-    if(f < first) return first;
-    if(f > last) return last;
-    return f;
+const QString OfxStringInstance::getRandomFrameName(int f) const{
+    return _fileKnob ? _fileKnob->getRandomFrameName(f) : "";
 }
 bool OfxStringInstance::isValid() const{
     if(_fileKnob){

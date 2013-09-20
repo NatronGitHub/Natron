@@ -342,19 +342,21 @@ public:
      for the frame frameIndex.*/
     std::string filenameFromPattern(int frameIndex) const;
     
+    /**
+     * @brief getRandomFrameName Valid only for OfxStringInstance's of type kOfxParamStringIsFilePath with
+     * an OfxImageEffectInstance of type kOfxImageEffectContextGenerator
+     * @param f The index of the frame.
+     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
+     */
+    const QString getRandomFrameName(int f) const;
+    
     Knob* getKnob() const;
     
     virtual ~OfxStringInstance(){}
     
-    public slots:
+public slots:
     void onInstanceChanged();
-    
-private:
-    void getVideoSequenceFromFilesList();
-    int firstFrame();
-    int lastFrame();
-    int clampToRange(int f);
-    
+
 };
 
 

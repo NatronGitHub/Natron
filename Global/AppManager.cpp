@@ -157,8 +157,8 @@ Node* AppInstance::createNode(const QString& name) {
         if(node->className() == "Viewer"){
             _gui->createViewerGui(node);
         }
-        autoConnect(selected, node);
         node->initializeKnobs();
+        autoConnect(selected, node);
         if(node->isOpenFXNode()){
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
             ofxNode->openFilesForAllFileParams();

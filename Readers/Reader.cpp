@@ -72,8 +72,9 @@ std::string Reader::description() {
 
 void Reader::initKnobs(){
     std::string desc("File");
-    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", this, desc,1, Knob::NONE));
+    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", this, desc));
     QObject::connect(_fileKnob, SIGNAL(valueChangedByUser()), this, SLOT(showFilePreview()));
+    QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
     assert(_fileKnob);
 }
 
@@ -81,15 +82,7 @@ void Reader::initKnobs(){
 
 
 bool Reader::readCurrentHeader(int current_frame){
-    current_frame = clampToRange(current_frame);
-    QString filename;
-    map<int,QString>::iterator it = files.find(current_frame);
-    if(it == files.end()){
-        cout << "ERROR: Failed to find a frame for frame number " << current_frame << endl;
-        return false;
-    }else{
-        filename = it->second;
-    }
+    QString filename = _fileKnob->getRandomFrameName(current_frame);
     
     /*the read handle used to decode the frame*/
     Read* _read = 0;
@@ -174,15 +167,8 @@ bool Reader::readCurrentHeader(int current_frame){
 }
 
 void Reader::readCurrentData(int current_frame){
-    current_frame = clampToRange(current_frame);
-    QString filename;
-    map<int,QString>::iterator it = files.find(current_frame);
-    if(it == files.end()){
-        cout << "ERROR: Failed to find a frame for frame number " << current_frame << endl;
-        return;
-    }else{
-        filename = it->second;
-    }
+    
+    QString filename = _fileKnob->getRandomFrameName(current_frame);
     
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
@@ -211,11 +197,7 @@ void Reader::readCurrentData(int current_frame){
 void Reader::showFilePreview(){
     
     _buffer.clear();
-    fileNameList = _fileKnob->getValueAsVariant().toStringList();
-    getVideoSequenceFromFilesList();
-    
     fitFrameToViewer(false);
-    
     _readMutex->lock();
     if(readCurrentHeader(firstFrame())){ 
         readCurrentData(firstFrame());
@@ -345,80 +327,24 @@ void Reader::Buffer::erase(DecodedFrameIterator it) {
     _buffer.erase(it);
 }
 
-void Reader::getVideoSequenceFromFilesList(){
-    files.clear();
-    bool first_time=true;
-    QString originalName;
-    foreach(QString Qfilename,fileNameList)
-    {	if(Qfilename.at(0) == QChar('.')) continue;
-        QString const_qfilename=Qfilename;
-        if(first_time){
-            Qfilename=Qfilename.remove(Qfilename.length()-4,4);
-            int j=Qfilename.length()-1;
-            QString frameIndex;
-            while(j>0 && Qfilename.at(j).isDigit()){
-                frameIndex.push_front(Qfilename.at(j));
-                j--;
-            }
-            if(j>0){
-				int number=0;
-                if(fileNameList.size() > 1){
-                    number = frameIndex.toInt();
-                }
-				files.insert(make_pair(number,const_qfilename));
-                originalName=Qfilename.remove(j+1,frameIndex.length());
-                
-            }else{
-                files[0]=const_qfilename;
-            }
-            first_time=false;
-        }else{
-            if(Qfilename.contains(originalName) /*&& (extension)*/){
-                Qfilename.remove(Qfilename.length()-4,4);
-                int j=Qfilename.length()-1;
-                QString frameIndex;
-                while(j>0 && Qfilename.at(j).isDigit()){
-                    frameIndex.push_front(Qfilename.at(j));
-                    j--;
-                }
-                if(j>0){
-                    int number = frameIndex.toInt();
-                    files[number]=const_qfilename;
-                }else{
-                    cout << " Read handle : WARNING !! several frames read but no frame count found in their name " << endl;
-                }
-            }
-        }
-    }
-    _info.set_firstFrame(firstFrame());
-    _info.set_lastFrame(lastFrame());
-    
-}
+
 int Reader::firstFrame(){
-    std::map<int,QString>::iterator it = files.begin();
-    if (it == files.end()) {
-        return INT_MIN;
-    }
-    return it->first;
+    return _fileKnob->firstFrame();
 }
 int Reader::lastFrame(){
-    std::map<int,QString>::iterator it = files.end();
-    if(it == files.begin()) {
-        return INT_MAX;
-    }
-    --it;
-    return it->first;
+    return _fileKnob->lastFrame();
 }
 int Reader::clampToRange(int f){
-    int first = firstFrame();
-    int last = lastFrame();
-    if(f < first) return first;
-    if(f > last) return last;
-    return f;
+    return _fileKnob->clampToRange(f);
 }
 
-std::string Reader::getRandomFrameName(int f){
-    return files[f].toStdString();
+const QString Reader::getRandomFrameName(int f) const{
+    return _fileKnob->getRandomFrameName(f);
+}
+
+void Reader::onFrameRangeChanged(int first,int last){
+    _info.set_firstFrame(first);
+    _info.set_lastFrame(last);
 }
 
 void Reader::setPreview(QImage* img){
@@ -534,4 +460,7 @@ ReaderInfo* ReaderInfo::fromString(const QString& from){
     out->setCurrentFrameName(name.toStdString());
     return out;
     
+}
+bool Reader::hasFrames() const{
+    return _fileKnob->frameCount() > 0;
 }
