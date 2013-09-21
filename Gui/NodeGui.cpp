@@ -71,7 +71,8 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
-    
+    QObject::connect(node, SIGNAL(canUndoChanged(bool)), this, SLOT(onCanUndoChanged(bool)));
+    QObject::connect(node, SIGNAL(canRedoChanged(bool)), this, SLOT(onCanRedoChanged(bool)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
