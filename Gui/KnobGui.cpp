@@ -54,6 +54,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/SpinBox.h"
 #include "Gui/ComboBox.h"
 #include "Gui/LineEdit.h"
+#include "Gui/ScaleSlider.h"
 
 #include "Readers/Reader.h"
 
@@ -351,16 +352,26 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
                 box->setMaximum(maximums.at(i).toInt());
             if(minimums.size() > i)
                 box->setMinimum(minimums.at(i).toInt());
+            
         }else{
             box->setMaximum(_knob->getMaximum().toInt());
             box->setMinimum(_knob->getMinimum().toInt());
         }
         
         boxContainerLayout->addWidget(box);
+        if(_knob->getDimension() == 1){
+            _slider = new ScaleSlider(_knob->getMinimum().toInt(),
+                                      _knob->getMaximum().toInt(),
+                                      100,
+                                      _knob->value<int>());
+            QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+            boxContainerLayout->addWidget(_slider);
+        }
        
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back(make_pair(box,subDesc));
     }
+   
     layout->addWidget(container,row,1,Qt::AlignLeft);
 }
 void Int_KnobGui::updateGUI(const Variant& variant){
@@ -375,9 +386,16 @@ void Int_KnobGui::updateGUI(const Variant& variant){
     }else{
         int value = variant.toInt();
         _spinBoxes[0].first->setValue(value);
+        _slider->seekScalePosition(value);
     }
 }
-
+void Int_KnobGui::onSliderValueChanged(double d){
+    assert(_knob->getDimension() == 1);
+    _spinBoxes[0].first->setValue(d);
+    Variant v;
+    v.setValue(d);
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),v));
+}
 void Int_KnobGui::onSpinBoxValueChanged(){
     Variant v;
     if(_knob->getDimension() > 1){
@@ -521,10 +539,15 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         }
         
         boxContainerLayout->addWidget(box);
-        int offset = _knob->determineHierarchySize();
-        if(_knob->getParentKnob()){
-            ++offset;
+        if(_knob->getDimension() == 1){
+            _slider = new ScaleSlider(_knob->getMinimum().toDouble(),
+                                      _knob->getMaximum().toDouble(),
+                                      100,
+                                      _knob->value<double>());
+            QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
+            boxContainerLayout->addWidget(_slider);
         }
+        
         containerLayout->addWidget(boxContainer);
         //        layout->addWidget(boxContainer,row,i+1+columnOffset);
         _spinBoxes.push_back(make_pair(box,subDesc));
@@ -543,9 +566,17 @@ void Double_KnobGui::updateGUI(const Variant& variant){
     }else{
         double value = variant.toDouble();
         _spinBoxes[0].first->setValue(value);
+        _slider->seekScalePosition(value);
     }
 }
 
+void Double_KnobGui::onSliderValueChanged(double d){
+    assert(_knob->getDimension() == 1);
+    _spinBoxes[0].first->setValue(d);
+    Variant v;
+    v.setValue(d);
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),v));
+}
 void Double_KnobGui::onSpinBoxValueChanged(){
     Variant v;
     if(_knob->getDimension() > 1){

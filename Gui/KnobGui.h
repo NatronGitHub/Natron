@@ -40,6 +40,7 @@ class QGridLayout;
 class Knob;
 class QVBoxLayout;
 class QHBoxLayout;
+class ScaleSlider;
 class QGridLayout;
 class KnobGui : public QObject
 {
@@ -241,7 +242,7 @@ public:
     static KnobGui* BuildKnobGui(Knob* knob){ return new Int_KnobGui(knob); }
 
     
-    Int_KnobGui(Knob* knob):KnobGui(knob){}
+    Int_KnobGui(Knob* knob):KnobGui(knob),_slider(0){}
     
     virtual ~Int_KnobGui(){}
     
@@ -260,6 +261,7 @@ public:
     
 public slots:
     void onSpinBoxValueChanged();
+    void onSliderValueChanged(double);
  
 protected:
     
@@ -268,6 +270,7 @@ protected:
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
     QLabel* _descriptionLabel;
+    ScaleSlider* _slider;
 
 };
 
@@ -318,7 +321,7 @@ public:
     static KnobGui* BuildKnobGui(Knob* knob){ return new Double_KnobGui(knob); }
 
     
-    Double_KnobGui(Knob* knob):KnobGui(knob){}
+    Double_KnobGui(Knob* knob):KnobGui(knob),_slider(0){}
     
     virtual ~Double_KnobGui(){}
     
@@ -335,8 +338,9 @@ public:
     
     virtual void addToLayout(QHBoxLayout* layout);
     
-    public slots:
+public slots:
     void onSpinBoxValueChanged();
+    void onSliderValueChanged(double);
     
 protected:
     
@@ -345,6 +349,7 @@ protected:
 private:
     std::vector<std::pair<SpinBox*,QLabel*> > _spinBoxes;
     QLabel* _descriptionLabel;
+    ScaleSlider* _slider;
 };
 
 //================================
