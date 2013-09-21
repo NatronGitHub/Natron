@@ -798,7 +798,7 @@ void ViewerGL::initBlackTex(){
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, texSize.w*texSize.h*sizeof(U32), NULL, GL_DYNAMIC_DRAW_ARB);
     checkGLErrors();
     assert(!frameData);
-    assert(!_pBOmapped);
+    //assert(!_pBOmapped);
     frameData = (char*)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     checkGLErrors();
     assert(frameData);

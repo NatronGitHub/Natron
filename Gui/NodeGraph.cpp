@@ -501,6 +501,8 @@ void NodeGraph::deleteSelectedNode(){
 
 void NodeGraph::removeNode(NodeGui* n) {
     assert(n);
+    if(_nodeSelected == n)
+        _nodeSelected = NULL;
     std::vector<NodeGui*>::iterator it = std::find(_nodes.begin(), _nodes.end(), n);
     if (it != _nodes.end()) {
         _nodes.erase(it);
