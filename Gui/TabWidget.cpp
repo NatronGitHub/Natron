@@ -154,13 +154,21 @@ void TabWidget::createMenu(){
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(12,12);
     pixH.scaled(12,12);
-    menu->addAction(QIcon(pixV),tr("Split vertical"), this, SLOT(splitVertically()));
-    menu->addAction(QIcon(pixH),tr("Split horizontal"), this, SLOT(splitHorizontally()));
+    QAction* splitVerticallyAction = new QAction(QIcon(pixV),tr("Split vertical"),this);
+    QObject::connect(splitVerticallyAction, SIGNAL(triggered()), this, SLOT(splitVertically()));
+    menu->addAction(splitVerticallyAction);
+    QAction* splitHorizontallyAction = new QAction(QIcon(pixH),tr("Split horizontal"),this);
+    QObject::connect(splitHorizontallyAction, SIGNAL(triggered()), this, SLOT(splitHorizontally()));
+    menu->addAction(splitHorizontallyAction);
+    if (_isFloating) {
+        splitVerticallyAction->setEnabled(false);
+        splitHorizontallyAction->setEnabled(false);
+    }
     menu->addSeparator();
     QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),this);
     QObject::connect(floatAction, SIGNAL(triggered()), this, SLOT(floatCurrentWidget()));
     menu->addAction(floatAction);
-    if(_tabBar->count() == 0){
+    if(_tabBar->count() == 0 || _isFloating){
         floatAction->setEnabled(false);
     }
 
