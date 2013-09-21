@@ -65,8 +65,8 @@ public:
     
     int getSpacingBetweenItems() const { return _spacingBetweenItems; }
     
-    void createGUI(QGridLayout* layout,int row,int offset){
-        createWidget(layout, row,offset);
+    void createGUI(QGridLayout* layout,int row){
+        createWidget(layout, row);
         _widgetCreated = true;
         updateGUI(_knob->getValueAsVariant());
         setEnabled(_knob->isEnabled());
@@ -115,7 +115,7 @@ signals:
     
 protected:
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset)=0;
+    virtual void createWidget(QGridLayout* layout,int row)=0;
     
    
     /*Called by the onInternalValueChanged slot. This should update
@@ -154,7 +154,7 @@ public:
 
     virtual ~File_KnobGui(){}
             
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -199,7 +199,7 @@ public:
     
     virtual ~OutputFile_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -245,7 +245,7 @@ public:
     
     virtual ~Int_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     void setMaximum(int);
     void setMinimum(int);
@@ -284,7 +284,7 @@ public:
 
     virtual ~Bool_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -322,7 +322,7 @@ public:
     
     virtual ~Double_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     void setMaximum(int);
     void setMinimum(int);
@@ -360,7 +360,7 @@ public:
     
     virtual ~Button_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -394,7 +394,7 @@ public:
     
     virtual ~ComboBox_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -428,7 +428,7 @@ public:
     
     virtual ~Separator_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -457,7 +457,7 @@ public:
     
     virtual ~RGBA_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     void disablePermantlyAlpha();
     
@@ -482,6 +482,15 @@ protected:
 private:
     
     void updateLabel(const QColor& color);
+    
+    QWidget* mainContainer;
+    QHBoxLayout* mainLayout;
+    
+    QWidget* boxContainers;
+    QHBoxLayout* boxLayout;
+    
+    QWidget* colorContainer;
+    QHBoxLayout* colorLayout;
     
     QLabel* _descriptionLabel;
     
@@ -512,7 +521,7 @@ public:
 	
     virtual ~String_KnobGui(){}
     
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     virtual void hide();
     
@@ -578,7 +587,7 @@ public:
     
     virtual ~Group_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     void addKnob(KnobGui* child,int row,int column){
         _children.push_back(std::make_pair(child,std::make_pair(row,column)));
@@ -626,7 +635,7 @@ public:
     
     ~Tab_KnobGui(){}
 
-    virtual void createWidget(QGridLayout* layout,int row,int columnOffset);
+    virtual void createWidget(QGridLayout* layout,int row);
     
     void addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs);
     

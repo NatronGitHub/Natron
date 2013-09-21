@@ -145,7 +145,7 @@ File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
     QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
 
-void File_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+void File_KnobGui::createWidget(QGridLayout* layout,int row){
     
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _lineEdit = new LineEdit(layout->parentWidget());
@@ -170,8 +170,8 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    layout->addWidget(_descriptionLabel, row, 0+columnOffset);
-    layout->addWidget(container,row,1+columnOffset);
+    layout->addWidget(_descriptionLabel, row, 0,Qt::AlignRight);
+    layout->addWidget(container,row,1,Qt::AlignLeft);
 }
 
 void File_KnobGui::updateGUI(const Variant& variant){
@@ -233,7 +233,7 @@ OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
     QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
 
-void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText(QString("File path..."));
@@ -256,8 +256,8 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row,int columnOff
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
-    layout->addWidget(container,row,1+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+    layout->addWidget(container,row,1,Qt::AlignLeft);
 }
 
 
@@ -309,10 +309,10 @@ void OutputFile_KnobGui::addToLayout(QHBoxLayout* layout){
 //==========================INT_KNOB_GUI======================================
 
 
-void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());    
     
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
     Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
@@ -361,7 +361,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
         containerLayout->addWidget(boxContainer);
         _spinBoxes.push_back(make_pair(box,subDesc));
     }
-    layout->addWidget(container,row,columnOffset+1);
+    layout->addWidget(container,row,1,Qt::AlignLeft);
 }
 void Int_KnobGui::updateGUI(const Variant& variant){
     if(_knob->getDimension() > 1){
@@ -430,12 +430,12 @@ void Int_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 //==========================BOOL_KNOB_GUI======================================
 
-void Bool_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _checkBox = new QCheckBox(layout->parentWidget());
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));    
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
-    layout->addWidget(_checkBox,row,1+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+    layout->addWidget(_checkBox,row,1,Qt::AlignLeft);
 }
 
 void Bool_KnobGui::updateGUI(const Variant& variant){
@@ -465,10 +465,10 @@ void Bool_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_checkBox);
 }
 //=============================DOUBLE_KNOB_GUI===================================
-void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
         
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
     QWidget* container = new QWidget(layout->parentWidget());
     QHBoxLayout* containerLayout = new QHBoxLayout(container);
@@ -529,7 +529,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset)
         //        layout->addWidget(boxContainer,row,i+1+columnOffset);
         _spinBoxes.push_back(make_pair(box,subDesc));
     }
-    layout->addWidget(container,row,1+columnOffset);
+    layout->addWidget(container,row,1,Qt::AlignLeft);
 }
 void Double_KnobGui::updateGUI(const Variant& variant){
     if(_knob->getDimension() > 1){
@@ -597,11 +597,11 @@ void Double_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 
 //=============================BUTTON_KNOB_GUI===================================
-void Button_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void Button_KnobGui::createWidget(QGridLayout *layout, int row){
     _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
     
-    layout->addWidget(_button,row,0+columnOffset);
+    layout->addWidget(_button,row,0,Qt::AlignRight);
 }
 
 void Button_KnobGui::emitValueChanged(){
@@ -627,7 +627,7 @@ ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob):KnobGui(knob){
     _entries = cbKnob->getEntries();
 }
 
-void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     _comboBox = new ComboBox(layout->parentWidget());
     
     for (U32 i = 0; i < _entries.size(); ++i) {
@@ -637,8 +637,8 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffse
         _comboBox->setCurrentText(_entries[0].c_str());
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));    
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
-    layout->addWidget(_comboBox,row,1+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+    layout->addWidget(_comboBox,row,1,Qt::AlignLeft);
 }
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));    
@@ -670,14 +670,14 @@ void ComboBox_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 
 //=============================SEPARATOR_KNOB_GUI===================================
-void Separator_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+void Separator_KnobGui::createWidget(QGridLayout* layout,int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     _line = new QFrame(layout->parentWidget());
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
     _line->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    layout->addWidget(_line,row,1+columnOffset);
+    layout->addWidget(_line,row,1,Qt::AlignLeft);
 }
 void Separator_KnobGui::hide(){
     _descriptionLabel->hide();
@@ -696,14 +696,27 @@ void Separator_KnobGui::addToLayout(QHBoxLayout* layout){
     
 }
 //=============================RGBA_KNOB_GUI===================================
-void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
-    _rBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
+void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
+    
+    mainContainer = new QWidget(layout->parentWidget());
+    mainLayout = new QHBoxLayout(mainContainer);
+    mainContainer->setLayout(mainLayout);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+        
+    boxContainers = new QWidget(mainContainer);
+    boxLayout = new QHBoxLayout(boxContainers);
+    boxContainers->setLayout(boxLayout);
+    boxLayout->setContentsMargins(0, 0, 0, 0);
+    boxLayout->setSpacing(0);
+
+    
+    _rBox = new SpinBox(boxContainers,SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_rBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _gBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
+    _gBox = new SpinBox(boxContainers,SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_gBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _bBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
+    _bBox = new SpinBox(boxContainers,SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_bBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
-    _aBox = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
+    _aBox = new SpinBox(boxContainers,SpinBox::DOUBLE_SPINBOX);
     QObject::connect(_aBox, SIGNAL(valueChanged(double)), this, SLOT(onColorChanged()));
     
     
@@ -724,19 +737,13 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     _aBox->setIncrement(0.1);
     
     
-    _rLabel = new QLabel("r:",layout->parentWidget());
-    _gLabel = new QLabel("g:",layout->parentWidget());
-    _bLabel = new QLabel("b:",layout->parentWidget());
-    _aLabel = new QLabel("a:",layout->parentWidget());
+    _rLabel = new QLabel("r:",boxContainers);
+    _gLabel = new QLabel("g:",boxContainers);
+    _bLabel = new QLabel("b:",boxContainers);
+    _aLabel = new QLabel("a:",boxContainers);
     
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
-    
-    QWidget* boxContainers = new QWidget(layout->parentWidget());
-    QHBoxLayout* boxLayout = new QHBoxLayout(boxContainers);
-    boxContainers->setLayout(boxLayout);
-    boxLayout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
     boxLayout->addWidget(_rLabel);
     boxLayout->addWidget(_rBox);
@@ -747,19 +754,27 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
     boxLayout->addWidget(_aLabel);
     boxLayout->addWidget(_aBox);
     
-    _colorLabel = new QLabel(layout->parentWidget());
-    boxLayout->addWidget(_colorLabel);
+    colorContainer = new QWidget(mainContainer);
+    colorLayout = new QHBoxLayout(colorContainer);
+    colorContainer->setLayout(colorLayout);
+    colorLayout->setContentsMargins(0, 0, 0, 0);
+    colorLayout->setSpacing(0);
+    
+    _colorLabel = new QLabel(colorContainer);
+    colorLayout->addWidget(_colorLabel);
     
     QImage buttonImg(POWITER_IMAGES_PATH"colorwheel.png");
     QPixmap buttonPix = QPixmap::fromImage(buttonImg);
     buttonPix = buttonPix.scaled(25, 20);
     QIcon buttonIcon(buttonPix);
-    _colorDialogButton = new Button(buttonIcon,"",layout->parentWidget());
-    
+    _colorDialogButton = new Button(buttonIcon,"",colorContainer);
     QObject::connect(_colorDialogButton, SIGNAL(pressed()), this, SLOT(showColorDialog()));
-    boxLayout->addWidget(_colorDialogButton);
+    colorLayout->addWidget(_colorDialogButton);
     
-    layout->addWidget(boxContainers,row,1+columnOffset);
+    mainLayout->addWidget(boxContainers);
+    mainLayout->addWidget(colorContainer);
+    
+    layout->addWidget(mainContainer,row,1,Qt::AlignLeft);
     
     
     Knob_Mask flags = _knob->getFlags();
@@ -835,6 +850,11 @@ void RGBA_KnobGui::updateLabel(const QColor& color){
 
 void RGBA_KnobGui::disablePermantlyAlpha(){
     _alphaEnabled = false;
+    boxLayout->removeWidget(_aLabel);
+    boxLayout->removeWidget(_aBox);
+    boxLayout->update();
+    _aLabel->setParent(NULL);
+    _aBox->setParent(NULL);
     _aLabel->setVisible(false);
     _aLabel->setEnabled(false);
     _aBox->setVisible(false);
@@ -864,8 +884,10 @@ void RGBA_KnobGui::show(){
     _gLabel->show();
     _bBox->show();
     _bLabel->show();
-    _aBox->show();
-    _aLabel->show();
+    if(_alphaEnabled){
+        _aBox->show();
+        _aLabel->show();
+    }
     
     _colorLabel->show();
     _colorDialogButton->show();
@@ -880,8 +902,10 @@ void RGBA_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_gBox);
     layout->addWidget(_bLabel);
     layout->addWidget(_bBox);
-    layout->addWidget(_aLabel);
-    layout->addWidget(_aBox);
+    if(_alphaEnabled){
+        layout->addWidget(_aLabel);
+        layout->addWidget(_aBox);
+    }
     
     layout->addWidget(_colorLabel);
     layout->addWidget(_colorDialogButton);
@@ -889,12 +913,12 @@ void RGBA_KnobGui::addToLayout(QHBoxLayout* layout){
 
 
 //=============================STRING_KNOB_GUI===================================
-void String_KnobGui::createWidget(QGridLayout *layout, int row,int columnOffset){
+void String_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     
-    layout->addWidget(_descriptionLabel,row,0+columnOffset);
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     _lineEdit = new LineEdit(layout->parentWidget());
-    layout->addWidget(_lineEdit,row,1+columnOffset);
+    layout->addWidget(_lineEdit,row,1,Qt::AlignLeft);
     QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
 
 }
@@ -947,16 +971,22 @@ void GroupBoxLabel::setChecked(bool b){
     }
 }
 
-void Group_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     _layout = layout;
     _button = new GroupBoxLabel(layout->parentWidget());
     
+    QWidget* header = new QWidget(layout->parentWidget());
+    QHBoxLayout* headerLay = new QHBoxLayout(header);
+    header->setLayout(headerLay);
     QObject::connect(_button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)));
-    layout->addWidget(_button,row,0+columnOffset);
-    
+    headerLay->addWidget(_button);
+    headerLay->setSpacing(1);
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    layout->addWidget(_descriptionLabel, row, 1+columnOffset);
+
+    headerLay->addWidget(_descriptionLabel);
     
+    layout->addWidget(header,row,0,Qt::AlignLeft);
+        
 }
 
 void Group_KnobGui::setChecked(bool b){
@@ -1019,12 +1049,12 @@ void Group_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(mainWidget);
 }
 //=============================TAB_KNOB_GUI===================================
-void Tab_KnobGui::createWidget(QGridLayout* layout,int row,int columnOffset){
+void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
     /*not a pretty call... considering using QTabWidget instead*/
     _tabWidget = new TabWidget(_knob->getNode()->getModel()->getApp()->getGui(),
                                TabWidget::NONE,layout->parentWidget());
     
-    layout->addWidget(_tabWidget,row,0+columnOffset);
+    layout->addWidget(_tabWidget,row,0,Qt::AlignLeft);
     
 }
 void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs_){

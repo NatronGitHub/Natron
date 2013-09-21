@@ -17,7 +17,7 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/AbstractCache.h" // for InMemoryEntry
 
-#define POWITER_MAX_BUFFERS_PER_ROW 100
+#define POWITER_MAX_BUFFERS_PER_ROW 10
 
 
 /*This class represent one line in the image.

@@ -48,6 +48,8 @@ protected:
     
     virtual void keyPressEvent(QKeyEvent* e);
     
+    virtual void mousePressEvent(QMouseEvent* e);
+        
 signals:
     
     void valueChanged(double d);

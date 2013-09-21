@@ -66,7 +66,12 @@ void SpinBox::interpretReturn(){
     emit valueChanged(text().toDouble());
 }
 
+void SpinBox::mousePressEvent(QMouseEvent* e){
+    LineEdit::mousePressEvent(e);
+    setFocus();
+}
 void SpinBox::wheelEvent(QWheelEvent *e){
+    setFocus();
     if(isEnabled() && !isReadOnly()){
         bool ok;
         double cur= text().toDouble(&ok);

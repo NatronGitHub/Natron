@@ -111,7 +111,8 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _settingsTab = new QWidget(_tabWidget);
     _settingsTab->setObjectName("_settingsTab");
     _layoutSettings=new QGridLayout(_settingsTab);
-    _layoutSettings->setSpacing(0);
+    _layoutSettings->setVerticalSpacing(0);
+    _layoutSettings->setHorizontalSpacing(10);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");
     
@@ -166,7 +167,7 @@ void SettingsPanel::initialize_knobs(){
                 int row = i;
                 int offsetColumn = knobs[i]->determineHierarchySize();
                 if(!gui->triggerNewLine() && i!=0) --i;
-                gui->createGUI(_layoutSettings,i,knobs[i]->determineHierarchySize());
+                gui->createGUI(_layoutSettings,i);
                 if(parentKnob){
                     Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(_nodeGUI->findKnobGuiOrCreate(parentKnob));
                     parentGui->addKnob(gui,row,offsetColumn);
@@ -182,7 +183,8 @@ void SettingsPanel::initialize_knobs(){
         if(knobSpacing > maxSpacing)
             maxSpacing = knobSpacing;
     }
-    _layoutSettings->setHorizontalSpacing(maxSpacing);
+    if(maxSpacing > 0)
+        _layoutSettings->setHorizontalSpacing(maxSpacing);
 }
 void SettingsPanel::close(){
     
