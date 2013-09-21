@@ -23,7 +23,7 @@ CLANG_DIAG_ON(unused-private-field);
 SpinBox::SpinBox(QWidget* parent,SPINBOX_TYPE type):
 LineEdit(parent)
 ,_type(type)
-,_decimals(1)
+,_decimals(3)
 ,_increment(1.0)
 ,_mini(0)
 ,_maxi(99)

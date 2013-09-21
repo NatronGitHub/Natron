@@ -189,6 +189,9 @@ QString Model::serializeNodeGraph() const{
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
             QString name = ofxNode->getShortLabel().c_str();
+            if(name.isEmpty()){
+                name = ofxNode->effectInstance()->getLabel().c_str();
+            }
             QStringList groups = ofxNode->getPluginGrouping();
             if (groups.size() >= 1) {
                 name.append("  [");
