@@ -172,7 +172,7 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
     containerLayout->addWidget(_openFileButton);
     
     layout->addWidget(_descriptionLabel, row, 0,Qt::AlignRight);
-    layout->addWidget(container,row,1,Qt::AlignLeft);
+    layout->addWidget(container,row,1);
 }
 
 void File_KnobGui::updateGUI(const Variant& variant){
@@ -258,7 +258,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     containerLayout->addWidget(_openFileButton);
     
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
-    layout->addWidget(container,row,1,Qt::AlignLeft);
+    layout->addWidget(container,row,1);
 }
 
 
@@ -416,6 +416,9 @@ void Int_KnobGui::hide(){
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->hide();
     }
+    if(_slider){
+        _slider->hide();
+    }
 }
 
 void Int_KnobGui::show(){
@@ -424,6 +427,9 @@ void Int_KnobGui::show(){
         _spinBoxes[i].first->show();
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->show();
+    }
+    if(_slider){
+        _slider->show();
     }
 }
 
@@ -597,6 +603,10 @@ void Double_KnobGui::hide(){
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->hide();
     }
+    if(_slider){
+        _slider->hide();
+    }
+
 }
 
 void Double_KnobGui::show(){
@@ -606,6 +616,10 @@ void Double_KnobGui::show(){
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->show();
     }
+    if(_slider){
+        _slider->show();
+    }
+
 }
 void Double_KnobGui::setEnabled(bool b){
     _descriptionLabel->setEnabled(b);
