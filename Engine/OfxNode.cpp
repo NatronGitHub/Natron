@@ -241,6 +241,15 @@ bool OfxNode::_validate(bool doFullWork){
             OfxStatus stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
             assert(stat == kOfxStatOK);
             const Format& format = getModel()->getApp()->getProjectFormat();
+            if(rod.x1 ==  0.
+               && rod.x2 == 0.
+               && rod.y1 == 0.
+               && rod.y2 == 0.){
+                rod.x1 = format.left();
+                rod.x2 = format.right();
+                rod.y1 = format.bottom();
+                rod.y2 = format.top();
+            }
             if(rod.x1 == kOfxFlagInfiniteMin){
                 rod.x1 = format.left();
             }
@@ -409,6 +418,15 @@ void OfxNode::computePreviewImage(){
     stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
     assert(stat == kOfxStatOK);
     const Format& format = getModel()->getApp()->getProjectFormat();
+    if(rod.x1 ==  0.
+       && rod.x2 == 0.
+       && rod.y1 == 0.
+       && rod.y2 == 0.){
+        rod.x1 = format.left();
+        rod.x2 = format.right();
+        rod.y1 = format.bottom();
+        rod.y2 = format.top();
+    }
     if(rod.x1 == kOfxFlagInfiniteMin){
         rod.x1 = format.left();
     }

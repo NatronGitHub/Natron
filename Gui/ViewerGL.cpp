@@ -354,7 +354,7 @@ void ViewerGL::resizeGL(int width, int height){
     checkGLErrors();
     _ms = UNDEFINED;
     if(_drawing)
-        emit engineNeeded();
+        _viewerTab->getInternalNode()->updateDAG(true);
 }
 void ViewerGL::paintGL()
 {
