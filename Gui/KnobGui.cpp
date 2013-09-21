@@ -1030,7 +1030,7 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
 
     headerLay->addWidget(_descriptionLabel);
     
-    layout->addWidget(header,row,0,Qt::AlignLeft);
+    layout->addWidget(header,row,0,1,2,Qt::AlignLeft);
         
 }
 
