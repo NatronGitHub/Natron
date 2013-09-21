@@ -137,7 +137,7 @@ void TabWidget::destroyTab(QWidget* tab){
 }
 
 void TabWidget::createMenu(){
-    QMenu *menu = new QMenu(_leftCornerButton);
+    QMenu *menu = new QMenu(_gui);
     QImage imgV(POWITER_IMAGES_PATH"splitVertically.png");
     QPixmap pixV=QPixmap::fromImage(imgV);
     pixV.scaled(12,12);
