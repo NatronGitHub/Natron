@@ -200,7 +200,7 @@ public:
     
     virtual void paintEvent(QPaintEvent* event);
     
-    public slots:
+public slots:
     /*Makes current the tab at index "index". Passing an
      index out of range will have no effect.*/
     void makeCurrentTab(int index);
@@ -227,6 +227,7 @@ public:
     
     void closeCurrentWidget();
     
+    void closeTab(int index);
 
     
 private:

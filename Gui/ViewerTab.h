@@ -66,7 +66,7 @@ public:
     QHBoxLayout* _firstRowLayout,*_secondRowLayout;
     
     /*1st row*/
-	ComboBox* _viewerLayers;
+	//ComboBox* _viewerLayers;
 	ComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;

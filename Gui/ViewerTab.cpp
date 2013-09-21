@@ -72,8 +72,8 @@ _maximized(false)
     _firstRowLayout->setSpacing(0);
     _mainLayout->addWidget(_firstSettingsRow);
     
-    _viewerLayers = new ComboBox(_firstSettingsRow);
-    _firstRowLayout->addWidget(_viewerLayers);
+    // _viewerLayers = new ComboBox(_firstSettingsRow);
+    //_firstRowLayout->addWidget(_viewerLayers);
     
     _viewerChannels = new ComboBox(_firstSettingsRow);
 	_firstRowLayout->addWidget(_viewerChannels);

@@ -295,6 +295,9 @@ margin-right: 0; /* the last selected tab has nothing to overlap with on the rig
 QTabBar::tab:only-one {
 margin: 0; /* if there is only one tab, we don't want overlapping margins */
 }
+QTabBar::close-button{
+subcontrol-position:right;
+}
 QTabWidget::tab-bar {
 alignment: left;
 }

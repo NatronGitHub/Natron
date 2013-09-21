@@ -97,10 +97,14 @@ public:
 
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget : public QWidget{
+    
     QWidget* _embeddedWidget;
     QVBoxLayout* _layout;
+    
 public:
+    
     explicit FloatingWidget(QWidget* parent = 0);
+    
     virtual ~FloatingWidget(){}
     
     /*Set the embedded widget. Only 1 widget can be embedded

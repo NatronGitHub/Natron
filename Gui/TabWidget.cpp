@@ -91,15 +91,19 @@ _drawDropRect(false){
     _headerLayout->addStretch();
     if(decorations != NONE){
         _floatButton = new Button(QIcon(pixM),"",_header);
-        _floatButton->setToolTip(tr("Create a new window with the currently displayed tab."));
+        _floatButton->setToolTip(tr("Float pane."));
         _floatButton->setFixedSize(15,15);
+        _floatButton->setEnabled(true);
         QObject::connect(_floatButton, SIGNAL(clicked()), this, SLOT(floatCurrentWidget()));
         _headerLayout->addWidget(_floatButton);
         
         _closeButton = new Button(QIcon(pixC),"",_header);
-        _closeButton->setToolTip(tr("Close the currently displayed tab."));
+        _closeButton->setToolTip(tr("Close pane."));
         _closeButton->setFixedSize(15,15);
-        QObject::connect(_closeButton, SIGNAL(clicked()), this, SLOT(closeCurrentWidget()));
+        if(decorations == NOT_CLOSABLE){
+            _closeButton->setVisible(false);
+        }
+        QObject::connect(_closeButton, SIGNAL(clicked()), this, SLOT(closePane()));
         _headerLayout->addWidget(_closeButton);
         
         
@@ -153,7 +157,13 @@ void TabWidget::createMenu(){
     menu->addAction(QIcon(pixV),tr("Split vertical"), this, SLOT(splitVertically()));
     menu->addAction(QIcon(pixH),tr("Split horizontal"), this, SLOT(splitHorizontally()));
     menu->addSeparator();
-    menu->addAction(QIcon(pixM),tr("Float pane"), this, SLOT(floatPane()));
+    QAction* floatAction = new QAction(QIcon(pixM),tr("Float pane"),this);
+    QObject::connect(floatAction, SIGNAL(triggered()), this, SLOT(floatCurrentWidget()));
+    menu->addAction(floatAction);
+    if(_tabBar->count() == 0){
+        floatAction->setEnabled(false);
+    }
+
     QAction* closeAction = new QAction(QIcon(pixC),tr("Close pane"), this);
     if (_decorations == NOT_CLOSABLE) {
         closeAction->setEnabled(false);
@@ -174,6 +184,7 @@ void TabWidget::closeFloatingPane(){
     QWidget* p = parentWidget();
     p->close();
 }
+
 
 void TabWidget::closePane(){
     _gui->closePane(this);
@@ -209,11 +220,15 @@ QString TabWidget::getTabName(QWidget* tab) const{
 }
 
 void TabWidget::floatCurrentWidget(){
-    if(!_currentWidget) return;
+    if(!_currentWidget)
+        return;
     TabWidget* newTab = new TabWidget(_gui,TabWidget::CLOSABLE);
     newTab->appendTab(getTabName(_currentWidget), _currentWidget);
     newTab->floatPane();
     removeTab(_currentWidget);
+    if(_tabBar->count() == 0){
+        _floatButton->setEnabled(false);
+    }
 }
 
 void TabWidget::closeCurrentWidget(){
@@ -221,6 +236,12 @@ void TabWidget::closeCurrentWidget(){
     destroyTab(_currentWidget);
     removeTab(_currentWidget);
 }
+void TabWidget::closeTab(int index){
+    assert(index < (int)_tabs.size());
+    destroyTab(_tabs[index]);
+    removeTab(index);
+}
+
 void TabWidget::movePropertiesBinHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
     _gui->moveTab(what, this);
@@ -252,6 +273,7 @@ bool TabWidget::appendTab(const QString& title,QWidget* widget){
     }
     makeCurrentTab(_tabs.size()-1);
     _tabBar->setCurrentIndex(_tabs.size()-1);
+    _floatButton->setEnabled(true);
     return true;
 }
 bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget){
@@ -271,6 +293,7 @@ bool TabWidget::appendTab(const QString& title,const QIcon& icon,QWidget* widget
     }
     makeCurrentTab(_tabs.size()-1);
     _tabBar->setCurrentIndex(_tabs.size()-1);
+    _floatButton->setEnabled(true);
     return true;
 }
 
@@ -284,6 +307,7 @@ void TabWidget::insertTab(int index,const QIcon& icon,const QString &title,QWidg
     }else{
         appendTab(title, widget);
     }
+     _floatButton->setEnabled(true);
     
 }
 
@@ -297,7 +321,7 @@ void TabWidget::insertTab(int index,const QString &title,QWidget* widget){
     }else{
         appendTab(title, widget);
     }
-    
+    _floatButton->setEnabled(true);
 }
 
 QWidget*  TabWidget::removeTab(int index) {
@@ -389,11 +413,8 @@ void TabWidget::dropEvent(QDropEvent* event){
 
 
 TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar(parent) , _tabWidget(tabWidget) /* ,_currentIndex(-1)*/{
-    
-    //    _mainLayout = new QHBoxLayout(this);
-    //    _mainLayout->setContentsMargins(0, 0, 0, 0);
-    //    _mainLayout->setSpacing(0);
-    //    setLayout(_mainLayout);
+    setTabsClosable(true);
+    QObject::connect(this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)));
 }
 
 void TabBar::mousePressEvent(QMouseEvent* event){
@@ -425,97 +446,3 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     drag->setPixmap(pix);
     drag->exec();
 }
-//
-//void TabBar::addTab(const QString& text){
-//    _mainLayout->addWidget(new Tab(QIcon(),text,this));
-//}
-//
-//void TabBar::addTab(const QIcon& icon,const QString& text){
-//    _mainLayout->addWidget(new Tab(icon,text,this));
-//}
-//
-//void TabBar::insertTab(int index,const QString& text){
-//    _mainLayout->insertWidget(index,new Tab(QIcon(),text,this));
-//}
-//
-//void TabBar::insertTab(int index,const QIcon& icon,const QString& text){
-//    _mainLayout->insertWidget(index,new Tab(icon,text,this));
-//}
-
-//void TabBar::removeTab(int index){
-//    _mainLayout->removeWidget(dynamic_cast<Tab*>(_mainLayout->itemAt(index)));
-//    setCurrentIndex(index-1);
-//}
-//
-//QString TabBar::tabText(int index) const{
-//    Tab* tab = dynamic_cast<Tab*>(_mainLayout->itemAt(index));
-//    QString ret;
-//    if (tab) {
-//        ret = tab->text();
-//    }
-//    return ret;
-//}
-//
-//int TabBar::count() const {
-//    return _mainLayout->count();
-//}
-//
-//void TabBar::setCurrentIndex(int index){
-//    if (index == -1) {
-//        _currentIndex = -1;
-//        emit currentChanged(-1);
-//    }
-//    for (int i =0 ; i < count(); ++i) {
-//        Tab* tab = dynamic_cast<Tab*>(_mainLayout->itemAt(index));
-//        if (tab) {
-//            if (i == index) {
-//                _currentIndex = index;
-//                emit currentChanged(index);
-//                tab->setCurrent(true);
-//            }else{
-//                tab->setCurrent(false);
-//            }
-//        }
-//    }
-//}
-
-//int TabBar::currentIndex() const{
-//    return _currentIndex;
-//}
-//
-//Tab::Tab(const QIcon& icon,const QString& text,QWidget* parent): QFrame(parent),isCurrent(false){
-//    _layout = new QHBoxLayout(this);
-//    _layout->setContentsMargins(0, 0, 5, 0);
-//    setLayout(_layout);
-//    _icon = new QLabel(this);
-//    if (!icon.isNull()) {
-//        _icon->setPixmap(icon.pixmap(15, 15));
-//    }
-//    _text = new QLabel(text,this);
-//    _layout->addWidget(_icon);
-//    _layout->addWidget(_text);
-//    setFrameShape(QFrame::Box);
-//}
-
-//void Tab::setCurrent(bool cur){isCurrent = cur;}
-//
-//bool Tab::current() const {return isCurrent;}
-//
-//void Tab::paintEvent(QPaintEvent* e){
-//
-//    QFrame::paintEvent(e);
-//}
-//
-//void Tab::setIcon(const QIcon& icon){
-//    if (!icon.isNull()) {
-//        _icon->setPixmap(icon.pixmap(15, 15));
-//    }
-//}
-//
-//void Tab::setText(const QString& text){
-//    _text->setText(text);
-//}
-
-//QString Tab::text() const{
-//    return _text->text();
-//}

@@ -750,6 +750,13 @@ void Gui::floatWidget(QWidget* what){
 
 void Gui::closePane(TabWidget* what) {
     assert(what);
+    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
+    if (what->isFloating()) {
+        what->parentWidget()->close();
+        what->destroyTabs();
+        return;
+    }
+    
     QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
     if(!container) {
         return;
@@ -760,13 +767,7 @@ void Gui::closePane(TabWidget* what) {
         _panes.erase(it);
     }
     
-    /*If it is floating we do not need to re-arrange the splitters containing the tab*/
-    if (what->isFloating()) {
-        what->destroyTabs();
-        delete what;
-        return;
-    }
-    
+   
     
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/
