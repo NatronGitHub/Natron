@@ -77,6 +77,7 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     p.fillRect(0, 0, w, h,bg );
     
     QFont f("Times",8);
+    QFontMetrics metrics(f);
     p.setPen(scaleColor);
     p.setFont(f);
     p.drawLine(BORDER_OFFSET, 0, BORDER_OFFSET, 0+BORDER_HEIGHT); // left border
@@ -86,9 +87,16 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     double incr =(scaleW-5)/(double)(_displayedValues.size()-1);
     QPointF pos(BORDER_OFFSET-1,20);
     fillCoordLut();
-    // drawing ticks & sub-ticks   
+    // drawing ticks & sub-ticks
+    int precision = 0;
+    
+    if(_displayedValues.size() > 1 && _displayedValues[1] - _displayedValues[0] < 1){
+        precision = 3;
+    }
     for(unsigned int i =0;i<_displayedValues.size();++i) {
-        p.drawText(pos, QString::number(_displayedValues[i],'g',3));
+        QString numberStr = QString::number(_displayedValues[i],'f',precision);
+        int offset = metrics.width(numberStr)/2;
+        p.drawText(QPointF(pos.x() - offset,pos.y()), numberStr);
         if(pos.x()-incr > 2) {
             p.drawLine((int)(pos.x()-incr/2+0.5),2+BORDER_HEIGHT,(int)(pos.x()-incr/2+0.5),BORDER_HEIGHT-TICK_HEIGHT/2);
         }
