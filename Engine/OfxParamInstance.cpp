@@ -183,9 +183,13 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
     double incr = getProperties().getDoubleProperty(kOfxParamPropIncrement);
     double def = getProperties().getDoubleProperty(kOfxParamPropDefault);
+    int decimals = getProperties().getIntProperty(kOfxParamPropDigits);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
-    _knob->setIncrement(incr);
+    if(incr > 0)
+        _knob->setIncrement(incr);
+    if(decimals > 0)
+        _knob->setDecimals(decimals);
     set(def);
     
 }
@@ -218,6 +222,7 @@ void OfxDoubleInstance::onInstanceChanged(){
     if(stat == kOfxStatOK){
         OfxPointD renderScale;
         renderScale.x = renderScale.y = 1.0;
+        /*Will set the value of the param in the plugin and then call OfxDoubleInstance::set(double)*/
         stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
         assert(stat == kOfxStatOK);
         stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
@@ -329,6 +334,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     }
     _knob->populate(_entries);
     int def = pSet.getIntProperty(kOfxParamPropDefault);
+    int mod = pSet.getIntProperty(kOfxParamPropPluginMayWrite);
     
     set(def);
 }

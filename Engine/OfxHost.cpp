@@ -192,10 +192,6 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
         delete node;
         node = NULL;
     }
-    const std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>& m = effect->getDescriptor().getClips();
-    for (std::map<std::string,OFX::Host::ImageEffect::ClipDescriptor*>::const_iterator it = m.begin(); it!=m.end(); ++it) {
-        std::cout << it->first << std::endl;
-    }
     
     /*must be called AFTER createInstanceAction!*/
     node->tryInitializeOverlayInteracts();

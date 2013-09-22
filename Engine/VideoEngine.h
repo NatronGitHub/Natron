@@ -600,6 +600,8 @@ public:
      **/
     U64 getCurrentTreeVersion() { assert(_treeVersionValid); return _treeVersion;}
     
+    bool hasBeenAborted() const {return _aborted;}
+    
 private:
 
     void engineLoop();

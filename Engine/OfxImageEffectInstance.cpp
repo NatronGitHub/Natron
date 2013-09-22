@@ -18,6 +18,8 @@
 #include "Engine/OfxNode.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
+#include "Engine/VideoEngine.h"
+
 
 using namespace std;
 using namespace Powiter;
@@ -337,9 +339,22 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
 }
 
 
-/// Triggered when the plug-in calls OfxParameterSuiteV1::paramEditBegin
-///
-/// Client host code needs to implement this
+/** @brief Used to group any parameter changes for undo/redo purposes
+ 
+ \arg paramSet   the parameter set in which this is happening
+ \arg name       label to attach to any undo/redo string UTF8
+ 
+ If a plugin calls paramSetValue/paramSetValueAtTime on one or more parameters, either from custom GUI interaction
+ or some analysis of imagery etc.. this is used to indicate the start of a set of a parameter
+ changes that should be considered part of a single undo/redo block.
+ 
+ See also OfxParameterSuiteV1::paramEditEnd
+ 
+ \return
+ - ::kOfxStatOK       - all was OK
+ - ::kOfxStatErrBadHandle  - if the instance handle was invalid
+ 
+ */
 OfxStatus OfxImageEffectInstance::editBegin(const std::string& /*name*/) {
     return kOfxStatErrMissingHostFeature;
 }
@@ -418,4 +433,14 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     t1 = dag.getOutput()->getTimeLine().firstFrame();
     t2 = dag.getOutput()->getTimeLine().lastFrame();
 
+}
+
+
+// override this to make processing abort, return 1 to abort processing
+int OfxImageEffectInstance::abort() {
+    VideoEngine* v = node()->getExecutingEngine();
+    if(v){
+        return (int)v->hasBeenAborted();
+    }
+    return 0;
 }

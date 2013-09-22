@@ -152,6 +152,8 @@ public:
     /// get the first and last times available on the effect's timeline
     virtual void timeLineGetBounds(double &t1, double &t2) OVERRIDE;
 
+    virtual int abort();
+    
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
