@@ -188,7 +188,7 @@ OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
 
 int OfxNode::maximumInputs() const {
     if(isInputNode()){
-        return 1;
+        return 0;
     } else {
         assert(effectInstance());
         int totalClips = effectInstance()->getDescriptor().getClips().size();
