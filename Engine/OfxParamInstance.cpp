@@ -48,7 +48,8 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
 }
 
 
@@ -107,7 +108,8 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
     int max = getProperties().getIntProperty(kOfxParamPropDisplayMax);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
@@ -171,7 +173,8 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
@@ -242,6 +245,8 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
@@ -311,7 +316,8 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
@@ -396,7 +402,8 @@ _paramName(name){
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
@@ -482,7 +489,8 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
@@ -564,7 +572,8 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     double minimum[2];
     double maximum[2];
     double increment[2];
@@ -654,7 +663,8 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    _knob->setHintToolTip(hint);
     int minimum[2];
     int maximum[2];
     int increment[2];
@@ -743,6 +753,8 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
         if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
             _tabKnob->turnOffUndoRedo();
         }
+        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        _tabKnob->setHintToolTip(hint);
 
     }else{
         _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, name,1, Knob::NONE));
@@ -751,6 +763,8 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
         if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
             _groupKnob->turnOffUndoRedo();
         }
+        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        _groupKnob->setHintToolTip(hint);
 
     }
     
@@ -794,6 +808,8 @@ _fileKnob(0),_outputFileKnob(0){
             if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
                 _fileKnob->turnOffUndoRedo();
             }
+            const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+            _fileKnob->setHintToolTip(hint);
 
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
@@ -806,6 +822,8 @@ _fileKnob(0),_outputFileKnob(0){
             if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
                 _outputFileKnob->turnOffUndoRedo();
             }
+            const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+            _outputFileKnob->setHintToolTip(hint);
 
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
@@ -822,7 +840,8 @@ _fileKnob(0),_outputFileKnob(0){
         if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
             _stringKnob->turnOffUndoRedo();
         }
-
+        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        _stringKnob->setHintToolTip(hint);
         _returnValue = getProperties().getStringProperty(kOfxParamPropDefault,1);
         set(_returnValue.c_str());
     }

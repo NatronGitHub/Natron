@@ -152,6 +152,7 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText("File path...");
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    _lineEdit->setToolTip(_knob->getHintToolTip().c_str());
     QObject::connect(_lineEdit, SIGNAL(returnPressed()), this, SLOT(onReturnPressed()));
 	
     _openFileButton = new Button(layout->parentWidget());
@@ -238,6 +239,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText(QString("File path..."));
+    _lineEdit->setToolTip(_knob->getHintToolTip().c_str());
 	_lineEdit->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     _openFileButton = new Button(layout->parentWidget());
     
@@ -357,7 +359,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
             box->setMaximum(_knob->getMaximum().toInt());
             box->setMinimum(_knob->getMinimum().toInt());
         }
-        
+        box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
         if(_knob->getDimension() == 1){
             _slider = new ScaleSlider(_knob->getMinimum().toInt(),
@@ -463,6 +465,7 @@ void Int_KnobGui::addToLayout(QHBoxLayout* layout){
 void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _checkBox = new QCheckBox(layout->parentWidget());
+    _checkBox->setToolTip(_knob->getHintToolTip().c_str());
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));    
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     layout->addWidget(_checkBox,row,1,Qt::AlignLeft);
@@ -549,7 +552,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
             if(incr > 0)
                 box->setIncrement(incr);
         }
-        
+        box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
         if(_knob->getDimension() == 1){
             _slider = new ScaleSlider(_knob->getMinimum().toDouble(),
@@ -656,7 +659,7 @@ void Double_KnobGui::addToLayout(QHBoxLayout* layout){
 void Button_KnobGui::createWidget(QGridLayout *layout, int row){
     _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
-    
+    _button->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_button,row,0,Qt::AlignRight);
 }
 
@@ -691,6 +694,7 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     }
     if(_entries.size() > 0)
         _comboBox->setCurrentText(_entries[0].c_str());
+    _comboBox->setToolTip(_knob->getHintToolTip().c_str());
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));    
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
@@ -792,6 +796,11 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _aBox->setMinimum(0.);
     _aBox->setIncrement(0.1);
     
+    
+    _rBox->setToolTip(_knob->getHintToolTip().c_str());
+    _gBox->setToolTip(_knob->getHintToolTip().c_str());
+    _bBox->setToolTip(_knob->getHintToolTip().c_str());
+    _aBox->setToolTip(_knob->getHintToolTip().c_str());
     
     _rLabel = new QLabel("r:",boxContainers);
     _gLabel = new QLabel("g:",boxContainers);
@@ -974,6 +983,7 @@ void String_KnobGui::createWidget(QGridLayout *layout, int row){
     
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     _lineEdit = new LineEdit(layout->parentWidget());
+    _lineEdit->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_lineEdit,row,1,Qt::AlignLeft);
     QObject::connect(_lineEdit, SIGNAL(textEdited(QString)), this, SLOT(onStringChanged(QString)));
 
@@ -1030,7 +1040,7 @@ void GroupBoxLabel::setChecked(bool b){
 void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     _layout = layout;
     _button = new GroupBoxLabel(layout->parentWidget());
-    
+    _button->setToolTip(_knob->getHintToolTip().c_str());
     QWidget* header = new QWidget(layout->parentWidget());
     QHBoxLayout* headerLay = new QHBoxLayout(header);
     header->setLayout(headerLay);
@@ -1109,7 +1119,7 @@ void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
     /*not a pretty call... considering using QTabWidget instead*/
     _tabWidget = new TabWidget(_knob->getNode()->getModel()->getApp()->getGui(),
                                TabWidget::NONE,layout->parentWidget());
-    
+    _tabWidget->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_tabWidget,row,0,Qt::AlignLeft);
     
 }

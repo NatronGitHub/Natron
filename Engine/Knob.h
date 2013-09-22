@@ -299,6 +299,10 @@ public:
     
     bool canBeUndone() const {return _canUndo;}
     
+    void setHintToolTip(const std::string& hint){_tooltipHint = hint;}
+    
+    const std::string& getHintToolTip() const {return _tooltipHint;}
+    
 public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
@@ -369,6 +373,7 @@ private:
     bool _visible;
     bool _enabled;
     bool _canUndo;
+    std::string _tooltipHint;
 };
 
 std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
