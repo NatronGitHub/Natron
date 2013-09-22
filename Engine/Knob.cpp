@@ -249,7 +249,7 @@ _visible(true),
 _enabled(true),
 _canUndo(true)
 {
-    //_value.setValue(0); // it is better to keep it as an invalid variant
+
 }
 
 Knob::~Knob(){

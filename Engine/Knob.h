@@ -29,13 +29,13 @@ class Node;
 /******************************VARIANT**************************************/
 
 /*Variant type used by knob storage type.
-
+ 
  <<Do not use explicit in front of the constructors to
-   allow type conversion!. This API should be
-   transparant for the plug-in programmer.>>
+ allow type conversion!. This API should be
+ transparant for the plug-in programmer.>>
  
  NO!
-
+ 
  from C++ Coding Standards: 101 Rules, Guidelines, and Best Practices:
  40. Avoid providing implicit conversions.
  Not all change is progress: Implicit conversions can often do more damage than good.
@@ -89,7 +89,7 @@ public:
     void setValue(const T &value) {
         QVariant::setValue(value);
     }
-
+    
     template<typename T>
     void setValue(T variant[],int count){
         QList<QVariant> list;
@@ -98,8 +98,8 @@ public:
         }
         QVariant::setValue(list);
     }
-
-
+    
+    
     int toInt(bool *ok = 0) const { return QVariant::toInt(ok); }
     uint toUInt(bool *ok = 0) const { return QVariant::toUInt(ok); }
     qlonglong toLongLong(bool *ok = 0) const { return QVariant::toLongLong(ok); }
@@ -119,7 +119,7 @@ public:
     QList<QVariant> toList() const { return QVariant::toList(); }
     QMap<QString, QVariant> toMap() const { return QVariant::toMap(); }
     QHash<QString, QVariant> toHash() const { return QVariant::toHash(); }
-
+    
     bool isNull() const{return QVariant::isNull();}
 };
 Q_DECLARE_METATYPE(Variant);
@@ -153,7 +153,7 @@ public:
     ~KnobFactory();
     
     const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
-   
+    
     Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1, Knob_Mask flags = 0);
     
     KnobGui* createGuiForKnob(Knob* knob);
@@ -188,7 +188,7 @@ public:
     Node* getNode() const { return _node; }
     
     int getDimension() const {return _dimension;}
-            
+    
     Knob_Mask getFlags() const;
     
     /*Must return the name of the knob. This name will be used by the KnobFactory
@@ -217,7 +217,7 @@ public:
         emit valueChanged(_value);
         tryStartRendering();
     }
-
+    
     /*Used to extract the value held by the knob.
      Derived classes should provide a more appropriate
      way to retrieve results in the expected type.*/
@@ -240,51 +240,6 @@ public:
     
     void setVisible(bool b);
     
-    void setMinimum(const QVariant& variant){
-        _minimum.setValue(variant);
-    }
-    
-    void setMinimum(const Variant& variant){
-        _minimum = variant;
-    }
-    
-    template<typename T>
-    void setMinimum(T variant[],int count){
-        _minimum = Variant(variant,count);
-    }
-    
-    const Variant& getMinimum() const {return _minimum;}
-    
-    void setMaximum(const QVariant& variant){
-        _maximum.setValue(variant);
-    }
-    
-    void setMaximum(const Variant& variant){
-        _maximum = variant;
-    }
-    
-    template<typename T>
-    void setMaximum(T variant[],int count){
-        _maximum = Variant(variant,count);
-    }
-    
-    const Variant& getMaximum() const {return _maximum;}
-
-    
-    void setIncrement(const QVariant& variant){
-        _increment.setValue(variant);
-    }
-    void setIncrement(const Variant& variant){
-        _increment = variant;
-    }
-    
-    template<typename T>
-    void setIncrement(T variant[],int count){
-        _increment = Variant(variant,count);
-    }
-    
-    const Variant& getIncrement() const {return _increment;}
-
     void setParentKnob(Knob* knob){_parentKnob = knob;}
     
     Knob* getParentKnob() const {return _parentKnob;}
@@ -303,7 +258,7 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
     
-public slots:
+    public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
     void onValueChanged(const Variant& variant){
@@ -326,16 +281,16 @@ signals:
     
     /*emitted by deleteKnob().
      WARNING: To properly delete the gui
-     associated, NodeGui::initializeKnobs must 
+     associated, NodeGui::initializeKnobs must
      have been called. That means you should
      never call this function right away after
      KnobFactory::createKnob().*/
     void deleteWanted();
-
+    
     void visible(bool);
-        
+    
     void enabled(bool);
-        
+    
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
@@ -355,7 +310,7 @@ protected:
     Variant _value;
     std::vector<U64> _hashVector;
     int _dimension;
-   
+    
     
 private:
     
@@ -365,10 +320,6 @@ private:
     bool _newLine;
     int _itemSpacing;
     
-    /*Theses are used when it makes sense (e.g: for a scalar).
-     They store exactly the same type as _value*/
-    Variant _maximum,_minimum;
-    Variant _increment;
     Knob* _parentKnob;
     bool _visible;
     bool _enabled;
@@ -478,7 +429,7 @@ public:
     void openFile(){
         emit shouldOpenFile();
     }
-
+    
 signals:
     
     void filesSelected();
@@ -499,6 +450,7 @@ protected:
 class Int_Knob:public Knob
 {
     
+    Q_OBJECT
     
 public:
     
@@ -518,7 +470,87 @@ public:
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
-    const std::vector<int> getValues() const ;
+    const std::vector<int> getValues() const;
+    
+    void setMinimum(int mini,int index = 0){
+        if(_minimums.size() > (U32)index){
+            _minimums[index] = mini;
+        }else{
+            if(index == 0){
+                _minimums.push_back(mini);
+            }else{
+                while(_minimums.size() <= (U32)index){
+                    _minimums.push_back(0);
+                }
+                _minimums.push_back(mini);
+            }
+        }
+        int maximum = 99;
+        if(_maximums.size() > (U32)index){
+            maximum = _maximums[index];
+        }
+        emit minMaxChanged(mini,maximum,index);
+    }
+    
+    void setMaximum(int maxi,int index = 0){
+        
+        if(_maximums.size() > (U32)index){
+            _maximums[index] = maxi;
+        }else{
+            if(index == 0){
+                _maximums.push_back(maxi);
+            }else{
+                while(_maximums.size() <= (U32)index){
+                    _maximums.push_back(99);
+                }
+                _maximums.push_back(maxi);
+            }
+        }
+        int minimum = 99;
+        if(_minimums.size() > (U32)index){
+            minimum = _minimums[index];
+        }
+        emit minMaxChanged(minimum,maxi,index);
+    }
+    
+    void setIncrement(int incr,int index = 0){
+        if(_increments.size() > (U32)index){
+            _increments[index] = incr;
+        }else{
+            if(index == 0){
+                _increments.push_back(incr);
+            }else{
+                while(_increments.size() <= (U32)index){
+                    _increments.push_back(0.1);
+                }
+                _increments.push_back(incr);
+            }
+        }
+        emit incrementChanged(_increments[index],index);
+    }
+    
+    void setIncrement(const std::vector<int>& incr){
+        _increments = incr;
+        for (U32 i = 0; i < incr.size(); ++i) {
+            emit incrementChanged(_increments[i],i);
+        }
+    }
+    
+    /*minis & maxis must have the same size*/
+    void setMinimumsAndMaximums(const std::vector<int>& minis,const std::vector<int>& maxis){
+        _minimums = minis;
+        _maximums = maxis;
+        for (U32 i = 0; i < maxis.size(); ++i) {
+            emit minMaxChanged(_minimums[i], _maximums[i],i);
+        }
+    }
+    
+    const std::vector<int>& getMinimums() const {return _minimums;}
+    
+    const std::vector<int>& getMaximums() const {return _maximums;}
+    
+    const std::vector<int>& getIncrements() const {return _increments;}
+    
     
 protected:
     
@@ -526,7 +558,15 @@ protected:
     
     virtual void _restoreFromString(const std::string& str);
     
+signals:
     
+    void minMaxChanged(int mini,int maxi,int index = 0);
+    
+    void incrementChanged(int incr,int index = 0);
+    
+private:
+    
+    std::vector<int> _minimums,_maximums,_increments;
     
 };
 
@@ -568,6 +608,7 @@ protected:
 
 class Double_Knob:public Knob
 {
+    Q_OBJECT
     
 public:
     
@@ -589,13 +630,126 @@ public:
      contains _dimension elements.*/
     const std::vector<double> getValues() const ;
     
+    const std::vector<double>& getMinimums() const {return _minimums;}
+    
+    const std::vector<double>& getMaximums() const {return _maximums;}
+    
+    const std::vector<double>& getIncrements() const {return _increments;}
+    
+    const std::vector<int>& getDecimals() const {return _decimals;}
+    
+    void setMinimum(double mini,int index = 0){
+        if(_minimums.size() > (U32)index){
+            _minimums[index] = mini;
+        }else{
+            if(index == 0){
+                _minimums.push_back(mini);
+            }else{
+                while(_minimums.size() <= (U32)index){
+                    _minimums.push_back(0);
+                }
+                _minimums.push_back(mini);
+            }
+        }
+        double maximum = 99;
+        if(_maximums.size() > (U32)index){
+            maximum = _maximums[index];
+        }
+        emit minMaxChanged(mini,maximum,index);
+    }
+    
+    void setMaximum(double maxi,int index = 0){
+        if(_maximums.size() > (U32)index){
+            _maximums[index] = maxi;
+        }else{
+            if(index == 0){
+                _maximums.push_back(maxi);
+            }else{
+                while(_maximums.size() <= (U32)index){
+                    _maximums.push_back(99);
+                }
+                _maximums.push_back(maxi);
+            }
+        }
+        double minimum = 99;
+        if(_minimums.size() > (U32)index){
+            minimum = _minimums[index];
+        }
+        emit minMaxChanged(minimum,maxi,index);
+    }
+    
+    void setIncrement(double incr,int index = 0){
+        if(_increments.size() > (U32)index){
+            _increments[index] = incr;
+        }else{
+            if(index == 0){
+                _increments.push_back(incr);
+            }else{
+                while(_increments.size() <= (U32)index){
+                    _increments.push_back(0.1);
+                }
+                _increments.push_back(incr);
+            }
+        }
+        emit incrementChanged(_increments[index],index);
+    }
+    
+    void setDecimals(int decis,int index = 0){
+        if(_decimals.size() > (U32)index){
+            _decimals[index] = decis;
+        }else{
+            if(index == 0){
+                _decimals.push_back(decis);
+            }else{
+                while(_decimals.size() <= (U32)index){
+                    _decimals.push_back(3);
+                    _decimals.push_back(decis);
+                }
+            }
+        }
+        emit decimalsChanged(_decimals[index],index);
+    }
+    
+    
+    /*minis & maxis must have the same size*/
+    void setMinimumsAndMaximums(const std::vector<double>& minis,const std::vector<double>& maxis){
+        _minimums = minis;
+        _maximums = maxis;
+        for (U32 i = 0; i < maxis.size(); ++i) {
+            emit minMaxChanged(_minimums[i], _maximums[i],i);
+        }
+    }
+    
+    void setIncrement(const std::vector<double>& incr){
+        _increments = incr;
+        for (U32 i = 0; i < incr.size(); ++i) {
+            emit incrementChanged(_increments[i],i);
+        }
+    }
+    void setDecimals(const std::vector<int>& decis){
+        _decimals = decis;
+        for (U32 i = 0; i < decis.size(); ++i) {
+            emit decimalsChanged(decis[i],i);
+        }
+    }
+    
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
     
+signals:
+    void minMaxChanged(double mini,double maxi,int index = 0);
     
+    void incrementChanged(double incr,int index = 0);
+    
+    void decimalsChanged(int deci,int index = 0);
+    
+private:
+    
+    std::vector<double> _minimums,_maximums,_increments;
+    std::vector<int> _decimals;
     
 };
 
@@ -663,7 +817,7 @@ public:
     const std::vector<std::string>& getEntries() const {return _entries;}
     
     int getActiveEntry() const {return _value.toInt();}
-        
+    
 protected:
     
     virtual void tryStartRendering();

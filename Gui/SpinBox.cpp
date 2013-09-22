@@ -61,6 +61,7 @@ void SpinBox::setValue(double d){
     else
         str.setNum((int)d);
     insert(str);
+    home(false);
 }
 void SpinBox::interpretReturn(){
     emit valueChanged(text().toDouble());

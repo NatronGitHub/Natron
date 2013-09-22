@@ -111,7 +111,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _settingsTab = new QWidget(_tabWidget);
     _settingsTab->setObjectName("_settingsTab");
     _layoutSettings=new QGridLayout(_settingsTab);
-    _layoutSettings->setVerticalSpacing(0);
+    _layoutSettings->setVerticalSpacing(2);
     _layoutSettings->setHorizontalSpacing(10);
     _settingsTab->setLayout(_layoutSettings);
     _tabWidget->addTab(_settingsTab,"Settings");

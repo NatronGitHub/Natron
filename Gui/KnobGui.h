@@ -242,7 +242,7 @@ public:
     static KnobGui* BuildKnobGui(Knob* knob){ return new Int_KnobGui(knob); }
 
     
-    Int_KnobGui(Knob* knob):KnobGui(knob),_slider(0){}
+    Int_KnobGui(Knob* knob);
     
     virtual ~Int_KnobGui(){}
     
@@ -260,8 +260,14 @@ public:
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
+    
     void onSpinBoxValueChanged();
+    
     void onSliderValueChanged(double);
+    
+    void onMinMaxChanged(int mini,int maxi,int index = 0);
+    
+    void onIncrementChanged(int incr,int index = 0);
  
 protected:
     
@@ -321,7 +327,7 @@ public:
     static KnobGui* BuildKnobGui(Knob* knob){ return new Double_KnobGui(knob); }
 
     
-    Double_KnobGui(Knob* knob):KnobGui(knob),_slider(0){}
+    Double_KnobGui(Knob* knob);
     
     virtual ~Double_KnobGui(){}
     
@@ -341,6 +347,10 @@ public:
 public slots:
     void onSpinBoxValueChanged();
     void onSliderValueChanged(double);
+    
+    void onMinMaxChanged(double mini,double maxi,int index = 0);
+    void onIncrementChanged(double incr,int index = 0);
+    void onDecimalsChanged(int deci,int index = 0);
     
 protected:
     
