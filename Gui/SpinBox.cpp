@@ -23,7 +23,7 @@ CLANG_DIAG_ON(unused-private-field);
 SpinBox::SpinBox(QWidget* parent,SPINBOX_TYPE type):
 LineEdit(parent)
 ,_type(type)
-,_decimals(3)
+,_decimals(2)
 ,_increment(1.0)
 ,_mini(0)
 ,_maxi(99)
@@ -57,7 +57,7 @@ void SpinBox::setValue(double d){
     clear();
     QString str;
     if(_type == DOUBLE_SPINBOX)
-        str.setNum(d);
+        str.setNum(d,'f',_decimals);
     else
         str.setNum((int)d);
     insert(str);
@@ -86,7 +86,7 @@ void SpinBox::wheelEvent(QWheelEvent *e){
         }
         QString str;
         if(_type == DOUBLE_SPINBOX)
-            str.setNum(cur);
+            str.setNum(cur,'f',_decimals);
         else
             str.setNum((int)cur);
         
@@ -105,7 +105,7 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
                 cur+=_increment;
             QString str;
             if(_type == DOUBLE_SPINBOX)
-                str.setNum(cur);
+                str.setNum(cur,'f',_decimals);
             else
                 str.setNum((int)cur);
             insert(str);
@@ -116,7 +116,7 @@ void SpinBox::keyPressEvent(QKeyEvent *e){
                 cur-=_increment;
             QString str;
             if(_type == DOUBLE_SPINBOX)
-                str.setNum(cur);
+                str.setNum(cur,'f',_decimals);
             else
                 str.setNum((int)cur);
             insert(str);

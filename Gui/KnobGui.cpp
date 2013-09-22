@@ -539,6 +539,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     const std::vector<double>& maximums = dbl_knob->getMaximums();
     const std::vector<double>& minimums = dbl_knob->getMinimums();
     const std::vector<double>& increments = dbl_knob->getIncrements();
+    const std::vector<int>& decimals = dbl_knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -561,6 +562,8 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
             box->setMaximum(maximums[i]);
         if((int)minimums.size() > i)
             box->setMinimum(minimums[i]);
+        if((int)decimals.size() > i)
+            box->decimals(decimals[i]);
         if((int)increments.size() > i){
             double incr = increments[i];
             if(incr > 0)
