@@ -36,8 +36,7 @@ namespace Powiter {
 }
 
 class OfxNode : public OutputNode
-{
-    
+{    
 public:
     OfxNode(Model* model,
              OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -156,7 +155,9 @@ public:
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
     virtual const QString getRandomFrameName(int f) const;
-            
+    
+    void onInstanceChanged(const std::string& paramName);
+    
 private:
 
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.

@@ -54,7 +54,7 @@ public:
     Knob* getKnob() const;
     
 public slots:
-    void onInstanceChanged();
+    void triggerInstanceChanged();
 
 protected:
     OfxNode* _node;
@@ -89,8 +89,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
     
 };
@@ -119,8 +120,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -148,8 +150,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -176,8 +179,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -203,8 +207,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -231,8 +236,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -259,8 +265,9 @@ public:
     Knob* getKnob() const;
     
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 
@@ -286,8 +293,9 @@ public:
     
     Knob* getKnob() const;
     
-    public slots:
-    void onInstanceChanged();
+public slots:
+    
+    void triggerInstanceChanged();
     
 };
 class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
@@ -355,7 +363,8 @@ public:
     virtual ~OfxStringInstance(){}
     
 public slots:
-    void onInstanceChanged();
+    
+    void triggerInstanceChanged();
 
 };
 

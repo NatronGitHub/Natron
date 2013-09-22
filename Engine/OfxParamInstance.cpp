@@ -40,7 +40,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
     _knob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", node, name,1, Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -67,18 +67,8 @@ Knob* OfxPushButtonInstance::getKnob() const {
     return _knob;
 }
 
-void OfxPushButtonInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxPushButtonInstance::triggerInstanceChanged() {
+    _node->onInstanceChanged(_paramName);
     ViewerNode* viewer = Node::hasViewerConnected(_node);
     if(viewer){
         _node->getModel()->updateDAG(viewer,false);
@@ -100,7 +90,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
     _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name,1, Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -136,18 +126,8 @@ OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     _knob->setValue(v);
     return kOfxStatOK;
 }
-void OfxIntegerInstance::onInstanceChanged(){
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxIntegerInstance::triggerInstanceChanged(){
+    _node->onInstanceChanged(_paramName);
 }
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
@@ -178,7 +158,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
     double incr = getProperties().getDoubleProperty(kOfxParamPropIncrement);
@@ -215,19 +195,8 @@ OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& /*v*/){
 OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, double& /*v*/){
     return kOfxStatErrMissingHostFeature;
 }
-void OfxDoubleInstance::onInstanceChanged(){
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        /*Will set the value of the param in the plugin and then call OfxDoubleInstance::set(double)*/
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxDoubleInstance::triggerInstanceChanged(){
+    _node->onInstanceChanged(_paramName);
 }
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
@@ -249,7 +218,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
     _knob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", node, name, 1,Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -282,18 +251,8 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
     return kOfxStatOK;
 }
 
-void OfxBooleanInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxBooleanInstance::triggerInstanceChanged() {
+   _node->onInstanceChanged(_paramName);
 }
 
 // callback which should set enabled state as appropriate
@@ -326,16 +285,14 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     OFX::Host::Property::Set& pSet = getProperties();
     for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = pSet.getStringProperty(kOfxParamPropChoiceOption,i);
         _entries.push_back(str);
     }
     _knob->populate(_entries);
-    int def = pSet.getIntProperty(kOfxParamPropDefault);
-    int mod = pSet.getIntProperty(kOfxParamPropPluginMayWrite);
-    
+    int def = pSet.getIntProperty(kOfxParamPropDefault);    
     set(def);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
@@ -363,18 +320,8 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
     }
 }
 
-void OfxChoiceInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxChoiceInstance::triggerInstanceChanged() {
+   _node->onInstanceChanged(_paramName);
 }
 
 
@@ -403,7 +350,7 @@ _paramName(name){
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
     _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name, 1,Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -455,18 +402,8 @@ OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,dou
     return kOfxStatOK;
 }
 
-void OfxRGBAInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxRGBAInstance::triggerInstanceChanged() {
+    _node->onInstanceChanged(_paramName);
 }
 
 // callback which should set enabled state as appropriate
@@ -490,7 +427,7 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
     _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name,1, Knob::NO_ALPHA));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -539,18 +476,8 @@ OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
     return kOfxStatOK;
 }
 
-void OfxRGBInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxRGBInstance::triggerInstanceChanged() {
+    _node->onInstanceChanged(_paramName);
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
@@ -573,7 +500,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
     }
     _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, name,2, Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -628,18 +555,8 @@ OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
 	return kOfxStatOK;
 }
 
-void OfxDouble2DInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxDouble2DInstance::triggerInstanceChanged() {
+   _node->onInstanceChanged(_paramName);
 }
 
 // callback which should set enabled state as appropriate
@@ -663,7 +580,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
     }
     _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name, 2,Knob::NONE));
-    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+    QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -717,18 +634,8 @@ OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
 	return kOfxStatOK;
 }
 
-void OfxInteger2DInstance::onInstanceChanged() {
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+void OfxInteger2DInstance::triggerInstanceChanged() {
+    _node->onInstanceChanged(_paramName);
 }
 
 // callback which should set enabled state as appropriate
@@ -806,7 +713,7 @@ _fileKnob(0),_outputFileKnob(0){
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
             _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", node, name, 1,Knob::NONE));
-            QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+            QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
             QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), _node, SLOT(onFrameRangeChanged(int,int)));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
@@ -821,7 +728,7 @@ _fileKnob(0),_outputFileKnob(0){
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, name,1, Knob::NONE));
-            QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(onInstanceChanged()));
+            QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
             if(layoutHint == 2){
                 _outputFileKnob->turnOffNewLine();
             }
@@ -839,7 +746,7 @@ _fileKnob(0),_outputFileKnob(0){
         if(mode == kOfxParamStringIsLabel){
             _stringKnob->setEnabled(false);
         }
-        QObject::connect(_stringKnob, SIGNAL(valueChangedByUser()), this, SLOT(onInstanceChanged()));
+        QObject::connect(_stringKnob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
         if(layoutHint == 2){
             _stringKnob->turnOffNewLine();
         }
@@ -964,21 +871,11 @@ void OfxStringInstance::setSecret(){
     
 }
 
-void OfxStringInstance::onInstanceChanged() {
+void OfxStringInstance::triggerInstanceChanged() {
     if (_fileKnob) {
          _node->computePreviewImage();
     }
-    assert(_node->effectInstance());
-    OfxStatus stat;
-    stat = _node->effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    if(stat == kOfxStatOK){
-        OfxPointD renderScale;
-        renderScale.x = renderScale.y = 1.0;
-        stat = _node->effectInstance()->paramInstanceChangedAction(_paramName, kOfxChangeUserEdited, 1.0,renderScale);
-        assert(stat == kOfxStatOK);
-        stat = _node->effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-        assert(stat == kOfxStatOK);
-    }
+    _node->onInstanceChanged(_paramName);
 }
 
 const QString OfxStringInstance::getRandomFrameName(int f) const{

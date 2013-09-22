@@ -367,21 +367,21 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
     }
 }
 
-//
-//void OfxNode::onInstanceChangedAction(const QString& str){
-//    double frame  = effectInstance()->getFrameRecursive();
-//    OfxPointD renderScale;
-//    effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);
-//    effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-//    effectInstance()->paramInstanceChangedAction(str.toStdString(),kOfxChangeUserEdited,frame,renderScale);
-//    effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-//    
-//    if(isOutputNode())
-//        getExecutingEngine()->changeDAGAndStartEngine(this);
-//    else{
-//        getExecutingEngine()->seekRandomFrame(getExecutingEngine()->getCurrentDAG().getOutput()->getTimeLine().currentFrame());
-//    }
-//}
+void OfxNode::onInstanceChanged(const std::string& paramName){
+    std::string realParamName = paramName;
+    std::locale loc;
+    realParamName[0] = std::tolower(paramName.at(0),loc);
+    OfxStatus stat;
+    stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+    //  if(stat == kOfxStatOK){
+    OfxPointD renderScale;
+    renderScale.x = renderScale.y = 1.0;
+    stat = effectInstance()->paramInstanceChangedAction(realParamName, kOfxChangeUserEdited, 1.0,renderScale);
+    //     assert(stat == kOfxStatOK);
+    stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+    //   assert(stat == kOfxStatOK);
+    // }
+}
 
 
 void OfxNode::computePreviewImage(){
