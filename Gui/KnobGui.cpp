@@ -441,6 +441,9 @@ void Int_KnobGui::setEnabled(bool b){
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->setEnabled(b);
     }
+    if(_slider){
+        _slider->setEnabled(b);
+    }
 
 }
 void Int_KnobGui::addToLayout(QHBoxLayout* layout){
@@ -449,6 +452,9 @@ void Int_KnobGui::addToLayout(QHBoxLayout* layout){
         layout->addWidget(_spinBoxes[i].first);
         if(_spinBoxes[i].second)
             layout->addWidget(_spinBoxes[i].second);
+    }
+    if(_slider){
+        layout->addWidget(_slider);
     }
     
 }
@@ -629,6 +635,9 @@ void Double_KnobGui::setEnabled(bool b){
         if(_spinBoxes[i].second)
             _spinBoxes[i].second->setEnabled(b);
     }
+    if(_slider){
+        _slider->setEnabled(b);
+    }
     
 }
 void Double_KnobGui::addToLayout(QHBoxLayout* layout){
@@ -638,7 +647,9 @@ void Double_KnobGui::addToLayout(QHBoxLayout* layout){
         if(_spinBoxes[i].second)
             layout->addWidget(_spinBoxes[i].second);
     }
-    
+    if(_slider){
+        layout->addWidget(_slider);
+    }
 }
 
 //=============================BUTTON_KNOB_GUI===================================

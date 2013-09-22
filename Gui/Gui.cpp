@@ -483,8 +483,9 @@ void Gui::setupUi()
     
     _middleRightSplitter->addWidget(_propertiesPane);
     QSize horizontalSplitterSize = _middleRightSplitter->sizeHint();
-    QList<int> sizes; sizes <<   240;
-    sizes  <<horizontalSplitterSize.width()- 240;
+    QList<int> sizes;
+    sizes << 195;
+    sizes << horizontalSplitterSize.width()- 195;
     _middleRightSplitter->setSizes(sizes);
 	
     

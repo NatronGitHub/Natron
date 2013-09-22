@@ -116,6 +116,8 @@ void ScaleSlider::fillCoordLut(){
 }
 
 void ScaleSlider::mousePressEvent(QMouseEvent* e){
+    if(!isEnabled())
+        return;
     _position = getScalePosition(e->x());
     _dragging=true;
     emit positionChanged(_position);
@@ -131,6 +133,8 @@ void ScaleSlider::mouseMoveEvent(QMouseEvent* e){
     }
 }
 void ScaleSlider::seekScalePosition(double d){
+    if(!isEnabled())
+        return;
     bool loop = true;
     if(d < _values [0]){
         _position= _values[0];
