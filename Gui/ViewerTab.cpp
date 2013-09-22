@@ -131,6 +131,9 @@ _maximized(false)
     
     
 	_refreshButton = new Button(_secondSettingsRow);
+    _refreshButton->setShortcut(QKeySequence(Qt::Key_U));
+    _refreshButton->setToolTip("Force a new render of the current frame."
+                               "<p></br><b>Keyboard shortcut: U</b></p>");
     _secondRowLayout->addWidget(_refreshButton);
     
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
@@ -436,7 +439,8 @@ _maximized(false)
     QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
     QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
     QObject::connect(viewer,SIGNAL(engineNeeded()),vengine,SLOT(repeatSameFrame()));
-        
+    QObject::connect(_refreshButton, SIGNAL(clicked()), this, SLOT(refresh()));
+    
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
     QObject::connect(_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
@@ -542,6 +546,11 @@ void ViewerTab::centerViewer(){
         viewer->fitToFormat(viewer->displayWindow());
         viewer->updateGL();
     }
+}
+
+void ViewerTab::refresh(){
+    _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
+    _viewerNode->updateDAG();
 }
 
 ViewerTab::~ViewerTab()

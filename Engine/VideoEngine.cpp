@@ -425,8 +425,11 @@ void VideoEngine::run(){
             x = columnSpan.first;
             r = columnSpan.second+1;
             
-            
-            iscached = appPTR->getViewerCache()->get(key);
+            if(!_forceRender){
+                iscached = appPTR->getViewerCache()->get(key);
+            }else{
+                _forceRender = false;
+            }
             /*Found in viewer cache, we execute the cached engine and leave*/
             if (iscached) {
                 _lastFrameInfos._cachedEntry = iscached;
@@ -702,6 +705,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _treeVersionValid(false)
 , _loopMode(true)
 , _autoSaveOnNextRun(false)
+, _forceRender(false)
 , _workerThreadsWatcher(new QFutureWatcher<void>)
 , _openGLCondition()
 , _openGLMutex()

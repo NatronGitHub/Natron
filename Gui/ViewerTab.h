@@ -148,6 +148,8 @@ public slots:
     
     void onEngineStopped();
     
+    void refresh();
+    
 signals:
     void recenteringNeeded();
     

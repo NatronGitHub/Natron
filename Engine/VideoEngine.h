@@ -363,6 +363,8 @@ private:
         
     bool _autoSaveOnNextRun; /*!< on if we need to to an autosave at the end of the next compute frame.*/
     
+    bool _forceRender;
+    
     boost::scoped_ptr<QFutureWatcher<void> > _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
@@ -525,6 +527,8 @@ public:
      *@brief Sets the _autoSaveOnNextRun to true
      **/
     void triggerAutoSaveOnNextRun(){_autoSaveOnNextRun = true;}
+    
+    void forceFullComputationOnNextFrame(){_forceRender = true;}
     
     /**
      *@brief Convenience function calling DAG::isOutputAViewer()
