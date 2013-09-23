@@ -101,7 +101,7 @@ Row::~Row(){
 }
 
 const float* Row::operator[](Channel z) const {
-    if (_channels.contains(z)) {
+    if (_channels & z) {
         assert(buffers[z]);
         return buffers[z] - x;
     } else {

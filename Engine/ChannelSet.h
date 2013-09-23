@@ -96,8 +96,8 @@ public:
     const ChannelSet& operator=(Powiter::Channel z);
     
     void clear() { mask = 0; _size = 0;}
-    operator bool() const { return (bool)mask ; }// allow to do stuff like if(channelsA & channelsB)
-    bool empty() const { return !(bool)mask; }
+    operator bool() const { return (bool)(mask >> 1) ; }// allow to do stuff like if(channelsA & channelsB)
+    bool empty() const { return !(bool)(mask >> 1); }
     
     bool operator==(const ChannelSet& source) const;
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
