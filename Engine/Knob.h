@@ -517,15 +517,21 @@ public:
     
     void setIncrement(int incr, int index = 0) {
         assert(incr > 0);
+        /*If _increments is already filled, just replace the existing value*/
         if (_increments.size() > (U32)index) {
             _increments[index] = incr;
         }else{
+            /*If it is not filled and it is 0, just push_back the value*/
             if(index == 0){
                 _increments.push_back(incr);
             } else {
+                /*Otherwise fill enough values until we  have
+                 the corresponding index in _increments. Then we
+                 can push_back the value as the last element of the
+                 vector.*/
                 while (_increments.size() <= (U32)index) {
                     // FIXME: explain what happens here (comment?)
-                    _increments.push_back(0.1); // FIXME: obviously a bug: (int)0.1 == 0
+                    _increments.push_back(1);
                     assert(_increments[_increments.size()-1] > 0);
                 }
                 _increments.push_back(incr);

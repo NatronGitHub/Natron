@@ -281,8 +281,8 @@ void ChannelSet::operator&=(ChannelMask source) {
 
 void ChannelSet::operator&=(Channel z){
     assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
-    mask = (1 << z);
-    _size = 1;
+    mask |= (1 << z);
+    ++_size;
 }
 
 ChannelSet ChannelSet::operator&(const ChannelSet& c) const {

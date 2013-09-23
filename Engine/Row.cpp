@@ -28,7 +28,7 @@ Row::Row():_cacheWillDelete(false){
 }
 
 void Row::turnOn(Channel c) {
-    if( c & _channels) return;
+    if(_channels.contains(c)) return;
     _channels += c;
     if(c != Channel_alpha) {
         buffers[c] = (float*)calloc((r-x),sizeof(float));
@@ -101,7 +101,7 @@ Row::~Row(){
 }
 
 const float* Row::operator[](Channel z) const {
-    if (_channels & z) {
+    if (_channels.contains(z)) {
         assert(buffers[z]);
         return buffers[z] - x;
     } else {
@@ -110,7 +110,7 @@ const float* Row::operator[](Channel z) const {
 }
 
 float* Row::writable(Channel c) {
-    if (_channels & c) {
+    if (_channels.contains(c)) {
         assert(buffers[c]);
         return buffers[c] - x;
     } else {
