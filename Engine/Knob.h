@@ -515,15 +515,18 @@ public:
         emit minMaxChanged(minimum,maxi,index);
     }
     
-    void setIncrement(int incr,int index = 0){
-        if(_increments.size() > (U32)index){
+    void setIncrement(int incr, int index = 0) {
+        assert(incr > 0);
+        if (_increments.size() > (U32)index) {
             _increments[index] = incr;
         }else{
             if(index == 0){
                 _increments.push_back(incr);
-            }else{
-                while(_increments.size() <= (U32)index){
-                    _increments.push_back(0.1);
+            } else {
+                while (_increments.size() <= (U32)index) {
+                    // FIXME: explain what happens here (comment?)
+                    _increments.push_back(0.1); // FIXME: obviously a bug: (int)0.1 == 0
+                    assert(_increments[_increments.size()-1] > 0);
                 }
                 _increments.push_back(incr);
             }
@@ -534,6 +537,7 @@ public:
     void setIncrement(const std::vector<int>& incr){
         _increments = incr;
         for (U32 i = 0; i < incr.size(); ++i) {
+            assert(_increments[i] > 0);
             emit incrementChanged(_increments[i],i);
         }
     }
@@ -680,15 +684,16 @@ public:
         emit minMaxChanged(minimum,maxi,index);
     }
     
-    void setIncrement(double incr,int index = 0){
-        if(_increments.size() > (U32)index){
+    void setIncrement(double incr, int index = 0) {
+        assert(incr > 0.);
+        if (_increments.size() > (U32)index) {
             _increments[index] = incr;
         }else{
             if(index == 0){
                 _increments.push_back(incr);
             }else{
-                while(_increments.size() <= (U32)index){
-                    _increments.push_back(0.1);
+                while (_increments.size() <= (U32)index) {
+                    _increments.push_back(0.1);  // FIXME: explain with a comment what happens here? why 0.1?
                 }
                 _increments.push_back(incr);
             }
