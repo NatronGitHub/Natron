@@ -88,7 +88,7 @@ public:
     
     ChannelSet() : mask(0),_size(0) {}
     ChannelSet(const ChannelSet &source);
-    ChannelSet(Powiter::ChannelMask v);
+    ChannelSet(Powiter::ChannelMask v) { *this = v; }// use operator=(ChannelMask v)
     ChannelSet(Powiter::Channel v) { *this = v; } // use operator=(Channel z)
     ~ChannelSet() {}
     const ChannelSet& operator=(const ChannelSet& source);
