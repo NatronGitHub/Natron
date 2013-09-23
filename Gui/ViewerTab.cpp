@@ -76,6 +76,8 @@ _maximized(false)
     //_firstRowLayout->addWidget(_viewerLayers);
     
     _viewerChannels = new ComboBox(_firstSettingsRow);
+    _viewerChannels->setToolTip("<p></br><b>Channels: \n</b></p>"
+                 "The channels to display on the viewer.");
 	_firstRowLayout->addWidget(_viewerChannels);
     
     _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
@@ -88,6 +90,8 @@ _maximized(false)
     QObject::connect(_viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)));
     
     _zoomCombobox = new ComboBox(_firstSettingsRow);
+    _zoomCombobox->setToolTip("<p></br><b>Zoom: \n</b></p>"
+                 "The zoom applied to the image on the viewer.");
     _zoomCombobox->addItem("10%");
     _zoomCombobox->addItem("25%");
     _zoomCombobox->addItem("50%");
@@ -120,6 +124,8 @@ _maximized(false)
     _mainLayout->addWidget(_secondSettingsRow);
     
     _gainBox = new SpinBox(_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
+    _gainBox->setToolTip("<p></br><b>Gain: \n</b></p>"
+                       "Multiplies the image by \nthis amount before display.");
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
     _gainBox->setMinimum(-99.0);
@@ -127,6 +133,8 @@ _maximized(false)
     
     
     _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,5,_secondSettingsRow);
+    _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
+                 "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
     
     
@@ -137,6 +145,11 @@ _maximized(false)
     _secondRowLayout->addWidget(_refreshButton);
     
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
+    _viewerColorSpace->setToolTip("<p></br><b>Viewer color process: \n</b></p>"
+                 "The operation applied to the image before it is displayed\n"
+                                  "on screen. All the color pipeline in Powiter \n"
+                                  "is linear,thus the process converts from linear\n"
+                                  "to your monitor's colorspace.");
     _secondRowLayout->addWidget(_viewerColorSpace);
     
     _viewerColorSpace->addItem("Linear(None)");

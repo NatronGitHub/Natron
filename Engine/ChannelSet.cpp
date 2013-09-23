@@ -91,7 +91,7 @@ const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
 
 const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     if (source == Mask_All) {
-        mask = 0xffffffff;
+        mask = 0xFFFFFFFF;
         _size = POWITER_MAX_CHANNEL_COUNT;
         return *this;
     }
@@ -281,8 +281,8 @@ void ChannelSet::operator&=(ChannelMask source) {
 
 void ChannelSet::operator&=(Channel z){
     assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
-    mask |= (1 << z);
-    ++_size;
+    mask &= (1 << z);
+    _size = NumberOfSetBits(mask);
 }
 
 ChannelSet ChannelSet::operator&(const ChannelSet& c) const {
