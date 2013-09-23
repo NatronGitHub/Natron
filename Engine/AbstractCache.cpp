@@ -15,14 +15,17 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
+#if QT_VERSION < 0x050000
+#include <QtGui/QDesktopServices>
+#else
+#include <QStandardPaths>
+#endif
 
 #include "Global/Macros.h"
 #include "Engine/MemoryFile.h"
 
 using namespace std;
 using namespace Powiter;
-
-#define CACHE_FOLDER_NAME "PowiterCache"
 
 #if QT_VERSION < 0x050000
 static bool removeRecursively(const QString & dirName)
@@ -266,66 +269,27 @@ CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
 }
 
 void AbstractDiskCache::initializeSubDirectories(){
-    QDir cache(POWITER_CACHE_ROOT_PATH);
-    QStringList entries = cache.entryList();
-    bool foundDir = false;
-    for(int i =0 ; i < entries.size();++i) {
-        if(entries[i].toStdString() == CACHE_FOLDER_NAME){
-            foundDir=true;
-            break;
+    QDir cacheFolder(getCachePath());
+    cacheFolder.mkpath(".");
+
+    QStringList etr = cacheFolder.entryList();
+    // if not 256 subdirs, we re-create the cache
+    if (etr.size() < 256) {
+        foreach(QString e, etr){
+            cacheFolder.rmdir(e);
         }
     }
-    if(!foundDir){
-        cache.mkdir(CACHE_FOLDER_NAME);
-    }
-    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
-    
-    QDir cacheFolder(cacheFolderName);
-    entries = cacheFolder.entryList();
-    foundDir = false;
-    for(int i =0 ; i < entries.size();++i) {
-        if(entries[i].toStdString() == cacheName()){
-            foundDir=true;
-            break;
-        }
-    }
-    if(!foundDir){
-        cacheFolder.mkdir(cacheName().c_str());
-        cacheFolderName.append(cacheName().c_str());
-        QDir newCache(cacheFolderName);
-        for(U32 i = 0x00 ; i <= 0xF; ++i) {
-            for(U32 j = 0x00 ; j <= 0xF ; ++j) {
-                ostringstream oss;
-                oss << hex <<  i;
-                oss << hex << j ;
-                string str = oss.str();
-                newCache.mkdir(str.c_str());
-            }
-        }
-    }else{
-        QString newCachePath(cacheFolderName);
-        newCachePath.append(cacheName().c_str());
-        QDir newCache(newCachePath);
-        QStringList etr = newCache.entryList();
-        // if not 256 subdirs, we re-create the cache
-        if (etr.size() < 256) {
-            foreach(QString e, etr){
-                newCache.rmdir(e);
-            }
-        }
-        for(U32 i = 0x00 ; i <= 0xF; ++i) {
-            for(U32 j = 0x00 ; j <= 0xF ; ++j) {
-                ostringstream oss;
-                oss << hex <<  i;
-                oss << hex << j ;
-                string str = oss.str();
-                newCache.mkdir(str.c_str());
-            }
+    for(U32 i = 0x00 ; i <= 0xF; ++i) {
+        for(U32 j = 0x00 ; j <= 0xF ; ++j) {
+            ostringstream oss;
+            oss << hex <<  i;
+            oss << hex << j ;
+            string str = oss.str();
+            cacheFolder.mkdir(str.c_str());
         }
     }
 }
+
 AbstractDiskCache::~AbstractDiskCache(){
 }
 
@@ -360,13 +324,9 @@ void AbstractDiskCache::clearDiskCache(){
 }
 
 void AbstractDiskCache::save(){
-    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
-    
-    QString newCachePath(cacheFolderName);
-    newCachePath.append(cacheName().c_str());
-    newCachePath.append("/restoreFile.powc");
+    QString newCachePath(getCachePath());
+    newCachePath.append(QDir::separator());
+    newCachePath.append("restoreFile.powc");
     QFile _restoreFile(newCachePath);
     _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
     QTextStream out(&_restoreFile);
@@ -383,13 +343,10 @@ void AbstractDiskCache::save(){
 }
 
 void AbstractDiskCache::restore(){
-    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
-    QString newCachePath(cacheFolderName);
-    newCachePath.append(cacheName().c_str());
+    QString newCachePath(getCachePath());
     QString settingsFilePath(newCachePath);
-    settingsFilePath.append("/restoreFile.powc");
+    settingsFilePath.append(QDir::separator());
+    settingsFilePath.append("restoreFile.powc");
     if(QFile::exists(settingsFilePath)){
         QDir directory(newCachePath);
         QStringList files = directory.entryList();
@@ -401,7 +358,7 @@ void AbstractDiskCache::restore(){
         int subFolderCount = 0;
         for(int i =0 ; i< files.size() ;++i) {
             QString subFolder(newCachePath);
-            subFolder.append("/");
+            subFolder.append(QDir::separator());
             subFolder.append(files[i]);
             if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
             QDir d(subFolder);
@@ -482,32 +439,9 @@ void AbstractDiskCache::restore(){
         }
     }else{ // restore file doesn't exist
         /*re-create cache*/
-        
-        QDir root(POWITER_CACHE_ROOT_PATH);
-        QStringList rootEntries = root.entryList();
-        bool foundCache = false;
-        for (int i =0 ; i< rootEntries.size(); ++i) {
-            if (rootEntries[i] == CACHE_FOLDER_NAME) {
-                foundCache = true;
-                break;
-            }
-        }
-        if(!foundCache){
-            root.mkdir(CACHE_FOLDER_NAME);
-        }
-        QDir cacheDir(cacheFolderName);
-        QStringList cacheRootEntries = root.entryList();
-        bool foundCacheName = false;
-        for (int i =0 ; i< cacheRootEntries.size(); ++i) {
-            if (cacheRootEntries[i] == QString(cacheName().c_str())) {
-                foundCacheName = true;
-                break;
-            }
-        }
-        if(!foundCacheName){
-            cacheDir.mkdir(cacheName().c_str());
-        }
-        
+
+        QDir(getCachePath()).mkpath(".");
+
         cleanUpDiskAndReset();
         
         /*re-create settings file*/
@@ -520,12 +454,7 @@ void AbstractDiskCache::restore(){
 }
 
 void AbstractDiskCache::cleanUpDiskAndReset(){
-    QString cacheFolderName(QDir::currentPath());
-    cacheFolderName.append("/");
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
-    QString cachePath(cacheFolderName);
-    cachePath.append(cacheName().c_str());
+    QString cachePath(getCachePath());
 #   if QT_VERSION < 0x050000
     removeRecursively(cachePath);
 #   else
@@ -539,12 +468,14 @@ void AbstractDiskCache::cleanUpDiskAndReset(){
 }
 
 QString AbstractDiskCache::getCachePath(){
-    QString cacheFolderName(POWITER_CACHE_ROOT_PATH);
-    cacheFolderName.append(CACHE_FOLDER_NAME);
-    cacheFolderName.append("/");
+#if QT_VERSION < 0x050000
+    QString cacheFolderName(QDesktopServices::storageLocation(QDesktopServices::CacheLocation));
+#else
+    QString cacheFolderName(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QDir::separator());
+#endif
+    cacheFolderName.append(QDir::separator());
     QString str(cacheFolderName);
     str.append(cacheName().c_str());
-    str.append("/");
     return str;
 }
 
