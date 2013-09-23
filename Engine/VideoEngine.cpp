@@ -745,15 +745,13 @@ void VideoEngine::abort(){
 void VideoEngine::startEngine(int nbFrames){
     if (dagHasInputs()) {
         render(nbFrames,true,true);
-        
     }
 }
 void VideoEngine::repeatSameFrame(bool initViewer){
     if (dagHasInputs()) {
-        if(_working){
-            abort();
-            
-        }
+//        if(_working){
+//             abort();
+//        }
         if(_working){
             appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
         }else{
@@ -1127,7 +1125,7 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     gettimeofday(&now, 0);
     double t =  now.tv_sec  - _lastComputeFrameTime.tv_sec +
     (now.tv_usec - _lastComputeFrameTime.tv_usec) * 1e-6f;
-    if(t >= 0.3){
+    if(t >= 0.5){
         _dag.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_lastFrameInfos._textureRect, y,zoomedY);
         return true;
     }else{

@@ -76,7 +76,6 @@ void OfxPushButtonInstance::triggerInstanceChanged() {
     }else if(_node->isOutputNode()){
         OutputNode* n = dynamic_cast<OutputNode*>(_node);
         n->updateDAG(false);
-        n->getVideoEngine()->startEngine(-1);
     }
 }
 
