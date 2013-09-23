@@ -137,7 +137,7 @@ public:
     
     void showErrorDialog(const QString& title,const QString& message) const;
     
-    static const QString autoSavesDir();
+    static QString autoSavesDir();
     
     ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
     

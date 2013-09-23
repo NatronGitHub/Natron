@@ -41,11 +41,13 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QApplication>
 #include <QtGui/QStylePainter>
 #include <QtGui/QStyleOptionViewItem>
+#include <QtGui/QDesktopServices>
 #else
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStylePainter>
 #include <QtWidgets/QStyleOptionViewItem>
+#include <QStandardPaths>
 #endif
 #include <QMenu>
 
@@ -372,8 +374,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
             setWindowTitle("Save File");
     }
     
-    QSettings settings(QSettings::UserScope, QLatin1String("Powiter"));
-    settings.beginGroup(QLatin1String("Powiter"));
+    QSettings settings;
     restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
     
     if(!currentDirectory.empty())
@@ -387,8 +388,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
-    QSettings settings(QSettings::UserScope, QLatin1String("Powiter"));
-    settings.beginGroup(QLatin1String("Powiter"));
+    QSettings settings;
     settings.setValue(QLatin1String("filedialog"), saveState());
     
     delete _model;
@@ -1217,7 +1217,7 @@ void SequenceFileDialog::openSelectedFiles(){
                     int dotPos = unpathed.lastIndexOf(".");
                     if(dotPos != pos+1){
                         //powiter only supports padding character # before the . marking the file extension
-                        QMessageBox::critical(this, "Filename error", "Powiter only supports padding character"
+                        QMessageBox::critical(this, "Filename error", QCoreApplication::applicationName() + " only supports padding character"
                                               " (#) before the '.' marking the file extension.");
                         return;
                     }

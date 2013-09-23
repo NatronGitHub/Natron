@@ -16,6 +16,12 @@
 #include <QMessageBox>
 #include <QtGui/QImageReader>
 #include <QtCore/QDir>
+#include <QtCore/QCoreApplication>
+#if QT_VERSION < 0x050000
+#include <QtGui/QDesktopServices>
+#else
+#include <QStandardPaths>
+#endif
 
 #include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
@@ -98,16 +104,17 @@ AppInstance::AppInstance(int appID,const QString& projectName)
     _gui->show();
     
     /*Check if auto-save dir already exists*/
-    QDir dir(QDir::tempPath()+QDir::separator()+"Powiter");
+    QDir dir = autoSavesDir();
+
     if(!dir.exists()){
-        QDir::temp().mkdir("Powiter");
+        QDir::temp().mkdir(autoSavesDir());
     }
     
     /*If this is the first instance of the software*/
     if(_appID == 0){
         if(!findAutoSave()){
             if(projectName.isEmpty()){
-                QString text("Powiter - ");
+                QString text(QCoreApplication::applicationName() + " - ");
                 text.append(_currentProject._projectName);
                 _gui->setWindowTitle(text);
                 createNode("Viewer");
@@ -119,7 +126,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
         }
     }else{
         if(projectName.isEmpty()){
-            QString text("Powiter - ");
+            QString text(QCoreApplication::applicationName() + " - ");
             text.append(_currentProject._projectName);
             _gui->setWindowTitle(text);
             createNode("Viewer");
@@ -226,7 +233,7 @@ void AppInstance::loadProject(const QString& path,const QString& name){
     _currentProject._projectPath = path;
     _currentProject._age = time;
     _currentProject._lastAutoSave = time;
-    QString text("Powiter - ");
+    QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject._projectName);
     _gui->setWindowTitle(text);
 }
@@ -243,7 +250,7 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
             _currentProject._projectPath = path;
             _currentProject._age = time;
             _currentProject._lastAutoSave = time;
-            QString text("Powiter - ");
+            QString text(QCoreApplication::applicationName() + " - ");
             text.append(_currentProject._projectName);
             _gui->setWindowTitle(text);
         }
@@ -267,7 +274,7 @@ void AppInstance::triggerAutoSaveOnNextEngineRun(){
 }
 
 void AppInstance::setProjectTitleAsModified(){
-    QString text("Powiter - ");
+    QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject._projectName);
     text.append(" (*)");
     _gui->setWindowTitle(text);
@@ -296,7 +303,7 @@ void AppInstance::resetCurrentProject(){
     _currentProject._hasProjectBeenSavedByUser = false;
     _currentProject._projectName = "Untitled.rs";
     _currentProject._projectPath = "";
-    QString text("Powiter - ");
+    QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject._projectName);
     _gui->setWindowTitle(text);
 }
@@ -338,7 +345,7 @@ bool AppInstance::findAutoSave(){
             }
             _currentProject._age = time;
             _currentProject._lastAutoSave = time;
-            QString title("Powiter - ");
+            QString title(QCoreApplication::applicationName() + " - ");
             title.append(_currentProject._projectName);
             title.append(" (*)");
             _gui->setWindowTitle(title);
@@ -377,7 +384,15 @@ bool AppInstance::findAutoSave(){
     removeAutoSaves();
     return false;
 }
-const QString AppInstance::autoSavesDir() {return QString(QDir::tempPath() + QDir::separator() + "Powiter" + QDir::separator());}
+
+QString AppInstance::autoSavesDir() {
+#if QT_VERSION < 0x050000
+    return QDesktopServices::storageLocation(QDesktopServices::DataLocation) + QDir::separator() + "Autosaves";
+#else
+    return QStandardPaths::writableLocation(QStandardPaths::DataLocation) + QDir::separator() + "Autosaves";
+#endif
+    //return QString(QDir::tempPath() + QDir::separator() + QCoreApplication::applicationName() + QDir::separator());
+}
 
 void AppInstance::deselectAllNodes() const{
     _gui->_nodeGraphTab->_nodeGraphArea->deselect();

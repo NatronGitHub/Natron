@@ -200,7 +200,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     
     FrameEntry* out  = new FrameEntry(inputFileNames,zoomFactor,exposure,lut,
                                       treeVersion,byteMode,bbox,dispW,Mask_RGBA,textureRect);
-    string name(getCachePath().toStdString());
+    string name((getCachePath()+QDir::separator()).toStdString());
     {
         ostringstream oss1;
         oss1 << hex << (key >> 60);

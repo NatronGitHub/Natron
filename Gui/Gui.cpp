@@ -233,69 +233,69 @@ bool Gui::eventFilter(QObject *target, QEvent *event) {
 void Gui::retranslateUi(QMainWindow *MainWindow)
 {
     Q_UNUSED(MainWindow);
-	setWindowTitle(QApplication::translate("Powiter", "Powiter"));
+	setWindowTitle(QCoreApplication::applicationName());
     assert(actionNew_project);
-	actionNew_project->setText(QApplication::translate("Powiter", "New Project"));
+	actionNew_project->setText(tr("&New Project"));
     assert(actionOpen_project);
-    actionOpen_project->setText(QApplication::translate("Powiter", "Open Project..."));
+    actionOpen_project->setText(tr("&Open Project..."));
     assert(actionSave_project);
-    actionSave_project->setText(QApplication::translate("Powiter", "Save Project"));
+    actionSave_project->setText(tr("&Save Project"));
     assert(actionSaveAs_project);
-    actionSaveAs_project->setText(QApplication::translate("Powiter", "Save Project As..."));
+    actionSaveAs_project->setText(tr("Save Project As..."));
     assert(actionPreferences);
-    actionPreferences->setText(QApplication::translate("Powiter", "Preferences..."));
+    actionPreferences->setText(tr("Preferences..."));
     assert(actionExit);
-    actionExit->setText(QApplication::translate("Powiter", "Exit"));
+    actionExit->setText(tr("E&xit"));
     assert(actionProject_settings);
-    actionProject_settings->setText(QApplication::translate("Powiter", "Project Settings..."));
+    actionProject_settings->setText(tr("Project Settings..."));
     assert(actionFullScreen);
-    actionFullScreen->setText(QApplication::translate("Powiter","Toggle Full Screen"));
+    actionFullScreen->setText(tr("Toggle Full Screen"));
     assert(actionClearDiskCache);
-    actionClearDiskCache->setText(QApplication::translate("Powiter","Clear Disk Cache"));
+    actionClearDiskCache->setText(tr("Clear Disk Cache"));
     assert(actionClearPlayBackCache);
-    actionClearPlayBackCache->setText(QApplication::translate("Powiter","Clear Playback Cache"));
+    actionClearPlayBackCache->setText(tr("Clear Playback Cache"));
     assert(actionClearNodeCache);
-    actionClearNodeCache ->setText(QApplication::translate("Powiter","Clear Per-Node Cache"));
+    actionClearNodeCache ->setText(tr("Clear Per-Node Cache"));
     
     assert(actionConnectInput1);
-    actionConnectInput1 ->setText(QApplication::translate("Powiter","Connect to input 1"));
+    actionConnectInput1 ->setText(tr("Connect to input 1"));
     assert(actionConnectInput2);
-    actionConnectInput2 ->setText(QApplication::translate("Powiter","Connect to input 2"));
+    actionConnectInput2 ->setText(tr("Connect to input 2"));
     assert(actionConnectInput3);
-    actionConnectInput3 ->setText(QApplication::translate("Powiter","Connect to input 3"));
+    actionConnectInput3 ->setText(tr("Connect to input 3"));
     assert(actionConnectInput4);
-    actionConnectInput4 ->setText(QApplication::translate("Powiter","Connect to input 4"));
+    actionConnectInput4 ->setText(tr("Connect to input 4"));
     assert(actionConnectInput5);
-    actionConnectInput5 ->setText(QApplication::translate("Powiter","Connect to input 5"));
+    actionConnectInput5 ->setText(tr("Connect to input 5"));
     assert(actionConnectInput6);
-    actionConnectInput6 ->setText(QApplication::translate("Powiter","Connect to input 6"));
+    actionConnectInput6 ->setText(tr("Connect to input 6"));
     assert(actionConnectInput7);
-    actionConnectInput7 ->setText(QApplication::translate("Powiter","Connect to input 7"));
+    actionConnectInput7 ->setText(tr("Connect to input 7"));
     assert(actionConnectInput8);
-    actionConnectInput8 ->setText(QApplication::translate("Powiter","Connect to input 8"));
+    actionConnectInput8 ->setText(tr("Connect to input 8"));
     assert(actionConnectInput9);
-    actionConnectInput9 ->setText(QApplication::translate("Powiter","Connect to input 9"));
+    actionConnectInput9 ->setText(tr("Connect to input 9"));
     assert(actionConnectInput10);
-    actionConnectInput10 ->setText(QApplication::translate("Powiter","Connect to input 10"));
+    actionConnectInput10 ->setText(tr("Connect to input 10"));
     
     
-	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), QApplication::translate("Powiter", "Motion Editor"));
+	//WorkShop->setTabText(WorkShop->indexOf(CurveEditor), tr("Motion Editor"));
     
-	//WorkShop->setTabText(WorkShop->indexOf(GraphEditor), QApplication::translate("Powiter", "Graph Editor"));
+	//WorkShop->setTabText(WorkShop->indexOf(GraphEditor), tr("Graph Editor"));
     assert(menuFile);
-    menuFile->setTitle(QApplication::translate("Powiter", "File"));
+    menuFile->setTitle(tr("File"));
     assert(menuEdit);
-    menuEdit->setTitle(QApplication::translate("Powiter", "Edit"));
+    menuEdit->setTitle(tr("Edit"));
     assert(menuDisplay);
-    menuDisplay->setTitle(QApplication::translate("Powiter", "Display"));
+    menuDisplay->setTitle(tr("Display"));
     assert(menuOptions);
-    menuOptions->setTitle(QApplication::translate("Powiter", "Options"));
+    menuOptions->setTitle(tr("Options"));
     assert(viewersMenu);
-    viewersMenu->setTitle(QApplication::translate("Powiter", "Viewer(s)"));
+    viewersMenu->setTitle(tr("Viewer(s)"));
     assert(cacheMenu);
-    cacheMenu->setTitle(QApplication::translate("Powiter", "Cache"));
+    cacheMenu->setTitle(tr("Cache"));
     assert(viewerInputsMenu);
-    viewerInputsMenu->setTitle(QApplication::translate("Powiter", "Connect Current Viewer"));
+    viewerInputsMenu->setTitle(tr("Connect Current Viewer"));
 }
 void Gui::setupUi()
 {

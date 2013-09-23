@@ -12,6 +12,12 @@
 
 #include <cassert>
 #include <fstream>
+#include <QtCore/QDir>
+#if QT_VERSION < 0x050000
+#include <QtGui/QDesktopServices>
+#else
+#include <QStandardPaths>
+#endif
 
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
@@ -26,8 +32,8 @@ using namespace Powiter;
 Powiter::OfxHost::OfxHost()
 :_imageEffectPluginCache(*this)
 {
-    _properties.setStringProperty(kOfxPropName, "PowiterHost");
-    _properties.setStringProperty(kOfxPropLabel, "Powiter");
+    _properties.setStringProperty(kOfxPropName, POWITER_APPLICATION_NAME "Host");
+    _properties.setStringProperty(kOfxPropLabel, POWITER_APPLICATION_NAME);
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
@@ -203,7 +209,7 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
 
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
-    OFX::Host::PluginCache::getPluginCache()->setCacheVersion("PowiterOFXCachev1");
+    OFX::Host::PluginCache::getPluginCache()->setCacheVersion(POWITER_APPLICATION_NAME "OFXCachev1");
 
     /// make an image effect plugin cache
 
@@ -222,10 +228,17 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
 #endif
 
     /// now read an old cache
-    std::ifstream ifs("PowiterOFXCache.xml");
-    OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
+#if QT_VERSION < 0x050000
+    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
+#else
+    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QDir::separator() + "OFXCache.xml";
+#endif
+    std::ifstream ifs(ofxcachename.toStdString().c_str());
+    if (ifs.is_open()) {
+        OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
+        ifs.close();
+    }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
-    ifs.close();
 
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
@@ -278,7 +291,17 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
 
 void Powiter::OfxHost::writeOFXCache(){
     /// and write a new cache, long version with everything in there
-    std::ofstream of("PowiterOFXCache.xml");
+#if QT_VERSION < 0x050000
+    QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+
+#else
+    QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+#endif
+    QDir().mkpath(ofxcachename);
+    ofxcachename +=  QDir::separator();
+    ofxcachename += "OFXCache.xml";
+    std::ofstream of(ofxcachename.toStdString().c_str());
+    assert(of.is_open());
     assert(OFX::Host::PluginCache::getPluginCache());
     OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
     of.close();
