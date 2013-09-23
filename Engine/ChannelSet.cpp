@@ -14,11 +14,21 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <cassert>
 
 using namespace std;
 using namespace Powiter;
 
-Channel getChannelByName(const std::string &name){
+// variable-precision SWAR algorithm
+// see http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer
+static int NumberOfSetBits(U32 i)
+{
+    i = i - ((i >> 1) & 0x55555555);
+    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+}
+
+Channel getChannelByName(const std::string &name) {
     if (name == "Channel_red") {
         return Channel_red;
     }
@@ -45,7 +55,7 @@ Channel getChannelByName(const std::string &name){
     throw std::runtime_error("(getChannelByName):Bad channel name");
 }
 
-std::string getChannelName(Channel c){
+std::string getChannelName(Channel c) {
     switch (c) {
         case Channel_black:
             return "Channel_black";
@@ -67,50 +77,35 @@ std::string getChannelName(Channel c){
     return s.str();
 }
 
-ChannelSet::ChannelSet(const ChannelSet &source):mask(source.mask),_size(source.size()){}
-ChannelSet::ChannelSet(ChannelMask v) {
-    if(v == Mask_All){
-        mask = Mask_All;
-        _size = POWITER_MAX_CHANNEL_COUNT;
-        return;
-    }
-    mask = (v << 1);
-    _size=0;
-    for(unsigned int i = 1; i < 32 ; ++i) {
-        if(mask & (1 << i)) {
-            ++_size;
-        }
-    }
+ChannelSet::ChannelSet(const ChannelSet &source)
+: mask(source.mask)
+, _size(source.size())
+{
 }
 
 const ChannelSet& ChannelSet::operator=(const ChannelSet& source){
-    
-    clear();
-    foreachChannels(z, source){
-            mask |= (1u << z);
-    }
+    mask = source.value();
     _size = source.size();
     return *this;
 }
 
 const ChannelSet& ChannelSet::operator=(ChannelMask source) {
-    if(source == Mask_All){
-        mask = Mask_All;
+    if (source == Mask_All) {
+        mask = 0xffffffff;
         _size = POWITER_MAX_CHANNEL_COUNT;
         return *this;
     }
     mask = (source << 1);
-    _size = 0;
-    for(unsigned int i = 1; i < 32 ; ++i) {
-        if(mask & (1 << i))
-            ++_size;
-    }
+    _size = NumberOfSetBits(mask);
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
     return *this;
 }
 
-const ChannelSet& ChannelSet::operator=(Channel z){
+const ChannelSet& ChannelSet::operator=(Channel z) {
     clear();
-    if(z < 31){
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    // Nuke has a U32* other field in its ChannelSet to handle more than 32 channels, but we don't
+    if ((int)z < 32) {
         mask |= (1u << z);
     }
     _size = 1;
@@ -118,25 +113,30 @@ const ChannelSet& ChannelSet::operator=(Channel z){
 }
 
 bool ChannelSet::operator==(const ChannelSet& source) const{
-    if(size() != source.size()) return false;
+    if(size() != source.size()) {
+        return false;
+    }
     Channel z = source.first();
     Channel thisZ = first();
-    if(z != thisZ)
+    if (z != thisZ) {
         return false;
-    else{
-        for(unsigned int i =1 ; i < source.size(); ++i) {
+    } else {
+        for (unsigned int i =1 ; i < source.size(); ++i) {
             z = source.next(z);
             thisZ = next(thisZ);
-            if(z != thisZ)
+            if (z != thisZ) {
                 return false;
+            }
         }
         return true;
     }
 }
-bool ChannelSet::operator<(const ChannelSet& source) const{
-    if(size() < source.size()) return true;
-    else if(size() > source.size()) return false;
-    else{
+bool ChannelSet::operator<(const ChannelSet& source) const {
+    if (size() < source.size()) {
+        return true;
+    } else if(size() > source.size()) {
+        return false;
+    } else {
         int sum = 0;
         int thisSum = 0;
         Channel z= source.first();
@@ -149,166 +149,182 @@ bool ChannelSet::operator<(const ChannelSet& source) const{
             sum+=z;
             thisSum+=thisZ;
         }
-        if(thisSum < sum ) return true;
-        else return false;
+        if (thisSum < sum ) {
+            return true;
+        } else {
+            return false;
+        }
     }
     return false;
 }
-bool ChannelSet::operator==(Channel z) const{
-    if(size() == 1){
-        return first() == z;
-    }else
-        return false;
+
+bool ChannelSet::operator==(Channel z) const {
+    return (size() == 1 && first() == z);
 }
-void ChannelSet::operator+=(const ChannelSet& source){
-    if(mask & 1){ // mask all
+
+void ChannelSet::operator+=(const ChannelSet& source) {
+    if(mask & 1) { // mask all
         return;
     }
     Channel z = source.first();
-    *this+=z;
+    if (z == Channel_black) {
+        return;
+    }
+    *this += z;
     for(unsigned i = 1; i < source.size();++i) {
         z=source.next(z);
+        if (z == Channel_black) {
+            return;
+        }
         *this+=z;
     }
     
 }
+
 void ChannelSet::operator+=(ChannelMask source) {
     if(mask & 1){ // mask all
         return;
     }
-    if((source & Mask_All) == Mask_All){// mask all
+    if(source == Mask_All) {// mask all
         _size = POWITER_MAX_CHANNEL_COUNT;
-        mask = 1;
+        mask = 0xffffffff;
         return;
     }
-    _size = 0;
     mask |= (source << 1);//shift from 1 bit on the left because the first bit is reserved for the Mask_all
-    for(unsigned int i = 1; i < 32 ; ++i) {
-        if(mask & (1 << i)) {
-            ++_size;
-        }
-    }
+    _size = NumberOfSetBits(mask);
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
-void ChannelSet::operator+=(Channel z){
-    if((mask & 1) || z == Channel_black){ // mask all or channel black
+void ChannelSet::operator+=(Channel z) {
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    if (mask & 1) { // mask all
         return;
     }
-    if(!contains(z)){
-        if(z < 31){
+    if (!contains(z)) {
+        if (1 <= (int)z && (int)z < 32) {
             mask |= (1 << z);
         }
         ++_size;
     }
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
-void ChannelSet::operator-=(const ChannelSet& source){
-    if(source.value() & 1){
+
+void ChannelSet::operator-=(const ChannelSet& source) {
+    if (source.value() & 1) { // "all" bit
         clear();
         return;
     }
     Channel z = source.first();
+    if (z == Channel_black) { // empty source
+        return;
+    }
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
     *this-=z;
     for(unsigned i = 0; i < source.size();++i) {
-        z=source.next(z);
-        *this-=z;
+        z = source.next(z);
+        if (z == Channel_black) { // end of channels
+            return;
+        }
+        assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+        *this -= z;
     }
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
+
 void ChannelSet::operator-=(ChannelMask source) {
-    if(source & 1){
+    if (source == Mask_All) {
         clear();
         return;
     }
-    mask &= ~source;
-    _size = 0;
-    for(unsigned int i = 1; i < 32 ; ++i) {
-        if(mask & (1 << i)) {
-            ++_size;
-        }
+    if (source == Mask_None) {
+        return;
     }
+    if (mask & 1) {
+        mask = ~(U32)source << 1;
+    } else {
+        mask &= ~(U32)source << 1;
+    }
+    _size = NumberOfSetBits(mask);
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
-void ChannelSet::operator-=(Channel z){
-    if(z < 31 && *this&z){// if it is a valid channel and it is effectivly contained
+void ChannelSet::operator-=(Channel z) {
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    if (1 <= (int)z && (int)z < 32 && *this&z) {// if it is a valid channel and it is effectivly contained
         mask &= ~1U; // removing the flag all if it was set
         mask &= ~(1U << z); // setting to 0 the channel z
         --_size; // decrementing channels count
     }
-    
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
-void ChannelSet::operator&=(const ChannelSet& source){
+
+void ChannelSet::operator&=(const ChannelSet& source) {
+    if (source.value() & 1) { // "all" bit is on
+        return;
+    }
     mask &= source.value();
-    if(source.value() & 1){
-        _size = POWITER_MAX_CHANNEL_COUNT;
-    }else{
-        _size = 0;
-        for(unsigned int i = 1; i < 32 ; ++i) {
-            if(mask & (1 << i)) {
-                ++_size;
-            }
-        }
-        
-    }
+    _size = NumberOfSetBits(mask);
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
+
 void ChannelSet::operator&=(ChannelMask source) {
-    mask &= (source << 1);
-    if(source & 1){
-        _size = POWITER_MAX_CHANNEL_COUNT;
-    }else{
-        _size = 0;
-        for(unsigned int i = 1; i < 32 ; ++i) {
-            if(mask & (1 << i)) {
-                ++_size;
-            }
-        }
+    if (source == Mask_All) {
+        return;
     }
+    mask &= (source << 1);
+    _size = NumberOfSetBits(mask);
+    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
 void ChannelSet::operator&=(Channel z){
-    mask &= (1 << z);
-    _size = 0;
-    for(unsigned int i = 1; i < 32 ; ++i) {
-        if(mask & (1 << i)) {
-            ++_size;
-        }
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    mask = (1 << z);
+    _size = 1;
+}
+
+ChannelSet ChannelSet::operator&(const ChannelSet& c) const {
+    ChannelSet ret(*this);
+    ret &= c;
+    return ret;
+}
+
+ChannelSet ChannelSet::operator&(ChannelMask c) const {
+    ChannelSet ret(*this);
+    ret &= c;
+    return ret;
+}
+
+ChannelSet ChannelSet::operator&(Channel z) const {
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    ChannelSet ret(*this);
+    ret &= z;
+    return ret;
+}
+
+bool ChannelSet::contains(const ChannelSet& source) const {
+    if (mask & 1) { // "all" bit is set
+        return true;
     }
-}
-ChannelSet ChannelSet::operator&(const ChannelSet& c) const{
-    ChannelSet ret;
-    ret = *this;
-    ret&=c;
-    return ret;
-}
-
-ChannelSet ChannelSet::operator&(ChannelMask c) const{
-    ChannelSet ret;
-    ret = *this;
-    ret&=c;
-    return ret;
-}
-
-ChannelSet ChannelSet::operator&(Channel z) const{
-    ChannelSet ret;
-    ret = *this;
-    ret&=z;
-    return ret;
-}
-bool ChannelSet::contains(const ChannelSet& source) const{
     foreachChannels(z, source){
         if(!contains(z))
             return false;
     }
     return true;
 }
-bool ChannelSet::contains(Channel z) const{
-    return (mask & (1 << z));
+
+bool ChannelSet::contains(Channel z) const {
+    assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
+    return ((mask & 1) || (mask & (1 << z)));
 }
-unsigned ChannelSet::size() const{
+
+unsigned ChannelSet::size() const {
     return _size;
 }
-Channel ChannelSet::first() const{
+
+Channel ChannelSet::first() const {
     int i =1;
     while(i < 32){
         if(mask & (1 << i)){
@@ -318,7 +334,9 @@ Channel ChannelSet::first() const{
     }
     return Channel_black;
 }
+
 Channel ChannelSet::next(Channel k) const{
+    assert(1 <= (int)k && (int)k < 32); // a channelset cannot contain channel 0 (black)
     int i = (int)k+1;
     while(i < 32){
         if(mask & (1 << i)){
@@ -328,7 +346,8 @@ Channel ChannelSet::next(Channel k) const{
     }
     return Channel_black;
 }
-Channel ChannelSet::last() const{
+
+Channel ChannelSet::last() const {
     int i = 31;
     while(i >=0){
         if(mask & (1 << i))
@@ -337,9 +356,11 @@ Channel ChannelSet::last() const{
     }
     return Channel_black;
 }
-Channel ChannelSet::previous(Channel k) const{
+
+Channel ChannelSet::previous(Channel k) const {
+    assert(1 <= (int)k && (int)k < 32); // a channelset cannot contain channel 0 (black)
     int i = (int)k-1;
-    while(i >= 0){
+    while (i >= 0) {
         if(mask & (1 << i)){
             return (Channel)i;
         }
@@ -350,12 +371,12 @@ Channel ChannelSet::previous(Channel k) const{
 
 void ChannelSet::printOut() const{
     std::cout << "ChannelSet is ..." << std::endl;
-    for (Channel CUR = first(); CUR; CUR = next(CUR)){
+    for (Channel CUR = first(); CUR != Channel_black; CUR = next(CUR)){
         std::cout << getChannelName(CUR) << endl;
     }
 }
 
-bool hasAlpha(ChannelSet mask){
-    return (mask & (1 << Channel_alpha));
+bool hasAlpha(ChannelSet mask) {
+    return ((mask & 1) || (mask & (1 << Channel_alpha)));
 }
 
