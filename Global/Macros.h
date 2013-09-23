@@ -20,6 +20,9 @@
 #define __POWITER_LINUX__
 #endif
 
+#define POWITER_ORGANIZATION_NAME "INRIA"
+#define POWITER_ORGANIZATION_DOMAIN "inria.fr"
+#define POWITER_APPLICATION_NAME "Powiter"
 #define POWITER_ROOT "/"
 #define POWITER_CACHE_ROOT_PATH "./"
 #define POWITER_IMAGES_PATH ":/Resources/Images/"

@@ -37,7 +37,10 @@ int main(int argc, char *argv[])
 	//VLDReportLeaks();
 #endif
     QApplication app(argc, argv);
-    
+    app.setOrganizationName(POWITER_ORGANIZATION_NAME);
+    app.setOrganizationDomain(POWITER_ORGANIZATION_DOMAIN);
+    app.setApplicationName(POWITER_APPLICATION_NAME);
+
     qRegisterMetaType<Variant>();
     
     /*Display a splashscreen while we wait for the engine to load*/
