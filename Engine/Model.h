@@ -77,6 +77,7 @@ class ViewerNode;
 class QMutex;
 class Node;
 class OutputNode;
+class Writer;
 
 namespace Powiter{
     class LibraryBinary;
@@ -133,10 +134,14 @@ public:
     
     void disconnectViewersFromViewerCache();
     
-
+    
+    /*This function regards only rendering on disk.*/
+    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    
+    
 private:
     
-
+    
     /*Serializes the active nodes in the editor*/
     QString serializeNodeGraph() const;
     

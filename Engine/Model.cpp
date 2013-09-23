@@ -470,3 +470,6 @@ void Model::disconnectViewersFromViewerCache(){
         }
     }
 }
+void Model::onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+    _appInstance->onRenderingOnDiskStarted(writer, sequenceName,firstFrame,lastFrame);
+}

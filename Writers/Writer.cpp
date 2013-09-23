@@ -164,6 +164,7 @@ void Writer::startWriting(){
         QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeHandle,watcher);
         _writeHandle = 0;
         watcher->setFuture(future);
+        watcher->waitForFinished();
     }else{
         _writeQueue.push_back(_writeHandle);
         _writeHandle = 0;
@@ -183,6 +184,7 @@ void Writer::notifyWriterForCompletion(){
         QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeQueue[0],watcher);
         _writeQueue.erase(_writeQueue.begin());
         watcher->setFuture(future);
+        watcher->waitForFinished();
     }
 }
 
@@ -247,6 +249,9 @@ void Writer::startRendering(){
     _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
         _model->updateDAG(this,false);
+        /*Calls validate just to get the appropriate frame range in the timeline*/
+        getVideoEngine()->validate(false);
+        _model->onRenderingOnDiskStarted(this,_filename.c_str(),_timeline.firstFrame(),_timeline.lastFrame());
         _model->startVideoEngine();
     }
 }

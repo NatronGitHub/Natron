@@ -865,3 +865,8 @@ void AppManager::setAsTopLevelInstance(int appID){
         }
     }
 }
+void AppInstance::onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+    if(_gui){
+        _gui->showProgressDialog(writer, sequenceName,firstFrame,lastFrame);
+    }
+}

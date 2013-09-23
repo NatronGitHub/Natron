@@ -116,6 +116,10 @@ public slots:
     void fileTypeChanged();
     void startRendering();
     
+signals:
+    
+    void startedRendering(const QString& sequenceName);
+    
 protected:
 	virtual void initKnobs() OVERRIDE;
     

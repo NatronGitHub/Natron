@@ -479,8 +479,6 @@ protected:
      **/
     void recenterViewer();
     
-    
-    
     /**
      *@brief displays progress if the time to compute the current frame exeeded
      * 0.5 sec.
@@ -522,6 +520,11 @@ signals:
     
     void engineStopped();
     
+    /*progress varies in [0,100]*/
+    void progressChanged(int progress);
+    
+    void frameRendered(int frameNumber);
+    
 public:
     /**
      *@brief Sets the _autoSaveOnNextRun to true
@@ -559,6 +562,11 @@ public:
      *@returns Return a const reference to the DAG used by the video engine.
      **/
     const DAG& getCurrentDAG() const {return _dag;}
+    
+    /*@brief Calls DAG::validate(bool)*/
+    void validate(bool doFullWork){
+        _dag.validate(doFullWork);
+    }
     
 	/**
      *@returns Returns true if the engine is currently working.

@@ -155,10 +155,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
 }
 
 void VideoEngine::stopEngine() {
-    if(_dag.isOutputAViewer()){
-        emit engineStopped();
-        
-    }
+    emit engineStopped();
     // cout << "- STOPPING ENGINE"<<endl;
     _lastRunArgs._frameRequestsCount = 0;
     _aborted = false;
@@ -459,6 +456,7 @@ void VideoEngine::run(){
                 }
                 assert(_lastFrameInfos._cachedEntry);
                 _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
+                emit frameRendered(currentFrame);
                 engineLoop();
                 _model->getGeneralMutex()->unlock();
                 continue;
@@ -566,6 +564,7 @@ void VideoEngine::run(){
             assert(_dag.outputAsWriter());
             _dag.outputAsWriter()->startWriting();
         }
+        emit frameRendered(currentFrame);
         engineLoop();
         
         /*endRenderAction for all openFX nodes*/
@@ -589,9 +588,8 @@ void VideoEngine::run(){
 void VideoEngine::onProgressUpdate(int i){
     // cout << "progress: index = " << i ;
     if(i < (int)_lastFrameInfos._rows.size()){
-        //   cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
-        if(_dag.outputAsViewer())
-            checkAndDisplayProgress(_lastFrameInfos._rows[i],i);
+        //  cout <<" y = "<< _lastFrameInfos._rows[i] << endl;
+        checkAndDisplayProgress(_lastFrameInfos._rows[i],i);
     }
 }
 
@@ -602,7 +600,6 @@ void VideoEngine::engineLoop(){
         --_lastRunArgs._frameRequestsCount;
     }
     ++_lastRunArgs._frameRequestIndex;//incrementing the frame counter
-    
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         QMutexLocker locker(&_openGLMutex);
         emit doUpdateViewer();
@@ -1126,7 +1123,11 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     double t =  now.tv_sec  - _lastComputeFrameTime.tv_sec +
     (now.tv_usec - _lastComputeFrameTime.tv_usec) * 1e-6f;
     if(t >= 0.5){
-        _dag.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_lastFrameInfos._textureRect, y,zoomedY);
+        if(_dag.isOutputAViewer()){
+            _dag.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_lastFrameInfos._textureRect, y,zoomedY);
+        }else{
+            emit progressChanged(floor(((double)y/(double)_lastFrameInfos._rows.size())*100));
+        }
         return true;
     }else{
         return false;

@@ -27,6 +27,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QToolBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QProgressBar>
  
 
 #include "Global/AppManager.h"
@@ -36,6 +37,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
+#include "Writers/Writer.h"
 
 #include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
@@ -46,6 +48,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/NodeGui.h"
+#include "Gui/Button.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
@@ -1079,4 +1082,91 @@ void Gui::connectInput9(){
 }
 void Gui::connectInput10(){
     _nodeGraphTab->_nodeGraphArea->connectCurrentViewerToSelection(9);
+}
+
+void RenderingProgressDialog::onFrameRendered(int frame){
+    //  cout << "Current: " << frame << " (first: " << _firstFrame << " , last: " << _lastFrame << ") " << endl;
+    double percent = (double)(frame - _firstFrame+1)/(double)(_lastFrame - _firstFrame+1);
+    cout << percent << endl;
+    int progress = floor(percent*100);
+    _totalProgress->setValue(progress);
+    _perFrameLabel->setText("Frame " + QString::number(frame) + ":");
+    QString title = QString::number(progress) + "% of " + _sequenceName;
+    setWindowTitle(title);
+    _perFrameLabel->hide();
+    _perFrameProgress->hide();
+    _separator->hide();
+}
+
+void RenderingProgressDialog::onCurrentFrameProgress(int progress){
+    if(!_perFrameProgress->isVisible()){
+        _separator->show();
+        _perFrameProgress->show();
+        _perFrameLabel->show();
+    }
+    _perFrameProgress->setValue(progress);
+}
+
+void RenderingProgressDialog::onCancelation(){
+    /*Maybe we should ask for user permission with another dialog ? */
+    _writer->getVideoEngine()->abort();
+    hide();
+    delete this;
+    
+}
+RenderingProgressDialog::RenderingProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
+QDialog(parent),
+_writer(writer),
+_sequenceName(sequenceName),
+_firstFrame(firstFrame),
+_lastFrame(lastFrame){
+    
+    QString title = QString::number(0) + "% of " + _sequenceName;
+    setMinimumWidth(fontMetrics().width(title)+100);
+    setWindowTitle(QString::number(0) + "% of " + _sequenceName);
+    _mainLayout = new QVBoxLayout(this);
+    setLayout(_mainLayout);
+    _mainLayout->setContentsMargins(5, 5, 0, 0);
+    _mainLayout->setSpacing(5);
+    
+    _totalLabel = new QLabel("Total progress:",this);
+    _mainLayout->addWidget(_totalLabel);
+    _totalProgress = new QProgressBar(this);
+    _totalProgress->setRange(0, 100);
+    _totalProgress->setMinimumWidth(150);
+    
+    _mainLayout->addWidget(_totalProgress);
+    
+    _separator = new QFrame(this);
+    _separator->setFrameShadow(QFrame::Raised);
+    _separator->setMinimumWidth(100);
+    _separator->setMaximumHeight(2);
+    _separator->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+    
+    _mainLayout->addWidget(_separator);
+    
+    QString txt("Frame ");
+    txt.append(QString::number(firstFrame));
+    txt.append(":");
+    _perFrameLabel = new QLabel(txt,this);
+    _mainLayout->addWidget(_perFrameLabel);
+    
+    _perFrameProgress = new QProgressBar(this);
+    _perFrameProgress->setMinimumWidth(150);
+    _perFrameProgress->setRange(0, 100);
+    _mainLayout->addWidget(_perFrameProgress);
+    
+    _cancelButton = new Button("Cancel",this);
+    _cancelButton->setMaximumWidth(50);
+    _mainLayout->addWidget(_cancelButton);
+    VideoEngine* videoEngine = writer->getVideoEngine();
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(onCancelation()));
+    QObject::connect(videoEngine, SIGNAL(frameRendered(int)), this, SLOT(onFrameRendered(int)));
+    QObject::connect(videoEngine, SIGNAL(progressChanged(int)),this,SLOT(onCurrentFrameProgress(int)));
+    QObject::connect(videoEngine, SIGNAL(engineStopped()), this, SLOT(onCancelation()));
+    
+}
+void Gui::showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+    RenderingProgressDialog* dialog = new RenderingProgressDialog(writer,sequenceName,firstFrame,lastFrame,this);
+    dialog->show();
 }

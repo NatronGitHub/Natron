@@ -157,6 +157,8 @@ public:
     
     void disconnectViewersFromViewerCache();
     
+    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+
 public slots:
     void clearPlaybackCache();
 
@@ -251,7 +253,6 @@ public:
     NodeCache* getNodeCache() const {return _nodeCache;}
     
     KnobFactory* getKnobFactory() const {return _knobFactory;}
-    
     
  
 public slots:

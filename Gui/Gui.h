@@ -20,6 +20,7 @@
 #include <QtCore/QObject>
 #include <QToolButton>
 #include <QIcon>
+#include <QDialog>
 #include <QAction>
 #include <QMainWindow>
 
@@ -49,6 +50,11 @@ class QToolBar;
 class QGraphicsScene;
 class AppInstance;
 class NodeGui;
+class QProgressBar;
+class Button;
+class QLabel;
+class Writer;
+class Gui;
 
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
@@ -113,7 +119,36 @@ public:
     void setWidget(const QSize& widgetSize,QWidget* w);
 };
 
-class Gui;
+class RenderingProgressDialog : public QDialog{
+    
+    Q_OBJECT
+    
+    QVBoxLayout* _mainLayout;
+    QLabel* _totalLabel;
+    QProgressBar* _totalProgress;
+    QFrame* _separator;
+    QLabel* _perFrameLabel;
+    QProgressBar* _perFrameProgress;
+    Button* _cancelButton;
+    Writer* _writer;
+    QString _sequenceName;
+    int _firstFrame;
+    int _lastFrame;
+public:
+    
+    RenderingProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
+    
+    virtual ~RenderingProgressDialog(){}
+    
+public slots:
+        
+    void onFrameRendered(int);
+    
+    void onCurrentFrameProgress(int);
+
+    void onCancelation();
+};
+
 /*This class encapsulate a nodegraph GUI*/
 class NodeGraphTab{
 public:
@@ -207,6 +242,9 @@ public:
     void selectNode(NodeGui* node);
     
     AppInstance* getApp() { return _appInstance; }
+    
+    void showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+
 private:
 
     void addNodeGraph();
