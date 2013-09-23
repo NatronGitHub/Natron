@@ -52,7 +52,15 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     QPixmap pixHelp = QPixmap::fromImage(imgHelp);
     pixHelp = pixHelp.scaled(15, 15);
     _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
-    _helpButton->setToolTip(NodeUi->getNode()->description().c_str());
+    QString tooltip(NodeUi->getNode()->description().c_str());
+    for (int i = 0; i < tooltip.size();++i) {
+        if (i%100 == 0) {
+            /*Find closest word end and insert a new line*/
+            while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')) ++i;
+            tooltip.insert(i, QChar('\n'));
+        }
+    }
+    _helpButton->setToolTip(tooltip);
     _helpButton->setFixedSize(15, 15);
     QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
     
