@@ -24,7 +24,7 @@ public:
     // class iterator: used to iterate over channels
     class iterator{
         Powiter::Channel _cur;
-        U32 _mask;
+        U32 _mask; // bit 0 means "all", other bits are for channels 1..31 
     public:
         iterator(const iterator& other):_cur(other._cur),_mask(other._mask){}
         iterator(U32 mask_, Powiter::Channel cur) {
@@ -88,16 +88,16 @@ public:
     
     ChannelSet() : mask(0),_size(0) {}
     ChannelSet(const ChannelSet &source);
-    ChannelSet(Powiter::ChannelMask v);
-    ChannelSet(Powiter::Channel v) : _size(1) {mask = v;}
+    ChannelSet(Powiter::ChannelMask v) { *this = v; }// use operator=(ChannelMask v)
+    ChannelSet(Powiter::Channel v) { *this = v; } // use operator=(Channel z)
     ~ChannelSet() {}
     const ChannelSet& operator=(const ChannelSet& source);
     const ChannelSet& operator=(Powiter::ChannelMask source) ;
     const ChannelSet& operator=(Powiter::Channel z);
     
     void clear() { mask = 0; _size = 0;}
-    operator bool() const { return mask ; }// allow to do stuff like if(channelsA & channelsB)
-    bool empty() const { return !mask; }
+    operator bool() const { return (bool)mask ; }// allow to do stuff like if(channelsA & channelsB)
+    bool empty() const { return !(bool)mask; }
     
     bool operator==(const ChannelSet& source) const;
     bool operator!=(const ChannelSet& source) const { return !(*this == source); }
@@ -128,7 +128,7 @@ public:
     ChannelSet operator&(Powiter::ChannelMask c) const;
     ChannelSet operator&(Powiter::Channel z) const;
     bool contains(const ChannelSet& source) const;
-    bool contains(Powiter::ChannelMask source) const { return !(~mask & source); }
+    bool contains(Powiter::ChannelMask source) const { return (mask & 1) || (!(~mask & (source << 1))); }
     bool contains(Powiter::Channel z) const;
     unsigned size() const;
     Powiter::Channel first() const;

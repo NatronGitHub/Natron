@@ -190,7 +190,7 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
         r = (*row)[Channel_red];
         g = (*row)[Channel_green];
         b = (*row)[Channel_blue];
-        a = (*row)[Channel_alpha];
+        a = (*row)[Channel_alpha]; // FIXME: what if the image does not have alpha, or any other of the RGB channels? it simply crashes
         _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
         row->release();
     }

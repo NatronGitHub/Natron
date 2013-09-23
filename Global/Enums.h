@@ -11,7 +11,7 @@
 #ifndef POWITER_GLOBAL_ENUMS_H_
 #define POWITER_GLOBAL_ENUMS_H_
 
-#define POWITER_MAX_CHANNEL_COUNT 7
+#define POWITER_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
 
 namespace Powiter{
     
