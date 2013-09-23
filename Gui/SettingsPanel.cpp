@@ -15,6 +15,7 @@
 #include <QAction>
 #include <QTabWidget>
 #include <QStyle>
+#include <QToolTip>
 
 #include "Global/Macros.h"
 
@@ -47,6 +48,13 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _headerLayout->setSpacing(0);
     _headerWidget->setLayout(_headerLayout);
     
+    QImage imgHelp(POWITER_IMAGES_PATH"help.png");
+    QPixmap pixHelp = QPixmap::fromImage(imgHelp);
+    pixHelp = pixHelp.scaled(15, 15);
+    _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
+    _helpButton->setToolTip(NodeUi->getNode()->description().c_str());
+    _helpButton->setFixedSize(15, 15);
+    QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
     
     QImage imgM(POWITER_IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
@@ -99,6 +107,7 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _headerLayout->addWidget(_undoButton);
     _headerLayout->addWidget(_redoButton);
     _headerLayout->addStretch();
+    _headerLayout->addWidget(_helpButton);
     _headerLayout->addWidget(_minimize);
     _headerLayout->addWidget(_cross);
    
@@ -124,6 +133,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     
 }
 SettingsPanel::~SettingsPanel(){}
+
+void SettingsPanel::showHelp(){
+    QToolTip::showText(QCursor::pos(), _helpButton->toolTip());
+}
 
 void SettingsPanel::setEnabledUndoButton(bool b){
     _undoButton->setEnabled(b);

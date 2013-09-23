@@ -62,9 +62,9 @@ public:
     
     virtual bool cacheData() const OVERRIDE {return false;}
     
-    virtual std::string className() OVERRIDE;
+    virtual std::string className() const OVERRIDE;
     
-    virtual std::string description() OVERRIDE {return "";}
+    virtual std::string description() const OVERRIDE;
     
     virtual std::string setInputLabel (int inputNb) OVERRIDE;
     

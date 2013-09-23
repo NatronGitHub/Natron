@@ -25,6 +25,7 @@ public:
     Button(const QIcon & icon, const QString & text, QWidget * parent = 0) : QPushButton(icon,text,parent){
         setAttribute(Qt::WA_LayoutUsesWidgetRect);
     }
+   
 };
 
 #endif

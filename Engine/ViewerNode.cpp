@@ -169,8 +169,8 @@ int ViewerNode::disconnectInput(Node* input){
     return -1;
 }
 
-std::string ViewerNode::description(){
-    return "OutputNode";
+std::string ViewerNode::description() const {
+    return "The Viewer node can display the output of a node graph.";
 }
 
 void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){

@@ -254,8 +254,8 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*============================*/
 
     /*Node utility functions*/
-    virtual std::string className() = 0;
-    virtual std::string description() = 0;
+    virtual std::string className() const = 0;
+    virtual std::string description() const = 0;
     /*============================*/
     
     /*Calculations related functions*/
@@ -509,9 +509,9 @@ public:
 
     
     /*Node utility functions*/
-    virtual std::string className() OVERRIDE = 0; // should be const
+    virtual std::string className() const OVERRIDE = 0; // should be const
     
-    virtual std::string description() OVERRIDE = 0; // should be const
+    virtual std::string description() const OVERRIDE = 0; // should be const
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
     virtual bool cacheData() const OVERRIDE = 0;

@@ -78,9 +78,9 @@ public:
     
     void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
     
-    virtual std::string className() OVERRIDE { return "Viewer"; }
+    virtual std::string className() const OVERRIDE { return "Viewer"; }
     
-    virtual std::string description() OVERRIDE;
+    virtual std::string description() const OVERRIDE;
     
     void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     

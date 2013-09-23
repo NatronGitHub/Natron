@@ -66,9 +66,9 @@ public:
         
     virtual ~Writer();
     
-    virtual std::string className();
+    virtual std::string className() const OVERRIDE;
     
-    virtual std::string description();
+    virtual std::string description() const OVERRIDE;
     
     /*If doFullWork is true, it creates a new Write and set _writeHandle
      to this newly created Write. It also calls Write::setupFile with 

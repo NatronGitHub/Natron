@@ -429,13 +429,13 @@ public:
      * @brief className
      * @return A string containing "Reader".
      */
-    virtual std::string className() OVERRIDE;
+    virtual std::string className() const OVERRIDE;
 
     /**
      * @brief description
      * @return A string containing "InputNode".
      */
-    virtual std::string description() OVERRIDE;
+    virtual std::string description() const OVERRIDE;
 
     /**
      * @brief Not documented yet as it will be revisited soon.

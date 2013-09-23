@@ -62,12 +62,12 @@ Reader::~Reader(){
     delete _readMutex;
 }
 
-std::string Reader::className() {
+std::string Reader::className() const {
     return "Reader";
 }
 
-std::string Reader::description() {
-    return "InputNode";
+std::string Reader::description() const {
+    return "The reader node can read image files sequences.";
 }
 
 void Reader::initKnobs(){

@@ -47,6 +47,8 @@ class SettingsPanel:public QFrame
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
     LineEdit* _nodeName;
+    
+    Button* _helpButton;
     Button* _minimize;
     Button* _cross;
     
@@ -103,6 +105,7 @@ public:
 public slots:
     void close();
     void minimizeOrMaximize(bool toggled);
+    void showHelp();
 
 private:
     

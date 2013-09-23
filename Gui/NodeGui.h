@@ -208,14 +208,10 @@ protected:
     /*the graphical knobs*/
     std::map<Knob*,KnobGui*> _knobs;
     
-    /*the graphical output arrows
-     NOT YET USED*/
-    //    std::map<int,Edge*> outputs;
-    
     /*settings panel related*/
     bool settingsPanel_displayed;
     SettingsPanel* settings;
-
+    
   
 };
 

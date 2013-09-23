@@ -46,5 +46,6 @@
         <file>Resources/Images/undo_grayscale.png</file>
         <file>Resources/Images/openeffects.png</file>
         <file>Resources/Images/loopmode.png</file>
+        <file>Resources/Images/help.png</file>
     </qresource>
 </RCC>

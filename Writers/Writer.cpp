@@ -50,12 +50,12 @@ Writer::~Writer(){
     delete _lock;
 }
 
-std::string Writer::className() {
+std::string Writer::className() const {
     return "Writer";
 }
 
-std::string Writer::description() {
-    return "OutputNode";
+std::string Writer::description() const {
+    return "The Writer node can render on disk the output of a node graph.";
 }
 
 bool Writer::_validate(bool doFullWork){

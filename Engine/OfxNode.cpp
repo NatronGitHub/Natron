@@ -116,6 +116,13 @@ OfxNode::~OfxNode() {
         delete _overlayInteract;
     delete effect_;
 }
+std::string OfxNode::description() const {
+    if(effect_){
+        return effect_->getProps().getStringProperty(kOfxPropPluginDescription);
+    }else{
+        return "";
+    }
+}
 
 void OfxNode::tryInitializeOverlayInteracts(){
     /*create overlay instance if any*/
@@ -150,7 +157,7 @@ bool OfxNode::isInputNode() const {
     return false;
 }
 
-std::string OfxNode::className() { // should be const
+std::string OfxNode::className() const { // should be const
     assert(effectInstance());
     std::string label = getShortLabel();
     if(label.empty()){
