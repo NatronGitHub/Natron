@@ -50,6 +50,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
 }
 
 
@@ -108,6 +109,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, O
     if(incr > 0)
         _knob->setIncrement(incr);
     _knob->setMaximum(max);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     set(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
@@ -170,6 +172,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX
         _knob->setIncrement(incr);
     if(decimals > 0)
         _knob->setDecimals(decimals);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     set(def);
     
 }
@@ -228,7 +231,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, O
     if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
@@ -292,6 +295,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OF
         _entries.push_back(str);
     }
     _knob->populate(_entries);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     int def = pSet.getIntProperty(kOfxParamPropDefault);    
     set(def);
 }
@@ -360,6 +364,7 @@ _paramName(name){
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
@@ -440,7 +445,7 @@ OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Hos
     double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
-    
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
@@ -510,6 +515,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     vector<double> minimum;
     vector<double> maximum;
     vector<double> increment;
@@ -594,6 +600,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
+    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     vector<int> minimum;
     vector<int> maximum;
     vector<int> increment;
@@ -673,7 +680,7 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
         }
         const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
         _tabKnob->setHintToolTip(hint);
-
+        _tabKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     }else{
         _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, name,1, Knob::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
@@ -683,7 +690,7 @@ OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_
         }
         const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
         _groupKnob->setHintToolTip(hint);
-
+        _groupKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     }
     
     
@@ -728,7 +735,7 @@ _fileKnob(0),_outputFileKnob(0){
             }
             const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
             _fileKnob->setHintToolTip(hint);
-
+            _fileKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, name,1, Knob::NONE));
@@ -742,6 +749,7 @@ _fileKnob(0),_outputFileKnob(0){
             }
             const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
             _outputFileKnob->setHintToolTip(hint);
+            _outputFileKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
 
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
@@ -760,6 +768,7 @@ _fileKnob(0),_outputFileKnob(0){
         }
         const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
         _stringKnob->setHintToolTip(hint);
+        _stringKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
         _returnValue = getProperties().getStringProperty(kOfxParamPropDefault,1);
         set(_returnValue.c_str());
     }
@@ -770,16 +779,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
-        if(currentFrame != INT_MAX && currentFrame != INT_MIN){
-            map<int,QString>::iterator it = _files.find(currentFrame);
-            if(it!=_files.end()){
-                str = it->second.toStdString();
-            }else{
-                str = "";
-            }
-        }else{
-            str = "";
-        }
+        str = _fileKnob->getRandomFrameName(currentFrame).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
     }else{
@@ -791,16 +791,7 @@ OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
-        if(currentFrame != INT_MAX && currentFrame != INT_MIN){
-            map<int,QString>::iterator it = _files.find(currentFrame);
-            if(it!=_files.end()){
-                str = it->second.toStdString();
-            }else{
-                str = "";
-            }
-        }else{
-            str = "";
-        }
+        str = _fileKnob->getRandomFrameName(currentFrame).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
     }else{

@@ -320,9 +320,6 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     OfxNode* _node;
     OFX::Host::Param::Descriptor& _descriptor;
     std::string _paramName;
-        
-    std::map<int,QString> _files;
-        
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;

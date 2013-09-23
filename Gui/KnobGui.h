@@ -249,6 +249,7 @@ public:
     virtual void createWidget(QGridLayout* layout,int row);
     
     void setMaximum(int);
+    
     void setMinimum(int);
     
     virtual void hide();
