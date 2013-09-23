@@ -71,6 +71,7 @@ OfxNode::OfxNode(Model* model,
 , _canHavePreview(false)
 , effect_(NULL)
 , _overlayInteract(NULL)
+, _penDown(false)
 {
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
      We need to pass more parameters to the constructor of OfxNode. That means we cannot
@@ -585,6 +586,7 @@ bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
         
         OfxStatus st = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
         if(st == kOfxStatOK){
+            _penDown = true;
             return true;
         }
     }
@@ -604,6 +606,12 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
         
         OfxStatus st = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
         if(st == kOfxStatOK){
+            if(_penDown){
+                ViewerNode* v = Node::hasViewerConnected(this);
+                if(v){
+                    v->updateDAG(false);
+                }
+            }
             return true;
         }
     }
@@ -624,6 +632,7 @@ bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
         
         OfxStatus st= _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
         if(st == kOfxStatOK){
+            _penDown = false;
             return true;
         }
     }
@@ -635,7 +644,12 @@ void OfxNode::onOverlayKeyDown(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        ViewerNode* v = Node::hasViewerConnected(this);
+        if(v){
+            v->updateDAG(false);
+        }
     }
+    
 }
 
 void OfxNode::onOverlayKeyUp(QKeyEvent* e){
@@ -651,6 +665,10 @@ void OfxNode::onOverlayKeyRepeat(QKeyEvent* e){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        ViewerNode* v = Node::hasViewerConnected(this);
+        if(v){
+            v->updateDAG(false);
+        }
     }
 }
 

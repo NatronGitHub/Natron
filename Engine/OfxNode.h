@@ -169,6 +169,7 @@ private:
     bool _canHavePreview; // does it have a preview? 
     Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)
     Powiter::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
+    bool _penDown; // true when the overlay trapped a penDow action
 };
 
 

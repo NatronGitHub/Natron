@@ -170,7 +170,7 @@ _maximized(false)
  //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
-	_currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::DOUBLE_SPINBOX);
+	_currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
     _currentFrameBox->setValue(0);
     _currentFrameBox->setMinimum(0);
     _currentFrameBox->setMaximum(0);

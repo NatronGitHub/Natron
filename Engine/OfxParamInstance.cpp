@@ -513,18 +513,22 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     vector<double> minimum;
     vector<double> maximum;
     vector<double> increment;
+    vector<int> decimals;
     double def[2];
     minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0));
     maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0));
     increment.push_back(getProperties().getDoubleProperty(kOfxParamPropIncrement,0));
+    decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
     def[0] = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     
     minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1));
     maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1));
     increment.push_back(getProperties().getDoubleProperty(kOfxParamPropIncrement,1));
+    decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,1));
     def[1] = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
+    _knob->setDecimals(decimals);
     _knob->setValue<double>(def,2);
     
 }

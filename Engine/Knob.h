@@ -207,6 +207,7 @@ public:
     template<typename T>
     void setValue(T variant[],int count){
         _value = Variant(variant,count);
+        fillHashVector();
         emit valueChanged(_value);
         tryStartRendering();
     }
@@ -214,6 +215,7 @@ public:
     template<typename T>
     void setValue(const T &value) {
         _value.setValue(value);
+        fillHashVector();
         emit valueChanged(_value);
         tryStartRendering();
     }
