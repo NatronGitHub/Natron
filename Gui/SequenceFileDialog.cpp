@@ -26,6 +26,8 @@
 #include <QInputDialog>
 #include <QSplitter>
 #include <QtGui/QIcon>
+#include <QDialog>
+#include <QFileDialog>
 #include <QtCore/QRegExp>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
@@ -1107,10 +1109,66 @@ void SequenceFileDialog::createDir(){
         }
     }
 }
+AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDialog(parent),_fd(fd){
+    _mainLayout = new QVBoxLayout(this);
+    _mainLayout->setSpacing(0);
+    _mainLayout->setContentsMargins(5, 5, 0, 0);
+    setLayout(_mainLayout);
+    setWindowTitle("New favorite");
+    
+    _descriptionLabel = new QLabel("",this);
+    _mainLayout->addWidget(_descriptionLabel);
+    
+    _secondLine = new QWidget(this);
+    _secondLineLayout = new QHBoxLayout(_secondLine);
+    
+    _pathLineEdit = new LineEdit(_secondLine);
+    _pathLineEdit->setPlaceholderText("path...");
+    _secondLineLayout->addWidget(_pathLineEdit);
+    
+    QImage img(POWITER_IMAGES_PATH"open-file.png");
+    QPixmap pix = QPixmap::fromImage(img);
+    pix = pix.scaled(15,15);
+    
+    _openDirButton = new Button(_secondLine);
+    _openDirButton->setIcon(QIcon(pix));
+    _openDirButton->setFixedSize(20, 20);
+    QObject::connect(_openDirButton, SIGNAL(clicked()), this, SLOT(openDir()));
+    _secondLineLayout->addWidget(_openDirButton);
+    
+    _mainLayout->addWidget(_secondLine);
+    
+    _thirdLine = new QWidget(this);
+    _thirdLineLayout = new QHBoxLayout(_thirdLine);
+    _thirdLine->setLayout(_thirdLineLayout);
+    
+    _cancelButton = new Button("Cancel",_thirdLine);
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
+    _thirdLineLayout->addWidget(_cancelButton);
+    
+    _okButton = new Button("Ok",_thirdLine);
+    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
+    _thirdLineLayout->addWidget(_okButton);
+    
+    _mainLayout->addWidget(_thirdLine);
+    
+}
+
+void AddFavoriteDialog::setLabelText(const QString& text){
+    _descriptionLabel->setText(text);
+}
+
+void AddFavoriteDialog::openDir(){
+    QString str = QFileDialog::getExistingDirectory(this,"Select a directory",_fd->currentDirectory().path());
+    _pathLineEdit->setText(str);
+}
+
+QString AddFavoriteDialog::textValue() const{
+    return _pathLineEdit->text();
+}
 void SequenceFileDialog::addFavorite(){
-    QInputDialog dialog(this);
+    AddFavoriteDialog dialog(this,this);
     dialog.setLabelText("Folder path:");
-    dialog.setWindowTitle("New favorite");
     QString newFavName,newFavPath;
     if(dialog.exec()){
         newFavName = dialog.textValue();
@@ -1121,6 +1179,10 @@ void SequenceFileDialog::addFavorite(){
 }
 
 void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
+    QDir d(path);
+    if(!d.exists()){
+        return;
+    }
     if(!name.isEmpty() && !path.isEmpty()){
         std::vector<QUrl> list;
         list.push_back(QUrl::fromLocalFile(path));

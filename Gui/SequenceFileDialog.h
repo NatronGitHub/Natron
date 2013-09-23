@@ -516,4 +516,40 @@ protected:
     virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const ;
 };
 
+
+
+class AddFavoriteDialog : public QDialog{
+    
+    Q_OBJECT
+    
+    QVBoxLayout* _mainLayout;
+    
+    QLabel* _descriptionLabel;
+    
+    QWidget* _secondLine;
+    QHBoxLayout* _secondLineLayout;
+    LineEdit* _pathLineEdit;
+    Button* _openDirButton;
+    SequenceFileDialog* _fd;
+    
+    QWidget* _thirdLine;
+    QHBoxLayout* _thirdLineLayout;
+    Button* _cancelButton;
+    Button* _okButton;
+public:
+    
+    AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent = 0);
+    
+    
+    void setLabelText(const QString& text);
+    
+    QString textValue() const;
+    
+    virtual ~AddFavoriteDialog(){}
+    
+    public slots:
+    
+    void openDir();
+    
+};
 #endif /* defined(POWITER_GUI_SEQUENCEFILEDIALOG_H_) */
