@@ -185,7 +185,8 @@ void VideoEngine::run(){
          nodes.That means only 1 frame can be rendered at any time. We would have to copy
          all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
          running simultaneously which is not very efficient and adds the burden to synchronize
-         states of nodes etc...*/
+         states of nodes etc...
+         To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
         _model->getGeneralMutex()->lock();
         _working = true;
         
@@ -674,22 +675,6 @@ void VideoEngine::updateDisplay(){
     viewer->updateGL();
 }
 
-void VideoEngine::startEngine(int nbFrames){
-    if (dagHasInputs()) {
-        render(nbFrames,true,true);
-        
-    }
-}
-void VideoEngine::repeatSameFrame(bool initViewer){
-    if (dagHasInputs()) {
-        if(_working){
-            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
-        }else{
-            render(1,initViewer,true,true);
-        }
-    }
-}
-
 VideoEngine::VideoEngine(Model* model,QObject* parent)
 : QThread(parent)
 , _model(model)
@@ -722,7 +707,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
     connect(this, SIGNAL(doRunTasks()), this, SLOT(runTasks()));
-    //  connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)),Qt::QueuedConnection);
+    connect(_workerThreadsWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)));
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
 }
@@ -757,7 +742,25 @@ void VideoEngine::abort(){
         emit engineStopped();
     }
 }
-
+void VideoEngine::startEngine(int nbFrames){
+    if (dagHasInputs()) {
+        render(nbFrames,true,true);
+        
+    }
+}
+void VideoEngine::repeatSameFrame(bool initViewer){
+    if (dagHasInputs()) {
+        if(_working){
+            abort();
+            
+        }
+        if(_working){
+            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
+        }else{
+            render(1,initViewer,true,true);
+        }
+    }
+}
 void VideoEngine::startPause(bool c){
     if(_working){
         abort();
