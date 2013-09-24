@@ -312,6 +312,7 @@ void AbstractDiskCache::clearInMemoryCache() {
             if(evictedNotRemovableCount ==  _inMemoryPortion.size())
                 return;
             add(evicted.first, evicted.second);
+#warning "if evicted.second->isRemovable() is false, we go into an infinite loop here! Just do a simple project with reader+viewer"
         }
     }
 }

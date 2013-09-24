@@ -103,13 +103,10 @@ AppInstance::AppInstance(int appID,const QString& projectName)
     }
     _gui->show();
     
-    /*Check if auto-save dir already exists*/
+    /* Create auto-save dir if it does not exists*/
     QDir dir = autoSavesDir();
+    dir.mkpath(".");
 
-    if(!dir.exists()){
-        QDir::temp().mkdir(autoSavesDir());
-    }
-    
     /*If this is the first instance of the software*/
     if(_appID == 0){
         if(!findAutoSave()){
@@ -307,76 +304,69 @@ void AppInstance::resetCurrentProject(){
     text.append(_currentProject._projectName);
     _gui->setWindowTitle(text);
 }
-bool AppInstance::findAutoSave(){
+
+bool AppInstance::findAutoSave() {
     QDir savesDir(autoSavesDir());
     QStringList entries = savesDir.entryList();
-    for(int i = 0; i < entries.size();++i) {
+    for (int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         int suffixPos = entry.indexOf(".rs.");
         if (suffixPos != -1) {
-            QFile autoSave(savesDir.path()+QDir::separator()+entry);
-            autoSave.open(QIODevice::ReadOnly);
-            QTextStream inStream(&autoSave);
+            QFile autoSaveFile(savesDir.path()+QDir::separator()+entry);
+            autoSaveFile.open(QIODevice::ReadOnly);
+            QTextStream inStream(&autoSaveFile);
             QString firstLine = inStream.readLine();
             QString path;
-            if(!firstLine.isEmpty()){
+            if (!firstLine.isEmpty()) {
                 int j = 0;
-                while(j < firstLine.size() &&  (firstLine.at(j) != QChar('\n'))){
+                while (j < firstLine.size() &&  (firstLine.at(j) != QChar('\n'))) {
                     path.append(firstLine.at(j));
                     ++j;
                 }
             }
-            autoSave.close();
+            autoSaveFile.close();
             QString filename = entry.left(suffixPos+3);
             QString filenameWithPath = path + QDir::separator() + filename;
             bool exists = QFile::exists(filenameWithPath);
             QString text;
             
-            
-            QDateTime time = QDateTime::currentDateTime();
-            if(exists){
-                _currentProject._hasProjectBeenSavedByUser = true;
-                _currentProject._projectName = filename;
-                _currentProject._projectPath = path;
-            }else{
-                _currentProject._hasProjectBeenSavedByUser = false;
-                _currentProject._projectName = "Untitled.rs";
-                _currentProject._projectPath = "";
-            }
-            _currentProject._age = time;
-            _currentProject._lastAutoSave = time;
-            QString title(QCoreApplication::applicationName() + " - ");
-            title.append(_currentProject._projectName);
-            title.append(" (*)");
-            _gui->setWindowTitle(title);
-            
-            if(exists){
-                text = "A recent auto-save of " + filename + " was found.\n"
-                "Would you like to restore it entirely? Clicking No will remove this auto-save.";
-            }else{
-                text = "An auto-save was restored successfully. It didn't belong to any project\n"
-                "Would you like to restore it ? Clicking No will remove this auto-save forever.";
+            if (exists) {
+                text = QString(tr("A recent auto-save of %1 was found.\n"
+                                  "Would you like to restore it entirely? "
+                                  "Clicking No will remove this auto-save.")).arg(filename);;
+            } else {
+                text = tr("An auto-save was restored successfully. It didn't belong to any project\n"
+                          "Would you like to restore it ? Clicking No will remove this auto-save forever.");
             }
             
             
-            QMessageBox::StandardButton ret = QMessageBox::question(_gui, "Auto-save", text,
+            QMessageBox::StandardButton ret = QMessageBox::question(_gui, tr("Auto-save"), text,
                                                                     QMessageBox::Yes | QMessageBox::No,QMessageBox::Yes);
-            if(ret == QMessageBox::No || ret == QMessageBox::Escape){
+            if (ret == QMessageBox::No || ret == QMessageBox::Escape) {
                 removeAutoSaves();
                 clearNodes();
                 resetCurrentProject();
                 return false;
-            }else{
+            } else {
                 _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
-                removeAutoSaves();
-                if(exists){
-                    QDateTime now = QDateTime::currentDateTime();
+                QDateTime now = QDateTime::currentDateTime();
+                if (exists) {
+                    _currentProject._hasProjectBeenSavedByUser = true;
                     _currentProject._projectName = filename;
                     _currentProject._projectPath = path;
-                    _currentProject._lastAutoSave = now;
-                    _currentProject._hasProjectBeenSavedByUser = true;
-                    _currentProject._age = now.addSecs(1);
+                } else {
+                    _currentProject._hasProjectBeenSavedByUser = false;
+                    _currentProject._projectName = "Untitled.rs";
+                    _currentProject._projectPath = "";
                 }
+                _currentProject._lastAutoSave = now;
+                _currentProject._age = now;
+                QString title(QCoreApplication::applicationName() + " - ");
+                title.append(_currentProject._projectName);
+                title.append(" (*)");
+                _gui->setWindowTitle(title);
+                removeAutoSaves(); // clean previous auto-saves
+                autoSave(); // auto-save the recently recovered project, in case the program crashes again
                 return true;
             }
         }
