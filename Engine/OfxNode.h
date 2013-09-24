@@ -20,6 +20,7 @@
 #include <QtCore/QString>
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
+#include <QtGui/QImage>
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -99,13 +100,13 @@ public:
 
     void setAsOutputNode() {_isOutput = true;}
 
-    bool hasPreviewImage() const {return _preview!=NULL;}
+    bool hasPreviewImage() const {return !_preview.isNull();}
 
     bool canHavePreviewImage() const {return _canHavePreview;}
 
     void setCanHavePreviewImage() {_canHavePreview = true;}
 
-    QImage* getPreview() const { return _preview; }
+    const QImage& getPreview() const { return _preview; }
 
     void setTabKnob(Tab_Knob* k){_tabKnob = k;}
     
@@ -165,7 +166,7 @@ private:
     QMutex _firstTimeMutex; // lock used in engine(...) function, protects _firstTime
     bool _firstTime; //used in engine(...) to operate once per frame
     bool _isOutput;//if the OfxNode can output a file somehow
-    QImage* _preview; // ptr to the preview if _canHavePreview is true
+    QImage _preview; // the preview if _canHavePreview is true
     bool _canHavePreview; // does it have a preview? 
     Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)
     Powiter::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any

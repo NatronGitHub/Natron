@@ -965,7 +965,7 @@ void ReadFFMPEG::engine(int y,int offset,int range,ChannelSet channels,Row* out)
 
 void ReadFFMPEG::make_preview(){
     Format frmt = op->info().displayWindow();
-    QImage *preview = new QImage(_data->buffer(), frmt.width(),frmt.height(),QImage::Format_RGB888);
+    QImage preview(_data->buffer(), frmt.width(),frmt.height(),QImage::Format_RGB888);
     op->setPreview(preview);
 }
 

@@ -44,22 +44,20 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader(Model* model):Node(model),
-preview(0),
-has_preview(false),
-readHandle(0),
-_fileKnob(0),
-_readMutex(new QMutex)
+Reader::Reader(Model* model)
+: Node(model)
+, _preview()
+, _has_preview(false)
+, _fitFrameToViewer(false)
+, _readHandle(0)
+, _buffer()
+, _fileKnob(0)
+, _readMutex()
 {
-
-   
-
 }
 
 Reader::~Reader(){
     _buffer.clear();
-	delete preview;
-    delete _readMutex;
 }
 
 std::string Reader::className() const {
@@ -151,7 +149,7 @@ bool Reader::readCurrentHeader(int current_frame){
         }
         assert((*found)->_readHandle);
         _info = (*found)->_readHandle->readerInfo();
-        readHandle = (*found)->_readHandle;
+        _readHandle = (*found)->_readHandle;
     }else{
         _read->initializeColorSpace();
         if(_read->supportsScanLine()){
@@ -161,7 +159,7 @@ bool Reader::readCurrentHeader(int current_frame){
             _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,filenameStr));
         }
         _info = _read->readerInfo();
-        readHandle = _read;
+        _readHandle = _read;
     }
     return true;
 }
@@ -198,13 +196,14 @@ void Reader::showFilePreview(){
     
     _buffer.clear();
     fitFrameToViewer(false);
-    _readMutex->lock();
-    if(readCurrentHeader(firstFrame())){ 
-        readCurrentData(firstFrame());
-        assert(readHandle);
-        readHandle->make_preview();
+    {
+        QMutexLocker locker(&_readMutex);
+        if(readCurrentHeader(firstFrame())){
+            readCurrentData(firstFrame());
+            assert(_readHandle);
+            _readHandle->make_preview();
+        }
     }
-    _readMutex->unlock();
     _buffer.clear();
 }
 
@@ -219,8 +218,8 @@ bool Reader::_validate(bool){
 }
 
 void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){
-	assert(readHandle);
-    readHandle->engine(y,offset,range,c,out);
+	assert(_readHandle);
+    _readHandle->engine(y,offset,range,c,out);
 	
 }
 
@@ -347,11 +346,11 @@ void Reader::onFrameRangeChanged(int first,int last){
     _info.set_lastFrame(last);
 }
 
-void Reader::setPreview(QImage* img){
-    if(preview)
-        delete preview;
-    preview=img;
-    hasPreview(true);
+void Reader::setPreview(const QImage& img){
+    _preview = img;
+    if (!img.isNull()) {
+        _has_preview = true;
+    }
     notifyGuiPreviewChanged();
 }
 

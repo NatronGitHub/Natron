@@ -12,7 +12,7 @@
 #include "OfxNode.h"
 
 #include <locale>
-#include <QImage>
+#include <QtGui/QImage>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
@@ -67,7 +67,7 @@ OfxNode::OfxNode(Model* model,
 , _firstTimeMutex()
 , _firstTime(false)
 , _isOutput(false)
-, _preview(NULL)
+, _preview()
 , _canHavePreview(false)
 , effect_(NULL)
 , _overlayInteract(NULL)
@@ -410,13 +410,7 @@ void OfxNode::computePreviewImage(){
         }
     }
 
-    if(_preview){
-        delete _preview;
-        _preview = 0;
-    }
-    
-    QImage* ret = new QImage(64,64,QImage::Format_ARGB32);
-    assert(ret);
+    _preview = QImage(64,64,QImage::Format_ARGB32);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
     OfxRectD rod;
@@ -468,7 +462,7 @@ void OfxNode::computePreviewImage(){
         double y = i / zoomFactor;
         int nearestY = (int)(y+0.5);
         OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearestY);
-        QRgb *dst_pixels = (QRgb *) ret->scanLine(i);
+        QRgb *dst_pixels = (QRgb *) _preview.scanLine(i);
         assert(src_pixels);
         for(int j = 0 ; j < w ; ++j) {
             double x = j / zoomFactor;
@@ -485,7 +479,6 @@ void OfxNode::computePreviewImage(){
     stat = effectInstance()->endRenderAction(0, 25, 1, true, rS);
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     
-    _preview = ret;
     notifyGuiPreviewChanged();
 }
 

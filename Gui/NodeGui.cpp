@@ -111,8 +111,7 @@ NodeGui::NodeGui(NodeGraph* dag,
         if(ret == 1){
             Reader* n = dynamic_cast<Reader*>(node);
             if(n->hasPreview()){
-                QImage *prev=n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(60,40);
                 prev_pix=scene->addPixmap(prev_pixmap);
                 prev_pix->setX(itemPos.x()+30);
@@ -131,8 +130,7 @@ NodeGui::NodeGui(NodeGraph* dag,
         }else if(ret == 2){
             OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
-                QImage *prev=n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(60,40);
                 prev_pix=scene->addPixmap(prev_pixmap);
                 prev_pix->setX(itemPos.x()+30);
@@ -255,15 +253,13 @@ void NodeGui::updatePreviewImage(){
     if(int ret = node->canMakePreviewImage()){
         if(ret == 1){
             Reader* reader = dynamic_cast<Reader*>(node);
-            QImage *prev = reader->getPreview();
-            QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+            QPixmap prev_pixmap=QPixmap::fromImage(reader->getPreview());
             prev_pixmap=prev_pixmap.scaled(60,40);
             prev_pix->setPixmap(prev_pixmap);
         }else if(ret == 2){
             OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
-                QImage *prev = n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                QPixmap prev_pixmap = QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(60,40);
                 prev_pix->setPixmap(prev_pixmap);
             }
