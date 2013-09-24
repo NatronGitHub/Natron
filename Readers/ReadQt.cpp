@@ -160,5 +160,5 @@ void ReadQt::readAllData(bool){
 
 
 void ReadQt::make_preview() {
-    op->setPreview(_img->scaled(64, 64, Qt::KeepAspectRatio));
+    op->setPreview(_img->scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio));
 }

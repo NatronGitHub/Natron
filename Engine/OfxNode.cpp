@@ -410,7 +410,7 @@ void OfxNode::computePreviewImage(){
         }
     }
 
-    _preview = QImage(64,64,QImage::Format_ARGB32);
+    _preview = QImage(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
     OfxRectD rod;
