@@ -347,12 +347,6 @@ public:
     explicit AbstractDiskCache(double inMemoryUsage);
     virtual ~AbstractDiskCache();
     
-    /*Creates empty sub-directories for the cache, counting them
-     from Ox00 to OxFF.
-     Must be called explicitely after the constructor
-     */
-    void initializeSubDirectories();
-    
     /*Returns the name of the cache with its path preprended*/
     QString getCachePath();
     
@@ -410,6 +404,12 @@ private:
     
     /*used by the restore func.*/
     void cleanUpDiskAndReset();
+
+    /*Creates empty sub-directories for the cache, counting them
+     from Ox00 to OxFF.
+     Must be called explicitely after the constructor
+     */
+    void initializeSubDirectories();
 
 private:
     U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
