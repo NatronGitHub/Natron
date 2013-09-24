@@ -725,9 +725,7 @@ void VideoEngine::updateViewer(){
         emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
     }
     _lastRunArgs._zoomFactor = viewer->getZoomFactor();
-    if(!_aborted){
-        updateDisplay(); // updating viewer & pixel aspect ratio if needed
-    }
+    updateDisplay(); // updating viewer & pixel aspect ratio if needed
     ++_openGLCount;
     _openGLCondition.wakeOne();
 }
