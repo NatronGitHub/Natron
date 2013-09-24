@@ -51,7 +51,6 @@ using namespace Powiter;
 
 Model::Model(AppInstance* appInstance)
 : _appInstance(appInstance),
-_currentOutput(0),
 _generalMutex(new QMutex)
 {
 }
@@ -78,17 +77,11 @@ void Model::checkViewersConnection(){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
         assert(_currentNodes[i]);
         if (_currentNodes[i]->className() == "Viewer") {
-            OutputNode* n = dynamic_cast<OutputNode*>(_currentNodes[i]);
+            ViewerNode* n = dynamic_cast<ViewerNode*>(_currentNodes[i]);
             assert(n);
-            n->updateDAG(false);
+            n->updateDAGAndRender();
         }
     }
-}
-
-void Model::updateDAG(OutputNode *output,bool initViewer){
-    assert(output);
-    _currentOutput = output;
-    output->updateDAG(initViewer);
 }
 
 
@@ -155,23 +148,11 @@ bool Model::disconnect(Node* input,Node* output){
     return true;
 }
 
-/*starts the videoEngine for nbFrames. It will re-init the viewer so the
- *frame fit in the viewer.*/
-void Model::startVideoEngine(int nbFrames){
-    assert(_currentOutput);
-    _currentOutput->getVideoEngine()->startEngine(nbFrames);
-}
-
-VideoEngine* Model::getVideoEngine() const{
-    if(_currentOutput)
-        return _currentOutput->getVideoEngine();
-    else
-        return NULL;
-}
-
-
 
 QString Model::serializeNodeGraph() const{
+    /*Locking the nodes while autosaving*/
+    QMutexLocker l(_appInstance->getAutoSaveMutex());
+
     const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
     QString ret;
     

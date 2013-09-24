@@ -572,7 +572,6 @@ void TimeLine::seek_noEmit(int frame){
     assert(frame <= _lastFrame && frame >= _firstFrame);
     _currentFrame = frame;
 }
-
-void OutputNode::updateDAG(bool initViewer){
-    _videoEngine->changeDAGAndStartEngine(this, initViewer);
+void OutputNode::updateDAGAndRender(bool initViewer){
+    _videoEngine->refreshAndContinueRender(initViewer, this,_timeline.currentFrame());
 }

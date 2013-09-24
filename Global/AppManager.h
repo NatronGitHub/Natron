@@ -45,6 +45,7 @@ class TabWidget;
 class Gui;
 class Format;
 class VideoEngine;
+class QMutex;
 class OutputNode;
 
 namespace Powiter {
@@ -88,21 +89,8 @@ public:
     Gui* getGui(){return _gui;}
     
     /* The following methods are forwarded to the model */
-    VideoEngine* getVideoEngine();
     void checkViewersConnection();
-
-    void updateDAG(OutputNode *output,bool initViewer);
-    
-    bool isRendering() const;
         
-    void startRendering(int nbFrames = -1);
-    
-    OutputNode* getCurrentOutput();
-    
-    ViewerNode* getCurrentViewer();
-    
-    Writer* getCurrentWriter();
-    
     const std::vector<Node*> getAllActiveNodes() const;
     
     const QString& getCurrentProjectName() const {return _currentProject._projectName;}
@@ -157,6 +145,8 @@ public:
     
     void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
 
+    QMutex* getAutoSaveMutex() const {return _autoSaveMutex;}
+
 public slots:
     void clearPlaybackCache();
 
@@ -182,6 +172,8 @@ private:
     int _appID;
     
     std::map<Node*,NodeGui*> _nodeMapping;
+
+    QMutex* _autoSaveMutex;
 };
 
 class AppManager : public QObject, public Singleton<AppManager>

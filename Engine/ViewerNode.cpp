@@ -63,7 +63,20 @@ ViewerNode::~ViewerNode(){
         delete _viewerInfos;
 }
 
-bool ViewerNode::_validate(bool){
+bool ViewerNode::_validate(bool doFullWork){
+    if(doFullWork){
+        if(_viewerInfos){
+            delete _viewerInfos;
+        }
+        _viewerInfos = new ViewerInfos;
+        _viewerInfos->set_channels(info().channels());
+        _viewerInfos->set_dataWindow(info().dataWindow());
+        _viewerInfos->set_displayWindow(info().displayWindow());
+        _viewerInfos->set_firstFrame(info().firstFrame());
+        _viewerInfos->set_lastFrame(info().lastFrame());
+        
+        _uiContext->setCurrentViewerInfos(_viewerInfos,false);
+    }
     return true;
 }
 bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection){
@@ -196,20 +209,6 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
     }
 }
 
-void ViewerNode::makeCurrentViewer(){
-    if(_viewerInfos){
-        delete _viewerInfos;
-    }
-    _viewerInfos = new ViewerInfos;
-    _viewerInfos->set_channels(info().channels());
-    _viewerInfos->set_dataWindow(info().dataWindow());
-    _viewerInfos->set_displayWindow(info().displayWindow());
-    _viewerInfos->set_firstFrame(info().firstFrame());
-    _viewerInfos->set_lastFrame(info().lastFrame());
-    
-    _uiContext->setCurrentViewerInfos(_viewerInfos,false);
-}
-
 int ViewerNode::firstFrame() const{
     return _uiContext->frameSeeker->firstFrame();
 }
@@ -304,7 +303,7 @@ void ViewerNode::setActiveInputAndRefresh(int inputNb){
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
-        updateDAG(false);
+        updateDAGAndRender();
     }
 }
 

@@ -674,12 +674,6 @@ class ViewerTab;
              **/
             void frameChanged(int);
             
-            /**
-             *@brief Signal emitted when the viewport is resized or the user pan around the image or zoom-in/out
-             **/
-            void engineNeeded();
-            
-            
             protected :
             /**
              *@brief The paint function. That's where all the drawing is done.

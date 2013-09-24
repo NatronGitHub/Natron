@@ -353,7 +353,7 @@ void ViewerGL::resizeGL(int width, int height){
     }
     checkGLErrors();
     _ms = UNDEFINED;
-    _viewerTab->getInternalNode()->updateDAG(true);
+    _viewerTab->getInternalNode()->updateDAGAndRender(true);
 }
 void ViewerGL::paintGL()
 {
@@ -1130,7 +1130,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
             _zoomCtx._oldClick = newClick;
             if(_drawing){
-                emit engineNeeded();
+                _viewerTab->getInternalNode()->updateDAGAndRender();
             }
             //    else
             updateGL();
@@ -1188,7 +1188,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_drawing){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
-        emit engineNeeded();
+        _viewerTab->getInternalNode()->updateDAGAndRender();
     }
     updateGL();
     
@@ -1208,7 +1208,7 @@ void ViewerGL::setZoomFactor(double f){
 
 void ViewerGL::zoomSlot(int v){
     assert(v > 0);
-    if(!_viewerTab->getGui()->getApp()->getVideoEngine()->isWorking()){
+    if(!_viewerTab->getInternalNode()->getVideoEngine()->isWorking()){
         double value = v/100.f;
         if(value < 0.01) {
             value = 0.01;
@@ -1218,7 +1218,7 @@ void ViewerGL::zoomSlot(int v){
         _zoomCtx._zoomFactor = value;
         if(_drawing){
             _viewerTab->getGui()->getApp()->clearPlaybackCache();
-            emit engineNeeded();
+            _viewerTab->getInternalNode()->updateDAGAndRender();
         }else{
             updateGL();
         }
@@ -1363,7 +1363,7 @@ void ViewerGL::updateColorSpace(QString str){
     }
     
     if(byteMode()==1 || !_hasHW)
-        emit engineNeeded();
+        _viewerTab->getInternalNode()->updateDAGAndRender();
     else
         updateGL();
     
@@ -1371,7 +1371,7 @@ void ViewerGL::updateColorSpace(QString str){
 void ViewerGL::updateExposure(double d){
     exposure = d;
     if((byteMode()==1 || !_hasHW) && _drawing)
-        emit engineNeeded();
+        _viewerTab->getInternalNode()->updateDAGAndRender();
     else
         updateGL();
     

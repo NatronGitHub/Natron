@@ -54,12 +54,12 @@ using namespace std;
 using namespace Powiter;
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
-QGraphicsView(scene,parent),
-_gui(gui),
-_evtState(DEFAULT),
-_nodeSelected(0),
-_maximized(false),
-_propertyBin(0)
+    QGraphicsView(scene,parent),
+    _gui(gui),
+    _evtState(DEFAULT),
+    _nodeSelected(0),
+    _maximized(false),
+    _propertyBin(0)
 {
     
     setObjectName("DAG_GUI");
@@ -187,7 +187,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF evpt = n->mapFromScene(ep);
             
             if(n->isActive() && n->isNearby(evpt) &&
-               (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
+                    (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 if(n->getNode()->isOutputNode() && _arrowSelected->getDest()->getNode()->isOutputNode()){
                     break;
                 }
@@ -248,7 +248,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
         if(n->isActive() && n->contains(evpt) && n->getNode()->className() != "Viewer"){
             if(!n->isThisPanelEnabled()){
                 n->setSettingsPanelEnabled(true);
-                n->getSettingPanel()->setVisible(true);                
+                n->getSettingPanel()->setVisible(true);
             }
             n->putSettingsPanelFirst();
             /*scrolling back to the top the selected node's property tab is visible*/
@@ -350,7 +350,7 @@ void NodeGraph::enterEvent(QEvent *event)
     QGraphicsView::enterEvent(event);
     if (smartNodeCreationEnabled) {
         _nodeCreationShortcutEnabled=true;
-        setFocus(); 
+        setFocus();
     }
 }
 void NodeGraph::leaveEvent(QEvent *event)
@@ -391,7 +391,6 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     Edge* first = 0;
     if(!selected)
         return;
-    bool cont = false;
     /*If the node selected isn't an output node and the node created isn't an output
      node we want to connect the node created to the output of the node selected*/
     if(!selected->getNode()->isOutputNode() && !created->getNode()->isInputNode()){
@@ -470,7 +469,6 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         first = created->firstAvailableEdge();
         if(first){
             _undoStack->push(new ConnectCommand(this,first,first->getSource(),selected));
-            cont = true;
         }
     }else{
         /*selected is an output node or the created node is an input node. We want to connect the created node
@@ -478,15 +476,6 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         first = selected->firstAvailableEdge();
         if(first && !created->getNode()->isOutputNode()){
             _undoStack->push(new ConnectCommand(this,first,first->getSource(),created));
-            cont = true;
-        }
-    }
-    
-    
-    if(cont){
-        ViewerNode* viewer = Node::hasViewerConnected(first->getDest()->getNode());
-        if(viewer){
-            _gui->getApp()->updateDAG(viewer,false);
         }
     }
 }
@@ -533,7 +522,7 @@ void NodeGraph::updateNavigator(){
         QRectF rect = visibleRect();
         _navigatorProxy->setPos(rect.width()-_navigator->sizeHint().width(),
                                 rect.height()-_navigator->sizeHint().height());
-         _navigator->show();
+        _navigator->show();
     }else{
         _navigator->hide();
     }
@@ -590,7 +579,7 @@ bool NodeGraph::isGraphWorthLess() const{
 }
 
 NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
-_w(120),_h(70){
+    _w(120),_h(70){
     
 }
 
@@ -634,9 +623,9 @@ void NodeGraph::restoreFromTrash(NodeGui* node) {
 // }
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
-_node(node),
-_oldPos(oldPos),
-_newPos(node->pos()){
+    _node(node),
+    _oldPos(oldPos),
+    _newPos(node->pos()){
     
 }
 void MoveCommand::undo(){
@@ -668,17 +657,18 @@ bool MoveCommand::mergeWith(const QUndoCommand *command){
 
 
 AddCommand::AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph),_undoWasCalled(false){
+    _node(node),_graph(graph),_undoWasCalled(false){
     
 }
 void AddCommand::undo(){
     _undoWasCalled = true;
-  
+
     
     
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
+    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _node->getNode()->deactivate();
 
     _graph->scene()->update();
@@ -688,7 +678,7 @@ void AddCommand::undo(){
 }
 void AddCommand::redo(){
     if(_undoWasCalled){
-       
+        QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
         _node->getNode()->activate();
     }
     _graph->scene()->update();
@@ -699,10 +689,11 @@ void AddCommand::redo(){
 }
 
 RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-_node(node),_graph(graph){
+    _node(node),_graph(graph){
     
 }
 void RemoveCommand::undo(){
+    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _node->getNode()->activate();
     
     _graph->scene()->update();
@@ -716,6 +707,7 @@ void RemoveCommand::redo(){
     _inputs = _node->getNode()->getInputs();
     _outputs = _node->getNode()->getOutputs();
     
+    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _node->getNode()->deactivate();
 
     _graph->scene()->update();
@@ -726,14 +718,15 @@ void RemoveCommand::redo(){
 
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent):QUndoCommand(parent),
-_edge(edge),
-_oldSrc(oldSrc),
-_newSrc(newSrc),
-_graph(graph){
+    _edge(edge),
+    _oldSrc(oldSrc),
+    _newSrc(newSrc),
+    _graph(graph){
     
 }
 
 void ConnectCommand::undo(){
+    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
@@ -750,15 +743,15 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
+
     _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        viewer->updateDAG(false);
+        viewer->updateDAGAndRender();
     }
-    
-    
 }
 void ConnectCommand::redo(){
+    QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     NodeGui* dst = _edge->getDest();
     if (dst->getNode()->className() == "Viewer") {
         ViewerNode* v = dynamic_cast<ViewerNode*>(dst->getNode());
@@ -776,13 +769,13 @@ void ConnectCommand::redo(){
         if(_oldSrc){
             if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
             if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                << " to (output) " << dst->getNode()->getName() << endl;
+                     << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
     }
@@ -790,7 +783,7 @@ void ConnectCommand::redo(){
     
     if(_newSrc){
         setText(QObject::tr("Connect %1 to %2")
-            .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
+                .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
     }else{
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
@@ -798,7 +791,7 @@ void ConnectCommand::redo(){
     _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        viewer->updateDAG(false);
+        viewer->updateDAGAndRender();
     }
 
     
@@ -807,11 +800,11 @@ void ConnectCommand::redo(){
 
 
 SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
-: QDialog()
-, graph(graph_)
-, layout(NULL)
-, textLabel(NULL)
-, textEdit(NULL)
+    : QDialog()
+    , graph(graph_)
+    , layout(NULL)
+    , textLabel(NULL)
+    , textEdit(NULL)
 {
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);

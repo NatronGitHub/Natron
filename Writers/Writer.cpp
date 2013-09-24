@@ -248,11 +248,10 @@ void Writer::startRendering(){
     _fileType = _allFileTypes[_filetypeCombo->value<int>()];
     _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
-        _model->updateDAG(this,false);
         /*Calls validate just to get the appropriate frame range in the timeline*/
         getVideoEngine()->validate(false);
+        updateDAGAndRender();
         _model->onRenderingOnDiskStarted(this,_filename.c_str(),_timeline.firstFrame(),_timeline.lastFrame());
-        _model->startVideoEngine();
     }
 }
 

@@ -87,39 +87,14 @@ static void metaEnginePerRow(Row* row, Node* output){
     // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
 }
 
-void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
-    if (_working) {
-        return;
-    }
-    cout <<"=============================================" << endl;
-    if(sameFrame){
-        cout << ">>>Starting engine to refresh the same frame.<<<" << endl;
-        
-    }else{
-        cout << "Starting engine";
-        if(forward){
-            cout << " in forward fashion";
-        }else{
-            cout << " in backward fashion";
-        }
-        cout << " for " << frameCount << " frames." << endl;
-        
-    }
-    if(fitFrameToViewer){
-        cout << ">>Fitting viewer to the frame<<" << endl;;
-    }
-    // cout << "+ STARTING ENGINE " << endl;
-    _timer->playState=RUNNING;
+void VideoEngine::render(OutputNode* output,int startingFrame,int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
+    /*aborting any previous rendering*/
+    abort();
     
-    {
-        QMutexLocker l(&_abortedMutex);
-        _aborted = false;
-        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-            (*it)->setAborted(false);
-        }
-    }
-    
-    
+    output->getTimeLine().seek(startingFrame);
+//    if (_working) {
+//        return;
+//    }
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         ViewerNode* viewer = _dag.outputAsViewer();
@@ -127,23 +102,9 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         assert(viewer->getUiContext());
         assert(viewer->getUiContext()->viewer);
         zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
-        emit engineStarted(forward);
     }else{
         zoomFactor = 1.f;
     }
-    
-    bool oldVersionValid = _treeVersionValid;
-    U64 oldVersion;
-    if (oldVersionValid) {
-        oldVersion = getCurrentTreeVersion();
-    }
-    changeTreeVersion();
-    
-    /*If the DAG changed we clear the playback cache.*/
-    if(!oldVersionValid || (_treeVersion != oldVersion)){
-        _model->getApp()->clearPlaybackCache(); // FIXME: the playback cache seems to be global to the application, why should we clear it here?
-    }
-    
     _lastRunArgs._zoomFactor = zoomFactor;
     _lastRunArgs._sameFrame = sameFrame;
     _lastRunArgs._fitToViewer = fitFrameToViewer;
@@ -151,6 +112,7 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     _lastRunArgs._forward = forward;
     _lastRunArgs._frameRequestsCount = frameCount;
     _lastRunArgs._frameRequestIndex = 0;
+    _lastRunArgs._output = output;
     
     if (!isRunning()) {
         start(HighestPriority);
@@ -160,11 +122,70 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         _startCondition.wakeOne();
     }
 }
+void VideoEngine::startEngine(){
+    
+    _restart = false;
+    _working = true;
+    _timer->playState=RUNNING;
+    _dag.resetAndSort(_lastRunArgs._output);
+    
+    
+    ViewerNode* viewer = dynamic_cast<ViewerNode*>(_dag.getOutput());
+    const std::vector<Node*>& inputs = _dag.getInputs();
+    bool hasFrames = false;
+    bool hasInputDifferentThanReader = false;
+    for (U32 i = 0; i< inputs.size(); ++i) {
+        assert(inputs[i]);
+        Reader* r = dynamic_cast<Reader*>(inputs[i]);
+        if (r) {
+            if (r->hasFrames()) {
+                hasFrames = true;
+            }
+        }else{
+            hasInputDifferentThanReader = true;
+        }
+    }
+    if(!hasInputDifferentThanReader && !hasFrames){
+        if(viewer)
+            viewer->disconnectViewer();
+        stopEngine();
+        return;
+    }
+    if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
+        stopEngine();
+        return;
+    }
 
+    
+    {
+        QMutexLocker l(&_abortedMutex);
+        _aborted = false;
+        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+            (*it)->setAborted(false);
+        }
+    }
+    
+    bool oldVersionValid = _treeVersionValid;
+    U64 oldVersion;
+    if (oldVersionValid) {
+        oldVersion = getCurrentTreeVersion();
+    }
+    updateTreeVersion();
+    
+    /*If the DAG changed we clear the playback cache.*/
+    if(!oldVersionValid || (_treeVersion != oldVersion)){
+         // FIXME: the playback cache seems to be global to the application, why should we clear it here?
+        //because the DAG changed, so the frame stored in memory are now useless for the playback.
+        _model->getApp()->clearPlaybackCache();
+    }
+    emit engineStarted(_lastRunArgs._forward);
+
+}
 void VideoEngine::stopEngine() {
+    
     emit engineStopped();
     // cout << "- STOPPING ENGINE"<<endl;
-    // _lastRunArgs._frameRequestsCount = 0;
+     _lastRunArgs._frameRequestsCount = 0;
     QMutexLocker l(&_abortedMutex);
     _aborted = false;
     for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
@@ -173,7 +194,7 @@ void VideoEngine::stopEngine() {
     _working = false;
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
-    cout << ">>>Engine stopped.<<<" << endl;
+    _restart = true;
     
 }
 
@@ -181,13 +202,16 @@ void VideoEngine::run(){
     
     for(;;){ // infinite loop
         
+        
         {
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
                 return;
             }
         }
-        
+        if(_restart){
+            startEngine();
+        }
         
         /*Locking out other rendering tasks so 1 VideoEngine gets access to all
          nodes.That means only 1 frame can be rendered at any time. We would have to copy
@@ -196,14 +220,6 @@ void VideoEngine::run(){
          states of nodes etc...
          To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
         _model->getGeneralMutex()->lock();
-        _working = true;
-        
-        if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
-            stopEngine();
-            return;
-        }
-        
-        
         
         /*beginRenderAction for all openFX nodes*/
         for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
@@ -255,7 +271,6 @@ void VideoEngine::run(){
         if(_aborted){
             /*aborted by the user*/
             stopEngine();
-            emit doRunTasks();
             return;
         }
         if((_dag.isOutputAViewer()
@@ -266,8 +281,6 @@ void VideoEngine::run(){
            || _lastRunArgs._frameRequestsCount == 0){
             /*1 frame in the sequence and we already computed it*/
             stopEngine();
-            emit doRunTasks();
-            //runTasks();
             {
                 QMutexLocker locker(&_startMutex);
                 while(_startCount <= 0) {
@@ -377,7 +390,6 @@ void VideoEngine::run(){
         const Format &_dispW = outputNode->info().displayWindow();
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             assert(viewer);
-            viewer->makeCurrentViewer();
             if (_lastRunArgs._fitToViewer) {
                 assert(viewer->getUiContext());
                 assert(viewer->getUiContext()->viewer);
@@ -386,8 +398,9 @@ void VideoEngine::run(){
                 _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
             }
             
-        }        /*Now that we called validate we can check if the frame is in the cache
-                  and return the appropriate EngineStatus code.*/
+        }
+        /*Now that we called validate we can check if the frame is in the cache*/
+        
         vector<int> rows;
         vector<int> columns;
         int x=0,r=0;
@@ -596,7 +609,6 @@ void VideoEngine::run(){
         }
         _model->getGeneralMutex()->unlock();
         
-        
     } // end for(;;)
     
 }
@@ -625,7 +637,7 @@ void VideoEngine::engineLoop(){
     }
     _lastRunArgs._fitToViewer = false;
     _lastRunArgs._recursiveCall = true;
-
+    
     
 }
 
@@ -687,7 +699,6 @@ void VideoEngine::updateDisplay(){
 VideoEngine::VideoEngine(Model* model,QObject* parent)
 : QThread(parent)
 , _model(model)
-, _waitingTasks()
 , _working(false)
 , _dag()
 , _timer(new Timer)
@@ -698,6 +709,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _treeVersion(0)
 , _treeVersionValid(false)
 , _loopMode(true)
+, _restart(true)
 , _forceRender(false)
 , _workerThreadsWatcher(new QFutureWatcher<void>)
 , _openGLCondition()
@@ -714,7 +726,6 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
-    connect(this, SIGNAL(doRunTasks()), this, SLOT(runTasks()));
     connect(_workerThreadsWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)));
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
@@ -728,7 +739,7 @@ VideoEngine::~VideoEngine(){
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
         }
-
+        
     }
     {
         QMutexLocker locker(&_startMutex);
@@ -753,228 +764,25 @@ void VideoEngine::abort(){
             (*it)->setAborted(true);
         }
     }
-    if(_dag.outputAsViewer()){
-        emit engineStopped();
-    }
-}
-void VideoEngine::startEngine(int nbFrames){
-    if (dagHasInputs()) {
-        render(nbFrames,true,true);
-    }
-}
-void VideoEngine::repeatSameFrame(bool initViewer){
-    if (dagHasInputs()) {
-        if(_working){
-            
-            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,
-                       _lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
-        }else{
-            render(1,initViewer,true,true);
-        }
-    }
-}
-void VideoEngine::startPause(bool c){
-    if(_working){
-        abort();
-    }
-    if(c && _dag.getOutput()){
-        render(-1,false,true);
-    }
-}
-void VideoEngine::startBackward(bool c){
-    
-    if(_working){
-        abort();
-    }
-    if(c && _dag.getOutput()){
-        render(-1,false,false);
-    }
-}
-void VideoEngine::previousFrame(){
-    if( _working){
-        abort();
-    }
-    if(!_working)
-        _startEngine(_dag.outputAsViewer()->currentFrame()-1, 1, false,false,false);
-    else
-        appendTask(_dag.outputAsViewer()->currentFrame()-1, 1,  false,_lastRunArgs._forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
-}
-
-void VideoEngine::nextFrame(){
-    if(_working){
-        abort();
-    }
-    
-    if(!_working)
-        _startEngine(_dag.outputAsViewer()->currentFrame()+1, 1, false,true,false);
-    else
-        appendTask(_dag.outputAsViewer()->currentFrame()+1,  1,false,_lastRunArgs._forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
-}
-
-void VideoEngine::firstFrame(){
-    if( _working){
-        abort();
-    }
-    
-    if(!_working)
-        _startEngine(_dag.outputAsViewer()->firstFrame(), 1, false,false,false);
-    else
-        appendTask(_dag.outputAsViewer()->firstFrame(), 1,  false,_lastRunArgs._forward,false,_dag.getOutput(),  &VideoEngine::_startEngine);
-}
-
-void VideoEngine::lastFrame(){
-    if(_working){
-        abort();
-    }
-    if(!_working)
-        _startEngine(_dag.outputAsViewer()->lastFrame(), 1, false,true,false);
-    else
-        appendTask(_dag.outputAsViewer()->lastFrame(), 1,  false,_lastRunArgs._forward,false,_dag.getOutput(),  &VideoEngine::_startEngine);
-}
-
-void VideoEngine::previousIncrement(){
-    if(_working){
-        abort();
-    }
-    int frame = _dag.outputAsViewer()->currentFrame() - (int)_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
-    if(!_working)
-        _startEngine(frame, 1, false,false,false);
-    else{
-        appendTask(frame,1, false,_lastRunArgs._forward,false,_dag.getOutput(), &VideoEngine::_startEngine);
-    }
-    
-    
-}
-
-void VideoEngine::nextIncrement(){
-    if(_working){
-        abort();
-    }
-    int frame = _dag.outputAsViewer()->currentFrame() + (int)_dag.outputAsViewer()->getUiContext()->incrementSpinBox->value();
-    if(!_working)
-        _startEngine(frame, 1, false,true,false);
-    else
-        appendTask(frame,1, false,_lastRunArgs._forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
-}
-
-void VideoEngine::seekRandomFrame(int f){
-    if(!_dag.getOutput() || _dag.getInputs().size()==0) return;
-    
-    if(_working){
-        abort();
-    }
-    
-    if(!_working){
-        if(_lastRunArgs._frameRequestsCount == -1){
-            _startEngine(f, -1, false,_lastRunArgs._forward,false);
-        }else{
-            _startEngine(f, 1, false,_lastRunArgs._forward,false);
-        }
-    }
-    else{
-        if(_lastRunArgs._frameRequestsCount == -1){
-            appendTask(f, -1, false,_lastRunArgs._forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
-        }else{
-            appendTask(f, 1, false,_lastRunArgs._forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
-        }
-    }
-}
-void VideoEngine::recenterViewer(){
-    if(_working){
-        abort();
-    }
-    if(!_working){
-        if(_lastRunArgs._frameRequestsCount == -1)
-            _startEngine(_dag.outputAsViewer()->currentFrame(), -1, true,_lastRunArgs._forward,false);
-        else
-            _startEngine(_dag.outputAsViewer()->currentFrame(), 1, true,_lastRunArgs._forward,false);
-    }else{
-        appendTask(_dag.outputAsViewer()->currentFrame(), -1, true,_lastRunArgs._forward,false, _dag.getOutput(),&VideoEngine::_startEngine);
-    }
 }
 
 
-
-void VideoEngine::changeDAGAndStartEngine(OutputNode* output,bool initViewer){
-    abort();
-    if(!_working){
-        if(_dag.getOutput()){
-            _changeDAGAndStartEngine(_dag.getOutput()->getTimeLine().currentFrame(), -1, initViewer,true,false,output);
-        }else{
-            _changeDAGAndStartEngine(0, -1, initViewer,true,false,output);
-        }
-    }else{
-        if(_dag.getOutput()){
-            appendTask(_dag.getOutput()->getTimeLine().currentFrame(), 1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
-        }else{
-            appendTask(0,1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
-        }
-    }
+void VideoEngine::seek(int frame){
+    refreshAndContinueRender(false, _dag.getOutput(),frame);
 }
 
-void VideoEngine::appendTask(int frameNB, int frameCount, bool initViewer,bool forward,bool sameFrame,OutputNode* output, VengineFunction func){
-    _waitingTasks.push_back(Task(frameNB,frameCount,initViewer,forward,sameFrame,output,func));
-}
-
-void VideoEngine::runTasks(){
-    if(_working){
-        return;
-    }
-    if(_waitingTasks.size() > 0){
-        Task _t = _waitingTasks.back();
-        VengineFunction f = _t._func;
-        VideoEngine *vengine = this;
-        (*vengine.*f)(_t._newFrameNB,_t._frameCount,_t._initViewer,_t._forward,_t._sameFrame,_t._output);
-        _waitingTasks.clear();
-    }
-    
-}
-
-void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
-    if(_dag.getOutput() && _dag.getInputs().size()>0){
-        if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
-            return;
-        _dag.outputAsViewer()->getTimeLine().seek(frameNB);
-        
-        render(frameCount,initViewer,forward,sameFrame);
-        
-    }
-}
-
-void VideoEngine::_changeDAGAndStartEngine(int , int , bool initViewer,bool,bool ,OutputNode* output){
+void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
-    _dag.resetAndSort(output,viewer!=NULL);
-    if(initViewer){
-        //we probably changed the sequence or at least we change the zoomFactor, we better
-        //clear everything in memory that is most likely not going to be used.
-        _model->getApp()->clearPlaybackCache();
-    }
-    if(viewer){
-        const std::vector<Node*>& inputs = _dag.getInputs();
-        bool hasFrames = false;
-        bool hasInputDifferentThanReader = false;
-        for (U32 i = 0; i< inputs.size(); ++i) {
-            assert(inputs[i]);
-            Reader* r = dynamic_cast<Reader*>(inputs[i]);
-            if (r) {
-                if (r->hasFrames()) {
-                    hasFrames = true;
-                }
-            }else{
-                hasInputDifferentThanReader = true;
-            }
-        }
-        if(hasInputDifferentThanReader || hasFrames){
-            repeatSameFrame(initViewer);
-        }else{
-            viewer->disconnectViewer();
-        }
+    bool wasPlaybackRunning = _working && _lastRunArgs._frameRequestsCount == -1;
+    if(!viewer || wasPlaybackRunning){
+        render(output,startingFrame,-1,initViewer,_lastRunArgs._forward,false);
+    }else{
+        render(output,startingFrame,1,initViewer,_lastRunArgs._forward,true);
     }
 }
 
 
-
-void VideoEngine::changeTreeVersion(){
+void VideoEngine::updateTreeVersion(){
     
     if(!_dag.getOutput()){
         return;
@@ -1061,11 +869,10 @@ OfxNode* VideoEngine::DAG::outputAsOpenFXNode() const{
     }
 }
 
-void VideoEngine::DAG::resetAndSort(OutputNode* out,bool isViewer){
+void VideoEngine::DAG::resetAndSort(OutputNode* out){
     
-    assert(!out->getVideoEngine()->isWorking());
     _output = out;
-    _isViewer = isViewer;
+    _isViewer = dynamic_cast<ViewerNode*>(out) != NULL;
     if(out && out->isOpenFXNode()){
         _isOutputOpenFXNode = true;
     }else{
@@ -1108,11 +915,6 @@ int VideoEngine::DAG::lastFrame() const {
     return _output->info().lastFrame();
 }
 
-
-
-void VideoEngine::resetAndMakeNewDag(OutputNode* output,bool isViewer){
-    _dag.resetAndSort(output,isViewer);
-}
 #ifdef POWITER_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
     for (unsigned int i = 0; i < columns.size(); ++i) {

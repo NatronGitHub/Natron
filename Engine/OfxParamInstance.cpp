@@ -72,10 +72,10 @@ void OfxPushButtonInstance::triggerInstanceChanged() {
     _node->onInstanceChanged(_paramName);
     ViewerNode* viewer = Node::hasViewerConnected(_node);
     if(viewer){
-        _node->getModel()->updateDAG(viewer,false);
+        viewer->updateDAGAndRender();
     }else if(_node->isOutputNode()){
         OutputNode* n = dynamic_cast<OutputNode*>(_node);
-        n->updateDAG(false);
+        n->updateDAGAndRender();
     }
 }
 

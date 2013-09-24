@@ -69,9 +69,6 @@ public:
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
     
-    /*tell the ViewerGL to use the current viewerInfos*/
-    void makeCurrentViewer();
-    
     ViewerInfos* getViewerInfos(){return _viewerInfos;}
     
     ViewerTab* getUiContext(){return _uiContext;}
@@ -97,6 +94,7 @@ public:
     void disconnectViewer(){
         emit viewerDisconnected();
     }
+    
     
     void connectSlotsToViewerCache();
     

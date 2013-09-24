@@ -17,6 +17,7 @@
 #include <QtGui/QImageReader>
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
+#include <QtConcurrentRun>
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -80,6 +81,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
 , _currentProject()
 , _appID(appID)
 , _nodeMapping()
+, _autoSaveMutex(new QMutex)
 {
     _gui->createGui();
     
@@ -140,11 +142,9 @@ AppInstance::AppInstance(int appID,const QString& projectName)
 AppInstance::~AppInstance(){
     removeAutoSaves();
     appPTR->removeInstance(_appID);
+    delete _autoSaveMutex;
 }
 
-void AppInstance::updateDAG(OutputNode *output,bool initViewer){
-    _model->updateDAG(output,initViewer);
-}
 
 Node* AppInstance::createNode(const QString& name) {
     Node* node = _model->createNode(name.toStdString());
@@ -180,10 +180,6 @@ Node* AppInstance::createNode(const QString& name) {
     return node;
 }
 
-VideoEngine* AppInstance::getVideoEngine() {
-    return _model->getVideoEngine();
-}
-
 void AppInstance::checkViewersConnection() {
     return _model->checkViewersConnection();
 }
@@ -192,26 +188,6 @@ void AppInstance::autoConnect(Node* target,Node* created){
     _gui->autoConnect(getNodeGui(target),getNodeGui(created));
 }
 
-OutputNode* AppInstance::getCurrentOutput(){
-    return _model->getCurrentOutput();
-}
-ViewerNode* AppInstance::getCurrentViewer(){
-    OutputNode* output = _model->getCurrentOutput();
-    return dynamic_cast<ViewerNode*>(output);
-}
-
-bool AppInstance::isRendering() const{
-    return _model->getVideoEngine()->isWorking();
-}
-
-void AppInstance::startRendering(int nbFrames){
-    _model->startVideoEngine(nbFrames);
-}
-
-Writer* AppInstance::getCurrentWriter(){
-    OutputNode* output = _model->getCurrentOutput();
-    return dynamic_cast<Writer*>(output);
-}
 
 const std::vector<Node*> AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
@@ -267,7 +243,7 @@ void AppInstance::autoSave(){
     saveProject(_currentProject._projectPath, _currentProject._projectName, true);
 }
 void AppInstance::triggerAutoSave(){
-    autoSave();
+    QtConcurrent::run(this,&AppInstance::autoSave);
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject._projectName);
     text.append(" (*)");
@@ -454,9 +430,6 @@ void AppInstance::disconnectViewersFromViewerCache(){
 }
 
 void AppInstance::clearPlaybackCache(){
-    if (!_model->getCurrentOutput()) { // FIXME: the playback cache is global, why should this action depend on this model's output?
-        return;
-    }
     appPTR->getViewerCache()->clearInMemoryPortion();
 }
 

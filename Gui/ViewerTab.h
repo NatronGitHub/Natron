@@ -128,8 +128,8 @@ public slots:
     void nextIncrement();
     void firstFrame();
     void lastFrame();
-    void seekRandomFrame(int);
-    void seekRandomFrame(double value){seekRandomFrame((int)value);}
+    void seek(int);
+    void seek(double value){seek((int)value);}
     void centerViewer();
     void toggleLoopMode(bool);
     void onViewerChannelsChanged(int);
@@ -150,8 +150,6 @@ public slots:
     
     void refresh();
     
-signals:
-    void recenteringNeeded();
     
 protected:
     

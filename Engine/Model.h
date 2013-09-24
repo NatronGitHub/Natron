@@ -97,17 +97,6 @@ public:
 	/*Create a new node internally*/
     Node* createNode(const std::string& name);
     
-    /*starts the videoEngine for nbFrames. It will re-init the viewer so the
-     *frame fit in the viewer.*/
-    void startVideoEngine(int nbFrames=-1);
-    
-    VideoEngine* getVideoEngine() const;
-
-    OutputNode* getCurrentOutput() const {return _currentOutput;}
-
-	/*Refresh the graph used by the output's videoEngine.*/
-    void updateDAG(OutputNode* output,bool initViewer);
-
     void checkViewersConnection();
     
     void loadProject(const QString& filename,bool autoSave = false);
@@ -152,8 +141,6 @@ private:
     
     
     AppInstance* _appInstance;
-
-    OutputNode* _currentOutput; /*The output of the last used graph.*/
     
     std::vector<Node*> _currentNodes;
     

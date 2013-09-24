@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "ViewerTab.h"
 
@@ -54,7 +54,7 @@ _viewerNode(node),
 _channelsToDraw(Mask_RGBA),
 _maximized(false)
 {
-
+    
     installEventFilter(this);
     setObjectName(node->getName().c_str());
     _mainLayout=new QVBoxLayout(this);
@@ -63,7 +63,7 @@ _maximized(false)
     _mainLayout->setContentsMargins(0, 0, 0, 0);
     
 	/*VIEWER SETTINGS*/
-   
+    
     /*1st row of buttons*/
     _firstSettingsRow = new QWidget(this);
     _firstRowLayout = new QHBoxLayout(_firstSettingsRow);
@@ -77,7 +77,7 @@ _maximized(false)
     
     _viewerChannels = new ComboBox(_firstSettingsRow);
     _viewerChannels->setToolTip("<p></br><b>Channels: \n</b></p>"
-                 "The channels to display on the viewer.");
+                                "The channels to display on the viewer.");
 	_firstRowLayout->addWidget(_viewerChannels);
     
     _viewerChannels->addItem("Luminance",QIcon(),QKeySequence(Qt::Key_Y));
@@ -91,7 +91,7 @@ _maximized(false)
     
     _zoomCombobox = new ComboBox(_firstSettingsRow);
     _zoomCombobox->setToolTip("<p></br><b>Zoom: \n</b></p>"
-                 "The zoom applied to the image on the viewer.");
+                              "The zoom applied to the image on the viewer.");
     _zoomCombobox->addItem("10%");
     _zoomCombobox->addItem("25%");
     _zoomCombobox->addItem("50%");
@@ -120,12 +120,12 @@ _maximized(false)
     _secondSettingsRow->setLayout(_secondRowLayout);
     _secondRowLayout->setSpacing(0);
     _secondRowLayout->setContentsMargins(0, 0, 0, 0);
-  //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    //  _secondSettingsRow->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_secondSettingsRow);
     
     _gainBox = new SpinBox(_secondSettingsRow,SpinBox::DOUBLE_SPINBOX);
     _gainBox->setToolTip("<p></br><b>Gain: \n</b></p>"
-                       "Multiplies the image by \nthis amount before display.");
+                         "Multiplies the image by \nthis amount before display.");
     _gainBox->setIncrement(0.1);
     _gainBox->setValue(1.0);
     _gainBox->setMinimum(-99.0);
@@ -134,7 +134,7 @@ _maximized(false)
     
     _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,5,_secondSettingsRow);
     _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
-                 "Multiplies the image by \nthis amount before display.");
+                            "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
     
     
@@ -146,7 +146,7 @@ _maximized(false)
     
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
     _viewerColorSpace->setToolTip("<p></br><b>Viewer color process: \n</b></p>"
-                 "The operation applied to the image before it is displayed\n"
+                                  "The operation applied to the image before it is displayed\n"
                                   "on screen. All the color pipeline in Powiter \n"
                                   "is linear,thus the process converts from linear\n"
                                   "to your monitor's colorspace.");
@@ -156,7 +156,7 @@ _maximized(false)
     _viewerColorSpace->addItem("sRGB");
     _viewerColorSpace->addItem("Rec.709");
     _viewerColorSpace->setCurrentIndex(1);
-  
+    
     
     _secondRowLayout->addStretch();
     
@@ -169,7 +169,7 @@ _maximized(false)
 	/*=============================================*/
     /*info bbox & color*/
     _infosWidget = new InfoViewerWidget(viewer,this);
-  //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    //  _infosWidget->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_infosWidget);
     viewer->setInfoViewer(_infosWidget);
     /*=============================================*/
@@ -180,7 +180,7 @@ _maximized(false)
     _playerLayout->setSpacing(0);
     _playerLayout->setContentsMargins(0, 0, 0, 0);
     _playerButtonsContainer->setLayout(_playerLayout);
- //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
+    //   _playerButtonsContainer->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
     _mainLayout->addWidget(_playerButtonsContainer);
     
 	_currentFrameBox=new SpinBox(_playerButtonsContainer,SpinBox::INT_SPINBOX);
@@ -342,11 +342,11 @@ _maximized(false)
     fpsBox->setValue(24.0);
     fpsBox->setIncrement(0.1);
     fpsBox->setToolTip("<p></br><b>fps: \n</b></p>"
-                                 "Enter here the desired playback rate.");
+                       "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
-        
     
-
+    
+    
     QImage imgFirst(POWITER_IMAGES_PATH"firstFrame.png");
     QImage imgPrevKF(POWITER_IMAGES_PATH"prevKF.png");
     QImage imgRewind(POWITER_IMAGES_PATH"rewind.png");
@@ -448,14 +448,12 @@ _maximized(false)
     QObject::connect(nextIncrement_Button,SIGNAL(clicked()),this,SLOT(nextIncrement()));
     QObject::connect(firstFrame_Button,SIGNAL(clicked()),this,SLOT(firstFrame()));
     QObject::connect(lastFrame_Button,SIGNAL(clicked()),this,SLOT(lastFrame()));
-    QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seekRandomFrame(double)));
+    QObject::connect(_currentFrameBox,SIGNAL(valueChanged(double)),this,SLOT(seek(double)));
     QObject::connect(loopMode_Button, SIGNAL(clicked(bool)), this, SLOT(toggleLoopMode(bool)));
-    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seekRandomFrame(int)));
-    QObject::connect(viewer,SIGNAL(engineNeeded()),vengine,SLOT(repeatSameFrame()));
+    QObject::connect(frameSeeker,SIGNAL(positionChanged(int)), this, SLOT(seek(int)));
     QObject::connect(_refreshButton, SIGNAL(clicked()), this, SLOT(refresh()));
     
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
-    QObject::connect(this, SIGNAL(recenteringNeeded()), vengine, SLOT(recenterViewer()));
     QObject::connect(_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
     
     QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(int)),this,SLOT(onCachedFrameAdded(int)));
@@ -499,61 +497,55 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    //_gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->startPause(b);
-    else
-        play_Forward_Button->setChecked(false);
+    abort();
+    if(b){
+        _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
+                                              _viewerNode->getTimeLine().currentFrame(),/*starting frame*/
+                                              -1, /*frame count*/
+                                              false, /*fit to viewer ?*/
+                                              true, /*forward ?*/
+                                              false); /*same frame ?*/
+    }
 }
 void ViewerTab::abort(){
     _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    // _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->startBackward(b);
-    else
-        play_Backward_Button->setChecked(false);
+    abort();
+    if(b){
+        _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
+                                              _viewerNode->getTimeLine().currentFrame(),/*starting frame*/
+                                              -1, /*frame count*/
+                                              false,/*fit to viewer?*/
+                                              false,/*forward?*/
+                                              false);/*same frame ?*/
+    }
 }
 void ViewerTab::previousFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->previousFrame();
+    seek(_viewerNode->getTimeLine().currentFrame()-1);
 }
 void ViewerTab::nextFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->nextFrame();
+    seek(_viewerNode->getTimeLine().currentFrame()+1);
 }
 void ViewerTab::previousIncrement(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->previousIncrement();
+    seek(_viewerNode->getTimeLine().currentFrame()-incrementSpinBox->value());
 }
 void ViewerTab::nextIncrement(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->nextIncrement();
+    seek(_viewerNode->getTimeLine().currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->firstFrame();
+    seek(_viewerNode->getTimeLine().firstFrame());
 }
 void ViewerTab::lastFrame(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->lastFrame();
+    seek(_viewerNode->getTimeLine().lastFrame());
 }
-void ViewerTab::seekRandomFrame(int f){
-    _gui->getApp()->updateDAG(_viewerNode, false);
-    if(_viewerNode->getVideoEngine()->dagHasInputs())
-        _viewerNode->getVideoEngine()->seekRandomFrame(f);
+void ViewerTab::seek(int f){
+    _viewerNode->getVideoEngine()->seek(f);
 }
 
 void ViewerTab::centerViewer(){
     if(viewer->drawing()){
-        emit recenteringNeeded();
+        _viewerNode->updateDAGAndRender(true);
     }else{
         viewer->fitToFormat(viewer->displayWindow());
         viewer->updateGL();
@@ -562,7 +554,7 @@ void ViewerTab::centerViewer(){
 
 void ViewerTab::refresh(){
     _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
-    _viewerNode->updateDAG();
+    _viewerNode->updateDAGAndRender();
 }
 
 ViewerTab::~ViewerTab()
@@ -605,9 +597,9 @@ void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
         // int curFirstFrame = frameSeeker->firstFrame();
         // int curLastFrame =  frameSeeker->lastFrame();
         // if ((viewerInfos->firstFrame() != curFirstFrame) || (viewerInfos->lastFrame() != curLastFrame)) {
-            frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
-            frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
-       // }
+        frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
+        frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
+        // }
     }
 }
 void ViewerTab::onViewerChannelsChanged(int i){
@@ -642,7 +634,7 @@ bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     }
     return QWidget::eventFilter(target, event);
 }
- 
+
 void ViewerTab::disconnectViewer(){
     viewer->disconnectViewer();
 }

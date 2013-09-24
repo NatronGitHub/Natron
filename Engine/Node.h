@@ -529,18 +529,19 @@ public:
     const TimeLine& getTimeLine() const {return _timeline;}
     
     TimeLine& getTimeLine(){return _timeline;}
+    
+    void updateDAGAndRender(bool initViewer = false);
         
-    void updateDAG(bool initViewer = false);
-
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
     virtual bool _validate(bool /*doFullWork*/) OVERRIDE = 0;
     
     TimeLine _timeline;
-
     
 private:
+    
     VideoEngine* _videoEngine;
+
 };
 
 

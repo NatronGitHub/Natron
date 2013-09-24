@@ -216,19 +216,6 @@ bool Gui::eventFilter(QObject *target, QEvent *event) {
          user inputs.*/
         appPTR->setAsTopLevelInstance(_appInstance->getAppID());
     }
-     
-    if (event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-        if (keyEvent->key() == Qt::Key_Right) {
-            _appInstance->getVideoEngine()->nextFrame();
-            focusNextChild();
-            return true;
-        }else if(keyEvent->key() == Qt::Key_Left){
-            _appInstance->getVideoEngine()->previousFrame();
-            focusNextChild();
-            return true;
-        }
-    }
     return QMainWindow::eventFilter(target, event);
 }
 void Gui::retranslateUi(QMainWindow *MainWindow)

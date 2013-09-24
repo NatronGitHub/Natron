@@ -33,8 +33,6 @@
 #include "Engine/Format.h"
 
 class FrameEntry;
-class InputNode;
-class OutputNode;
 class ViewerGL;
 class Node;
 class Row;
@@ -45,9 +43,7 @@ class ViewerNode;
 class Writer;
 class Timer;
 class OfxNode;
-class EngineMainEntry;
-class Worker;
-
+class OutputNode;
 
 /**
  *@class VideoEngine
@@ -55,10 +51,8 @@ class Worker;
  *the graph.
  **/
 class VideoEngine : public QThread{
-    Q_OBJECT
     
-    friend class EngineMainEntry;
-    friend class Worker;
+    Q_OBJECT
     
 public:
     
@@ -95,13 +89,10 @@ public:
          *@brief Clears the structure and fill it with a new graph, represented by the OutputNode.
          *@param out[in] This is the output of the graph, i.e either a viewer or a writer. The rest
          *of the graph is fetched recursivly starting from this node.
-         *@param isViewer[in] If true, it indicates the DAG that the output node is a viewer, hence
-         *allowing some optimisations to be made by the engine. The type of the output node should always
-         *be known when calling this function.
          *@TODO Throw some exception to detect cycles in the graph
          */
         
-        void resetAndSort(OutputNode* out, bool isViewer);
+        void resetAndSort(OutputNode* out);
         
         /**
          *@brief Clears out the structure. As a result the graph will do nothing.
@@ -239,71 +230,13 @@ public:
         bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
     };
     
-    /**
-     *@struct EngineStatus
-     *@brief This class is used as a return code from the function
-     *VideoEngine::computeFrameRequest(bool,bool,bool).
-     *The members of this class helps the video engine to know what decision to make after
-     *the thread as returned from VideoEngine::computeFrameRequest(bool,bool,bool). Thanks to this class
-     *the engine will either go in cache mode (i.e: reading data from the cache) or start computations
-     *in the graph.
-     **/
-    struct EngineStatus{
-        enum RetCode{NORMAL_ENGINE = 0 , CACHED_ENGINE = 1 , ABORTED = 2};
-        
-        EngineStatus():_cachedEntry(0),_key(0),_x(0),_r(0),_returnCode(NORMAL_ENGINE){}
-        
-        EngineStatus(FrameEntry* cachedEntry,U64 key,int x,int r,const std::vector<int> rows,EngineStatus::RetCode state):
-        _cachedEntry(cachedEntry),
-        _key(key),
-        _x(x),
-        _r(r),
-        _rows(rows),
-        _returnCode(state)
-        {}
-        
-        EngineStatus(const EngineStatus& other): _cachedEntry(other._cachedEntry),
-        _key(other._key),_x(other._x),_r(other._r),
-        _rows(other._rows),_returnCode(other._returnCode){}
-        
-        
-        ~EngineStatus(){}
-        
-        FrameEntry* _cachedEntry;
-        U64 _key;
-        int _x,_r;
-        std::vector<int> _rows;
-        RetCode _returnCode;
-    };
-    
 private:
-    
-    friend class ViewerGL;
     
     /**
      *@brief A typedef used to represent a generic signature of a function that represent a user action like Play, Pause, Seek...etc
      */
     typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,OutputNode*);
     
-    /**
-     *@struct VideoEngine::Task
-     *@brief This class holds all necessary infos to store a function call that will be queued. This is used mainly to delay
-     *user requested operation like "Seek" "Play" etc... so it doesn't mess with the currently running computations. Once
-     *the engine finishes its computations, it will then execute the stored Task.
-     **/
-    struct Task{
-        int _newFrameNB;
-        int _frameCount;
-        bool _initViewer;
-        bool _forward;
-        bool _sameFrame;
-        OutputNode* _output;
-        VengineFunction _func;
-        Task(int newFrameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func):
-        _newFrameNB(newFrameNB),_frameCount(frameCount),_initViewer(initViewer),_forward(forward),_sameFrame(sameFrame),
-        _output(output),_func(func){}
-        
-    };
     
     /**
      * @brief The ViewerCacheArgs class is a convenience class storing the arguments
@@ -328,7 +261,8 @@ private:
         _recursiveCall(false),
         _forward(true),
         _frameRequestsCount(0),
-        _frameRequestIndex(0)
+        _frameRequestIndex(0),
+        _output(0)
         {}
         
         float _zoomFactor;
@@ -339,12 +273,11 @@ private:
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
+        OutputNode* _output;/*!< the output that will be used to build the DAG that will serve to render*/
     };
     
-    Model* _model;
-    
-    std::vector<Task> _waitingTasks; /*!< The queue of the user's waiting tasks.*/
-        
+    Model* _model;/*!< pointer to the model*/
+            
 	bool _working; /*!< True if the engine is working.*/
     
     DAG _dag; /*!< The internal DAG instance.*/
@@ -362,14 +295,15 @@ private:
     
     bool _loopMode; /*!< on if the player will loop*/
         
+    bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
     
-    bool _forceRender;
+    bool _forceRender;/*!< true when we want to by-pass the cache*/
     
     boost::scoped_ptr<QFutureWatcher<void> > _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
 
-    QWaitCondition _openGLCondition; // FIXME: where is the counter associated with this condition???
+    QWaitCondition _openGLCondition;
     QMutex _openGLMutex; //!< protects *_openGLCount
     int _openGLCount;
     
@@ -384,20 +318,47 @@ private:
     struct timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
 protected:
+    
+    /*The function doing all the processing*/
     virtual void run();
     
-    public slots:
-	/**
-     *@brief Starts the engine with initialisation of the viewer so the frame fits in the viewport.
-	 *If nbFrames = -1, the engine cycles through all remaining frames(and loops if loop mode is activated).
+public slots:
+    /**
+     *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
+     *frame indicated on the timeline.
+     *@param startingFrame[in] The frame to start with.
+     *@param output[in] The output from which we should build the DAG that will serve to render.
+     *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
+     *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
+     *until the user explicitly stops it.
+     *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
+     *@param forward[in] If true, the engine runs forwards, otherwise backwards.
+     *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
+     *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
+     *is on, frameCount MUST be 1.
      **/
-    void startEngine(int nbFrames =-1);
+    void render(OutputNode* output,int startingFrame,int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /**
-     *@brief Starts the engine to repeat the same frame (usually called when panning/zooming)
-     * The engine will not  initialise  the viewer to fit the frame in the viewport.
+     @brief Aborts all computations. This turns on the flag _aborted and will inform the engine that it needs to stop.
      **/
-    void repeatSameFrame(bool initViewer = false);
+    void abort();
+    /**
+     *@brief Calls the video engine for the frame number frame. This is the slot called when the user scrub in the timeline.
+     **/
+    void seek(int frame);
+    
+    /**
+     *@brief Updates the internal DAG by looking at the nodes upstream of output. Once the DAG has been
+     *built,it will refresh the display for the current frame with the new DAG taken into account.
+     *If the playback was running while this function was called, it will resume taking the new DAG
+     *into account.
+     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
+     *@param viewer[in] A pointer to the output whose inputs will determine the DAG that will
+     *serve to render the frames.
+     *@param startingFrame[in] The frame to start rendering with.
+     **/
+    void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
     
     /**
      *@brief Does nothing yet as there ain't no progress bar.
@@ -408,82 +369,6 @@ protected:
      *@brief The slot called by the GUI to set the requested fps.
      **/
     void setDesiredFPS(double d);
-    
-    /**
-     @brief Aborts all computations. This turns on the flag _aborted and will inform the engine that it needs to stop.
-     **/
-    void abort();
-    
-    
-    /**
-     *@brief Starts or stops the video engine. This is the slot called when the user toggle on/off the play button.
-     **/
-    void startPause(bool c);
-    
-    /**
-     *@brief Starts or stops the video engine in backwords fashion.
-     *This is the slot called when the user toggle on/off the play backwards button.
-     **/
-    void startBackward(bool c);
-    
-    /**
-     *@brief Calls the video engine for the previous frame. This is the slot called when the user press the previous button.
-     **/
-    void previousFrame();
-    
-    /**
-     *@brief Calls the video engine for the next frame. This is the slot called when the user press the next button.
-     **/
-    void nextFrame();
-    
-    /**
-     *@brief Calls the video engine for the first frame. This is the slot called when the user press the first frame button.
-     **/
-    void firstFrame();
-    
-    /**
-     *@brief Calls the video engine for the last frame. This is the slot called when the user press the last frame button.
-     **/
-    void lastFrame();
-    
-    /**
-     *@brief Calls the video engine for the frame located at (currentFrame - incrementValue). This is the slot called when the user press the
-     *previous increment button.
-     **/
-    void previousIncrement();
-    
-    /**
-     *@brief Calls the video engine for the frame located at (currentFrame + incrementValue). This is the slot called when the user press the
-     *next increment button.
-     **/
-    void nextIncrement();
-    
-    /**
-     *@brief Calls the video engine for the frame number f. This is the slot called when the user scrub in the timeline.
-     **/
-    void seekRandomFrame(int f);
-    
-    /**
-     *@brief Convenience function for the FeedBackSpinbox class
-     **/
-    void seekRandomFrame(double d){seekRandomFrame((int)d);}
-    
-    /**
-     *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
-     *of the graph.
-     **/
-    void changeTreeVersion();
-    
-    /**
-     *@brief Pauses the engine and restarts it right away, re-centering the image on the viewer.
-     **/
-    void recenterViewer();
-    
-    /**
-     *@brief displays progress if the time to compute the current frame exeeded
-     * 0.5 sec.
-     **/
-    bool checkAndDisplayProgress(int y,int zoomedY);
     
     void onProgressUpdate(int i);
         
@@ -497,11 +382,6 @@ protected:
     
     void toggleLoopMode(bool b);
     
-    /**
-     *@brief Runs the queued tasks. It is called when the video engine stops the current computations.
-     **/
-    void runTasks();
-    
 signals:
     /**
      *@brief Signal emitted when the function waits the time due to display the frame.
@@ -513,9 +393,7 @@ signals:
     void doCachedEngine();
     
     void doFrameStorageAllocation();
-    
-    void doRunTasks();
-    
+        
     void engineStarted(bool forward);
     
     void engineStopped();
@@ -526,8 +404,22 @@ signals:
     void frameRendered(int frameNumber);
     
 public:
-
+    /**
+     *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
+     *in the future it will be able to handle several engines working at the same time.
+     *@param engine A pointer to the Model. It is currently unused.
+     *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
+     engine-wise synchronisaton;
+     **/
+    VideoEngine(Model* model, QObject* parent = NULL);
     
+    virtual ~VideoEngine();
+    
+    
+    
+    /**
+     *@brief Bypasses the cache so the next frame will be rendered fully
+     **/
     void forceFullComputationOnNextFrame(){_forceRender = true;}
     
     /**
@@ -536,27 +428,7 @@ public:
     bool isOutputAViewer() const {return _dag.isOutputAViewer();}
     
     /**
-     *@brief Convenience function checking whether the dag has inputs connected.
-     **/
-    bool dagHasInputs() const {return !_dag.getInputs().empty();}
-    
-    /**
-     *@brief Do not call this. This is called internally by the DAG GUI when the user changes the graph.
-     **/
-    void changeDAGAndStartEngine(OutputNode* output,bool initViewer);
-    
-    /**
-     *@brief Convenience function. It resets the graph, emptying all nodes stored in the DAG.
-     **/
-    void resetDAG(){_dag.reset();}
-    
-    /**
-     *@brief Convenience function. It calls DAG::resetAndSort(OutputNode*,bool).
-     **/
-    void resetAndMakeNewDag(OutputNode* output,bool isViewer);
-    
-    /**
-     *@returns Return a const reference to the DAG used by the video engine.
+     *@returns Returns a const reference to the DAG used by the video engine.
      **/
     const DAG& getCurrentDAG() const {return _dag;}
     
@@ -571,39 +443,6 @@ public:
 	bool isWorking() const {return _working;}
     
     /**
-     *@returns Returns the number of frame the engine is being executed for.
-     *If it runs indefinately it will return -1. If it is stopped, it will return 0.
-     **/
-    int getFrameCountForCurrentPlayback() const {return _working ?  _lastRunArgs._frameRequestsCount :  0;}
-    
-    /**
-     *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
-     *in the future it will be able to handle several engines working at the same time.
-     *@param engine A pointer to the Model. It is currently unused.
-     *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
-     engine-wise synchronisaton;
-     **/
-    VideoEngine(Model* model, QObject* parent = NULL);
-    
-    
-    virtual ~VideoEngine();
-    
-    /**
-     *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
-     *frame indicated on the timeline in case the output of the graph is a viewer. If it is a writer then is starts
-     *off at Writer::firstFrame().
-     *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
-     *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
-     *until the user explicitly stops it.
-     *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport. This is used when connecting
-     *a node to the viewer for the first time.
-     *@param forward[in] If true, the engine runs forwards, otherwise backwards.
-     *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
-     *for the same frame than the last frame  computed. This is used exclusively when zooming/panning.
-     **/
-    void render(int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
-    
-    /**
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
      *represents the version of the graph.
      **/
@@ -612,13 +451,33 @@ public:
     bool hasBeenAborted() const {return _aborted;}
     
 private:
+    
+    
+    /**
+     *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
+     *of the graph.
+     **/
+    void updateTreeVersion();
+    
+    /**
+     *@brief displays progress if the time to compute the current frame exeeded
+     * 0.5 sec.
+     **/
+    bool checkAndDisplayProgress(int y,int zoomedY);
 
     void engineLoop();
 
     /**
-     *@brief Resets the video engine state and ensures that all worker threads are stopped.
+     *@brief Resets the video engine state and ensures that all worker threads are stopped. It is called
+     *internally by the run function.
      **/
     void stopEngine();
+    
+    /**
+     *@brief Set up the video engine state, e.g: build DAG from the output node and activate some flags.
+     *It is used internally by the run function
+     **/
+    void startEngine();
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.
@@ -632,35 +491,11 @@ private:
      */
     void readFrames(const std::vector<Reader*>& readers);
     
-    
-    
     /**
      *@brief Calls QGLWidget::updateGL() and causes the viewer to refresh.
      *It also adjusts the pixel aspect ratio of the viewer.
      */
     void updateDisplay();
-    
-    
-    /**
-     *@brief Called by almost all VideoEngine slots that respond to a user request(Seek,play,pause etc..).
-     *All the parameters are given to the function VideoEngine::videoEngine(int,bool,bool,bool). See the
-     *documentation for that function.
-     **/
-    void _startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
-    
-    /**
-     *@brief Called by VideoEngine::changeDAGAndStartEngine(OutputNode*); This function is slightly different
-     *than _startEngine(...) because it resets the graph and calls VideoEngine::changeTreeVersion()
-     *before actually starting the engine.
-     **/
-    void _changeDAGAndStartEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output = NULL);
-    
-    /**
-     *@brief Appends a new VideoEngine::Task to the the queue.
-     **/
-    void appendTask(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* output,VengineFunction func);
-    
-   
     
     
 #ifdef POWITER_DEBUG

@@ -616,7 +616,7 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
             if(_penDown){
                 ViewerNode* v = Node::hasViewerConnected(this);
                 if(v){
-                    v->updateDAG(false);
+                    v->updateDAGAndRender();
                 }
             }
             return true;
@@ -653,7 +653,7 @@ void OfxNode::onOverlayKeyDown(QKeyEvent* e){
         _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         ViewerNode* v = Node::hasViewerConnected(this);
         if(v){
-            v->updateDAG(false);
+            v->updateDAGAndRender();
         }
     }
     
@@ -674,7 +674,7 @@ void OfxNode::onOverlayKeyRepeat(QKeyEvent* e){
         _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         ViewerNode* v = Node::hasViewerConnected(this);
         if(v){
-            v->updateDAG(false);
+            v->updateDAGAndRender();
         }
     }
 }
