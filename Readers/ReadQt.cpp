@@ -40,20 +40,66 @@ ReadQt::~ReadQt(){
 }
 
 void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
-    int h = op->info().displayWindow().height();
-    int Y = h - y - 1;
-    const uchar* buffer = _img->scanLine(Y);
-    if(autoAlpha() && !_img->hasAlphaChannel()){
-        out->turnOn(Channel_alpha);
-    }
-    const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
-    foreachChannels(z, channels){
-        float* to = out->writable(z) ;
-        if(to!=NULL){
-            from_byteQt(z, to+out->offset(), from, (range-offset),1);
+    switch(_img->format()) {
+        case QImage::Format_Invalid:
+        {
+            foreachChannels(z, channels){
+                float* to = out->writable(z) ;
+                if (to != NULL) {
+                    std::fill(to+out->offset(), to+out->offset() + (range-offset), 0.);
+                }
+            }
         }
-    }     
+            break;
+        case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
+        case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
+        case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
+        {
+            int h = op->info().displayWindow().height();
+            int Y = h - y - 1;
+            const uchar* buffer = _img->scanLine(Y);
+            if(autoAlpha() && !_img->hasAlphaChannel()){
+                out->turnOn(Channel_alpha);
+            }
+            const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
+            foreachChannels(z, channels){
+                float* to = out->writable(z) ;
+                if (to != NULL) {
+                    from_byteQt(z, to+out->offset(), from, (range-offset),1);
+                }
+            }
+        }
+            break;
+        case QImage::Format_Mono: // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
+        case QImage::Format_MonoLSB: // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
+        case QImage::Format_Indexed8: // The image is stored using 8-bit indexes into a colormap.
+        case QImage::Format_RGB16: // The image is stored using a 16-bit RGB format (5-6-5).
+        case QImage::Format_ARGB8565_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
+        case QImage::Format_RGB666: // The image is stored using a 24-bit RGB format (6-6-6). The unused most significant bits is always zero.
+        case QImage::Format_ARGB6666_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (6-6-6-6).
+        case QImage::Format_RGB555: // The image is stored using a 16-bit RGB format (5-5-5). The unused most significant bit is always zero.
+        case QImage::Format_ARGB8555_Premultiplied: // The image is stored using a premultiplied 24-bit ARGB format (8-5-5-5).
+        case QImage::Format_RGB888: // The image is stored using a 24-bit RGB format (8-8-8).
+        case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
+        case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
+        default:
+        {
+            int h = op->info().displayWindow().height();
+            int Y = h - y - 1;
+            for (int X = offset; X < range; ++X) {
+                QRgb c = _img->pixel(X, Y);
+                foreachChannels(z, channels){
+                    float* to = out->writable(z) ;
+                    if (to != NULL) {
+                        from_byteQt(z, to+out->offset()+X, &c, 1, 1);
+                    }
+                }
+            }
+        }
+            break;
+    }
 }
+
 bool ReadQt::supports_stereo() const {
     return false;
 }
@@ -113,23 +159,6 @@ void ReadQt::readAllData(bool){
 
 
 
-void ReadQt::make_preview(){
-    
-    int h,w;
-    _img->width() < 64 ? w = _img->width() : w = 64;
-    _img->height() < 64 ? h = _img->height() : h = 64;
-    float zoomFactor = (float)h/(float)_img->height();
-    QImage* img = new QImage(w,h,_img->format());
-    for(int i =0 ; i < h ; ++i) {
-        float y = (float)i*1.f/zoomFactor;
-        int nearestY = (int)(y+0.5);
-        const QRgb* src_pixels = (QRgb*) _img->scanLine(nearestY);
-        QRgb *dst_pixels = (QRgb *) img->scanLine(i);
-        for(int j = 0 ; j < w ; ++j) {
-            float x = (float)j*1.f/zoomFactor;
-            int nearestX = (int)(x+0.5);
-            dst_pixels[j] = src_pixels[nearestX];
-        }
-    }
-    op->setPreview(img);
+void ReadQt::make_preview() {
+    op->setPreview(_img->scaled(64, 64, Qt::KeepAspectRatio));
 }
