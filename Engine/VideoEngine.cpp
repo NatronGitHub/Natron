@@ -111,11 +111,14 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     // cout << "+ STARTING ENGINE " << endl;
     _timer->playState=RUNNING;
     
-    _aborted = false;
-    for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-        (*it)->setAborted(false);
+    {
+        QMutexLocker l(&_abortedMutex);
+        _aborted = false;
+        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+            (*it)->setAborted(false);
+        }
     }
-
+    
     
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
@@ -161,7 +164,8 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
 void VideoEngine::stopEngine() {
     emit engineStopped();
     // cout << "- STOPPING ENGINE"<<endl;
-    _lastRunArgs._frameRequestsCount = 0;
+    // _lastRunArgs._frameRequestsCount = 0;
+    QMutexLocker l(&_abortedMutex);
     _aborted = false;
     for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
         (*it)->setAborted(true);
@@ -539,32 +543,35 @@ void VideoEngine::run(){
             //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
             //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
             //panning/zooming.
-            assert(viewer);
-            assert(viewer->getUiContext());
-            assert(viewer->getUiContext()->viewer);
-            viewer->getUiContext()->viewer->stopDisplayingProgressBar();
-            assert(appPTR->getViewerCache());
-            FrameEntry* entry = appPTR->getViewerCache()->addFrame(key,
-                                                                   inputFileNames,
-                                                                   _treeVersion,
-                                                                   zoomFactor,
-                                                                   exposure,
-                                                                   lut,
-                                                                   byteMode,
-                                                                   _lastFrameInfos._textureRect,
-                                                                   dataW,
-                                                                   _dispW);
-            
-            if(entry){
-                assert(entry->getMappedFile());
-                assert(entry->getMappedFile()->data());
+            QMutexLocker l(&_abortedMutex);
+            if(!_aborted){
+                
+                assert(viewer);
                 assert(viewer->getUiContext());
                 assert(viewer->getUiContext()->viewer);
-                assert(viewer->getUiContext()->viewer->getFrameData());
-                memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
-                entry->removeReference(); // removing reference as we're done with the entry.
+                viewer->getUiContext()->viewer->stopDisplayingProgressBar();
+                assert(appPTR->getViewerCache());
+                FrameEntry* entry = appPTR->getViewerCache()->addFrame(key,
+                                                                       inputFileNames,
+                                                                       _treeVersion,
+                                                                       zoomFactor,
+                                                                       exposure,
+                                                                       lut,
+                                                                       byteMode,
+                                                                       _lastFrameInfos._textureRect,
+                                                                       dataW,
+                                                                       _dispW);
+                
+                if(entry){
+                    assert(entry->getMappedFile());
+                    assert(entry->getMappedFile()->data());
+                    assert(viewer->getUiContext());
+                    assert(viewer->getUiContext()->viewer);
+                    assert(viewer->getUiContext()->viewer->getFrameData());
+                    memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
+                    entry->removeReference(); // removing reference as we're done with the entry.
+                }
             }
-            
             
         } else if (!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             /*if the output is a writer we actually start writing on disk now*/
@@ -608,7 +615,7 @@ void VideoEngine::engineLoop(){
         --_lastRunArgs._frameRequestsCount;
     }
     ++_lastRunArgs._frameRequestIndex;//incrementing the frame counter
-    if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && !_aborted){
+    if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         QMutexLocker locker(&_openGLMutex);
         emit doUpdateViewer();
         while(_openGLCount <= 0) {
@@ -764,10 +771,16 @@ void VideoEngine::repeatSameFrame(bool initViewer){
 //        if(_working){
 //             abort();
 //        }
+        int frameCount = 1;
+        if(_lastRunArgs._frameRequestsCount == -1){
+            frameCount = -1;
+        }
         if(_working){
-            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,_lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
+            
+            appendTask(_dag.outputAsViewer()->currentFrame(), frameCount, initViewer,
+                       _lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
         }else{
-            render(1,initViewer,true,true);
+            render(frameCount,initViewer,true,true);
         }
     }
 }

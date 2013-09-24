@@ -328,7 +328,8 @@ private:
         _recursiveCall(false),
         _forward(true),
         _frameRequestsCount(0),
-        _frameRequestIndex(0){}
+        _frameRequestIndex(0)
+        {}
         
         float _zoomFactor;
         bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/

@@ -506,7 +506,6 @@ void ViewerTab::startPause(bool b){
         play_Forward_Button->setChecked(false);
 }
 void ViewerTab::abort(){
-    _gui->getApp()->updateDAG(_viewerNode, false);
     _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
