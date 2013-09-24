@@ -1077,9 +1077,10 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     _zoomCtx._oldClick = event->pos();
+    // TODO: Qt::RightButton should pop up a menu
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _ms = DRAGGING;
-    } else {
+    } else if (event->button() == Qt::LeftButton) {
         _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
                                                              toImgCoordinates_fast(event->x(), event->y()));
     }
@@ -1092,54 +1093,51 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
                                                          toImgCoordinates_fast(event->x(), event->y()));
     QGLWidget::mouseReleaseEvent(event);
 }
-void ViewerGL::mouseMoveEvent(QMouseEvent *event){
+void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
     const Format& dispW = displayWindow();
-    if(pos.x() >= dispW.left() &&
-       pos.x() <= dispW.width() &&
-       pos.y() >= dispW.bottom() &&
-       pos.y() <= dispW.height() &&
-       event->x() >= 0 && event->x() < width() &&
-       event->y() >= 0 && event->y() < height()){
-        if(!_infoViewer->colorAndMouseVisible()){
+    // if the mouse is inside the image, update the color picker
+    if (pos.x() >= dispW.left() &&
+        pos.x() <= dispW.width() &&
+        pos.y() >= dispW.bottom() &&
+        pos.y() <= dispW.height() &&
+        event->x() >= 0 && event->x() < width() &&
+        event->y() >= 0 && event->y() < height()) {
+        if (!_infoViewer->colorAndMouseVisible()) {
             _infoViewer->showColorAndMouseInfo();
         }
         VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
-        if(videoEngine && !videoEngine->isWorking()){
+        if (videoEngine && !videoEngine->isWorking()) {
             updateColorPicker(event->x(),event->y());
         }
         _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
         emit infoMousePosChanged();
-        
-        
-        
-    }else{
+    } else {
         if(_infoViewer->colorAndMouseVisible()){
             _infoViewer->hideColorAndMouseInfo();
         }
     }
-    if(event->modifiers().testFlag(Qt::AltModifier)){
-        if(_ms == DRAGGING){
-            // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
-            QPoint newClick =  event->pos();
-            QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-            QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
-            float dy = (oldClick_opengl.y() - newClick_opengl.y());
-            _zoomCtx._bottom += dy;
-            _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-            _zoomCtx._oldClick = newClick;
-            if(_displayingImage){
-                emit engineNeeded();
-            }
-            //    else
+
+    if (_ms == DRAGGING) {
+        // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
+        QPoint newClick =  event->pos();
+        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+        float dy = (oldClick_opengl.y() - newClick_opengl.y());
+        _zoomCtx._bottom += dy;
+        _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
+        _zoomCtx._oldClick = newClick;
+        if(_displayingImage){
+            emit engineNeeded();
+        } else {
             updateGL();
-            //  }
-            
         }
-    }else{
+        // no need to update the color picker or mouse posn: they should be unchanged
+    } else {
         _viewerTab->getInternalNode()->notifyOverlaysPenMotion(event->posF(),pos);
     }
 }
+
 void ViewerGL::updateColorPicker(int x,int y){
     QPoint pos;
     bool xInitialized = false;
