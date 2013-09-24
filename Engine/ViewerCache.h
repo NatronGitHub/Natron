@@ -46,7 +46,6 @@ public:
     
     FrameEntry(float zoom,float exp,float lut,U64 treeVers,
                float byteMode,ReaderInfo* info,const TextureRect& textureRect);
-	FrameEntry(const FrameEntry& other);
     
     
 	virtual std::string printOut();

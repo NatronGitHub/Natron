@@ -34,22 +34,39 @@ using namespace std;
 using namespace Powiter;
 
 
-ViewerCache::ViewerCache() : AbstractDiskCache(0)
-{}
+ViewerCache::ViewerCache()
+: AbstractDiskCache(0)
+{
+}
 
-ViewerCache::~ViewerCache(){}
+ViewerCache::~ViewerCache()
+{
+}
 
 
-FrameEntry::FrameEntry():MemoryMappedEntry(), _exposure(0),_lut(0),_zoom(0),_treeVers(0),_byteMode(0){
+FrameEntry::FrameEntry()
+: MemoryMappedEntry()
+, _exposure(0.)
+, _lut(0.)
+, _zoom(0.)
+, _treeVers(0)
+, _frameInfo (new ReaderInfo)
+, _byteMode(0)
+, _textureRect() {
     _frameInfo = new ReaderInfo;
 }
 
-FrameEntry::FrameEntry(QString inputFileNames,float zoom,float exp,float lut,U64 treeVers,
-                       float byteMode,const Box2D& bbox,const Format& dispW,
-                       const ChannelSet& channels,const TextureRect& textureRect):MemoryMappedEntry(),
-_exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
-_byteMode(byteMode),_textureRect(textureRect){
-    _frameInfo = new ReaderInfo;
+FrameEntry::FrameEntry(QString inputFileNames, float zoom, float exp, float lut, U64 treeVers,
+                       float byteMode, const Box2D& bbox, const Format& dispW,
+                       const ChannelSet& channels, const TextureRect& textureRect)
+: MemoryMappedEntry()
+, _exposure(exp)
+, _lut(lut)
+, _zoom(zoom)
+, _treeVers(treeVers)
+, _frameInfo (new ReaderInfo)
+, _byteMode(byteMode)
+, _textureRect(textureRect) {
     _frameInfo->set_dataWindow(bbox);
     _frameInfo->set_displayWindow(dispW);
     _frameInfo->set_channels(channels);
@@ -57,19 +74,17 @@ _byteMode(byteMode),_textureRect(textureRect){
     
 }
 
-FrameEntry::FrameEntry(float zoom,float exp,float lut,U64 treeVers,
-                       float byteMode,ReaderInfo* info,const TextureRect& textureRect):MemoryMappedEntry(),
-_exposure(exp),_lut(lut),_zoom(zoom),_treeVers(treeVers),
-_byteMode(byteMode),_textureRect(textureRect)
+FrameEntry::FrameEntry(float zoom, float exp, float lut, U64 treeVers,
+                       float byteMode, ReaderInfo* info, const TextureRect& textureRect)
+: MemoryMappedEntry()
+, _exposure(exp)
+, _lut(lut)
+, _zoom(zoom)
+, _treeVers(treeVers)
+, _frameInfo(info)
+, _byteMode(byteMode)
+, _textureRect(textureRect)
 {
-    _frameInfo = info;
-}
-
-FrameEntry::FrameEntry(const FrameEntry& other):_exposure(other._exposure),_lut(other._lut),_zoom(other._zoom),
-_treeVers(other._treeVers),_byteMode(other._byteMode),_textureRect(other._textureRect)
-{
-    _frameInfo = new ReaderInfo;
-    *_frameInfo = *other._frameInfo;
 }
 
 FrameEntry::~FrameEntry(){

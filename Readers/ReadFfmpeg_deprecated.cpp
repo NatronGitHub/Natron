@@ -14,6 +14,8 @@
  IS STILL PRESENT
  **/
 
+#if 0 // deprecated
+
 #include "ReadFfmpeg_deprecated.h"
 
 #include "Readers/Reader.h"
@@ -969,3 +971,4 @@ void ReadFFMPEG::make_preview(){
     op->setPreview(preview);
 }
 
+#endif // deprecated
