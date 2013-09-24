@@ -271,6 +271,9 @@ void WriteExr::writeAllData(){
         const ChannelSet& channels = op->requestedChannels();
 
         for (int y = _dataW->top()-1; y >= _dataW->bottom(); y--) {
+            if(op->aborted()){
+                break;
+            }
             Imf::FrameBuffer fbuf;
             Imf::Array2D<half>* halfwriterow = 0 ;
             Row* row = _img[y];

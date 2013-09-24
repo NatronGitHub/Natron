@@ -193,6 +193,7 @@ Node::Node(Model* model)
 , _inputs()
 , _knobs()
 , _undoStack(new QUndoStack)
+, _renderAborted(false)
 {
 }
 

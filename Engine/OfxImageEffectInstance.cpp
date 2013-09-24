@@ -438,9 +438,5 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
 
 // override this to make processing abort, return 1 to abort processing
 int OfxImageEffectInstance::abort() {
-    VideoEngine* v = node()->getExecutingEngine();
-    if(v){
-        return (int)v->hasBeenAborted();
-    }
-    return 0;
+    return (bool)node()->aborted();
 }

@@ -112,6 +112,10 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
     _timer->playState=RUNNING;
     
     _aborted = false;
+    for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+        (*it)->setAborted(false);
+    }
+
     
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
@@ -159,6 +163,9 @@ void VideoEngine::stopEngine() {
     // cout << "- STOPPING ENGINE"<<endl;
     _lastRunArgs._frameRequestsCount = 0;
     _aborted = false;
+    for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+        (*it)->setAborted(true);
+    }
     _working = false;
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
@@ -528,7 +535,7 @@ void VideoEngine::run(){
             _workerThreadsWatcher->waitForFinished();
             //_threadPool->waitForDone();
         }
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && !_aborted){
             //copying the frame data stored into the PBO to the viewer cache if it was a normal engine
             //This is done only if we run a sequence (i.e: playback) because the viewer cache isn't meant for
             //panning/zooming.
@@ -562,7 +569,8 @@ void VideoEngine::run(){
         } else if (!_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             /*if the output is a writer we actually start writing on disk now*/
             assert(_dag.outputAsWriter());
-            _dag.outputAsWriter()->startWriting();
+            if(!_aborted)
+                _dag.outputAsWriter()->startWriting();
         }
         emit frameRendered(currentFrame);
         engineLoop();
@@ -600,7 +608,7 @@ void VideoEngine::engineLoop(){
         --_lastRunArgs._frameRequestsCount;
     }
     ++_lastRunArgs._frameRequestIndex;//incrementing the frame counter
-    if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
+    if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && !_aborted){
         QMutexLocker locker(&_openGLMutex);
         emit doUpdateViewer();
         while(_openGLCount <= 0) {
@@ -714,6 +722,10 @@ VideoEngine::~VideoEngine(){
     {
         QMutexLocker locker(&_abortedMutex);
         _aborted = true;
+        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+            (*it)->setAborted(true);
+        }
+
     }
     {
         QMutexLocker locker(&_startMutex);
@@ -734,6 +746,9 @@ void VideoEngine::abort(){
     {
         QMutexLocker locker(&_abortedMutex);
         _aborted = true;
+        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+            (*it)->setAborted(true);
+        }
     }
     if(_dag.outputAsViewer()){
         emit engineStopped();

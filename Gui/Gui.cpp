@@ -1087,7 +1087,6 @@ void Gui::connectInput10(){
 void RenderingProgressDialog::onFrameRendered(int frame){
     //  cout << "Current: " << frame << " (first: " << _firstFrame << " , last: " << _lastFrame << ") " << endl;
     double percent = (double)(frame - _firstFrame+1)/(double)(_lastFrame - _firstFrame+1);
-    cout << percent << endl;
     int progress = floor(percent*100);
     _totalProgress->setValue(progress);
     _perFrameLabel->setText("Frame " + QString::number(frame) + ":");

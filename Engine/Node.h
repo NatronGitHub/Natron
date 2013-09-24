@@ -371,6 +371,12 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*0 if not, 1 if yes and this is a Reader, 2 if yes and this is an OpenFX node*/
     int canMakePreviewImage();
     
+    /*The overloaded node should query this to abort any long process 
+     in the engine function.*/
+    bool aborted() const {return _renderAborted;}
+    
+    void setAborted(bool b){_renderAborted = b;}
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -426,6 +432,8 @@ protected:
     std::vector<Knob*> _knobs;
     
     boost::scoped_ptr<QUndoStack> _undoStack;
+    
+    bool _renderAborted;
 
 private:
     
