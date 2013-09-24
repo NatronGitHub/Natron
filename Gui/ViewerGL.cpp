@@ -41,7 +41,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/InfoViewerWidget.h"
 #include "Engine/Model.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
@@ -167,7 +167,7 @@ static void _glLoadIdentity(M44f& matrix);
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _displayingImage ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f               , (GLfloat)img.height()  , //0
@@ -245,7 +245,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 }
 void ViewerGL::initConstructor(){
     
-    _hasHW=true;
+    _hasHW = true;
     _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->set_channels(Powiter::Mask_RGBA);
     _blankViewerInfos->set_rgbMode(true);
@@ -255,14 +255,14 @@ void ViewerGL::initConstructor(){
     _blankViewerInfos->set_firstFrame(0);
     _blankViewerInfos->set_lastFrame(0);
     blankInfoForViewer(true);
-	_drawing=false;
+	_displayingImage = false;
 	exposure = 1;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
-	shaderLC=NULL;
-	shaderRGB=NULL;
-    shaderBlack=NULL;
-    _overlay=true;
+	shaderLC = NULL;
+	shaderRGB = NULL;
+    shaderBlack = NULL;
+    _overlay = true;
     frameData = NULL;
     _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
     _defaultDisplayTexture = 0;
@@ -279,7 +279,7 @@ ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareW
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 { 
@@ -292,7 +292,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* s
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 {
@@ -305,7 +305,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 {
@@ -381,7 +381,7 @@ void ViewerGL::paintGL()
     
     
     glEnable (GL_TEXTURE_2D);
-    if(_drawing){
+    if(_displayingImage){
         glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
@@ -412,7 +412,7 @@ void ViewerGL::paintGL()
     drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    if(_drawing){
+    if(_displayingImage){
         if(_hasHW && rgbMode() && shaderRGB){
             shaderRGB->release();
         }else if (_hasHW &&  !rgbMode() && shaderLC){
@@ -499,7 +499,7 @@ void ViewerGL::drawOverlay(){
         glPopAttrib();
         checkGLErrors();
     }
-    if(_drawing){
+    if(_displayingImage){
         _viewerTab->getInternalNode()->drawOverlays();
     }
     //reseting color for next pass
@@ -870,20 +870,26 @@ void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     memcpy(dst, src, byteCount);
 }
 
-void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
+void ViewerGL::unMapPBO(){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
         cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
         return;
     }
-    /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine). 
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    _pBOmapped = false;
+
+
+}
+
+void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
+       /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine).
      This buffer (frameData) might be NULL if we were running in cached mode.*/
     // [FD]: where is ViewerNode::cachedEngine ?
     //assert(frameData);
     assert(_pBOmapped);
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    _pBOmapped = false;
+    unMapPBO();
     checkGLErrors();
     if (frameData) {
         frameData = NULL;
@@ -1077,70 +1083,67 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     _zoomCtx._oldClick = event->pos();
-    if(event->button() != Qt::MiddleButton ){
-        if(event->modifiers().testFlag(Qt::AltModifier)){
-            _ms = DRAGGING;
-        }else{
-            _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
-                                                                 toImgCoordinates_fast(event->x(), event->y()));
-        }
+    // TODO: Qt::RightButton should pop up a menu
+    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+        _ms = DRAGGING;
+    } else if (event->button() == Qt::LeftButton) {
+        _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
+                                                             toImgCoordinates_fast(event->x(), event->y()));
     }
     QGLWidget::mousePressEvent(event);
 }
+
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
     _viewerTab->getInternalNode()->notifyOverlaysPenUp(event->posF(),
                                                          toImgCoordinates_fast(event->x(), event->y()));
     QGLWidget::mouseReleaseEvent(event);
 }
-void ViewerGL::mouseMoveEvent(QMouseEvent *event){
+void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
     const Format& dispW = displayWindow();
-    if(pos.x() >= dispW.left() &&
-       pos.x() <= dispW.width() &&
-       pos.y() >= dispW.bottom() &&
-       pos.y() <= dispW.height() &&
-       event->x() >= 0 && event->x() < width() &&
-       event->y() >= 0 && event->y() < height()){
-        if(!_infoViewer->colorAndMouseVisible()){
+    // if the mouse is inside the image, update the color picker
+    if (pos.x() >= dispW.left() &&
+        pos.x() <= dispW.width() &&
+        pos.y() >= dispW.bottom() &&
+        pos.y() <= dispW.height() &&
+        event->x() >= 0 && event->x() < width() &&
+        event->y() >= 0 && event->y() < height()) {
+        if (!_infoViewer->colorAndMouseVisible()) {
             _infoViewer->showColorAndMouseInfo();
         }
         VideoEngine* videoEngine = _viewerTab->getInternalNode()->getVideoEngine();
-        if(videoEngine && !videoEngine->isWorking()){
+        if (videoEngine && !videoEngine->isWorking()) {
             updateColorPicker(event->x(),event->y());
         }
         _infoViewer->setMousePos(QPoint((int)pos.x(),(int)pos.y()));
         emit infoMousePosChanged();
-        
-        
-        
-    }else{
+    } else {
         if(_infoViewer->colorAndMouseVisible()){
             _infoViewer->hideColorAndMouseInfo();
         }
     }
-    if(event->modifiers().testFlag(Qt::AltModifier)){
-        if(_ms == DRAGGING){
-            // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
-            QPoint newClick =  event->pos();
-            QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
-            QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
-            float dy = (oldClick_opengl.y() - newClick_opengl.y());
-            _zoomCtx._bottom += dy;
-            _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
-            _zoomCtx._oldClick = newClick;
-            if(_drawing){
-                _viewerTab->getInternalNode()->updateDAGAndRender();
-            }
-            //    else
+
+
+    if (_ms == DRAGGING) {
+        QPoint newClick =  event->pos();
+        QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
+        QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
+        float dy = (oldClick_opengl.y() - newClick_opengl.y());
+        _zoomCtx._bottom += dy;
+        _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
+        _zoomCtx._oldClick = newClick;
+        if(_displayingImage){
+            _viewerTab->getInternalNode()->updateDAGAndRender();
+        } else {
             updateGL();
-            //  }
-            
         }
-    }else{
+        // no need to update the color picker or mouse posn: they should be unchanged
+    } else {
         _viewerTab->getInternalNode()->notifyOverlaysPenMotion(event->posF(),pos);
     }
 }
+
 void ViewerGL::updateColorPicker(int x,int y){
     QPoint pos;
     bool xInitialized = false;
@@ -1167,17 +1170,17 @@ void ViewerGL::updateColorPicker(int x,int y){
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
     
     double newZoomFactor;
-    if(event->delta() >0) {
-        newZoomFactor =   _zoomCtx._zoomFactor*std::pow(1.01,event->delta());
+    if (event->delta() > 0) {
+        newZoomFactor = _zoomCtx._zoomFactor*std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());
     } else {
-        newZoomFactor = _zoomCtx._zoomFactor/std::pow(1.01,-event->delta());
+        newZoomFactor = _zoomCtx._zoomFactor/std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, -event->delta());
     }
-    if(newZoomFactor <= 0.01) {
+    if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
-    } else if(newZoomFactor > 1024.) {
+    } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());
@@ -1186,12 +1189,13 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
     
     _zoomCtx._zoomFactor = newZoomFactor;
-    if(_drawing){
+    if(_displayingImage){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
         _viewerTab->getInternalNode()->updateDAGAndRender();
+    } else {
+        updateGL();
     }
-    updateGL();
-    
+
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
     int zoomValue = (int)(100*_zoomCtx._zoomFactor);
     if (zoomValue == 0) {
@@ -1200,30 +1204,36 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     assert(zoomValue > 0);
     emit zoomChanged(zoomValue);
 }
-void ViewerGL::setZoomFactor(double f){
-    assert(f>0. && f <= 1024);
-    _zoomCtx.setZoomFactor(f);
-    emit zoomChanged((int)(f*100));
+
+void ViewerGL::zoomSlot(int v) {
+    assert(v > 0);
+    double newZoomFactor = v/100.;
+    if(newZoomFactor < 0.01) {
+        newZoomFactor = 0.01;
+    } else if (newZoomFactor > 1024.) {
+        newZoomFactor = 1024.;
+    }
+    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    double w = (double)width();
+    double h = (double)height();
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
+    double right = left +  w / (double)_zoomCtx._zoomFactor;
+
+    _zoomCtx._left = (right + left)/2. - zoomRatio * (right - left)/2.;
+    _zoomCtx._bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
+
+    _zoomCtx._zoomFactor = newZoomFactor;
+    if(_displayingImage){
+        _viewerTab->getGui()->getApp()->clearPlaybackCache();
+        _viewerTab->getInternalNode()->updateDAGAndRender();
+    } else {
+        updateGL();
+    }
+    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
 }
 
-void ViewerGL::zoomSlot(int v){
-    assert(v > 0);
-    if(!_viewerTab->getInternalNode()->getVideoEngine()->isWorking()){
-        double value = v/100.f;
-        if(value < 0.01) {
-            value = 0.01;
-        } else if (value > 1024.) {
-            value = 1024.;
-        }
-        _zoomCtx._zoomFactor = value;
-        if(_drawing){
-            _viewerTab->getGui()->getApp()->clearPlaybackCache();
-            _viewerTab->getInternalNode()->updateDAGAndRender();
-        }else{
-            updateGL();
-        }
-    }
-}
 void ViewerGL::zoomSlot(QString str){
     str.remove(QChar('%'));
     int v = str.toInt();
@@ -1292,7 +1302,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    setZoomFactor(zoomFactor);
+    _zoomCtx.setZoomFactor(zoomFactor);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
@@ -1358,7 +1368,7 @@ void ViewerGL::updateColorSpace(QString str){
         }
         _lut = 2;
     }
-    if (!_drawing) {
+    if (!_displayingImage) {
         return;
     }
     
@@ -1370,8 +1380,9 @@ void ViewerGL::updateColorSpace(QString str){
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    if((byteMode()==1 || !_hasHW) && _drawing)
-        _viewerTab->getInternalNode()->updateDAGAndRender();
+
+    if((byteMode()==1 || !_hasHW) && _displayingImage)
+         _viewerTab->getInternalNode()->updateDAGAndRender();
     else
         updateGL();
     
@@ -1734,7 +1745,7 @@ const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->displayW
 
 /*display black in the viewer*/
 void ViewerGL::clearViewer(){
-    drawing(false);
+    setDisplayingImage(false);
     updateGL();
 }
 

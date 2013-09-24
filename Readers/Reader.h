@@ -13,14 +13,14 @@
 #define POWITER_READERS_READER_H_
 #include <QString>
 #include <QStringList>
+#include <QtCore/QMutex>
+#include <QtGui/QImage> // FIXME: should be pimpled
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
 
-class QImage;
 class FrameEntry;
 class File_Knob;
-class QMutex;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
@@ -404,25 +404,19 @@ public:
      * @brief hasPreview
      * @return True if the preview image is valid.
      */
-	bool hasPreview(){return has_preview;}
-
-    /**
-     * @brief hasPreview
-     * @param b Set the has_preview flag to b.
-     */
-	void hasPreview(bool b){has_preview=b;}
+	bool hasPreview() { return _has_preview; }
 
     /**
      * @brief setPreview will set the preview image for this Reader.
      * @param img The preview image
      */
-	void setPreview(QImage* img);
+	void setPreview(const QImage& img);
 
     /**
      * @brief getPreview
      * @return A pointer to the preview image.
      */
-	QImage* getPreview(){return preview;}
+	const QImage& getPreview() { return _preview; }
 
 
     /**
@@ -495,15 +489,15 @@ protected:
     
     virtual ChannelSet supportedComponents() OVERRIDE { return ChannelSet(Powiter::Mask_All); }
 private:
-	QImage *preview;
-	bool has_preview;
+	QImage _preview;
+	bool _has_preview;
     /*useful when using readScanLine in the open(..) function, it determines
      how many scanlines we'd need*/
     bool _fitFrameToViewer;
-	Read* readHandle;
+	Read* _readHandle;
     Buffer _buffer;
     File_Knob* _fileKnob;
-    QMutex* _readMutex;
+    QMutex _readMutex;
 };
 
 

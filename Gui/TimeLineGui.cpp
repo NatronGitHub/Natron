@@ -8,7 +8,7 @@
 *
 */
 
-#include "Timeline.h"
+#include "TimeLineGui.h"
 
 #include <QtGui/QPainter>
 #if QT_VERSION < 0x050000
@@ -22,6 +22,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Node.h"
+#include "Engine/TimeLine.h"
 
 #include "Gui/ViewerTab.h"
 
@@ -31,13 +32,13 @@ using namespace std;
 using namespace Powiter;
 
 
-TimeLineGui::TimeLineGui(TimeLine& timeline,ViewerTab* parentTab):
+TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,ViewerTab* parentTab):
 QWidget(parentTab),
 _first(0),
 _last(100),
 _alphaCursor(false),
 _state(IDLE),
-_timeLine(timeline),
+_timeline(timeline),
 _viewerTab(parentTab),
 _cursorColor(243,149,0),
 _boundsColor(207,69,6),
@@ -47,7 +48,7 @@ _ticksColor(200,200,200),
 _scaleColor(100,100,100)
 {
     
-    QObject::connect(&timeline, SIGNAL(frameChanged(int)), this, SLOT(seek(int)));
+    QObject::connect(_timeline.get(), SIGNAL(frameChanged(int)), this, SLOT(seekFrame(int)));
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     setMouseTracking(true);
         
@@ -63,12 +64,12 @@ QSize TimeLineGui::sizeHint() const{
 void TimeLineGui::updateScale(){
     _values.clear();
     _displayedValues.clear();
-    for (int i = _timeLine.firstFrame(); i <= _timeLine.lastFrame(); ++i) {
+    for (int i = _timeline->firstFrame(); i <= _timeline->lastFrame(); ++i) {
         _values.push_back(i);
     }
     
-    int averageUnitTextWidth = (fontMetrics().width(QString::number(_timeLine.firstFrame())) +
-                            fontMetrics().width(QString::number(_timeLine.lastFrame())))/2;
+    int averageUnitTextWidth = (fontMetrics().width(QString::number(_timeline->firstFrame())) +
+                            fontMetrics().width(QString::number(_timeline->lastFrame())))/2;
     
     /*The maximum number of diplayed units is the width of the widget minus 2 (because
      we always display the first and last units) divided by the average unit text width.
@@ -76,20 +77,20 @@ void TimeLineGui::updateScale(){
      apart from 0 and 120.*/
     int maximumDisplayedUnits = (sizeHint().width()- 2*averageUnitTextWidth - 2*BORDER_OFFSET_)/ averageUnitTextWidth;
     
-    _displayedValues << _timeLine.firstFrame();
-    _increment = (_timeLine.lastFrame() - _timeLine.firstFrame() +1)/(maximumDisplayedUnits + 1);
+    _displayedValues << _timeline->firstFrame();
+    _increment = (_timeline->lastFrame() - _timeline->firstFrame() +1)/(maximumDisplayedUnits + 1);
     if(_increment == 0){
         _increment = 1;
     }else{
-        while((_timeLine.firstFrame()+_increment)%5!=0) ++_increment;
+        while((_timeline->firstFrame()+_increment)%5!=0) ++_increment;
     }
     
-    int c = _timeLine.firstFrame() + _increment;
-    while (c < _timeLine.lastFrame()) {
+    int c = _timeline->firstFrame() + _increment;
+    while (c < _timeline->lastFrame()) {
         _displayedValues << c;
         c+=_increment;
     }
-    _displayedValues << _timeLine.lastFrame();
+    _displayedValues << _timeline->lastFrame();
     
     _XValues.clear();
     double _Xincrement = ((size().width()-BORDER_OFFSET_) - BORDER_OFFSET_ )/(double)(_values.size()-1);
@@ -118,7 +119,7 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     drawTicks(&p,_scaleColor);
     QPolygonF cursorPoly;
     p.setPen(_cursorColor);
-    double cursorX = getCoordPosition(_timeLine.currentFrame());
+    double cursorX = getCoordPosition(_timeline->currentFrame());
     double lastX = getCoordPosition(_last);
     double firstX = getCoordPosition(_first);
     
@@ -150,7 +151,7 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     cursorPoly.push_back(QPointF(cursorX ,BORDER_HEIGHT_+LINE_START - 2));
     cursorPoly.push_back(QPointF(cursorX - CURSOR_WIDTH/2 ,BORDER_HEIGHT_+LINE_START - 2 - CURSOR_HEIGHT));
     cursorPoly.push_back(QPointF(cursorX + CURSOR_WIDTH/2,BORDER_HEIGHT_+LINE_START -2 -CURSOR_HEIGHT));
-    QString curNumber(QString::number(_timeLine.currentFrame()));
+    QString curNumber(QString::number(_timeline->currentFrame()));
     QPointF textPos(cursorX,BORDER_HEIGHT_+LINE_START-CURSOR_HEIGHT-5);
     int textOffset = (int)(curNumber.size()*2.5);
     p.drawText(QPointF(textPos.x()-textOffset,textPos.y()), curNumber,'g',3);
@@ -196,7 +197,7 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     for(U32 i =0 ; i < _cached.size() ; ++i) {
         double pos = getCoordPosition(_cached[i]);
         double previousOrNext;
-        if (_cached[i] == _timeLine.firstFrame()) {
+        if (_cached[i] == _timeline->firstFrame()) {
             previousOrNext = getCoordPosition(_cached[i]+1);
         }else{
             previousOrNext = getCoordPosition(_cached[i]-1);
@@ -222,7 +223,7 @@ void TimeLineGui::drawTicks(QPainter *p,QColor& scaleColor){
         int offset = nbStr.size()*2;
         if(_displayedValues[i] != _first
            && _displayedValues[i] != _last
-           && _timeLine.currentFrame() != _displayedValues[i])
+           && _timeline->currentFrame() != _displayedValues[i])
             p->drawText(QPointF(x-offset,y), nbStr,'g',3);
         p->setPen(scaleColor);
         if(i != _displayedValues.size()-1){
@@ -284,16 +285,17 @@ void TimeLineGui::changeLast(int v){
 }
 
 
-void TimeLineGui::seek(int v){
+void TimeLineGui::seekFrame(int v){
     if(v >=_first && v<=_last)
-        _timeLine.seek_noEmit(v);
+        _timeline->seekFrame_noEmit(v);
     emit currentFrameChanged(v);
     repaint();
 }
 
 void TimeLineGui::seek_notSlot(int v){
-    if(v >=_first && v<=_last)
-        _timeLine.seek_noEmit(v);
+    if(v >=_first && v<=_last) {
+        _timeline->seekFrame_noEmit(v);
+    }
     emit currentFrameChanged(v);
     QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
@@ -310,11 +312,11 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
         int firstPos = (int)getCoordPosition(_first);
         int lastPos = (int)getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
-            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame()){
+            if( c >= _timeline->firstFrame() && c<= _timeline->lastFrame()){
                 _last = c;
             }
         }else{ // moving first frame anchor
-            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame()){
+            if( c >= _timeline->firstFrame() && c<= _timeline->lastFrame()){
                 _first = c;
             }
         }
@@ -322,8 +324,8 @@ void TimeLineGui::mousePressEvent(QMouseEvent* e){
     }else{
         _state = DRAGGING_CURSOR;
         if(c >= _first && c <=_last){
-            _timeLine.seek_noEmit(c);
-            emit positionChanged(_timeLine.currentFrame());
+            _timeline->seekFrame_noEmit(c);
+            emit positionChanged(_timeline->currentFrame());
         }
     }
     
@@ -337,19 +339,19 @@ void TimeLineGui::mouseMoveEvent(QMouseEvent* e){
     if(_state==DRAGGING_CURSOR){
         int c = (int)getScalePosition(e->x());
         if(c >= _first && c <=_last){
-            _timeLine.seek_noEmit(c);
-            emit positionChanged(_timeLine.currentFrame());
+            _timeline->seekFrame_noEmit(c);
+            emit positionChanged(_timeline->currentFrame());
         }
     }else if(_state == DRAGGING_BOUNDARY){
         int c = (int)getScalePosition(e->x());
         int firstPos = (int)getCoordPosition(_first);
         int lastPos = (int)getCoordPosition(_last);
         if(abs( e->x()-firstPos ) > abs(e->x() - lastPos) ){ // moving last frame anchor
-            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame() && c >= _first){
+            if( c >= _timeline->firstFrame() && c<= _timeline->lastFrame() && c >= _first){
                 _last = c;
             }
         }else{ // moving first frame anchor
-            if( c >= _timeLine.firstFrame() && c<= _timeLine.lastFrame() && c<=_last){
+            if( c >= _timeline->firstFrame() && c<= _timeline->lastFrame() && c<=_last){
                 _first = c;
             }
         }
@@ -390,8 +392,8 @@ void TimeLineGui::removeCachedFrame(){
 }
 
 void TimeLineGui::setFrameRange(int min,int max){
-    _timeLine.setFirstFrame(min);
-    _timeLine.setLastFrame(max);
+    _timeline->setFirstFrame(min);
+    _timeline->setLastFrame(max);
 }
 /*initialises the boundaries on the timeline*/
 void TimeLineGui::setBoundaries(int first,int last){
@@ -399,4 +401,4 @@ void TimeLineGui::setBoundaries(int first,int last){
     _last = last;
     // repaint();
 }
-int TimeLineGui::currentFrame() const{return _timeLine.currentFrame();}
+int TimeLineGui::currentFrame() const{return _timeline->currentFrame();}

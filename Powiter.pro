@@ -73,6 +73,7 @@ SOURCES += \
     Engine/Format.cpp \
     Engine/Hash64.cpp \
     Engine/ImageFetcher.cpp \
+    Engine/Knob.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
     Engine/Model.cpp \
@@ -86,17 +87,16 @@ SOURCES += \
     Engine/OfxParamInstance.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
+    Engine/TimeLine.cpp \
     Engine/Timer.cpp \
     Engine/VideoEngine.cpp \
     Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
-    Engine/Knob.cpp \
     Global/AppManager.cpp \
-    Global/main.cpp \
     Global/LibraryBinary.cpp \
+    Global/main.cpp \
     Gui/ComboBox.cpp \
     Gui/Edge.cpp \
-    Gui/SpinBox.cpp \
     Gui/Gui.cpp \
     Gui/InfoViewerWidget.cpp \
     Gui/KnobGui.cpp \
@@ -105,10 +105,11 @@ SOURCES += \
     Gui/ScaleSlider.cpp \
     Gui/SequenceFileDialog.cpp \
     Gui/SettingsPanel.cpp \
+    Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
     Gui/TextRenderer.cpp \
     Gui/Texture.cpp \
-    Gui/Timeline.cpp \
+    Gui/TimeLineGui.cpp \
     Gui/ViewerGL.cpp \
     Gui/ViewerTab.cpp \
     Readers/Read.cpp \
@@ -143,6 +144,7 @@ HEADERS += \
     Engine/Format.h \
     Engine/Hash64.h \
     Engine/ImageFetcher.h \
+    Engine/Knob.h \
     Engine/LRUcache.h \
     Engine/Lut.h \
     Engine/MemoryFile.h \
@@ -151,16 +153,16 @@ HEADERS += \
     Engine/NodeCache.h \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
+    Engine/OfxImageEffectInstance.h \
     Engine/OfxNode.h \
     Engine/OfxOverlayInteract.h \
-    Engine/OfxImageEffectInstance.h \
     Engine/OfxParamInstance.h \
-    Engine/Knob.h \
     Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
     Engine/Sleeper.h \
+    Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/VideoEngine.h \
     Engine/ViewerCache.h \
@@ -175,7 +177,6 @@ HEADERS += \
     Gui/Button.h \
     Gui/ComboBox.h \
     Gui/Edge.h \
-    Gui/SpinBox.h \
     Gui/Gui.h \
     Gui/InfoViewerWidget.h \
     Gui/KnobGui.h \
@@ -186,10 +187,11 @@ HEADERS += \
     Gui/SequenceFileDialog.h \
     Gui/SettingsPanel.h \
     Gui/Shaders.h \
+    Gui/SpinBox.h \
     Gui/TabWidget.h \
     Gui/TextRenderer.h \
     Gui/Texture.h \
-    Gui/Timeline.h \
+    Gui/TimeLineGui.h \
     Gui/ViewerGL.h \
     Gui/ViewerTab.h \
     Readers/Read.h \

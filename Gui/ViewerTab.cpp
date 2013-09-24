@@ -37,7 +37,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/ComboBox.h"
 #include "Gui/Button.h"
@@ -427,13 +427,13 @@ _maximized(false)
     QObject::connect(_zoomCombobox, SIGNAL(currentIndexChanged(QString)),viewer, SLOT(zoomSlot(QString)));
     QObject::connect(viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
     QObject::connect(viewer,SIGNAL(frameChanged(int)),_currentFrameBox,SLOT(setValue(int)));
-    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seek(int)));
+    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seekFrame(int)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), viewer,SLOT(updateExposure(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _gainBox, SLOT(setValue(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(frameSeeker,SIGNAL(currentFrameChanged(int)), _currentFrameBox, SLOT(setValue(int)));
-    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
+    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seekFrame(double)));
     
     VideoEngine* vengine = _viewerNode->getVideoEngine();
     
@@ -500,7 +500,7 @@ void ViewerTab::startPause(bool b){
     abort();
     if(b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
-                                              _viewerNode->getTimeLine().currentFrame(),/*starting frame*/
+                                              _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
@@ -514,7 +514,7 @@ void ViewerTab::startBackward(bool b){
     abort();
     if(b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
-                                              _viewerNode->getTimeLine().currentFrame(),/*starting frame*/
+                                              _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
@@ -522,30 +522,31 @@ void ViewerTab::startBackward(bool b){
     }
 }
 void ViewerTab::previousFrame(){
-    seek(_viewerNode->getTimeLine().currentFrame()-1);
+    seek(_viewerNode->currentFrame()-1);
 }
 void ViewerTab::nextFrame(){
-    seek(_viewerNode->getTimeLine().currentFrame()+1);
+    seek(_viewerNode->currentFrame()+1);
 }
 void ViewerTab::previousIncrement(){
-    seek(_viewerNode->getTimeLine().currentFrame()-incrementSpinBox->value());
+    seek(_viewerNode->currentFrame()-incrementSpinBox->value());
 }
 void ViewerTab::nextIncrement(){
-    seek(_viewerNode->getTimeLine().currentFrame()+incrementSpinBox->value());
+    seek(_viewerNode->currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
-    seek(_viewerNode->getTimeLine().firstFrame());
+    seek(_viewerNode->firstFrame());
 }
 void ViewerTab::lastFrame(){
-    seek(_viewerNode->getTimeLine().lastFrame());
+    seek(_viewerNode->lastFrame());
 }
 void ViewerTab::seek(int f){
     _viewerNode->getVideoEngine()->seek(f);
 }
 
 void ViewerTab::centerViewer(){
-    if(viewer->drawing()){
+    if(viewer->displayingImage()){
         _viewerNode->updateDAGAndRender(true);
+
     }else{
         viewer->fitToFormat(viewer->displayWindow());
         viewer->updateGL();

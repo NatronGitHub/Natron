@@ -256,7 +256,7 @@ class ViewerTab;
             
             ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
-            bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
+            bool _displayingImage;/*!< True if the viewer is connected and not displaying black.*/
             bool _must_initBlackTex;
 
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
@@ -324,13 +324,18 @@ class ViewerTab;
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void drawing(bool d){_drawing=d;if(!_drawing) { _must_initBlackTex = true; };}
+            void setDisplayingImage(bool d) {
+                _displayingImage = d;
+                if (!_displayingImage) {
+                    _must_initBlackTex = true;
+                };
+            }
             
             /**
              *@returns Returns true if the viewer is displaying something.
              **/
-            bool drawing()const{return _drawing;}
-            
+            bool displayingImage() const { return _displayingImage; }
+
             /**
              *@brief Convenience function.
              *Ydirection is the order of fill of the display texture:
@@ -408,11 +413,6 @@ class ViewerTab;
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
             double zoomedWidth(){return std::floor(displayWindow().width()*_zoomCtx._zoomFactor);}
-            
-            /**
-             *@brief Set the zoom factor used to render.
-             **/
-            void setZoomFactor(double f);
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
@@ -547,6 +547,8 @@ class ViewerTab;
              *@brief Fill the buffer dst with byteCount bytes of src (simple call to memcpy)
              **/
             void fillPBO(const char* src,void* dst,size_t byteCount);
+            
+            void unMapPBO();
             
             /**
              *@brief Copies the data stored in the currently mapped pbo into the currently

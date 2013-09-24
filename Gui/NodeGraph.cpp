@@ -35,7 +35,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxNode.h"
@@ -136,7 +136,13 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     return node_ui;
     
 }
-void NodeGraph::mousePressEvent(QMouseEvent *event){
+void NodeGraph::mousePressEvent(QMouseEvent *event) {
+    assert(event);
+    if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
+        _evtState = MOVING_AREA;
+        return;
+    }
+
     old_pos=mapToScene(event->pos());
     oldp=event->pos();
     for(U32 i = 0;i<_nodes.size();++i){
@@ -163,12 +169,8 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             
         }
     }
-    if(_evtState == MOVING_AREA){
-        if(!event->modifiers().testFlag(Qt::AltModifier)){
-            _evtState = DEFAULT;
-        }
-    }
 }
+
 void NodeGraph::deselect(){
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
         NodeGui* n = _nodes[i];
@@ -364,7 +366,7 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
-    scaleView(pow((double)2, event->delta() / 240.0), mapToScene(event->pos()));
+    scaleView(pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta()), mapToScene(event->pos()));
     //   updateNavigator();
 }
 
@@ -373,7 +375,7 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 void NodeGraph::scaleView(qreal scaleFactor,QPointF){
     
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-    if (factor < 0.07 || factor > 100)
+    if (factor < 0.07 || factor > 10)
         return;
     
     scale(scaleFactor,scaleFactor);

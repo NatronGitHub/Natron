@@ -46,7 +46,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/Button.h"
 #include "Gui/SettingsPanel.h"
 #include "Gui/ViewerTab.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/Gui.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/TabWidget.h"

@@ -111,40 +111,38 @@ NodeGui::NodeGui(NodeGraph* dag,
         if(ret == 1){
             Reader* n = dynamic_cast<Reader*>(node);
             if(n->hasPreview()){
-                QImage *prev=n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
-                prev_pixmap=prev_pixmap.scaled(60,40);
+                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
+                prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
                 prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x()+30);
-                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
                 prev_pix->setParentItem(this);
             }else{
-                QImage prev(60,40,QImage::Format_ARGB32);
+                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
                 prev.fill(Qt::black);
                 QPixmap prev_pixmap=QPixmap::fromImage(prev);
                 prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x()+30);
-                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
                 prev_pix->setParentItem(this);
             }
             
         }else if(ret == 2){
             OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
-                QImage *prev=n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
-                prev_pixmap=prev_pixmap.scaled(60,40);
+                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
+                prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
                 prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x()+30);
-                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
                 prev_pix->setParentItem(this);
             }else{
-                QImage prev(60,40,QImage::Format_ARGB32);
+                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
                 prev.fill(Qt::black);
                 QPixmap prev_pixmap=QPixmap::fromImage(prev);
                 prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x()+30);
-                prev_pix->setY(itemPos.y()+20);
+                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
                 prev_pix->setParentItem(this);
             }
 
@@ -255,15 +253,13 @@ void NodeGui::updatePreviewImage(){
     if(int ret = node->canMakePreviewImage()){
         if(ret == 1){
             Reader* reader = dynamic_cast<Reader*>(node);
-            QImage *prev = reader->getPreview();
-            QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+            QPixmap prev_pixmap=QPixmap::fromImage(reader->getPreview());
             prev_pixmap=prev_pixmap.scaled(60,40);
             prev_pix->setPixmap(prev_pixmap);
         }else if(ret == 2){
             OfxNode* n = dynamic_cast<OfxNode*>(node);
             if(n->hasPreviewImage()){
-                QImage *prev = n->getPreview();
-                QPixmap prev_pixmap=QPixmap::fromImage(*prev);
+                QPixmap prev_pixmap = QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(60,40);
                 prev_pix->setPixmap(prev_pixmap);
             }

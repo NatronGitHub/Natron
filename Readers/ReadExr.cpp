@@ -492,14 +492,14 @@ void ReadExr::make_preview(){
         int nearestY = (int)(y+0.5);
         readScanLine(nearestY);
     }
-    QImage* img=new QImage(w,h,QImage::Format_ARGB32);
+    QImage img(w,h,QImage::Format_ARGB32);
     for (int i=0; i< h; ++i) {
         double y = i*1.f/zoomFactor;
         int nearestY = (int)(y+0.5);
         int exrY = dispWindow.max.y+1 - nearestY;
         if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
         Row* from = _img[exrY];
-        QRgb *dst_pixels = (QRgb *) img->scanLine(h-1-i);
+        QRgb *dst_pixels = (QRgb *) img.scanLine(h-1-i);
         const float* red = (*from)[Channel_red];
         const float* green = (*from)[Channel_green];
         const float* blue = (*from)[Channel_blue] ;

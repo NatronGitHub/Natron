@@ -25,6 +25,7 @@
 #include "Engine/Row.h"
 #include "Engine/Knob.h"
 #include "Engine/OfxNode.h"
+#include "Engine/TimeLine.h"
 
 
 #include "Readers/Reader.h"
@@ -128,8 +129,8 @@ void Node::merge_info(bool doFullWork){
     }
     if(isOutputNode()){
         OutputNode* node =  dynamic_cast<OutputNode*>(this);
-        node->getTimeLine().setFirstFrame(_info.firstFrame());
-        node->getTimeLine().setLastFrame(_info.lastFrame());
+        assert(node);
+        node->setFrameRange(_info.firstFrame(), _info.lastFrame());
     }
     U32 size = getInputs().size();
     if(size > 0)
@@ -434,7 +435,10 @@ Row* Node::get(int y,int x,int r){
     NodeCache* cache = appPTR->getNodeCache();
     int current_frame;
     const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
-    current_frame = dag.getOutput()->getTimeLine().currentFrame();
+
+    OutputNode* outputNode = dag.getOutput();
+    assert(outputNode);
+    current_frame = outputNode->currentFrame();
     std::string filename =  getRandomFrameName(current_frame).toStdString();
     Row* out = 0;
     U64 key = _hashValue.value();
@@ -553,6 +557,7 @@ void Node::onFrameRangeChanged(int first,int last){
 
 OutputNode::OutputNode(Model* model)
 : Node(model)
+, _timeline(new TimeLine)
 , _videoEngine(new VideoEngine(_model))
 {
 }
@@ -562,16 +567,30 @@ OutputNode::~OutputNode(){
     delete _videoEngine;
 }
 
-void TimeLine::seek(int frame){
-    assert(frame <= _lastFrame && frame >= _firstFrame);
-    _currentFrame = frame;
-    emit frameChanged(_currentFrame);
+void OutputNode::setFrameRange(int first, int last) {
+    _timeline->setFirstFrame(first);
+    _timeline->setLastFrame(last);
 }
 
-void TimeLine::seek_noEmit(int frame){
-    assert(frame <= _lastFrame && frame >= _firstFrame);
-    _currentFrame = frame;
+void OutputNode::seekFrame(int frame) {
+    return _timeline->seekFrame(frame);
+}
+
+void OutputNode::incrementCurrentFrame() {
+    return _timeline->incrementCurrentFrame();
+}
+
+int OutputNode::currentFrame() const {
+    return _timeline->currentFrame();
+}
+
+int OutputNode::firstFrame() const {
+    return _timeline->firstFrame();
+}
+
+int OutputNode::lastFrame() const {
+    return _timeline->lastFrame();
 }
 void OutputNode::updateDAGAndRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer, this,_timeline.currentFrame());
+    _videoEngine->refreshAndContinueRender(initViewer, this,currentFrame());
 }
