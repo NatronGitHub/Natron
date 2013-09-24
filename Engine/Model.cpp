@@ -422,7 +422,7 @@ void Model::loadProject(const QString& filename,bool autoSave){
 }
 void Model::saveProject(const QString& path,const QString& filename,bool autoSave){
     if(autoSave){
-        QFile file(AppInstance::autoSavesDir()+filename);
+        QFile file(AppInstance::autoSavesDir()+QDir::separator()+filename);
         if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
             cout <<  file.errorString().toStdString() << endl;
             return;
