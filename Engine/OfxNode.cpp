@@ -247,29 +247,27 @@ bool OfxNode::_validate(bool doFullWork){
             OfxRectD rod;
             //This function calculates the merge of the inputs RoD.
             OfxStatus stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
-            assert(stat == kOfxStatOK);
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             const Format& format = getModel()->getApp()->getProjectFormat();
-            if(rod.x1 ==  0.
-               && rod.x2 == 0.
-               && rod.y1 == 0.
-               && rod.y2 == 0.){
+            if (stat == kOfxStatReplyDefault) {
                 rod.x1 = format.left();
                 rod.x2 = format.right();
                 rod.y1 = format.bottom();
                 rod.y2 = format.top();
             }
-            if(rod.x1 == kOfxFlagInfiniteMin){
+            if (rod.x1 == kOfxFlagInfiniteMin) {
                 rod.x1 = format.left();
             }
-            if(rod.x2 == kOfxFlagInfiniteMax){
+            if (rod.x2 == kOfxFlagInfiniteMax) {
                 rod.x2 = format.right();
             }
-            if(rod.y1 == kOfxFlagInfiniteMin){
+            if (rod.y1 == kOfxFlagInfiniteMin) {
                 rod.y1 = format.bottom();
             }
-            if(rod.y2 == kOfxFlagInfiniteMax){
+            if (rod.y2 == kOfxFlagInfiniteMax) {
                 rod.y2 = format.top();
             }
+            assert(!(rod.x1 ==  0. && rod.x2 == 0. && rod.y1 == 0. && rod.y2 == 0.));
             int xmin = (int)std::floor(rod.x1);
             int ymin = (int)std::floor(rod.y1);
             int xmax = (int)std::ceil(rod.x2);
@@ -381,14 +379,13 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
     realParamName[0] = std::tolower(paramName.at(0),loc);
     OfxStatus stat;
     stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    //  if(stat == kOfxStatOK){
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     stat = effectInstance()->paramInstanceChangedAction(realParamName, kOfxChangeUserEdited, 1.0,renderScale);
-    //     assert(stat == kOfxStatOK);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    //   assert(stat == kOfxStatOK);
-    // }
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
 
 
@@ -418,29 +415,27 @@ void OfxNode::computePreviewImage(){
     OfxStatus stat = effectInstance()->beginRenderAction(0, 25, 1, true, rS);
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
-    assert(stat == kOfxStatOK);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     const Format& format = getModel()->getApp()->getProjectFormat();
-    if(rod.x1 ==  0.
-       && rod.x2 == 0.
-       && rod.y1 == 0.
-       && rod.y2 == 0.){
+    if (stat == kOfxStatReplyDefault) {
         rod.x1 = format.left();
         rod.x2 = format.right();
         rod.y1 = format.bottom();
         rod.y2 = format.top();
     }
-    if(rod.x1 == kOfxFlagInfiniteMin){
+    if (rod.x1 == kOfxFlagInfiniteMin) {
         rod.x1 = format.left();
     }
-    if(rod.x2 == kOfxFlagInfiniteMax){
+    if (rod.x2 == kOfxFlagInfiniteMax) {
         rod.x2 = format.right();
     }
-    if(rod.y1 == kOfxFlagInfiniteMin){
+    if (rod.y1 == kOfxFlagInfiniteMin) {
         rod.y1 = format.bottom();
     }
-    if(rod.y2 == kOfxFlagInfiniteMax){
+    if (rod.y2 == kOfxFlagInfiniteMax) {
         rod.y2 = format.top();
     }
+    assert(!(rod.x1 ==  0. && rod.x2 == 0. && rod.y1 == 0. && rod.y2 == 0.));
     OfxRectI renderW;
     renderW.x1 = (int)std::floor(rod.x1);
     renderW.y1 = (int)std::floor(rod.y1);
@@ -584,8 +579,9 @@ bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         
-        OfxStatus st = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
-        if(st == kOfxStatOK){
+        OfxStatus stat = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
             _penDown = true;
             return true;
         }
@@ -604,8 +600,9 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         
-        OfxStatus st = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
-        if(st == kOfxStatOK){
+        OfxStatus stat = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
             if(_penDown){
                 ViewerNode* v = Node::hasViewerConnected(this);
                 if(v){
@@ -630,8 +627,9 @@ bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
         
-        OfxStatus st= _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
-        if(st == kOfxStatOK){
+        OfxStatus stat = _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
         }
@@ -643,10 +641,13 @@ void OfxNode::onOverlayKeyDown(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
-        ViewerNode* v = Node::hasViewerConnected(this);
-        if(v){
-            v->updateDAG(false);
+        OfxStatus stat = _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
+            ViewerNode* v = Node::hasViewerConnected(this);
+            if (v) {
+                v->updateDAG(false);
+            }
         }
     }
     
@@ -656,7 +657,14 @@ void OfxNode::onOverlayKeyUp(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->keyUpAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        OfxStatus stat = _overlayInteract->keyUpAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
+            ViewerNode* v = Node::hasViewerConnected(this);
+            if (v) {
+                v->updateDAG(false);
+            }
+        }
     }
 }
 
@@ -664,10 +672,13 @@ void OfxNode::onOverlayKeyRepeat(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
-        ViewerNode* v = Node::hasViewerConnected(this);
-        if(v){
-            v->updateDAG(false);
+        OfxStatus stat = _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
+            ViewerNode* v = Node::hasViewerConnected(this);
+            if (v) {
+                v->updateDAG(false);
+            }
         }
     }
 }
@@ -676,7 +687,14 @@ void OfxNode::onOverlayFocusGained(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->gainFocusAction(1., rs);
+        OfxStatus stat = _overlayInteract->gainFocusAction(1., rs);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
+            ViewerNode* v = Node::hasViewerConnected(this);
+            if (v) {
+                v->updateDAG(false);
+            }
+        }
     }
 }
 
@@ -684,7 +702,14 @@ void OfxNode::onOverlayFocusLost(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->loseFocusAction(1., rs);
+        OfxStatus stat = _overlayInteract->loseFocusAction(1., rs);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if (stat == kOfxStatOK) {
+            ViewerNode* v = Node::hasViewerConnected(this);
+            if (v) {
+                v->updateDAG(false);
+            }
+        }
     }
 }
 
