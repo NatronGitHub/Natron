@@ -1077,16 +1077,15 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     _zoomCtx._oldClick = event->pos();
-    if(event->button() != Qt::MiddleButton ){
-        if(event->modifiers().testFlag(Qt::AltModifier)){
-            _ms = DRAGGING;
-        }else{
-            _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
-                                                                 toImgCoordinates_fast(event->x(), event->y()));
-        }
+    if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
+        _ms = DRAGGING;
+    } else {
+        _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
+                                                             toImgCoordinates_fast(event->x(), event->y()));
     }
     QGLWidget::mousePressEvent(event);
 }
+
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
     _viewerTab->getInternalNode()->notifyOverlaysPenUp(event->posF(),

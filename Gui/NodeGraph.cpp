@@ -136,7 +136,13 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     return node_ui;
     
 }
-void NodeGraph::mousePressEvent(QMouseEvent *event){
+void NodeGraph::mousePressEvent(QMouseEvent *event) {
+    assert(event);
+    if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
+        _evtState = MOVING_AREA;
+        return;
+    }
+
     old_pos=mapToScene(event->pos());
     oldp=event->pos();
     for(U32 i = 0;i<_nodes.size();++i){
@@ -163,12 +169,8 @@ void NodeGraph::mousePressEvent(QMouseEvent *event){
             
         }
     }
-    if(_evtState == MOVING_AREA){
-        if(!event->modifiers().testFlag(Qt::AltModifier)){
-            _evtState = DEFAULT;
-        }
-    }
 }
+
 void NodeGraph::deselect(){
     for(U32 i = 0 ; i < _nodes.size() ;++i) {
         NodeGui* n = _nodes[i];
