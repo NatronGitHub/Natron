@@ -245,7 +245,7 @@ void ViewerGL::blankInfoForViewer(bool onInit){
 }
 void ViewerGL::initConstructor(){
     
-    _hasHW=true;
+    _hasHW = true;
     _blankViewerInfos = new ViewerInfos;
     _blankViewerInfos->set_channels(Powiter::Mask_RGBA);
     _blankViewerInfos->set_rgbMode(true);
@@ -255,14 +255,14 @@ void ViewerGL::initConstructor(){
     _blankViewerInfos->set_firstFrame(0);
     _blankViewerInfos->set_lastFrame(0);
     blankInfoForViewer(true);
-	_drawing=false;
+	_drawing = false;
 	exposure = 1;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
-	shaderLC=NULL;
-	shaderRGB=NULL;
-    shaderBlack=NULL;
-    _overlay=true;
+	shaderLC = NULL;
+	shaderRGB = NULL;
+    shaderBlack = NULL;
+    _overlay = true;
     frameData = NULL;
     _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
     _defaultDisplayTexture = 0;
@@ -1189,9 +1189,10 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     if(_drawing){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
         emit engineNeeded();
+    } else {
+        updateGL();
     }
-    updateGL();
-    
+
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
     int zoomValue = (int)(100*_zoomCtx._zoomFactor);
     if (zoomValue == 0) {
@@ -1200,30 +1201,37 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     assert(zoomValue > 0);
     emit zoomChanged(zoomValue);
 }
-void ViewerGL::setZoomFactor(double f){
-    assert(f>0. && f <= 1024);
-    _zoomCtx.setZoomFactor(f);
-    emit zoomChanged((int)(f*100));
+
+void ViewerGL::zoomSlot(int v) {
+    assert(v > 0);
+
+    double newZoomFactor = v/100.;
+    if(newZoomFactor < 0.01) {
+        newZoomFactor = 0.01;
+    } else if (newZoomFactor > 1024.) {
+        newZoomFactor = 1024.;
+    }
+    double zoomRatio =   _zoomCtx._zoomFactor / newZoomFactor;
+    double w = (double)width();
+    double h = (double)height();
+    double bottom = _zoomCtx._bottom;
+    double left = _zoomCtx._left;
+    double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
+    double right = left +  w / (double)_zoomCtx._zoomFactor;
+
+    _zoomCtx._left = (right + left)/2. - zoomRatio * (right - left)/2.;
+    _zoomCtx._bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
+
+    _zoomCtx._zoomFactor = newZoomFactor;
+    if(_drawing){
+        _viewerTab->getGui()->getApp()->clearPlaybackCache();
+        emit engineNeeded();
+    } else {
+        updateGL();
+    }
+    assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
 }
 
-void ViewerGL::zoomSlot(int v){
-    assert(v > 0);
-    if(!_viewerTab->getGui()->getApp()->getVideoEngine()->isWorking()){
-        double value = v/100.f;
-        if(value < 0.01) {
-            value = 0.01;
-        } else if (value > 1024.) {
-            value = 1024.;
-        }
-        _zoomCtx._zoomFactor = value;
-        if(_drawing){
-            _viewerTab->getGui()->getApp()->clearPlaybackCache();
-            emit engineNeeded();
-        }else{
-            updateGL();
-        }
-    }
-}
 void ViewerGL::zoomSlot(QString str){
     str.remove(QChar('%'));
     int v = str.toInt();
@@ -1292,7 +1300,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     double zoomFactor = height()/h;
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
-    setZoomFactor(zoomFactor);
+    _zoomCtx.setZoomFactor(zoomFactor);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
@@ -1734,7 +1742,7 @@ const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->displayW
 
 /*display black in the viewer*/
 void ViewerGL::clearViewer(){
-    drawing(false);
+    _drawing = false;
     updateGL();
 }
 

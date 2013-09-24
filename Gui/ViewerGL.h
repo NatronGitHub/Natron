@@ -320,16 +320,23 @@ class ViewerTab;
              */
             void drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY);
             
+#if 0
             /**
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void drawing(bool d){_drawing=d;if(!_drawing) { _must_initBlackTex = true; };}
+            void setDrawing(bool d) {
+                _drawing = d;
+                if (!_drawing) {
+                    _must_initBlackTex = true;
+                };
+            }
             
             /**
              *@returns Returns true if the viewer is displaying something.
              **/
-            bool drawing()const{return _drawing;}
+            bool drawing() const { return _drawing; }
+#endif
             
             /**
              *@brief Convenience function.
@@ -408,11 +415,6 @@ class ViewerTab;
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
             double zoomedWidth(){return std::floor(displayWindow().width()*_zoomCtx._zoomFactor);}
-            
-            /**
-             *@brief Set the zoom factor used to render.
-             **/
-            void setZoomFactor(double f);
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
