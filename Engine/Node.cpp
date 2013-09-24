@@ -128,8 +128,7 @@ void Node::merge_info(bool doFullWork){
     }
     if(isOutputNode()){
         OutputNode* node =  dynamic_cast<OutputNode*>(this);
-        node->getTimeLine().setFirstFrame(_info.firstFrame());
-        node->getTimeLine().setLastFrame(_info.lastFrame());
+        node->setFrameRange(_info.firstFrame(), _info.lastFrame());
     }
     U32 size = getInputs().size();
     if(size > 0)
@@ -553,6 +552,7 @@ void Node::onFrameRangeChanged(int first,int last){
 
 OutputNode::OutputNode(Model* model)
 : Node(model)
+, _timeline()
 , _videoEngine(new VideoEngine(_model))
 {
 }
@@ -560,6 +560,11 @@ OutputNode::OutputNode(Model* model)
 OutputNode::~OutputNode(){
     _videoEngine->quitEngineThread();
     delete _videoEngine;
+}
+
+void OutputNode::setFrameRange(int first, int last) {
+    _timeline.setFirstFrame(first);
+    _timeline.setLastFrame(last);
 }
 
 void TimeLine::seek(int frame){

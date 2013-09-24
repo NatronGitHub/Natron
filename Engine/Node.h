@@ -527,8 +527,10 @@ public:
     VideoEngine* getVideoEngine() const {return _videoEngine;}
     
     const TimeLine& getTimeLine() const {return _timeline;}
-    
-    TimeLine& getTimeLine(){return _timeline;}
+
+    void setFrameRange(int first, int last);
+
+    //TimeLine& getTimeLine(){return _timeline;} // NEVER return a non-const ref!
         
     void updateDAG(bool initViewer = false);
 
