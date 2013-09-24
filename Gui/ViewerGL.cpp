@@ -1170,14 +1170,14 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
     
     double newZoomFactor;
-    if(event->delta() >0) {
-        newZoomFactor =   _zoomCtx._zoomFactor*std::pow(1.01,event->delta());
+    if (event->delta() > 0) {
+        newZoomFactor = _zoomCtx._zoomFactor*std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());
     } else {
-        newZoomFactor = _zoomCtx._zoomFactor/std::pow(1.01,-event->delta());
+        newZoomFactor = _zoomCtx._zoomFactor/std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, -event->delta());
     }
-    if(newZoomFactor <= 0.01) {
+    if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
-    } else if(newZoomFactor > 1024.) {
+    } else if (newZoomFactor > 1024.) {
         newZoomFactor = 1024.;
     }
     QPointF zoomCenter = toImgCoordinates_fast(event->x(), event->y());

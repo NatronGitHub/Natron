@@ -364,7 +364,7 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
-    scaleView(pow((double)2, event->delta() / 240.0), mapToScene(event->pos()));
+    scaleView(pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta()), mapToScene(event->pos()));
     //   updateNavigator();
 }
 
@@ -373,7 +373,7 @@ void NodeGraph::wheelEvent(QWheelEvent *event){
 void NodeGraph::scaleView(qreal scaleFactor,QPointF){
     
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-    if (factor < 0.07 || factor > 100)
+    if (factor < 0.07 || factor > 10)
         return;
     
     scale(scaleFactor,scaleFactor);
