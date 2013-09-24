@@ -225,8 +225,7 @@ bool OfxNode::isInputOptional(int inpubNb) const {
 bool OfxNode::_validate(bool doFullWork){
     QMutexLocker g(&_firstTimeMutex);
     _firstTime = true;
-    _timeline->setFirstFrame(info().firstFrame());
-    _timeline->setLastFrame(info().lastFrame());
+    setFrameRange(info().firstFrame(), info().lastFrame());
     
     /*Checking if all mandatory inputs are connected!*/
     MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
