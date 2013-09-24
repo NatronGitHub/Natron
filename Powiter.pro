@@ -69,7 +69,6 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 SOURCES += \
     Engine/AbstractCache.cpp \
     Engine/ChannelSet.cpp \
-    Engine/DataBuffer.cpp \
     Engine/Format.cpp \
     Engine/Hash64.cpp \
     Engine/ImageFetcher.cpp \
@@ -140,7 +139,6 @@ HEADERS += \
     Engine/AbstractCache.h \
     Engine/Box.h \
     Engine/ChannelSet.h \
-    Engine/DataBuffer.h \
     Engine/Format.h \
     Engine/Hash64.h \
     Engine/ImageFetcher.h \
