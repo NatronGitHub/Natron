@@ -266,17 +266,14 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
 void AppInstance::autoSave(){
     saveProject(_currentProject._projectPath, _currentProject._projectName, true);
 }
-void AppInstance::triggerAutoSaveOnNextEngineRun(){
-    _model->triggerAutoSaveOnNextEngineRun();
-}
-
-void AppInstance::setProjectTitleAsModified(){
+void AppInstance::triggerAutoSave(){
+    autoSave();
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject._projectName);
     text.append(" (*)");
     _gui->setWindowTitle(text);
-    
 }
+
 void AppInstance::removeAutoSaves() const{
     /*removing all previous autosave files*/
     QDir savesDir(autoSavesDir());

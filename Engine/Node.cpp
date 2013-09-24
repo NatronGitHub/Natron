@@ -344,7 +344,7 @@ void Node::deactivate(){
     }
     emit deactivated();
     if(firstChild){
-        _model->triggerAutoSaveOnNextEngineRun();
+        _model->getApp()->triggerAutoSave();
         _model->checkViewersConnection();
     }
 }
@@ -380,7 +380,7 @@ void Node::activate(){
     emit activated();
 
     if(firstChild){
-        _model->triggerAutoSaveOnNextEngineRun();
+        _model->getApp()->triggerAutoSave();
         _model->checkViewersConnection();
     }
 }

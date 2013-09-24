@@ -117,9 +117,7 @@ public:
     AppInstance* getApp() const {return _appInstance;}
         
     QMutex* getGeneralMutex() const {return _generalMutex;}
-    
-    void triggerAutoSaveOnNextEngineRun();
-    
+        
     bool connect(int inputNumber,const std::string& inputName,Node* output);
     
     bool connect(int inputNumber,Node* input,Node* output);

@@ -625,10 +625,7 @@ void VideoEngine::engineLoop(){
     }
     _lastRunArgs._fitToViewer = false;
     _lastRunArgs._recursiveCall = true;
-    if(_autoSaveOnNextRun){
-        _autoSaveOnNextRun = false;
-        _model->getApp()->autoSave();
-    }
+
     
 }
 
@@ -701,7 +698,6 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _treeVersion(0)
 , _treeVersionValid(false)
 , _loopMode(true)
-, _autoSaveOnNextRun(false)
 , _forceRender(false)
 , _workerThreadsWatcher(new QFutureWatcher<void>)
 , _openGLCondition()
@@ -768,45 +764,30 @@ void VideoEngine::startEngine(int nbFrames){
 }
 void VideoEngine::repeatSameFrame(bool initViewer){
     if (dagHasInputs()) {
-//        if(_working){
-//             abort();
-//        }
-        int frameCount = 1;
-        if(_lastRunArgs._frameRequestsCount == -1){
-            frameCount = -1;
-        }
         if(_working){
             
-            appendTask(_dag.outputAsViewer()->currentFrame(), frameCount, initViewer,
+            appendTask(_dag.outputAsViewer()->currentFrame(), 1, initViewer,
                        _lastRunArgs._forward,true, _dag.getOutput(),&VideoEngine::_startEngine);
         }else{
-            render(frameCount,initViewer,true,true);
+            render(1,initViewer,true,true);
         }
     }
 }
 void VideoEngine::startPause(bool c){
     if(_working){
         abort();
-        return;
     }
-    
-    
     if(c && _dag.getOutput()){
         render(-1,false,true);
-    }else{
-        abort();
     }
 }
 void VideoEngine::startBackward(bool c){
     
     if(_working){
         abort();
-        return;
     }
     if(c && _dag.getOutput()){
         render(-1,false,false);
-    }else{
-        abort();
     }
 }
 void VideoEngine::previousFrame(){

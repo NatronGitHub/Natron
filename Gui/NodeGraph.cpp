@@ -750,7 +750,7 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
+    _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
         viewer->updateDAG(false);
@@ -795,7 +795,7 @@ void ConnectCommand::redo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-    _graph->getGui()->getApp()->triggerAutoSaveOnNextEngineRun();
+    _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
         viewer->updateDAG(false);

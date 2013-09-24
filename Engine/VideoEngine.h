@@ -362,7 +362,6 @@ private:
     
     bool _loopMode; /*!< on if the player will loop*/
         
-    bool _autoSaveOnNextRun; /*!< on if we need to to an autosave at the end of the next compute frame.*/
     
     bool _forceRender;
     
@@ -527,10 +526,7 @@ signals:
     void frameRendered(int frameNumber);
     
 public:
-    /**
-     *@brief Sets the _autoSaveOnNextRun to true
-     **/
-    void triggerAutoSaveOnNextRun(){_autoSaveOnNextRun = true;}
+
     
     void forceFullComputationOnNextFrame(){_forceRender = true;}
     

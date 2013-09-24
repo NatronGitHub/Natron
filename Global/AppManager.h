@@ -117,10 +117,8 @@ public:
     
     void autoSave();
     
-    void triggerAutoSaveOnNextEngineRun();
-    
-    void setProjectTitleAsModified();
-        
+    void triggerAutoSave();
+            
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
     
     const Format& getProjectFormat() const {return *(_currentProject._format);}

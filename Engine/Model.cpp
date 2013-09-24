@@ -446,12 +446,6 @@ void Model::saveProject(const QString& path,const QString& filename,bool autoSav
         
     }
 }
-void Model::triggerAutoSaveOnNextEngineRun(){
-    if(getVideoEngine()){
-        getVideoEngine()->triggerAutoSaveOnNextRun();
-        _appInstance->setProjectTitleAsModified();
-    }
-}
 
 void Model::connectViewersToViewerCache(){
     foreach(Node* n,_currentNodes){
