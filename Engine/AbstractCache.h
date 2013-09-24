@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <QtCore/QMutex>
+#include <boost/utility.hpp>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
@@ -23,7 +24,7 @@ class MemoryFile;
 /* Abstract class/interface for cache entries. This can be overloaded to fit parameters you'd
  like to track like offset in files, list of elements etc...
  Entries are not copyable, you must create a new object if you want to copy infos.*/
-class CacheEntry {
+class CacheEntry : boost::noncopyable {
 public:
     CacheEntry() {};
     virtual ~CacheEntry() {};
