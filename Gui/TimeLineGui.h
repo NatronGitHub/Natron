@@ -13,6 +13,7 @@
 #define POWITER_GUI_TIMELINE_H_
 
 #include <vector>
+#include <boost/shared_ptr.hpp>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
 #include <QWidget>
@@ -31,42 +32,9 @@ class QMouseEvent;
 class TimeLine;
 class TimeLineGui : public QWidget{
     Q_OBJECT
-    
-    int _first,_last; // the first and last frames, bounded by the user
-    
-    std::vector<int> _values;
-    QList<int> _displayedValues;
-    std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
-    int _increment; // 5 or 10 (for displayed values)
-    bool _alphaCursor;
-    QPointF _Mouse;
-    Powiter::TIMELINE_STATE _state;
-    
-    std::vector<int> _cached;
-    
-    TimeLine& _timeLine;
-    
-    ViewerTab* _viewerTab;//ptr to the viewer tab holding this timeline
-    
-    QColor _cursorColor;
-    QColor _boundsColor;
-    QColor _cachedLineColor;
-    QColor _backgroundColor;
-    QColor _ticksColor;
-    QColor _scaleColor;
-    
-signals:
-    void positionChanged(int);
-    void currentFrameChanged(int);
-    
-public slots:
-    void seek(int);
-    void seek(double d){seek((int)d);}
-    void changeFirstAndLast(QString); // for the spinbox
-        
 public:
     
-    explicit TimeLineGui(TimeLine& timeLine,ViewerTab* parentTab);
+    explicit TimeLineGui(boost::shared_ptr<TimeLine> timeLine, ViewerTab* parentTab);
     virtual ~TimeLineGui(){}
     
     /*Tells the timeline to indicate that the frame f is cached*/
@@ -96,7 +64,13 @@ public:
     void setScaleColor(const QColor& scaleColor);
     
     void seek_notSlot(int);
-    
+
+public slots:
+    void seekFrame(int);
+    void seekFrame(double d) { seekFrame((int)d); }
+    void changeFirstAndLast(QString); // for the spinbox
+
+
 protected:
     virtual void mousePressEvent(QMouseEvent* e);
     virtual void mouseMoveEvent(QMouseEvent* e);
@@ -113,6 +87,34 @@ private:
     void drawTicks(QPainter* p,QColor& scaleColor);
     void changeFirst(int);
     void changeLast(int);
+
+private:
+    int _first,_last; // the first and last frames, bounded by the user
+
+    std::vector<int> _values;
+    QList<int> _displayedValues;
+    std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
+    int _increment; // 5 or 10 (for displayed values)
+    bool _alphaCursor;
+    QPointF _Mouse;
+    Powiter::TIMELINE_STATE _state;
+
+    std::vector<int> _cached;
+
+    boost::shared_ptr<TimeLine> _timeline;
+
+    ViewerTab* _viewerTab;//ptr to the viewer tab holding this timeline
+
+    QColor _cursorColor;
+    QColor _boundsColor;
+    QColor _cachedLineColor;
+    QColor _backgroundColor;
+    QColor _ticksColor;
+    QColor _scaleColor;
+
+signals:
+    void positionChanged(int);
+    void currentFrameChanged(int);
 
 };
 

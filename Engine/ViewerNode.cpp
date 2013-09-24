@@ -16,7 +16,7 @@
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 
 #include "Engine/Row.h"
 #include "Engine/ViewerCache.h"

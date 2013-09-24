@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
 
@@ -32,6 +33,7 @@ class QUndoCommand;
 class ViewerNode;
 class QKeyEvent;
 class QUndoStack;
+class TimeLine;
 
 class Node : public QObject
 {
@@ -460,53 +462,9 @@ private:
 };
 typedef Node* (*NodeBuilder)();
 
-class TimeLine: public QObject {
-    Q_OBJECT
-    
-    int _firstFrame;
-    int _lastFrame;
-    int _currentFrame;
-    
 
-public:
-    
-    TimeLine():
-    _firstFrame(0),
-    _lastFrame(100),
-    _currentFrame(0)
-    {}
-    
-    virtual ~TimeLine(){}
-    
-    int firstFrame() const {return _firstFrame;}
-    
-    void setFirstFrame(int f) {_firstFrame = f;}
-    
-    int lastFrame() const {return _lastFrame;}
-    
-    void setLastFrame(int f){_lastFrame = f;}
-    
-    int currentFrame() const {return _currentFrame;}
-    
-    void incrementCurrentFrame(){++_currentFrame; emit frameChanged(_currentFrame);}
-    
-    void decrementCurrentFrame(){--_currentFrame; emit frameChanged(_currentFrame);}
 
-public slots:
-    
-    void seek(int frame);
-    
-    void seek_noEmit(int frame);
-    
-    
-signals:
-    
-    void frameChanged(int);
-    
-    
-};
-
-class OutputNode : public Node{
+class OutputNode : public Node {
 public:
     
     OutputNode(Model* model);
@@ -526,22 +484,24 @@ public:
    
     VideoEngine* getVideoEngine() const {return _videoEngine;}
     
-    const TimeLine& getTimeLine() const {return _timeline;}
+    boost::shared_ptr<TimeLine> getTimeLine() const {return _timeline;}
 
+    // TimeLine operations (to avoid duplicating the shared_ptr when possible)
     void setFrameRange(int first, int last);
+    void seekFrame(int frame);
+    void incrementCurrentFrame();
+    int currentFrame() const;
+    int firstFrame() const;
+    int lastFrame() const;
 
-    //TimeLine& getTimeLine(){return _timeline;} // NEVER return a non-const ref!
-        
     void updateDAG(bool initViewer = false);
 
 protected:
     virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
     virtual bool _validate(bool /*doFullWork*/) OVERRIDE = 0;
-    
-    TimeLine _timeline;
 
-    
 private:
+    boost::shared_ptr<TimeLine> _timeline;
     VideoEngine* _videoEngine;
 };
 

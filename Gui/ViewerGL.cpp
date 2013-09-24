@@ -41,7 +41,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Gui/InfoViewerWidget.h"
 #include "Engine/Model.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Engine/ViewerCache.h"
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
@@ -167,7 +167,7 @@ static void _glLoadIdentity(M44f& matrix);
  12--13--14--15
  */
 void ViewerGL::drawRenderingVAO(){
-    const TextureRect& r = _drawing ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
+    const TextureRect& r = _displayingImage ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
     const Format& img = displayWindow();
     GLfloat vertices[32] = {
         0.f               , (GLfloat)img.height()  , //0
@@ -255,7 +255,7 @@ void ViewerGL::initConstructor(){
     _blankViewerInfos->set_firstFrame(0);
     _blankViewerInfos->set_lastFrame(0);
     blankInfoForViewer(true);
-	_drawing = false;
+	_displayingImage = false;
 	exposure = 1;
 	setMouseTracking(true);
 	_ms = UNDEFINED;
@@ -279,7 +279,7 @@ ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareW
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 { 
@@ -292,7 +292,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* s
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 {
@@ -305,7 +305,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _shaderLoaded(false)
 , _lut(1)
 , _viewerTab(parent)
-, _drawing(false)
+, _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
 {
@@ -381,7 +381,7 @@ void ViewerGL::paintGL()
     
     
     glEnable (GL_TEXTURE_2D);
-    if(_drawing){
+    if(_displayingImage){
         glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
         // debug (so the OpenGL debugger can make a breakpoint here)
         // GLfloat d;
@@ -412,7 +412,7 @@ void ViewerGL::paintGL()
     drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    if(_drawing){
+    if(_displayingImage){
         if(_hasHW && rgbMode() && shaderRGB){
             shaderRGB->release();
         }else if (_hasHW &&  !rgbMode() && shaderLC){
@@ -499,7 +499,7 @@ void ViewerGL::drawOverlay(){
         glPopAttrib();
         checkGLErrors();
     }
-    if(_drawing){
+    if(_displayingImage){
         _viewerTab->getInternalNode()->drawOverlays();
     }
     //reseting color for next pass
@@ -1121,7 +1121,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
     }
     if(event->modifiers().testFlag(Qt::AltModifier)){
         if(_ms == DRAGGING){
-            // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+            // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
             QPoint newClick =  event->pos();
             QPointF newClick_opengl = toImgCoordinates_fast(newClick.x(),newClick.y());
             QPointF oldClick_opengl = toImgCoordinates_fast(_zoomCtx._oldClick.x(),_zoomCtx._oldClick.y());
@@ -1129,7 +1129,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event){
             _zoomCtx._bottom += dy;
             _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
             _zoomCtx._oldClick = newClick;
-            if(_drawing){
+            if(_displayingImage){
                 emit engineNeeded();
             }
             //    else
@@ -1167,7 +1167,7 @@ void ViewerGL::updateColorPicker(int x,int y){
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_drawing){
+    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
     
     double newZoomFactor;
     if (event->delta() > 0) {
@@ -1186,7 +1186,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _zoomCtx._bottom = zoomCenter.y() - (zoomCenter.y() - _zoomCtx._bottom)*zoomRatio;
     
     _zoomCtx._zoomFactor = newZoomFactor;
-    if(_drawing){
+    if(_displayingImage){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
         emit engineNeeded();
     } else {
@@ -1223,7 +1223,7 @@ void ViewerGL::zoomSlot(int v) {
     _zoomCtx._bottom = (top + bottom)/2. - zoomRatio * (top - bottom)/2.;
 
     _zoomCtx._zoomFactor = newZoomFactor;
-    if(_drawing){
+    if(_displayingImage){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
         emit engineNeeded();
     } else {
@@ -1366,7 +1366,7 @@ void ViewerGL::updateColorSpace(QString str){
         }
         _lut = 2;
     }
-    if (!_drawing) {
+    if (!_displayingImage) {
         return;
     }
     
@@ -1378,7 +1378,7 @@ void ViewerGL::updateColorSpace(QString str){
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;
-    if((byteMode()==1 || !_hasHW) && _drawing)
+    if((byteMode()==1 || !_hasHW) && _displayingImage)
         emit engineNeeded();
     else
         updateGL();
@@ -1742,7 +1742,7 @@ const Format& ViewerGL::displayWindow(){return getCurrentViewerInfos()->displayW
 
 /*display black in the viewer*/
 void ViewerGL::clearViewer(){
-    _drawing = false;
+    _displayingImage = false;
     updateGL();
 }
 

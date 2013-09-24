@@ -19,6 +19,7 @@
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/TimeLine.h"
 
 
 using namespace std;
@@ -401,7 +402,9 @@ double OfxImageEffectInstance::timeLineGetTime() {
     if(!engine)
         return -1.;
     const VideoEngine::DAG& dag = engine->getCurrentDAG();
-    return dag.getOutput()->getTimeLine().currentFrame();
+    OutputNode* outputNode = dag.getOutput();
+    assert(outputNode);
+    return outputNode->currentFrame();
 }
 
 
@@ -415,8 +418,10 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // FIXME: wrong Temporal Coordinates!!!
     // See http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id476301
     // - the effect may not begin at frame 0
-    // - it depends on the input and output FPS of the effect 
-    return dag.getOutput()->getTimeLine().seek((int)t);
+    // - it depends on the input and output FPS of the effect
+    OutputNode* outputNode = dag.getOutput();
+    assert(outputNode);
+    return outputNode->seekFrame((int)t);
     
 }
 
@@ -430,9 +435,10 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
         t2 = -1.;
         return;
     }
-    t1 = dag.getOutput()->getTimeLine().firstFrame();
-    t2 = dag.getOutput()->getTimeLine().lastFrame();
-
+    OutputNode* outputNode = dag.getOutput();
+    assert(outputNode);
+    t1 = outputNode->firstFrame();
+    t2 = outputNode->lastFrame();
 }
 
 

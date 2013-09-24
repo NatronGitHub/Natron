@@ -43,7 +43,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerGL.h"
 #include "Gui/TabWidget.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"

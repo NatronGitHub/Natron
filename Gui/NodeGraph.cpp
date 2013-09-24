@@ -35,7 +35,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerTab.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxNode.h"

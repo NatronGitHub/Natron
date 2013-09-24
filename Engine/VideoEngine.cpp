@@ -31,6 +31,7 @@
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/Timer.h"
+#include "Engine/TimeLine.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
 
@@ -125,8 +126,9 @@ void VideoEngine::render(int frameCount,bool fitFrameToViewer,bool forward,bool 
         ViewerNode* viewer = _dag.outputAsViewer();
         assert(viewer);
         assert(viewer->getUiContext());
-        assert(viewer->getUiContext()->viewer);
-        zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
+        ViewerGL* viewerGL = viewer->getUiContext()->viewer;
+        assert(viewerGL);
+        zoomFactor = viewerGL->getZoomFactor();
         emit engineStarted(forward);
     }else{
         zoomFactor = 1.f;
@@ -220,33 +222,31 @@ void VideoEngine::run(){
         
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
         
-        Writer* writer = dynamic_cast<Writer*>(_dag.getOutput());
-        ViewerNode* viewer = dynamic_cast<ViewerNode*>(_dag.getOutput());
-        OfxNode* ofxOutput = dynamic_cast<OfxNode*>(_dag.getOutput());
+        Writer* writer = _dag.outputAsWriter();
+        ViewerNode* viewer = _dag.outputAsViewer();
+        OfxNode* ofxOutput = _dag.outputAsOpenFXNode();
         if (!_dag.isOutputAViewer()) {
             if(!_dag.isOutputAnOpenFXNode()){
                 assert(writer);
-                TimeLine& t = writer->getTimeLine();
                 if (!_lastRunArgs._recursiveCall) {
-                    lastFrame = t.lastFrame();
-                    currentFrame = t.firstFrame();
-                    t.seek(t.firstFrame());
+                    lastFrame = writer->lastFrame();
+                    currentFrame = writer->firstFrame();
+                    writer->seekFrame(writer->firstFrame());
                 } else {
-                    lastFrame = t.lastFrame();
-                    t.incrementCurrentFrame();
-                    currentFrame = t.currentFrame();
+                    lastFrame = writer->lastFrame();
+                    writer->incrementCurrentFrame();
+                    currentFrame = writer->currentFrame();
                 }
             } else {
                 assert(ofxOutput);
-                TimeLine& t = ofxOutput->getTimeLine();
                 if (!_lastRunArgs._recursiveCall) {
-                    lastFrame = t.lastFrame();
-                    currentFrame = t.firstFrame();
-                    t.seek(t.firstFrame());
+                    lastFrame = ofxOutput->lastFrame();
+                    currentFrame = ofxOutput->firstFrame();
+                    ofxOutput->seekFrame(ofxOutput->firstFrame());
                 } else {
-                    lastFrame = t.lastFrame();
-                    t.incrementCurrentFrame();
-                    currentFrame = t.currentFrame();
+                    lastFrame = ofxOutput->lastFrame();
+                    ofxOutput->incrementCurrentFrame();
+                    currentFrame = ofxOutput->currentFrame();
                 }
             }
         }
@@ -296,7 +296,7 @@ void VideoEngine::run(){
             /*Determine what is the current frame when output is a viewer*/
             /*!recursiveCall means this is the first time it's called for the sequence.*/
             if (!_lastRunArgs._recursiveCall) {
-                currentFrame = viewer->getTimeLine().currentFrame();
+                currentFrame = viewer->currentFrame();
                 firstFrame = _dag.firstFrame();
                 lastFrame = _dag.lastFrame();
                 
@@ -307,16 +307,15 @@ void VideoEngine::run(){
                 else if(currentFrame > lastFrame){
                     currentFrame = lastFrame;
                 }
-                viewer->getTimeLine().seek(currentFrame);
+                viewer->seekFrame(currentFrame);
                 
             } else { // if the call is recursive, i.e: the next frame in the sequence
                 /*clear the node cache, as it is very unlikely the user will re-use
                  data from previous frame.*/
                 lastFrame = _dag.lastFrame();
                 firstFrame = _dag.firstFrame();
-                assert(_dag.outputAsViewer());
                 if (_lastRunArgs._forward) {
-                    currentFrame = _dag.outputAsViewer()->currentFrame()+1;
+                    currentFrame = viewer->currentFrame()+1;
                     if(currentFrame > lastFrame){
                         if(_loopMode)
                             currentFrame = firstFrame;
@@ -326,7 +325,7 @@ void VideoEngine::run(){
                         }
                     }
                 } else {
-                    currentFrame  = _dag.outputAsViewer()->currentFrame()-1;
+                    currentFrame  = viewer->currentFrame()-1;
                     if(currentFrame < firstFrame){
                         if(_loopMode)
                             currentFrame = lastFrame;
@@ -336,7 +335,7 @@ void VideoEngine::run(){
                         }
                     }
                 }
-                viewer->getTimeLine().seek(currentFrame);
+                viewer->seekFrame(currentFrame);
             }
         }
         
@@ -379,11 +378,13 @@ void VideoEngine::run(){
             assert(viewer);
             viewer->makeCurrentViewer();
             if (_lastRunArgs._fitToViewer) {
+                assert(viewer);
                 assert(viewer->getUiContext());
-                assert(viewer->getUiContext()->viewer);
+                ViewerGL* viewerGL = viewer->getUiContext()->viewer;
+                assert(viewerGL);
                 assert(_dispW.height() > 0. && _dispW.width() > 0);
-                viewer->getUiContext()->viewer->fitToFormat(_dispW);
-                _lastRunArgs._zoomFactor = viewer->getUiContext()->viewer->getZoomFactor();
+                viewerGL->fitToFormat(_dispW);
+                _lastRunArgs._zoomFactor = viewerGL->getZoomFactor();
             }
             
         }        /*Now that we called validate we can check if the frame is in the cache
@@ -402,11 +403,12 @@ void VideoEngine::run(){
         if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             assert(viewer);
             assert(viewer->getUiContext());
-            assert(viewer->getUiContext()->viewer);
-            viewer->getUiContext()->viewer->drawing(true);
+            ViewerGL* viewerGL = viewer->getUiContext()->viewer;
+            assert(viewerGL);
+            viewerGL->setDisplayingImage(true);
             
-            std::pair<int,int> rowSpan = viewer->getUiContext()->viewer->computeRowSpan(_dispW, &rows);
-            std::pair<int,int> columnSpan = viewer->getUiContext()->viewer->computeColumnSpan(_dispW, &columns);
+            std::pair<int,int> rowSpan = viewerGL->computeRowSpan(_dispW, &rows);
+            std::pair<int,int> columnSpan = viewerGL->computeColumnSpan(_dispW, &columns);
             
             TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
             
@@ -417,9 +419,9 @@ void VideoEngine::run(){
                 return;
             }
             zoomFactor = _lastRunArgs._zoomFactor;
-            exposure = viewer->getUiContext()->viewer->getExposure();
-            lut =  viewer->getUiContext()->viewer->lutType();
-            byteMode = viewer->getUiContext()->viewer->byteMode();
+            exposure = viewerGL->getExposure();
+            lut =  viewerGL->lutType();
+            byteMode = viewerGL->byteMode();
             inputFileNames = _dag.generateConcatenationOfAllReadersFileNames();
             key = FrameEntry::computeHashKey(currentFrame,
                                              inputFileNames,
@@ -548,8 +550,9 @@ void VideoEngine::run(){
                 
                 assert(viewer);
                 assert(viewer->getUiContext());
-                assert(viewer->getUiContext()->viewer);
-                viewer->getUiContext()->viewer->stopDisplayingProgressBar();
+                ViewerGL* viewerGL = viewer->getUiContext()->viewer;
+                assert(viewerGL);
+                viewerGL->stopDisplayingProgressBar();
                 assert(appPTR->getViewerCache());
                 FrameEntry* entry = appPTR->getViewerCache()->addFrame(key,
                                                                        inputFileNames,
@@ -566,9 +569,9 @@ void VideoEngine::run(){
                     assert(entry->getMappedFile());
                     assert(entry->getMappedFile()->data());
                     assert(viewer->getUiContext());
-                    assert(viewer->getUiContext()->viewer);
-                    assert(viewer->getUiContext()->viewer->getFrameData());
-                    memcpy(entry->getMappedFile()->data(),viewer->getUiContext()->viewer->getFrameData(),_lastFrameInfos._dataSize);
+                    assert(viewerGL);
+                    assert(viewerGL->getFrameData());
+                    memcpy(entry->getMappedFile()->data(),viewerGL->getFrameData(),_lastFrameInfos._dataSize);
                     entry->removeReference(); // removing reference as we're done with the entry.
                 }
             }
@@ -916,15 +919,16 @@ void VideoEngine::recenterViewer(){
 
 void VideoEngine::changeDAGAndStartEngine(OutputNode* output,bool initViewer){
     abort();
+    OutputNode* outputNode = _dag.getOutput();
     if(!_working){
-        if(_dag.getOutput()){
-            _changeDAGAndStartEngine(_dag.getOutput()->getTimeLine().currentFrame(), -1, initViewer,true,false,output);
+        if(outputNode){
+            _changeDAGAndStartEngine(outputNode->currentFrame(), -1, initViewer,true,false,output);
         }else{
             _changeDAGAndStartEngine(0, -1, initViewer,true,false,output);
         }
     }else{
-        if(_dag.getOutput()){
-            appendTask(_dag.getOutput()->getTimeLine().currentFrame(), 1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
+        if(outputNode){
+            appendTask(outputNode->currentFrame(), 1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }else{
             appendTask(0,1, initViewer,true,true, output, &VideoEngine::_changeDAGAndStartEngine);
         }
@@ -950,10 +954,12 @@ void VideoEngine::runTasks(){
 }
 
 void VideoEngine::_startEngine(int frameNB,int frameCount,bool initViewer,bool forward,bool sameFrame,OutputNode* ){
-    if(_dag.getOutput() && _dag.getInputs().size()>0){
-        if(frameNB < _dag.outputAsViewer()->firstFrame() || frameNB > _dag.outputAsViewer()->lastFrame())
+    if(_dag.getOutput() && _dag.getInputs().size()>0) {
+        ViewerNode* viewerNode =_dag.outputAsViewer();
+        assert(viewerNode);
+        if(frameNB < viewerNode->firstFrame() || frameNB > viewerNode->lastFrame())
             return;
-        _dag.outputAsViewer()->getTimeLine().seek(frameNB);
+        viewerNode->seekFrame(frameNB);
         
         render(frameCount,initViewer,forward,sameFrame);
         
@@ -1179,8 +1185,11 @@ void VideoEngine::toggleLoopMode(bool b){
 
 const QString VideoEngine::DAG::generateConcatenationOfAllReadersFileNames() const{
     QString ret;
+
+    assert(_output);
     for (U32 i = 0; i < _inputs.size(); ++i) {
-        ret.append(_inputs[i]->getRandomFrameName(_output->getTimeLine().currentFrame()));
+        assert(_inputs[i]);
+        ret.append(_inputs[i]->getRandomFrameName(_output->currentFrame()));
     }
     return ret;
 }

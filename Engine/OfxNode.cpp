@@ -30,6 +30,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/Model.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
+#include "Engine/TimeLine.h"
 
 #include "Writers/Writer.h"
 
@@ -224,8 +225,8 @@ bool OfxNode::isInputOptional(int inpubNb) const {
 bool OfxNode::_validate(bool doFullWork){
     QMutexLocker g(&_firstTimeMutex);
     _firstTime = true;
-    _timeline.setFirstFrame(info().firstFrame());
-    _timeline.setLastFrame(info().lastFrame());
+    _timeline->setFirstFrame(info().firstFrame());
+    _timeline->setLastFrame(info().lastFrame());
     
     /*Checking if all mandatory inputs are connected!*/
     MappedInputV ofxInputs = inputClipsCopyWithoutOutput();

@@ -37,7 +37,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/SpinBox.h"
-#include "Gui/Timeline.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/ScaleSlider.h"
 #include "Gui/ComboBox.h"
 #include "Gui/Button.h"
@@ -427,13 +427,13 @@ _maximized(false)
     QObject::connect(_zoomCombobox, SIGNAL(currentIndexChanged(QString)),viewer, SLOT(zoomSlot(QString)));
     QObject::connect(viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)));
     QObject::connect(viewer,SIGNAL(frameChanged(int)),_currentFrameBox,SLOT(setValue(int)));
-    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seek(int)));
+    QObject::connect(viewer,SIGNAL(frameChanged(int)),frameSeeker,SLOT(seekFrame(int)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), viewer,SLOT(updateExposure(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), _gainBox, SLOT(setValue(double)));
     QObject::connect(_gainSlider, SIGNAL(positionChanged(double)), viewer, SLOT(updateExposure(double)));
     QObject::connect(_gainBox, SIGNAL(valueChanged(double)), _gainSlider, SLOT(seekScalePosition(double)));
     QObject::connect(frameSeeker,SIGNAL(currentFrameChanged(int)), _currentFrameBox, SLOT(setValue(int)));
-    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seek(double)));
+    QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seekFrame(double)));
     
     VideoEngine* vengine = _viewerNode->getVideoEngine();
     
@@ -552,7 +552,7 @@ void ViewerTab::seekRandomFrame(int f){
 }
 
 void ViewerTab::centerViewer(){
-    if(viewer->drawing()){
+    if(viewer->displayingImage()){
         emit recenteringNeeded();
     }else{
         viewer->fitToFormat(viewer->displayWindow());

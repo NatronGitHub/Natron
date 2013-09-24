@@ -256,7 +256,7 @@ class ViewerTab;
             
             ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
-            bool _drawing;/*!< True if the viewer is connected and not displaying black.*/
+            bool _displayingImage;/*!< True if the viewer is connected and not displaying black.*/
             bool _must_initBlackTex;
 
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
@@ -320,14 +320,13 @@ class ViewerTab;
              */
             void drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY);
             
-#if 0
             /**
              *@brief Toggles on/off the display on the viewer. If d is false then it will
              *render black only.
              **/
-            void setDrawing(bool d) {
-                _drawing = d;
-                if (!_drawing) {
+            void setDisplayingImage(bool d) {
+                _displayingImage = d;
+                if (!_displayingImage) {
                     _must_initBlackTex = true;
                 };
             }
@@ -335,9 +334,8 @@ class ViewerTab;
             /**
              *@returns Returns true if the viewer is displaying something.
              **/
-            bool drawing() const { return _drawing; }
-#endif
-            
+            bool displayingImage() const { return _displayingImage; }
+
             /**
              *@brief Convenience function.
              *Ydirection is the order of fill of the display texture:
