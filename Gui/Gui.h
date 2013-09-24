@@ -248,6 +248,10 @@ public:
 private:
 
     void addNodeGraph();
+    
+    void restoreGuiGeometry();
+    
+    void saveGuiGeometry();
 
 
 public slots:

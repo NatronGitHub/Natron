@@ -28,7 +28,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressBar>
- 
+#include <QSettings>
 
 #include "Global/AppManager.h"
 
@@ -126,6 +126,7 @@ bool Gui::exit(){
     } else if (ret == 2) {
         return false;
     }
+    saveGuiGeometry();
     assert(_appInstance);
     if (_appInstance->getAppID() != 0) {
         delete this;
@@ -550,6 +551,9 @@ void Gui::setupUi()
     QObject::connect(actionConnectInput10, SIGNAL(triggered()),this,SLOT(connectInput10()));
     
 	QMetaObject::connectSlotsByName(this);
+    
+    restoreGuiGeometry();
+    
     
 } // setupUi
 
@@ -1168,4 +1172,65 @@ _lastFrame(lastFrame){
 void Gui::showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
     RenderingProgressDialog* dialog = new RenderingProgressDialog(writer,sequenceName,firstFrame,lastFrame,this);
     dialog->show();
+}
+
+void Gui::restoreGuiGeometry(){
+    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    settings.beginGroup("MainWindow");
+    
+    if(settings.contains("pos")){
+        QPoint pos = settings.value("pos").toPoint();
+        move(pos);
+    }
+    if(settings.contains("size")){
+        QSize size = settings.value("size").toSize();
+        resize(size);
+    }
+    if(settings.contains("fullScreen")){
+        bool fs = settings.value("fullScreen").toBool();
+        if(fs)
+            toggleFullScreen();
+    }
+    
+    if(settings.contains("splitters")){
+        QByteArray splittersData = settings.value("splitters").toByteArray();
+        QDataStream splittersStream(&splittersData, QIODevice::ReadOnly);
+        if (splittersStream.atEnd())
+            return;
+        QByteArray leftRightSplitterState;
+        QByteArray viewerWorkshopSplitterState;
+        QByteArray middleRightSplitterState;
+        
+        splittersStream >> leftRightSplitterState
+        >> viewerWorkshopSplitterState
+        >> middleRightSplitterState;
+        
+        if(!_leftRightSplitter->restoreState(leftRightSplitterState))
+            return;
+        if(!_viewerWorkshopSplitter->restoreState(viewerWorkshopSplitterState))
+            return;
+        if(!_middleRightSplitter->restoreState(middleRightSplitterState))
+            return;
+    }
+    
+    settings.endGroup();
+}
+
+void Gui::saveGuiGeometry(){
+    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    
+    settings.beginGroup("MainWindow");
+    settings.setValue("pos", pos());
+    settings.setValue("size", size());
+    settings.setValue("fullScreen", isFullScreen());
+    
+    QByteArray splittersData;
+    QDataStream splittersStream(&splittersData, QIODevice::WriteOnly);
+    splittersStream << _leftRightSplitter->saveState();
+    splittersStream << _viewerWorkshopSplitter->saveState();
+    splittersStream << _middleRightSplitter->saveState();
+    settings.setValue("splitters", splittersData);
+    
+    settings.endGroup();
+
 }

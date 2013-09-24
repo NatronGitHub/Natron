@@ -374,8 +374,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
             setWindowTitle("Save File");
     }
     
-    QSettings settings;
-    restoreState(settings.value(QLatin1String("filedialog")).toByteArray());
+    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    restoreState(settings.value(QLatin1String("FileDialog")).toByteArray());
     
     if(!currentDirectory.empty())
         setDirectory(currentDirectory.c_str());
@@ -388,8 +388,8 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
-    QSettings settings;
-    settings.setValue(QLatin1String("filedialog"), saveState());
+    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    settings.setValue(QLatin1String("FileDialog"), saveState());
     
     delete _model;
     delete _itemDelegate;
@@ -398,6 +398,72 @@ SequenceFileDialog::~SequenceFileDialog(){
     
     
 }
+
+QByteArray SequenceFileDialog::saveState() const{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    QList<QUrl> urls;
+    std::vector<QUrl> stdUrls = _favoriteView->urls();
+    for(unsigned int i = 0 ; i < stdUrls.size(); ++i) {
+        urls.push_back(stdUrls[i]);
+    }
+    stream << _centerSplitter->saveState();
+    stream << urls;
+    stream << history();
+    stream << currentDirectory().path();
+    stream << _view->header()->saveState();
+    return data;
+}
+
+bool SequenceFileDialog::restoreState(const QByteArray& state){
+    QByteArray sd = state;
+    QDataStream stream(&sd, QIODevice::ReadOnly);
+    if (stream.atEnd())
+        return false;
+    QByteArray splitterState;
+    QByteArray headerData;
+    QList<QUrl> bookmarks;
+    QStringList history;
+    QString currentDirectory;
+    stream >> splitterState
+    >> bookmarks
+    >> history
+    >> currentDirectory
+    >> headerData;
+    if (!_centerSplitter->restoreState(splitterState))
+        return false;
+    QList<int> list = _centerSplitter->sizes();
+    if (list.count() >= 2 && list.at(0) == 0 && list.at(1) == 0) {
+        for (int i = 0; i < list.count(); ++i)
+            list[i] = _centerSplitter->widget(i)->sizeHint().width();
+        _centerSplitter->setSizes(list);
+    }
+    std::vector<QUrl> stdBookMarks;
+    for(int i = 0 ; i < bookmarks.count() ; ++i) {
+        stdBookMarks.push_back(bookmarks.at(i));
+    }
+    _favoriteView->setUrls(stdBookMarks);
+    while (history.count() > 5)
+        history.pop_front();
+    setHistory(history);
+    setDirectory(currentDirectory);
+    QHeaderView *headerView = _view->header();
+    if (!headerView->restoreState(headerData))
+        return false;
+    
+    QList<QAction*> actions = headerView->actions();
+    QAbstractItemModel *abstractModel = _model;
+    if (_proxy)
+        abstractModel = _proxy;
+    int total = qMin(abstractModel->columnCount(QModelIndex()), actions.count() + 1);
+    for (int i = 1; i < total; ++i)
+        actions.at(i - 1)->setChecked(!headerView->isSectionHidden(i));
+    
+    return true;
+}
+
+
+
 void SequenceFileDialog::setFileExtensionOnLineEdit(const QString& ext){
     QString str  = _selectionLineEdit->text();
     if(str.isEmpty()) return;
@@ -2016,69 +2082,6 @@ void FavoriteView::keyPressEvent(QKeyEvent *event){
     }
     QListView::keyPressEvent(event);
 }
-QByteArray SequenceFileDialog::saveState() const{
-    QByteArray data;
-    QDataStream stream(&data, QIODevice::WriteOnly);
-    QList<QUrl> urls;
-    std::vector<QUrl> stdUrls = _favoriteView->urls();
-    for(unsigned int i = 0 ; i < stdUrls.size(); ++i) {
-        urls.push_back(stdUrls[i]);
-    }
-    stream << _centerSplitter->saveState();
-    stream << urls;
-    stream << history();
-    stream << currentDirectory().path();
-    stream << _view->header()->saveState();
-    return data;
-}
-
-bool SequenceFileDialog::restoreState(const QByteArray& state){
-    QByteArray sd = state;
-    QDataStream stream(&sd, QIODevice::ReadOnly);
-    if (stream.atEnd())
-        return false;
-    QByteArray splitterState;
-    QByteArray headerData;
-    QList<QUrl> bookmarks;
-    QStringList history;
-    QString currentDirectory;
-    stream >> splitterState
-    >> bookmarks
-    >> history
-    >> currentDirectory
-    >> headerData;
-    if (!_centerSplitter->restoreState(splitterState))
-        return false;
-    QList<int> list = _centerSplitter->sizes();
-    if (list.count() >= 2 && list.at(0) == 0 && list.at(1) == 0) {
-        for (int i = 0; i < list.count(); ++i)
-            list[i] = _centerSplitter->widget(i)->sizeHint().width();
-        _centerSplitter->setSizes(list);
-    }
-    std::vector<QUrl> stdBookMarks;
-    for(int i = 0 ; i < bookmarks.count() ; ++i) {
-        stdBookMarks.push_back(bookmarks.at(i));
-    }
-    _favoriteView->setUrls(stdBookMarks);
-    while (history.count() > 5)
-        history.pop_front();
-    setHistory(history);
-    setDirectory(currentDirectory);
-    QHeaderView *headerView = _view->header();
-    if (!headerView->restoreState(headerData))
-        return false;
-    
-    QList<QAction*> actions = headerView->actions();
-    QAbstractItemModel *abstractModel = _model;
-    if (_proxy)
-        abstractModel = _proxy;
-    int total = qMin(abstractModel->columnCount(QModelIndex()), actions.count() + 1);
-    for (int i = 1; i < total; ++i)
-        actions.at(i - 1)->setChecked(!headerView->isSectionHidden(i));
-    
-    return true;
-}
-
 
 QStringList UrlModel::mimeTypes() const{
     return QStringList(QLatin1String("text/uri-list"));
