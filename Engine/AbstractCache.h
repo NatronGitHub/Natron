@@ -28,6 +28,8 @@ class CacheEntry : boost::noncopyable {
 public:
     CacheEntry() {};
     virtual ~CacheEntry() {};
+    virtual void lock() const = 0;
+    virtual void unlock() const = 0;
     virtual int refCount() const = 0;
     virtual void addReference() = 0;
     virtual void removeReference() = 0;
@@ -43,42 +45,46 @@ public:
 protected:
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
-    virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
+    //virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
 
     /*Must implement the deallocation of the entry*/
-    virtual void deallocate() = 0;
+    //virtual void deallocate() = 0;
 };
 
 // a helper for CacheEntry, holding a reference count and size
 class CacheEntryHelper : public CacheEntry {
-    int _refCount;
 public:
-    CacheEntryHelper():_refCount(0),_size(0) {}
-    virtual ~CacheEntryHelper() {};
+    CacheEntryHelper(): _size(0), _lock(), _refCount(0) {}
+    virtual ~CacheEntryHelper() OVERRIDE {};
+
+    virtual void lock() const OVERRIDE { _lock.lock(); }
+    virtual void unlock() const OVERRIDE { assert(!_lock.tryLock()); _lock.unlock(); }
+
+    virtual int refCount() const OVERRIDE { assert(!_lock.tryLock()); return _refCount; }
+    virtual void addReference() OVERRIDE { assert(!_lock.tryLock()); ++_refCount; assert(_refCount >= 0);}
     
-    virtual int refCount() const {return _refCount;}
-    
-    virtual void addReference() {++_refCount; assert(_refCount >= 0);}
-    
-    virtual void removeReference() {--_refCount; assert(_refCount >= 0);}
+    virtual void removeReference() OVERRIDE { assert(!_lock.tryLock()); --_refCount; assert(_refCount >= 0);}
     
     /*Returns true if the cache can delete this entry*/
-    virtual bool isRemovable() const {return _refCount == 0;}
+    virtual bool isRemovable() const OVERRIDE { assert(!_lock.tryLock()); return _refCount == 0;}
     
     /*Returns the size of the entry in bytes.*/
-    virtual U64 size() const {return _size;}
+    virtual U64 size() const OVERRIDE { assert(!_lock.tryLock()); return _size;}
     
-    virtual bool isMemoryMappedEntry () const =0;
+    virtual bool isMemoryMappedEntry () const OVERRIDE = 0;
     
     /*Must be implemented to handle the allocation of the entry.
      Must return true on success,false otherwise.*/
-    virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
+    //virtual bool allocate(U64 byteCount, const char* path = 0) = 0;
 
     /*Must implement the deallocation of the entry*/
-    virtual void deallocate() = 0;
+    //virtual void deallocate() = 0;
 
 protected:
     U64 _size; //the size in bytes of the entry
+    mutable QMutex _lock;
+private:
+    int _refCount;
 };
 
 /*A memory-mapped cache entry
@@ -92,16 +98,21 @@ public:
     virtual ~MemoryMappedEntry();
 
     /*Returns a pointer to the memory mapped object*/
-    const MemoryFile* getMappedFile() const {return _mappedFile;}
-    
+    // the user is responsible for locking the entry before getting the pointer
+    // and after manipulating its content
+    const MemoryFile* getMappedFile() const {
+        assert(!_lock.tryLock()); // the cache entry should be locked
+        return _mappedFile;
+    }
+
     /*Must print a string representing all the data, terminated by a
      new line character.*/
-    virtual std::string printOut()=0;
+    virtual std::string printOut() = 0;
     
     /*Returns the path of the file backing the entry*/
     std::string path() const {return _path;}
     
-    virtual bool isMemoryMappedEntry () const {return true;};
+    virtual bool isMemoryMappedEntry () const OVERRIDE {return true;};
     
     /*Allocates the mapped file*/
     virtual bool allocate(U64 byteCount, const char* path =0);
@@ -117,22 +128,32 @@ public:
     
 };
 
+#if 0 // unused
 class InMemoryEntry : public CacheEntryHelper {
-protected:
+private:
     char* _data; // < the buffer holding data
 public:
     InMemoryEntry();
     virtual ~InMemoryEntry();
 
-    virtual bool isMemoryMappedEntry () const {return false;};
+    virtual bool isMemoryMappedEntry () const OVERRIDE {return false;};
     
+    /* Returns a pointer to the data */
+    // the user is responsible for locking the entry before getting the pointer
+    // and after manipulating its content
+    const char* getData() const {
+        assert(!_lock.tryLock()); // the cache entry should be locked
+        return _data;
+    }
+    void unlock() { _lock.unlock(); }
+
     /*allocates the buffer*/
     virtual bool allocate(U64 byteCount,const char* path = 0);
 
     /*deallocate the buffer*/
     virtual void deallocate();
 };
-
+#endif
 
 
 /*Aims to provide an abstract base class for caches. 2 cache modes are availables:
@@ -267,7 +288,9 @@ public:
 
     virtual ~AbstractCacheHelper();
 
+    // on input, entry must be locked, on output it is still locked
     virtual bool add(U64 key,CacheEntry* entry) OVERRIDE;
+
     virtual void clear() OVERRIDE FINAL;
     virtual std::string cacheName() = 0;
     virtual void setMaximumCacheSize(U64 size) OVERRIDE FINAL {_maximumCacheSize = size;}
@@ -279,6 +302,7 @@ public:
     /*Returns an iterator to the cache. If found it points
      to a valid cache entry, otherwise it points  to end.
      */
+    // on output the cache entry is locked, and must be unlocked using unlock()
     CacheEntry* getCacheEntry(U64 key) ;
 
 
@@ -316,14 +340,6 @@ public:
  on disk so they can survive several runs. These caches can handle a bigger amount of data than
  in-memory caches, but are a bit slower.*/
 class AbstractDiskCache : public AbstractCacheHelper {
-    
-    U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
-    double _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
-    
-    /*Keeps track of the cache entries that reside in the virtual adress space of the process.
-     These cache entries must be of type MemoryMappedEntry, typecheck is done by the class internally.*/
-    CacheContainer _inMemoryPortion;
-    
 public:
     /*Constructs an empty disk cache of size 0. You must explicitly call
      setMaximumCacheSize to allow the cache to grow. The inMemoryUsage indicates
@@ -386,6 +402,7 @@ protected:
      to a valid cache entry, otherwise it points to to end.
      Protected so the derived class must explicitly encapsulate
      this function: the CacheIterator should be opaque to the end user.*/
+    // on output the CacheEntry is locked, and must be unlocked using CacheEntry::unlock()
     CacheEntry* isInMemory(U64 key);
     
     
@@ -393,7 +410,14 @@ private:
     
     /*used by the restore func.*/
     void cleanUpDiskAndReset();
-    
+
+private:
+    U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
+    double _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)
+
+    /*Keeps track of the cache entries that reside in the virtual adress space of the process.
+     These cache entries must be of type MemoryMappedEntry, typecheck is done by the class internally.*/
+    CacheContainer _inMemoryPortion;
 };
 
 #endif /* defined(POWITER_ENGINE_ABSTRACTCACHE_H_) */

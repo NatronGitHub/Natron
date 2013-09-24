@@ -50,7 +50,7 @@ private:
 template<class T> T* Singleton<T>::instance() {
     if ( Singleton::instance_ == 0 ) {
         if(_mutex){
-            QMutexLocker guard(_mutex);
+            QMutexLocker locker(_mutex);
         }
         if ( Singleton::instance_ == 0 ) {
             Singleton::instance_ = CreateInstance();

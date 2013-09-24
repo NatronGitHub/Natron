@@ -154,7 +154,7 @@ void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
     to_byte(Channel_blue, toB, blue, alpha, row->right() - row->offset(),4);
     to_byte(Channel_alpha, toA, alpha, alpha, row->right() - row->offset(),4);
     row->release();
-    
+    // row is unlocked by release()
 }
 
 WriteQt::WriteQt(Writer* writer):Write(writer),_buf(0){

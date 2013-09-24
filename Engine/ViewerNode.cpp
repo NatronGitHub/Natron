@@ -188,7 +188,8 @@ std::string ViewerNode::description() const {
 
 void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
     Row* row = input(_activeInput)->get(y,offset,range);
-    if(row){
+    if (row) {
+        // row is locked
         int zoomedY = out->zoomedY();
         //assert(zoomedY > 0.);
         row->set_zoomedY(zoomedY);
@@ -206,6 +207,7 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
         a = (*row)[Channel_alpha];
         _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
         row->release();
+        // row is unlocked by release()
     }
 }
 

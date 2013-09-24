@@ -223,7 +223,7 @@ bool OfxNode::isInputOptional(int inpubNb) const {
     return inputs[inputs.size()-1-inpubNb]->isOptional();
 }
 bool OfxNode::_validate(bool doFullWork){
-    QMutexLocker g(&_firstTimeMutex);
+    QMutexLocker locker(&_firstTimeMutex);
     _firstTime = true;
     setFrameRange(info().firstFrame(), info().lastFrame());
     
@@ -325,10 +325,10 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
     OfxPointD renderScale;
     effectInstance()->getRenderScaleRecursive(renderScale.x, renderScale.y);
     {
-        QMutexLocker g(&_firstTimeMutex);
+        QMutexLocker locker(&_firstTimeMutex);
         if(_firstTime){
             _firstTime = false;
-            OfxStatus stat = effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, renderScale);
+            OfxStatus stat = effectInstance()->renderAction(0, kOfxImageFieldNone, renderW, renderScale);
             assert(stat == kOfxStatOK);
 
         }

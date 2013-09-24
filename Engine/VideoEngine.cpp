@@ -136,6 +136,7 @@ static void metaReadData(Reader* reader,int current_frame) {
 static void metaEnginePerRow(Row* row, Node* output){
     assert(row);
     assert(output);
+    row->lock();
     output->engine(row->y(), row->offset(), row->right(), row->channels(), row);
     delete row;
     // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
@@ -542,8 +543,9 @@ void VideoEngine::run(){
                     }
                     --_openGLCount;
                 }
-                assert(_lastFrameInfos._cachedEntry);
-                _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
+                assert(iscached);
+                iscached->removeReference(); // the cached engine has finished using this frame
+                iscached->unlock();
                 emit frameRendered(currentFrame);
                 engineLoop();
                 _model->getGeneralMutex()->unlock();
@@ -602,7 +604,9 @@ void VideoEngine::run(){
             for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
                 Row* row = new Row(x,*it,r,outChannels);
                 assert(row);
+                row->lock();
                 row->set_zoomedY(counter);
+                row->unlock();
                 // RowRunnable* worker = new RowRunnable(row,_dag.getOutput());
                 //            if(counter%10 == 0){
                 //            // UNCOMMENT to report progress.
@@ -648,6 +652,7 @@ void VideoEngine::run(){
                     assert(viewerGL->getFrameData());
                     memcpy(entry->getMappedFile()->data(),viewerGL->getFrameData(),_lastFrameInfos._dataSize);
                     entry->removeReference(); // removing reference as we're done with the entry.
+                    entry->unlock();
                 }
             }
             

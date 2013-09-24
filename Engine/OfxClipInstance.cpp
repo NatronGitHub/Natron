@@ -247,6 +247,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         } else {
             ImageFetcher srcImg(input, (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2)-1, (int)std::ceil(roi.y2)-1,Mask_RGBA);
             srcImg.claimInterest(true);
+            // all rows are locked
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
             /*Copying all rows living in the InputFetcher to the ofx image*/
@@ -262,23 +263,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
                 const float* g = (*row)[Channel_green];
                 const float* b = (*row)[Channel_blue];
                 const float* a = (*row)[Channel_alpha];
-                if(r)
-                    rowPlaneToOfxPackedBuffer(Channel_red, r+row->offset(), row->right()-row->offset(), dstImg);
-                else
-                    rowPlaneToOfxPackedBuffer(Channel_red, NULL , row->right()-row->offset(), dstImg);
-                if(g)
-                    rowPlaneToOfxPackedBuffer(Channel_green, g+row->offset(), row->right()-row->offset(), dstImg);
-                else
-                    rowPlaneToOfxPackedBuffer(Channel_green, NULL , row->right()-row->offset(), dstImg);
-                if(b)
-                    rowPlaneToOfxPackedBuffer(Channel_blue, b+row->offset(), row->right()-row->offset(), dstImg);
-                else
-                    rowPlaneToOfxPackedBuffer(Channel_blue, NULL , row->right()-row->offset(), dstImg);
-                if(a)
-                    rowPlaneToOfxPackedBuffer(Channel_alpha, a+row->offset(), row->right()-row->offset(), dstImg);
-                else
-                    rowPlaneToOfxPackedBuffer(Channel_alpha, NULL , row->right()-row->offset(), dstImg);
-            }
+                rowPlaneToOfxPackedBuffer(Channel_red,   r ? r+row->offset() : NULL, row->right()-row->offset(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_green, g ? g+row->offset() : NULL, row->right()-row->offset(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_blue,  b ? b+row->offset() : NULL, row->right()-row->offset(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_alpha, a ? a+row->offset() : NULL, row->right()-row->offset(), dstImg);
+                srcImg.erase(y);
+             }
             
             return ret;
         }

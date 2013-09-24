@@ -201,6 +201,7 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
 
 
 /*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
+// on output, the FrameEntry is locked, and must be unlocked using FrameEntry::unlock()
 FrameEntry* ViewerCache::addFrame(U64 key,
                                   QString inputFileNames,
                                   U64 treeVersion,
@@ -240,7 +241,7 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     }else{
         dataSize = textureRect.w*textureRect.h*4*sizeof(float);
     }
-    
+    out->lock();
     if(!out->allocate(dataSize,name.c_str())){
         delete out;
         return NULL;
@@ -251,10 +252,10 @@ FrameEntry* ViewerCache::addFrame(U64 key,
     }
     emit addedFrame();
     out->addReference(); //increase refcount BEFORE adding it to the cache and exposing it to the other threads
-    if(AbstractDiskCache::add(key, out)){
+    if (AbstractDiskCache::add(key, out)) {
         emit removedFrame();
     }
-    assert(out->getMappedFile());
+    //assert(out->getMappedFile());
     return out;
 }
 
@@ -263,13 +264,14 @@ void ViewerCache::clearInMemoryPortion(){
     clearInMemoryCache();
 }
 
+// on output, the FrameEntry is locked, and must be unlocked using FrameEntry::unlock()
 FrameEntry* ViewerCache::get(U64 key){
     CacheEntry* entry = isInMemory(key);
     if (!entry) {// not in memory
         entry = getCacheEntry(key);
-        if(!entry){ //neither on disk
+        if (!entry) { //neither on disk
             return NULL;
-        }else{ // found on disk
+        } else { // found on disk
             FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
             assert(frameEntry);
             if(!frameEntry->reOpen()){
@@ -278,7 +280,7 @@ FrameEntry* ViewerCache::get(U64 key){
             emit addedFrame();
             return frameEntry;
         }
-    }else{ // found in memory
+    } else { // found in memory
         FrameEntry* frameEntry = dynamic_cast<FrameEntry*>(entry);
         assert(frameEntry);
         emit addedFrame();
