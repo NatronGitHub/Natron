@@ -790,7 +790,8 @@ void VideoEngine::abort(){
 
 
 void VideoEngine::seek(int frame){
-    refreshAndContinueRender(false, _dag.getOutput(),frame);
+    if(frame >= _dag.getOutput()->firstFrame() && frame <= _dag.getOutput()->lastFrame())
+        refreshAndContinueRender(false, _dag.getOutput(),frame);
 }
 
 void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
