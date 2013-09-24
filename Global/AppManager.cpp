@@ -677,6 +677,7 @@ void AppManager::loadBuiltinReads(){
         }
         delete readQt;
     }
+#if 0 // deprecated
     {
         Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
         assert(readFfmpeg);
@@ -692,6 +693,7 @@ void AppManager::loadBuiltinReads(){
         }
         delete readFfmpeg;
     }
+#endif // deprecated
 }
 void AppManager::loadBuiltinNodePlugins(){
     // these  are built-in nodes

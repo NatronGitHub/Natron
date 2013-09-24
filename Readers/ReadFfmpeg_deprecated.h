@@ -17,6 +17,8 @@
 #ifndef POWITER_READERS_READFFMPEG_DEPRECATED_H_
 #define POWITER_READERS_READFFMPEG_DEPRECATED_H_
 
+#if 0 // this is deprecated
+
 #include <vector>
 #include <string>
 #include <map>
@@ -338,5 +340,7 @@ private:
 	QMutex _lock;
     
 };
+
+#endif // deprecated
 
 #endif /* defined(POWITER_READERS_READFFMPEG_DEPRECATED_H_) */
