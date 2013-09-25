@@ -155,7 +155,6 @@ HEADERS += \
     Engine/OfxNode.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
-    Engine/ReferenceCountedObject.h \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
