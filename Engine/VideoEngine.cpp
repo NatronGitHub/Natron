@@ -86,7 +86,8 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
 }
 
-VideoEngine::~VideoEngine(){
+VideoEngine::~VideoEngine() {
+    assert(_workerThreadsWatcher);
     _workerThreadsWatcher->waitForFinished();
     {
         QMutexLocker locker(&_abortedMutex);
@@ -142,11 +143,11 @@ static void metaEnginePerRow(Row* row, Node* output){
     // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
 }
 
-void VideoEngine::render(OutputNode* output,int startingFrame,int frameCount,bool fitFrameToViewer,bool forward,bool sameFrame){
+void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, bool fitFrameToViewer, bool forward, bool sameFrame) {
+    assert(output);
     /*aborting any previous rendering*/
     if(_working)
         abort();
-    
     output->seekFrame(startingFrame);
 //    if (_working) {
 //        return;
@@ -752,6 +753,8 @@ void VideoEngine::allocateFrameStorage(){
 }
 
 void RowRunnable::run() {
+    assert(_row);
+    assert(_output);
     _output->engine(_row->y(), _row->offset(), _row->right(), _row->channels(), _row);
     emit finished(_row->y(),_row->zoomedY());
     delete _row;
@@ -782,7 +785,8 @@ void VideoEngine::setDesiredFPS(double d){
 }
 
 
-void VideoEngine::abort(){
+void VideoEngine::abort() {
+    assert(_workerThreadsWatcher);
     _workerThreadsWatcher->cancel();
     {
         QMutexLocker locker(&_abortedMutex);
