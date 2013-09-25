@@ -220,7 +220,9 @@ bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
         }
         _size += entry->size();
         evicted = _cache.insert(key,entry,evict);
-        _size -= evicted.second->size();
+        if (evicted.second) {
+            _size -= evicted.second->size();
+        }
     }
     if (evicted.second) {
         /*while we removed an entry from the cache that must not be removed, we insert it again.
@@ -273,7 +275,9 @@ bool AbstractDiskCache::add(U64 key, CacheEntry* entry) {
         }
         _inMemorySize += mmEntry->size();
         evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
-        _inMemorySize -= evicted.second->size();
+        if (evicted.second) {
+            _inMemorySize -= evicted.second->size();
+        }
     }
     if (evicted.second) {
         evicted.second->lock();
