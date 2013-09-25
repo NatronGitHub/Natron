@@ -353,7 +353,12 @@ void ViewerGL::resizeGL(int width, int height){
     }
     checkGLErrors();
     _ms = UNDEFINED;
-    _viewerTab->getInternalNode()->updateDAGAndRender(true);
+    assert(_viewerTab);
+    ViewerNode* viewer = _viewerTab->getInternalNode();
+    assert(viewer);
+    if (viewer->getUiContext()) {
+        _viewerTab->getInternalNode()->updateDAGAndRender(true);
+    }
 }
 void ViewerGL::paintGL()
 {
