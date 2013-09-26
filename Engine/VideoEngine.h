@@ -303,10 +303,11 @@ private:
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
 
-    QWaitCondition _openGLCondition;
-    QMutex _openGLMutex; //!< protects *_openGLCount
-    int _openGLCount;
-    
+    QWaitCondition _pboUnMappedCondition;
+    QMutex _pboUnMappedMutex; //!< protects *_openGLCount
+    int _pboUnMappedCount;
+
+       
     QWaitCondition _startCondition;
     QMutex _startMutex; //!< protects _startCount
     int _startCount;

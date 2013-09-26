@@ -67,9 +67,9 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _restart(true)
 , _forceRender(false)
 , _workerThreadsWatcher(new QFutureWatcher<void>)
-, _openGLCondition()
-, _openGLMutex()
-, _openGLCount(0)
+, _pboUnMappedCondition()
+, _pboUnMappedMutex()
+, _pboUnMappedCount(0)
 , _startCondition()
 , _startMutex()
 , _startCount(0)
@@ -321,38 +321,17 @@ void VideoEngine::run(){
             }
         }
         
-        /*check whether we need to stop the engine*/
-        if(_aborted){
-            /*aborted by the user*/
-            stopEngine();
-            {
-                QMutexLocker locker(&_startMutex);
-                while(_startCount <= 0) {
-                    _startCondition.wait(&_startMutex);
-                }
-                --_startCount;
-            }
-            continue;
-            //return;
-        }
-        if((_dag.isOutputAViewer()
+        if(_aborted || // aborted by the user
+           
+           (_dag.isOutputAViewer()
             &&  _lastRunArgs._recursiveCall
             && _dag.lastFrame() == _dag.firstFrame()
             && _lastRunArgs._frameRequestsCount == -1
-            && _lastRunArgs._frameRequestIndex == 1)
-           || _lastRunArgs._frameRequestsCount == 0){
-            /*1 frame in the sequence and we already computed it*/
-            stopEngine();
-            {
-                QMutexLocker locker(&_startMutex);
-                while(_startCount <= 0) {
-                    _startCondition.wait(&_startMutex);
-                }
-                --_startCount;
-            }
-            continue;
-        }else if(!_dag.isOutputAViewer() && currentFrame == lastFrame+1){
-            /*stoping the engine for writers*/
+            && _lastRunArgs._frameRequestIndex == 1) // the last run was the refresh of a frame
+           
+           || _lastRunArgs._frameRequestsCount == 0 // the sequence ended
+           || (!_dag.isOutputAViewer() && currentFrame == lastFrame+1)){// the sequence ended
+
             stopEngine();
             {
                 QMutexLocker locker(&_startMutex);
@@ -535,12 +514,12 @@ void VideoEngine::run(){
                 _lastFrameInfos._textureRect = iscached->_textureRect;
                 
                 {
-                    QMutexLocker locker(&_openGLMutex);
+                    QMutexLocker locker(&_pboUnMappedMutex);
                     emit doCachedEngine();
-                    while(_openGLCount <= 0) {
-                        _openGLCondition.wait(&_openGLMutex);
+                    while(_pboUnMappedCount <= 0) {
+                        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
                     }
-                    --_openGLCount;
+                    --_pboUnMappedCount;
                 }
                 assert(_lastFrameInfos._cachedEntry);
                 _lastFrameInfos._cachedEntry->removeReference(); // the cached engine has finished using this frame
@@ -566,12 +545,12 @@ void VideoEngine::run(){
         _lastFrameInfos._rows = rows;
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
-            QMutexLocker locker(&_openGLMutex);
+            QMutexLocker locker(&_pboUnMappedMutex);
             emit doFrameStorageAllocation();
-            while(_openGLCount <= 0) {
-                _openGLCondition.wait(&_openGLMutex);
+            while(_pboUnMappedCount <= 0) {
+                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
             }
-            --_openGLCount;
+            --_pboUnMappedCount;
         }
         
         if (!_lastRunArgs._sameFrame) {
@@ -693,12 +672,12 @@ void VideoEngine::engineLoop(){
     }
     ++_lastRunArgs._frameRequestIndex;//incrementing the frame counter
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-        QMutexLocker locker(&_openGLMutex);
+        QMutexLocker locker(&_pboUnMappedMutex);
         emit doUpdateViewer();
-        while(_openGLCount <= 0) {
-            _openGLCondition.wait(&_openGLMutex);
+        while(_pboUnMappedCount <= 0) {
+            _pboUnMappedCondition.wait(&_pboUnMappedMutex);
         }
-        --_openGLCount;
+        --_pboUnMappedCount;
     }
     _lastRunArgs._fitToViewer = false;
     _lastRunArgs._recursiveCall = true;
@@ -707,43 +686,50 @@ void VideoEngine::engineLoop(){
 }
 
 void VideoEngine::updateViewer(){
-    QMutexLocker locker(&_openGLMutex);
+    QMutexLocker locker(&_pboUnMappedMutex);
     ViewerGL* viewer = _dag.outputAsViewer()->getUiContext()->viewer;
     /*This should remove the flickering on the Viewer. This is because we're trying to
      fill a texture with a buffer not necessarily filled correctly if aborted is true.
      
      ||| Somehow calling unMapPBO() leads to a race condition. Commenting out
      while this is resolved.*/
-    // if(!_aborted){
+    //if(!_aborted)
         viewer->copyPBOToRenderTexture(_lastFrameInfos._textureRect); // returns instantly
-                                                                      //}else{
-        
-        //viewer->unMapPBO();
-        //   }
+                                                                      //else
+                                                                      //        viewer->unMapPBO();
+    
     _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
     if((_lastRunArgs._frameRequestIndex%24)==0){
         emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
     }
     _lastRunArgs._zoomFactor = viewer->getZoomFactor();
     updateDisplay(); // updating viewer & pixel aspect ratio if needed
-    ++_openGLCount;
-    _openGLCondition.wakeOne();
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
 }
 
 void VideoEngine::cachedEngine(){
-    QMutexLocker locker(&_openGLMutex);
+     QMutexLocker locker(&_pboUnMappedMutex);
     _dag.outputAsViewer()->cachedFrameEngine(_lastFrameInfos._cachedEntry);
-    ++_openGLCount;
-    _openGLCondition.wakeOne();
+//    while(_pboUnMappedCount <= 0) {
+//        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+//    }
+//    --_pboUnMappedCount;
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
 }
 
 void VideoEngine::allocateFrameStorage(){
-    QMutexLocker locker(&_openGLMutex);
-    _lastFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(
-                                                                                                    _lastFrameInfos._textureRect.w,
+     QMutexLocker locker(&_pboUnMappedMutex);
+    _lastFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(_lastFrameInfos._textureRect.w,
                                                                                                     _lastFrameInfos._textureRect.h);
-    ++_openGLCount;
-    _openGLCondition.wakeOne();
+//    while(_pboUnMappedCount <= 0) {
+//        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+//    }
+//    --_pboUnMappedCount;
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
+   
 }
 
 void RowRunnable::run() {
