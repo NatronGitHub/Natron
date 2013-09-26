@@ -320,6 +320,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*Returns in row, a row containing the results expected of this node
      for the line y , channels and range (r-x). Data may come from the cache,
      otherwise engine() gets called.
+     The row is LOCKED and must be unlocked after use (using Row::unlock())
      */
     Row* get(int y,int x,int r);
     

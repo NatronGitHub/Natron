@@ -24,16 +24,7 @@ class Node;
  nodes. This object is kind of a generalisation of the node->get() function.
  Note that this object launches new threads to actually get the rows.*/
 class ImageFetcher : public QObject{
-    
     Q_OBJECT
-    
-    int _x,_y,_r,_t;
-    ChannelSet _channels;
-    Node* _node;
-    bool _isFinished;
-    std::map<int,Row*> _interest;
-    QVector<int> _sequence;
-    QFutureWatcher<Row*>* _results;
 public:
     /*Construct an image fetcher object that will fetch all the row in the range (y,t)
      for the given channels for the node specified in parameters. No fetching
@@ -64,6 +55,7 @@ public:
      of rows that are inter-dependent; if they were independent you could use
      Node::get in the first place.
      */
+    // on output, all rows referenced in ImageFetcher are locked, and must be unlocked using Row::unlock()
     void claimInterest(bool blocking = false);
     
     bool isFinished() const {return _isFinished;}
@@ -72,8 +64,13 @@ public:
      if it couldn't find it.
      !!WARNING: calling at() while isFinished still returns false
      will block until the results are available for this row*/
+    // on output, the row is locked, and must be unlocked using Row::unlock()
     Row* at(int y) const;
-    
+
+    // erase the row at y
+    // the row must be locked
+    void erase(int y);
+
     /*write the rows to an image on disk using QImage.*/
     void debugImageFetcher(const std::string& filename);
     
@@ -94,7 +91,17 @@ signals:
     void hasFinishedCompletly();
     
 private:
+    // on output, the row is locked, and must be unlocked using Row::unlock()
     Row* getInputRow(Node* node,int y, int x,int r);
+
+private:
+    int _x,_y,_r,_t;
+    ChannelSet _channels;
+    Node* _node;
+    bool _isFinished;
+    std::map<int,Row*> _interest;
+    QVector<int> _sequence;
+    QFutureWatcher<Row*>* _results;
 };
 
 #endif /* defined(POWITER_ENGINE_IMAGEFETCHER_H_) */

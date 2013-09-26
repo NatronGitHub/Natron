@@ -52,10 +52,14 @@ static bool removeRecursively(const QString & dirName)
 }
 #endif
 
-MemoryMappedEntry::MemoryMappedEntry():_mappedFile(0){
-    
+MemoryMappedEntry::MemoryMappedEntry()
+: _path()
+, _mappedFile(0)
+{
 }
-bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
+
+bool MemoryMappedEntry::allocate(U64 byteCount,const char* path) {
+    assert(!_lock.tryLock());
     assert(path);
 #ifdef POWITER_DEBUG
     if(QFile::exists(path)){
@@ -85,7 +89,9 @@ bool MemoryMappedEntry::allocate(U64 byteCount,const char* path){
     }
     return true;
 }
-void MemoryMappedEntry::deallocate(){
+
+void MemoryMappedEntry::deallocate() {
+    assert(!_lock.tryLock());
     if(_mappedFile){
         delete _mappedFile;
     }
@@ -93,6 +99,7 @@ void MemoryMappedEntry::deallocate(){
 }
 
 bool MemoryMappedEntry::reOpen(){
+    assert(!_lock.tryLock());
     if(_path.empty()) return false;
     try{
         _mappedFile = new MemoryFile(_path.c_str(),Powiter::if_exists_keep_if_dont_exists_fail);
@@ -107,37 +114,43 @@ bool MemoryMappedEntry::reOpen(){
     return true;
 }
 
-MemoryMappedEntry::~MemoryMappedEntry(){
+MemoryMappedEntry::~MemoryMappedEntry() {
     deallocate();
-    
 }
 
-InMemoryEntry::InMemoryEntry():_data(0){
-    
+#if 0 // unused
+InMemoryEntry::InMemoryEntry()
+:_data(0)
+{
 }
-bool InMemoryEntry::allocate(U64 byteCount,const char* path){
+
+bool InMemoryEntry::allocate(U64 byteCount,const char* path) {
+    assert(!_lock.tryLock());
     Q_UNUSED(path);
     _data = (char*)malloc(byteCount);
     if(!_data) return false;
     return true;
 }
-void InMemoryEntry::deallocate(){
+
+void InMemoryEntry::deallocate() {
+    assert(!_lock.tryLock());
     free(_data);
     _data = 0;
 }
 InMemoryEntry::~InMemoryEntry(){
     deallocate();
 }
-
+#endif
 
 
 AbstractCacheHelper::AbstractCacheHelper():_maximumCacheSize(0),_size(0){
     
 }
 AbstractCacheHelper::~AbstractCacheHelper(){
-    QMutexLocker guard(&_lock);
+    QMutexLocker locker(&_lock);
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
+        entry->lock();
         delete entry;
     }
     _cache.clear();
@@ -145,11 +158,12 @@ AbstractCacheHelper::~AbstractCacheHelper(){
     
 }
 
-void AbstractCacheHelper::clear(){
-    QMutexLocker guard(&_lock);
+void AbstractCacheHelper::clear() {
+    QMutexLocker locker(&_lock);
     std::vector<std::pair<U64,CacheEntry*> > backUp;
     for(CacheIterator it = _cache.begin() ; it!=_cache.end() ; ++it) {
         CacheEntry* entry = getValueFromIterator(it);
+        entry->lock();
         assert(entry);
         if (entry->isMemoryMappedEntry()) {
             MemoryMappedEntry* mmapEntry = dynamic_cast<MemoryMappedEntry*>(entry);
@@ -169,44 +183,59 @@ void AbstractCacheHelper::clear(){
     _cache.clear();
     for (unsigned int i = 0; i < backUp.size(); ++i) {
         add(backUp[i].first, backUp[i].second);
+        backUp[i].second->unlock();
     }
 }
+
 void AbstractCacheHelper::erase(CacheIterator it){
     _cache.erase(it);
 }
 
 /*Returns an iterator to the cache. If found it points
  to a valid cache entry, otherwise it points to to end.*/
+// on output, the cache entry is locked
 CacheEntry* AbstractCacheHelper::getCacheEntry(U64 key)  {
-    QMutexLocker g(&_lock);
-    CacheEntry* ret = _cache(key);
-    if(ret) ret->addReference();
+    CacheEntry* ret;
+    {
+        QMutexLocker locker(&_lock);
+        ret = _cache(key);
+    }
+    if(ret) {
+        // ret is not locked (freshly grabbed from the map)
+        ret->lock();
+        ret->addReference();
+    }
     return ret;
 }
 
 
+// on input, entry must be locked, on output it is still locked
 bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
-    QMutexLocker guard(&_lock);
+    std::pair<U64,CacheEntry*> evicted;
     bool evict = false;
     {
+        QMutexLocker locker(&_lock);
         if (_size >= _maximumCacheSize) {
             evict = true;
         }
         _size += entry->size();
+        evicted = _cache.insert(key,entry,evict);
+        if (evicted.second) {
+            _size -= evicted.second->size();
+        }
     }
-    std::pair<U64,CacheEntry*> evicted = _cache.insert(key,entry,evict);
-    
     if (evicted.second) {
         /*while we removed an entry from the cache that must not be removed, we insert it again.
          If all the entries in the cache cannot be removed (in theory it should never happen), the
          last one will be evicted.*/
         
         while(!evicted.second->isRemovable()) {
+            QMutexLocker locker(&_lock);
             evicted = _cache.insert(key,entry,true);
             assert(evicted.second);
+            _size -= evicted.second->size();
         }
-        _size -= evicted.second->size();
-        
+
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
         if (evicted.second->isMemoryMappedEntry()) {
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
@@ -222,53 +251,73 @@ bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
 }
 
 bool AbstractMemoryCache::add(U64 key,CacheEntry* entry){
-    assert(dynamic_cast<InMemoryEntry*>(entry));
+    assert(!entry->isMemoryMappedEntry());
     return AbstractCacheHelper::add(key, entry);
 }
 
-AbstractDiskCache::AbstractDiskCache(double inMemoryUsage):_inMemorySize(0){
-    _maximumInMemorySize = inMemoryUsage;
+AbstractDiskCache::AbstractDiskCache(double inMemoryUsage)
+: _inMemorySize(0)
+, _maximumInMemorySize(inMemoryUsage)
+, _inMemoryPortion()
+{
 }
 
-bool AbstractDiskCache::add(U64 key,CacheEntry* entry){
+// on input, entry must be locked, on output it is still locked
+bool AbstractDiskCache::add(U64 key, CacheEntry* entry) {
     MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(entry);
     assert(mmEntry);
     bool mustEvictFromMemory = false;
-    QMutexLocker guard(&_lock);
+    std::pair<U64,CacheEntry*> evicted;
     {
+        QMutexLocker locker(&_lock);
         if(_inMemorySize > _maximumInMemorySize*getMaximumSize()){
             mustEvictFromMemory = true;
         }
         _inMemorySize += mmEntry->size();
+        evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
+        if (evicted.second) {
+            _inMemorySize -= evicted.second->size();
+        }
     }
-    std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.insert(key, mmEntry, mustEvictFromMemory);
     if (evicted.second) {
+        evicted.second->lock();
         if (evicted.second->isRemovable()) {
             /*switch the evicted entry from memory to the disk.*/
             MemoryMappedEntry* mmEvictedEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
             assert(mmEvictedEntry);
             mmEvictedEntry->deallocate();
-            _inMemorySize -= mmEvictedEntry->size();
-            return AbstractCacheHelper::add(evicted.first, evicted.second);
+            bool ret = AbstractCacheHelper::add(evicted.first, evicted.second);
+            evicted.second->unlock();
+            return ret;
         } else {
             /*We risk an infinite loop here. It might happen if all entries in the cache cannot be removed.
              This is bad design if all entries in the cache cannot be removed, this means that they all live
              in memory and that you shouldn't use a disk cache for this purpose.*/
             add(evicted.first,evicted.second);
+            evicted.second->unlock();
         }
     }
     
     return false;
 }
 
+// on output the CacheEntry is locked, and must be unlocked using CacheEntry::unlock()
 CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
-    QMutexLocker g(&_lock);
-    CacheEntry* ret = _inMemoryPortion(key);
-    if(ret)ret->addReference();
+    CacheEntry* ret;
+    {
+        QMutexLocker locker(&_lock);
+        ret = _inMemoryPortion(key);
+    }
+    if (ret) {
+        // ret is not locked (freshly grabbed from the map)
+        ret->lock();
+        ret->addReference();
+    }
     return ret;
 }
 
 void AbstractDiskCache::initializeSubDirectories(){
+    assert(!_lock.tryLock()); // must be locked
     QDir cacheFolder(getCachePath());
     cacheFolder.mkpath(".");
 
@@ -294,26 +343,24 @@ AbstractDiskCache::~AbstractDiskCache(){
 }
 
 void AbstractDiskCache::clearInMemoryCache() {
-    _inMemorySize = 0;
-    U32 evictedNotRemovableCount = 0;
+    QMutexLocker locker(&_lock);
     while (_inMemoryPortion.size() > 0) {
         std::pair<U64,CacheEntry*> evicted = _inMemoryPortion.evict();
         assert(evicted.second);
+        evicted.second->lock();
+        _inMemorySize -= evicted.second->size();
+        locker.unlock(); // avoid deadlock
         if (evicted.second->isRemovable()) { // shouldn't we remove it anyay, even if it's not removable?
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
             assert(mmEntry);
             mmEntry->deallocate();
             AbstractCacheHelper::add(evicted.first, evicted.second);
         } else {
-            /*I think I fixed it with this counter. If all the frames are not removable, we
-             just return. We can't actually remove a frame not removable since it is currently
-             used by the engine, and this is probably during a memcpy call.*/
-            ++evictedNotRemovableCount;
-            if(evictedNotRemovableCount ==  _inMemoryPortion.size())
-                return;
             add(evicted.first, evicted.second);
 #warning "if evicted.second->isRemovable() is false, we go into an infinite loop here! Just do a simple project with reader+viewer"
         }
+        evicted.second->unlock();
+        locker.relock();
     }
 }
 
@@ -328,22 +375,28 @@ void AbstractDiskCache::save(){
     QString newCachePath(getCachePath());
     newCachePath.append(QDir::separator());
     newCachePath.append("restoreFile.powc");
-    QFile _restoreFile(newCachePath);
-    _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
-    QTextStream out(&_restoreFile);
+    QFile restoreFile(newCachePath);
+    restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
+    QTextStream out(&restoreFile);
     /*clearing in-memory cache so only the on-disk portion has entries left.*/
     clearInMemoryCache();
-    for(CacheIterator it = _cache.begin(); it!= _cache.end() ; ++it) {
-        MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
-        assert(mmEntry);
-        out << mmEntry->printOut().c_str() << endl;
+    {
+        QMutexLocker locker(&_lock);
+        for(CacheIterator it = _cache.begin(); it!= _cache.end() ; ++it) {
+            MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
+            assert(mmEntry);
+            mmEntry->lock();
+            out << mmEntry->printOut().c_str() << endl;
+            mmEntry->unlock();
+        }
     }
-    _restoreFile.close();
+    restoreFile.close();
     
     
 }
 
 void AbstractDiskCache::restore(){
+    QMutexLocker locker(&_lock);
     QString newCachePath(getCachePath());
     QString settingsFilePath(newCachePath);
     settingsFilePath.append(QDir::separator());
@@ -378,9 +431,9 @@ void AbstractDiskCache::restore(){
             cleanUpDiskAndReset();
         }
         
-        QFile _restoreFile(settingsFilePath);
-        _restoreFile.open(QIODevice::ReadWrite);
-        QTextStream in(&_restoreFile);
+        QFile restoreFile(settingsFilePath);
+        restoreFile.open(QIODevice::ReadWrite);
+        QTextStream in(&restoreFile);
         
         
         QString line = in.readLine();
@@ -400,7 +453,8 @@ void AbstractDiskCache::restore(){
                 }
                 line = in.readLine();
             }
-            _restoreFile.close();
+            restoreFile.close();
+            locker.unlock(); // avoid deadlock
             if ((U32)count == entries.size()) {
                 for (U32 i = 0; i < entries.size(); ++i) {
                     std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
@@ -410,7 +464,7 @@ void AbstractDiskCache::restore(){
                 /*cache is filled , debug*/
                 // debug();
                 
-            }else{
+            } else {
                 cout << cacheName() << ": The entries count in the restore file does not equal the number of actual data files.Reseting." << endl;
                 cleanUpDiskAndReset();
             }
@@ -422,27 +476,28 @@ void AbstractDiskCache::restore(){
             //QTextStream outsetti(&newFile);
             //outsetti << cacheVersion().c_str() << endl;
             //newFile.close();
-            _restoreFile.remove();
-            _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            QTextStream outsetti(&_restoreFile);
+            restoreFile.remove();
+            restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+            QTextStream outsetti(&restoreFile);
             outsetti << cacheVersion().c_str() << endl;
-            _restoreFile.close();
+            restoreFile.close();
         } else { /*cache version is different*/
             /*re-create the cache*/
-            _restoreFile.remove();
+            restoreFile.remove();
+            locker.unlock(); // avoid deadlock
             cleanUpDiskAndReset();
             /*re-create settings file*/
             //QFile _restoreFile(settingsFilePath); // error?
-            _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            QTextStream outsetti(&_restoreFile);
+            restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+            QTextStream outsetti(&restoreFile);
             outsetti << cacheVersion().c_str() << endl;
-            _restoreFile.close();
+            restoreFile.close();
         }
     }else{ // restore file doesn't exist
         /*re-create cache*/
 
         QDir(getCachePath()).mkpath(".");
-
+        locker.unlock(); // avoid deadlock
         cleanUpDiskAndReset();
         
         /*re-create settings file*/
@@ -455,6 +510,7 @@ void AbstractDiskCache::restore(){
 }
 
 void AbstractDiskCache::cleanUpDiskAndReset(){
+    QMutexLocker locker(&_lock);
     QString cachePath(getCachePath());
 #   if QT_VERSION < 0x050000
     removeRecursively(cachePath);
@@ -481,30 +537,34 @@ QString AbstractDiskCache::getCachePath(){
 }
 
 void AbstractDiskCache::debug(){
-    QMutexLocker g(&_lock);
+    QMutexLocker locker(&_lock);
     cout << "====================DEBUGING: " << cacheName() << " =========" << endl;
     cout << "-------------------IN MEMORY ENTRIES-------------------" << endl;
     for (CacheIterator it = _inMemoryPortion.begin(); it!=_inMemoryPortion.end(); ++it) {
         MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
+        entry->lock();
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()->data()){
             cout << "Entry has a valid ptr." << endl;
         }else{
             cout << "Entry has a NULL ptr." << endl;
         }
+        entry->unlock();
         cout << "Key:" << it->first << endl;
     }
     cout <<" --------------------ON DISK ENTRIES---------------------" << endl;
     for (CacheIterator it = _cache.begin(); it!=_cache.end(); ++it) {
         MemoryMappedEntry* entry = dynamic_cast<MemoryMappedEntry*>(getValueFromIterator(it));
         assert(entry);
+        entry->lock();
         cout << "[" << entry->path() << "] = " << entry->size() << " bytes. ";
         if(entry->getMappedFile()){
             cout << "Entry is still allocated!!" << endl;
         }else{
             cout << "Entry is normally deallocated." << endl;
         }
+        entry->unlock();
         cout << "Key:" << it->first << endl;
     }
     cout << "Total entries count : " << _inMemoryPortion.size()+_cache.size() << endl;

@@ -75,11 +75,13 @@ bool ViewerNode::_validate(bool doFullWork){
         _viewerInfos->set_firstFrame(info().firstFrame());
         _viewerInfos->set_lastFrame(info().lastFrame());
         
+        assert(_uiContext);
         _uiContext->setCurrentViewerInfos(_viewerInfos,false);
     }
     return true;
 }
-bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection){
+bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
+    assert(input);
     InputMap::iterator found = _inputs.find(inputNumber);
     /*If the selected node is a viewer itself, return*/
     if(input->className() == "Viewer" && found!=_inputs.end() && !found->second){
@@ -188,7 +190,8 @@ std::string ViewerNode::description() const {
 
 void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
     Row* row = input(_activeInput)->get(y,offset,range);
-    if(row){
+    if (row) {
+        // row is locked
         int zoomedY = out->zoomedY();
         //assert(zoomedY > 0.);
         row->set_zoomedY(zoomedY);
@@ -204,20 +207,28 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
         g = (*row)[Channel_green];
         b = (*row)[Channel_blue];
         a = (*row)[Channel_alpha];
+        assert(_uiContext);
         _uiContext->viewer->drawRow(r,g,b,a,row->zoomedY());
         row->release();
+        // row is unlocked by release()
     }
 }
 
 int ViewerNode::firstFrame() const{
+    assert(_uiContext);
+    assert(_uiContext->frameSeeker);
     return _uiContext->frameSeeker->firstFrame();
 }
 
 int ViewerNode::lastFrame() const{
+    assert(_uiContext);
+    assert(_uiContext->frameSeeker);
     return _uiContext->frameSeeker->lastFrame();
 }
 
 int ViewerNode::currentFrame() const{
+    assert(_uiContext);
+    assert(_uiContext->frameSeeker);
     return _uiContext->frameSeeker->currentFrame();
 }
 
@@ -269,6 +280,7 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
     }
+    assert(_uiContext);
     ViewerGL* gl_viewer = _uiContext->viewer;
     if(_viewerInfos){
         delete _viewerInfos;
@@ -287,6 +299,7 @@ void ViewerNode::cachedFrameEngine(FrameEntry* frame){
     _pboIndex = (_pboIndex+1)%2;
     const char* cachedFrame = frame->getMappedFile()->data();
     assert(cachedFrame);
+    assert(_uiContext->viewer);
     _uiContext->viewer->fillPBO(cachedFrame, output, dataSize);
 }
 
@@ -315,15 +328,22 @@ void ViewerNode::swapBuffers(){
     emit mustSwapBuffers();
 }
 
-void ViewerNode::pixelScale(double &x,double &y){
+void ViewerNode::pixelScale(double &x,double &y) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
     x = _uiContext->viewer->displayWindow().pixel_aspect();
     y = 2. - x;
 }
 
-void ViewerNode::backgroundColor(double &r,double &g,double &b){
+void ViewerNode::backgroundColor(double &r,double &g,double &b) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
     _uiContext->viewer->backgroundColor(r, g, b);
 }
-void ViewerNode::viewportSize(double &w,double &h){
+
+void ViewerNode::viewportSize(double &w,double &h) {
+    assert(_uiContext);
+    assert(_uiContext->viewer);
     const Format& f = _uiContext->viewer->displayWindow();
     w = f.width();
     h = f.height();

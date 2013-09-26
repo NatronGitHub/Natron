@@ -194,15 +194,19 @@ void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
         a+=row->offset();
     }
     Row* toRow = new Row(offset,y,range,channels);
+    toRow->lock();
     toRow->allocateRow();
     foreachChannels(z, channels){
         const float* from = (*row)[z] + row->offset();
         float* to = toRow->writable(z)+row->offset();
         to_float(z, to , from, a, row->right()- row->offset());
     }
-    QMutexLocker g(_lock);
-    _img.insert(make_pair(y,toRow));
     row->release();
+    // row is unlocked by release()
+    {
+        QMutexLocker locker(_lock);
+        _img.insert(make_pair(y,toRow));
+    }
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
@@ -303,7 +307,9 @@ void WriteExr::writeAllData(){
                 }
                 delete halfwriterow;
             }
-
+            _img.erase(y);
+            row->release();
+            // row is unlocked by release()
             outfile->setFrameBuffer(fbuf);
             outfile->writePixels(1);
         }

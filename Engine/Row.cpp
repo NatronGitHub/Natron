@@ -23,11 +23,20 @@
 using namespace std;
 using namespace Powiter;
 
-Row::Row():_cacheWillDelete(false){
-    buffers = 0;
+Row::Row()
+: CacheEntryHelper()
+, _cacheWillDelete(false)
+, _y(-1)
+, _zoomedY(-1)
+, _channels()
+, x(-1)
+, r(-1)
+, buffers(0)
+{
 }
 
 void Row::turnOn(Channel c) {
+    assert(!_lock.tryLock());
     if(_channels.contains(c)) return;
     _channels += c;
     if(c != Channel_alpha) {
@@ -45,7 +54,8 @@ void Row::turnOn(Channel c) {
 
 
 Row::Row(int x_,int y_, int range, ChannelSet channels)
-: _cacheWillDelete(false)
+: CacheEntryHelper()
+, _cacheWillDelete(false)
 , _y(y_)
 , _zoomedY(-1)
 , _channels(channels)
@@ -58,7 +68,9 @@ Row::Row(int x_,int y_, int range, ChannelSet channels)
     memset(buffers, 0, sizeof(float*)*POWITER_MAX_BUFFERS_PER_ROW);
     
 }
-bool Row::allocateRow(const char*){
+
+bool Row::allocateRow() {
+    assert(!_lock.tryLock());
     size_t dataSize = (r-x)*sizeof(float);
     foreachChannels(z, _channels){
         if(z != Channel_alpha) {
@@ -77,8 +89,8 @@ bool Row::allocateRow(const char*){
 }
 
 
-void Row::range(int offset,int right){
-    
+void Row::setRange(int offset,int right) {
+    assert(!_lock.tryLock()); // entry must be locked
     if((right-offset) < (r-x)) // don't changeSize if the range is smaller
         return;
     r = right;
@@ -93,6 +105,7 @@ void Row::range(int offset,int right){
 }
 
 Row::~Row(){
+    assert(!_lock.tryLock()); // entry must be locked
     foreachChannels(z, _channels){
         if(buffers[(int)z])
             free(buffers[(int)z]);
@@ -101,6 +114,7 @@ Row::~Row(){
 }
 
 const float* Row::operator[](Channel z) const {
+    assert(!_lock.tryLock()); // entry must be locked
     if (_channels & z) {
         return buffers[z] ? buffers[z] - x : NULL;
     } else {
@@ -109,6 +123,7 @@ const float* Row::operator[](Channel z) const {
 }
 
 float* Row::writable(Channel c) {
+    assert(!_lock.tryLock()); // entry must be locked
     if (_channels.contains(c)) {
         assert(buffers[c]);
         return buffers[c] - x;
@@ -117,9 +132,11 @@ float* Row::writable(Channel c) {
     }
 }
 
-void Row::copy(const Row *source,ChannelSet channels,int o,int r_){
+void Row::copy(const Row *source,ChannelSet channels,int o,int r_) {
+    assert(!_lock.tryLock());
     _channels = channels;
-    range(o, r_); // does nothing if the range is smaller
+    setRange(o, r_); // does nothing if the range is smaller
+    source->lock();
     foreachChannels(z, channels){
         if(!buffers[z]){
             turnOn(z);
@@ -133,10 +150,22 @@ void Row::copy(const Row *source,ChannelSet channels,int o,int r_){
             ++sourcePtr;
         }
     }
+    source->unlock();
 }
-void Row::erase(Channel c){
-    if(buffers[c]){
+
+void Row::erase(Channel c) {
+    assert(!_lock.tryLock());
+    if (buffers[c]) {
         memset(buffers[c], 0, sizeof(float)*(r-x));
+    }
+}
+
+void Row::erase(ChannelSet set){
+    assert(!_lock.tryLock());
+    foreachChannels(c, set){
+        if (buffers[c]) {
+            memset(buffers[c], 0, sizeof(float)*(r-x));
+        }
     }
 }
 
@@ -149,7 +178,7 @@ bool compareRows(const Row &a,const Row &b){
     }
 }
 
-U64 Row::computeHashKey(U64 nodeKey, const std::string& filename, int x , int r, int y){
+U64 Row::computeHashKey(U64 nodeKey, const std::string& filename, int x , int r, int y) {
     Hash64 _hash;
     Hash64_appendQString(&_hash,QString(filename.c_str()));
     _hash.append(nodeKey);
@@ -160,10 +189,13 @@ U64 Row::computeHashKey(U64 nodeKey, const std::string& filename, int x , int r,
     return _hash.value();
 }
 
-void Row::release(){
-    if(!_cacheWillDelete)
+void Row::release() {
+    assert(!_lock.tryLock());
+    if(!_cacheWillDelete) {
         delete this;
-    else
-        removeReference();
+        return;
+    }
+    removeReference();
+    unlock();
 }
 

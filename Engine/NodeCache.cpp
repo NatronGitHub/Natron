@@ -50,6 +50,7 @@ Row* NodeCache::addRow(U64 key,int x, int r, int y, const ChannelSet &channels,c
         delete out;
         return NULL;
     }
+    out->lock();
     if(!out->allocateRow()){
         cout << "Failed to allocate row..." << endl;
         delete out;

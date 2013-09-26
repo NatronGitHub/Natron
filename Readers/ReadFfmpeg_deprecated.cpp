@@ -370,7 +370,7 @@ unsigned FFMPEGFile::streams() const
 // decode a single frame into the buffer thread safe
 bool FFMPEGFile::decode(unsigned char* buffer, unsigned frame, unsigned streamIdx )
 {
-    QMutexLocker guard(&_locker);
+    QMutexLocker locker(&_locker);
     
     if (streamIdx >= _streams.size())
         return false;
@@ -785,7 +785,7 @@ bool FFMPEGFile::decode(unsigned char* buffer, unsigned frame, unsigned streamId
 }
 
 bool FFMPEGFile::info( int& width,int& height,double& aspect,int& frames,unsigned streamIdx){
-    QMutexLocker guard(&_locker);
+    QMutexLocker locker(&_locker);
     
     if (streamIdx >= _streams.size())
         return false;
@@ -853,7 +853,7 @@ FFMPEGFileManager::FFMPEGFileManager()
 
 FFMPEGFile::Ptr FFMPEGFileManager::get(const char* filename)
 {
-    QMutexLocker guard(&lock_);
+    QMutexLocker locker(&lock_);
     FFMPEGFile::Ptr retVal;
     
     ReaderMap::iterator it = _readers.find(filename);
@@ -872,7 +872,7 @@ FFMPEGFile::Ptr FFMPEGFileManager::get(const char* filename)
 void FFMPEGFileManager::release(const char* filename)
 {
     
-    QMutexLocker guard(&lock_);
+    QMutexLocker locker(&lock_);
     ReaderMap::iterator it = _readers.find(filename);
     
     if (it != _readers.end()) {

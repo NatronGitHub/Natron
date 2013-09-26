@@ -723,7 +723,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     }
     
     /*Locking the access to the frame sequences multi-map*/
-    QMutexLocker g(&_frameSequencesMutex);
+    QMutexLocker locker(&_frameSequencesMutex);
     pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
         /*we found a matching sequence name, we need to figure out if it has the same file type*/

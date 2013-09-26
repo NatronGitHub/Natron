@@ -90,6 +90,7 @@ public:
     virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
+    // on output, the FrameEntry is locked, and must be unlocked using FrameEntry::unlock()
 	FrameEntry* addFrame(U64 key,
                          QString inputFileNames,
                          U64 treeVersion,
@@ -104,6 +105,7 @@ public:
     
 	/*Returns a valid frameID if it could find one matching the parameters, otherwise
      returns NULL.*/
+    // on output, the FrameEntry is locked, and must be unlocked using FrameEntry::unlock()
 	FrameEntry* get(U64 key);
     
     

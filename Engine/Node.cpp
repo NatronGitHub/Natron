@@ -431,7 +431,7 @@ void Node::createKnobDynamically(){
 }
 
 
-Row* Node::get(int y,int x,int r){
+Row* Node::get(int y,int x,int r) {
     NodeCache* cache = appPTR->getNodeCache();
     int current_frame;
     const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
@@ -449,6 +449,11 @@ Row* Node::get(int y,int x,int r){
     // Shit happens: there may be a completely different cache entry with the same hash
     // FIXME: we should check for more things (frame number...)
     if (!out || out->y() != y || out->offset() != x || out->right() !=  r) {
+        if (out) {
+            // wrong cache entry
+            assert(out->y() != y || out->offset() != x || out->right() !=  r);
+            out->unlock();
+        }
         if (cacheData()) {
             out = cache->addRow(entry.first,x,r,y, info().channels(), filename);
             if (!out) {
@@ -456,12 +461,14 @@ Row* Node::get(int y,int x,int r){
             }
         } else {
             out = new Row(x,y,r,info().channels());
+            out->lock();
             out->allocateRow();
         }
         assert(out->offset() == x && out->right() == r);
         engine(y,x,r, info().channels(), out);
     }
     assert(out);
+    // out is locked
     return out;
 }
 

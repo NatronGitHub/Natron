@@ -53,6 +53,7 @@ public:
     
     /*add a new Row(x,y,r,channels) to the cache with the U64 as key and
      returns a pointer to it.*/
+    // the output row is locked, and must be unlocked using Row::unlock()
     Row* addRow(U64 key, int x, int r, int y, const ChannelSet& channels, const std::string& filename);
 
     

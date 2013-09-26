@@ -177,7 +177,7 @@ void Writer::notifyWriterForCompletion(){
     /*Several threads may fight here to try to start another task.
      We ensure that at least 1 thread get into the condition, as more
      are not needed. */
-    QMutexLocker guard(_lock);
+    QMutexLocker locker(_lock);
     if(_writeQueue.size() > 0 && _buffer.size() < _buffer.getMaximumBufferSize()){
         QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
         QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));

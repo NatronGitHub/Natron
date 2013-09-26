@@ -233,16 +233,8 @@ public:
 private:
     
     /**
-     *@brief A typedef used to represent a generic signature of a function that represent a user action like Play, Pause, Seek...etc
-     */
-    typedef void (VideoEngine::*VengineFunction)(int,int,bool,bool,bool,OutputNode*);
-    
-    
-    /**
-     * @brief The ViewerCacheArgs class is a convenience class storing the arguments
-     * passed to the viewer cache for checking if a frame is cached or not.
-     * This saves the burden of re-calling all the arguments separatly into
-     * member variables or even re-compute some of them.
+     * @brief The RunArgs class contains info on the size of last frame computed
+     * by the engine.
      */
     struct LastFrameInfos{
         LastFrameInfos():_cachedEntry(0),_dataSize(0){}
@@ -254,6 +246,10 @@ private:
         
     };
     
+    /**
+     * @brief The RunArgs class is a convenience class storing the arguments
+     * passed to the render function for the last frame computed.
+     */
     struct RunArgs{
         RunArgs():_zoomFactor(1.f),
         _sameFrame(false),
@@ -285,10 +281,10 @@ private:
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
     QMutex _abortedMutex; //!< protects _aborted
-    bool _aborted ;/*!< true when the engine has been aborted, i.e: the user disconnected the viewer*/
+    bool _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
     QMutex _mustQuitMutex; //!< protects _mustQuit
-    bool _mustQuit;/*!< true when we quit the engine*/
+    bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
     
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
     bool _treeVersionValid;/*!< was _treeVersion initialized? */
@@ -449,7 +445,7 @@ public:
      **/
     U64 getCurrentTreeVersion() { assert(_treeVersionValid); return _treeVersion;}
     
-    bool hasBeenAborted() const {return _aborted;}
+    bool hasBeenAborted() const {return _abortRequested;}
     
 private:
     
