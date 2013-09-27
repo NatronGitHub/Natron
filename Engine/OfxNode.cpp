@@ -12,6 +12,7 @@
 #include "OfxNode.h"
 
 #include <locale>
+#include <limits>
 #include <QtGui/QImage>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
@@ -255,16 +256,16 @@ bool OfxNode::_validate(bool doFullWork){
                 rod.y1 = format.bottom();
                 rod.y2 = format.top();
             }
-            if (rod.x1 == kOfxFlagInfiniteMin) {
+            if (rod.x1 == kOfxFlagInfiniteMin || rod.x1 == -std::numeric_limits<double>::infinity()) {
                 rod.x1 = format.left();
             }
-            if (rod.x2 == kOfxFlagInfiniteMax) {
+            if (rod.x2 == kOfxFlagInfiniteMax || rod.x2 == std::numeric_limits<double>::infinity()) {
                 rod.x2 = format.right();
             }
-            if (rod.y1 == kOfxFlagInfiniteMin) {
+            if (rod.y1 == kOfxFlagInfiniteMin || rod.y1 == -std::numeric_limits<double>::infinity()) {
                 rod.y1 = format.bottom();
             }
-            if (rod.y2 == kOfxFlagInfiniteMax) {
+            if (rod.y2 == kOfxFlagInfiniteMax || rod.y2 == std::numeric_limits<double>::infinity()) {
                 rod.y2 = format.top();
             }
             assert(!(rod.x1 ==  0. && rod.x2 == 0. && rod.y1 == 0. && rod.y2 == 0.));
