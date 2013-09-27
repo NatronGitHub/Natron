@@ -11,6 +11,7 @@
 #include "OfxClipInstance.h"
 
 #include <cfloat>
+#include <limits>
 
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -290,6 +291,10 @@ OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     assert(bounds.y1 != kOfxFlagInfiniteMin);
     assert(bounds.x2 != kOfxFlagInfiniteMax);
     assert(bounds.y2 != kOfxFlagInfiniteMax);
+    assert(bounds.x1 != -std::numeric_limits<double>::infinity()); // what should we do in this case?
+    assert(bounds.y1 != -std::numeric_limits<double>::infinity());
+    assert(bounds.x2 != std::numeric_limits<double>::infinity());
+    assert(bounds.y2 != std::numeric_limits<double>::infinity());
     int xmin = (int)std::floor(bounds.x1);
     int xmax = (int)std::ceil(bounds.x2);
     _rowBytes = (xmax - xmin) * pixSize;
