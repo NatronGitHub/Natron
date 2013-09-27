@@ -383,6 +383,7 @@ void ReadExr::readScanLine(int y){
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
     const ChannelSet& channels = readerInfo().channels();
     Row* out = new Row(x,y,r,channels);
+    out->lock();
     out->allocateRow();
     _img.insert(make_pair(exrY,out));
     // Figure out intersection of x,r with the data in exr file:
@@ -392,6 +393,7 @@ void ReadExr::readScanLine(int y){
     // Black outside the bbox:
     if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
         out->erase(channels);
+        out->unlock();
         return;
     }
     Imf::FrameBuffer fbuf;
@@ -418,6 +420,7 @@ void ReadExr::readScanLine(int y){
             //iop->error(exc.what());
         }
     }
+    out->unlock();
 
 }
 
@@ -438,6 +441,7 @@ ReadExr::~ReadExr(){
     delete inputStdStream ;
 #endif
     for(map<int,Row*>::iterator it =_img.begin(); it!= _img.end(); ++it) {
+        it->second->lock();
         delete it->second;
     }
     _img.clear();
@@ -461,6 +465,7 @@ void ReadExr::engine(int y,int offset,int range,ChannelSet channels,Row* out){
         return;
     }
     from = it->second;
+    from->lock();
     if(autoAlpha()){
         out->turnOn(Channel_alpha);
     }
@@ -474,6 +479,7 @@ void ReadExr::engine(int y,int offset,int range,ChannelSet channels,Row* out){
             from_float(z,to + X ,in + X,alpha, R-X,1);
         }
     }
+    from->unlock();
 }
 
 
@@ -484,8 +490,8 @@ void ReadExr::make_preview(){
     int dh = dataWindow.max.y - dataWindow.min.y + 1;
     int dw = dataWindow.max.x - dataWindow.min.x + 1;
     int h,w;
-    dh < 64 ? h = dh : h = 64;
-    dw < 64 ? w = dw : w = 64;
+    dh < POWITER_PREVIEW_HEIGHT ? h = dh : h = POWITER_PREVIEW_HEIGHT;
+    dw < POWITER_PREVIEW_WIDTH ? w = dw : w = POWITER_PREVIEW_WIDTH;
     float zoomFactor = (float)h/(float)dh;
     for (int i =0 ; i < h; ++i) {
         float y = (float)i*1.f/zoomFactor;
@@ -499,6 +505,7 @@ void ReadExr::make_preview(){
         int exrY = dispWindow.max.y+1 - nearestY;
         if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
         Row* from = _img[exrY];
+        from->lock();
         QRgb *dst_pixels = (QRgb *) img.scanLine(h-1-i);
         const float* red = (*from)[Channel_red];
         const float* green = (*from)[Channel_green];
@@ -518,6 +525,7 @@ void ReadExr::make_preview(){
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
         }
+        from->unlock();
     }
     op->setPreview(img);
 }

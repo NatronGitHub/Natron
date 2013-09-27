@@ -815,6 +815,7 @@ void VideoEngine::setDesiredFPS(double d){
 
 
 void VideoEngine::abort() {
+    
     assert(_workerThreadsWatcher);
     _workerThreadsWatcher->cancel();
     _workerThreadsWatcher->waitForFinished();

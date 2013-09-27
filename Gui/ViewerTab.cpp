@@ -497,7 +497,6 @@ void ViewerTab::updateZoomComboBox(int value){
 /*In case they're several viewer around, we need to reset the dag and tell it
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
-    abort();
     if(b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
@@ -505,13 +504,14 @@ void ViewerTab::startPause(bool b){
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
+    }else{
+        abort();
     }
 }
 void ViewerTab::abort(){
     _viewerNode->getVideoEngine()->abort();
 }
 void ViewerTab::startBackward(bool b){
-    abort();
     if(b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
@@ -519,6 +519,8 @@ void ViewerTab::startBackward(bool b){
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/
+    }else{
+        abort();
     }
 }
 void ViewerTab::previousFrame(){
