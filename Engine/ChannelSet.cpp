@@ -97,7 +97,7 @@ const ChannelSet& ChannelSet::operator=(ChannelMask source) {
     }
     mask = (source << 1);
     _size = NumberOfSetBits(mask);
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
     return *this;
 }
 
@@ -192,7 +192,7 @@ void ChannelSet::operator+=(ChannelMask source) {
     }
     mask |= (source << 1);//shift from 1 bit on the left because the first bit is reserved for the Mask_all
     _size = NumberOfSetBits(mask);
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
@@ -207,7 +207,7 @@ void ChannelSet::operator+=(Channel z) {
         }
         ++_size;
     }
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 void ChannelSet::operator-=(const ChannelSet& source) {
@@ -229,7 +229,7 @@ void ChannelSet::operator-=(const ChannelSet& source) {
         assert(1 <= (int)z && (int)z < 32); // a channelset cannot contain channel 0 (black)
         *this -= z;
     }
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 void ChannelSet::operator-=(ChannelMask source) {
@@ -246,7 +246,7 @@ void ChannelSet::operator-=(ChannelMask source) {
         mask &= ~(U32)source << 1;
     }
     _size = NumberOfSetBits(mask);
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
@@ -257,7 +257,7 @@ void ChannelSet::operator-=(Channel z) {
         mask &= ~(1U << z); // setting to 0 the channel z
         --_size; // decrementing channels count
     }
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 void ChannelSet::operator&=(const ChannelSet& source) {
@@ -266,7 +266,7 @@ void ChannelSet::operator&=(const ChannelSet& source) {
     }
     mask &= source.value();
     _size = NumberOfSetBits(mask);
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 void ChannelSet::operator&=(ChannelMask source) {
@@ -275,7 +275,7 @@ void ChannelSet::operator&=(ChannelMask source) {
     }
     mask &= (source << 1);
     _size = NumberOfSetBits(mask);
-    assert(0 <= _size && _size <= POWITER_MAX_CHANNEL_COUNT);
+    assert(_size <= POWITER_MAX_CHANNEL_COUNT);
 }
 
 
