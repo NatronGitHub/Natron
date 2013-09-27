@@ -24,6 +24,9 @@
 #include <QStandardPaths>
 #endif
 
+#include <ImfThreading.h>
+
+
 #include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
 
@@ -530,6 +533,9 @@ AppManager::AppManager()
     _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
     _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
     _viewerCache->restore();
+    
+    /*Adjusting multi-threading for OpenEXR library.*/
+    Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
 }
 

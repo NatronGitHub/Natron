@@ -14,7 +14,6 @@
 
 #include <cassert>
 #include <vector>
-#include <boost/scoped_ptr.hpp>
 #include <QtCore/QObject>
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
@@ -25,6 +24,7 @@
 
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -240,12 +240,16 @@ private:
      * by the engine.
      */
     struct LastFrameInfos{
-        LastFrameInfos():_cachedEntry(0),_dataSize(0){}
+        LastFrameInfos():
+        _cachedEntry(NULL)
+        , _rows()
+        , _textureRect()
+        ,_dataSize(0){}
         
         FrameEntry* _cachedEntry;
         std::vector<int> _rows;
         TextureRect _textureRect;
-        size_t _dataSize;
+        U64 _dataSize;
         
     };
     
@@ -283,8 +287,10 @@ private:
     
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
-    QWaitCondition _abortedCondition;
-    QMutex _abortedMutex; //!< protects _aborted
+    QMutex _abortBeingProcessedLock; /*!< protecting startEngine and stopEngine (when we process abort)*/
+    bool _abortBeingProcessed; /*true when someone is processing abort*/
+    QWaitCondition _abortedRequestedCondition;
+    QMutex _abortedRequestedMutex; //!< protects _aborted
     int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
     QMutex _mustQuitMutex; //!< protects _mustQuit
@@ -299,7 +305,7 @@ private:
     
     bool _forceRender;/*!< true when we want to by-pass the cache*/
     
-    boost::scoped_ptr<QFutureWatcher<void> > _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
+    QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
 
@@ -316,7 +322,7 @@ private:
         
     LastFrameInfos _lastFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
     
-    struct timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
+    timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
 protected:
     
