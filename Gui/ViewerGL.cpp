@@ -840,7 +840,7 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO != 0) {
-        cout << "(ViewerGL::allocateFrameStorage : Another PBO is currently mapped, glMap failed." << endl;
+        cout << "(ViewerGL::allocateFrameStorage): Another PBO is currently mapped, glMap failed." << endl;
         return 0;
     }
     size_t dataSize = 0;
@@ -853,6 +853,7 @@ size_t ViewerGL::allocateFrameStorage(int w,int h){
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
     assert(frameData);
+    
     checkGLErrors();
     return dataSize;
 }
@@ -879,37 +880,31 @@ void ViewerGL::unMapPBO(){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO == 0) {
-        cout << "(ViewerGL::copyPBOtoTexture WARNING: Attempting to copy data from a PBO that is not mapped." << endl;
+        cout << "(ViewerGL::unMapPBO) WARNING: No PBO currently mapped." << endl;
         return;
     }
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     _pBOmapped = false;
-
-
-}
-
-void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
-       /*Don't assert here. This function is not used only with the frameData buffer (see ViewerNode::cachedEngine).
-     This buffer (frameData) might be NULL if we were running in cached mode.*/
-    // [FD]: where is ViewerNode::cachedEngine ?
-    //assert(frameData);
-    assert(_pBOmapped);
-    unMapPBO();
-    checkGLErrors();
     if (frameData) {
         frameData = NULL;
     }
+
+}
+void ViewerGL::unBindPBO(){
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,0);
+}
+
+void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
+    assert(_pBOmapped);
+    unMapPBO();
+    checkGLErrors();
+    
     if(byteMode() == 1.f || !_hasHW){
-        //        cout << "[COPY PBO]: " << "x = "<< region.x  << " y = " << region.y
-        //        << " r = " << region.r << " t = " << region.t << " w = " << region.w
-        //        << " h = " << region.h << endl;
         _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::BYTE);
     }else{
         _defaultDisplayTexture->fillOrAllocateTexture(region,Texture::FLOAT);
     }
-    
-    // cout << "    - unmapping PBO" << endl;
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    unBindPBO();
     checkGLErrors();
 }
 

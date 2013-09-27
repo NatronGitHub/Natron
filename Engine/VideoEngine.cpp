@@ -747,6 +747,7 @@ void VideoEngine::updateViewer(){
             viewer->copyPBOToRenderTexture(_lastFrameInfos._textureRect); // returns instantly
         }else{
             viewer->unMapPBO();
+            viewer->unBindPBO();
         }
     }
     _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps

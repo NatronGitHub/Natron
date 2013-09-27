@@ -550,6 +550,8 @@ class ViewerTab;
             
             void unMapPBO();
             
+            void unBindPBO();
+            
             /**
              *@brief Copies the data stored in the currently mapped pbo into the currently
              *used texture. Note that it unmaps the current PBO before actually copying data
