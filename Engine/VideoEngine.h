@@ -314,7 +314,10 @@ private:
        
     QWaitCondition _startCondition;
     QMutex _startMutex; //!< protects _startCount
-    int _startCount;
+    int _startCount; //!< if > 0 that means start requests are pending
+    
+    QMutex _workingMutex;//!< protects _working
+    bool _working; //!< true if a thread is working
 
     RunArgs _lastRunArgs;
         

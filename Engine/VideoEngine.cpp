@@ -74,6 +74,8 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _startCondition()
 , _startMutex()
 , _startCount(0)
+, _workingMutex()
+, _working(false)
 , _lastRunArgs()
 , _lastFrameInfos()
 , _lastComputeFrameTime()
@@ -147,12 +149,8 @@ static void metaEnginePerRow(Row* row, Node* output){
 
 void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, bool fitFrameToViewer, bool forward, bool sameFrame) {
     assert(output);
-    {
-        QMutexLocker startedLocker(&_startMutex);
-        /*aborting any rendering on-going*/
-        if(_startCount > 0)
-            abort();
-    }
+    /*aborting any rendering on-going*/
+    abort();
     /*seek the timeline to the starting frame*/
     output->seekFrame(startingFrame);
     
@@ -201,6 +199,14 @@ void VideoEngine::startEngine(){
         }
     }
     
+    /*Locking out other rendering tasks so 1 VideoEngine gets access to all
+     nodes.That means only 1 frame can be rendered at any time. We would have to copy
+     all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
+     running simultaneously which is not very efficient and adds the burden to synchronize
+     states of nodes etc...
+     To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
+    _model->getGeneralMutex()->lock();
+    
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
     _timer->playState = RUNNING; /*activating the timer*/
     _dag.resetAndSort(_lastRunArgs._output);/*rebuilding the dag from the output provided*/
@@ -248,6 +254,10 @@ void VideoEngine::startEngine(){
         //because the DAG changed, so the frame stored in memory are now useless for the playback.
         _model->getApp()->clearPlaybackCache();
     }
+    {
+        QMutexLocker workingLocker(&_workingMutex);
+        _working = true;
+    }
     emit engineStarted(_lastRunArgs._forward);
 
 }
@@ -268,10 +278,13 @@ void VideoEngine::stopEngine() {
     
     emit engineStopped();
     _lastRunArgs._frameRequestsCount = 0;
-    _timer->playState=PAUSE;
-    _model->getGeneralMutex()->unlock();
+    _timer->playState = PAUSE;
     _restart = true;
-    
+    _model->getGeneralMutex()->unlock();
+    {
+        QMutexLocker workingLocker(&_workingMutex);
+        _working = false;
+    }
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
@@ -295,14 +308,6 @@ void VideoEngine::run(){
                 return;
             }
         }
-        
-        /*Locking out other rendering tasks so 1 VideoEngine gets access to all
-         nodes.That means only 1 frame can be rendered at any time. We would have to copy
-         all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
-         running simultaneously which is not very efficient and adds the burden to synchronize
-         states of nodes etc...
-         To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
-        _model->getGeneralMutex()->lock();
         
         /*If restart is on, start the engine. Restart is on for the 1st frame
          rendered of a sequence.*/
@@ -405,7 +410,7 @@ void VideoEngine::run(){
                             currentFrame = firstFrame;
                         else{
                             stopEngine();
-                            return;
+                            continue;
                         }
                     }
                 } else {
@@ -415,7 +420,7 @@ void VideoEngine::run(){
                             currentFrame = lastFrame;
                         else{
                             stopEngine();
-                            return;
+                            continue;
                         }
                     }
                 }
@@ -442,13 +447,6 @@ void VideoEngine::run(){
         for (int i = 0; i < readHeaderResults.size(); i++) {
             if (readHeaderResults.at(i) == false) {
                 stopEngine();
-                {
-                    QMutexLocker locker(&_startMutex);
-                    while(_startCount <= 0) {
-                        _startCondition.wait(&_startMutex);
-                    }
-                    --_startCount;
-                }
                 continue;
             }
         }
@@ -502,7 +500,7 @@ void VideoEngine::run(){
             _lastFrameInfos._textureRect = textureRect;
             if(textureRect.w == 0 || textureRect.h == 0){
                 stopEngine();
-                return;
+                continue;
             }
             zoomFactor = _lastRunArgs._zoomFactor;
             exposure = viewerGL->getExposure();
@@ -558,7 +556,6 @@ void VideoEngine::run(){
                 iscached->unlock();
                 emit frameRendered(currentFrame);
                 engineLoop();
-                _model->getGeneralMutex()->unlock();
                 continue;
             }
             
@@ -816,7 +813,12 @@ void VideoEngine::setDesiredFPS(double d){
 
 
 void VideoEngine::abort(){
-    
+    {
+        QMutexLocker workingLocker(&_workingMutex);
+        if(!_working){
+            return;
+        }
+    }
     assert(_workerThreadsWatcher);
     _workerThreadsWatcher->cancel();
     _workerThreadsWatcher->waitForFinished();
@@ -1033,8 +1035,8 @@ void VideoEngine::toggleLoopMode(bool b){
 }
 
 bool VideoEngine::isWorking() {
-    QMutexLocker lock(&_startMutex);
-    return _startCount > 0;
+    QMutexLocker workingLocker(&_workingMutex);
+    return _working;
 }
 
 const QString VideoEngine::DAG::generateConcatenationOfAllReadersFileNames() const{
