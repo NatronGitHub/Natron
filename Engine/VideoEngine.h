@@ -83,7 +83,10 @@ public:
          *Once filled up, you can access the nodes in topological order with the iterators.
          *The reverse iterator will give you the opposite of the topological order.
          */
-        DAG():_output(0),_isViewer(false),_isOutputOpenFXNode(false){}
+        DAG():
+        _output(0)
+        ,_isViewer(false)
+        ,_isOutputOpenFXNode(false){}
         
         /**
          *@brief Clears the structure and fill it with a new graph, represented by the OutputNode.
@@ -280,8 +283,9 @@ private:
     
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
+    QWaitCondition _abortedCondition;
     QMutex _abortedMutex; //!< protects _aborted
-    bool _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
+    int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
     QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
@@ -316,7 +320,7 @@ private:
     
 protected:
     
-    /*The function doing all the processing*/
+    /*The function doing all the processing, called by render()*/
     virtual void run();
     
 public slots:
@@ -337,7 +341,7 @@ public slots:
     void render(OutputNode* output,int startingFrame,int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
     
     /**
-     @brief Aborts all computations. This turns on the flag _aborted and will inform the engine that it needs to stop.
+     @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
     void abort();
     /**
@@ -346,38 +350,71 @@ public slots:
     void seek(int frame);
     
     /**
-     *@brief Updates the internal DAG by looking at the nodes upstream of output. Once the DAG has been
-     *built,it will refresh the display for the current frame with the new DAG taken into account.
-     *If the playback was running while this function was called, it will resume taking the new DAG
-     *into account.
+     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
+     *and update the DAG currently operating. Otherwise it will just refresh the same frame than the last frame rendered
+     *on the viewer. This function is to be called exclusivly by the Viewer.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *@param viewer[in] A pointer to the output whose inputs will determine the DAG that will
      *serve to render the frames.
      *@param startingFrame[in] The frame to start rendering with.
      **/
     void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
-    
-    /**
-     *@brief Does nothing yet as there ain't no progress bar.
-     **/
-    void updateProgressBar();
-    
+   
     /**
      *@brief The slot called by the GUI to set the requested fps.
      **/
     void setDesiredFPS(double d);
     
+    
+    /*
+     *@brief Slot called internally by the render() function when it reports progress for the current frame.
+     *Do not call this yourself.
+     */
+    void toggleLoopMode(bool b);
+    
+    
+    /************************************************************************************************************
+     ************************************************************************************************************
+     **************************************PRIVATE SLOTS*********************************************************
+     *************************************DO NO CALL THEM********************************************************
+     ***********************************************************************************************************/
+    /*
+     *@brief Slot called internally by the render() function when it reports progress for the current frame.
+     *Do not call this yourself.
+     */
     void onProgressUpdate(int i);
-        
+    
+    /*
+     *@brief Slot called internally by the render() function when it wants to refresh the viewer if
+     *the output is a viewer.
+     *Do not call this yourself.
+     */
     void updateViewer();
     
+    /*
+     *@brief Slot called internally by the render() function when it found a frame in cache.
+     *Do not call this yourself
+     **/
     void cachedEngine();
     
+    /*
+     *@brief Slot called internally by the render() function when the output is a viewer and it
+     *needs to allocate the output buffer for the current frame.
+     *Do not call this yourself.
+     */
     void allocateFrameStorage();
     
+    /*
+     *@brief Slot called when the output node owning this VideoEngine is about to be deleted.
+     *Do not call this yourself.
+     */
     void quitEngineThread();
-    
-    void toggleLoopMode(bool b);
+    /************************************************************************************************************
+     ************************************************************************************************************
+     **************************************END PRIVATE SLOTS*****************************************************
+     ************************************************************************************************************
+     ***********************************************************************************************************/
+   
     
 signals:
     /**
@@ -385,34 +422,50 @@ signals:
      **/
     void fpsChanged(double d);
     
+    /**
+     *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the
+     *viewer in case the output of the graph is a viewer.
+     **/
     void doUpdateViewer();
     
+    /**
+     *@brief Signal emitted when the engine needs to pass-on to the main thread the rendering of a cached frame.
+     **/
     void doCachedEngine();
     
+    /**
+     *@brief Signal emitted when the engine needs to warn the main thread that the storage for the current frame
+     *should be allocated in case the output is a viewer.
+     **/
     void doFrameStorageAllocation();
-        
+    
+    /**
+     *@brief emitted when the engine started to render a sequence (which can be only a sequence of 1 frame).
+     **/
     void engineStarted(bool forward);
     
+    /**
+     *@brief emitted when the engine finished rendering for a sequence (which can be only a sequence of 1 frame).
+     **/
     void engineStopped();
     
-    /*progress varies in [0,100]*/
+    /**
+     *@brief emitted when progress is reported for the current frame.
+     *Progress varies between [0,100].
+     **/
     void progressChanged(int progress);
     
+    /**
+     *@brief emitted when a frame has been rendered successfully.
+     **/
     void frameRendered(int frameNumber);
     
 public:
-    /**
-     *@brief Constructs a VideoEngine instance. Currently the software only supports 1 VideoEngine,but
-     *in the future it will be able to handle several engines working at the same time.
-     *@param engine A pointer to the Model. It is currently unused.
-     *@param lock A pointer to the general lock used by the engine. It is useful when it needs to do
-     engine-wise synchronisaton;
-     **/
+   
+    
     VideoEngine(Model* model, QObject* parent = NULL);
     
     virtual ~VideoEngine();
-    
-    
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully

@@ -57,8 +57,9 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _working(false)
 , _dag()
 , _timer(new Timer)
+, _abortedCondition()
 , _abortedMutex()
-, _abortRequested(false)
+, _abortRequested(0)
 , _mustQuitMutex()
 , _mustQuit(false)
 , _treeVersion(0)
@@ -92,11 +93,11 @@ VideoEngine::~VideoEngine() {
     _workerThreadsWatcher->waitForFinished();
     {
         QMutexLocker locker(&_abortedMutex);
-        _abortRequested = true;
+        ++_abortRequested;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
         }
-        
+        _abortedCondition.wakeOne();
     }
     {
         QMutexLocker locker(&_startMutex);
@@ -185,7 +186,7 @@ void VideoEngine::startEngine(){
     
     _restart = false;
     _working = true;
-    _timer->playState=RUNNING;
+    _timer->playState = RUNNING;
     _dag.resetAndSort(_lastRunArgs._output);
     
     
@@ -218,9 +219,8 @@ void VideoEngine::startEngine(){
     
     {
         QMutexLocker l(&_abortedMutex);
-        _abortRequested = false;
-        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-            (*it)->setAborted(false);
+        while(_abortRequested > 0) {
+            _abortedCondition.wait(&_abortedMutex);
         }
     }
     
@@ -245,17 +245,27 @@ void VideoEngine::stopEngine() {
     emit engineStopped();
     // cout << "- STOPPING ENGINE"<<endl;
      _lastRunArgs._frameRequestsCount = 0;
-    {
-        QMutexLocker l(&_abortedMutex);
-        _abortRequested = false;
-        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-            (*it)->setAborted(false);
-        }
-    }
     _working = false;
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
     _restart = true;
+    {
+        QMutexLocker l(&_abortedMutex);
+        _abortRequested = 0;
+        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+            (*it)->setAborted(false);
+        }
+        _abortedCondition.wakeOne();
+    }
+    
+    {
+        QMutexLocker locker(&_startMutex);
+        while(_startCount <= 0) {
+            _startCondition.wait(&_startMutex);
+        }
+        --_startCount;
+    }
+   
     
 }
 
@@ -339,13 +349,6 @@ void VideoEngine::run(){
            || (!_dag.isOutputAViewer() && currentFrame == lastFrame+1)){// the sequence ended
 
             stopEngine();
-            {
-                QMutexLocker locker(&_startMutex);
-                while(_startCount <= 0) {
-                    _startCondition.wait(&_startMutex);
-                }
-                --_startCount;
-            }
             continue;
         }
         
@@ -699,17 +702,21 @@ void VideoEngine::engineLoop(){
 
 void VideoEngine::updateViewer(){
     QMutexLocker locker(&_pboUnMappedMutex);
+    
     ViewerGL* viewer = _dag.outputAsViewer()->getUiContext()->viewer;
     /*This should remove the flickering on the Viewer. This is because we're trying to
      fill a texture with a buffer not necessarily filled correctly if aborted is true.
      
      ||| Somehow calling unMapPBO() leads to a race condition. Commenting out
      while this is resolved.*/
-    //if(!_aborted)
-        viewer->copyPBOToRenderTexture(_lastFrameInfos._textureRect); // returns instantly
-                                                                      //else
-                                                                      //        viewer->unMapPBO();
-    
+    {
+        QMutexLocker l(&_abortedMutex);
+        if(!_abortRequested){
+            viewer->copyPBOToRenderTexture(_lastFrameInfos._textureRect); // returns instantly
+        }else{
+            viewer->unMapPBO();
+        }
+    }
     _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
     if((_lastRunArgs._frameRequestIndex%24)==0){
         emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
@@ -732,7 +739,7 @@ void VideoEngine::cachedEngine(){
 }
 
 void VideoEngine::allocateFrameStorage(){
-     QMutexLocker locker(&_pboUnMappedMutex);
+    QMutexLocker locker(&_pboUnMappedMutex);
     _lastFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(_lastFrameInfos._textureRect.w,
                                                                                                     _lastFrameInfos._textureRect.h);
 //    while(_pboUnMappedCount <= 0) {
@@ -753,9 +760,6 @@ void RowRunnable::run() {
 }
 
 
-void VideoEngine::updateProgressBar(){
-    //update progress bar
-}
 void VideoEngine::updateDisplay(){
     ViewerGL* viewer  = _dag.outputAsViewer()->getUiContext()->viewer;
     int width = viewer->width();
@@ -782,11 +786,17 @@ void VideoEngine::abort() {
     _workerThreadsWatcher->cancel();
     _workerThreadsWatcher->waitForFinished();
     {
+//        QMutexLocker locker(&_abortedMutex);
+//        _abortRequested = true;
+//        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+//            (*it)->setAborted(true);
+//        }
         QMutexLocker locker(&_abortedMutex);
-        _abortRequested = true;
+        ++_abortRequested;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
         }
+        // _abortedCondition.wakeOne();
     }
 }
 
