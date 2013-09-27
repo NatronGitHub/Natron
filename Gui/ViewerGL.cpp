@@ -1170,8 +1170,6 @@ void ViewerGL::updateColorPicker(int x,int y){
 }
 
 void ViewerGL::wheelEvent(QWheelEvent *event) {
-    // if(!ctrlPTR->getModel()->getVideoEngine()->isWorking() || !_displayingImage){
-    
     double newZoomFactor;
     if (event->delta() > 0) {
         newZoomFactor = _zoomCtx._zoomFactor*std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());

@@ -53,7 +53,6 @@ using namespace Powiter;
 VideoEngine::VideoEngine(Model* model,QObject* parent)
 : QThread(parent)
 , _model(model)
-, _working(false)
 , _dag()
 , _timer(new Timer)
 , _abortBeingProcessedLock()
@@ -148,13 +147,15 @@ static void metaEnginePerRow(Row* row, Node* output){
 
 void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, bool fitFrameToViewer, bool forward, bool sameFrame) {
     assert(output);
-    /*aborting any rendering on-going*/
-    if(_working)
-        abort();
-    
+    {
+        QMutexLocker startedLocker(&_startMutex);
+        /*aborting any rendering on-going*/
+        if(_startCount > 0)
+            abort();
+    }
     /*seek the timeline to the starting frame*/
     output->seekFrame(startingFrame);
-
+    
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
         ViewerNode* viewer = _dag.outputAsViewer();
@@ -194,13 +195,13 @@ void VideoEngine::startEngine(){
         {
             QMutexLocker l(&_abortedRequestedMutex);
             while(_abortRequested > 0) {
+                cout << "waiting for an aborted render to finish" << endl;
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
         }
     }
     
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
-    _working = true;/*flaging that we're working!*/
     _timer->playState = RUNNING; /*activating the timer*/
     _dag.resetAndSort(_lastRunArgs._output);/*rebuilding the dag from the output provided*/
     
@@ -257,6 +258,7 @@ void VideoEngine::stopEngine() {
         _abortBeingProcessed = true;
         QMutexLocker l(&_abortedRequestedMutex);
         _abortRequested = 0;
+        cout << "abort processed" << endl;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(false);
         }
@@ -266,7 +268,6 @@ void VideoEngine::stopEngine() {
     
     emit engineStopped();
     _lastRunArgs._frameRequestsCount = 0;
-    _working = false;
     _timer->playState=PAUSE;
     _model->getGeneralMutex()->unlock();
     _restart = true;
@@ -814,13 +815,15 @@ void VideoEngine::setDesiredFPS(double d){
 }
 
 
-void VideoEngine::abort() {
+void VideoEngine::abort(){
     
     assert(_workerThreadsWatcher);
     _workerThreadsWatcher->cancel();
     _workerThreadsWatcher->waitForFinished();
     {
         QMutexLocker locker(&_abortedRequestedMutex);
+        cout << "abort requested" << endl;
+
         ++_abortRequested;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
@@ -838,7 +841,11 @@ void VideoEngine::seek(int frame){
 void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
 
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
-    bool wasPlaybackRunning = _working && _lastRunArgs._frameRequestsCount == -1;
+    bool wasPlaybackRunning;
+    {
+        QMutexLocker startedLocker(&_startMutex);
+        wasPlaybackRunning = _startCount > 0 && _lastRunArgs._frameRequestsCount == -1;
+    }
     if(!viewer || wasPlaybackRunning){
         render(output,startingFrame,-1,initViewer,_lastRunArgs._forward,false);
     }else{
@@ -1023,6 +1030,11 @@ void VideoEngine::quitEngineThread(){
 
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
+}
+
+bool VideoEngine::isWorking() {
+    QMutexLocker lock(&_startMutex);
+    return _startCount > 0;
 }
 
 const QString VideoEngine::DAG::generateConcatenationOfAllReadersFileNames() const{

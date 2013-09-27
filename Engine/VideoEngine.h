@@ -280,9 +280,7 @@ private:
     };
     
     Model* _model;/*!< pointer to the model*/
-            
-	bool _working; /*!< True if the engine is working.*/
-    
+                
     DAG _dag; /*!< The internal DAG instance.*/
     
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
@@ -496,7 +494,7 @@ public:
 	/**
      *@returns Returns true if the engine is currently working.
      **/
-	bool isWorking() const {return _working;}
+	bool isWorking();
     
     /**
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
