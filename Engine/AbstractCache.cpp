@@ -195,11 +195,10 @@ void AbstractCacheHelper::erase(CacheIterator it){
  to a valid cache entry, otherwise it points to to end.*/
 // on output, the cache entry is locked
 CacheEntry* AbstractCacheHelper::getCacheEntry(U64 key)  {
+    QMutexLocker locker(&_lock);
     CacheEntry* ret;
-    {
-        QMutexLocker locker(&_lock);
-        ret = _cache(key);
-    }
+    ret = _cache(key);
+    // do NOT unlock the cache (_lock) here, or ret may become an invalid cache entry
     if(ret) {
         // ret is not locked (freshly grabbed from the map)
         ret->lock();
@@ -303,11 +302,10 @@ bool AbstractDiskCache::add(U64 key, CacheEntry* entry) {
 
 // on output the CacheEntry is locked, and must be unlocked using CacheEntry::unlock()
 CacheEntry* AbstractDiskCache::isInMemory(U64 key) {
+    QMutexLocker locker(&_lock);
     CacheEntry* ret;
-    {
-        QMutexLocker locker(&_lock);
-        ret = _inMemoryPortion(key);
-    }
+    ret = _inMemoryPortion(key);
+    // do NOT unlock the cache (_lock) here, or ret may become an invalid cache entry
     if (ret) {
         // ret is not locked (freshly grabbed from the map)
         ret->lock();
