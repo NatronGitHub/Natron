@@ -84,7 +84,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
-    connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)));
+    //  connect(_workerThreadsWatcher, SIGNAL(progressValueChanged(int)), this, SLOT(onProgressUpdate(int)));
     
 }
 
@@ -193,7 +193,6 @@ void VideoEngine::startEngine(){
         {
             QMutexLocker l(&_abortedRequestedMutex);
             while(_abortRequested > 0) {
-                cout << "waiting for an aborted render to finish" << endl;
                 _abortedRequestedCondition.wait(&_abortedRequestedMutex);
             }
         }
@@ -268,7 +267,6 @@ void VideoEngine::stopEngine() {
         _abortBeingProcessed = true;
         QMutexLocker l(&_abortedRequestedMutex);
         _abortRequested = 0;
-        cout << "abort processed" << endl;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(false);
         }
@@ -824,8 +822,6 @@ void VideoEngine::abort(){
     _workerThreadsWatcher->waitForFinished();
     {
         QMutexLocker locker(&_abortedRequestedMutex);
-        cout << "abort requested" << endl;
-
         ++_abortRequested;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);

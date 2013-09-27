@@ -333,8 +333,8 @@ int Reader::firstFrame(){
 int Reader::lastFrame(){
     return _fileKnob->lastFrame();
 }
-int Reader::clampToRange(int f){
-    return _fileKnob->clampToRange(f);
+int Reader::nearestFrame(int f){
+    return _fileKnob->nearestFrame(f);
 }
 
 const QString Reader::getRandomFrameName(int f) const{

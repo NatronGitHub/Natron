@@ -777,7 +777,7 @@ _fileKnob(0),_outputFileKnob(0){
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
+        int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
         str = _fileKnob->getRandomFrameName(currentFrame).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
@@ -789,7 +789,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime /*time*/, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        int currentFrame = _fileKnob->clampToRange((int)_node->effectInstance()->timeLineGetTime());
+        int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
         str = _fileKnob->getRandomFrameName(currentFrame).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());

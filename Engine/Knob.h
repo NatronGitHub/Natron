@@ -373,11 +373,11 @@ public:
     int frameCount() const{return _filesSequence.size();}
     
     /**
-     * @brief clampToRange
-     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
-     * @param f The index of the frame to clamp.
+     * @brief nearestFrame
+     * @return Returns the index of the nearest frame in the Range [ firstFrame() - lastFrame( ].
+     * @param f The index of the frame to modify.
      */
-    int clampToRange(int f) const;
+    int nearestFrame(int f) const;
     
     /**
      * @brief getRandomFrameName

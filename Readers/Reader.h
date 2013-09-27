@@ -387,11 +387,11 @@ public:
 	int lastFrame();
     
     /**
-     * @brief clampToRange
+     * @brief nearestFrame
      * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
      * @param f The index of the frame to clamp.
      */
-    int clampToRange(int f);
+    int nearestFrame(int f);
     
     /**
      * @brief getRandomFrameName

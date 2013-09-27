@@ -390,15 +390,20 @@ int File_Knob::lastFrame() const {
     --it;
     return it->first;
 }
-int File_Knob::clampToRange(int f) const{
+int File_Knob::nearestFrame(int f) const{
     int first = firstFrame();
     int last = lastFrame();
     if(f < first) return first;
     if(f > last) return last;
-    return f;
+    
+    map<int,int> distanceMap;
+    for (std::map<int,QString>::const_iterator it = _filesSequence.begin(); it!=_filesSequence.end(); ++it) {
+        distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
+    }
+    return distanceMap.begin()->second;
 }
 const QString File_Knob::getRandomFrameName(int f) const{
-    f = clampToRange(f);
+    f = nearestFrame(f);
     map<int, QString>::const_iterator it = _filesSequence.find(f);
     if(it!=_filesSequence.end()){
         return it->second;
