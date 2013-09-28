@@ -435,8 +435,8 @@ Row* Node::get(int y,int x,int r) {
     NodeCache* cache = appPTR->getNodeCache();
     int current_frame;
     const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
-
     OutputNode* outputNode = dag.getOutput();
+    dag.unlock();
     assert(outputNode);
     current_frame = outputNode->currentFrame();
     std::string filename =  getRandomFrameName(current_frame).toStdString();

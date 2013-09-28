@@ -94,13 +94,12 @@ public:
          *of the graph is fetched recursivly starting from this node.
          *@TODO Throw some exception to detect cycles in the graph
          */
-        
         void resetAndSort(OutputNode* out);
         
-        /**
-         *@brief Clears out the structure. As a result the graph will do nothing.
-         */
-        void reset();
+        /*Lock the dag. You should call this before any access*/
+        void lock() const { _dagMutex.lock(); }
+        
+        void unlock() const { assert(!_dagMutex.tryLock()); _dagMutex.unlock(); }
         
         /**
          *@brief Returns an iterator pointing to the first node in the graph in topological order.
@@ -169,24 +168,6 @@ public:
         const std::vector<Node*>& getInputs()const{return _inputs;}
         
         /**
-         *@brief The first frame supported by the graph.
-         *@decription The first frame is the minimum frame number that an input node of the graph can generate.
-         *E.G: Imagine the DAG has 2 readers A and B. A has a frame range of 30-50 and B a frame range of 20-40.
-         *The first frame in that case is 20.
-         *@returns Returns the first frame number that can be read in the graph.
-         */
-        int firstFrame() const ;
-        
-        /**
-         *@brief The last frame supported by the graph.
-         *@decription The last frame is the maximum frame number that an input node of the graph can generate.
-         *E.G: Imagine the DAG has 2 readers A and B. A has a frame range of 30-50 and B a frame range of 20-40.
-         *The last frame in that case is 50.
-         *@returns Returns the last frame number that can be read in the graph.
-         */
-        int lastFrame() const;
-        
-        /**
          *@brief Validates that all nodes parameters can fit together in the graph.
          *This function will propagate in topological order all infos in the graph,
          *starting from input nodes and finishing to the output node. During that pass all frame ranges
@@ -231,6 +212,7 @@ public:
         std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
         bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
+        mutable QMutex _dagMutex; /*!< protects the dag*/
     };
     
 private:
@@ -285,9 +267,10 @@ private:
     };
     
     Model* _model;/*!< pointer to the model*/
-                
+    
     DAG _dag; /*!< The internal DAG instance.*/
     
+    QMutex _timerMutex;///protects timer
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
     QMutex _abortBeingProcessedLock; /*!< protecting startEngine and stopEngine (when we process abort)*/
@@ -302,10 +285,13 @@ private:
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
     bool _treeVersionValid;/*!< was _treeVersion initialized? */
     
+    QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/
-        
+    
+    /*Accessed and modified only by the run() thread*/
     bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
     
+    QMutex _forceRenderMutex;
     bool _forceRender;/*!< true when we want to by-pass the cache*/
     
     QMutex _workerThreadsWatcherMutex;
@@ -325,11 +311,17 @@ private:
     QMutex _workingMutex;//!< protects _working
     bool _working; //!< true if a thread is working
 
+    /*These member doesn't need to be protected by a mutex: 
+     _lastRequestedRunArgs is modified upon a call to render() and 
+     _currentRunArgs just retrieves the last value found in _lastRequestedRunArgs,
+     they're accessed both by 1 (different) thread exclusivly.*/
     RunArgs _lastRequestedRunArgs; /*called upon render()*/
     RunArgs _currentRunArgs; /*the args used in the run() func*/
-        
+    
+    /*Accessed only by the run() thread*/
     LastFrameInfos _currentFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
     
+    /*Accessed only by the run() thread*/
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
 protected:
@@ -510,7 +502,10 @@ public:
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
      **/
-    void forceFullComputationOnNextFrame(){_forceRender = true;}
+    void forceFullComputationOnNextFrame(){
+        QMutexLocker forceRenderLocker(&_forceRenderMutex);
+        _forceRender = true;
+    }
     
     /**
      *@brief Convenience function calling DAG::isOutputAViewer()
@@ -519,8 +514,11 @@ public:
     
     /**
      *@returns Returns a const reference to the DAG used by the video engine.
+     *You should call dag.unlock() when you're done with it.
      **/
-    const DAG& getCurrentDAG() const {return _dag;}
+    const DAG& getCurrentDAG() const {
+        _dag.lock();
+        return _dag;}
     
     /*@brief Calls DAG::validate(bool)*/
     void validate(bool doFullWork){

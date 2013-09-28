@@ -340,6 +340,7 @@ void ViewerNode::drawOverlays() const{
             (*it)->drawOverlay();
         }
     }
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
@@ -350,6 +351,7 @@ void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF&
             (*it)->onOverlayPenDown(viewportPos, pos);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
@@ -360,6 +362,7 @@ void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPoint
             (*it)->onOverlayPenMotion(viewportPos, pos);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
@@ -370,6 +373,7 @@ void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& p
             (*it)->onOverlayPenUp(viewportPos, pos);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
@@ -380,6 +384,7 @@ void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
             (*it)->onOverlayKeyDown(e);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
@@ -390,6 +395,7 @@ void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
             (*it)->onOverlayKeyUp(e);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
@@ -400,6 +406,7 @@ void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
             (*it)->onOverlayKeyRepeat(e);
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysFocusGained(){
@@ -410,6 +417,7 @@ void ViewerNode::notifyOverlaysFocusGained(){
             (*it)->onOverlayFocusGained();
         }
     }
+     _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysFocusLost(){
@@ -420,4 +428,5 @@ void ViewerNode::notifyOverlaysFocusLost(){
             (*it)->onOverlayFocusLost();
         }
     }
+     _dag.unlock();
 }

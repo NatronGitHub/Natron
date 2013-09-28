@@ -403,6 +403,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
         return -1.;
     const VideoEngine::DAG& dag = engine->getCurrentDAG();
     OutputNode* outputNode = dag.getOutput();
+    dag.unlock();
     assert(outputNode);
     return outputNode->currentFrame();
 }
@@ -413,6 +414,7 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // FIXME-seeabove: disconnect timeline handling from GUI
     const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
     if(!dag.getOutput()){
+        dag.unlock();
         return;
     }
     // FIXME: wrong Temporal Coordinates!!!
@@ -420,6 +422,7 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // - the effect may not begin at frame 0
     // - it depends on the input and output FPS of the effect
     OutputNode* outputNode = dag.getOutput();
+    dag.unlock();
     assert(outputNode);
     return outputNode->seekFrame((int)t);
     
@@ -433,9 +436,11 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;
+        dag.unlock();
         return;
     }
     OutputNode* outputNode = dag.getOutput();
+    dag.unlock();
     assert(outputNode);
     t1 = outputNode->firstFrame();
     t2 = outputNode->lastFrame();

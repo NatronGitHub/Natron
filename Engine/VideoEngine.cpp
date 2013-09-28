@@ -54,6 +54,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 : QThread(parent)
 , _model(model)
 , _dag()
+, _timerMutex()
 , _timer(new Timer)
 , _abortBeingProcessedLock()
 , _abortBeingProcessed(false)
@@ -64,8 +65,10 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _mustQuit(false)
 , _treeVersion(0)
 , _treeVersionValid(false)
+, _loopModeMutex()
 , _loopMode(true)
 , _restart(true)
+, _forceRenderMutex()
 , _forceRender(false)
 , _workerThreadsWatcherMutex()
 , _workerThreadsWatcher(new QFutureWatcher<void>)
@@ -352,7 +355,7 @@ void VideoEngine::run(){
          ViewerNode* viewer = _dag.outputAsViewer();
         /*Get the frame range*/
         assert(_currentRunArgs._output);
-        firstFrame = _dag.firstFrame();
+        firstFrame = _currentRunArgs._output->firstFrame();
         lastFrame = _currentRunArgs._output->lastFrame();
         if (!_currentRunArgs._recursiveCall) {
             if(_currentRunArgs._startingFrame < _currentRunArgs._output->firstFrame()){
@@ -367,10 +370,12 @@ void VideoEngine::run(){
                 _currentRunArgs._output->incrementCurrentFrame();
                 currentFrame = _currentRunArgs._output->currentFrame();
                 if(currentFrame > lastFrame){
+                    QMutexLocker loopModeLocker(&_loopModeMutex);
                     if(_loopMode && _dag.isOutputAViewer()){ // loop only for a viewer
                         currentFrame = firstFrame;
                         _currentRunArgs._output->seekFrame(currentFrame);
                     }else{
+                        loopModeLocker.unlock();
                         stopEngine();
                         continue;
                     }
@@ -380,10 +385,12 @@ void VideoEngine::run(){
                 _currentRunArgs._output->decrementCurrentFrame();
                 currentFrame = _currentRunArgs._output->currentFrame();
                 if(currentFrame < firstFrame){
+                    QMutexLocker loopModeLocker(&_loopModeMutex);
                     if(_loopMode && _dag.isOutputAViewer()){ //loop only for a viewer
                         currentFrame = lastFrame;
                         _currentRunArgs._output->seekFrame(currentFrame);
                     }else{
+                        loopModeLocker.unlock();
                         stopEngine();
                         continue;
                     }
@@ -397,7 +404,7 @@ void VideoEngine::run(){
            
            (_dag.isOutputAViewer() // #2 the DAG contains only 1 frame and we rendered it
             &&  _currentRunArgs._recursiveCall
-            && _dag.lastFrame() == _dag.firstFrame()
+            && _currentRunArgs._output->lastFrame() == _currentRunArgs._output->firstFrame()
             && _currentRunArgs._frameRequestsCount == -1
             && _currentRunArgs._frameRequestIndex == 1)
            
@@ -500,10 +507,13 @@ void VideoEngine::run(){
             x = columnSpan.first;
             r = columnSpan.second+1;
             
-            if(!_forceRender){
-                iscached = appPTR->getViewerCache()->get(key);
-            }else{
-                _forceRender = false;
+            {
+                QMutexLocker forceRenderLocker(&_forceRenderMutex);
+                if(!_forceRender){
+                    iscached = appPTR->getViewerCache()->get(key);
+                }else{
+                    _forceRender = false;
+                }
             }
             /*Found in viewer cache, we execute the cached engine and leave*/
             if (iscached) {
@@ -730,7 +740,10 @@ void VideoEngine::updateViewer(){
             viewer->unBindPBO();
         }
     }
-    _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+    {
+        QMutexLocker timerLocker(&_timerMutex);
+        _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+    }
     if((_currentRunArgs._frameRequestIndex%24)==0){
         emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
     }
@@ -790,6 +803,7 @@ void VideoEngine::updateDisplay(){
 
 
 void VideoEngine::setDesiredFPS(double d){
+    QMutexLocker timerLocker(&_timerMutex);
     _timer->setDesiredFrameRate(d);
 }
 
@@ -810,9 +824,11 @@ void VideoEngine::abort(){
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
+        _dag.lock();
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
         }
+        _dag.unlock();
         // _abortedCondition.wakeOne();
     }
 }
@@ -913,11 +929,6 @@ void VideoEngine::DAG::_depthCycle(Node* n){
     _sorted.push_back(n);
 }
 
-void VideoEngine::DAG::reset(){
-    _output = 0;
-    
-    clearGraph();
-}
 
 ViewerNode* VideoEngine::DAG::outputAsViewer() const {
     if(_output && _isViewer)
@@ -941,7 +952,7 @@ OfxNode* VideoEngine::DAG::outputAsOpenFXNode() const{
 }
 
 void VideoEngine::DAG::resetAndSort(OutputNode* out){
-    
+    QMutexLocker dagLocker(&_dagMutex);
     _output = out;
     _isViewer = dynamic_cast<ViewerNode*>(out) != NULL;
     if(out && out->isOpenFXNode()){
@@ -978,13 +989,6 @@ bool VideoEngine::DAG::validate(bool doFullWork){
     return true;
 }
 
-
-int VideoEngine::DAG::firstFrame() const {
-    return _output->info().firstFrame();
-}
-int VideoEngine::DAG::lastFrame() const {
-    return _output->info().lastFrame();
-}
 
 #ifdef POWITER_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){

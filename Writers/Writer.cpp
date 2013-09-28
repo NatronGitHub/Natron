@@ -249,7 +249,7 @@ void Writer::startRendering(){
     _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
         /*Calls validate just to get the appropriate frame range in the timeline*/
-        getVideoEngine()->validate(false);
+        //getVideoEngine()->validate(false);
         updateDAGAndRender();
         _model->onRenderingOnDiskStarted(this,_filename.c_str(),firstFrame(),lastFrame());
 
