@@ -258,7 +258,9 @@ private:
      * passed to the render function for the last frame computed.
      */
     struct RunArgs{
-        RunArgs():_zoomFactor(1.f),
+        RunArgs():
+        _startingFrame(INT_MAX),
+        _zoomFactor(1.f),
         _sameFrame(false),
         _fitToViewer(false),
         _recursiveCall(false),
@@ -269,6 +271,7 @@ private:
         _output(0)
         {}
         
+        int _startingFrame;
         float _zoomFactor;
         bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
         bool _fitToViewer;

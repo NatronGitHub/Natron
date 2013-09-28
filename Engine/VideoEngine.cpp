@@ -157,9 +157,6 @@ void VideoEngine::render(OutputNode* output,
     /*aborting any rendering on-going*/
     abort();
     
-    /*seek the timeline to the starting frame. Missing a thread protection here*/
-    output->seekFrame(startingFrame);
-    
     /*If the DAG was never built and we don't want to update the DAG, force an update
      so there's no null pointers hanging around*/
     if(!_dag.getOutput() && !updateDAG) updateDAG = true;
@@ -177,6 +174,7 @@ void VideoEngine::render(OutputNode* output,
     }
     
     /*setting the run args that are used by the run function*/
+    _lastRunArgs._startingFrame = startingFrame;
     _lastRunArgs._zoomFactor = zoomFactor;
     _lastRunArgs._sameFrame = sameFrame;
     _lastRunArgs._fitToViewer = fitFrameToViewer;
@@ -302,7 +300,7 @@ void VideoEngine::stopEngine() {
         while(_startCount <= 0) {
             _startCondition.wait(&_startMutex);
         }
-        --_startCount;
+        _startCount = 0;
     }
    
     
@@ -344,33 +342,44 @@ void VideoEngine::run(){
         
         /*get the frame range*/
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
-        Writer* writer = _dag.outputAsWriter();
-        ViewerNode* viewer = _dag.outputAsViewer();
-        OfxNode* ofxOutput = _dag.outputAsOpenFXNode();
-        
-        /*If the output is not a Viewer, get the frame range*/
-        if (!_dag.isOutputAViewer()) {
-            if(!_dag.isOutputAnOpenFXNode()){
-                assert(writer);
-                if (!_lastRunArgs._recursiveCall) {
-                    lastFrame = writer->lastFrame();
-                    currentFrame = writer->firstFrame();
-                    writer->seekFrame(writer->firstFrame());
-                } else {
-                    lastFrame = writer->lastFrame();
-                    writer->incrementCurrentFrame();
-                    currentFrame = writer->currentFrame();
+         ViewerNode* viewer = _dag.outputAsViewer();
+        /*Get the frame range*/
+        assert(_lastRunArgs._output);
+        firstFrame = _dag.firstFrame();
+        lastFrame = _lastRunArgs._output->lastFrame();
+        if (!_lastRunArgs._recursiveCall) {
+            if(_lastRunArgs._startingFrame < _lastRunArgs._output->firstFrame()){
+                _lastRunArgs._startingFrame = _lastRunArgs._output->firstFrame();
+            }else if(_lastRunArgs._startingFrame > _lastRunArgs._output->lastFrame()){
+                _lastRunArgs._startingFrame = _lastRunArgs._output->lastFrame();
+            }
+            currentFrame = _lastRunArgs._startingFrame;
+            _lastRunArgs._output->seekFrame(currentFrame);
+        } else if(!_lastRunArgs._sameFrame){
+            if(_lastRunArgs._forward){
+                _lastRunArgs._output->incrementCurrentFrame();
+                currentFrame = _lastRunArgs._output->currentFrame();
+                if(currentFrame > lastFrame){
+                    if(_loopMode && _dag.isOutputAViewer()){ // loop only for a viewer
+                        currentFrame = firstFrame;
+                        _lastRunArgs._output->seekFrame(currentFrame);
+                    }else{
+                        stopEngine();
+                        continue;
+                    }
                 }
-            } else {
-                assert(ofxOutput);
-                if (!_lastRunArgs._recursiveCall) {
-                    lastFrame = ofxOutput->lastFrame();
-                    currentFrame = ofxOutput->firstFrame();
-                    ofxOutput->seekFrame(ofxOutput->firstFrame());
-                } else {
-                    lastFrame = ofxOutput->lastFrame();
-                    ofxOutput->incrementCurrentFrame();
-                    currentFrame = ofxOutput->currentFrame();
+                
+            }else{
+                _lastRunArgs._output->decrementCurrentFrame();
+                currentFrame = _lastRunArgs._output->currentFrame();
+                if(currentFrame < firstFrame){
+                    if(_loopMode && _dag.isOutputAViewer()){ //loop only for a viewer
+                        currentFrame = lastFrame;
+                        _lastRunArgs._output->seekFrame(currentFrame);
+                    }else{
+                        stopEngine();
+                        continue;
+                    }
                 }
             }
         }
@@ -385,61 +394,11 @@ void VideoEngine::run(){
             && _lastRunArgs._frameRequestsCount == -1
             && _lastRunArgs._frameRequestIndex == 1)
            
-           || _lastRunArgs._frameRequestsCount == 0 // #3 the sequence ended and it was not an infinite run
-           || (!_dag.isOutputAViewer() && currentFrame == lastFrame+1)){//#4 the sequence ended and it was an infinite run (for writers)
-
+           || _lastRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
+        {
+            
             stopEngine();
             continue;
-        }
-        
-        
-        /*Getting the frame range if it was not a writer*/
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){ //openfx viewers are UNSUPPORTED
-            assert(viewer);
-            /*Determine what is the current frame when output is a viewer*/
-            /*!recursiveCall means this is the first time it's called for the sequence.*/
-            if (!_lastRunArgs._recursiveCall) {
-                currentFrame = viewer->currentFrame();
-                firstFrame = _dag.firstFrame();
-                lastFrame = _dag.lastFrame();
-                
-                /*clamping the current frame to the range [first,last] if it wasn't*/
-                if(currentFrame < firstFrame){
-                    currentFrame = firstFrame;
-                }
-                else if(currentFrame > lastFrame){
-                    currentFrame = lastFrame;
-                }
-                viewer->seekFrame(currentFrame);
-                
-            } else { // if the call is recursive, i.e: the next frame in the sequence
-                /*clear the node cache, as it is very unlikely the user will re-use
-                 data from previous frame.*/
-                lastFrame = _dag.lastFrame();
-                firstFrame = _dag.firstFrame();
-                if (_lastRunArgs._forward) {
-                    currentFrame = viewer->currentFrame()+1;
-                    if(currentFrame > lastFrame){
-                        if(_loopMode)
-                            currentFrame = firstFrame;
-                        else{
-                            stopEngine();
-                            continue;
-                        }
-                    }
-                } else {
-                    currentFrame  = viewer->currentFrame()-1;
-                    if(currentFrame < firstFrame){
-                        if(_loopMode)
-                            currentFrame = lastFrame;
-                        else{
-                            stopEngine();
-                            continue;
-                        }
-                    }
-                }
-                viewer->seekFrame(currentFrame);
-            }
         }
         
         /*Getting all readers of the DAG + flagging that we'll want to fit the frame to the viewer*/
@@ -614,8 +573,7 @@ void VideoEngine::run(){
             outChannels = viewer->getUiContext()->displayChannels();
         } else {// channels requested are those requested by the user
             if (!_dag.isOutputAnOpenFXNode()) {
-                assert(writer);
-                outChannels = writer->requestedChannels();
+                outChannels = dynamic_cast<Writer*>(_lastRunArgs._output)->requestedChannels();
             } else {
                 //openfx outputs can only output RGBA
                 outChannels = Mask_RGBA;

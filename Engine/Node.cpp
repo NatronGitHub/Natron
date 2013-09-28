@@ -584,7 +584,10 @@ void OutputNode::seekFrame(int frame) {
 }
 
 void OutputNode::incrementCurrentFrame() {
-    return _timeline->incrementCurrentFrame();
+    _timeline->incrementCurrentFrame();
+}
+void OutputNode::decrementCurrentFrame(){
+    _timeline->decrementCurrentFrame();
 }
 
 int OutputNode::currentFrame() const {

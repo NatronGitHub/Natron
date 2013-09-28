@@ -214,23 +214,6 @@ void ViewerNode::engine(int y,int offset,int range,ChannelSet ,Row* out){
     }
 }
 
-int ViewerNode::firstFrame() const{
-    assert(_uiContext);
-    assert(_uiContext->frameSeeker);
-    return _uiContext->frameSeeker->firstFrame();
-}
-
-int ViewerNode::lastFrame() const{
-    assert(_uiContext);
-    assert(_uiContext->frameSeeker);
-    return _uiContext->frameSeeker->lastFrame();
-}
-
-int ViewerNode::currentFrame() const{
-    assert(_uiContext);
-    assert(_uiContext->frameSeeker);
-    return _uiContext->frameSeeker->currentFrame();
-}
 
 
 void ViewerInfos::reset(){

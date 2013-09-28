@@ -495,6 +495,7 @@ public:
     void setFrameRange(int first, int last);
     void seekFrame(int frame);
     void incrementCurrentFrame();
+    void decrementCurrentFrame();
     int currentFrame() const;
     int firstFrame() const;
     int lastFrame() const;

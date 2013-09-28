@@ -81,13 +81,6 @@ public:
     
     void engine(int y,int offset,int range,ChannelSet channels,Row* out);
     
-    /*Convenience functions. They query the values from the timeline.*/
-    int firstFrame() const;
-    
-    int lastFrame() const;
-    
-    int currentFrame() const;
-            
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(FrameEntry* frame);
     
