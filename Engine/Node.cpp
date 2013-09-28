@@ -599,5 +599,8 @@ int OutputNode::lastFrame() const {
     return _timeline->lastFrame();
 }
 void OutputNode::updateDAGAndRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer, this,currentFrame());
+    _videoEngine->updateDAGAndContinueRender(initViewer, this,currentFrame());
+}
+void OutputNode::refreshAndContinueRender(bool initViewer){
+    _videoEngine->refreshAndContinueRender(initViewer,this,currentFrame());
 }

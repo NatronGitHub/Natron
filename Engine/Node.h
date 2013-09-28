@@ -486,7 +486,8 @@ public:
     VideoEngine* getVideoEngine() const {return _videoEngine;}
   
     void updateDAGAndRender(bool initViewer = false);
-        
+    
+    void refreshAndContinueRender(bool initViewer = false);
 
     boost::shared_ptr<TimeLine> getTimeLine() const {return _timeline;}
 

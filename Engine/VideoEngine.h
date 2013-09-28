@@ -263,6 +263,7 @@ private:
         _fitToViewer(false),
         _recursiveCall(false),
         _forward(true),
+        _updateDAG(false),
         _frameRequestsCount(0),
         _frameRequestIndex(0),
         _output(0)
@@ -273,6 +274,7 @@ private:
         bool _fitToViewer;
         bool _recursiveCall;
         bool _forward;/*!< forwards/backwards video engine*/
+        bool _updateDAG;
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
@@ -339,13 +341,20 @@ public slots:
      *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
      *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
      *until the user explicitly stops it.
+     *@param updateDAG if true, the engine will rebuild the internal DAG in the startEngine() function.
      *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
      *@param forward[in] If true, the engine runs forwards, otherwise backwards.
      *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
      *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
      *is on, frameCount MUST be 1.
      **/
-    void render(OutputNode* output,int startingFrame,int frameCount,bool fitFrameToViewer = false,bool forward = true,bool sameFrame = false);
+    void render(OutputNode* output,
+                int startingFrame,
+                int frameCount,
+                bool updateDAG,
+                bool fitFrameToViewer = false,
+                bool forward = true,
+                bool sameFrame = false);
     
     /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
@@ -358,14 +367,30 @@ public slots:
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
-     *and update the DAG currently operating. Otherwise it will just refresh the same frame than the last frame rendered
-     *on the viewer. This function is to be called exclusivly by the Viewer.
+     *taking into account the new parameters changed. Otherwise it will just refresh the same frame than the last frame rendered
+     *on the viewer. This function is to be called exclusivly by the Viewer. This function should be called whenever
+     *a parameter changed but not the DAG itself.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *@param viewer[in] A pointer to the output whose inputs will determine the DAG that will
      *serve to render the frames.
+     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
+     *serve to render the frames in case we need to build the DAG.
      *@param startingFrame[in] The frame to start rendering with.
      **/
     void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+    
+    /**
+     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
+     *taking into account the new DAG that it has rebuilt using output.
+     *Otherwise it will just refresh the same frame than the last frame rendered
+     *on the viewer. This function should be called whenever
+     *a change has been made (potentially) to the DAG.
+     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
+     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
+     *serve to render the frames.
+     *@param startingFrame[in] The frame to start rendering with.
+     **/
+    void updateDAGAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+
    
     /**
      *@brief The slot called by the GUI to set the requested fps.
@@ -533,8 +558,9 @@ private:
     /**
      *@brief Set up the video engine state, e.g: build DAG from the output node and activate some flags.
      *It is used internally by the run function
+     *@returns Returns true if started,false otherwise
      **/
-    void startEngine();
+    bool startEngine();
     
     /**
      *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.

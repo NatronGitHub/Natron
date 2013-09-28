@@ -147,12 +147,22 @@ static void metaEnginePerRow(Row* row, Node* output){
     // QMetaObject::invokeMethod(_engine, "onProgressUpdate", Qt::QueuedConnection, Q_ARG(int, zoomedY));
 }
 
-void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, bool fitFrameToViewer, bool forward, bool sameFrame) {
-    assert(output);
+void VideoEngine::render(OutputNode* output,
+                         int startingFrame,
+                         int frameCount,
+                         bool updateDAG,
+                         bool fitFrameToViewer,
+                         bool forward,
+                         bool sameFrame) {
     /*aborting any rendering on-going*/
     abort();
-    /*seek the timeline to the starting frame*/
+    
+    /*seek the timeline to the starting frame. Missing a thread protection here*/
     output->seekFrame(startingFrame);
+    
+    /*If the DAG was never built and we don't want to update the DAG, force an update
+     so there's no null pointers hanging around*/
+    if(!_dag.getOutput() && !updateDAG) updateDAG = true;
     
     double zoomFactor;
     if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
@@ -172,9 +182,11 @@ void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, 
     _lastRunArgs._fitToViewer = fitFrameToViewer;
     _lastRunArgs._recursiveCall = false;
     _lastRunArgs._forward = forward;
+    _lastRunArgs._updateDAG = updateDAG;
     _lastRunArgs._frameRequestsCount = frameCount;
     _lastRunArgs._frameRequestIndex = 0;
-    _lastRunArgs._output = output;
+    if(_lastRunArgs._updateDAG)
+        _lastRunArgs._output = output;
     
     /*Starting or waking-up the thread*/
     if (!isRunning()) {
@@ -185,7 +197,7 @@ void VideoEngine::render(OutputNode* output, int startingFrame, int frameCount, 
         _startCondition.wakeOne();
     }
 }
-void VideoEngine::startEngine(){
+bool VideoEngine::startEngine(){
     /*wait if something is already running until it's aborted*/
     {
         QMutexLocker abortProcessLocker(&_abortBeingProcessedLock);
@@ -208,7 +220,9 @@ void VideoEngine::startEngine(){
     
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
     _timer->playState = RUNNING; /*activating the timer*/
-    _dag.resetAndSort(_lastRunArgs._output);/*rebuilding the dag from the output provided*/
+    
+    if(_lastRunArgs._updateDAG)
+        _dag.resetAndSort(_lastRunArgs._output);/*rebuilding the dag from the output provided*/
     
     
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(_dag.getOutput()); /*viewer might be NULL if the output is smthing else*/
@@ -230,13 +244,11 @@ void VideoEngine::startEngine(){
     if(!hasInputDifferentThanReader && !hasFrames){
         if(viewer)
             viewer->disconnectViewer();
-        stopEngine();
-        return;
+        return false;
     }
     
     if(!_dag.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
-        stopEngine();
-        return;
+        return false;
     }
 
     /*update the tree hash */
@@ -258,6 +270,7 @@ void VideoEngine::startEngine(){
         _working = true;
     }
     emit engineStarted(_lastRunArgs._forward);
+    return true;
 
 }
 void VideoEngine::stopEngine() {
@@ -310,7 +323,10 @@ void VideoEngine::run(){
         /*If restart is on, start the engine. Restart is on for the 1st frame
          rendered of a sequence.*/
         if(_restart){
-            startEngine();
+            if(!startEngine()){
+                stopEngine();
+                continue;
+            }
         }
 
         /*beginRenderAction for all openFX nodes*/
@@ -833,23 +849,37 @@ void VideoEngine::abort(){
 
 void VideoEngine::seek(int frame){
     if(frame >= _dag.getOutput()->firstFrame() && frame <= _dag.getOutput()->lastFrame())
-        refreshAndContinueRender(false, _dag.getOutput(),frame);
+        refreshAndContinueRender(false,_dag.getOutput(),frame);
 }
 
 void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
 
+    bool wasPlaybackRunning;
+    {
+        QMutexLocker startedLocker(&_workingMutex);
+        wasPlaybackRunning = _working && _lastRunArgs._frameRequestsCount == -1;
+    }
+    if(wasPlaybackRunning){
+        render(output,startingFrame,-1,false,initViewer,_lastRunArgs._forward,false);
+    }else{
+        render(output,startingFrame,1,false,initViewer,_lastRunArgs._forward,true);
+    }
+}
+void VideoEngine::updateDAGAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
+    
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
     bool wasPlaybackRunning;
     {
-        QMutexLocker startedLocker(&_startMutex);
-        wasPlaybackRunning = _startCount > 0 && _lastRunArgs._frameRequestsCount == -1;
+        QMutexLocker startedLocker(&_workingMutex);
+        wasPlaybackRunning = _working && _lastRunArgs._frameRequestsCount == -1;
     }
     if(!viewer || wasPlaybackRunning){
-        render(output,startingFrame,-1,initViewer,_lastRunArgs._forward,false);
+        render(output,startingFrame,-1,true,initViewer,_lastRunArgs._forward,false);
     }else{
-        render(output,startingFrame,1,initViewer,_lastRunArgs._forward,true);
+        render(output,startingFrame,1,true,initViewer,_lastRunArgs._forward,true);
     }
 }
+
 
 
 void VideoEngine::updateTreeVersion(){

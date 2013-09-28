@@ -501,6 +501,7 @@ void ViewerTab::startPause(bool b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
+                                              true,/*rebuild dag?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
@@ -516,6 +517,7 @@ void ViewerTab::startBackward(bool b){
         _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
+                                              true,/*rebuild dag?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/
@@ -547,7 +549,7 @@ void ViewerTab::seek(int f){
 
 void ViewerTab::centerViewer(){
     if(viewer->displayingImage()){
-        _viewerNode->updateDAGAndRender(true);
+        _viewerNode->refreshAndContinueRender(true);
 
     }else{
         viewer->fitToFormat(viewer->displayWindow());

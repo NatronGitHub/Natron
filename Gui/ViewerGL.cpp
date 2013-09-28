@@ -357,7 +357,7 @@ void ViewerGL::resizeGL(int width, int height){
     ViewerNode* viewer = _viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _viewerTab->getInternalNode()->updateDAGAndRender(true);
+        _viewerTab->getInternalNode()->refreshAndContinueRender(true);
     }
 }
 void ViewerGL::paintGL()
@@ -1134,7 +1134,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         _zoomCtx._left += (oldClick_opengl.x() - newClick_opengl.x());
         _zoomCtx._oldClick = newClick;
         if(_displayingImage){
-            _viewerTab->getInternalNode()->updateDAGAndRender();
+            _viewerTab->getInternalNode()->refreshAndContinueRender();
         } else {
             updateGL();
         }
@@ -1189,7 +1189,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_displayingImage){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
-        _viewerTab->getInternalNode()->updateDAGAndRender();
+        _viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
     }
@@ -1225,7 +1225,7 @@ void ViewerGL::zoomSlot(int v) {
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_displayingImage){
         _viewerTab->getGui()->getApp()->clearPlaybackCache();
-        _viewerTab->getInternalNode()->updateDAGAndRender();
+        _viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
     }
@@ -1371,7 +1371,7 @@ void ViewerGL::updateColorSpace(QString str){
     }
     
     if(byteMode()==1 || !_hasHW)
-        _viewerTab->getInternalNode()->updateDAGAndRender();
+        _viewerTab->getInternalNode()->refreshAndContinueRender();
     else
         updateGL();
     
@@ -1380,7 +1380,7 @@ void ViewerGL::updateExposure(double d){
     exposure = d;
 
     if((byteMode()==1 || !_hasHW) && _displayingImage)
-         _viewerTab->getInternalNode()->updateDAGAndRender();
+         _viewerTab->getInternalNode()->refreshAndContinueRender();
     else
         updateGL();
     
