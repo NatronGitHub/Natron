@@ -20,6 +20,7 @@
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
+#include <QMutex>
 
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
@@ -241,7 +242,7 @@ class ViewerTab;
             
             const Powiter::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
             
-            bool _usingColorSpace;/*!< True when the viewer is using the Lut. It locks it so
+            QMutex _colorSpaceMutex;/*!< True when the viewer is using the Lut. It locks it so
                                    the the software will not try to change the current lut at
                                    the same time.*/
             

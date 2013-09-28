@@ -915,7 +915,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     assert(frameData);
-    
+    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
     U32* output = reinterpret_cast<U32*>(frameData);
     unsigned int row_width = columnSpan.size();
     yOffset *= row_width;
@@ -925,24 +925,18 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         int start = (int)(rand() % row_width);
         /* go fowards from starting point to end of line: */
         for(unsigned int i = start ; i < row_width; ++i) {
-            double _r,_g,_b,_a;
-            U8 r_,g_,b_,a_;
+            double _a;
+            U8 a_,r_,g_,b_;
             int col = columnSpan[i];
-            _r = (r != NULL) ? r[col] : 0.f;
-            _g = (g != NULL) ? g[col] : 0.f;
-            _b = (b != NULL) ? b[col] : 0.f;
             _a = (alpha != NULL) ? alpha[col] : 1.f;
-
-            if(!rgbMode()){
-                _r = (_r + 1.0)*_r;
-                _g = _r; _b = _r;
-            }
-            _r*=_a;_g*=_a;_b*=_a;
-            _r*=exposure;_g*=exposure;_b*=exposure;
+//            if(!rgbMode()){
+//                _r = (_r + 1.0)*_r;
+//                _g = _r; _b = _r;
+//            }
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)(_r*256),255);
-            g_ = (U8)std::min((int)(_g*256),255);
-            b_ = (U8)std::min((int)(_b*256),255);
+            r_ = (U8)std::min((int)(((r != NULL) ? r[col] : 0.f)*_a*exposure*256),255);
+            g_ = (U8)std::min((int)(((g != NULL) ? g[col] : 0.f)*_a*exposure*256),255);
+            b_ = (U8)std::min((int)(((b != NULL) ? b[col] : 0.f)*_a*exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
@@ -969,55 +963,19 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
     }else{ // !linear
         /*flaging that we're using the colorspace so it doesn't try to change it in the same time
          if the user requested it*/
-        _usingColorSpace = true;
         int start = (int)(rand() % row_width);
         unsigned error_r = 0x80;
         unsigned error_g = 0x80;
         unsigned error_b = 0x80;
         /* go fowards from starting point to end of line: */
-        //void to_float(float* to, const float* from, int W, int delta = 1) const;
-        float *row_r = new float[row_width];
-        float *row_g = new float[row_width];
-        float *row_b = new float[row_width];
-        float *row_a = new float[row_width];
-        for (unsigned int i = 0 ; i < row_width; ++i) {
-            int col = columnSpan[i];
-            double _r,_g,_b,_a;
-            _r = (r != NULL) ? r[col] : 0.f;
-            _g = (g != NULL) ? g[col] : 0.f;
-            _b = (b != NULL) ? b[col] : 0.f;
-            _a = ((alpha != NULL) ? alpha[col] : 1.f)  * exposure;
-            row_r[i] = _r;
-            row_g[i] = _g;
-            row_b[i] = _b;
-            row_a[i] = _a;
-        }
-        if (!rgbMode()) { // FIXME-seeabove: what does !rgbMode() mean?
-            for(unsigned int i = 0 ; i < row_width; ++i) {
-                double _r,_g,_b;
-                _r = row_r[i];
-                _r = (_r + 1.0)*_r;
-                _g = _r; _b = _r;
-                row_r[i] = _r;
-                row_g[i] = _g;
-                row_b[i] = _b;
-            }
-        }
-
-        float *row_r_out = new float[row_width];
-        float *row_g_out = new float[row_width];
-        float *row_b_out = new float[row_width];
-        _colorSpace->to_float(row_r_out, row_r, row_a, row_width);
-        _colorSpace->to_float(row_g_out, row_g, row_a, row_width);
-        _colorSpace->to_float(row_b_out, row_b, row_a, row_width);
-
+        _colorSpace->validate();
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
             U8 r_,g_,b_,a_;
-
-            error_r = (error_r&0xff) + (unsigned)row_r_out[i];
-            error_g = (error_g&0xff) + (unsigned)row_g_out[i];
-            error_b = (error_b&0xff) + (unsigned)row_b_out[i];
-            a_ = (U8)std::min((int)((row_a[i]/exposure)*256),255);
+            
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[columnSpan[i]] : 0.f);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[columnSpan[i]] : 0.f);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[columnSpan[i]] : 0.f);
+            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[columnSpan[i]] : 1.f)*256),255);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -1031,23 +989,15 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         for (int i = start-1 ; i >= 0 ; --i) {
             U8 r_,g_,b_,a_;
             
-            error_r = (error_r&0xff) + (unsigned)row_r_out[i];
-            error_g = (error_g&0xff) + (unsigned)row_g_out[i];
-            error_b = (error_b&0xff) + (unsigned)row_b_out[i];
-            a_ = (U8)std::min((int)((row_a[i]/exposure)*256),255);
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[columnSpan[i]] : 0.f);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[columnSpan[i]] : 0.f);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[columnSpan[i]] : 0.f);
+            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[columnSpan[i]] : 1.f)*256),255);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
-        delete [] row_r;
-        delete [] row_g;
-        delete [] row_b;
-        delete [] row_a;
-        delete [] row_r_out;
-        delete [] row_g_out;
-        delete [] row_b_out;
-        _usingColorSpace = false;
     }
     
 }
@@ -1056,6 +1006,7 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
 void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
                                              const std::vector<int>& columnSpan,int yOffset,const float* alpha){
     assert(frameData);
+    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
@@ -1348,7 +1299,7 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     
 }
 void ViewerGL::updateColorSpace(QString str){
-    while(_usingColorSpace){}
+    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
             _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);

@@ -97,6 +97,23 @@ public:
     void from_float(float* to, const float* from, int W, int delta = 1) const;
     void from_float(float* to, const float* from, const float* alpha, int W, int delta = 1) const;
 
+    
+    //float toFloat(float v) const { return to_byte(v) / 255.f; }
+    inline float toFloatFast(float v) const;
+    //float fromFloat(float v) const { return from_byte(v * 255.f); }
+    inline float fromFloatFast(float v) const;
+    
+    // post-constructor
+    void validate() const {
+        if (init_) {
+            return;
+        }
+        if (!linear()) {
+            fillTables();
+        }
+        init_=true;
+    }
+
 private:
 
     //takes in input a float clamped to [0 - 1.f] and  return
@@ -109,21 +126,8 @@ private:
 
     void fillTables() const;
 
-    // post-constructor
-    void validate() const {
-        if (init_) {
-            return;
-        }
-        if (!linear()) {
-            fillTables();
-        }
-        init_=true;
-    }
-
-    //float toFloat(float v) const { return to_byte(v) / 255.f; }
-    inline float toFloatFast(float v) const;
-    //float fromFloat(float v) const { return from_byte(v * 255.f); }
-    inline float fromFloatFast(float v) const;
+    
+    
 };
 
 // DEFAULT/GLOBAL LUTS
