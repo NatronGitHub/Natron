@@ -324,11 +324,12 @@ private:
     QMutex _workingMutex;//!< protects _working
     bool _working; //!< true if a thread is working
 
-    RunArgs _lastRunArgs;
+    RunArgs _lastRequestedRunArgs; /*called upon render()*/
+    RunArgs _currentRunArgs; /*the args used in the run() func*/
         
-    LastFrameInfos _lastFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
+    LastFrameInfos _currentFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
     
-    timeval _lastComputeFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
+    timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
 protected:
     
