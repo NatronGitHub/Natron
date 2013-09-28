@@ -220,19 +220,24 @@ bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
         _size += entry->size();
         evicted = _cache.insert(key,entry,evict);
         if (evicted.second) {
+            evicted.second->lock();
             _size -= evicted.second->size();
+            evicted.second->unlock();
         }
     }
     if (evicted.second) {
         /*while we removed an entry from the cache that must not be removed, we insert it again.
          If all the entries in the cache cannot be removed (in theory it should never happen), the
          last one will be evicted.*/
-        
+        evicted.second->lock();
         while(!evicted.second->isRemovable()) {
             QMutexLocker locker(&_lock);
+            evicted.second->unlock();
             evicted = _cache.insert(key,entry,true);
             assert(evicted.second);
+            evicted.second->lock();
             _size -= evicted.second->size();
+            evicted.second->unlock();
         }
 
         /*if it is a memorymapped entry, remove the backing file in the meantime*/

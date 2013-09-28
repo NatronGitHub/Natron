@@ -67,6 +67,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _loopMode(true)
 , _restart(true)
 , _forceRender(false)
+, _workerThreadsWatcherMutex()
 , _workerThreadsWatcher(new QFutureWatcher<void>)
 , _pboUnMappedCondition()
 , _pboUnMappedMutex()
@@ -90,9 +91,12 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 }
 
 VideoEngine::~VideoEngine() {
-    assert(_workerThreadsWatcher);
-    _workerThreadsWatcher->cancel();
-    _workerThreadsWatcher->waitForFinished();
+    {
+        QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
+        assert(_workerThreadsWatcher);
+        _workerThreadsWatcher->cancel();
+        _workerThreadsWatcher->waitForFinished();
+    }
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
@@ -108,6 +112,7 @@ VideoEngine::~VideoEngine() {
     }
     wait();
     delete _workerThreadsWatcher;
+    
 }
 
 
@@ -605,7 +610,10 @@ void VideoEngine::run(){
             }
             
             /*Does the rendering*/
-            _workerThreadsWatcher->setFuture(QtConcurrent::map(sequence,boost::bind(metaEnginePerRow,_1,_dag.getOutput())));
+            {
+                QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
+                _workerThreadsWatcher->setFuture(QtConcurrent::map(sequence,boost::bind(metaEnginePerRow,_1,_dag.getOutput())));
+            }
             _workerThreadsWatcher->waitForFinished();
             //_threadPool->waitForDone();
         }
@@ -793,9 +801,12 @@ void VideoEngine::abort(){
             return;
         }
     }
-    assert(_workerThreadsWatcher);
-    _workerThreadsWatcher->cancel();
-    _workerThreadsWatcher->waitForFinished();
+    {
+        QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
+        assert(_workerThreadsWatcher);
+        _workerThreadsWatcher->cancel();
+        _workerThreadsWatcher->waitForFinished();
+    }
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;

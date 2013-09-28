@@ -308,6 +308,7 @@ private:
     
     bool _forceRender;/*!< true when we want to by-pass the cache*/
     
+    QMutex _workerThreadsWatcherMutex;
     QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
