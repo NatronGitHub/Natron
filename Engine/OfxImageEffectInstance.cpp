@@ -402,6 +402,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
     if(!engine)
         return -1.;
     const VideoEngine::DAG& dag = engine->getCurrentDAG();
+    dag.lock();
     OutputNode* outputNode = dag.getOutput();
     dag.unlock();
     assert(outputNode);
@@ -413,6 +414,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // FIXME-seeabove: disconnect timeline handling from GUI
     const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
+    dag.lock();
     if(!dag.getOutput()){
         dag.unlock();
         return;
@@ -433,6 +435,7 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     // FIXME-seeabove: disconnect timeline handling from GUI
     const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
+    dag.lock();
     if(!dag.getOutput()){
         t1 = -1.;
         t2 = -1.;

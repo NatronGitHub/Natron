@@ -86,7 +86,9 @@ public:
         DAG():
         _output(0)
         ,_isViewer(false)
-        ,_isOutputOpenFXNode(false){}
+        ,_isOutputOpenFXNode(false)
+        ,_dagMutex(QMutex::Recursive) /*recursive lock*/
+        {}
         
         /**
          *@brief Clears the structure and fill it with a new graph, represented by the OutputNode.
@@ -99,8 +101,8 @@ public:
         /*Lock the dag. You should call this before any access*/
         void lock() const { _dagMutex.lock(); }
         
-        void unlock() const { assert(!_dagMutex.tryLock()); _dagMutex.unlock(); }
-        
+        void unlock() const { _dagMutex.unlock(); }
+                
         /**
          *@brief Returns an iterator pointing to the first node in the graph in topological order.
          *Generally the first node is an input node.
@@ -514,11 +516,10 @@ public:
     
     /**
      *@returns Returns a const reference to the DAG used by the video engine.
-     *You should call dag.unlock() when you're done with it.
+     *You should bracket dag.lock() and dag.unlock() before any operation on 
+     *the dag.
      **/
-    const DAG& getCurrentDAG() const {
-        _dag.lock();
-        return _dag;}
+    const DAG& getCurrentDAG() const { return _dag; }
     
     /*@brief Calls DAG::validate(bool)*/
     void validate(bool doFullWork){

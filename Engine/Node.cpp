@@ -435,6 +435,7 @@ Row* Node::get(int y,int x,int r) {
     NodeCache* cache = appPTR->getNodeCache();
     int current_frame;
     const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
+    dag.lock();
     OutputNode* outputNode = dag.getOutput();
     dag.unlock();
     assert(outputNode);

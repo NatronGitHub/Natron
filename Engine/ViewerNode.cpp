@@ -334,6 +334,7 @@ void ViewerNode::viewportSize(double &w,double &h) {
 
 void ViewerNode::drawOverlays() const{
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock(); /*it might be locked already if a node forced a re-render*/
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
@@ -345,88 +346,96 @@ void ViewerNode::drawOverlays() const{
 
 void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenDown(viewportPos, pos);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenMotion(viewportPos, pos);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenUp(viewportPos, pos);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyDown(e);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyUp(e);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyRepeat(e);
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysFocusGained(){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusGained();
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }
 
 void ViewerNode::notifyOverlaysFocusLost(){
     const VideoEngine::DAG& _dag = getVideoEngine()->getCurrentDAG();
+    _dag.lock();
     if(_dag.getOutput()){
         for (VideoEngine::DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusLost();
         }
     }
-     _dag.unlock();
+    _dag.unlock();
 }

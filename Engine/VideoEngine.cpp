@@ -288,9 +288,11 @@ void VideoEngine::stopEngine() {
         _abortBeingProcessed = true;
         QMutexLocker l(&_abortedRequestedMutex);
         _abortRequested = 0;
+         _dag.lock();
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(false);
         }
+        _dag.unlock();
         _abortedRequestedCondition.wakeOne();
         _abortBeingProcessed = false;
     }
@@ -819,7 +821,7 @@ void VideoEngine::abort(){
         QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
         assert(_workerThreadsWatcher);
         _workerThreadsWatcher->cancel();
-        _workerThreadsWatcher->waitForFinished();
+        // _workerThreadsWatcher->waitForFinished();
     }
     {
         QMutexLocker locker(&_abortedRequestedMutex);
