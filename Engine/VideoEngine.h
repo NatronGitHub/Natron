@@ -333,30 +333,7 @@ protected:
     virtual void run();
     
 public slots:
-    /**
-     *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
-     *frame indicated on the timeline.
-     *@param startingFrame[in] The frame to start with.
-     *@param output[in] The output from which we should build the DAG that will serve to render.
-     *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
-     *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
-     *until the user explicitly stops it.
-     *@param updateDAG if true, the engine will rebuild the internal DAG in the startEngine() function.
-     *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
-     *@param forward[in] If true, the engine runs forwards, otherwise backwards.
-     *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
-     *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
-     *is on, frameCount MUST be 1.
-     **/
-    void render(OutputNode* output,
-                int startingFrame,
-                int frameCount,
-                bool updateDAG,
-                bool fitFrameToViewer = false,
-                bool forward = true,
-                bool sameFrame = false);
-    
-    /**
+        /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
     void abort();
@@ -364,33 +341,6 @@ public slots:
      *@brief Calls the video engine for the frame number frame. This is the slot called when the user scrub in the timeline.
      **/
     void seek(int frame);
-    
-    /**
-     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
-     *taking into account the new parameters changed. Otherwise it will just refresh the same frame than the last frame rendered
-     *on the viewer. This function is to be called exclusivly by the Viewer. This function should be called whenever
-     *a parameter changed but not the DAG itself.
-     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *serve to render the frames.
-     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
-     *serve to render the frames in case we need to build the DAG.
-     *@param startingFrame[in] The frame to start rendering with.
-     **/
-    void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
-    
-    /**
-     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
-     *taking into account the new DAG that it has rebuilt using output.
-     *Otherwise it will just refresh the same frame than the last frame rendered
-     *on the viewer. This function should be called whenever
-     *a change has been made (potentially) to the DAG.
-     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
-     *serve to render the frames.
-     *@param startingFrame[in] The frame to start rendering with.
-     **/
-    void updateDAGAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
-
    
     /**
      *@brief The slot called by the GUI to set the requested fps.
@@ -498,6 +448,59 @@ public:
     VideoEngine(Model* model, QObject* parent = NULL);
     
     virtual ~VideoEngine();
+    
+    
+    /**
+     *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
+     *frame indicated on the timeline.
+     *@param startingFrame[in] The frame to start with.
+     *@param output[in] The output from which we should build the DAG that will serve to render.
+     *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
+     *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
+     *until the user explicitly stops it.
+     *@param updateDAG if true, the engine will rebuild the internal DAG in the startEngine() function.
+     *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
+     *@param forward[in] If true, the engine runs forwards, otherwise backwards.
+     *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
+     *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
+     *is on, frameCount MUST be 1.
+     **/
+    void render(OutputNode* output,
+                int startingFrame,
+                int frameCount,
+                bool updateDAG,
+                bool fitFrameToViewer = false,
+                bool forward = true,
+                bool sameFrame = false);
+    
+    
+    
+    /**
+     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
+     *taking into account the new parameters changed. Otherwise it will just refresh the same frame than the last frame rendered
+     *on the viewer. This function is to be called exclusivly by the Viewer. This function should be called whenever
+     *a parameter changed but not the DAG itself.
+     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
+     *serve to render the frames.
+     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
+     *serve to render the frames in case we need to build the DAG.
+     *@param startingFrame[in] The frame to start rendering with.
+     **/
+    void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+    
+    /**
+     *@brief This function internally calls render(). If the playback is running, then it will resume the playback
+     *taking into account the new DAG that it has rebuilt using output.
+     *Otherwise it will just refresh the same frame than the last frame rendered
+     *on the viewer. This function should be called whenever
+     *a change has been made (potentially) to the DAG.
+     *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
+     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
+     *serve to render the frames.
+     *@param startingFrame[in] The frame to start rendering with.
+     **/
+    void updateDAGAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+
     
     /**
      *@brief Bypasses the cache so the next frame will be rendered fully
