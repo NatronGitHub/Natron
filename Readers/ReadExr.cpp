@@ -521,7 +521,7 @@ void ReadExr::make_preview(){
             float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
             float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
             float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
-            float a = alpha ? alpha[nearestX] : 1.f;
+            float a = alpha ? clamp(alpha[nearestX]) : 1.f;
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
         }

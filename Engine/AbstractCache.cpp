@@ -450,6 +450,7 @@ void AbstractDiskCache::restore(){
                 }
                 std::pair<U64,MemoryMappedEntry*> entry = recoverEntryFromString(line);
                 if(entry.second){
+                    entry.second->lock();
                     entries.push_back(entry);
                 }else{
                     cout <<"WARNING: " <<  cacheName() << " failed to recover entry, discarding it." << endl;
@@ -462,6 +463,7 @@ void AbstractDiskCache::restore(){
                 for (U32 i = 0; i < entries.size(); ++i) {
                     std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
                     add(entry.first,entry.second);
+                    entry.second->unlock();
                 }
                 
                 /*cache is filled , debug*/

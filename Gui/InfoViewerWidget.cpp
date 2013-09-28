@@ -205,8 +205,8 @@ void InfoViewerWidget::changeDataWindow(){
     bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
     .arg(viewer->dataWindow().left())
     .arg(viewer->dataWindow().bottom())
-    .arg(viewer->dataWindow().width())
-    .arg(viewer->dataWindow().height());
+    .arg(viewer->dataWindow().right())
+    .arg(viewer->dataWindow().top());
 
     coordDispWindow->setText(bbox);
 }

@@ -171,11 +171,14 @@ std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString st
             dataSize = entry->_textureRect.w * entry->_textureRect.h * 4 * sizeof(float);
         }
         string pathStd = path.toStdString();
+        entry->lock();
         if(!entry->allocate(dataSize,pathStd.c_str())){
+            entry->unlock();
             QFile::remove(path);
             delete entry;
             return make_pair(0, (MemoryMappedEntry*)NULL);
         }
+        entry->unlock();
     }
     QString hashKey;
     int j = path.size() - 1;
