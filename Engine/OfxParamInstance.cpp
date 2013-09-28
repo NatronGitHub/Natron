@@ -522,13 +522,15 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name,
     double def[2];
     minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0));
     maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0));
-    increment.push_back(getProperties().getDoubleProperty(kOfxParamPropIncrement,0));
+    double incr1 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
+    incr1 != 0 ? increment.push_back(incr1) : increment.push_back(0.1);
     decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
     def[0] = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     
     minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1));
     maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1));
-    increment.push_back(getProperties().getDoubleProperty(kOfxParamPropIncrement,1));
+    double incr2 = getProperties().getIntProperty(kOfxParamPropIncrement,1);
+    incr2 != 0 ? increment.push_back(incr2) : increment.push_back(0.1);
     decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,1));
     def[1] = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
     _knob->setMinimumsAndMaximums(minimum, maximum);
@@ -606,12 +608,14 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& na
     int def[2];
     minimum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,0));
     maximum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,0));
-    increment.push_back(getProperties().getIntProperty(kOfxParamPropIncrement,0));
+    int incr1 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
+    incr1 != 0 ? increment.push_back(incr1) : increment.push_back(1);
     def[0] = getProperties().getIntProperty(kOfxParamPropDefault,0);
     
     minimum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,1));
     maximum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,1));
-    increment.push_back(getProperties().getIntProperty(kOfxParamPropIncrement,1));
+    int incr2 = getProperties().getIntProperty(kOfxParamPropIncrement,1);
+    incr2 != 0 ? increment.push_back(incr2) : increment.push_back(1);
     def[1] = getProperties().getIntProperty(kOfxParamPropDefault,1);
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);

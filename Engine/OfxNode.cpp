@@ -451,17 +451,18 @@ void OfxNode::computePreviewImage(){
     const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
     assert(img);
     OfxRectI bounds = img->getBounds();
-    int w = std::min(bounds.x2-bounds.x1, 64);
-    int h = std::min(bounds.y2-bounds.y1, 64);
-    double zoomFactor = (double)h/(bounds.y2-bounds.y1);
+    int w = std::min(bounds.x2-bounds.x1, POWITER_PREVIEW_WIDTH);
+    int h = std::min(bounds.y2-bounds.y1, POWITER_PREVIEW_HEIGHT);
+    double yZoomFactor = (double)h/(bounds.y2-bounds.y1);
+    double xZoomFactor = (double)w/(bounds.x2 - bounds.x1);
     for (int i = 0; i < h; ++i) {
-        double y = i / zoomFactor;
+        double y = i / yZoomFactor;
         int nearestY = (int)(y+0.5);
         OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearestY);
         QRgb *dst_pixels = (QRgb *) _preview.scanLine(i);
         assert(src_pixels);
         for(int j = 0 ; j < w ; ++j) {
-            double x = j / zoomFactor;
+            double x = (double)j / xZoomFactor;
             int nearestX = (int)(x+0.5);
             OfxRGBAColourF p = src_pixels[nearestX];
             uchar r = (uchar)std::min(p.r*256., 255.);

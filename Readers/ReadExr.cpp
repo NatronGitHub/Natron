@@ -492,15 +492,16 @@ void ReadExr::make_preview(){
     int h,w;
     dh < POWITER_PREVIEW_HEIGHT ? h = dh : h = POWITER_PREVIEW_HEIGHT;
     dw < POWITER_PREVIEW_WIDTH ? w = dw : w = POWITER_PREVIEW_WIDTH;
-    float zoomFactor = (float)h/(float)dh;
+    float yZoomFactor = (float)h/(float)dh;
+    float xZoomFactor = (float)w/(float)dw;
     for (int i =0 ; i < h; ++i) {
-        float y = (float)i*1.f/zoomFactor;
+        float y = (float)i*1.f/yZoomFactor;
         int nearestY = (int)(y+0.5);
         readScanLine(nearestY);
     }
     QImage img(w,h,QImage::Format_ARGB32);
     for (int i=0; i< h; ++i) {
-        double y = i*1.f/zoomFactor;
+        double y = i*1.f/yZoomFactor;
         int nearestY = (int)(y+0.5);
         int exrY = dispWindow.max.y+1 - nearestY;
         if(exrY < dispWindow.min.y || exrY > dispWindow.max.y) continue;
@@ -516,7 +517,7 @@ void ReadExr::make_preview(){
         if(blue) blue+=from->offset();
         if(alpha) alpha+=from->offset();
         for (int j=0; j<w; ++j) {
-            double x = j*1.f/zoomFactor;
+            double x = j*1.f/xZoomFactor;
             int nearestX = (int)(x+0.5);
             float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
             float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
