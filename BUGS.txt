@@ -2,8 +2,3 @@ Here is a list of the know bugs:
 
 
 - On OSX dragging the viewer pane will freeze the GUI (Qt5 only)
-
-- Entering a directory with the file dialog that has image sequences inside will cause the history to bug.
-
-- Selecting a sequence of files that is not contiguous will result in a crash. This is not a bug, rather this is an unsupported feature.
-

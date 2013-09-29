@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <QtCore/QMutex>
+#include <QtCore/QObject>
 #include <boost/utility.hpp>
 
 #include "Global/Macros.h"
@@ -268,8 +269,8 @@ public:
     virtual CacheEntry* getCacheEntry(U64 key) = 0;
 };
 
-class AbstractCacheHelper : public AbstractCache {
-
+class AbstractCacheHelper :  public AbstractCache {
+        
 private:
 
 
@@ -282,6 +283,7 @@ protected:
     QMutex _lock;
     CacheContainer _cache; // the actual cache
 
+    
 public:
 
     AbstractCacheHelper();
@@ -340,6 +342,7 @@ public:
  on disk so they can survive several runs. These caches can handle a bigger amount of data than
  in-memory caches, but are a bit slower.*/
 class AbstractDiskCache : public AbstractCacheHelper {
+    
 public:
     /*Constructs an empty disk cache of size 0. You must explicitly call
      setMaximumCacheSize to allow the cache to grow. The inMemoryUsage indicates
@@ -410,7 +413,8 @@ private:
      Must be called explicitely after the constructor
      */
     void initializeSubDirectories();
-
+    
+    
 private:
     U64 _inMemorySize; // the size of the in-memory portion of the cache in bytes
     double _maximumInMemorySize; // the maximum size of the in-memory portion of the cache.(in % of the maximum cache size)

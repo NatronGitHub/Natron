@@ -44,9 +44,7 @@ public:
             QVBoxLayout *dockContainer,
             Node *node,
             qreal x,qreal y ,
-            QGraphicsItem *parent=0,
-            QGraphicsScene *sc=0,
-            QObject* parentObj=0);
+            QGraphicsItem *parent=0);
 
     ~NodeGui();
     
@@ -189,10 +187,7 @@ protected:
     
     /*A pointer to the layout containing setting panels*/
     QVBoxLayout* dockContainer;
-    
-    /*A pointer to the global scene representing the DAG*/
-    QGraphicsScene* sc;
-    
+        
     /*A pointer to the rectangle of the node.*/
     QGraphicsRectItem* rectangle;
     

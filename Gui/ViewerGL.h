@@ -21,6 +21,7 @@
 #include <QtOpenGL/QGLWidget>
 #include <QtGui/QVector4D>
 #include <QMutex>
+#include <QWaitCondition>
 
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
@@ -242,9 +243,9 @@ class ViewerTab;
             
             const Powiter::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
             
-            QMutex _colorSpaceMutex;/*!< True when the viewer is using the Lut. It locks it so
-                                   the the software will not try to change the current lut at
-                                   the same time.*/
+            QWaitCondition _usingColorSpaceCondition;
+            QMutex _usingColorSpaceMutex;
+            int _usingColorSpaceCounter;
             
             InfoViewerWidget* _infoViewer;/*!< Pointer to the info bar below the viewer holding pixel/mouse/format related infos*/
             

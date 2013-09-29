@@ -898,7 +898,7 @@ public:
 protected:
     
     virtual void tryStartRendering(){
-        startRendering(true);
+        startRendering(false);
     }
     
     virtual void _restoreFromString(const std::string& str);

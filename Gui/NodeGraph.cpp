@@ -17,6 +17,8 @@ CLANG_DIAG_OFF(unused-private-field);
 CLANG_DIAG_ON(unused-private-field);
 #endif
 #include <QGraphicsProxyWidget>
+#include <QGraphicsTextItem>
+#include <QFileSystemModel>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QComboBox>
@@ -41,14 +43,16 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Model.h"
-#include "Engine/ViewerNode.h"
 #include "Engine/Hash64.h"
+#include "Engine/ViewerCache.h"
+#include "Engine/NodeCache.h"
 
 #include "Readers/Reader.h"
 
-
 #include "Global/AppManager.h"
 
+
+#define POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
 using namespace std;
 using namespace Powiter;
@@ -67,8 +71,10 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     setCacheMode(CacheBackground);
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
-    
+    setResizeAnchor(QGraphicsView::NoAnchor);
+    // setSceneRect(0, 0, 2000, 2000);
     scale(qreal(0.8), qreal(0.8));
+    setDragMode(QGraphicsView::ScrollHandDrag);
     
     smartNodeCreationEnabled=true;
     _root = new QGraphicsLineItem(0);
@@ -77,6 +83,15 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     // _navigator = new NodeGraphNavigator();
     //  _navigatorProxy = scene->addWidget(_navigator);
     //_navigatorProxy->hide();
+    
+    _cacheSizeText = new QGraphicsTextItem(0);
+    // scene->addItem(_cacheSizeText); // do not add it yet since position is not good
+    _cacheSizeText->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _cacheSizeText->setDefaultTextColor(QColor(200,200,200));
+
+    QObject::connect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
+    _refreshCacheTextTimer.start(POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
+    
     _undoStack = new QUndoStack(this);
     
     _undoAction = _undoStack->createUndoAction(this,tr("&Undo"));
@@ -85,6 +100,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _redoAction->setShortcuts(QKeySequence::Redo);
     
     _gui->addUndoRedoActions(_undoAction, _redoAction);
+    
 }
 
 NodeGraph::~NodeGraph(){
@@ -104,7 +120,6 @@ QRectF NodeGraph::visibleRect_v2(){
     return mapToScene(viewport()->rect()).boundingRect();
 }
 NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
-    QGraphicsScene* sc=scene();
     QPointF selectedPos;
     QRectF viewPos = visibleRect();
     double x,y;
@@ -129,7 +144,8 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
         y = (viewPos.bottomRight().y()-viewPos.topLeft().y())/2.;
     }
     
-    NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root,sc);
+    NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root);
+    // scene()->addItem(node_ui);
     _nodes.push_back(node_ui);
     _undoStack->push(new AddCommand(this,node_ui));
     _evtState = DEFAULT;
@@ -140,6 +156,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     assert(event);
     if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
         _evtState = MOVING_AREA;
+        QGraphicsView::mousePressEvent(event);
         return;
     }
 
@@ -152,19 +169,22 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
         if(n->isActive() && n->contains(evpt)){
             
             selectNode(n);
-            
-            _evtState=NODE_DRAGGING;
+            _evtState = NODE_DRAGGING;
             _lastNodeDragStartPoint = n->pos();
             break;
         }else{
             Edge* edge = n->hasEdgeNearbyPoint(old_pos);
             if(edge){
                 _arrowSelected = edge;
-                _evtState=ARROW_DRAGGING;
+                _evtState = ARROW_DRAGGING;
                 break;
             }else{
+                
                 deselect();
-                _evtState=MOVING_AREA;
+                if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
+                    _evtState = MOVING_AREA;
+                    QGraphicsView::mousePressEvent(event);
+                }
             }
             
         }
@@ -180,7 +200,7 @@ void NodeGraph::deselect(){
 }
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
-    if(_evtState==ARROW_DRAGGING){
+    if(_evtState == ARROW_DRAGGING){
         bool foundSrc=false;
         NodeGui* dst = _arrowSelected->getDest();
         for(U32 i = 0; i<_nodes.size() ;++i){
@@ -210,6 +230,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     }else if(_evtState == NODE_DRAGGING){
         if(_nodeSelected)
             _undoStack->push(new MoveCommand(_nodeSelected,_lastNodeDragStartPoint));
+    }else if(_evtState == MOVING_AREA){
+        QGraphicsView::mouseReleaseEvent(event);
     }
     scene()->update();
     
@@ -217,19 +239,24 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
     QPointF newPos=mapToScene(event->pos());
-    if(_evtState==ARROW_DRAGGING){
+    if(_evtState == ARROW_DRAGGING){
+        
         QPointF np=_arrowSelected->mapFromScene(newPos);
         _arrowSelected->updatePosition(np);
-    }else if(_evtState==NODE_DRAGGING && _nodeSelected){
+        
+    }else if(_evtState == NODE_DRAGGING && _nodeSelected){
+        
         QPointF op=_nodeSelected->mapFromScene(old_pos);
         QPointF np=_nodeSelected->mapFromScene(newPos);
         qreal diffx=np.x()-op.x();
         qreal diffy=np.y()-op.y();
         QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
         _nodeSelected->refreshPosition(p.x(),p.y());
-    }else if(_evtState==MOVING_AREA){
-        double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
-        double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
+        
+    }else if(_evtState == MOVING_AREA){
+        
+         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
+         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
         _root->moveBy(dx, dy);
     }
     old_pos=newPos;
@@ -612,17 +639,7 @@ void NodeGraph::restoreFromTrash(NodeGui* node) {
     }
 }
 
-// void NodeGraph::clear(){
-//     foreach(NodeGui* n,_nodes){
-//         scene()->removeItem(n);
-//         if(n->getSettingPanel())
-//             n->getSettingPanel()->hide();
-//         delete n;
-//     }
-//     _nodes.clear();
-//     _nodesTrash.clear();
-//     _nodeSelected = 0;
-// }
+
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
     _node(node),
@@ -876,4 +893,32 @@ void NodeGraph::refreshAllEdges(){
     for (U32 i=0; i < _nodes.size(); ++i) {
         _nodes[i]->refreshEdges();
     }
+}
+// grabbed from QDirModelPrivate::size() in qtbase/src/widgets/itemviews/qdirmodel.cpp
+static QString QDirModelPrivate_size(quint64 bytes)
+{
+    // According to the Si standard KB is 1000 bytes, KiB is 1024
+    // but on windows sizes are calulated by dividing by 1024 so we do what they do.
+    const quint64 kb = 1024;
+    const quint64 mb = 1024 * kb;
+    const quint64 gb = 1024 * mb;
+    const quint64 tb = 1024 * gb;
+    if (bytes >= tb)
+        return QFileSystemModel::tr("%1 TB").arg(QLocale().toString(qreal(bytes) / tb, 'f', 3));
+    if (bytes >= gb)
+        return QFileSystemModel::tr("%1 GB").arg(QLocale().toString(qreal(bytes) / gb, 'f', 2));
+    if (bytes >= mb)
+        return QFileSystemModel::tr("%1 MB").arg(QLocale().toString(qreal(bytes) / mb, 'f', 1));
+    if (bytes >= kb)
+        return QFileSystemModel::tr("%1 KB").arg(QLocale().toString(bytes / kb));
+    return QFileSystemModel::tr("%1 byte(s)").arg(QLocale().toString(bytes));
+}
+
+
+void NodeGraph::updateCacheSizeText(){
+    _cacheSizeText->setPlainText(QString("Disk cache size: %1\n"
+                                         "Memory cache size: %2")
+                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentSize()))
+                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentInMemoryPortionSize()
+                                                            + appPTR->getNodeCache()->getCurrentSize())));
 }

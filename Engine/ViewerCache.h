@@ -73,7 +73,7 @@ public:
 
 class ReaderInfo;
 class MemoryMappedEntry;
-class ViewerCache :public QObject, public AbstractDiskCache
+class ViewerCache : public QObject,public AbstractDiskCache
 {
        Q_OBJECT
 public:

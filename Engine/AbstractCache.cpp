@@ -475,12 +475,6 @@ void AbstractDiskCache::restore(){
             }
             
             /*now that we're done using it, clear it*/
-            //QFile::remove(settingsFilePath);
-            //QFile newFile(settingsFilePath);
-            //newFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            //QTextStream outsetti(&newFile);
-            //outsetti << cacheVersion().c_str() << endl;
-            //newFile.close();
             restoreFile.remove();
             restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
             QTextStream outsetti(&restoreFile);

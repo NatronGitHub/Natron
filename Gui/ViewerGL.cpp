@@ -265,6 +265,7 @@ void ViewerGL::initConstructor(){
     _overlay = true;
     frameData = NULL;
     _colorSpace = Color::getLut(Color::LUT_DEFAULT_VIEWER);
+    _usingColorSpaceCounter = 0;
     _defaultDisplayTexture = 0;
     _pBOmapped = false;
     _displayChannels = 0.f;
@@ -915,7 +916,10 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
      and it proceeds in both directions away from this point.*/
     assert(frameData);
-    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
+    {
+        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
+        ++_usingColorSpaceCounter;
+    }
     U32* output = reinterpret_cast<U32*>(frameData);
     unsigned int row_width = columnSpan.size();
     yOffset *= row_width;
@@ -999,6 +1003,11 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }
+    {
+        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
+        --_usingColorSpaceCounter;
+        _usingColorSpaceCondition.wakeAll();
+    }
     
 }
 
@@ -1006,7 +1015,6 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
 void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
                                              const std::vector<int>& columnSpan,int yOffset,const float* alpha){
     assert(frameData);
-    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
@@ -1252,6 +1260,7 @@ void ViewerGL::fitToFormat(Format displayWindow){
     zoomFactor = (zoomFactor > 0.06) ? (zoomFactor-0.05) : std::max(zoomFactor,0.01);
     assert(zoomFactor>=0.01 && zoomFactor <= 1024);
     _zoomCtx.setZoomFactor(zoomFactor);
+    emit zoomChanged(zoomFactor * 100);
     resetMousePos();
     _zoomCtx._left = w/2.f - (width()/(2.f*_zoomCtx._zoomFactor));
     _zoomCtx._bottom = h/2.f - (height()/(2.f*_zoomCtx._zoomFactor));
@@ -1299,7 +1308,12 @@ void ViewerGL::updateDataWindowAndDisplayWindowInfo(){
     
 }
 void ViewerGL::updateColorSpace(QString str){
-    QMutexLocker colorSpaceLocker(&_colorSpaceMutex);
+    {
+        QMutexLocker colorSpaceLocker(&_usingColorSpaceMutex);
+        while(_usingColorSpaceCounter > 0){
+            _usingColorSpaceCondition.wait(&_usingColorSpaceMutex);
+        }
+    }
     if (str == "Linear(None)") {
         if(_lut != 0){ // if it wasnt already this setting
             _colorSpace = Color::getLut(Color::LUT_DEFAULT_FLOAT);
@@ -1325,7 +1339,7 @@ void ViewerGL::updateColorSpace(QString str){
         _viewerTab->getInternalNode()->refreshAndContinueRender();
     else
         updateGL();
-    
+
 }
 void ViewerGL::updateExposure(double d){
     exposure = d;

@@ -16,6 +16,7 @@
 #include <map>
 #include <QGraphicsView>
 #include <QtCore/QRectF>
+#include <QtCore/QTimer>
 #include <QDialog>
 #include <QLabel>
 #include <QUndoCommand>
@@ -29,6 +30,7 @@ class QVBoxLayout;
 class QScrollArea;
 class QGraphicsProxyWidget;
 class QUndoStack;
+class QGraphicsTextItem;
 class QComboBox;
 class QEvent;
 class QKeyEvent;
@@ -41,7 +43,9 @@ class Edge;
 class SmartInputDialog;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
+    
     enum EVENT_STATE{DEFAULT,MOVING_AREA,ARROW_DRAGGING,NODE_DRAGGING};
+    
     Q_OBJECT
     
     class NodeGraphNavigator : public QLabel{
@@ -105,9 +109,6 @@ public:
     
     void restoreFromTrash(NodeGui* node);
     
-    /*Effectivly deletes all nodes. Called on load/save*/
-  //  void clear();
-    
     /*Returns true if the graph has no value, i.e:
      this is just output nodes*/
     bool isGraphWorthLess() const;
@@ -117,8 +118,12 @@ public:
     void refreshAllEdges();
     
 public slots:
+    
     void connectCurrentViewerToSelection(int inputNB);
 
+    void updateCacheSizeText();
+    
+    
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -155,6 +160,9 @@ private:
     bool _maximized;
     QGraphicsItem* _root;
     QScrollArea* _propertyBin;
+
+    QGraphicsTextItem* _cacheSizeText;
+    QTimer _refreshCacheTextTimer;
     
     NodeGraphNavigator* _navigator;
     QGraphicsProxyWidget* _navigatorProxy;

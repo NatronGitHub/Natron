@@ -384,9 +384,9 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     stat = effectInstance()->paramInstanceChangedAction(realParamName, kOfxChangeUserEdited, 1.0,renderScale);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
 
 
@@ -582,7 +582,7 @@ bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             _penDown = true;
             return true;
@@ -603,7 +603,7 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        // assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             if(_penDown){
                 ViewerNode* v = Node::hasViewerConnected(this);
@@ -630,7 +630,7 @@ bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;

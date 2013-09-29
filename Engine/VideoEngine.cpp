@@ -728,11 +728,6 @@ void VideoEngine::updateViewer(){
     QMutexLocker locker(&_pboUnMappedMutex);
     
     ViewerGL* viewer = _dag.outputAsViewer()->getUiContext()->viewer;
-    /*This should remove the flickering on the Viewer. This is because we're trying to
-     fill a texture with a buffer not necessarily filled correctly if aborted is true.
-     
-     ||| Somehow calling unMapPBO() leads to a race condition. Commenting out
-     while this is resolved.*/
     {
         QMutexLocker l(&_abortedRequestedMutex);
         if(!_abortRequested){
@@ -758,10 +753,6 @@ void VideoEngine::updateViewer(){
 void VideoEngine::cachedEngine(){
      QMutexLocker locker(&_pboUnMappedMutex);
     _dag.outputAsViewer()->cachedFrameEngine(_currentFrameInfos._cachedEntry);
-//    while(_pboUnMappedCount <= 0) {
-//        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
-//    }
-//    --_pboUnMappedCount;
     ++_pboUnMappedCount;
     _pboUnMappedCondition.wakeOne();
 }
@@ -770,10 +761,6 @@ void VideoEngine::allocateFrameStorage(){
     QMutexLocker locker(&_pboUnMappedMutex);
     _currentFrameInfos._dataSize = _dag.outputAsViewer()->getUiContext()->viewer->allocateFrameStorage(_currentFrameInfos._textureRect.w,
                                                                                                     _currentFrameInfos._textureRect.h);
-//    while(_pboUnMappedCount <= 0) {
-//        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
-//    }
-//    --_pboUnMappedCount;
     ++_pboUnMappedCount;
     _pboUnMappedCondition.wakeOne();
    

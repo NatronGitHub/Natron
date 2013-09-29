@@ -28,8 +28,8 @@ class Edge: public QGraphicsLineItem
 {
     
 public:
-    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
-    Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0, QGraphicsScene *scene=0);
+    Edge(int inputNb,double angle,NodeGui *dest,QGraphicsItem *parent=0);
+    Edge(int inputNb,NodeGui *src, NodeGui *dest,QGraphicsItem *parent=0);
     
     virtual ~Edge();
     
@@ -62,13 +62,9 @@ public:
     
     void setAngle(double a){angle = a;}
     
-    QGraphicsScene* getScene() const {return scene;}
 
 private:
 
-
-
-    QGraphicsScene* scene;
     int inputNb;
     double angle;
     QGraphicsTextItem* label;

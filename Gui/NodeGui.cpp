@@ -39,17 +39,14 @@ NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer_,
                  Node *node_,
                  qreal x, qreal y,
-                 QGraphicsItem *parent,
-                 QGraphicsScene* scene,
-                 QObject* parentObj)
-: QObject(parentObj)
+                 QGraphicsItem *parent)
+: QObject()
 , QGraphicsItem(parent)
 , _dag(dag)
 , node(node_)
 , _selected(false)
 , name(NULL)
 , dockContainer(dockContainer_)
-, sc(scene)
 , rectangle(NULL)
 , channels(NULL)
 , prev_pix(NULL)
@@ -81,24 +78,22 @@ NodeGui::NodeGui(NodeGraph* dag,
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
 	if(node->canMakePreviewImage()){ 
-		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)));
+		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)),this);
 	}else{
-		rectangle=scene->addRect(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)));
+		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)),this);
 	}
 	
-    rectangle->setParentItem(this);
     
     QImage img(POWITER_IMAGES_PATH"RGBAchannels.png");
     
     
     QPixmap pixmap=QPixmap::fromImage(img);
     pixmap=pixmap.scaled(10,10);
-    channels=scene->addPixmap(pixmap);
+    channels= new QGraphicsPixmapItem(pixmap,this);
     channels->setX(itemPos.x()+1);
     channels->setY(itemPos.y()+1);
-    channels->setParentItem(this);
 	
-    name=scene->addSimpleText(node->getName().c_str());
+    name = new QGraphicsSimpleTextItem(node->getName().c_str(),this);
 	
 	if(node->canMakePreviewImage()){
 		name->setX(itemPos.x()+35);
@@ -113,18 +108,13 @@ NodeGui::NodeGui(NodeGraph* dag,
             if(n->hasPreview()){
                 QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
-                prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-                prev_pix->setParentItem(this);
+                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
+                
             }else{
                 QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
                 prev.fill(Qt::black);
                 QPixmap prev_pixmap=QPixmap::fromImage(prev);
-                prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-                prev_pix->setParentItem(this);
+                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
             }
             
         }else if(ret == 2){
@@ -132,25 +122,19 @@ NodeGui::NodeGui(NodeGraph* dag,
             if(n->hasPreviewImage()){
                 QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
                 prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
-                prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-                prev_pix->setParentItem(this);
+                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
+
             }else{
                 QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
                 prev.fill(Qt::black);
                 QPixmap prev_pixmap=QPixmap::fromImage(prev);
-                prev_pix=scene->addPixmap(prev_pixmap);
-                prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-                prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-                prev_pix->setParentItem(this);
+                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
             }
 
         }
-        
+        prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+        prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
 	}
-    
-    name->setParentItem(this);
     
     /*building settings panel*/
 	if(node->className() != "Viewer"){
@@ -175,7 +159,7 @@ NodeGui::~NodeGui(){
     for(InputEdgesMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         Edge* e = it->second;
         if(e){
-            QGraphicsScene* scene = e->getScene();
+            QGraphicsScene* scene = e->scene();
             if(scene){
                 scene->removeItem(e);
             }
@@ -277,7 +261,7 @@ void NodeGui::initializeInputs(){
     }
     for(int i = 0; i < inputnb;++i){
         if(inputs.find(i) == inputs.end()){
-            Edge* edge = new Edge(i,0.,this,parentItem(),sc);
+            Edge* edge = new Edge(i,0.,this,parentItem());
             inputs.insert(make_pair(i,edge));
         }
     }
@@ -376,13 +360,13 @@ void NodeGui::setName(const QString& name_){
 }
 void NodeGui::onLineEditNameChanged(const QString& s){
     name->setText(s);
-    sc->update();
+    scene()->update();
 }
 void NodeGui::onInternalNameChanged(const QString& s){
     name->setText(s);
     if(settings)
         settings->setNodeName(s);
-    sc->update();
+    scene()->update();
 }
 
 Edge* NodeGui::firstAvailableEdge(){
@@ -453,11 +437,12 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
 }
 
 void NodeGui::activate(){
-    sc->addItem(this);
+    scene()->addItem(this);
     setActive(true);
     _dag->restoreFromTrash(this);
     for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
         _dag->scene()->addItem(it->second);
+        it->second->setParentItem(this);
         it->second->setActive(true);
     }
     refreshEdges();
@@ -484,7 +469,7 @@ void NodeGui::activate(){
 }
 
 void NodeGui::deactivate(){
-    sc->removeItem(this);
+    scene()->removeItem(this);
     setActive(false);
     _dag->moveToTrash(this);
     for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {

@@ -23,9 +23,8 @@ const qreal pi= 3.14159265358979323846264338327950288419717;
 static const qreal UNATTACHED_ARROW_LENGTH=60.;
 const int graphicalContainerOffset=10; //number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 
-Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent, QGraphicsScene* scene_)
+Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
-, scene(scene_)
 , inputNb(inputNb_)
 , angle(angle_)
 , label(NULL)
@@ -36,17 +35,15 @@ Edge::Edge(int inputNb_, double angle_, NodeGui *dest_, QGraphicsItem *parent, Q
 {
     assert(dest);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label = scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
-    label->setParentItem(this);
+    label = new QGraphicsTextItem(QString(dest->getNode()->getInputLabel(inputNb).c_str()),this);
     setAcceptedMouseButtons(Qt::LeftButton);
     initLine();
     setFlag(QGraphicsItem::ItemStacksBehindParent);
     setZValue(-1.1);
 }
 
-Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent, QGraphicsScene *scene_)
+Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
-, scene(scene_)
 , inputNb(inputNb_)
 , angle(0.)
 , label(NULL)
@@ -58,7 +55,7 @@ Edge::Edge(int inputNb_, NodeGui *src, NodeGui* dest_, QGraphicsItem *parent, QG
     assert(dest_);
     assert(src);
     setPen(QPen(Qt::black, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    label=scene->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
+    label=scene()->addText(QString(dest->getNode()->getInputLabel(inputNb).c_str()));
     label->setParentItem(this);
     initLine();
 }

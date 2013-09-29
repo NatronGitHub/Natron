@@ -452,5 +452,5 @@ void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
 
 // override this to make processing abort, return 1 to abort processing
 int OfxImageEffectInstance::abort() {
-    return (bool)node()->aborted();
+    return (int)node()->aborted();
 }
