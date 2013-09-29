@@ -375,15 +375,13 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
 }
 
 void OfxNode::onInstanceChanged(const std::string& paramName){
-    std::string realParamName = paramName;
-    std::locale loc;
-    realParamName[0] = std::tolower(paramName.at(0),loc);
+   
     OfxStatus stat;
     stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
-    stat = effectInstance()->paramInstanceChangedAction(realParamName, kOfxChangeUserEdited, 1.0,renderScale);
+    stat = effectInstance()->paramInstanceChangedAction(paramName, kOfxChangeUserEdited, 1.0,renderScale);
     //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
     //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);

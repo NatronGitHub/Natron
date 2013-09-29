@@ -123,7 +123,7 @@ public slots:
 
     void updateCacheSizeText();
     
-    
+    void onSceneRectChanged(const QRectF& rect);
 protected:
 
     void mousePressEvent(QMouseEvent *event);

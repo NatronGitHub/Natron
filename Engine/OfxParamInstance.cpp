@@ -29,11 +29,13 @@ using namespace std;
 using namespace Powiter;
 
 OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
+                                             const std::string& originalName ,
                                              const std::string& name,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 , _node(node)
 , _descriptor(descriptor)
+, _originalName(originalName)
 {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
@@ -69,7 +71,7 @@ Knob* OfxPushButtonInstance::getKnob() const {
 }
 
 void OfxPushButtonInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
     ViewerNode* viewer = Node::hasViewerConnected(_node);
     if(viewer){
         viewer->updateDAGAndRender();
@@ -79,11 +81,13 @@ void OfxPushButtonInstance::triggerInstanceChanged() {
     }
 }
 
-OfxIntegerInstance::OfxIntegerInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxIntegerInstance::OfxIntegerInstance(OfxNode *node,const std::string& originalName ,
+                                       const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 , _node(node)
 , _descriptor(descriptor)
 , _paramName(name)
+, _originalName(originalName)
 {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
@@ -128,7 +132,7 @@ OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     return kOfxStatOK;
 }
 void OfxIntegerInstance::triggerInstanceChanged(){
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
@@ -143,8 +147,13 @@ Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
-OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& originalName ,
+                                     const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
@@ -198,7 +207,7 @@ OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, dou
     return kOfxStatErrMissingHostFeature;
 }
 void OfxDoubleInstance::triggerInstanceChanged(){
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
@@ -213,8 +222,13 @@ Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
-OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+OfxBooleanInstance::OfxBooleanInstance(OfxNode *node,const std::string& originalName ,
+                                       const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
@@ -254,7 +268,7 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
 }
 
 void OfxBooleanInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_paramName);
+   _node->onInstanceChanged(_originalName);
 }
 
 // callback which should set enabled state as appropriate
@@ -271,8 +285,13 @@ Knob* OfxBooleanInstance::getKnob() const{
 }
 
 
-OfxChoiceInstance::OfxChoiceInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name) {
+OfxChoiceInstance::OfxChoiceInstance(OfxNode *node, const std::string& originalName ,
+                                     const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
@@ -324,7 +343,7 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
 }
 
 void OfxChoiceInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_paramName);
+   _node->onInstanceChanged(_originalName);
 }
 
 
@@ -343,11 +362,13 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 
-OfxRGBAInstance::OfxRGBAInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxRGBAInstance::OfxRGBAInstance(OfxNode *node,const std::string& originalName ,
+                                 const std::string& name, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor),
-_paramName(name){
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
@@ -407,7 +428,7 @@ OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,dou
 }
 
 void OfxRGBAInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 
 // callback which should set enabled state as appropriate
@@ -424,8 +445,13 @@ void OfxRGBAInstance::setSecret(){
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
-OfxRGBInstance::OfxRGBInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+OfxRGBInstance::OfxRGBInstance(OfxNode *node, const std::string& originalName ,
+                               const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
@@ -481,7 +507,7 @@ OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
 }
 
 void OfxRGBInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
@@ -497,8 +523,13 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node,const std::string& originalName ,
+                                         const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
@@ -567,7 +598,7 @@ OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
 }
 
 void OfxDouble2DInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_paramName);
+   _node->onInstanceChanged(_originalName);
 }
 
 // callback which should set enabled state as appropriate
@@ -584,8 +615,13 @@ Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
-OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,  const std::string& name, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()), _node(node), _descriptor(descriptor),_paramName(name){
+OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,const std::string& originalName ,
+                                           const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+:OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
@@ -649,7 +685,7 @@ OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
 }
 
 void OfxInteger2DInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 
 // callback which should set enabled state as appropriate
@@ -667,8 +703,13 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name){
+OfxGroupInstance::OfxGroupInstance(OfxNode *node,const std::string& originalName ,
+                                   const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName){
     int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
@@ -716,9 +757,15 @@ Knob* OfxGroupInstance::getKnob() const{
     }
 }
 
-OfxStringInstance::OfxStringInstance(OfxNode *node,const std::string& name,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),_node(node),_descriptor(descriptor),_paramName(name),
-_fileKnob(0),_outputFileKnob(0){
+OfxStringInstance::OfxStringInstance(OfxNode *node,const std::string& originalName ,
+                                     const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),
+_node(node),
+_descriptor(descriptor),
+_paramName(name),
+_originalName(originalName),
+_fileKnob(0),
+_outputFileKnob(0){
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
@@ -873,7 +920,7 @@ void OfxStringInstance::triggerInstanceChanged() {
     if (_fileKnob) {
          _node->computePreviewImage();
     }
-    _node->onInstanceChanged(_paramName);
+    _node->onInstanceChanged(_originalName);
 }
 
 const QString OfxStringInstance::getRandomFrameName(int f) const{

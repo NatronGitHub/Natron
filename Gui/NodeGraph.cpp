@@ -65,7 +65,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     _maximized(false),
     _propertyBin(0)
 {
-    
+    QObject::connect(scene,SIGNAL(sceneRectChanged(QRectF)),this,SLOT(onSceneRectChanged(QRectF)));
     setObjectName("DAG_GUI");
     setMouseTracking(true);
     setCacheMode(CacheBackground);
@@ -85,7 +85,7 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     //_navigatorProxy->hide();
     
     _cacheSizeText = new QGraphicsTextItem(0);
-    // scene->addItem(_cacheSizeText); // do not add it yet since position is not good
+    //  scene->addItem(_cacheSizeText); // do not add it yet since position is not good
     _cacheSizeText->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     _cacheSizeText->setDefaultTextColor(QColor(200,200,200));
 
@@ -110,6 +110,10 @@ NodeGraph::~NodeGraph(){
     //delete _navigator;
 }
 
+void NodeGraph::onSceneRectChanged(const QRectF& ){
+    //   const QRectF& sceneRect = sceneRect();
+    
+}
 QRectF NodeGraph::visibleRect() {
     QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
     QPointF br = tl + viewport()->rect().bottomRight();
