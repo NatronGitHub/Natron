@@ -205,8 +205,6 @@ bool ExrChannelExctractor::extractExrChannelName(const char* channelname, const 
      //    exrToPowiterChannelMapping(channel, otherpart.c_str());
 
      //    return true;
-
-    //	std::cout << "Turned '"<<channelname<<"' into "<<layer<<"."<<chan<<std::endl;
     
 }
 

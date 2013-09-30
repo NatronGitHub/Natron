@@ -67,6 +67,8 @@ public:
      plan on changing the shape of the node.*/
     virtual QRectF boundingRect() const;
     
+    QRectF boundingRectWithEdges() const;
+    
     /*this function does the painting, using QPainter, you can overload it to change the aspect of
      the node.*/
     virtual void paint(QPainter* painter,const QStyleOptionGraphicsItem* options,QWidget* parent);

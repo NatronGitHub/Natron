@@ -26,6 +26,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QScrollBar>
 #include <QGraphicsLineItem>
 #include <QUndoStack>
+#include <QMenu>
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -58,37 +59,69 @@ using namespace std;
 using namespace Powiter;
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
-    QGraphicsView(scene,parent),
-    _gui(gui),
-    _evtState(DEFAULT),
-    _nodeSelected(0),
-    _maximized(false),
-    _propertyBin(0)
+QGraphicsView(scene,parent),
+_gui(gui),
+_evtState(DEFAULT),
+_nodeSelected(0),
+_maximized(false),
+_propertyBin(0),
+_refreshOverlays(true)
 {
-    QObject::connect(scene,SIGNAL(sceneRectChanged(QRectF)),this,SLOT(onSceneRectChanged(QRectF)));
+    QObject::connect(_gui->getApp(), SIGNAL(pluginsPopulated()), this, SLOT(populateMenu()));
+    
     setObjectName("DAG_GUI");
     setMouseTracking(true);
     setCacheMode(CacheBackground);
     setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
     setRenderHint(QPainter::Antialiasing);
-    setResizeAnchor(QGraphicsView::NoAnchor);
-    // setSceneRect(0, 0, 2000, 2000);
+    setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     scale(qreal(0.8), qreal(0.8));
     setDragMode(QGraphicsView::ScrollHandDrag);
     
     smartNodeCreationEnabled=true;
-    _root = new QGraphicsLineItem(0);
+    _root = new QGraphicsTextItem(0);
+    // _root->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     scene->addItem(_root);
-    oldZoom = QPointF(0,0);
-    // _navigator = new NodeGraphNavigator();
-    //  _navigatorProxy = scene->addWidget(_navigator);
-    //_navigatorProxy->hide();
+    _navigator = new NodeGraphNavigator();
+    _navigatorProxy = new QGraphicsProxyWidget(0);
+    _navigatorProxy->setWidget(_navigator);
+    // scene->addItem(_navigatorProxy);
+    _navigatorProxy->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _navigatorProxy->hide();
+    
+    QPen p;
+    p.setBrush(QColor(200,200,200));
+    p.setWidth(2);
+    
+    _navLeftEdge = new QGraphicsLineItem(0);
+    _navLeftEdge->setPen(p);
+    scene->addItem(_navLeftEdge);
+    _navLeftEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _navLeftEdge->hide();
+    
+    _navBottomEdge = new QGraphicsLineItem(0);
+    _navBottomEdge->setPen(p);
+    scene->addItem(_navBottomEdge);
+    _navBottomEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _navBottomEdge->hide();
+    
+    _navRightEdge = new QGraphicsLineItem(0);
+    _navRightEdge->setPen(p);
+    scene->addItem(_navRightEdge);
+    _navRightEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _navRightEdge->hide();
+    
+    _navTopEdge = new QGraphicsLineItem(0);
+    _navTopEdge->setPen(p);
+    scene->addItem(_navTopEdge);
+    _navTopEdge->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    _navTopEdge->hide();
     
     _cacheSizeText = new QGraphicsTextItem(0);
-    //  scene->addItem(_cacheSizeText); // do not add it yet since position is not good
+    scene->addItem(_cacheSizeText);
     _cacheSizeText->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     _cacheSizeText->setDefaultTextColor(QColor(200,200,200));
-
+    
     QObject::connect(&_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()));
     _refreshCacheTextTimer.start(POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
     
@@ -101,28 +134,89 @@ NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
     
     _gui->addUndoRedoActions(_undoAction, _redoAction);
     
+    
+    _tL = new QGraphicsTextItem(0);
+    _tL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    scene->addItem(_tL);
+    
+    _tR = new QGraphicsTextItem(0);
+    _tR->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    scene->addItem(_tR);
+    
+    _bR = new QGraphicsTextItem(0);
+    _bR->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    scene->addItem(_bR);
+    
+    _bL = new QGraphicsTextItem(0);
+    _bL->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    scene->addItem(_bL);
+    
+    scene->setSceneRect(0,0,10000,10000);
+    _tL->setPos(_tL->mapFromScene(QPointF(0,10000)));
+    _tR->setPos(_tR->mapFromScene(QPointF(10000,10000)));
+    _bR->setPos(_bR->mapFromScene(QPointF(10000,0)));
+    _bL->setPos(_bL->mapFromScene(QPointF(0,0)));
+    centerOn(5000,5000);
+    
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    _menu = new QMenu(this);
+    
 }
 
 NodeGraph::~NodeGraph(){
-    _nodeCreationShortcutEnabled=false;
+    _nodeCreationShortcutEnabled = false;
     _nodes.clear();
     _nodesTrash.clear();
-    //delete _navigator;
 }
 
-void NodeGraph::onSceneRectChanged(const QRectF& ){
-    //   const QRectF& sceneRect = sceneRect();
-    
+void NodeGraph::resizeEvent(QResizeEvent* event){
+    _refreshOverlays = true;
+    QGraphicsView::resizeEvent(event);
+}
+void NodeGraph::paintEvent(QPaintEvent* event){
+    if(_refreshOverlays){
+        QRectF visible = visibleRect();
+        //cout << visible.topLeft().x() << " " << visible.topLeft().y() << " " << visible.width() << " " << visible.height() << endl;
+        _cacheSizeText->setPos(visible.topLeft());
+        QSize navSize = _navigator->sizeHint();
+        QPointF navPos = visible.bottomRight() - QPoint(navSize.width(),navSize.height());
+        //   cout << navPos.x() << " " << navPos.y() << endl;
+        _navigatorProxy->setPos(navPos);
+        _navLeftEdge->setLine(navPos.x(),
+                              navPos.y() + navSize.height(),
+                              navPos.x(),
+                              navPos.y());
+        _navLeftEdge->setPos(navPos);
+        _navTopEdge->setLine(navPos.x(),
+                             navPos.y(),
+                             navPos.x() + navSize.width(),
+                             navPos.y());
+        _navTopEdge->setPos(navPos);
+        _navRightEdge->setLine(navPos.x() + navSize.width() ,
+                               navPos.y(),
+                               navPos.x() + navSize.width() ,
+                               navPos.y() + navSize.height());
+        _navRightEdge->setPos(navPos);
+        _navBottomEdge->setLine(navPos.x() + navSize.width() ,
+                                navPos.y() + navSize.height(),
+                                navPos.x(),
+                                navPos.y() + navSize.height());
+        _navBottomEdge->setPos(navPos);
+        _refreshOverlays = false;
+    }
+    QGraphicsView::paintEvent(event);
 }
 QRectF NodeGraph::visibleRect() {
-    QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
-    QPointF br = tl + viewport()->rect().bottomRight();
-    QMatrix mat = matrix().inverted();
-    return mat.mapRect(QRectF(tl,br));
-}
-QRectF NodeGraph::visibleRect_v2(){
+//    QPointF tl(horizontalScrollBar()->value(), verticalScrollBar()->value());
+//    QPointF br = tl + viewport()->rect().bottomRight();
+//    QMatrix mat = matrix().inverted();
+//    return mat.mapRect(QRectF(tl,br));
+    
     return mapToScene(viewport()->rect()).boundingRect();
 }
+
 NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     QPointF selectedPos;
     QRectF viewPos = visibleRect();
@@ -144,8 +238,8 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
         }
         y =  selectedPos.y() + yOffset;
     }else{
-        x = (viewPos.bottomRight().x()-viewPos.topLeft().x())/2.;
-        y = (viewPos.bottomRight().y()-viewPos.topLeft().y())/2.;
+        x = (viewPos.bottomRight().x()+viewPos.topLeft().x())/2.;
+        y = (viewPos.topLeft().y()+viewPos.bottomRight().y())/2.;
     }
     
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root);
@@ -157,19 +251,23 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event) {
+    if(event->button() == Qt::RightButton){
+        showMenu(mapToGlobal(event->pos()));
+        return;
+    }
+    
     assert(event);
     if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
         _evtState = MOVING_AREA;
         QGraphicsView::mousePressEvent(event);
         return;
     }
-
-    old_pos=mapToScene(event->pos());
-    oldp=event->pos();
+    
+    _lastScenePosClick = mapToScene(event->pos());
     for(U32 i = 0;i<_nodes.size();++i){
         NodeGui* n=_nodes[i];
         
-        QPointF evpt=n->mapFromScene(old_pos);
+        QPointF evpt=n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt)){
             
             selectNode(n);
@@ -177,7 +275,7 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
             _lastNodeDragStartPoint = n->pos();
             break;
         }else{
-            Edge* edge = n->hasEdgeNearbyPoint(old_pos);
+            Edge* edge = n->hasEdgeNearbyPoint(_lastScenePosClick);
             if(edge){
                 _arrowSelected = edge;
                 _evtState = ARROW_DRAGGING;
@@ -213,7 +311,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             QPointF evpt = n->mapFromScene(ep);
             
             if(n->isActive() && n->isNearby(evpt) &&
-                    (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
+               (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
                 if(n->getNode()->isOutputNode() && _arrowSelected->getDest()->getNode()->isOutputNode()){
                     break;
                 }
@@ -242,7 +340,8 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
     _evtState=DEFAULT;
 }
 void NodeGraph::mouseMoveEvent(QMouseEvent *event){
-    QPointF newPos=mapToScene(event->pos());
+    QPointF newPos = mapToScene(event->pos());
+    
     if(_evtState == ARROW_DRAGGING){
         
         QPointF np=_arrowSelected->mapFromScene(newPos);
@@ -250,8 +349,8 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
     }else if(_evtState == NODE_DRAGGING && _nodeSelected){
         
-        QPointF op=_nodeSelected->mapFromScene(old_pos);
-        QPointF np=_nodeSelected->mapFromScene(newPos);
+        QPointF op = _nodeSelected->mapFromScene(_lastScenePosClick);
+        QPointF np = _nodeSelected->mapFromScene(newPos);
         qreal diffx=np.x()-op.x();
         qreal diffy=np.y()-op.y();
         QPointF p = _nodeSelected->pos()+QPointF(diffx,diffy);
@@ -259,16 +358,19 @@ void NodeGraph::mouseMoveEvent(QMouseEvent *event){
         
     }else if(_evtState == MOVING_AREA){
         
-         double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(old_pos).x();
-         double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(old_pos).y();
+        double dx = _root->mapFromScene(newPos).x() - _root->mapFromScene(_lastScenePosClick).x();
+        double dy = _root->mapFromScene(newPos).y() - _root->mapFromScene(_lastScenePosClick).y();
+//        double dx = newPos.x() - _lastScenePosClick.x();
+//        double dy = newPos.y() - _lastScenePosClick.y();
         _root->moveBy(dx, dy);
+//        QGraphicsView::mouseMoveEvent(event);
+//        translate(dx, dy);
+       
     }
-    old_pos=newPos;
-    oldp=event->pos();
+    _lastScenePosClick = newPos;
     
     /*Now update navigator*/
-    //  autoResizeScene();
-    //     updateNavigator();
+    //updateNavigator();
 }
 
 
@@ -277,7 +379,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
     while(i<_nodes.size()){
         NodeGui* n=_nodes[i];
         
-        QPointF evpt = n->mapFromScene(old_pos);
+        QPointF evpt = n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt) && n->getNode()->className() != "Viewer"){
             if(!n->isThisPanelEnabled()){
                 n->setSettingsPanelEnabled(true);
@@ -298,7 +400,7 @@ bool NodeGraph::event(QEvent* event){
         if (ke &&  ke->key() == Qt::Key_Tab && _nodeCreationShortcutEnabled ) {
             if(smartNodeCreationEnabled){
                 //releaseKeyboard();
-                QPoint global = mapToGlobal(oldp.toPoint());
+                QPoint global = mapToGlobal(mapFromScene(_lastScenePosClick.toPoint()));
                 SmartInputDialog* nodeCreation=new SmartInputDialog(this);
                 nodeCreation->move(global.x(), global.y());
                 QPoint position=_gui->_workshopPane->pos();
@@ -397,21 +499,16 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
-    scaleView(pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta()), mapToScene(event->pos()));
-    //   updateNavigator();
-}
-
-
-
-void NodeGraph::scaleView(qreal scaleFactor,QPointF){
     
+    double scaleFactor = pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
-    if (factor < 0.07 || factor > 10)
+    if(factor < 0.07 || factor > 10)
         return;
-    
     scale(scaleFactor,scaleFactor);
-    
+    _refreshOverlays = true;
+
 }
+
 
 void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
     
@@ -552,35 +649,41 @@ void NodeGraph::selectNode(NodeGui* n) {
 void NodeGraph::updateNavigator(){
     if (!areAllNodesVisible()) {
         _navigator->setImage(getFullSceneScreenShot());
-        QRectF rect = visibleRect();
-        _navigatorProxy->setPos(rect.width()-_navigator->sizeHint().width(),
-                                rect.height()-_navigator->sizeHint().height());
         _navigator->show();
+        _navLeftEdge->show();
+        _navBottomEdge->show();
+        _navRightEdge->show();
+        _navTopEdge->show();
+
     }else{
         _navigator->hide();
+        _navLeftEdge->hide();
+        _navTopEdge->hide();
+        _navRightEdge->hide();
+        _navBottomEdge->hide();
     }
 }
 bool NodeGraph::areAllNodesVisible(){
     QRectF rect = visibleRect();
     for (U32 i = 0; i < _nodes.size(); ++i) {
-        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
-        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
+//        QRectF itemSceneRect = _nodes[i]->mapRectFromScene(rect);
+//        if(!itemSceneRect.contains(_nodes[i]->boundingRect()))
+        if(!rect.contains(_nodes[i]->boundingRectWithEdges()))
             return false;
     }
     return true;
 }
-void NodeGraph::autoResizeScene(){
-    QRectF rect(0,0,1,1);
-    for (U32 i = 0; i < _nodes.size(); ++i) {
-        NodeGui* item = _nodes[i];
-        rect = rect.united(item->mapToItem(_root,item->boundingRect()).boundingRect());
-    }
-    setSceneRect(rect);
-}
+
 QImage NodeGraph::getFullSceneScreenShot(){
-    QImage img((int)scene()->width(), (int)scene()->height(), QImage::Format_ARGB32_Premultiplied);
-    img.fill(QColor(71,71,71,255));
+    const QTransform& currentTransform = transform();
+    setTransform(currentTransform.inverted());
+    QRectF sceneR = calcNodesBoundingRect();
     QRectF viewRect = visibleRect();
+    sceneR = sceneR.united(viewRect);
+    QImage img((int)sceneR.width(), (int)sceneR.height(), QImage::Format_ARGB32_Premultiplied);
+    img.fill(QColor(71,71,71,255));
+    viewRect.setX(viewRect.x() - sceneR.x());
+    viewRect.setY(viewRect.y() - sceneR.y());
     QPainter painter(&img);
     painter.save();
     QPen p;
@@ -589,15 +692,23 @@ QImage NodeGraph::getFullSceneScreenShot(){
     painter.setPen(p);
     painter.drawRect(viewRect);
     painter.restore();
+    scene()->removeItem(_navLeftEdge);
+    scene()->removeItem(_navBottomEdge);
+    scene()->removeItem(_navTopEdge);
+    scene()->removeItem(_navRightEdge);
+    scene()->removeItem(_cacheSizeText);
     scene()->removeItem(_navigatorProxy);
-    scene()->render(&painter);
+    scene()->render(&painter,QRectF(),sceneR);
     scene()->addItem(_navigatorProxy);
+    scene()->addItem(_cacheSizeText);
+    scene()->addItem(_navLeftEdge);
+    scene()->addItem(_navBottomEdge);
+    scene()->addItem(_navTopEdge);
+    scene()->addItem(_navRightEdge);
     p.setColor(QColor(200,200,200,255));
-    p.setWidth(10);
-    QRect border(0,0,img.width()-1,img.height()-1);
     painter.setPen(p);
-    painter.drawRect(border);
     painter.fillRect(viewRect, QColor(200,200,200,100));
+    setTransform(currentTransform);
     return img;
 }
 bool NodeGraph::isGraphWorthLess() const{
@@ -612,7 +723,7 @@ bool NodeGraph::isGraphWorthLess() const{
 }
 
 NodeGraph::NodeGraphNavigator::NodeGraphNavigator(QWidget* parent ):QLabel(parent),
-    _w(120),_h(70){
+_w(120),_h(70){
     
 }
 
@@ -646,9 +757,9 @@ void NodeGraph::restoreFromTrash(NodeGui* node) {
 
 MoveCommand::MoveCommand(NodeGui *node, const QPointF &oldPos,
                          QUndoCommand *parent):QUndoCommand(parent),
-    _node(node),
-    _oldPos(oldPos),
-    _newPos(node->pos()){
+_node(node),
+_oldPos(oldPos),
+_newPos(node->pos()){
     
 }
 void MoveCommand::undo(){
@@ -680,12 +791,12 @@ bool MoveCommand::mergeWith(const QUndoCommand *command){
 
 
 AddCommand::AddCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-    _node(node),_graph(graph),_undoWasCalled(false){
+_node(node),_graph(graph),_undoWasCalled(false){
     
 }
 void AddCommand::undo(){
     _undoWasCalled = true;
-
+    
     
     
     _inputs = _node->getNode()->getInputs();
@@ -693,7 +804,7 @@ void AddCommand::undo(){
     
     QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _node->getNode()->deactivate();
-
+    
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
@@ -712,7 +823,7 @@ void AddCommand::redo(){
 }
 
 RemoveCommand::RemoveCommand(NodeGraph* graph,NodeGui *node,QUndoCommand *parent):QUndoCommand(parent),
-    _node(node),_graph(graph){
+_node(node),_graph(graph){
     
 }
 void RemoveCommand::undo(){
@@ -732,7 +843,7 @@ void RemoveCommand::redo(){
     
     QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     _node->getNode()->deactivate();
-
+    
     _graph->scene()->update();
     setText(QObject::tr("Add %1")
             .arg(_node->getNode()->getName().c_str()));
@@ -741,10 +852,10 @@ void RemoveCommand::redo(){
 
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,Edge* edge,NodeGui *oldSrc,NodeGui* newSrc,QUndoCommand *parent):QUndoCommand(parent),
-    _edge(edge),
-    _oldSrc(oldSrc),
-    _newSrc(newSrc),
-    _graph(graph){
+_edge(edge),
+_oldSrc(oldSrc),
+_newSrc(newSrc),
+_graph(graph){
     
 }
 
@@ -766,7 +877,7 @@ void ConnectCommand::undo(){
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
-
+    
     _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
@@ -784,7 +895,7 @@ void ConnectCommand::redo(){
             if(v->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
                 _edge->setSource(_newSrc);
                 _newSrc->getNode()->connectOutput(v);
-
+                
             }
         }
     }else{
@@ -792,13 +903,13 @@ void ConnectCommand::redo(){
         if(_oldSrc){
             if(!_graph->getGui()->getApp()->disconnect(_oldSrc->getNode(), dst->getNode())){
                 cout << "Failed to disconnect (input) " << _oldSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
+                << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
         if(_newSrc){
             if(!_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _newSrc->getNode(), dst->getNode())){
                 cout << "Failed to connect (input) " << _newSrc->getNode()->getName()
-                     << " to (output) " << dst->getNode()->getName() << endl;
+                << " to (output) " << dst->getNode()->getName() << endl;
             }
         }
     }
@@ -816,18 +927,18 @@ void ConnectCommand::redo(){
     if(viewer){
         viewer->updateDAGAndRender();
     }
-
+    
     
 }
 
 
 
 SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
-    : QDialog()
-    , graph(graph_)
-    , layout(NULL)
-    , textLabel(NULL)
-    , textEdit(NULL)
+: QDialog()
+, graph(graph_)
+, layout(NULL)
+, textLabel(NULL)
+, textEdit(NULL)
 {
     setWindowTitle(QString("Node creation tool"));
     setWindowFlags(Qt::Popup);
@@ -837,7 +948,7 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     textLabel=new QLabel(QString("Input a node name:"),this);
     textEdit=new QComboBox(this);
     textEdit->setEditable(true);
-
+    
     textEdit->addItems(appPTR->getNodeNameList());
     layout->addWidget(textLabel);
     layout->addWidget(textEdit);
@@ -847,8 +958,8 @@ SmartInputDialog::SmartInputDialog(NodeGraph* graph_)
     textEdit->lineEdit()->setFocus(Qt::ActiveWindowFocusReason);
     textEdit->setFocus(); // textEdit->grabKeyboard();
     installEventFilter(this);
-
-
+    
+    
 }
 void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
@@ -858,38 +969,38 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             //textEdit->releaseKeyboard();
-
+            
             graph->setFocus(Qt::ActiveWindowFocusReason);
             delete this;
-
-
+            
+            
         }else{
-
+            
         }
     }else if(e->key()== Qt::Key_Escape){
         graph->setSmartNodeCreationEnabled(true);
         graph->setMouseTracking(true);
         //textEdit->releaseKeyboard();
-
+        
         graph->setFocus(Qt::ActiveWindowFocusReason);
-
-
+        
+        
         delete this;
-
-
+        
+        
     }
 }
 bool SmartInputDialog::eventFilter(QObject *obj, QEvent *e){
     Q_UNUSED(obj);
-
+    
     if(e->type()==QEvent::Close){
         graph->setSmartNodeCreationEnabled(true);
         graph->setMouseTracking(true);
         //textEdit->releaseKeyboard();
-
+        
         graph->setFocus(Qt::ActiveWindowFocusReason);
-
-
+        
+        
     }
     return false;
 }
@@ -925,4 +1036,31 @@ void NodeGraph::updateCacheSizeText(){
                                  .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentSize()))
                                  .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentInMemoryPortionSize()
                                                             + appPTR->getNodeCache()->getCurrentSize())));
+}
+QRectF NodeGraph::calcNodesBoundingRect(){
+    QRectF ret;
+    for (U32 i = 0; i < _nodes.size(); ++i) {
+        ret = ret.united(_nodes[i]->boundingRectWithEdges());
+    }
+    return ret;
+}
+void NodeGraph::toggleCacheInfos(){
+    if(_cacheSizeText->isVisible()){
+        _cacheSizeText->hide();
+    }else{
+        _cacheSizeText->show();
+    }
+}
+void NodeGraph::populateMenu(){
+    _menu->clear();
+    QAction* displayCacheInfoAction = new QAction("Display memory consumption",this);
+    displayCacheInfoAction->setCheckable(true);
+    displayCacheInfoAction->setChecked(true);
+    QObject::connect(displayCacheInfoAction,SIGNAL(triggered()),this,SLOT(toggleCacheInfos()));
+    _menu->addAction(displayCacheInfoAction);
+    //  const std::map<QString,ToolButton*>& toolButtons = _gui->getToolButtons();
+}
+
+void NodeGraph::showMenu(const QPoint& pos){
+    _menu->exec(pos);
 }

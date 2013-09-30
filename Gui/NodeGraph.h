@@ -40,6 +40,7 @@ class NodeGui;
 class Node;
 class AppInstance;
 class Edge;
+class QMenu;
 class SmartInputDialog;
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
@@ -88,10 +89,8 @@ public:
     void setSmartNodeCreationEnabled(bool enabled){smartNodeCreationEnabled=enabled;}
     
     void selectNode(NodeGui* n);
-    
+        
     QRectF visibleRect();
-    
-    QRectF visibleRect_v2();
     
     void deselect();
     
@@ -123,7 +122,12 @@ public slots:
 
     void updateCacheSizeText();
     
-    void onSceneRectChanged(const QRectF& rect);
+    void showMenu(const QPoint& pos);
+    
+    void populateMenu();
+    
+    void toggleCacheInfos();
+
 protected:
 
     void mousePressEvent(QMouseEvent *event);
@@ -133,43 +137,67 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     
     void mouseDoubleClickEvent(QMouseEvent *event);
+    
+    void resizeEvent(QResizeEvent* event);
+    
+    void paintEvent(QPaintEvent* event);
 
     void wheelEvent(QWheelEvent *event);
 
-    void scaleView(qreal scaleFactor,QPointF center);
-
 private:
     
+    QRectF calcNodesBoundingRect();
+    
     void deleteSelectedNode();
-    
-    void autoResizeScene();
-    
+        
     bool smartNodeCreationEnabled;
     
     Gui* _gui;
-    QPointF old_pos;
-    QPointF oldp;
+    
+    QPointF _lastScenePosClick;
+    
     QPointF _lastNodeDragStartPoint;
-    QPointF oldZoom;
+
     EVENT_STATE _evtState;
+    
     NodeGui* _nodeSelected;
+    
     Edge* _arrowSelected;
+    
     std::vector<NodeGui*> _nodes;
+    
     std::vector<NodeGui*> _nodesTrash;
+    
     bool _nodeCreationShortcutEnabled;
+    
     bool _maximized;
+    
     QGraphicsItem* _root;
+    
     QScrollArea* _propertyBin;
 
     QGraphicsTextItem* _cacheSizeText;
+    
     QTimer _refreshCacheTextTimer;
     
     NodeGraphNavigator* _navigator;
+    
+    QGraphicsLineItem* _navLeftEdge;
+    QGraphicsLineItem* _navBottomEdge;
+    QGraphicsLineItem* _navRightEdge;
+    QGraphicsLineItem* _navTopEdge;
+    
     QGraphicsProxyWidget* _navigatorProxy;
     
     QUndoStack* _undoStack;
     
     QAction* _undoAction,*_redoAction;
+    
+    QMenu* _menu;
+    
+    QGraphicsItem *_tL,*_tR,*_bR,*_bL;
+    
+    bool _refreshOverlays;
     
 };
 
@@ -245,5 +273,6 @@ private:
     QVBoxLayout* layout;
     QLabel* textLabel;
     QComboBox* textEdit;
+    
 };
 #endif // POWITER_GUI_NODEGRAPH_H_

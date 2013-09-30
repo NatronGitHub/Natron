@@ -106,6 +106,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
                                   _toolButtons[i]->_pluginIconPath,
                                   _toolButtons[i]->_groupIconPath);
     }
+    emit pluginsPopulated();
     _gui->show();
     
     /* Create auto-save dir if it does not exists*/

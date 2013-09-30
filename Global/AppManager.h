@@ -153,6 +153,10 @@ public slots:
     void clearDiskCache();
 
     void clearNodeCache();
+    
+signals:
+    
+    void pluginsPopulated();
 
 private:
     

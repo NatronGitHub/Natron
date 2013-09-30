@@ -245,6 +245,8 @@ public:
     
     void showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
 
+    const std::map<QString,ToolButton*>& getToolButtons() const {return _toolGroups;}
+    
 private:
 
     void addNodeGraph();

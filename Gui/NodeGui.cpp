@@ -307,6 +307,16 @@ QPainterPath NodeGui::shape() const
 QRectF NodeGui::boundingRect() const{
     return rectangle->boundingRect();
 }
+QRectF NodeGui::boundingRectWithEdges() const{
+    QRectF ret;
+    ret = ret.united(mapToScene(rectangle->boundingRect()).boundingRect());
+    for (InputEdgesMap::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        ret = ret.united(it->second->mapToScene(it->second->boundingRect()).boundingRect());
+    }
+    ret.setTopLeft(ret.topLeft() - QPointF(50,50));
+    ret.setBottomRight(ret.bottomRight() + QPointF(50,50));
+    return ret;
+}
 
 void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
     
