@@ -275,10 +275,11 @@ private:
     QMutex _timerMutex;///protects timer
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
-    QMutex _abortBeingProcessedLock; /*!< protecting startEngine and stopEngine (when we process abort)*/
+    QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
     bool _abortBeingProcessed; /*true when someone is processing abort*/
+
     QWaitCondition _abortedRequestedCondition;
-    QMutex _abortedRequestedMutex; //!< protects _aborted
+    QMutex _abortedRequestedMutex; //!< protects _abortRequested
     int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
     QMutex _mustQuitMutex; //!< protects _mustQuit
