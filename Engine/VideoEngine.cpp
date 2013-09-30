@@ -212,10 +212,15 @@ bool VideoEngine::startEngine() {
 
     /*wait if something is already running until it's aborted*/
     {
+        // let stopEngine run by unlocking abortBeingProcessedLocker()
+        abortBeingProcessedLocker.unlock();
         QMutexLocker l(&_abortedRequestedMutex);
         while (_abortRequested > 0) {
             _abortedRequestedCondition.wait(&_abortedRequestedMutex);
         }
+        // make sure stopEngine is not running before releasing _abortedRequestedMutex
+        abortBeingProcessedLocker.relock();
+        assert(!_abortBeingProcessed);
     }
 
     /*Locking out other rendering tasks so 1 VideoEngine gets access to all
@@ -286,7 +291,7 @@ void VideoEngine::stopEngine() {
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
-        QMutexLocker abortProcessLocker(&_abortBeingProcessedMutex);
+        QMutexLocker abortBeingProcessedLocker(&_abortBeingProcessedMutex);
         _abortBeingProcessed = true; //_abortBeingProcessed is a dummy variable: it should be always false when stopeEngine is not running
         {
             QMutexLocker l(&_abortedRequestedMutex);
