@@ -56,7 +56,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _dag()
 , _timerMutex()
 , _timer(new Timer)
-, _abortBeingProcessedLock()
+, _abortBeingProcessedMutex()
 , _abortBeingProcessed(false)
 , _abortedRequestedCondition()
 , _abortedRequestedMutex()
@@ -204,19 +204,20 @@ void VideoEngine::render(OutputNode* output,
         _startCondition.wakeOne();
     }
 }
-bool VideoEngine::startEngine(){
+
+bool VideoEngine::startEngine() {
+    // don't allow "abort"s to be processed while starting engine by locking _abortBeingProcessedMutex
+    QMutexLocker abortBeingProcessedLocker(&_abortBeingProcessedMutex);
+    assert(!_abortBeingProcessed);
+
     /*wait if something is already running until it's aborted*/
     {
-        QMutexLocker abortProcessLocker(&_abortBeingProcessedLock);
-        assert(!_abortBeingProcessed);
-        {
-            QMutexLocker l(&_abortedRequestedMutex);
-            while(_abortRequested > 0) {
-                _abortedRequestedCondition.wait(&_abortedRequestedMutex);
-            }
+        QMutexLocker l(&_abortedRequestedMutex);
+        while (_abortRequested > 0) {
+            _abortedRequestedCondition.wait(&_abortedRequestedMutex);
         }
     }
-    
+
     /*Locking out other rendering tasks so 1 VideoEngine gets access to all
      nodes.That means only 1 frame can be rendered at any time. We would have to copy
      all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
@@ -284,27 +285,30 @@ bool VideoEngine::startEngine(){
 void VideoEngine::stopEngine() {
     /*reset the abort flag and wake up any thread waiting*/
     {
-        QMutexLocker abortProcessLocker(&_abortBeingProcessedLock);
-        _abortBeingProcessed = true;
-        QMutexLocker l(&_abortedRequestedMutex);
-        _abortRequested = 0;
-         _dag.lock();
-        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-            (*it)->setAborted(false);
+        // make sure startEngine is not running by locking _abortBeingProcessedMutex
+        QMutexLocker abortProcessLocker(&_abortBeingProcessedMutex);
+        _abortBeingProcessed = true; //_abortBeingProcessed is a dummy variable: it should be always false when stopeEngine is not running
+        {
+            QMutexLocker l(&_abortedRequestedMutex);
+            _abortRequested = 0;
+            _dag.lock();
+            for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
+                (*it)->setAborted(false);
+            }
+            _dag.unlock();
+            _abortedRequestedCondition.wakeOne();
         }
-        _dag.unlock();
-        _abortedRequestedCondition.wakeOne();
+
+        emit engineStopped();
+        _currentRunArgs._frameRequestsCount = 0;
+        _timer->playState = PAUSE;
+        _restart = true;
+        _model->getGeneralMutex()->unlock();
+        {
+            QMutexLocker workingLocker(&_workingMutex);
+            _working = false;
+        }
         _abortBeingProcessed = false;
-    }
-    
-    emit engineStopped();
-    _currentRunArgs._frameRequestsCount = 0;
-    _timer->playState = PAUSE;
-    _restart = true;
-    _model->getGeneralMutex()->unlock();
-    {
-        QMutexLocker workingLocker(&_workingMutex);
-        _working = false;
     }
     /*pause the thread if needed*/
     {
@@ -402,19 +406,22 @@ void VideoEngine::run(){
         
         /*Check whether we need to stop the engine or not for various reasons.
          */
-        if(_abortRequested || // #1 aborted by the user
-           
-           (_dag.isOutputAViewer() // #2 the DAG contains only 1 frame and we rendered it
-            &&  _currentRunArgs._recursiveCall
-            && _currentRunArgs._output->lastFrame() == _currentRunArgs._output->firstFrame()
-            && _currentRunArgs._frameRequestsCount == -1
-            && _currentRunArgs._frameRequestIndex == 1)
-           
-           || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
         {
-            
-            stopEngine();
-            continue;
+            QMutexLocker locker(&_abortedRequestedMutex);
+            if(_abortRequested || // #1 aborted by the user
+
+               (_dag.isOutputAViewer() // #2 the DAG contains only 1 frame and we rendered it
+                &&  _currentRunArgs._recursiveCall
+                && _currentRunArgs._output->lastFrame() == _currentRunArgs._output->firstFrame()
+                && _currentRunArgs._frameRequestsCount == -1
+                && _currentRunArgs._frameRequestIndex == 1)
+
+               || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
+            {
+                locker.unlock();
+                stopEngine();
+                continue;
+            }
         }
         
         /*Getting all readers of the DAG + flagging that we'll want to fit the frame to the viewer*/
