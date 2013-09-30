@@ -163,7 +163,7 @@ _maximized(false)
 	/*=============================================*/
     
 	/*OpenGL viewer*/
-	viewer=new ViewerGL(this);
+	viewer = new ViewerGL(this);
     viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/

@@ -30,6 +30,7 @@
 
 class QKeyEvent;
 class QEvent;
+class QMenu;
 class QGLShaderProgram;
 namespace Powiter {
     namespace Color {
@@ -293,6 +294,8 @@ class ViewerTab;
             int _progressBarY;
             
             QColor _clearColor;
+            
+            QMenu* _menu;
                         
         public:
             
@@ -649,6 +652,8 @@ class ViewerTab;
             
             void clearColorBuffer(double r = 0.,double g = 0.,double b = 0.,double a = 1.);
             
+            void toggleOverlays(){ _overlay = ! _overlay; updateGL();}
+            
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -717,6 +722,8 @@ class ViewerTab;
              *@brief Called by the contructor. It avoids re-writing the same code for all constructors.
              **/
             void initConstructor();
+            
+            void populateMenu();
             
             /**
              *@brief Prints a message if the current frame buffer is incomplete.

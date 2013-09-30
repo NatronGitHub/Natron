@@ -18,6 +18,7 @@
 #include <QtGui/QPainter>
 #include <QtCore/QCoreApplication>
 #include <QtGui/QImage>
+#include <QMenu>
 #include <QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtCore/QEvent>
@@ -272,6 +273,7 @@ void ViewerGL::initConstructor(){
     _progressBarY = -1;
     _drawProgressBar = false;
     _updatingTexture = false;
+    populateMenu();
 }
 
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
@@ -283,6 +285,7 @@ ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareW
 , _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
+, _menu(new QMenu(this))
 { 
     initConstructor();
 }
@@ -296,6 +299,7 @@ ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* s
 , _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
+, _menu(new QMenu(this))
 {
     initConstructor();
 }
@@ -309,6 +313,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
 , _displayingImage(false)
 , _must_initBlackTex(true)
 , _clearColor(0,0,0,255)
+, _menu(new QMenu(this))
 {
     initConstructor();
 }
@@ -338,6 +343,7 @@ ViewerGL::~ViewerGL(){
     checkGLErrors();
     delete _blankViewerInfos;
 	delete _infoViewer;
+
 }
 
 QSize ViewerGL::sizeHint() const{
@@ -506,7 +512,7 @@ void ViewerGL::drawOverlay(){
         checkGLErrors();
     }
     if(_displayingImage){
-        _viewerTab->getInternalNode()->drawOverlays();
+        //   _viewerTab->getInternalNode()->drawOverlays();
     }
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
@@ -1041,8 +1047,12 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
 }
 
 void ViewerGL::mousePressEvent(QMouseEvent *event){
+    if(event->button() == Qt::RightButton){
+        _menu->exec(mapToGlobal(event->pos()));
+        return;
+    }
+    
     _zoomCtx._oldClick = event->pos();
-    // TODO: Qt::RightButton should pop up a menu
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _ms = DRAGGING;
     } else if (event->button() == Qt::LeftButton) {
@@ -1715,13 +1725,13 @@ void ViewerGL::clearViewer(){
 /*overload of QT enter/leave/resize events*/
 void ViewerGL::enterEvent(QEvent *event)
 {   QGLWidget::enterEvent(event);
-    _viewerTab->getInternalNode()->notifyOverlaysFocusGained();
+    //    _viewerTab->getInternalNode()->notifyOverlaysFocusGained();
 
 }
 void ViewerGL::leaveEvent(QEvent *event)
 {
     QGLWidget::leaveEvent(event);
-    _viewerTab->getInternalNode()->notifyOverlaysFocusLost();
+    // _viewerTab->getInternalNode()->notifyOverlaysFocusLost();
 
 }
 void ViewerGL::resizeEvent(QResizeEvent* event){ // public to hack the protected field
@@ -1792,4 +1802,12 @@ void ViewerGL::updateProgressOnViewer(const TextureRect& region,int y , int texY
 
 void ViewerGL::doSwapBuffers(){
     swapBuffers();
+}
+void ViewerGL::populateMenu(){
+    _menu->clear();
+    QAction* displayOverlaysAction = new QAction("Display overlays",this);
+    displayOverlaysAction->setCheckable(true);
+    displayOverlaysAction->setChecked(true);
+    QObject::connect(displayOverlaysAction,SIGNAL(triggered()),this,SLOT(toggleOverlays()));
+    _menu->addAction(displayOverlaysAction);
 }
