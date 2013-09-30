@@ -10,7 +10,6 @@
  */
 
 #include "OfxParamInstance.h"
-
 #include <iostream>
 #include <QColor>
 #include <QHBoxLayout>
@@ -114,10 +113,15 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode *node,OFX::Host::Param::Descripto
     }
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    int min = getProperties().getIntProperty(kOfxParamPropDisplayMin);
-    int max = getProperties().getIntProperty(kOfxParamPropDisplayMax);
+    int min = getProperties().getIntProperty(kOfxParamPropMin);
+    int max = getProperties().getIntProperty(kOfxParamPropMax);
     int incr = getProperties().getIntProperty(kOfxParamPropIncrement);
     int def = getProperties().getIntProperty(kOfxParamPropDefault);
+    int displayMin = getProperties().getIntProperty(kOfxParamPropDisplayMin);
+    int displayMax = getProperties().getIntProperty(kOfxParamPropDisplayMax);
+    _knob->setDisplayMinimum(displayMin);
+    _knob->setDisplayMaximum(displayMax);
+
     _knob->setMinimum(min);
     if(incr > 0)
         _knob->setIncrement(incr);
@@ -176,11 +180,15 @@ _descriptor(descriptor){
     const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
-    double min = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
-    double max = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
+    double min = getProperties().getDoubleProperty(kOfxParamPropMin);
+    double max = getProperties().getDoubleProperty(kOfxParamPropMax);
     double incr = getProperties().getDoubleProperty(kOfxParamPropIncrement);
     double def = getProperties().getDoubleProperty(kOfxParamPropDefault);
     int decimals = getProperties().getIntProperty(kOfxParamPropDigits);
+    double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
+    double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
+    _knob->setDisplayMinimum(displayMin);
+    _knob->setDisplayMaximum(displayMax);
     _knob->setMinimum(min);
     _knob->setMaximum(max);
     if(incr > 0)
@@ -541,17 +549,23 @@ _descriptor(descriptor){
     vector<double> minimum;
     vector<double> maximum;
     vector<double> increment;
+    vector<double> displayMins;
+    vector<double> displayMaxs;
     vector<int> decimals;
     double def[2];
-    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0));
-    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0));
+    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropMin,0));
+    displayMins.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0));
+    displayMaxs.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0));
+    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropMax,0));
     double incr1 = getProperties().getDoubleProperty(kOfxParamPropIncrement,0);
     incr1 != 0 ? increment.push_back(incr1) : increment.push_back(0.1);
     decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
     def[0] = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
     
-    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1));
-    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1));
+    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropMin,1));
+    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropMax,1));
+    displayMins.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1));
+    displayMaxs.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1));
     double incr2 = getProperties().getDoubleProperty(kOfxParamPropIncrement,0);
     incr2 != 0 ? increment.push_back(incr2) : increment.push_back(0.1);
     decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
@@ -630,15 +644,22 @@ _descriptor(descriptor){
     vector<int> minimum;
     vector<int> maximum;
     vector<int> increment;
+    vector<int> displayMins;
+    vector<int> displayMaxs;
     int def[2];
-    minimum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,0));
-    maximum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,0));
+    minimum.push_back(getProperties().getIntProperty(kOfxParamPropMin,0));
+    displayMins.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,0));
+    displayMaxs.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,0));
+    maximum.push_back(getProperties().getIntProperty(kOfxParamPropMax,0));
     int incr1 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
     incr1 != 0 ? increment.push_back(incr1) : increment.push_back(1);
     def[0] = getProperties().getIntProperty(kOfxParamPropDefault,0);
     
-    minimum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,1));
-    maximum.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,1));
+    minimum.push_back(getProperties().getIntProperty(kOfxParamPropMin,1));
+    maximum.push_back(getProperties().getIntProperty(kOfxParamPropMax,1));
+    displayMins.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,1));
+    displayMaxs.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,1));
+
     int incr2 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
     incr2 != 0 ? increment.push_back(incr2) : increment.push_back(1);
     def[1] = getProperties().getIntProperty(kOfxParamPropDefault,1);

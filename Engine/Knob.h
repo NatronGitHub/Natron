@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cfloat>
 
 #include <QtGui/QVector4D>
 #include <QtCore/QVariant>
@@ -482,7 +483,7 @@ public:
                 _minimums.push_back(mini);
             }else{
                 while(_minimums.size() <= (U32)index){
-                    _minimums.push_back(0);
+                    _minimums.push_back(INT_MIN);
                 }
                 _minimums.push_back(mini);
             }
@@ -503,7 +504,7 @@ public:
                 _maximums.push_back(maxi);
             }else{
                 while(_maximums.size() <= (U32)index){
-                    _maximums.push_back(99);
+                    _maximums.push_back(INT_MAX);
                 }
                 _maximums.push_back(maxi);
             }
@@ -513,6 +514,37 @@ public:
             minimum = _minimums[index];
         }
         emit minMaxChanged(minimum,maxi,index);
+    }
+    
+    void setDisplayMinimum(int mini,int index = 0){
+        if(_displayMins.size() > (U32)index){
+            _displayMins[index] = mini;
+        }else{
+            if(index == 0){
+                _displayMins.push_back(mini);
+            }else{
+                while(_displayMins.size() <= (U32)index){
+                    _displayMins.push_back(0);
+                }
+                _displayMins.push_back(mini);
+            }
+        }
+    }
+    
+    void setDisplayMaximum(int maxi,int index = 0){
+        
+        if(_displayMaxs.size() > (U32)index){
+            _displayMaxs[index] = maxi;
+        }else{
+            if(index == 0){
+                _displayMaxs.push_back(maxi);
+            }else{
+                while(_displayMaxs.size() <= (U32)index){
+                    _displayMaxs.push_back(99);
+                }
+                _displayMaxs.push_back(maxi);
+            }
+        }
     }
     
     void setIncrement(int incr, int index = 0) {
@@ -557,11 +589,20 @@ public:
         }
     }
     
+    void setDisplayMinimumsAndMaximums(const std::vector<int>& minis,const std::vector<int>& maxis){
+        _displayMins = minis;
+        _displayMaxs = maxis;
+    }
+    
     const std::vector<int>& getMinimums() const {return _minimums;}
     
     const std::vector<int>& getMaximums() const {return _maximums;}
     
     const std::vector<int>& getIncrements() const {return _increments;}
+    
+    const std::vector<int>& getDisplayMinimums() const {return _displayMins;}
+    
+    const std::vector<int>& getDisplayMaximums() const {return _displayMaxs;}
     
     
 protected:
@@ -577,8 +618,8 @@ signals:
     void incrementChanged(int incr,int index = 0);
     
 private:
-    
-    std::vector<int> _minimums,_maximums,_increments;
+
+    std::vector<int> _minimums,_maximums,_increments,_displayMins,_displayMaxs;
     
 };
 
@@ -650,6 +691,10 @@ public:
     
     const std::vector<int>& getDecimals() const {return _decimals;}
     
+    const std::vector<double>& getDisplayMinimums() const {return _displayMins;}
+    
+    const std::vector<double>& getDisplayMaximums() const {return _displayMaxs;}
+    
     void setMinimum(double mini,int index = 0){
         if(_minimums.size() > (U32)index){
             _minimums[index] = mini;
@@ -688,6 +733,37 @@ public:
             minimum = _minimums[index];
         }
         emit minMaxChanged(minimum,maxi,index);
+    }
+    
+    void setDisplayMinimum(double mini,int index = 0){
+        if(_displayMins.size() > (U32)index){
+            _displayMins[index] = mini;
+        }else{
+            if(index == 0){
+                _displayMins.push_back(DBL_MIN);
+            }else{
+                while(_displayMins.size() <= (U32)index){
+                    _displayMins.push_back(0);
+                }
+                _displayMins.push_back(mini);
+            }
+        }
+    }
+    
+    void setDisplayMaximum(double maxi,int index = 0){
+        
+        if(_displayMaxs.size() > (U32)index){
+            _displayMaxs[index] = maxi;
+        }else{
+            if(index == 0){
+                _displayMaxs.push_back(maxi);
+            }else{
+                while(_displayMaxs.size() <= (U32)index){
+                    _displayMaxs.push_back(DBL_MAX);
+                }
+                _displayMaxs.push_back(maxi);
+            }
+        }
     }
     
     void setIncrement(double incr, int index = 0) {
@@ -733,6 +809,11 @@ public:
         }
     }
     
+    void setDisplayMinimumsAndMaximums(const std::vector<double>& minis,const std::vector<double>& maxis){
+        _displayMins = minis;
+        _displayMaxs = maxis;
+    }
+    
     void setIncrement(const std::vector<double>& incr){
         _increments = incr;
         for (U32 i = 0; i < incr.size(); ++i) {
@@ -761,7 +842,7 @@ signals:
     
 private:
     
-    std::vector<double> _minimums,_maximums,_increments;
+    std::vector<double> _minimums,_maximums,_increments,_displayMins,_displayMaxs;
     std::vector<int> _decimals;
     
 };

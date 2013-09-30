@@ -14,6 +14,7 @@
 #include <dlfcn.h>
 #endif
 #include <climits>
+#include <cfloat>
 #include <QtCore/QString>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -339,6 +340,8 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     const std::vector<int>& maximums = intKnob->getMaximums();
     const std::vector<int>& minimums = intKnob->getMinimums();
     const std::vector<int>& increments = intKnob->getIncrements();
+    const std::vector<int>& displayMins = intKnob->getDisplayMinimums();
+    const std::vector<int>& displayMaxs = intKnob->getDisplayMaximums();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(layout->parentWidget());
         QHBoxLayout* boxContainerLayout = new QHBoxLayout(boxContainer);
@@ -366,12 +369,21 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
         if(_knob->getDimension() == 1){
-            _slider = new ScaleSlider(minimums[0],
-                                      maximums[0],
+            int min,max;
+            if(displayMins.size() >(U32)i && displayMins[i] != INT_MIN)
+                min = displayMins[i];
+            else
+                min = minimums[i];
+            if(displayMaxs.size() >(U32)i && displayMaxs[i] != INT_MAX)
+                max = displayMaxs[i];
+            else
+                max = maximums[i];
+            _slider = new ScaleSlider(min,max,
                                       100,
                                       _knob->value<int>());
             QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
             boxContainerLayout->addWidget(_slider);
+            
         }
        
         containerLayout->addWidget(boxContainer);
@@ -539,6 +551,9 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     const std::vector<double>& maximums = dbl_knob->getMaximums();
     const std::vector<double>& minimums = dbl_knob->getMinimums();
     const std::vector<double>& increments = dbl_knob->getIncrements();
+    const std::vector<double>& displayMins = dbl_knob->getDisplayMinimums();
+    const std::vector<double>& displayMaxs = dbl_knob->getDisplayMaximums();
+
     const std::vector<int>& decimals = dbl_knob->getDecimals();
     for (int i = 0; i < dim; ++i) {
         QWidget* boxContainer = new QWidget(layout->parentWidget());
@@ -572,8 +587,17 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         box->setToolTip(_knob->getHintToolTip().c_str());
         boxContainerLayout->addWidget(box);
         if(_knob->getDimension() == 1){
-            _slider = new ScaleSlider(minimums[0],
-                                      maximums[0],
+            double min,max;
+            if(displayMins.size() >(U32)i && displayMins[i] != DBL_MIN)
+                min = displayMins[i];
+            else
+                min = minimums[i];
+            if(displayMaxs.size() >(U32)i && displayMaxs[i] != DBL_MAX)
+                max = displayMaxs[i];
+            else
+                max = maximums[i];
+
+            _slider = new ScaleSlider(min,max,
                                       100,
                                       _knob->value<double>());
             QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
