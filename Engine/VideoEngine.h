@@ -527,6 +527,10 @@ public:
         _dag.validate(doFullWork);
     }
     
+    void resetAndSortDAG(OutputNode* output){
+        _dag.resetAndSort(output);
+    }
+    
 	/**
      *@returns Returns true if the engine is currently working.
      **/

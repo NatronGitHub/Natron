@@ -1031,9 +1031,7 @@ static QString QDirModelPrivate_size(quint64 bytes)
 
 
 void NodeGraph::updateCacheSizeText(){
-    _cacheSizeText->setPlainText(QString("Disk cache size: %1\n"
-                                         "Memory cache size: %2")
-                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentSize()))
+    _cacheSizeText->setPlainText(QString("Memory cache size: %1")
                                  .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentInMemoryPortionSize()
                                                             + appPTR->getNodeCache()->getCurrentSize())));
 }

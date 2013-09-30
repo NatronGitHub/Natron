@@ -211,7 +211,6 @@ void Reader::showFilePreview(){
 
 
 bool Reader::_validate(bool){
-   
     _info.set_firstFrame(firstFrame());
     _info.set_lastFrame(lastFrame());
     return true;
