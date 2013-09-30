@@ -99,9 +99,9 @@ public:
 
     
     //float toFloat(float v) const { return to_byte(v) / 255.f; }
-    inline float toFloatFast(float v) const;
+    float toFloatFast(float v) const;
     //float fromFloat(float v) const { return from_byte(v * 255.f); }
-    inline float fromFloatFast(float v) const;
+    float fromFloatFast(float v) const;
     
     // post-constructor
     void validate() const {
