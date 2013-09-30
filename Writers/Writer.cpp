@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "Writer.h"
 
@@ -39,7 +39,7 @@ _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSi
 _writeHandle(0),
 _writeOptions(0)
 {
-     
+    
     _lock = new QMutex;
 }
 
@@ -63,58 +63,56 @@ bool Writer::_validate(bool doFullWork){
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
     setFrameRange(info().firstFrame(), info().lastFrame());
+    if(_filename.empty()){
+        return false;
+    }
     
     if (doFullWork) {
-        
-        
-        if(_filename.size() > 0){
+        Write* write = 0;
+        Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+        if(!encoder){
+            cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
+            return false;
+        }else{
             
-            Write* write = 0;
-            Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
-            if(!encoder){
-                cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
+            
+            pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+            if(func.first)
+                write = func.second(this);
+            else{
+                cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
                 return false;
-            }else{
-                
-
-                pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
-                if(func.first)
-                    write = func.second(this);
-                else{
-                    cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
-                    return false;
-                }
-                write->premultiplyByAlpha(_premult);
-                /*check if the filename already contains the extension, otherwise appending it*/
-                QString extension;
-                QString filename(_filename.c_str());
-                int i = filename.lastIndexOf(QChar('.'));
-                if(i != -1){
-                    extension.append(filename.toStdString().substr(i).c_str());
-                    filename = filename.replace(i+1, extension.size(), _fileType.c_str());
-                }else{
-                    filename.append(extension);
-                }
-                
-                i = filename.lastIndexOf(QChar('#'));
-                QString n = QString::number(currentFrame());
-                if(i != -1){
-                    filename = filename.replace(i,1,n);
-                }else{
-                    i = filename.lastIndexOf(QChar('.'));
-                    filename = filename.insert(i, n);
-                }
-                
-                write->setOptionalKnobsPtr(_writeOptions);
-                write->setupFile(filename.toStdString());
-                write->initializeColorSpace();
-                _writeHandle = write;
             }
+            write->premultiplyByAlpha(_premult);
+            /*check if the filename already contains the extension, otherwise appending it*/
+            QString extension;
+            QString filename(_filename.c_str());
+            int i = filename.lastIndexOf(QChar('.'));
+            if(i != -1){
+                extension.append(filename.toStdString().substr(i).c_str());
+                filename = filename.replace(i+1, extension.size(), _fileType.c_str());
+            }else{
+                filename.append(extension);
+            }
+            
+            i = filename.lastIndexOf(QChar('#'));
+            QString n = QString::number(currentFrame());
+            if(i != -1){
+                filename = filename.replace(i,1,n);
+            }else{
+                i = filename.lastIndexOf(QChar('.'));
+                filename = filename.insert(i, n);
+            }
+            
+            write->setOptionalKnobsPtr(_writeOptions);
+            write->setupFile(filename.toStdString());
+            write->initializeColorSpace();
+            _writeHandle = write;
         }
     }
     return true;
-}
 
+}
 void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
     _writeHandle->engine(y, offset, range, channels, out);
 }
@@ -240,6 +238,9 @@ bool Writer::validInfosForRendering(){
             return false;
         }
     }
+    if(_filename.empty()){
+        return false;
+    }
     
     return true;
 }
@@ -253,7 +254,7 @@ void Writer::startRendering(){
         getVideoEngine()->validate(false);
         updateDAGAndRender();
         _model->onRenderingOnDiskStarted(this,_filename.c_str(),firstFrame(),lastFrame());
-
+        
     }
 }
 
