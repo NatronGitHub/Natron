@@ -28,20 +28,33 @@
 using namespace std;
 using namespace Powiter;
 
+static std::string getParamLabel(OFX::Host::Param::Instance* param){
+    std::string label = param->getProperties().getStringProperty(kOfxPropLabel);
+    if(label.empty()){
+        label = param->getProperties().getStringProperty(kOfxPropShortLabel);
+    }
+    if(label.empty()){
+        label = param->getProperties().getStringProperty(kOfxPropLongLabel);
+    }
+    if(label.empty()){
+        label = param->getName();
+    }
+    return label;
+}
+
 OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
-                                             const std::string& originalName ,
-                                             const std::string& name,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 , _node(node)
 , _descriptor(descriptor)
-, _originalName(originalName)
 {
+    
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", node, name,1, Knob::NONE));
+    
+    _knob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", node, getParamLabel(this),1, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -71,7 +84,7 @@ Knob* OfxPushButtonInstance::getKnob() const {
 }
 
 void OfxPushButtonInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
     ViewerNode* viewer = Node::hasViewerConnected(_node);
     if(viewer){
         viewer->updateDAGAndRender();
@@ -81,19 +94,16 @@ void OfxPushButtonInstance::triggerInstanceChanged() {
     }
 }
 
-OfxIntegerInstance::OfxIntegerInstance(OfxNode *node,const std::string& originalName ,
-                                       const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxIntegerInstance::OfxIntegerInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 , _node(node)
 , _descriptor(descriptor)
-, _paramName(name)
-, _originalName(originalName)
 {
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, getParamLabel(this),1, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -132,7 +142,7 @@ OfxStatus OfxIntegerInstance::set(OfxTime /*time*/, int v){
     return kOfxStatOK;
 }
 void OfxIntegerInstance::triggerInstanceChanged(){
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 // callback which should set enabled state as appropriate
 void OfxIntegerInstance::setEnabled(){
@@ -147,18 +157,15 @@ Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
-OfxDoubleInstance::OfxDoubleInstance(OfxNode *node, const std::string& originalName ,
-                                     const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxDoubleInstance::OfxDoubleInstance(OfxNode *node,  OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, getParamLabel(this),1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -207,7 +214,7 @@ OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, dou
     return kOfxStatErrMissingHostFeature;
 }
 void OfxDoubleInstance::triggerInstanceChanged(){
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 // callback which should set enabled state as appropriate
 void OfxDoubleInstance::setEnabled(){
@@ -222,18 +229,15 @@ Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
-OfxBooleanInstance::OfxBooleanInstance(OfxNode *node,const std::string& originalName ,
-                                       const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", node, name, 1,Knob::NONE));
+    _knob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", node, getParamLabel(this), 1,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -268,7 +272,7 @@ OfxStatus OfxBooleanInstance::set(OfxTime /*time*/, bool b){
 }
 
 void OfxBooleanInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_originalName);
+   _node->onInstanceChanged(getName());
 }
 
 // callback which should set enabled state as appropriate
@@ -285,18 +289,15 @@ Knob* OfxBooleanInstance::getKnob() const{
 }
 
 
-OfxChoiceInstance::OfxChoiceInstance(OfxNode *node, const std::string& originalName ,
-                                     const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxChoiceInstance::OfxChoiceInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", node, name,1, Knob::NONE));
+    _knob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", node, getParamLabel(this),1, Knob::NONE));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
@@ -343,7 +344,7 @@ OfxStatus OfxChoiceInstance::set(OfxTime /*time*/, int v){
 }
 
 void OfxChoiceInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_originalName);
+   _node->onInstanceChanged(getName());
 }
 
 
@@ -362,18 +363,15 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 
-OfxRGBAInstance::OfxRGBAInstance(OfxNode *node,const std::string& originalName ,
-                                 const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxRGBAInstance::OfxRGBAInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this), 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name, 1,Knob::NONE));
+    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, getParamLabel(this), 1,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -428,7 +426,7 @@ OfxStatus OfxRGBAInstance::set(OfxTime /*time*/, double r ,double g,double b,dou
 }
 
 void OfxRGBAInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 
 // callback which should set enabled state as appropriate
@@ -445,18 +443,15 @@ void OfxRGBAInstance::setSecret(){
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
-OfxRGBInstance::OfxRGBInstance(OfxNode *node, const std::string& originalName ,
-                               const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxRGBInstance::OfxRGBInstance(OfxNode *node,  OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this), 1,Knob::NONE);
     }
-    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, name,1, Knob::NO_ALPHA));
+    _knob = dynamic_cast<RGBA_Knob*>(appPTR->getKnobFactory()->createKnob("RGBA", node, getParamLabel(this),1, Knob::NO_ALPHA));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -507,7 +502,7 @@ OfxStatus OfxRGBInstance::set(OfxTime /*time*/, double r,double g,double b){
 }
 
 void OfxRGBInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 // callback which should set enabled state as appropriate
 void OfxRGBInstance::setEnabled(){
@@ -523,18 +518,15 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node,const std::string& originalName ,
-                                         const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name, 1,Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this), 1,Knob::NONE);
     }
-    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, name,2, Knob::NONE));
+    _knob = dynamic_cast<Double_Knob*>(appPTR->getKnobFactory()->createKnob("Double", node, getParamLabel(this),2, Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -598,7 +590,7 @@ OfxStatus OfxDouble2DInstance::set(OfxTime /*time*/,double x1,double x2){
 }
 
 void OfxDouble2DInstance::triggerInstanceChanged() {
-   _node->onInstanceChanged(_originalName);
+   _node->onInstanceChanged(getName());
 }
 
 // callback which should set enabled state as appropriate
@@ -615,18 +607,15 @@ Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
-OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node,const std::string& originalName ,
-                                           const std::string& name, OFX::Host::Param::Descriptor& descriptor)
+OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
-    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, name, 2,Knob::NONE));
+    _knob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory()->createKnob("Int", node, getParamLabel(this), 2,Knob::NONE));
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     if(layoutHint == 2){
         _knob->turnOffNewLine();
@@ -685,7 +674,7 @@ OfxStatus OfxInteger2DInstance::set(OfxTime /*time*/, int x1, int x2) {
 }
 
 void OfxInteger2DInstance::triggerInstanceChanged() {
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 
 // callback which should set enabled state as appropriate
@@ -703,16 +692,14 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode *node,const std::string& originalName ,
-                                   const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OfxGroupInstance::OfxGroupInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),
 _node(node),
-_descriptor(descriptor),
-_paramName(name),
-_originalName(originalName){
+_descriptor(descriptor){
     int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
+        std::string name = getParamLabel(this);
         if(!_tabKnob){
             _tabKnob = dynamic_cast<Tab_Knob*>(appPTR->getKnobFactory()->createKnob("Tab", node, name,1, Knob::NONE));
             _node->setTabKnob(_tabKnob);
@@ -726,7 +713,7 @@ _originalName(originalName){
         _tabKnob->setHintToolTip(hint);
         _tabKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
     }else{
-        _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, name,1, Knob::NONE));
+        _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory()->createKnob("Group", node, getParamLabel(this),1, Knob::NONE));
         int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
         if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
@@ -757,23 +744,20 @@ Knob* OfxGroupInstance::getKnob() const{
     }
 }
 
-OfxStringInstance::OfxStringInstance(OfxNode *node,const std::string& originalName ,
-                                     const std::string& name,OFX::Host::Param::Descriptor& descriptor):
+OfxStringInstance::OfxStringInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor),
-_paramName(name),
-_originalName(originalName),
 _fileKnob(0),
 _outputFileKnob(0){
     std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
     int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
-        appPTR->getKnobFactory()->createKnob("Separator", node, name,1, Knob::NONE);
+        appPTR->getKnobFactory()->createKnob("Separator", node, getParamLabel(this),1, Knob::NONE);
     }
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
-            _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", node, name, 1,Knob::NONE));
+            _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", node, getParamLabel(this), 1,Knob::NONE));
             QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
             QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), _node, SLOT(onFrameRangeChanged(int,int)));
             if(layoutHint == 2){
@@ -788,7 +772,7 @@ _outputFileKnob(0){
             _fileKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
-            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, name,1, Knob::NONE));
+            _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", node, getParamLabel(this),1, Knob::NONE));
             QObject::connect(_outputFileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
             if(layoutHint == 2){
                 _outputFileKnob->turnOffNewLine();
@@ -804,7 +788,7 @@ _outputFileKnob(0){
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
         
-        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory()->createKnob("String", node, name,1, Knob::NONE));
+        _stringKnob = dynamic_cast<String_Knob*>(appPTR->getKnobFactory()->createKnob("String", node, getParamLabel(this),1, Knob::NONE));
         if(mode == kOfxParamStringIsLabel){
             _stringKnob->setEnabled(false);
         }
@@ -920,7 +904,7 @@ void OfxStringInstance::triggerInstanceChanged() {
     if (_fileKnob) {
          _node->computePreviewImage();
     }
-    _node->onInstanceChanged(_originalName);
+    _node->onInstanceChanged(getName());
 }
 
 const QString OfxStringInstance::getRandomFrameName(int f) const{
