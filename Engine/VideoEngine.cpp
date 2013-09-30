@@ -221,14 +221,6 @@ bool VideoEngine::startEngine() {
         abortBeingProcessedLocker.relock();
         assert(!_abortBeingProcessed);
     }
-
-    /*Locking out other rendering tasks so 1 VideoEngine gets access to all
-     nodes.That means only 1 frame can be rendered at any time. We would have to copy
-     all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
-     running simultaneously which is not very efficient and adds the burden to synchronize
-     states of nodes etc...
-     To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
-    _model->getGeneralMutex()->lock();
     
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
     _timer->playState = RUNNING; /*activating the timer*/
@@ -346,6 +338,14 @@ void VideoEngine::run(){
                 continue;
             }
         }
+        
+        /*Locking out other rendering tasks so 1 VideoEngine gets access to all
+         nodes.That means only 1 frame can be rendered at any time. We would have to copy
+         all the nodes that have a varying state (such as Readers/Writers) for every VideoEngine
+         running simultaneously which is not very efficient and adds the burden to synchronize
+         states of nodes etc...
+         To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
+        _model->getGeneralMutex()->lock();
 
         /*beginRenderAction for all openFX nodes*/
         for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
