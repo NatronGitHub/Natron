@@ -1115,7 +1115,7 @@ _lastFrame(lastFrame){
     QString title = QString::number(0) + "% of " + _sequenceName;
     setMinimumWidth(fontMetrics().width(title)+100);
     setWindowTitle(QString::number(0) + "% of " + _sequenceName);
-    setModal(true);
+    setWindowFlags(Qt::WindowStaysOnTopHint);
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
     _mainLayout->setContentsMargins(5, 5, 0, 0);

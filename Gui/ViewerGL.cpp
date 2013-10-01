@@ -512,7 +512,7 @@ void ViewerGL::drawOverlay(){
         checkGLErrors();
     }
     if(_displayingImage){
-        //   _viewerTab->getInternalNode()->drawOverlays();
+        _viewerTab->getInternalNode()->drawOverlays();
     }
     //reseting color for next pass
     glColor4f(1., 1., 1., 1.);
