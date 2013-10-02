@@ -26,7 +26,7 @@
 
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
-
+using namespace std;
 using namespace Powiter;
 
 Powiter::OfxHost::OfxHost()
@@ -247,10 +247,16 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
         assert(p);
         if(p->getContexts().size() == 0)
             continue;
-        QString name = p->getDescriptor().getProps().getStringProperty(kOfxPropShortLabel).c_str();
+        QString name = p->getDescriptor().getLabel().c_str();
         if(name.isEmpty()){
-            name = p->getDescriptor().getProps().getStringProperty(kOfxPropLabel).c_str();
+            name = p->getDescriptor().getShortLabel().c_str();
         }
+       
+        if(name.isEmpty()){
+            name = p->getDescriptor().getLongLabel().c_str();
+        }
+
+        
         QString rawName = name;
         QString id = p->getIdentifier().c_str();
         QString grouping = p->getDescriptor().getPluginGrouping().c_str();

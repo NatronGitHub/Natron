@@ -275,7 +275,7 @@ bool Node::connectInput(Node* input,int inputNumber) {
 
 void Node::connectOutput(Node* output,int outputNumber ){
     assert(output);
-    disconnectOutput(output);
+    // disconnectOutput(output);
     _outputs.insert(make_pair(outputNumber,output));
 }
 
@@ -295,7 +295,7 @@ int Node::disconnectInput(Node* input) {
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
-            return -1;
+            continue;
         } else {
             int inputNumber = it->first;
             _inputs.erase(it);

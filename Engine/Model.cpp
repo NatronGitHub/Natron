@@ -169,10 +169,7 @@ QString Model::serializeNodeGraph() const{
             writer.writeAttribute("ClassName",n->className().c_str());
         }else{
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
-            QString name = ofxNode->getShortLabel().c_str();
-            if(name.isEmpty()){
-                name = ofxNode->effectInstance()->getLabel().c_str();
-            }
+            QString name = ofxNode->className().c_str();
             QStringList groups = ofxNode->getPluginGrouping();
             if (groups.size() >= 1) {
                 name.append("  [");

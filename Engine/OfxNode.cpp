@@ -159,12 +159,20 @@ bool OfxNode::isInputNode() const {
     return false;
 }
 
-std::string OfxNode::className() const { // should be const
-    assert(effectInstance());
-    std::string label = getShortLabel();
+static std::string getEffectInstanceLabel(Powiter::OfxImageEffectInstance* effect){
+    std::string label = effect->getLabel();
     if(label.empty()){
-        label = effectInstance()->getLabel();
+        label = effect->getShortLabel();
     }
+    if(label.empty()){
+        label = effect->getLongLabel();
+    }
+    return label;
+}
+
+std::string OfxNode::className() const { // should be const
+    assert(effect_);
+    std::string label = getEffectInstanceLabel(effect_);
     if (label!="Viewer") {
         return label;
     }else{
