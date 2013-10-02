@@ -85,7 +85,7 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 , _currentFrameInfos()
 , _startRenderFrameTime()
 {
-    
+    setTerminationEnabled();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
@@ -94,26 +94,27 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 }
 
 VideoEngine::~VideoEngine() {
-    {
-        QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
-        assert(_workerThreadsWatcher);
-        _workerThreadsWatcher->cancel();
-        _workerThreadsWatcher->waitForFinished();
-    }
+    abort();
+
+    //quitEngineThread();
+    
+    
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
         for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
             (*it)->setAborted(true);
         }
-        _abortedRequestedCondition.wakeOne();
+        _abortedRequestedCondition.wakeAll();
     }
     {
-        QMutexLocker locker(&_startMutex);
-        ++_startCount;
-        _startCondition.wakeOne();
+        QMutexLocker startLocker(&_startMutex);
+        _startCount = 1;
+        _startCondition.wakeAll();
     }
-    wait();
+//    _pboUnMappedCondition.wakeAll();
+//    while(!isFinished()){
+//    }
     delete _workerThreadsWatcher;
     
 }
@@ -196,7 +197,8 @@ void VideoEngine::render(OutputNode* output,
         _lastRequestedRunArgs._output = output;
     
     /*Starting or waking-up the thread*/
-    if (!isRunning()) {
+    QMutexLocker quitLocker(&_mustQuitMutex);
+    if (!isRunning() && !_mustQuit) {
         start(HighestPriority);
     } else {
         QMutexLocker locker(&_startMutex);
@@ -279,6 +281,9 @@ bool VideoEngine::startEngine() {
 
 }
 void VideoEngine::stopEngine() {
+    
+    //_model->getGeneralMutex()->unlock();
+
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
@@ -299,7 +304,6 @@ void VideoEngine::stopEngine() {
         _currentRunArgs._frameRequestsCount = 0;
         _timer->playState = PAUSE;
         _restart = true;
-        _model->getGeneralMutex()->unlock();
         {
             QMutexLocker workingLocker(&_workingMutex);
             _working = false;
@@ -326,6 +330,8 @@ void VideoEngine::run(){
              in which case we must quit the engine.*/
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
+                // _model->getGeneralMutex()->unlock();
+                //terminate();
                 return;
             }
         }
@@ -345,7 +351,7 @@ void VideoEngine::run(){
          running simultaneously which is not very efficient and adds the burden to synchronize
          states of nodes etc...
          To be lock free you can move a rendering task to a new project and start rendering in the new window.*/
-        _model->getGeneralMutex()->lock();
+        // _model->getGeneralMutex()->lock();
 
         /*beginRenderAction for all openFX nodes*/
         for (DAG::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
@@ -703,7 +709,7 @@ void VideoEngine::run(){
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
         }
-        _model->getGeneralMutex()->unlock();
+        //_model->getGeneralMutex()->unlock();
         
     } // end for(;;)
     
@@ -1026,8 +1032,8 @@ void VideoEngine::quitEngineThread(){
     }
     {
         QMutexLocker locker(&_startMutex);
-        ++_startCount;
-        _startCondition.wakeOne();
+        _startCount = 0;
+        _startCondition.wakeAll();
     }
 }
 
