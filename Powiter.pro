@@ -31,15 +31,16 @@ unix {
      eigen2:    PKGCONFIG += eigen2
      expat:     PKGCONFIG += expat
 } #unix
-
-linux-g++ {
+unix:!macx{
      QMAKE_CXXFLAGS_WARN_ON += -Wextra
-     LIBS += -lGLU -ldl
+     LIBS +=  -lGLU -ldl
 }
 
 debug{
 warning("Compiling in DEBUG mode.")
 }
+
+QMAKE_CXXFLAGS_RELEASE += -O3
 
 release:DESTDIR = "build_$$TARGET/release"
 debug:  DESTDIR = "build_$$TARGET/debug"
