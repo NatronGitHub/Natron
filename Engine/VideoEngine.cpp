@@ -584,6 +584,7 @@ void VideoEngine::run(){
         _currentFrameInfos._rows = rows;
         /*Read the data of all the files to read*/
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
+        
         /*Allocate the output buffer if the output is a viewer (i.e: allocating the PBO)*/
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             QMutexLocker locker(&_pboUnMappedMutex);
@@ -646,6 +647,7 @@ void VideoEngine::run(){
             _workerThreadsWatcher->waitForFinished();
             //_threadPool->waitForDone();
         }
+        
         {
             /*The frame is now fully rendered, if it is a viewer we want to stash it to the cache.*/
             QMutexLocker locker(&_abortedRequestedMutex);

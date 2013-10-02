@@ -353,7 +353,7 @@ public:
     Reader(Model* model);
 
     virtual ~Reader();
-
+    
     /**
      * @brief hasFrames
      * @return True if the files list contains at list a file.

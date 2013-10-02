@@ -3,7 +3,7 @@
 #OPEN-SOURCE,CROSSPLATFORM(OSX/LINUX/WINDOWS) , NODAL, COMPOSITING SOFTWARE UNDER
 MOZILLA PUBLIC LICENSE V2.0 (MPL) #
 
-Check out http://mrkepzie.github.io/Powiter_Core/ for a full presentation on what is Powiter and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in october)].
+Check out http://mrkepzie.github.io/Powiter/ for a full presentation on what is Powiter and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in october)].
 
 The development is going very well and most of the features are not pushed on the master branch yet.
 

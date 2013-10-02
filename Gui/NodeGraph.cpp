@@ -593,6 +593,8 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                     selected->refreshEdges();
                     created->refreshEdges();
                     refreshAllEdges();
+                }else{
+                    break;
                 }
             }
         }
