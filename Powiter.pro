@@ -5,7 +5,7 @@
 
 TARGET = Powiter
 TEMPLATE = app
-CONFIG += app warn_on
+CONFIG += app warn_on c++11
 CONFIG += moc rcc
 CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
 QT += gui core opengl
@@ -30,17 +30,41 @@ unix {
      freetype2: PKGCONFIG += freetype2
      eigen2:    PKGCONFIG += eigen2
      expat:     PKGCONFIG += expat
+     !macx {
+         LIBS +=  -lGLU -ldl
+     }
 } #unix
-unix:!macx{
-     QMAKE_CXXFLAGS_WARN_ON += -Wextra
-     LIBS +=  -lGLU -ldl
-}
+
 
 debug{
 warning("Compiling in DEBUG mode.")
 }
 
-QMAKE_CXXFLAGS_RELEASE += -O3
+# When compiler is GCC check for at least version 4.7
+*g++* {
+  QMAKE_CXXFLAGS_RELEASE += -O3
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
+  GCCVer = $$system($$QMAKE_CXX --version)
+  contains(GCCVer,[0-3]\\.[0-9]+.*) {
+    error("At least GCC 4.6 is required.")
+  } else {
+    contains(GCCVer,4\\.[0-5].*) {
+      error("At least GCC 4.6 is required.")
+    } else {
+      contains(GCCVer,4\\.6.*) {
+        QMAKE_CXXFLAGS += -std=c++0x
+      } else {
+        QMAKE_CXXFLAGS += -std=c++11
+      }
+    }
+  }
+}
+  
+*clang++* {
+  QMAKE_CXXFLAGS_RELEASE += -O3
+  QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
+  QMAKE_CXXFLAGS += -std=c++11
+}
 
 release:DESTDIR = "build_$$TARGET/release"
 debug:  DESTDIR = "build_$$TARGET/debug"
