@@ -456,6 +456,7 @@ void Gui::setupUi()
 	/*PROPERTIES DOCK*/
 	//======================
 	_propertiesPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,this);
+    _propertiesPane->setObjectName("Properties_Pane");
     _panes.push_back(_propertiesPane);
 	_propertiesScrollArea = new QScrollArea(_propertiesPane);
     _nodeGraphTab->_nodeGraphArea->setPropertyBinPtr(_propertiesScrollArea);
@@ -561,11 +562,15 @@ void Gui::loadStyleSheet(){
     }
 }
 
-void Gui::maximize(TabWidget* what) {
+void Gui::maximize(TabWidget* what,bool isViewerPane) {
     assert(what);
+    if(what->isFloating())
+        return;
     for (std::list<TabWidget*>::iterator it = _panes.begin(); it != _panes.end(); ++it) {
-        if (*it != what) {
+        if (*it != what && !(*it)->isFloating()) {
             (*it)->hide();
+            if(!isViewerPane && (*it)->objectName() == "Properties_Pane")
+                (*it)->show();
         }
     }
 }

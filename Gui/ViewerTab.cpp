@@ -576,7 +576,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
             _gui->minimize();
         }else{
             _maximized=true;
-            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()));
+            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()),true);
         }
     }else if(event->key() == Qt::Key_Y){
         _viewerChannels->setCurrentIndex(0);

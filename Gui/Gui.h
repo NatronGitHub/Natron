@@ -215,7 +215,7 @@ public:
     
     void closePane(TabWidget* what);
     
-    void maximize(TabWidget* what);
+    void maximize(TabWidget* what,bool isViewerPane);
     
     void minimize();
     

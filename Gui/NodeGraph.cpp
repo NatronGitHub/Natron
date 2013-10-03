@@ -449,7 +449,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
         
         if(!_maximized){
             _maximized = true;
-            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()));
+            _gui->maximize(dynamic_cast<TabWidget*>(parentWidget()),false);
         }else{
             _maximized = false;
             _gui->minimize();

@@ -95,26 +95,15 @@ VideoEngine::VideoEngine(Model* model,QObject* parent)
 
 VideoEngine::~VideoEngine() {
     abort();
-
-    //quitEngineThread();
-    
-    
-    {
-        QMutexLocker locker(&_abortedRequestedMutex);
-        ++_abortRequested;
-        for (DAG::DAGIterator it = _dag.begin(); it != _dag.end(); ++it) {
-            (*it)->setAborted(true);
-        }
-        _abortedRequestedCondition.wakeAll();
-    }
+    quitEngineThread();
     {
         QMutexLocker startLocker(&_startMutex);
         _startCount = 1;
         _startCondition.wakeAll();
     }
 //    _pboUnMappedCondition.wakeAll();
-//    while(!isFinished()){
-//    }
+    while(!isFinished()){
+    }
     delete _workerThreadsWatcher;
     
 }
@@ -586,6 +575,11 @@ void VideoEngine::run(){
         QtConcurrent::blockingMap(readers,boost::bind(metaReadData,_1,currentFrame));
         
         /*Allocate the output buffer if the output is a viewer (i.e: allocating the PBO)*/
+        {
+            QMutexLocker quitLocker(&_mustQuitMutex);
+            if(_mustQuit)
+                return;
+        }
         if (_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()) {
             QMutexLocker locker(&_pboUnMappedMutex);
             emit doFrameStorageAllocation();
@@ -593,6 +587,12 @@ void VideoEngine::run(){
                 _pboUnMappedCondition.wait(&_pboUnMappedMutex);
             }
             --_pboUnMappedCount;
+        }
+        
+        {
+            QMutexLocker quitLocker(&_mustQuitMutex);
+            if(_mustQuit)
+                return;
         }
         
         /*If the frame is not the same than the last frame, we clear the node cache because
@@ -731,13 +731,16 @@ void VideoEngine::engineLoop(){
         --_currentRunArgs._frameRequestsCount;
     }
     ++_currentRunArgs._frameRequestIndex;//incrementing the frame counter
-    if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
-        QMutexLocker locker(&_pboUnMappedMutex);
-        emit doUpdateViewer();
-        while(_pboUnMappedCount <= 0) {
-            _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+    {
+        QMutexLocker quitLocker(&_mustQuitMutex);
+        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && !_mustQuit){
+            QMutexLocker locker(&_pboUnMappedMutex);
+            emit doUpdateViewer();
+            while(_pboUnMappedCount <= 0) {
+                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+            }
+            --_pboUnMappedCount;
         }
-        --_pboUnMappedCount;
     }
     _currentRunArgs._fitToViewer = false;
     _currentRunArgs._recursiveCall = true;
@@ -1028,13 +1031,14 @@ bool VideoEngine::checkAndDisplayProgress(int y,int zoomedY){
     }
 }
 void VideoEngine::quitEngineThread(){
+    _pboUnMappedCondition.wakeAll();
     {
         QMutexLocker locker(&_mustQuitMutex);
         _mustQuit = true;
     }
     {
         QMutexLocker locker(&_startMutex);
-        _startCount = 0;
+        _startCount = 1;
         _startCondition.wakeAll();
     }
 }
