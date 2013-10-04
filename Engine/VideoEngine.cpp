@@ -439,12 +439,16 @@ void VideoEngine::run(){
         
         /*Read all the headers of all the files to read*/
         QList<bool> readHeaderResults = QtConcurrent::blockingMapped(readers,boost::bind(metaReadHeader,_1,currentFrame));
+        bool shouldLoop = false;
         for (int i = 0; i < readHeaderResults.size(); i++) {
             if (readHeaderResults.at(i) == false) {
                 stopEngine();
-                continue;
+                shouldLoop = true;
+                break;
             }
         }
+        if(shouldLoop)
+            continue;
         
         /*Validate the infos that has been read and pass 'em down the tree*/
         _dag.validate(true);
@@ -732,8 +736,12 @@ void VideoEngine::engineLoop(){
     }
     ++_currentRunArgs._frameRequestIndex;//incrementing the frame counter
     {
-        QMutexLocker quitLocker(&_mustQuitMutex);
-        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode() && !_mustQuit){
+        {
+            QMutexLocker quitLocker(&_mustQuitMutex);
+            if(_mustQuit)
+                return;
+        }
+        if(_dag.isOutputAViewer() && !_dag.isOutputAnOpenFXNode()){
             QMutexLocker locker(&_pboUnMappedMutex);
             emit doUpdateViewer();
             while(_pboUnMappedCount <= 0) {

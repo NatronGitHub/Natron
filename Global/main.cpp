@@ -8,12 +8,6 @@
 *
 */
 
- 
-
- 
-
-
-
 #ifdef _WIN32
 //#include <vld.h> //< visual studio memory leaks finder header
 #endif

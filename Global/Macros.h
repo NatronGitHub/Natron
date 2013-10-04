@@ -34,9 +34,6 @@
 #define POWITER_PREVIEW_HEIGHT 48
 #define POWITER_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
 
-// debug flag
-#define POWITER_DEBUG
-
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by POWITER)
 
 /* COMPILER() - the compiler being used to build the project */

@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat debug
+CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -35,13 +35,13 @@ unix {
      }
 } #unix
 
-
-debug{
+CONFIG(debug, debug|release){
 warning("Compiling in DEBUG mode.")
+    DEFINES += POWITER_DEBUG
 }
 
 # When compiler is GCC check for at least version 4.7
-*g++* {
+*g++*{
   QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   GCCVer = $$system($$QMAKE_CXX --version)
@@ -66,8 +66,12 @@ warning("Compiling in DEBUG mode.")
   QMAKE_CXXFLAGS += -std=c++11
 }
 
-release:DESTDIR = "build_$$TARGET/release"
-debug:  DESTDIR = "build_$$TARGET/debug"
+CONFIG(release, debug|release){
+    release:DESTDIR = "build_$$TARGET/release"
+}
+CONFIG(debug, debug|release){
+    debug:  DESTDIR = "build_$$TARGET/debug"
+}
 
 OBJECTS_DIR = "$$DESTDIR/.obj"
 

@@ -120,13 +120,13 @@ private:
 
 void KnobUndoCommand::undo(){
     _knob->setValue(_oldValue);
-    
+    _knob->getKnob()->getNode()->getModel()->getApp()->triggerAutoSave(); // should be a signal
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
 void KnobUndoCommand::redo(){
     _knob->setValue(_newValue);
-    
+    _knob->getKnob()->getNode()->getModel()->getApp()->triggerAutoSave(); // should be a signal
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
