@@ -217,11 +217,14 @@ Writer::Buffer::~Buffer(){
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/
     Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
-    if(!isValid) return false;
-    
+    if(!isValid) {
+        return false;
+    }
     /*checking if channels are supported*/
     pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    assert(func.second);
     Write* write = func.second(this);
+    assert(write);
     try {
         write->supportsChannelsForWriting(_requestedChannels);
     } catch (const std::exception &e) {
