@@ -232,7 +232,7 @@ public slots:
     
 private:
     
-    void destroyTab(QWidget* tab);
+    bool destroyTab(QWidget* tab) WARN_UNUSED_RETURN;
 
 };
 

@@ -119,25 +119,31 @@ _drawDropRect(false){
 TabWidget::~TabWidget(){
 }
 
-void TabWidget::destroyTabs(){
+void TabWidget::destroyTabs() {
     
     for (U32 i = 0; i < _tabs.size(); ++i) {
-        destroyTab(_tabs[i]);
+        bool mustDelete = destroyTab(_tabs[i]);
+        if (mustDelete) {
+            delete _tabs[i];
+            _tabs[i] = NULL;
+        }
     }
 }
-void TabWidget::destroyTab(QWidget* tab){
+
+bool TabWidget::destroyTab(QWidget* tab) {
     /*special care is taken if this is a viewer: we also
      need to delete the viewer node.*/
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(tab);
     if (isViewer) {
         _gui->removeViewerTab(isViewer,false);
-    }else if(tab->objectName() != "DAG_GUI" && tab->objectName() != "Properties_GUI"){
+    } else if(tab->objectName() != "DAG_GUI" && tab->objectName() != "Properties_GUI") {
         /*Otherwise delete it normally*/
-        delete tab;
-    }else{
+        //delete tab;
+        return true; // must be deleted
+    } else {
         tab->setVisible(false);
     }
-    
+    return false; // must not be deleted
 }
 
 void TabWidget::createMenu(){
@@ -240,14 +246,26 @@ void TabWidget::floatCurrentWidget(){
 }
 
 void TabWidget::closeCurrentWidget(){
-    if(!_currentWidget) return;
-    destroyTab(_currentWidget);
+    if(!_currentWidget) {
+        return;
+    }
     removeTab(_currentWidget);
+    bool mustDelete = destroyTab(_currentWidget);
+    if (mustDelete) {
+        delete _currentWidget;
+        _currentWidget = NULL;
+    }
 }
 void TabWidget::closeTab(int index){
     assert(index < (int)_tabs.size());
-    destroyTab(_tabs[index]);
-    removeTab(index);
+    QWidget *tab = _tabs[index];
+    assert(_tabs[index]);
+    removeTab(tab);
+    bool mustDelete = destroyTab(tab);
+    if (mustDelete) {
+        delete tab;
+        // tab was already removed from the _tabs array by removeTab()
+    }
 }
 
 void TabWidget::movePropertiesBinHere(){
