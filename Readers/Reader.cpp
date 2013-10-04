@@ -193,18 +193,18 @@ void Reader::readCurrentData(int current_frame){
 
 
 void Reader::showFilePreview(){
-#warning disabling preview for demos as it is currently un-safe especially with saved projects.
+#warning preview is un-safe especially with saved projects.
     _buffer.clear();
-//    fitFrameToViewer(false);
-//    {
-//        QMutexLocker locker(&_readMutex);
-//        if(readCurrentHeader(firstFrame())){
-//            readCurrentData(firstFrame());
-//            assert(_readHandle);
-//            _readHandle->make_preview();
-//        }
-//    }
-//    _buffer.clear();
+    fitFrameToViewer(false);
+    {
+        QMutexLocker locker(&_readMutex);
+        if(readCurrentHeader(firstFrame())){
+            readCurrentData(firstFrame());
+            assert(_readHandle);
+            _readHandle->make_preview();
+        }
+    }
+    _buffer.clear();
 }
 
 
