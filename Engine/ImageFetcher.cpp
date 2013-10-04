@@ -37,7 +37,7 @@ ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet ch
 , _sequence()
 , _results(0)
 {
-    for (int i = y; i <= t; ++i) {
+    for (int i = y; i < t; ++i) {
         _sequence.push_back(i);
     }
 }

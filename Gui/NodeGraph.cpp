@@ -847,7 +847,7 @@ void RemoveCommand::redo(){
     _node->getNode()->deactivate();
     
     _graph->scene()->update();
-    setText(QObject::tr("Add %1")
+    setText(QObject::tr("Remove %1")
             .arg(_node->getNode()->getName().c_str()));
     
 }

@@ -246,7 +246,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             assert(clip);
             return clip->getImage(time, optionalBounds);
         } else {
-            ImageFetcher srcImg(input, (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2)-1, (int)std::ceil(roi.y2)-1,Mask_RGBA);
+            ImageFetcher srcImg(input, (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2), (int)std::ceil(roi.y2),Mask_RGBA);
             srcImg.claimInterest(true);
             // all rows are locked
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);

@@ -447,7 +447,7 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
 }
 
 void NodeGui::activate(){
-    scene()->addItem(this);
+    show();
     setActive(true);
     _dag->restoreFromTrash(this);
     for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
@@ -479,7 +479,7 @@ void NodeGui::activate(){
 }
 
 void NodeGui::deactivate(){
-    scene()->removeItem(this);
+    hide();
     setActive(false);
     _dag->moveToTrash(this);
     for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
