@@ -175,7 +175,7 @@ class Knob : public QObject
     Q_OBJECT
     
 public:
-    enum Knob_Flags{NONE=0x0,RGBA_STYLE_SCALAR=0x2,NO_ALPHA=0x4};
+    //enum Knob_Flags{NONE=0x0,RGBA_STYLE_SCALAR=0x2,NO_ALPHA=0x4};
     
     
     Knob(Node* node,const std::string& description,int dimension = 1,Knob_Mask flags = 0);
@@ -330,7 +330,7 @@ private:
     std::string _tooltipHint;
 };
 
-std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
+//std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
 
 /******************************FILE_KNOB**************************************/
 
