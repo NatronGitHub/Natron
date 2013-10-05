@@ -526,28 +526,36 @@ void ViewerTab::startBackward(bool b){
     }
 }
 void ViewerTab::previousFrame(){
+    abort();
     seek(_viewerNode->currentFrame()-1);
 }
 void ViewerTab::nextFrame(){
+    abort();
     seek(_viewerNode->currentFrame()+1);
 }
 void ViewerTab::previousIncrement(){
+    abort();
     seek(_viewerNode->currentFrame()-incrementSpinBox->value());
 }
 void ViewerTab::nextIncrement(){
+    abort();
     seek(_viewerNode->currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
+    abort();
     seek(_viewerNode->firstFrame());
 }
 void ViewerTab::lastFrame(){
+    abort();
     seek(_viewerNode->lastFrame());
 }
 void ViewerTab::seek(int f){
+    abort();
     _viewerNode->getVideoEngine()->seek(f);
 }
 
 void ViewerTab::centerViewer(){
+    abort();
     if(viewer->displayingImage()){
         _viewerNode->refreshAndContinueRender(true);
 
@@ -558,6 +566,7 @@ void ViewerTab::centerViewer(){
 }
 
 void ViewerTab::refresh(){
+    abort();
     _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
     _viewerNode->updateDAGAndRender();
 }
