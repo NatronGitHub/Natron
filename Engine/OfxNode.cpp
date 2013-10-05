@@ -390,9 +390,10 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
     OfxPointD renderScale;
     renderScale.x = renderScale.y = 1.0;
     stat = effectInstance()->paramInstanceChangedAction(paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
 
 

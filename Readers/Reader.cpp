@@ -81,11 +81,11 @@ void Reader::initKnobs(){
 
 
 
-bool Reader::readCurrentHeader(int current_frame){
+bool Reader::readCurrentHeader(int current_frame) {
     QString filename = _fileKnob->getRandomFrameName(current_frame);
     
     /*the read handle used to decode the frame*/
-    Read* _read = 0;
+    Read* decoderReadHandle = 0;
     
     QString extension;
     for (int i = filename.size() - 1; i >= 0; --i) {
@@ -97,15 +97,15 @@ bool Reader::readCurrentHeader(int current_frame){
     }
     
     Powiter::LibraryBinary* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
-    if(!decoder){
+    if (!decoder) {
         cout << "ERROR: Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
         return false;
     }
 
     pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
-    if(func.first){
-        _read = func.second(this);
-    }else{
+    if (func.first) {
+        decoderReadHandle = func.second(this);
+    } else {
         cout << "ERROR: Failed to create the decoder for " << getName()  << ",something is wrong in the plugin."<< endl;
         return false;
     }
@@ -115,19 +115,20 @@ bool Reader::readCurrentHeader(int current_frame){
     std::vector<int> rows;
     /*the slContext is useful to check the equality of 2 scan-line based frames.*/
     Reader::Buffer::ScanLineContext *slContext = 0;
-    if(_read->supportsScanLine()){
-        _read->readHeader(filename, false);
+    assert(decoderReadHandle);
+    if (decoderReadHandle->supportsScanLine()) {
+        decoderReadHandle->readHeader(filename, false);
         slContext = new Reader::Buffer::ScanLineContext;
         /*TEMPORARY FIX while OpenFX nodes still require the full RoD. This would let the Reads work
          not properly since they need more rows than just what the viewer wants to display. */
 //        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
-//            const Format &dispW = _read->getReaderInfo()->displayWindow();
+//            const Format &dispW = decoderReadHandle->getReaderInfo()->displayWindow();
 //            if(_fitFrameToViewer){
 //                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
 //            }
 //            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
 //        }else{
-            const Box2D& dataW = _read->readerInfo().dataWindow();
+            const Box2D& dataW = decoderReadHandle->readerInfo().dataWindow();
             for (int i = dataW.bottom() ; i < dataW.top(); ++i) {
                 rows.push_back(i);
             }            
@@ -136,32 +137,34 @@ bool Reader::readCurrentHeader(int current_frame){
     }
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
     Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
-    if(found !=_buffer.end()){
+    if (found !=_buffer.end()) {
         assert(*found);
-        if(!(*found)->supportsScanLines()){
-            delete _read;
-        }else{
+        if (!(*found)->supportsScanLines() || !decoderReadHandle->supportsScanLine()) {
+            delete decoderReadHandle;
+        } else {
             Reader::Buffer::ScanLineDescriptor *slDesc = static_cast<Reader::Buffer::ScanLineDescriptor*>(*found);
             
             /*we found a buffered frame with a scanline context. We can now compute
              the intersection between the current scan-line context and the one found
              to find out which rows we need to compute*/
+            assert(slDesc->_slContext);
+            assert(decoderReadHandle->supportsScanLine() && slContext);
             slDesc->_slContext->computeIntersectionAndSetRowsToRead(slContext->getRows());
-            delete _read;
+            delete decoderReadHandle;
         }
         assert((*found)->_readHandle);
         _info = (*found)->_readHandle->readerInfo();
         _readHandle = (*found)->_readHandle;
-    }else{
-        _read->initializeColorSpace();
-        if(_read->supportsScanLine()){
-            _buffer.insert(new Reader::Buffer::ScanLineDescriptor(_read,filenameStr,slContext));
-        }else{
-            _read->readHeader(filename, false);
-            _buffer.insert(new Reader::Buffer::FullFrameDescriptor(_read,filenameStr));
+    } else {
+        decoderReadHandle->initializeColorSpace();
+        if (decoderReadHandle->supportsScanLine()) {
+            _buffer.insert(new Reader::Buffer::ScanLineDescriptor(decoderReadHandle,filenameStr,slContext));
+        } else {
+            decoderReadHandle->readHeader(filename, false);
+            _buffer.insert(new Reader::Buffer::FullFrameDescriptor(decoderReadHandle,filenameStr));
         }
-        _info = _read->readerInfo();
-        _readHandle = _read;
+        _info = decoderReadHandle->readerInfo();
+        _readHandle = decoderReadHandle;
     }
     return true;
 }

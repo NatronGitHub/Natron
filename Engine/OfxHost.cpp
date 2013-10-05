@@ -196,7 +196,7 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
     } else {
         std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
         delete node;
-        node = NULL;
+        return NULL;
     }
     
     /*must be called AFTER createInstanceAction!*/

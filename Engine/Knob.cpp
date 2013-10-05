@@ -29,19 +29,19 @@
 using namespace std;
 using namespace Powiter;
 
-std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
-    unsigned int i=0x1;
-    std::vector<Knob::Knob_Flags> flags;
-    if(m!=0){
-        while(i<0x4){
-            if((m & i)==i){
-                flags.push_back((Knob::Knob_Flags)i);
-            }
-            i <<= 2;
-        }
-    }
-    return flags;
-}
+//std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
+//    unsigned int i=0x1;
+//    std::vector<Knob::Knob_Flags> flags;
+//    if(m!=0){
+//        while(i<0x4){
+//            if((m & i)==i){
+//                flags.push_back((Knob::Knob_Flags)i);
+//            }
+//            i <<= 2;
+//        }
+//    }
+//    return flags;
+//}
 
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
