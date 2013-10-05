@@ -105,7 +105,7 @@ void FrameEntry::writeToXml(QXmlStreamWriter* writer){
     writer->writeAttribute("x",QString::number(_textureRect.x));
     writer->writeAttribute("y",QString::number(_textureRect.y));
     writer->writeAttribute("r",QString::number(_textureRect.r));
-    writer->writeAttribute("t",QString::number(_textureRect.y));
+    writer->writeAttribute("t",QString::number(_textureRect.t));
     writer->writeAttribute("w",QString::number(_textureRect.w));
     writer->writeAttribute("h",QString::number(_textureRect.h));
     writer->writeEndElement();
@@ -140,12 +140,14 @@ FrameEntry* FrameEntry::entryFromXml(QXmlStreamReader* reader){
         }
         QXmlStreamReader::TokenType token = reader->readNext();
         int i =0;
-        while(token == QXmlStreamReader::StartElement && i < 2){
-            if (reader->name() == "ReaderInfo") {
+        while(i < 2){
+            if (token == QXmlStreamReader::StartElement && reader->name() == "ReaderInfo") {
                 info = ReaderInfo::fromXml(reader);
                 if(!info)
                     return NULL;
-            }else if(reader->name() == "TextureRect"){
+                ++i;
+
+            }else if(token == QXmlStreamReader::StartElement && reader->name() == "TextureRect"){
                 QXmlStreamAttributes textureAttributes = reader->attributes();
                 if(textureAttributes.hasAttribute("x")){
                     xStr = textureAttributes.value("x").toString();
@@ -177,8 +179,11 @@ FrameEntry* FrameEntry::entryFromXml(QXmlStreamReader* reader){
                 }else{
                     return NULL;
                 }
+                cout << endl;
+                ++i;
+
             }
-            ++i;
+            token = reader->readNext();
         }
     }
     

@@ -323,7 +323,6 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
-    Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
     
     QWidget* container = new QWidget(layout->parentWidget());
@@ -334,7 +333,6 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     Int_Knob* intKnob = dynamic_cast<Int_Knob*>(_knob);
     assert(intKnob);
     
-    QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
     QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
     const std::vector<int>& maximums = intKnob->getMaximums();
@@ -349,13 +347,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel* subDesc = 0;
         if(dim != 1){
-            QString subLabelDesc;
-            if(flags & Knob::RGBA_STYLE_SCALAR){
-                subLabelDesc = subLabels_RGBA[i];
-            }else{
-                subLabelDesc = subLabels_XYZW[i];
-            }
-            subDesc = new QLabel(subLabelDesc,boxContainer);
+            subDesc = new QLabel(subLabels_XYZW[i],boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox* box = new SpinBox(layout->parentWidget(),SpinBox::INT_SPINBOX);
@@ -542,10 +534,8 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     
     Double_Knob* dbl_knob = dynamic_cast<Double_Knob*>(_knob);
     assert(dbl_knob);
-    Knob_Mask flags = _knob->getFlags();
     int dim = _knob->getDimension();
     
-    QString subLabels_RGBA[] = {"r:","g:","b:","a:"};
     QString subLabels_XYZW[] = {"x:","y:","z:","w:"};
     
     const std::vector<double>& maximums = dbl_knob->getMaximums();
@@ -562,13 +552,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         QLabel* subDesc = 0;
         if(dim != 1){
-            QString subLabelDesc;
-            if(flags & Knob::RGBA_STYLE_SCALAR){
-                subLabelDesc = subLabels_RGBA[i];
-            }else{
-                subLabelDesc = subLabels_XYZW[i];
-            }
-            subDesc = new QLabel(subLabelDesc,boxContainer);
+            subDesc = new QLabel(subLabels_XYZW[i],boxContainer);
             boxContainerLayout->addWidget(subDesc);
         }
         SpinBox* box = new SpinBox(layout->parentWidget(),SpinBox::DOUBLE_SPINBOX);
@@ -896,9 +880,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     
     layout->addWidget(mainContainer,row,1,Qt::AlignLeft);
     
-    
-    Knob_Mask flags = _knob->getFlags();
-    if (flags  & Knob::NO_ALPHA) {
+    if (!dynamic_cast<RGBA_Knob*>(_knob)->isAlphaEnabled()) {
         disablePermantlyAlpha();
     }
 

@@ -393,6 +393,11 @@ void ReaderInfo::writeToXml(QXmlStreamWriter* writer){
     writer->writeAttribute("FirstFrame",QString::number(firstFrame()));
     writer->writeAttribute("LastFrame",QString::number(lastFrame()));
     writer->writeAttribute("RgbMode",QString::number(rgbMode()));
+    QString chans;
+    foreachChannels(chan, channels()){
+        chans += getChannelName(chan).c_str() + QString("|");
+    }
+    writer->writeAttribute("Channels",chans);
     
     const Format& dispW = displayWindow();
     writer->writeStartElement("DisplayWindow");
@@ -409,12 +414,8 @@ void ReaderInfo::writeToXml(QXmlStreamWriter* writer){
     writer->writeAttribute("bottom",QString::number(dataW.bottom()));
     writer->writeAttribute("right",QString::number(dataW.right()));
     writer->writeAttribute("top",QString::number(dataW.top()));
+    writer->writeEndElement();
     
-    QString chans;
-    foreachChannels(chan, channels()){
-        chans += getChannelName(chan).c_str() + QString("|");
-    }
-    writer->writeAttribute("Channels",chans);
 }
 
 ReaderInfo* ReaderInfo::fromXml(QXmlStreamReader* reader){
@@ -429,7 +430,7 @@ ReaderInfo* ReaderInfo::fromXml(QXmlStreamReader* reader){
         return NULL;
     }
     if(attributes.hasAttribute("FirstFrame")){
-        currentFrameName = attributes.value("FirstFrame").toString();
+        firstFrameStr = attributes.value("FirstFrame").toString();
     }else{
         return NULL;
     }
@@ -450,55 +451,58 @@ ReaderInfo* ReaderInfo::fromXml(QXmlStreamReader* reader){
     }
     QXmlStreamReader::TokenType token = reader->readNext();
     int i = 0;
-    while(token == QXmlStreamReader::StartElement && i < 2){
-        if(reader->name() == "DisplayWindow"){
+    while(i < 2){
+        if(token == QXmlStreamReader::StartElement && reader->name() == "DisplayWindow"){
             QXmlStreamAttributes dispWAtts = reader->attributes();
-            if(attributes.hasAttribute("left")){
-                frmtXStr = attributes.value("left").toString();
+            if(dispWAtts.hasAttribute("left")){
+                frmtXStr = dispWAtts.value("left").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("bottom")){
-                frmtYStr = attributes.value("bottom").toString();
+            if(dispWAtts.hasAttribute("bottom")){
+                frmtYStr = dispWAtts.value("bottom").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("right")){
-                frmtRStr = attributes.value("right").toString();
+            if(dispWAtts.hasAttribute("right")){
+                frmtRStr = dispWAtts.value("right").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("top")){
-                frmtTStr = attributes.value("top").toString();
+            if(dispWAtts.hasAttribute("top")){
+                frmtTStr = dispWAtts.value("top").toString();
             }else{
                 return NULL;
             }
-            
+            ++i;
 
-        }else if(reader->name() == "DataWindow"){
+
+        }else if(token == QXmlStreamReader::StartElement && reader->name() == "DataWindow"){
             QXmlStreamAttributes dataWAtts = reader->attributes();
-            if(attributes.hasAttribute("left")){
-                bboxXStr = attributes.value("left").toString();
+            if(dataWAtts.hasAttribute("left")){
+                bboxXStr = dataWAtts.value("left").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("bottom")){
-                bboxYStr = attributes.value("bottom").toString();
+            if(dataWAtts.hasAttribute("bottom")){
+                bboxYStr = dataWAtts.value("bottom").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("right")){
-                bboxRStr = attributes.value("right").toString();
+            if(dataWAtts.hasAttribute("right")){
+                bboxRStr = dataWAtts.value("right").toString();
             }else{
                 return NULL;
             }
-            if(attributes.hasAttribute("top")){
-                bboxTStr = attributes.value("top").toString();
+            if(dataWAtts.hasAttribute("top")){
+                bboxTStr = dataWAtts.value("top").toString();
             }else{
                 return NULL;
             }
+            ++i;
+
         }
-        ++i;
+        token = reader->readNext();
     }
 
     ReaderInfo* out = new ReaderInfo;

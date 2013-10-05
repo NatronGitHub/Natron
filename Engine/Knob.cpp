@@ -29,24 +29,10 @@
 using namespace std;
 using namespace Powiter;
 
-//std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask&m) {
-//    unsigned int i=0x1;
-//    std::vector<Knob::Knob_Flags> flags;
-//    if(m!=0){
-//        while(i<0x4){
-//            if((m & i)==i){
-//                flags.push_back((Knob::Knob_Flags)i);
-//            }
-//            i <<= 2;
-//        }
-//    }
-//    return flags;
-//}
-
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension,Knob_Mask flags);
+typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension);
 
 typedef KnobGui* (*KnobGuiBuilder)(Knob* knob);
 
@@ -71,7 +57,7 @@ void KnobFactory::loadKnobPlugins(){
         if (plugins[i]->loadFunctions(functions)) {
             pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if(builder.first){
-                Knob* knob = builder.second(NULL,"",1,0);
+                Knob* knob = builder.second(NULL,"",1);
                 _loadedKnobs.insert(make_pair(knob->name(), plugins[i]));
                 delete knob;
             }
@@ -84,7 +70,7 @@ void KnobFactory::loadKnobPlugins(){
 
 void KnobFactory::loadBultinKnobs(){
     std::string stub;
-    Knob* fileKnob = File_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* fileKnob = File_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> FILEfunctions;
     FILEfunctions.insert(make_pair("BuildKnob",(void*)&File_Knob::BuildKnob));
@@ -93,7 +79,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(fileKnob->name(),FILEKnobPlugin));
     delete fileKnob;
     
-    Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> INTfunctions;
     INTfunctions.insert(make_pair("BuildKnob",(void*)&Int_Knob::BuildKnob));
@@ -103,7 +89,7 @@ void KnobFactory::loadBultinKnobs(){
     delete intKnob;
     
     
-    Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* doubleKnob = Double_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> DOUBLEfunctions;
     DOUBLEfunctions.insert(make_pair("BuildKnob",(void*)&Double_Knob::BuildKnob));
@@ -112,7 +98,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
     delete doubleKnob;
     
-    Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> BOOLfunctions;
     BOOLfunctions.insert(make_pair("BuildKnob",(void*)&Bool_Knob::BuildKnob));
@@ -121,7 +107,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(boolKnob->name(),BOOLKnobPlugin));
     delete boolKnob;
     
-    Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> BUTTONfunctions;
     BUTTONfunctions.insert(make_pair("BuildKnob",(void*)&Button_Knob::BuildKnob));
@@ -130,7 +116,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(buttonKnob->name(),BUTTONKnobPlugin));
     delete buttonKnob;
     
-    Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> OFfunctions;
     OFfunctions.insert(make_pair("BuildKnob",(void*)&OutputFile_Knob::BuildKnob));
@@ -139,7 +125,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(outputFileKnob->name(),OUTPUTFILEKnobPlugin));
     delete outputFileKnob;
     
-    Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> CBBfunctions;
     CBBfunctions.insert(make_pair("BuildKnob",(void*)&ComboBox_Knob::BuildKnob));
@@ -149,7 +135,7 @@ void KnobFactory::loadBultinKnobs(){
     delete comboBoxKnob;
     
     
-    Knob* separatorKnob = Separator_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* separatorKnob = Separator_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> Sepfunctions;
     Sepfunctions.insert(make_pair("BuildKnob",(void*)&Separator_Knob::BuildKnob));
@@ -158,7 +144,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
     delete separatorKnob;
     
-    Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> Grpfunctions;
     Grpfunctions.insert(make_pair("BuildKnob",(void*)&Group_Knob::BuildKnob));
@@ -167,7 +153,7 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
     delete groupKnob;
     
-    Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> RGBAfunctions;
     RGBAfunctions.insert(make_pair("BuildKnob",(void*)&RGBA_Knob::BuildKnob));
@@ -177,7 +163,7 @@ void KnobFactory::loadBultinKnobs(){
     delete rgbaKnob;
     
     
-    Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> TABfunctions;
     TABfunctions.insert(make_pair("BuildKnob",(void*)&Tab_Knob::BuildKnob));
@@ -185,7 +171,7 @@ void KnobFactory::loadBultinKnobs(){
     LibraryBinary *TABKnobPlugin = new LibraryBinary(TABfunctions);
     _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
     delete tabKnob;
-    Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1,0);
+    Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> STRfunctions;
     STRfunctions.insert(make_pair("BuildKnob",(void*)&String_Knob::BuildKnob));
@@ -198,7 +184,7 @@ void KnobFactory::loadBultinKnobs(){
 }
 
 
-Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension, Knob_Mask flags){
+Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension){
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(name);
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -208,7 +194,7 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
             return NULL;
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        Knob* knob = builder(node,description,dimension,flags);
+        Knob* knob = builder(node,description,dimension);
         if(!knob){
             return NULL;
         }
@@ -236,12 +222,11 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob){
 /***********************************KNOB BASE******************************************/
 
 
-Knob::Knob(Node* node,const std::string& description,int dimension,Knob_Mask flags):
+Knob::Knob(Node* node,const std::string& description,int dimension):
 _node(node),
 _value(),
 _dimension(dimension),
 _description(description),
-_flags(flags),
 _newLine(true),
 _itemSpacing(0),
 _parentKnob(NULL),
@@ -253,10 +238,6 @@ _canUndo(true)
 }
 
 Knob::~Knob(){
-}
-
-Knob_Mask Knob::getFlags() const{
-    return _flags;
 }
 
 void Knob::startRendering(bool initViewer){
@@ -602,8 +583,8 @@ void Double_Knob::tryStartRendering(){
 }
 /***********************************BUTTON_KNOB*****************************************/
 
-Button_Knob::Button_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags):
-Knob(node,description,dimension,flags)
+Button_Knob::Button_Knob(Node* node, const std::string& description,int dimension):
+Knob(node,description,dimension)
 {
     //QObject::connect(this,SIGNAL(valueChanged(const Variant&)),this,SLOT(connectToSlot(const Variant&)));
 }

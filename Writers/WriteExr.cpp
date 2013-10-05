@@ -144,11 +144,10 @@ std::vector<std::string> WriteExr::fileTypesEncoded() const {
 void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory()->createKnob("Separator", _op, separatorDesc,1, Knob::NONE));
+    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory()->createKnob("Separator", _op, separatorDesc));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,
-                                                                            compressionCBDesc, 1,Knob::NONE));
+    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op, compressionCBDesc));
     std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
         list.push_back(EXR::compressionNames[i].c_str());
@@ -157,8 +156,7 @@ void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,
-                                                                      depthCBDesc,1, Knob::NONE));
+    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,depthCBDesc));
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
         list.push_back(EXR::depthNames[i].c_str());

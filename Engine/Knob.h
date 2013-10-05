@@ -140,7 +140,6 @@ namespace Powiter {
     class LibraryBinary;
 }
 
-typedef unsigned int Knob_Mask;
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
 class KnobGui;
@@ -155,7 +154,7 @@ public:
     
     const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
     
-    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1, Knob_Mask flags = 0);
+    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1);
     
     KnobGui* createGuiForKnob(Knob* knob);
     
@@ -174,11 +173,9 @@ class Knob : public QObject
 {
     Q_OBJECT
     
-public:
-    //enum Knob_Flags{NONE=0x0,RGBA_STYLE_SCALAR=0x2,NO_ALPHA=0x4};
+public:    
     
-    
-    Knob(Node* node,const std::string& description,int dimension = 1,Knob_Mask flags = 0);
+    Knob(Node* node,const std::string& description,int dimension = 1);
     
     virtual ~Knob();
     
@@ -189,8 +186,6 @@ public:
     Node* getNode() const { return _node; }
     
     int getDimension() const {return _dimension;}
-    
-    Knob_Mask getFlags() const;
     
     /*Must return the name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
@@ -318,7 +313,6 @@ protected:
 private:
     
     std::string _description;
-    Knob_Mask _flags;
     
     bool _newLine;
     int _itemSpacing;
@@ -341,12 +335,12 @@ class File_Knob:public Knob
     std::map<int,QString> _filesSequence;///mapping <frameNumber,fileName>
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new File_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new File_Knob(node,description,dimension);
     }
     
-    File_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    File_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -411,12 +405,12 @@ class OutputFile_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new OutputFile_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new OutputFile_Knob(node,description,dimension);
     }
     
-    OutputFile_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    OutputFile_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {}
     
     virtual void fillHashVector(){
@@ -457,12 +451,12 @@ class Int_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Int_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Int_Knob(node,description,dimension);
     }
     
-    Int_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    Int_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -630,12 +624,12 @@ class Bool_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Bool_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Bool_Knob(node,description,dimension);
     }
     
-    Bool_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    Bool_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -665,12 +659,12 @@ class Double_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Double_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Double_Knob(node,description,dimension);
     }
     
-    Double_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    Double_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -855,11 +849,11 @@ class Button_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Button_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Button_Knob(node,description,dimension);
     }
     
-    Button_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0);
+    Button_Knob(Node* node, const std::string& description,int dimension);
     
     virtual void fillHashVector(){}
     
@@ -887,12 +881,12 @@ class ComboBox_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new ComboBox_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new ComboBox_Knob(node,description,dimension);
     }
     
-    ComboBox_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    ComboBox_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {
         
     }
@@ -930,12 +924,12 @@ class Separator_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Separator_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Separator_Knob(node,description,dimension);
     }
     
-    Separator_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags){
+    Separator_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension){
         
     }
     
@@ -957,12 +951,12 @@ class RGBA_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new RGBA_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new RGBA_Knob(node,description,dimension);
     }
     
-    RGBA_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    RGBA_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension),_alphaEnabled(true)
     {
         
     }
@@ -975,6 +969,9 @@ public:
     
     QVector4D getValues() const {return _value.value<QVector4D>();}
     
+    void setAlphaEnabled(bool enabled) { _alphaEnabled = enabled; }
+    
+    bool isAlphaEnabled() const { return _alphaEnabled; }
     
 protected:
     
@@ -986,6 +983,8 @@ protected:
     
     
 private:
+    
+    bool _alphaEnabled;
     QStringList _entries;
 };
 
@@ -994,12 +993,12 @@ class String_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new String_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new String_Knob(node,description,dimension);
     }
     
-    String_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags){
+    String_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension){
         
     }
     
@@ -1031,12 +1030,12 @@ class Group_Knob:public Knob
     std::vector<Knob*> _children;
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Group_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Group_Knob(node,description,dimension);
     }
     
-    Group_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags)
+    Group_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension)
     {
         
     }
@@ -1065,12 +1064,12 @@ class Tab_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension, Knob_Mask flags){
-        return new Tab_Knob(node,description,dimension,flags);
+    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+        return new Tab_Knob(node,description,dimension);
     }
     
-    Tab_Knob(Node* node, const std::string& description,int dimension, Knob_Mask flags=0):
-    Knob(node,description,dimension,flags){
+    Tab_Knob(Node* node, const std::string& description,int dimension):
+    Knob(node,description,dimension){
         
     }
     

@@ -541,6 +541,7 @@ AppManager::AppManager()
 }
 
 AppManager::~AppManager(){
+    _viewerCache->save();
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -556,7 +557,6 @@ AppManager::~AppManager(){
     }
     delete _knobFactory;
     delete _nodeCache;
-    _viewerCache->save();
     delete _viewerCache;
 }
 void AppManager::quit(){
