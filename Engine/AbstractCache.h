@@ -15,12 +15,15 @@
 #include <vector>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
+
 #include <boost/utility.hpp>
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/LRUcache.h"
 
+class QXmlStreamWriter;
+class QXmlStreamReader;
 class MemoryFile;
 /* Abstract class/interface for cache entries. This can be overloaded to fit parameters you'd
  like to track like offset in files, list of elements etc...
@@ -106,9 +109,11 @@ public:
         return _mappedFile;
     }
 
-    /*Must print a string representing all the data, terminated by a
-     new line character.*/
-    virtual std::string printOut() = 0;
+    /*Must print in the xml writer the attributes and values
+     of the cache entry. You must not call writeBeginDocument() or writeEndDocument()
+     on the writer and you must close any bracket you opened. The state
+     of the writer should be the same as it were passed in argument.*/
+    virtual void writeToXml(QXmlStreamWriter* writer) = 0;
     
     /*Returns the path of the file backing the entry*/
     std::string path() const {return _path;}
@@ -361,7 +366,7 @@ public:
     virtual std::string cacheVersion() = 0;
     
     /*Recover an entry from string*/
-    virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str)=0;
+    virtual std::pair<U64,MemoryMappedEntry*> entryFromXml(QXmlStreamReader* reader)=0;
     
     /*type-check for the entry, add the entry to the in-memory cache and
      call the super-class version of add.*/

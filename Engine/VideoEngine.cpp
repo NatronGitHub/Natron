@@ -154,7 +154,7 @@ void VideoEngine::render(OutputNode* output,
                          bool forward,
                          bool sameFrame) {
     /*aborting any rendering on-going*/
-    abort();
+    //abort();
     
     /*If the DAG was never built and we don't want to update the DAG, force an update
      so there's no null pointers hanging around*/

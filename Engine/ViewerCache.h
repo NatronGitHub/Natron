@@ -48,9 +48,9 @@ public:
                float byteMode,ReaderInfo* info,const TextureRect& textureRect);
     
     
-	virtual std::string printOut();
+	virtual void writeToXml(QXmlStreamWriter* writer);
     
-	static FrameEntry* recoverFromString(QString str);
+	static FrameEntry* entryFromXml(QXmlStreamReader* reader);
     
 	/*Returns a key computed from the parameters.*/
 	static U64 computeHashKey(int frameNb,
@@ -87,7 +87,7 @@ public:
     
 	virtual std::string cacheVersion(){std::string str("v1.0.0");return str;}
         
-    virtual std::pair<U64,MemoryMappedEntry*> recoverEntryFromString(QString str);
+    virtual std::pair<U64,MemoryMappedEntry*> entryFromXml(QXmlStreamReader* reader);
     
 	/*Construct a frame entry,adds it to the cache and returns a pointer to it.*/
     // on output, the FrameEntry is locked, and must be unlocked using FrameEntry::unlock()

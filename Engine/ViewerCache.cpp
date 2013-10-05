@@ -18,6 +18,8 @@
 #include <QtCore/qdebug.h>
 #include <QtGui/QVector2D>
 #include <QtCore/QFile>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
 
 #include "Global/AppManager.h"
 #include "Engine/Model.h"
@@ -90,76 +92,119 @@ FrameEntry::FrameEntry(float zoom, float exp, float lut, U64 treeVers,
 FrameEntry::~FrameEntry(){
     delete _frameInfo;
 }
+void FrameEntry::writeToXml(QXmlStreamWriter* writer){
+    writer->writeAttribute("Path",_path.c_str());
+    writer->writeAttribute("Exposure", QString::number(_exposure));
+    writer->writeAttribute("Lut", QString::number(_lut));
+    writer->writeAttribute("TreeVersion",QString::number(_treeVers));
+    writer->writeAttribute("ByteMode",QString::number(_byteMode));
+    writer->writeStartElement("ReaderInfo");
+    _frameInfo->writeToXml(writer);
+    writer->writeEndElement();
+    writer->writeStartElement("TextureRect");
+    writer->writeAttribute("x",QString::number(_textureRect.x));
+    writer->writeAttribute("y",QString::number(_textureRect.y));
+    writer->writeAttribute("r",QString::number(_textureRect.r));
+    writer->writeAttribute("t",QString::number(_textureRect.y));
+    writer->writeAttribute("w",QString::number(_textureRect.w));
+    writer->writeAttribute("h",QString::number(_textureRect.h));
+    writer->writeEndElement();
 
-std::string FrameEntry::printOut(){
-    ostringstream oss;
-    oss << _path << " " <<_zoom << " "
-    << _exposure << " "
-    << _lut << " "
-    << _treeVers << " "
-    << _byteMode << " "
-    << _frameInfo->printOut()
-    << _textureRect.x << " "
-    << _textureRect.y << " "
-    << _textureRect.r << " "
-    << _textureRect.t << " "
-    << _textureRect.w << " "
-    << _textureRect.h << " "
-    << endl;
-    return oss.str();
 }
 
 /*Recover an entry from string*/
-FrameEntry* FrameEntry::recoverFromString(QString str){
+FrameEntry* FrameEntry::entryFromXml(QXmlStreamReader* reader){
+    QString zoomStr,expStr,lutStr,treeStr,byteStr,xStr,yStr,rStr,tStr,wStr,hStr;
+    ReaderInfo * info = 0;
+    if(!reader->atEnd() && !reader->hasError()){
+        QXmlStreamAttributes attributes = reader->attributes();
+        if (attributes.hasAttribute("Exposure")) {
+            expStr = attributes.value("Exposure").toString();
+        }else{
+            return NULL;
+        }
+        if (attributes.hasAttribute("Lut")) {
+            lutStr = attributes.value("Lut").toString();
+        }else{
+            return NULL;
+        }
+        if (attributes.hasAttribute("TreeVersion")) {
+            treeStr = attributes.value("TreeVersion").toString();
+        }else{
+            return NULL;
+        }
+        if (attributes.hasAttribute("ByteMode")) {
+            byteStr = attributes.value("ByteMode").toString();
+        }else{
+            return NULL;
+        }
+        QXmlStreamReader::TokenType token = reader->readNext();
+        int i =0;
+        while(token == QXmlStreamReader::StartElement && i < 2){
+            if (reader->name() == "ReaderInfo") {
+                info = ReaderInfo::fromXml(reader);
+                if(!info)
+                    return NULL;
+            }else if(reader->name() == "TextureRect"){
+                QXmlStreamAttributes textureAttributes = reader->attributes();
+                if(textureAttributes.hasAttribute("x")){
+                    xStr = textureAttributes.value("x").toString();
+                }else{
+                    return NULL;
+                }
+                if(textureAttributes.hasAttribute("y")){
+                    yStr = textureAttributes.value("y").toString();
+                }else{
+                    return NULL;
+                }
+                if(textureAttributes.hasAttribute("r")){
+                    rStr = textureAttributes.value("r").toString();
+                }else{
+                    return NULL;
+                }
+                if(textureAttributes.hasAttribute("t")){
+                    tStr = textureAttributes.value("t").toString();
+                }else{
+                    return NULL;
+                }
+                if(textureAttributes.hasAttribute("w")){
+                    wStr = textureAttributes.value("w").toString();
+                }else{
+                    return NULL;
+                }
+                if(textureAttributes.hasAttribute("h")){
+                    hStr = textureAttributes.value("h").toString();
+                }else{
+                    return NULL;
+                }
+            }
+            ++i;
+        }
+    }
     
-    QString zoomStr,expStr,lutStr,treeStr,byteStr,frameInfoStr,xStr,yStr,rightStr,topStr,wStr,hStr;
-    int i =0 ;
-    while(str.at(i)!= QChar(' ')){zoomStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){expStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){lutStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){treeStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){byteStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){frameInfoStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){xStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){yStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){rightStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){topStr.append(str.at(i));++i;}
-    ++i;
-    while(str.at(i)!= QChar(' ')){wStr.append(str.at(i));++i;}
-    ++i;
-    while(i < str.size()){hStr.append(str.at(i));++i;}
       
     
-    TextureRect textureRect(xStr.toInt(),yStr.toInt(),rightStr.toInt(),topStr.toInt(),wStr.toInt(),hStr.toInt());
+    TextureRect textureRect(xStr.toInt(),yStr.toInt(),rStr.toInt(),tStr.toInt(),wStr.toInt(),hStr.toInt());
     FrameEntry* entry = new FrameEntry(zoomStr.toFloat(),expStr.toFloat(),lutStr.toFloat(),treeStr.toULongLong(),byteStr.toFloat(),
-                                       ReaderInfo::fromString(frameInfoStr),textureRect);
+                                       info,textureRect);
     
     return entry;
 }
 
-std::pair<U64,MemoryMappedEntry*> ViewerCache::recoverEntryFromString(QString str){
-    if(str.isEmpty()) return make_pair(0, (MemoryMappedEntry*)NULL);
-    QString path,entryStr;
-    int i =0 ;
-    while(str.at(i)!= QChar(' ')){path.append(str.at(i));++i;}
-    ++i;
-    while(i < str.size()){entryStr.append(str.at(i));++i;}
-    ++i;
-    
+std::pair<U64,MemoryMappedEntry*> ViewerCache::entryFromXml(QXmlStreamReader* reader){
+    QXmlStreamAttributes attributes = reader->attributes();
+    QString path;
+    if (attributes.hasAttribute("Path")) {
+        path = attributes.value("Path").toString();
+    }else{
+        return make_pair(0, (MemoryMappedEntry*)NULL);
+    }
+
     if (!QFile::exists(path)) {
         return make_pair(0, (MemoryMappedEntry*)NULL);;
     }
     
-    FrameEntry* entry = FrameEntry::recoverFromString(entryStr);
+    FrameEntry* entry = FrameEntry::entryFromXml(reader);
     if(!entry){
         cout << "Invalid entry : " << qPrintable(path) << endl;
         return make_pair(0,(FrameEntry*)NULL);

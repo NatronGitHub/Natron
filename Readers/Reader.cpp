@@ -16,6 +16,8 @@
 
 #include <QtCore/QMutex>
 #include <QtGui/QImage>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
 
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
@@ -383,60 +385,121 @@ void Reader::Buffer::ScanLineContext::merge(){
 //bool _blackOutside;
 //bool _rgbMode;
 //Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
-std::string ReaderInfo::printOut(){
-    const ChannelSet& chan = channels();
-    ostringstream oss;
-    oss << _currentFrameName <<  "<" << firstFrame() << "."
-    << lastFrame() << "."
-    << rgbMode() << "."
-    << displayWindow().left() << "."
-    << displayWindow().bottom() << "."
-    << displayWindow().right() << "."
-    << displayWindow().top() << "."
-    << dataWindow().left() << "."
-    << dataWindow().bottom() << "."
-    << dataWindow().right() << "."
-    << dataWindow().top() << ".";
-    foreachChannels(z, chan){
-        oss << getChannelName(z) << "|";
+void ReaderInfo::writeToXml(QXmlStreamWriter* writer){
+    writer->writeAttribute("CurrentFrameName",_currentFrameName.c_str());
+    writer->writeAttribute("FirstFrame",QString::number(firstFrame()));
+    writer->writeAttribute("LastFrame",QString::number(lastFrame()));
+    writer->writeAttribute("RgbMode",QString::number(rgbMode()));
+    
+    const Format& dispW = displayWindow();
+    writer->writeStartElement("DisplayWindow");
+    writer->writeAttribute("left",QString::number(dispW.left()));
+    writer->writeAttribute("bottom",QString::number(dispW.bottom()));
+    writer->writeAttribute("right",QString::number(dispW.right()));
+    writer->writeAttribute("top",QString::number(dispW.top()));
+    writer->writeEndElement();
+    
+    const Box2D& dataW = dataWindow();
+    
+    writer->writeStartElement("DataWindow");
+    writer->writeAttribute("left",QString::number(dataW.left()));
+    writer->writeAttribute("bottom",QString::number(dataW.bottom()));
+    writer->writeAttribute("right",QString::number(dataW.right()));
+    writer->writeAttribute("top",QString::number(dataW.top()));
+    
+    QString chans;
+    foreachChannels(chan, channels()){
+        chans += getChannelName(chan).c_str() + QString("|");
     }
-    oss << " " ;
-    return oss.str();
+    writer->writeAttribute("Channels",chans);
 }
 
-ReaderInfo* ReaderInfo::fromString(const QString& from){
-    ReaderInfo* out = new ReaderInfo;
-    QString name;
+ReaderInfo* ReaderInfo::fromXml(QXmlStreamReader* reader){
+    QString currentFrameName;
     QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;
     QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
     
+    QXmlStreamAttributes attributes = reader->attributes();
+    if(attributes.hasAttribute("CurrentFrameName")){
+        currentFrameName = attributes.value("CurrentFrameName").toString();
+    }else{
+        return NULL;
+    }
+    if(attributes.hasAttribute("FirstFrame")){
+        currentFrameName = attributes.value("FirstFrame").toString();
+    }else{
+        return NULL;
+    }
+    if(attributes.hasAttribute("LastFrame")){
+        lastFrameStr = attributes.value("LastFrame").toString();
+    }else{
+        return NULL;
+    }
+    if(attributes.hasAttribute("RgbMode")){
+        rgbStr = attributes.value("RgbMode").toString();
+    }else{
+        return NULL;
+    }
+    if(attributes.hasAttribute("Channels")){
+        channelsStr = attributes.value("Channels").toString();
+    }else{
+        return NULL;
+    }
+    QXmlStreamReader::TokenType token = reader->readNext();
     int i = 0;
-    while(from.at(i) != QChar('<')){name.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){firstFrameStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){lastFrameStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){rgbStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){frmtXStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){frmtYStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){frmtRStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){frmtTStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){bboxXStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){bboxYStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){bboxRStr.append(from.at(i)); ++i;}
-    ++i;
-    while(from.at(i) != QChar('.')){bboxTStr.append(from.at(i)); ++i;}
-    ++i;
-    while(i < from.size()){channelsStr.append(from.at(i)); ++i;}
-    ++i;
+    while(token == QXmlStreamReader::StartElement && i < 2){
+        if(reader->name() == "DisplayWindow"){
+            QXmlStreamAttributes dispWAtts = reader->attributes();
+            if(attributes.hasAttribute("left")){
+                frmtXStr = attributes.value("left").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("bottom")){
+                frmtYStr = attributes.value("bottom").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("right")){
+                frmtRStr = attributes.value("right").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("top")){
+                frmtTStr = attributes.value("top").toString();
+            }else{
+                return NULL;
+            }
+            
+
+        }else if(reader->name() == "DataWindow"){
+            QXmlStreamAttributes dataWAtts = reader->attributes();
+            if(attributes.hasAttribute("left")){
+                bboxXStr = attributes.value("left").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("bottom")){
+                bboxYStr = attributes.value("bottom").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("right")){
+                bboxRStr = attributes.value("right").toString();
+            }else{
+                return NULL;
+            }
+            if(attributes.hasAttribute("top")){
+                bboxTStr = attributes.value("top").toString();
+            }else{
+                return NULL;
+            }
+        }
+        ++i;
+    }
+
+    ReaderInfo* out = new ReaderInfo;
+
     ChannelSet channels;
     i = 0;
     while(i < channelsStr.size()){
@@ -456,7 +519,7 @@ ReaderInfo* ReaderInfo::fromString(const QString& from){
     out->set_displayWindow(dispW);
     out->set_firstFrame(firstFrameStr.toInt());
     out->set_lastFrame(lastFrameStr.toInt());
-    out->setCurrentFrameName(name.toStdString());
+    out->setCurrentFrameName(currentFrameName.toStdString());
     return out;
     
 }

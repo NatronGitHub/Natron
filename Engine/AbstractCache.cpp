@@ -15,6 +15,9 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
+
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -239,7 +242,7 @@ bool AbstractCacheHelper::add(U64 key,CacheEntry* entry){
             _size -= evicted.second->size();
             evicted.second->unlock();
         }
-
+        
         /*if it is a memorymapped entry, remove the backing file in the meantime*/
         if (evicted.second->isMemoryMappedEntry()) {
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(evicted.second);
@@ -323,7 +326,7 @@ void AbstractDiskCache::initializeSubDirectories(){
     assert(!_lock.tryLock()); // must be locked
     QDir cacheFolder(getCachePath());
     cacheFolder.mkpath(".");
-
+    
     QStringList etr = cacheFolder.entryList();
     // if not 256 subdirs, we re-create the cache
     if (etr.size() < 256) {
@@ -379,8 +382,13 @@ void AbstractDiskCache::save(){
     newCachePath.append(QDir::separator());
     newCachePath.append("restoreFile.powc");
     QFile restoreFile(newCachePath);
-    restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append);
-    QTextStream out(&restoreFile);
+    restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+    
+    QXmlStreamWriter *writer = new QXmlStreamWriter(&restoreFile);
+    writer->setAutoFormatting(true);
+    writer->writeStartDocument();
+    writer->writeStartElement("CacheEntries");
+    writer->writeAttribute("Version",cacheVersion().c_str());
     /*clearing in-memory cache so only the on-disk portion has entries left.*/
     clearInMemoryCache();
     {
@@ -389,12 +397,16 @@ void AbstractDiskCache::save(){
             MemoryMappedEntry* mmEntry = dynamic_cast<MemoryMappedEntry*>(AbstractCache::getValueFromIterator(it));
             assert(mmEntry);
             mmEntry->lock();
-            out << mmEntry->printOut().c_str() << endl;
+            writer->writeStartElement("Entry");
+            mmEntry->writeToXml(writer);
+            writer->writeEndElement();
             mmEntry->unlock();
         }
     }
+    writer->writeEndElement();
+    writer->writeEndDocument();
     restoreFile.close();
-    
+    delete writer;
     
 }
 
@@ -433,79 +445,85 @@ void AbstractDiskCache::restore(){
             cout << cacheName() << " doesn't contain sub-folders indexed from 00 to FF. Reseting." << endl;
             cleanUpDiskAndReset();
         }
+        std::vector<std::pair<U64,MemoryMappedEntry*> > entries;
         
         QFile restoreFile(settingsFilePath);
-        restoreFile.open(QIODevice::ReadWrite);
-        QTextStream in(&restoreFile);
-        
-        
-        QString line = in.readLine();
-        std::vector<std::pair<U64,MemoryMappedEntry*> > entries;
-        if(line.contains(QString(cacheVersion().c_str()))){
-            line = in.readLine();
-            while(!line.isNull()){
-                if (line.isEmpty()) {
-                    line = in.readLine();
-                    continue;
+        restoreFile.open(QIODevice::ReadOnly);
+        QXmlStreamReader *reader = new QXmlStreamReader(&restoreFile);
+        while(!reader->atEnd() && !reader->hasError()){
+            
+            QXmlStreamReader::TokenType token = reader->readNext();
+            
+            /* If token is StartElement, we'll see if we can read it.*/
+            if(token == QXmlStreamReader::StartElement) {
+                if(reader->name() == "Entry"){
+                    std::pair<U64,MemoryMappedEntry*> entry = entryFromXml(reader);
+                    if(entry.second){
+                        entry.second->lock();
+                        entries.push_back(entry);
+                    }else{
+                        cout <<"WARNING: " <<  cacheName() << " failed to recover entry, discarding it." << endl;
+                    }
+                    
                 }
-                std::pair<U64,MemoryMappedEntry*> entry = recoverEntryFromString(line);
-                if(entry.second){
-                    entry.second->lock();
-                    entries.push_back(entry);
-                }else{
-                    cout <<"WARNING: " <<  cacheName() << " failed to recover entry, discarding it." << endl;
+                if(reader->name() == "CacheEntries"){
+                    QXmlStreamAttributes versionAtts = reader->attributes();
+                    bool shouldClean = false;
+                    if(versionAtts.hasAttribute("Version")){
+                        QString vers = versionAtts.value("Version").toString();
+                        if(vers != cacheVersion().c_str()){
+                            shouldClean = true;
+                        }
+                    }else{
+                        shouldClean = true;
+                    }
+                    if(shouldClean){
+                        
+                        /*re-create the cache*/
+                        restoreFile.remove();
+                        locker.unlock(); // avoid deadlock
+                        cleanUpDiskAndReset();
+                        /*re-create settings file*/
+                        //QFile _restoreFile(settingsFilePath); // error?
+                        restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
+                        QTextStream outsetti(&restoreFile);
+                        outsetti << cacheVersion().c_str() << endl;
+                        restoreFile.close();
+                        delete reader;
+                        return;
+                    }
+                    
                 }
-                line = in.readLine();
             }
-            restoreFile.close();
-            locker.unlock(); // avoid deadlock
-            if ((U32)count == entries.size()) {
-                for (U32 i = 0; i < entries.size(); ++i) {
-                    std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
-                    add(entry.first,entry.second);
-                    entry.second->unlock();
-                }
-                
-                /*cache is filled , debug*/
-                // debug();
-                
-            } else {
-                cout << cacheName() << ": The entries count in the restore file does not equal the number of actual data files.Reseting." << endl;
-                cleanUpDiskAndReset();
+        }
+        restoreFile.close();
+        locker.unlock(); // avoid deadlock
+        if ((U32)count == entries.size()) {
+            for (U32 i = 0; i < entries.size(); ++i) {
+                std::pair<U64,MemoryMappedEntry*>& entry = entries[i];
+                add(entry.first,entry.second);
+                entry.second->unlock();
             }
             
-            /*now that we're done using it, clear it*/
-            restoreFile.remove();
-            restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            QTextStream outsetti(&restoreFile);
-            outsetti << cacheVersion().c_str() << endl;
-            restoreFile.close();
-        } else { /*cache version is different*/
-            /*re-create the cache*/
-            restoreFile.remove();
-            locker.unlock(); // avoid deadlock
+            /*cache is filled , debug*/
+            // debug();
+            
+        } else {
+            cout << cacheName() << ": The entries count in the restore file does not equal the number of actual data files.Reseting." << endl;
             cleanUpDiskAndReset();
-            /*re-create settings file*/
-            //QFile _restoreFile(settingsFilePath); // error?
-            restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-            QTextStream outsetti(&restoreFile);
-            outsetti << cacheVersion().c_str() << endl;
-            restoreFile.close();
         }
+        
+        /*now that we're done using it, clear it*/
+        restoreFile.remove();
+        delete reader;
     }else{ // restore file doesn't exist
         /*re-create cache*/
-
+        
         QDir(getCachePath()).mkpath(".");
         locker.unlock(); // avoid deadlock
         cleanUpDiskAndReset();
-        
-        /*re-create settings file*/
-        QFile _restoreFile(settingsFilePath);
-        _restoreFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate);
-        QTextStream outsetti(&_restoreFile);
-        outsetti << cacheVersion().c_str() << endl;
-        _restoreFile.close();
     }
+    
 }
 
 void AbstractDiskCache::cleanUpDiskAndReset(){

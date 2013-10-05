@@ -25,6 +25,8 @@ class File_Knob;
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
 **/
+class QXmlStreamWriter;
+class QXmlStreamReader;
 class ReaderInfo : public Node::Info{
 
 public:
@@ -40,12 +42,12 @@ public:
     /**
      * @brief Returns a string with all infos
     **/
-    std::string printOut();
+    void writeToXml(QXmlStreamWriter* writer);
     
     /**
-     *@brief Constructs a new ReaderInfo from string
+     *@brief Constructs a new ReaderInfo from the xml reader
     **/
-    static ReaderInfo* fromString(const QString& from);
+    static ReaderInfo* fromXml(QXmlStreamReader* reader);
     
     void operator=(const ReaderInfo& other){
         dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
