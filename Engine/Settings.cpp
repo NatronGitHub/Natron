@@ -24,7 +24,7 @@ using namespace Powiter;
 Settings::CachingSettings::CachingSettings(){
     maxCacheMemoryPercent=0.5;
     maxPlayBackMemoryPercent = 0.14;
-    maxDiskCache = 9000000000;
+    maxDiskCache = 9000000000ULL;
 }
 
 Settings::ViewerSettings::ViewerSettings(){

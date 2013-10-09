@@ -80,7 +80,7 @@ public:
     
     Box2D(int l, int b, int r, int t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
     
-    explicit Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
+    Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
 
     int left() const { return _l; }
     void set_left(int v) { _l = v; }
