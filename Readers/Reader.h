@@ -15,6 +15,8 @@
 #include <QStringList>
 #include <QtCore/QMutex>
 #include <QtGui/QImage> // FIXME: should be pimpled
+#include <QtCore/QXmlStreamReader> // forward declaration does not work because of ugly #defines in qxmlstream.h
+#include <QtCore/QXmlStreamWriter> // forward declaration does not work because of ugly #defines in qxmlstream.h
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
@@ -25,8 +27,6 @@ class File_Knob;
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
 **/
-class QXmlStreamWriter;
-class QXmlStreamReader;
 class ReaderInfo : public Node::Info{
 
 public:

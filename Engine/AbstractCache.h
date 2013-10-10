@@ -15,6 +15,7 @@
 #include <vector>
 #include <QtCore/QMutex>
 #include <QtCore/QObject>
+#include <QtCore/QXmlStreamWriter> // forward declaration does not work because of ugly #defines in qxmlstream.h
 
 #include <boost/utility.hpp>
 
@@ -22,8 +23,6 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/LRUcache.h"
 
-class QXmlStreamWriter;
-class QXmlStreamReader;
 class MemoryFile;
 /* Abstract class/interface for cache entries. This can be overloaded to fit parameters you'd
  like to track like offset in files, list of elements etc...
