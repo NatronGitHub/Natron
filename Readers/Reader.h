@@ -15,6 +15,8 @@
 #include <QStringList>
 #include <QtCore/QMutex>
 #include <QtGui/QImage> // FIXME: should be pimpled
+#include <QtCore/QXmlStreamReader> // forward declaration does not work because of ugly #defines in qxmlstream.h
+#include <QtCore/QXmlStreamWriter> // forward declaration does not work because of ugly #defines in qxmlstream.h
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"

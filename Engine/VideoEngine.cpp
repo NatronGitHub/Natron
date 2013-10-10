@@ -256,7 +256,7 @@ bool VideoEngine::startEngine() {
 
     /*update the tree hash */
     bool oldVersionValid = _treeVersionValid;
-    U64 oldVersion;
+    U64 oldVersion = 0;
     if (oldVersionValid) {
         oldVersion = getCurrentTreeVersion();
     }
