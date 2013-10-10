@@ -53,39 +53,45 @@ namespace Powiter{
          resetHash().
          */
         template<typename HashType>
-        class KeyHelper{
+        class KeyHelper {
             
         public:
             typedef HashType hash_type;
             
-            KeyHelper():_hash(0){}
+            KeyHelper(): _hashMutex(), _hashComputed(false), _hash() {}
             
-            KeyHelper(hash_type hashValue):_hash(hashValue){}
-                        
+            KeyHelper(hash_type hashValue): _hashMutex(), _hashComputed(true), _hash(hashValue){}
+
+            KeyHelper(const KeyHelper& other) : _hashMutex(), _hashComputed(true), _hash(other.getHash()) {}
+
             virtual ~KeyHelper(){}
+
+            hash_type getHash() const {
+                QMutexLocker locker(&_hashMutex);
+                if(!_hashComputed) {
+                    computeHashKey();
+                    _hashComputed = true;
+                }
+                return _hash;
+            }
             
+            void resetHash() const {QMutexLocker locker(&_hashMutex); _hashComputed = false;}
+            
+        private:
+
             /*for now HashType can only be 64 bits...the implementation should
              fill the Hash64 using the append function with the values contained in the
              derived class.*/
             virtual void fillHash(Hash64* hash) const = 0;
-            
-            hash_type getHash() const {
-                if(!_hash)
-                    computeHashKey();
-                return _hash;
-            }
-            
-            void resetHash() const {_hash = 0;}
-            
-        private:
-            
+
             void computeHashKey() const {
                 Hash64 hash;
                 fillHash(&hash);
                 hash.computeHash();
                 _hash = hash.value();
             }
-            
+            mutable QMutex _hashMutex; // protects _hashComputed and _hash
+            mutable bool _hashComputed;
             mutable hash_type _hash;
         };
         
@@ -294,7 +300,7 @@ namespace Powiter{
                 return name;
             }
             
-            void allocate(size_t size,int cost,std::string path = std::string()) const {
+            void allocate(size_t size,int cost,std::string path = std::string()) {
                 std::string fileName;
                 if(cost != 0){
                     try{
@@ -318,7 +324,7 @@ namespace Powiter{
                 }
             }
             
-            void restoreBufferFromFile(const std::string& path) const {
+            void restoreBufferFromFile(const std::string& path) {
                 std::string fileName;
                 try{
                     fileName = generateStringFromHash(path);
@@ -343,7 +349,7 @@ namespace Powiter{
         protected:
             
             KeyType _params;
-            mutable Buffer<BitDepth> _data;
+            Buffer<BitDepth> _data;
         };
         
         template<typename ValueType>
@@ -390,10 +396,7 @@ namespace Powiter{
          */
         template<typename ValueType>
         class Cache {
-            
-            friend class CachedValue<ValueType>;
 
-            
         public:
             typedef boost::shared_ptr<const ValueType> value_type;
             typedef typename ValueType::hash_type hash_type;
@@ -448,20 +451,20 @@ namespace Powiter{
             
             U64 _maximumCacheSize; // maximum size allowed for the cache
             
-            mutable U64 _memoryCacheSize; // current size of the cache in bytes
+            U64 _memoryCacheSize; // current size of the cache in bytes
             
-            mutable U64 _diskCacheSize;
+            U64 _diskCacheSize;
             
             mutable QMutex _lock;
             
-            mutable CacheContainer _memoryCache;
-            mutable CacheContainer _diskCache;
+            CacheContainer _memoryCache;
+            CacheContainer _diskCache;
             
-            std::string _cacheName;
+            const std::string _cacheName;
             
-            unsigned int _version;
+            const unsigned int _version;
             
-            mutable CacheSignalEmitter* _signalEmitter;
+            CacheSignalEmitter* _signalEmitter;
             
         public:
             
@@ -482,10 +485,12 @@ namespace Powiter{
             ,_version(version)
             ,_signalEmitter(NULL)
             {
+                QMutexLocker locker(&_lock);
                 restore();
             }
             
-            ~Cache(){
+            ~Cache() {
+                QMutexLocker locker(&_lock);
                 clearInMemoryPortion();
                 save();
                 _memoryCache.clear();
@@ -577,15 +582,18 @@ namespace Powiter{
                 }
             }
             
-            std::string cacheName() const {return _cacheName;}
+            // const data member: no need to take the lock
+            const std::string& cacheName() const { return _cacheName;}
             
             /*Returns the cache version as a string. This is
              used to know whether a cache is still valid when
              restoring*/
-            unsigned int cacheVersion() const {return _version;}
+            // const data member: no need to take the lock
+            unsigned int cacheVersion() const { return _version;}
             
             /*Returns the name of the cache with its path preprended*/
             QString getCachePath() const {
+                 QMutexLocker locker(&_lock);
 #if QT_VERSION < 0x050000
                 QString cacheFolderName(QDesktopServices::storageLocation(QDesktopServices::CacheLocation));
 #else
@@ -598,26 +606,33 @@ namespace Powiter{
 
             }
             
-            U64 getMaximumSize() const  {return _maximumCacheSize;}
+            U64 getMaximumSize() const  { QMutexLocker locker(&_lock); return _maximumCacheSize;}
             
-            U64 getMaximumMemorySize() const {return _maximumInMemorySize;}
+            U64 getMaximumMemorySize() const { QMutexLocker locker(&_lock); return _maximumInMemorySize;}
             
-            U64 getMemoryCacheSize() const  {return _memoryCacheSize;}
+            U64 getMemoryCacheSize() const  { QMutexLocker locker(&_lock); return _memoryCacheSize;}
             
-            U64 getDiskCacheSize() const {return _diskCacheSize;}
+            U64 getDiskCacheSize() const { QMutexLocker locker(&_lock); return _diskCacheSize;}
             
             CacheSignalEmitter* activateSignalEmitter() const {
+                QMutexLocker locker(&_lock);
                 if(!_signalEmitter)
                     _signalEmitter = new CacheSignalEmitter;
                 return _signalEmitter;
             }
-            
+
+            void sealEntry(const value_type& entry) const {
+                QMutexLocker locker(&_lock);
+                sealEntryInternal(entry);
+            }
         private:
-            
+            typedef std::list<std::pair<hash_type,typename ValueType::key_type> > CacheTOC;
+
             /* Seal the entry into the cache: the entry must have been allocated
              * previously by this cache*/
-            void sealEntry(value_type entry) const {
-                QMutexLocker locker(&_lock);
+            void sealEntryInternal(const value_type& entry) const {
+                //QMutexLocker locker(&_lock); // no need to lock in private functions: the caller is responsible for locking, or you must use recursive locks
+                assert(!_lock.tryLock()); // must be locked
                 while(_memoryCacheSize+entry->size() >= _maximumInMemorySize){
                     std::pair<hash_type,value_type> evicted = _memoryCache.evict();
                     _memoryCacheSize -= evicted.second->size();
@@ -645,12 +660,13 @@ namespace Powiter{
             /*Saves cache to disk as a settings file.
              */
             void save(){
+                assert(!_lock.tryLock()); // must be locked
                 QString newCachePath(getCachePath());
                 newCachePath.append(QDir::separator());
                 newCachePath.append("restoreFile.powc");
                 std::ofstream ofile(newCachePath.toStdString().c_str(),std::ofstream::out);
                 boost::archive::binary_oarchive oArchive(ofile);
-                std::list<std::pair<hash_type,typename ValueType::key_type> > tableOfContents;
+                CacheTOC tableOfContents;
                 {
                     QMutexLocker locker(&_lock);
                     for(CacheIterator it = _diskCache.begin(); it!= _diskCache.end() ; ++it) {
@@ -665,68 +681,73 @@ namespace Powiter{
             }
             
             /*Restores the cache from disk.*/
-            void restore(){
-                QMutexLocker locker(&_lock);
-                QString newCachePath(getCachePath());
-                QString settingsFilePath(newCachePath);
-                settingsFilePath.append(QDir::separator());
-                settingsFilePath.append("restoreFile.powc");
-                if(QFile::exists(settingsFilePath)){
+            void restore() {
+                //QMutexLocker locker(&_lock); // no need to lock in private functions: the caller is responsible for locking
+                assert(!_lock.tryLock()); // must be locked
+                try { // if anything throws an exception, just recreate the cache
+                    QString newCachePath(getCachePath());
+                    QString settingsFilePath(newCachePath+QDir::separator()+"restoreFile.powc");
+                    if(!QFile::exists(settingsFilePath)) {
+                        throw std::runtime_error("Cache does not exist");
+                    }
                     QDir directory(newCachePath);
                     QStringList files = directory.entryList();
-                    
-                    
+
+
                     /*Now counting actual data files in the cache*/
                     /*check if there's 256 subfolders, otherwise reset cache.*/
                     int count = 0; // -1 because of the restoreFile
                     int subFolderCount = 0;
-                    for(int i =0 ; i< files.size() ;++i) {
+                    for (int i =0; i< files.size(); ++i) {
                         QString subFolder(newCachePath);
                         subFolder.append(QDir::separator());
                         subFolder.append(files[i]);
                         if(subFolder.right(1) == QString(".") || subFolder.right(2) == QString("..")) continue;
                         QDir d(subFolder);
-                        if(d.exists()){
+                        if (d.exists()) {
                             ++subFolderCount;
                             QStringList items = d.entryList();
-                            for(int j = 0 ; j < items.size();++j) {
+                            for (int j = 0; j < items.size(); ++j) {
                                 if(items[j] != QString(".") && items[j] != QString("..")) {
                                     ++count;
                                 }
                             }
                         }
                     }
-                    if(subFolderCount<256){
+                    if (subFolderCount<256) {
                         std::cout << cacheName() << " doesn't contain sub-folders indexed from 00 to FF. Reseting." << std::endl;
                         cleanUpDiskAndReset();
                     }
                     std::ifstream ifile(settingsFilePath.toStdString().c_str(),std::ifstream::in);
                     boost::archive::binary_iarchive iArchive(ifile);
-                    std::list<std::pair<hash_type,typename ValueType::key_type> > tableOfContents;
+                    CacheTOC tableOfContents;
                     iArchive >> tableOfContents;
-                    
-                    locker.unlock();
-                    for (typename std::list<std::pair<hash_type,typename ValueType::key_type> >::const_iterator it =
+
+                    // NEVER UNLOCK FOR A BAD REASON!!!!!!!!!!!!!!!!!!!!!!!!!
+                    //   this is a wide open door to race conditions.
+                    //   You must keep the lock during the whole critical section!
+                    //locker.unlock();
+                    for (typename CacheTOC::const_iterator it =
                          tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
-                        if(it->first != it->second.getHash()){
+                        if (it->first != it->second.getHash()) {
                             std::cout << "WARNING: serialized hash key different than the restored one" << std::endl;
                         }
                         ValueType* value = NULL;
-                        try{
+                        try {
                             value = new ValueType(it->second,QString(getCachePath()+QDir::separator()).toStdString());
-                        }catch(const std::bad_alloc& e){
+                        } catch (const std::bad_alloc& e) {
                             std::cout << e.what() << std::endl;
                             continue;
                         }
-                        sealEntry(value_type(value));
+                        sealEntryInternal(value_type(value));
                     }
-                    locker.relock();
-                    ifile.close();                    
+                    //locker.relock();
+                    ifile.close();
                     QFile restoreFile(settingsFilePath);
                     restoreFile.remove();
-                }else{ // restore file doesn't exist
+                } catch (...) {
                     /*re-create cache*/
-                    
+
                     QDir(getCachePath()).mkpath(".");
                     cleanUpDiskAndReset();
                 }
