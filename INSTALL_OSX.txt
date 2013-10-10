@@ -84,8 +84,9 @@ INCLUDEPATH is the path to the include files
 LIBS is the path to the libs
 
 
-boost{
+boost {
     INCLUDEPATH += /opt/local/include
+    LIBS += -L/opt/local/lib -lboost_serialization-mt
 }
 
 ###Build with Makefile
