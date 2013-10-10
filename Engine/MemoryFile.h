@@ -113,7 +113,7 @@
  */
 class MemoryFile {
 public:
-    MemoryFile(const char *pathname, Powiter::MMAPfile_mode open_mode);
+    MemoryFile(const std::string& pathname, Powiter::MMAPfile_mode open_mode);
     ~MemoryFile();
     char* data() const { return data_; }
     void resize(size_t new_size);

@@ -39,14 +39,16 @@ ReadQt::~ReadQt(){
         delete _img;
 }
 
-void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
+void ReadQt::engine(Row* out) {
+    const ChannelSet& channels = out->channels();
+    int y = out->y();
     switch(_img->format()) {
         case QImage::Format_Invalid:
         {
             foreachChannels(z, channels){
-                float* to = out->writable(z) ;
+                const float* to = out->begin(z) ;
                 if (to != NULL) {
-                    std::fill(to+out->offset(), to+out->offset() + (range-offset), 0.);
+                    std::fill(out->begin(z), out->end(z), 0.f);
                 }
             }
         }
@@ -57,15 +59,14 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
         {
             int h = op->info().displayWindow().height();
             int Y = h - y - 1;
-            const uchar* buffer = _img->scanLine(Y);
-            if(autoAlpha() && !_img->hasAlphaChannel()){
-                out->turnOn(Channel_alpha);
-            }
-            const QRgb* from = reinterpret_cast<const QRgb*>(buffer) + offset;
+//            if(autoAlpha() && !_img->hasAlphaChannel()){
+//                out->turnOn(Channel_alpha);
+//            }
+            const QRgb* from = reinterpret_cast<const QRgb*>(_img->scanLine(Y)) + out->left();
             foreachChannels(z, channels){
-                float* to = out->writable(z) ;
+                float* to = out->begin(z) ;
                 if (to != NULL) {
-                    from_byteQt(z, to+out->offset(), from, (range-offset),1);
+                    from_byteQt(z, out->begin(z), from, out->width(),1);
                 }
             }
         }
@@ -86,12 +87,12 @@ void ReadQt::engine(int y,int offset,int range,ChannelSet channels,Row* out) {
         {
             int h = op->info().displayWindow().height();
             int Y = h - y - 1;
-            for (int X = offset; X < range; ++X) {
+            for (int X = out->left(); X < out->right(); ++X) {
                 QRgb c = _img->pixel(X, Y);
                 foreachChannels(z, channels){
-                    float* to = out->writable(z) ;
+                    float* to = out->begin(z) ;
                     if (to != NULL) {
-                        from_byteQt(z, to+out->offset()+X, &c, 1, 1);
+                        from_byteQt(z, to+X , &c, 1, 1);
                     }
                 }
             }

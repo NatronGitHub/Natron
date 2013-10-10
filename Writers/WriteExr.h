@@ -22,7 +22,9 @@
 
 class ComboBox_Knob;
 class Separator_Knob;
+namespace Powiter{
 class Row;
+}
 class QMutex;
 class Box2D;
 class Writer;
@@ -56,7 +58,7 @@ class WriteExr :public Write{
     
    
     std::string _filename;
-    std::map<int,Row*> _img;
+    std::map<int,Powiter::Row*> _img;
     
     Imf::Compression compression;
     int depth;
@@ -91,7 +93,7 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+	virtual void renderRow(int left,int right,int y,const ChannelSet& channels) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,

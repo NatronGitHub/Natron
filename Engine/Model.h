@@ -97,8 +97,6 @@ public:
 	/*Create a new node internally*/
     Node* createNode(const std::string& name);
     
-    void checkViewersConnection();
-    
     void loadProject(const QString& filename,bool autoSave = false);
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
@@ -121,11 +119,10 @@ public:
     
     void disconnectViewersFromViewerCache();
     
+public slots:
     
-    /*This function regards only rendering on disk.*/
-    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
-    
-    
+    void checkViewersConnection();
+
 private:
     
     

@@ -24,8 +24,9 @@
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Hash64.h"
-
-class Row;
+namespace Powiter{
+    class Row;
+}
 class Model;
 class SettingsPanel;
 class Knob;
@@ -161,7 +162,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     static ViewerNode* hasViewerConnected(Node* node);
     /*============================*/
     
-    /*DAG related (topological sorting)*/
+    /*Tree related (topological sorting)*/
     void setMarked(bool mark){_marked = mark;}
     
     bool isMarked(){return _marked;}
@@ -263,11 +264,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
     /*Calculations related functions*/
     bool validate(bool doFullWork);
     
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out){
-        Q_UNUSED(y);
-        Q_UNUSED(offset);
-        Q_UNUSED(range);
-        Q_UNUSED(channels);
+    virtual void engine(Powiter::Row* out){
         Q_UNUSED(out);
     }
 	    
@@ -322,7 +319,7 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
      otherwise engine() gets called.
      The row is LOCKED and must be unlocked after use (using Row::unlock())
      */
-    Row* get(int y,int x,int r);
+    boost::shared_ptr<const Powiter::Row> get(int y,int x,int r);
     
     /*Returns true if the node will cache rows in the node cache.
      Otherwise results will not be cached.*/
@@ -413,6 +410,10 @@ signals:
 
     void previewImageChanged();
     
+    void knobUndoneChange();
+    
+    void knobRedoneChange();
+    
 protected:
     
     virtual ChannelSet supportedComponents() = 0;
@@ -485,7 +486,7 @@ public:
    
     VideoEngine* getVideoEngine() const {return _videoEngine;}
   
-    void updateDAGAndRender(bool initViewer = false);
+    void updateTreeAndRender(bool initViewer = false);
     
     void refreshAndContinueRender(bool initViewer = false);
 

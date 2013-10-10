@@ -152,11 +152,11 @@ public:
     
     ~KnobFactory();
     
-    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs(){return _loadedKnobs;}
+    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs() const {return _loadedKnobs;}
     
-    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1);
+    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1) const;
     
-    KnobGui* createGuiForKnob(Knob* knob);
+    KnobGui* createGuiForKnob(Knob* knob) const;
     
 private:
     
@@ -413,12 +413,8 @@ public:
     Knob(node,description,dimension)
     {}
     
-    virtual void fillHashVector(){
-        // filenames of the sequence should not be involved in hash key computation as it defeats all the purpose of the cache.
-        // explanation: The algorithm doing the look-up in the cache already takes care of the current frame name.
-        // See  VideoEngine::render(...) at line starting with  key = FrameEntry::computeHashKey to understand the call.
-    }
-    
+    virtual void fillHashVector();
+                                
     virtual const std::string name(){return "OutputFile";}
     
     virtual std::string serialize() const;

@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat
+CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat #sanitizer
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -40,6 +40,7 @@ warning("Compiling in DEBUG mode.")
     DEFINES += POWITER_DEBUG
 }
 
+
 # When compiler is GCC check for at least version 4.7
 *g++*{
   QMAKE_CXXFLAGS_RELEASE += -O3
@@ -59,8 +60,11 @@ warning("Compiling in DEBUG mode.")
     }
   }
 }
-  
-*clang++* {
+*clang* {
+sanitizer{
+    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+    QMAKE_LFLAGS += -fsanitize=address -g
+}
   QMAKE_CXXFLAGS_RELEASE += -O3
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   QMAKE_CXXFLAGS += -std=c++11
@@ -96,7 +100,6 @@ INCLUDEPATH += $$PWD/
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
-    Engine/AbstractCache.cpp \
     Engine/ChannelSet.cpp \
     Engine/Format.cpp \
     Engine/Hash64.cpp \
@@ -106,7 +109,6 @@ SOURCES += \
     Engine/MemoryFile.cpp \
     Engine/Model.cpp \
     Engine/Node.cpp \
-    Engine/NodeCache.cpp \
     Engine/OfxClipInstance.cpp \
     Engine/OfxHost.cpp \
     Engine/OfxImageEffectInstance.cpp \
@@ -118,7 +120,6 @@ SOURCES += \
     Engine/TimeLine.cpp \
     Engine/Timer.cpp \
     Engine/VideoEngine.cpp \
-    Engine/ViewerCache.cpp \
     Engine/ViewerNode.cpp \
     Global/AppManager.cpp \
     Global/LibraryBinary.cpp \
@@ -165,7 +166,7 @@ SOURCES += \
 
 
 HEADERS += \
-    Engine/AbstractCache.h \
+    Engine/Cache.h \
     Engine/Box.h \
     Engine/ChannelSet.h \
     Engine/Format.h \
@@ -177,7 +178,6 @@ HEADERS += \
     Engine/MemoryFile.h \
     Engine/Model.h \
     Engine/Node.h \
-    Engine/NodeCache.h \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
     Engine/OfxImageEffectInstance.h \
@@ -191,7 +191,7 @@ HEADERS += \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/VideoEngine.h \
-    Engine/ViewerCache.h \
+    Engine/FrameEntry.h \
     Engine/ViewerNode.h \
     Global/AppManager.h \
     Global/Enums.h \

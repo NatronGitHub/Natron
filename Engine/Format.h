@@ -51,6 +51,16 @@ public:
 private:
 	double _pixel_aspect;
     mutable std::string _name;
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & boost::serialization::base_object<Box2D>(*this);
+        ar & _pixel_aspect;
+        
+    }
 };
 
 

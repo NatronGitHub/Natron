@@ -73,6 +73,9 @@ _widgetCreated(false)
     QObject::connect(this,SIGNAL(valueChanged(const Variant&)),knob,SLOT(onValueChanged(const Variant&)));
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
+    
+    QObject::connect(this, SIGNAL(knobUndoneChange()), knob->getNode(), SIGNAL(knobUndoneChange()));
+    QObject::connect(this, SIGNAL(knobRedoneChange()), knob->getNode(), SIGNAL(knobRedoneChange()));
 }
 
 KnobGui::~KnobGui(){
@@ -99,34 +102,16 @@ void KnobGui::moveToLayout(QVBoxLayout* layout){
 }
 
 //================================================================
-class KnobUndoCommand : public QUndoCommand{
-    
-public:
-    
-    KnobUndoCommand(KnobGui* knob,const Variant& oldValue,const Variant& newValue,QUndoCommand *parent = 0):QUndoCommand(parent),
-    _oldValue(oldValue),
-    _newValue(newValue),
-    _knob(knob)
-    {}
-    virtual void undo();
-    virtual void redo();
-    virtual bool mergeWith(const QUndoCommand *command);
-    
-private:
-    Variant _oldValue;
-    Variant _newValue;
-    KnobGui* _knob;
-};
 
 void KnobUndoCommand::undo(){
     _knob->setValue(_oldValue);
-    _knob->getKnob()->getNode()->getModel()->getApp()->triggerAutoSave(); // should be a signal
+    emit knobUndoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
 void KnobUndoCommand::redo(){
     _knob->setValue(_newValue);
-    _knob->getKnob()->getNode()->getModel()->getApp()->triggerAutoSave(); // should be a signal
+    emit knobRedoneChange();
     setText(QObject::tr("Change %1")
             .arg(_knob->getKnob()->getDescription().c_str()));
 }
@@ -1153,9 +1138,7 @@ void Group_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 //=============================TAB_KNOB_GUI===================================
 void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
-    /*not a pretty call... considering using QTabWidget instead*/
-    _tabWidget = new TabWidget(_knob->getNode()->getModel()->getApp()->getGui(),
-                               TabWidget::NONE,layout->parentWidget());
+    _tabWidget = new QTabWidget(layout->parentWidget());
     _tabWidget->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_tabWidget,row,0,Qt::AlignLeft);
     
@@ -1165,7 +1148,7 @@ void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& k
          it!=knobs_.end(); ++it) {
         std::string name = it->first;
         QWidget* newTab = new QWidget(_tabWidget);
-        _tabWidget->appendTab(name.c_str(), newTab);
+        _tabWidget->addTab(newTab,name.c_str());
         QVBoxLayout* newLayout = new QVBoxLayout(newTab);
         newTab->setLayout(newLayout);
         vector<KnobGui*> knobs = it->second;

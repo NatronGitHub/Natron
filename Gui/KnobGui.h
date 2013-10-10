@@ -27,7 +27,6 @@
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 
-class TabWidget;
 class QCheckBox;
 class Node;
 class LineEdit;
@@ -114,6 +113,10 @@ signals:
      an external source.*/
     void valueChanged(const Variant& variant);
     
+    void knobUndoneChange();
+    
+    void knobRedoneChange();
+    
 protected:
     /*Must create the GUI and insert it in the grid layout at the index "row".*/
     virtual void createWidget(QGridLayout* layout,int row)=0;
@@ -141,6 +144,38 @@ private:
     int _spacingBetweenItems;
     bool _widgetCreated;
 };
+//================================
+
+
+class KnobUndoCommand : public QObject, public QUndoCommand{
+    
+    Q_OBJECT
+    
+public:
+    
+    KnobUndoCommand(KnobGui* knob,const Variant& oldValue,const Variant& newValue,QUndoCommand *parent = 0):QUndoCommand(parent),
+    _oldValue(oldValue),
+    _newValue(newValue),
+    _knob(knob)
+    {
+        QObject::connect(this, SIGNAL(knobUndoneChange()), knob,SIGNAL(knobUndoneChange()));
+        QObject::connect(this, SIGNAL(knobRedoneChange()), knob,SIGNAL(knobRedoneChange()));
+    }
+    virtual void undo();
+    virtual void redo();
+    virtual bool mergeWith(const QUndoCommand *command);
+    
+signals:
+    void knobUndoneChange();
+    
+    void knobRedoneChange();
+    
+private:
+    Variant _oldValue;
+    Variant _newValue;
+    KnobGui* _knob;
+};
+
 
 //================================
 class File_KnobGui:public KnobGui
@@ -211,6 +246,7 @@ public:
     virtual void addToLayout(QHBoxLayout* layout);
     
 public slots:
+    
     void open_file();
     void onReturnPressed();
 
@@ -639,6 +675,7 @@ private:
 
 
 /*****************************/
+class QTabWidget;
 class Tab_KnobGui : public KnobGui{
   
 public:
@@ -669,7 +706,7 @@ protected:
     
 private:
   
-    TabWidget* _tabWidget;
+    QTabWidget* _tabWidget;
 };
 
 

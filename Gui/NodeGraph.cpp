@@ -45,8 +45,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerNode.h"
 #include "Engine/Model.h"
 #include "Engine/Hash64.h"
-#include "Engine/ViewerCache.h"
-#include "Engine/NodeCache.h"
+#include "Engine/FrameEntry.h"
 
 #include "Readers/Reader.h"
 
@@ -327,7 +326,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
         }
         dst->refreshEdges();
         scene()->update();
-        _gui->getApp()->clearPlaybackCache();
+        appPTR->clearPlaybackCache();
         _gui->getApp()->checkViewersConnection();
     }else if(_evtState == NODE_DRAGGING){
         if(_nodeSelected)
@@ -883,7 +882,7 @@ void ConnectCommand::undo(){
     _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        viewer->updateDAGAndRender();
+        viewer->updateTreeAndRender();
     }
 }
 void ConnectCommand::redo(){
@@ -927,7 +926,7 @@ void ConnectCommand::redo(){
     _graph->getGui()->getApp()->triggerAutoSave();
     ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
     if(viewer){
-        viewer->updateDAGAndRender();
+        viewer->updateTreeAndRender();
     }
     
     
@@ -1034,8 +1033,8 @@ static QString QDirModelPrivate_size(quint64 bytes)
 
 void NodeGraph::updateCacheSizeText(){
     _cacheSizeText->setPlainText(QString("Memory cache size: %1")
-                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache()->getCurrentInMemoryPortionSize()
-                                                            + appPTR->getNodeCache()->getCurrentSize())));
+                                 .arg(QDirModelPrivate_size(appPTR->getViewerCache().getMemoryCacheSize()
+                                                            + appPTR->getNodeCache().getMemoryCacheSize())));
 }
 QRectF NodeGraph::calcNodesBoundingRect(){
     QRectF ret;

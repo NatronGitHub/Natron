@@ -22,7 +22,10 @@
 class ViewerInfos;
 class TabWidget;
 class ViewerTab;
-class FrameEntry;
+namespace Powiter{
+    class FrameEntry;
+}
+
 class QKeyEvent;
 class ViewerNode: public OutputNode
 {
@@ -79,10 +82,10 @@ public:
     
     virtual std::string description() const OVERRIDE;
     
-    void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+    void renderRow(int left,int right,int y,int textureY);
     
     /*This function MUST be called in the main thread.*/
-    void cachedFrameEngine(FrameEntry* frame);
+    void cachedFrameEngine(boost::shared_ptr<const Powiter::FrameEntry> frame);
     
     void disconnectViewer(){
         emit viewerDisconnected();

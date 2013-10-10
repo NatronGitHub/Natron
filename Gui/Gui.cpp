@@ -441,7 +441,7 @@ void Gui::setupUi()
 	//======================
 	_workshopPane = new TabWidget(this,TabWidget::NOT_CLOSABLE,_viewerWorkshopSplitter);
     _panes.push_back(_workshopPane);
-    /*creating DAG gui*/
+    /*creating Tree gui*/
     addNodeGraph();
     
 	_viewerWorkshopSplitter->addWidget(_workshopPane);
@@ -522,9 +522,9 @@ void Gui::setupUi()
 	retranslateUi(this);
 
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
-    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),_appInstance,SLOT(clearDiskCache()));
-    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),_appInstance,SLOT(clearPlaybackCache()));
-    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),_appInstance,SLOT(clearNodeCache()));
+    QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
+    QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
+    QObject::connect(actionClearNodeCache, SIGNAL(triggered()),appPTR,SLOT(clearNodeCache()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
     
     QObject::connect(actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));
@@ -1105,7 +1105,7 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
 
 void RenderingProgressDialog::onCancelation(){
     /*Maybe we should ask for user permission with another dialog ? */
-    _writer->getVideoEngine()->abort();
+    _writer->getVideoEngine()->abortRendering();
     hide();
     delete this;
     
@@ -1120,7 +1120,7 @@ _lastFrame(lastFrame){
     QString title = QString::number(0) + "% of " + _sequenceName;
     setMinimumWidth(fontMetrics().width(title)+100);
     setWindowTitle(QString::number(0) + "% of " + _sequenceName);
-    setWindowFlags(Qt::WindowStaysOnTopHint);
+    //setWindowFlags(Qt::WindowStaysOnTopHint);
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
     _mainLayout->setContentsMargins(5, 5, 0, 0);

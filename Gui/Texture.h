@@ -12,8 +12,13 @@
 #ifndef POWITER_GUI_TEXTURE_H_
 #define POWITER_GUI_TEXTURE_H_
 
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+
+
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  *into a texture. x,y,r,t are respectivly the image coordinates of the left,bottom,right,top
@@ -87,6 +92,18 @@ private:
     virtual bool allocate(U64 ,const char* path = 0){(void)path;return true;}
     
 };
+
+namespace boost {
+    namespace serialization {
+        
+        template<class Archive>
+        void serialize(Archive & ar, TextureRect &t, const unsigned int version)
+        {
+            (void)version;
+            ar & t.x & t.y & t.r & t.t & t.w & t.h;
+        }
+    }
+}
 
 
 

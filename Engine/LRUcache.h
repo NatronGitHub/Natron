@@ -8,13 +8,6 @@
 *contact: immarespond at gmail dot com
 *
 */
-
- 
-
- 
-
-
-
 //
 
 //Copyright (c) 2010-2011, Tim Day <timday@timday.com>
@@ -130,15 +123,10 @@ public:
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
 
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
-    
+
     // Record a fresh key-value pair in the cache
-    // Return value is the value evicted from cache space was necessary.
-    std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
+    void insert(const key_type& k,const value_type& v) {
         // Make space if necessary
-        if (mustEvict && _key_to_value.size() > 0) {
-            ret =  evict();
-        }
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
@@ -147,10 +135,6 @@ public:
         _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
 
         return ret;
-    }
-    
-    void erase(typename key_tracker_type::iterator it) {
-        _key_tracker.erase(it);
     }
     
     void clear() {
@@ -232,24 +216,11 @@ public:
         return _container.left.begin();
     }
     
-    // Return value is the value evicted from cache space was necessary.
-    std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
-        if (mustEvict && _container.right.size() > 0) {
-            ret = evict();
-        }
+    void insert(const key_type& k,const value_type& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
-        
-        return ret;
-    }
-    
-    void erase(typename container_type::left_iterator it) {
-        typename container_type::right_iterator itRight = _container.project_right(it);
-        assert(itRight != _container.right.end());
-        _container.right.erase(itRight);
     }
     
     
@@ -312,13 +283,7 @@ public:
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
     // Record a fresh key-value pair in the cache
-    // Return value is the value evicted from cache space was necessary.
-    std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
-        // Make space if necessary
-        if (mustEvict && _key_to_value.size() > 0) {
-            ret =  evict();
-        }
+    void insert(const key_type& k,const value_type& v) {
         // Record k as most-recently-used key
         typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
         
@@ -326,12 +291,8 @@ public:
         // linked to the usage record.
         _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
 
-        return ret;
     }
-    
-    void erase(typename key_tracker_type::iterator it) {
-        _key_tracker.erase(it);
-    }
+   
     
     void clear() {
         _key_to_value.clear();
@@ -408,24 +369,13 @@ public:
     }
     
     // Return value is the value evicted from cache space was necessary.
-    std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
-        if (mustEvict && _container.right.size() > 0) {
-            ret = evict();
-        }
+    void insert(const key_type& k,const value_type& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
-        
-        return ret;
     }
-    
-    void erase(typename container_type::left_iterator it) {
-        typename container_type::right_iterator itRight = _container.project_right(it);
-        assert(itRight != _container.right.end());
-        _container.right.erase(itRight);
-    }
+  
     
     void clear() {
         _container.clear();
@@ -483,25 +433,12 @@ public:
         return _container.left.begin();
     }
     // Return value is the value evicted from cache space was necessary.
-    std::pair<key_type,value_type> insert(const key_type& k,const value_type& v,bool mustEvict) {
-        std::pair<key_type,value_type> ret = std::make_pair(0, value_type());
-        if (mustEvict && _container.right.size() > 0) {
-            ret = evict();
-        }
+    void insert(const key_type& k,const value_type& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
         _container.insert(typename container_type::value_type(k,v));
-        
-        return ret;
     }
-
-    void erase(typename container_type::left_iterator it) {
-        typename container_type::right_iterator itRight = _container.project_right(it);
-        assert(itRight != _container.right.end());
-        _container.right.erase(itRight);
-    }
-
     
     void clear() {
         _container.clear();

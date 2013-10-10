@@ -255,19 +255,19 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             for (int y = (int)std::floor(roi.y1); y < (int)std::ceil(roi.y2); ++y) {
                 OfxRGBAColourF* dstImg = ret->pixelF(0, y);
                 assert(dstImg);
-                Row* row = srcImg.at(y);
+                boost::shared_ptr<const Row> row = srcImg.at(y);
                 if(!row){
                     cout << "Couldn't find row for index " << y << "...skipping this row" << endl;
                     continue;
                 }
-                const float* r = (*row)[Channel_red];
-                const float* g = (*row)[Channel_green];
-                const float* b = (*row)[Channel_blue];
-                const float* a = (*row)[Channel_alpha];
-                rowPlaneToOfxPackedBuffer(Channel_red,   r ? r+row->offset() : NULL, row->right()-row->offset(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_green, g ? g+row->offset() : NULL, row->right()-row->offset(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_blue,  b ? b+row->offset() : NULL, row->right()-row->offset(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_alpha, a ? a+row->offset() : NULL, row->right()-row->offset(), dstImg);
+                const float* r = row->begin(Channel_red);
+                const float* g = row->begin(Channel_green);
+                const float* b = row->begin(Channel_blue);
+                const float* a = row->begin(Channel_alpha);
+                rowPlaneToOfxPackedBuffer(Channel_red,   r , row->width(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_green, g , row->width(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_blue,  b , row->width(), dstImg);
+                rowPlaneToOfxPackedBuffer(Channel_alpha, a , row->width(), dstImg);
                 srcImg.erase(y);
              }
             

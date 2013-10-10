@@ -4,15 +4,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #ifndef POWITER_ENGINE_BOX_H_
 #define POWITER_ENGINE_BOX_H_
 
 #include <cassert>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 // the y coordinate is towards the top
 // the x coordinate is towards the right
@@ -23,7 +25,17 @@ private:
 	int _r; // right
 	int _t; // top
     
-
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & _l;
+        ar & _b;
+        ar & _r;
+        ar & _t;
+        
+    }
 public:
     
     
@@ -74,44 +86,44 @@ public:
     {
         return iterator(_t, _l, _l, _r);
     }
-
+    
     // default cionstructor: empty box
     Box2D() : _l(0), _b(0), _r(0), _t(0) {}
     
     Box2D(int l, int b, int r, int t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
     
     explicit Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
-
+    
     int left() const { return _l; }
     void set_left(int v) { _l = v; }
     
-    int bottom() const { return _b; } 
+    int bottom() const { return _b; }
     void set_bottom(int v) { _b = v; }
     
-    int right() const { return _r; } 
+    int right() const { return _r; }
     void set_right(int v) { _r = v; }
     
-    int top() const { return _t; } 
+    int top() const { return _t; }
     void set_top(int v) { _t = v; }
     
     int width() const { return _r - _l; }
     
-    int height() const { return _t - _b; } 
-
+    int height() const { return _t - _b; }
+    
     double middle_row() const { return (_l + _r) / 2.0f; }
     
     double middle_column() const { return (_b + _t) / 2.0f; }
     
-   
+    
     void set(int l, int b, int r, int t) {
         _l = l;
         _b = b;
         _r = r;
         _t = t;
-        assert((_r>= _l) && (_t>=_b)); 
+        assert((_r>= _l) && (_t>=_b));
     }
     
-   
+    
     void set(const Box2D& b) { *this = b; }
     
     
@@ -133,7 +145,7 @@ public:
     }
     
     /*Pad the edges of the box by the input values.
-     *This is used by filters that increases the BBOX 
+     *This is used by filters that increases the BBOX
      *of the image.*/
     void pad(int dl, int db, int dr, int dt)
     {
@@ -150,7 +162,7 @@ public:
     /*clamp x to the region [_l,_r-1] */
     int clampx(int x) const { return x <= _l ? _l : x >= _r ? _r - 1 : x; }
     
-   
+    
     int clampy(int y) const { return y <= _b ? _b : y >= _t ? _t - 1 : y; }
     
 	/*merge the current box with another integerBox.
@@ -159,7 +171,7 @@ public:
     void merge(const Box2D& box) {
         merge(box.left(), box.bottom(), box.right(), box.top());
     }
-
+    
     void merge(int l, int b, int r, int t) {
         if (l < left()) {
             _l = l;
@@ -174,13 +186,13 @@ public:
             _t = t;
         }
     }
-
+    
     
 	/*intersection of two boxes*/
     void intersect(const Box2D& box) {
         intersect(box.left(), box.bottom(), box.right(), box.top());
     }
-
+    
     
     void intersect(int l, int b, int r, int t) {
         if (l > left()) {
@@ -196,14 +208,14 @@ public:
             _t = t;
         }
     }
-
-
+    
+    
     /// returns true if the Box2D passed as parameter is fully contained in this one
     bool isContained(const Box2D& b) const {
         return b.isEmpty() || ((b.left() >= left()) && (b.bottom() > bottom()) &&
                                (b.right() <= right()) && (b.top() <= top()));
     }
-
+    
     bool isContained(int l,int b,int r,int t) const {
         return isContained(Box2D(l,b,r,t));
     }
@@ -237,5 +249,7 @@ inline bool operator!=(const Box2D& b1, const Box2D& b2)
     b1.right() != b2.right() ||
     b1.top() != b2.top();
 }
+
+
 
 #endif

@@ -98,10 +98,9 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
-    Row* row = op->input(0)->get(y,offset,range);
+void WriteQt::renderRow(int left,int right,int y,const ChannelSet& channels){
+    boost::shared_ptr<const Row> row = op->input(0)->get(y,left,right);
     const Format& frmt = op->info().displayWindow();
-    
     /*invert y to be in top-to-bottom increasing order*/
     y = frmt.top()-y-1;
     uchar* toR=0;
@@ -125,36 +124,16 @@ void WriteQt::engine(int y,int offset,int range,ChannelSet channels,Row*){
         toA = toR+1;
     }
 
-    const float* red = (*row)[Channel_red];
-    const float* green = (*row)[Channel_green];
-    const float* blue = (*row)[Channel_blue];
-    const float* alpha = (*row)[Channel_alpha];
-    if(!red){
-        row->turnOn(Channel_red);
-    }
-    red = (*row)[Channel_red]+row->offset();
+    const float* red = row->begin(Channel_red);
+    const float* green = row->begin(Channel_green);
+    const float* blue = row->begin(Channel_blue);
+    const float* alpha = row->begin(Channel_alpha);
 
-    if(!green){
-        row->turnOn(Channel_green);
-    }
-    green = (*row)[Channel_green]+row->offset();
 
-    if(!blue){
-        row->turnOn(Channel_blue);
-    }
-    blue = (*row)[Channel_blue]+row->offset();
-
-    if(!alpha){
-        row->turnOn(Channel_alpha);
-    }
-    alpha = (*row)[Channel_alpha]+row->offset();
-
-    to_byte(Channel_red, toR, red, alpha, row->right() - row->offset(),4);
-    to_byte(Channel_green, toG, green, alpha, row->right() - row->offset(),4);
-    to_byte(Channel_blue, toB, blue, alpha, row->right() - row->offset(),4);
-    to_byte(Channel_alpha, toA, alpha, alpha, row->right() - row->offset(),4);
-    row->release();
-    // row is unlocked by release()
+    to_byte(Channel_red, toR, red, alpha, row->width(),4);
+    to_byte(Channel_green, toG, green, alpha, row->width(),4);
+    to_byte(Channel_blue, toB, blue, alpha, row->width(),4);
+    to_byte(Channel_alpha, toA, alpha, alpha, row->width(),4);
 }
 
 WriteQt::WriteQt(Writer* writer):Write(writer),_buf(0){

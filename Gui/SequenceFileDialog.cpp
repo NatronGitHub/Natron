@@ -78,6 +78,8 @@ static inline bool nocase_equal_string (const std::string &s1, const std::string
                 nocase_equal_char);
 }
 
+
+
 namespace {
     struct NameMappingCompareFirst {
         NameMappingCompareFirst(const QString &val) : val_(val) {}

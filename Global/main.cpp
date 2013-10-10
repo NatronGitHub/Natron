@@ -21,6 +21,7 @@
 #include "Global/AppManager.h"
 #include "Engine/Model.h"
 #include "Engine/Knob.h"
+#include "Writers/Writer.h"
 
 using namespace std;
 
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
     app.setApplicationName(POWITER_APPLICATION_NAME);
 
     qRegisterMetaType<Variant>();
+    qRegisterMetaType<Writer*>();
     
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");

@@ -18,7 +18,6 @@
 #include "Engine/ChannelSet.h"
 #include "Engine/Model.h"
 #include "Engine/Format.h"
-#include "Engine/NodeCache.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxNode.h"
@@ -332,22 +331,15 @@ void Node::deactivate(){
             it->second = NULL;
         }
     }
-    Node* firstChild = 0;
     _deactivatedState._outputsConnections.clear();
     for (OutputMap::iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(!it->second)
             continue;
-        if(it == _outputs.begin()){
-            firstChild = it->second;
-        }
         int inputNb = it->second->disconnectInput(this);
         _deactivatedState._outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     emit deactivated();
-    if(firstChild){
-        _model->getApp()->triggerAutoSave();
-        _model->checkViewersConnection();
-    }
+
 }
 
 void Node::activate(){
@@ -363,13 +355,10 @@ void Node::activate(){
         assert(found->second.first == it->first);
         it->second->connectOutput(this,found->second.first);
     }
-    Node* firstChild = 0;
     for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(!it->second)
             continue;
-        if(it == _outputs.begin()){
-            firstChild = it->second;
-        }
+
         OutputConnectionsIterator found = _deactivatedState._outputsConnections.find(it->second);
         if(found == _deactivatedState._outputsConnections.end()){
             cout << "Big issue while activating this node, canceling process." << endl;
@@ -380,10 +369,6 @@ void Node::activate(){
     }
     emit activated();
 
-    if(firstChild){
-        _model->getApp()->triggerAutoSave();
-        _model->checkViewersConnection();
-    }
 }
 
 
@@ -431,46 +416,29 @@ void Node::createKnobDynamically(){
 }
 
 
-Row* Node::get(int y,int x,int r) {
-    NodeCache* cache = appPTR->getNodeCache();
-    int current_frame;
-    const VideoEngine::DAG& dag = _info.executingEngine()->getCurrentDAG();
-    dag.lock();
-    OutputNode* outputNode = dag.getOutput();
-    dag.unlock();
-    assert(outputNode);
-    current_frame = outputNode->currentFrame();
-    std::string filename =  getRandomFrameName(current_frame).toStdString();
-    Row* out = 0;
-    U64 key = _hashValue.value();
-    pair<U64,Row*> entry = cache->get(key , filename,x,r,y,info().channels());
-    if (entry.second && entry.first != 0) {
-        out = entry.second;
-    }
-    // Shit happens: there may be a completely different cache entry with the same hash
-    // FIXME: we should check for more things (frame number...)
-    if (!out || out->y() != y || out->offset() != x || out->right() !=  r) {
-        if (out) {
-            // wrong cache entry
-            assert(out->y() != y || out->offset() != x || out->right() !=  r);
-            out->unlock();
-        }
+boost::shared_ptr<const Row> Node::get(int y,int x,int r) {
+    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();    
+    RowKey params = Row::makeKey(_hashValue.value(), x, y, r, info().channels());
+    boost::shared_ptr<const Row> entry = cache.get(params);
+    if (entry) {
+        return entry;
+    }else{
+        boost::shared_ptr<Row> out;
         if (cacheData()) {
-            out = cache->addRow(entry.first,x,r,y, info().channels(), filename);
-            if (!out) {
-                return NULL;
+            {
+                boost::shared_ptr<Powiter::CachedValue<Row> > newCacheEntry = cache.newEntry(params,
+                                                                                             (r-x)*sizeof(float)*info().channels().size(),0);
+                out = newCacheEntry->getObject();
+                engine(out.get());
+                
             }
+            return out;
         } else {
-            out = new Row(x,y,r,info().channels());
-            out->lock();
-            out->allocateRow();
+            out.reset(new Row(x,y,r,info().channels()));
+            engine(out.get());
         }
-        assert(out->offset() == x && out->right() == r);
-        engine(y,x,r, info().channels(), out);
+        return out;
     }
-    assert(out);
-    // out is locked
-    return out;
 }
 
 ViewerNode* Node::hasViewerConnected(Node* node){
@@ -602,8 +570,8 @@ int OutputNode::firstFrame() const {
 int OutputNode::lastFrame() const {
     return _timeline->lastFrame();
 }
-void OutputNode::updateDAGAndRender(bool initViewer){
-    _videoEngine->updateDAGAndContinueRender(initViewer, this,currentFrame());
+void OutputNode::updateTreeAndRender(bool initViewer){
+    _videoEngine->updateTreeAndContinueRender(initViewer, this,currentFrame());
 }
 void OutputNode::refreshAndContinueRender(bool initViewer){
     _videoEngine->refreshAndContinueRender(initViewer,this,currentFrame());

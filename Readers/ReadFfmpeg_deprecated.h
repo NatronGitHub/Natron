@@ -122,7 +122,9 @@ inline bool IsCodecBlacklisted(const char* name)
     }
     return false;
 }
+namespace Powiter{
 class Row;
+}
 class FFMPEGFile : public ReferenceCountedObject{
     
     struct Stream

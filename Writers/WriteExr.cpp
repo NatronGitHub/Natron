@@ -144,10 +144,10 @@ std::vector<std::string> WriteExr::fileTypesEncoded() const {
 void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory()->createKnob("Separator", _op, separatorDesc));
+    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory().createKnob("Separator", _op, separatorDesc));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op, compressionCBDesc));
+    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _op, compressionCBDesc));
     std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
         list.push_back(EXR::compressionNames[i].c_str());
@@ -156,7 +156,7 @@ void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", _op,depthCBDesc));
+    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _op,depthCBDesc));
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
         list.push_back(EXR::depthNames[i].c_str());
@@ -185,22 +185,17 @@ void WriteExr::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void WriteExr::engine(int y,int offset,int range,ChannelSet channels,Row* ){
-    Row* row = op->input(0)->get(y,offset,range);
-    const float* a = (*row)[Channel_alpha];
-    if (a) {
-        a+=row->offset();
-    }
-    Row* toRow = new Row(offset,y,range,channels);
-    toRow->lock();
-    toRow->allocateRow();
+void WriteExr::renderRow(int left,int right,int y,const ChannelSet& channels){
+    boost::shared_ptr<const Row> row = op->input(0)->get(y,left,right);
+    const float* a = row->begin(Channel_alpha);
+   
+    Row* toRow = new Row(left,y,right,channels);
     foreachChannels(z, channels){
-        const float* from = (*row)[z] + row->offset();
-        float* to = toRow->writable(z)+row->offset();
-        to_float(z, to , from, a, row->right()- row->offset());
+        const float* from = row->begin(z);
+        float* to = toRow->begin(z);
+        to_float(z, to , from, a, row->width());
     }
-    row->release();
-    // row is unlocked by release()
+
     {
         QMutexLocker locker(_lock);
         _img.insert(make_pair(y,toRow));
@@ -284,7 +279,7 @@ void WriteExr::writeAllData(){
                 foreachChannels(z, channels){
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
-                                Imf::Slice(Imf::FLOAT, (char*)row->writable(z),
+                                Imf::Slice(Imf::FLOAT, (char*)row->begin(z), // watch out begin does not point to 0 anymore
                                            sizeof(float), 0));
                 }
             }else{
@@ -297,7 +292,7 @@ void WriteExr::writeAllData(){
                                 Imf::Slice(Imf::HALF,
                                            (char*)(&(*halfwriterow)[cur][0] - exrDataW->min.x),
                                            sizeof((*halfwriterow)[cur][0]), 0));
-                    const float* from = (*row)[z];
+                    const float* from = row->begin(z); // watch out begin does not point to 0 anymore
                     for(int i = exrDataW->min.x; i < exrDataW->max.x ; ++i) {
                         (*halfwriterow)[cur][i - exrDataW->min.x] = from[i];
                     }
@@ -306,7 +301,7 @@ void WriteExr::writeAllData(){
                 delete halfwriterow;
             }
             _img.erase(y);
-            row->release();
+            delete row;
             // row is unlocked by release()
             outfile->setFrameBuffer(fbuf);
             outfile->writePixels(1);

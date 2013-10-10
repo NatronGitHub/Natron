@@ -221,34 +221,29 @@ void Lut::from_byteQt(float* to, const QRgb* from,Channel z,bool premult,int W,i
     validate();
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
-    switch (z) {
-        case Powiter::Channel_alpha:
+    if(z == Channel_alpha)
             lookup = qAlpha;
-            break;
-        case Powiter::Channel_red:
+    else if(z == Channel_red)
             lookup = qRed;
-            break;
-        case Powiter::Channel_green:
+
+    else if (z == Channel_green)
             lookup = qGreen;
-            break;
-        case Powiter::Channel_blue:
+
+    else if (z == Channel_blue)
             lookup = qBlue;
-            break;
-        default:
+    else
             lookup = qRed;
-            break;
-    }
     if(z == Powiter::Channel_alpha){
         linear_from_byteQt(to, from, z, W,delta);
     }else{
         if(premult){
-            for(int i =0 ; i < W ; i+=delta){
+            for(int i = 0 ; i < W ; i+=delta){
                 const QRgb c = from[i];
                 int alpha = qAlpha(c);
                 to[i] = from_byte_table[((*lookup)(c)/alpha)] * alpha;
             }
         }else{
-            for(int i =0 ; i < W ; i+=delta){
+            for(int i = 0 ; i < W ; i+=delta){
                 const QRgb c = from[i];
                 to[i] = from_byte_table[(*lookup)(c)];
             }

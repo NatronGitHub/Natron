@@ -13,12 +13,26 @@
 #define POWITER_ENGINE_CHANNELSET_H_
 
 #include <string>
+
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 class ChannelSet{
     U32 mask; // 1 bit per channel and LSB is for "all" channels
     unsigned int _size;
+    
+    
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        ar & mask;
+        ar & _size;
+    }
 public:
     
     // class iterator: used to iterate over channels

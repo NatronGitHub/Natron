@@ -23,7 +23,9 @@ namespace Powiter {
     }
 }
 class Writer;
+namespace Powiter{
 class Row;
+}
 class Separator_Knob;
 
 /** @class This class is used by Writer to load the filetype-specific knobs.
@@ -126,7 +128,7 @@ public:
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
      * within the range specified by (offset,range) and for all the channels.
     **/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) = 0;
+	virtual void renderRow(int left,int right,int y,const ChannelSet& channels) = 0;
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the

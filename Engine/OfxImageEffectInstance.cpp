@@ -397,7 +397,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
     VideoEngine* engine = node()->getExecutingEngine();
     if(!engine)
         return -1.;
-    const VideoEngine::DAG& dag = engine->getCurrentDAG();
+    const VideoEngine::Tree& dag = engine->getTree();
     dag.lock();
     OutputNode* outputNode = dag.getOutput();
     dag.unlock();
@@ -409,7 +409,7 @@ double OfxImageEffectInstance::timeLineGetTime() {
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
+    const VideoEngine::Tree& dag = node()->getExecutingEngine()->getTree();
     dag.lock();
     if(!dag.getOutput()){
         dag.unlock();
@@ -430,7 +430,7 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
 /// get the first and last times available on the effect's timeline
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::DAG& dag = node()->getExecutingEngine()->getCurrentDAG();
+    const VideoEngine::Tree& dag = node()->getExecutingEngine()->getTree();
     dag.lock();
     if(!dag.getOutput()){
         t1 = -1.;

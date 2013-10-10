@@ -113,8 +113,8 @@ bool Writer::_validate(bool doFullWork){
     return true;
 
 }
-void Writer::engine(int y,int offset,int range,ChannelSet channels,Row* out){
-    _writeHandle->engine(y, offset, range, channels, out);
+void Writer::renderRow(int left,int right,int y,const ChannelSet& channels){
+    _writeHandle->renderRow(left,right,y,channels);
 }
 
 void Writer::createKnobDynamically(){
@@ -122,21 +122,21 @@ void Writer::createKnobDynamically(){
 }
 void Writer::initKnobs(){
     std::string fileDesc("File");
-    _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory()->createKnob("OutputFile", this, fileDesc));
+    _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", this, fileDesc));
     QObject::connect(_fileKnob,SIGNAL(filesSelected()),this,SLOT(onFilesSelected()));
     assert(_fileKnob);
     
     std::string renderDesc("Render");
-    Button_Knob* renderButton = static_cast<Button_Knob*>(appPTR->getKnobFactory()->createKnob("Button", this, renderDesc));
+    Button_Knob* renderButton = static_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button", this, renderDesc));
     assert(renderButton);
     QObject::connect(renderButton, SIGNAL(valueChangedByUser()), this, SLOT(startRendering()));
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = static_cast<Bool_Knob*>(appPTR->getKnobFactory()->createKnob("Bool", this, premultString));
+    Bool_Knob* premult = static_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
     premult->setValue(_premult);
     
     std::string filetypeStr("File type");
-    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory()->createKnob("ComboBox", this, filetypeStr));
+    _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
     QObject::connect(_filetypeCombo, SIGNAL(valueChangedByUser()), this, SLOT(fileTypeChanged()));
     const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
@@ -253,10 +253,10 @@ void Writer::startRendering(){
     _filename = _fileKnob->value<QString>().toStdString();
     if(validInfosForRendering()){
         /*Calls validate just to get the appropriate frame range in the timeline*/
-        getVideoEngine()->resetAndSortDAG(this);
+        getVideoEngine()->resetAndSortTree(this);
         getVideoEngine()->validate(false);
-        updateDAGAndRender();
-        _model->onRenderingOnDiskStarted(this,_filename.c_str(),firstFrame(),lastFrame());
+        updateTreeAndRender();
+        emit renderingOnDiskStarted(this,_filename.c_str(),firstFrame(),lastFrame());
         
     }
 }

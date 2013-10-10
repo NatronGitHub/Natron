@@ -15,8 +15,8 @@
 #include <map>
 #include <string>
 #include <QtCore/QFutureWatcher>
-
 #include "Engine/Row.h"
+
 #include "Engine/ChannelSet.h"
 
 class Node;
@@ -65,7 +65,7 @@ public:
      !!WARNING: calling at() while isFinished still returns false
      will block until the results are available for this row*/
     // on output, the row is locked, and must be unlocked using Row::unlock()
-    Row* at(int y) const;
+    boost::shared_ptr<const Powiter::Row> at(int y) const;
 
     // erase the row at y
     // the row must be locked
@@ -92,16 +92,16 @@ signals:
     
 private:
     // on output, the row is locked, and must be unlocked using Row::unlock()
-    Row* getInputRow(Node* node,int y, int x,int r);
+    boost::shared_ptr<const Powiter::Row> getInputRow(Node* node,int y, int x,int r);
 
 private:
     int _x,_y,_r,_t;
     ChannelSet _channels;
     Node* _node;
     bool _isFinished;
-    std::map<int,Row*> _interest;
+    std::map<int,boost::shared_ptr<const Powiter::Row> > _interest;
     QVector<int> _sequence;
-    QFutureWatcher<Row*>* _results;
+    QFutureWatcher<boost::shared_ptr<const Powiter::Row> >* _results;
 };
 
 #endif /* defined(POWITER_ENGINE_IMAGEFETCHER_H_) */

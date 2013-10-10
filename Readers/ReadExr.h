@@ -25,7 +25,9 @@ namespace Imf {
     class InputFile;
 }
 
+namespace Powiter{
 class Row;
+}
 class ReaderInfo;
 class ExrChannelExctractor
 {
@@ -72,7 +74,7 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "OpenEXR";}
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+    virtual void engine(Powiter::Row* out) OVERRIDE;
     virtual bool supportsScanLine() const OVERRIDE {return true;}
     virtual int scanLinesCount() const OVERRIDE {return (int)_img.size();}
     virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
@@ -83,12 +85,11 @@ public:
     void debug();
     
 private:
-	Imf::InputFile* inputfile;
-	std::map<Powiter::Channel, const char*> channel_map;
-	std::vector<std::string> views;
-	std::string heroview;
-	int dataOffset;
-    std::map< int, Row* > _img;
+    Imf::InputFile* _inputfile;
+    std::map<Powiter::Channel, const char*> _channel_map;
+    std::vector<std::string> views;
+    int _dataOffset;
+    std::map< int, Powiter::Row* > _img;
 #ifdef __POWITER_WIN32__
     // FIXME: this kind of system-dependent members should really be put in a PIMPL
     std::ifstream* inputStr;

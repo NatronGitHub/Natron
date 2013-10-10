@@ -31,11 +31,13 @@
 #include "Global/GlobalDefines.h"
 #include "Gui/Texture.h" // for TextureRect
 #include "Engine/Format.h"
+#include "Engine/FrameEntry.h"
 
-class FrameEntry;
 class ViewerGL;
 class Node;
+namespace Powiter{
 class Row;
+}
 class ReaderInfo;
 class Reader;
 class Model;
@@ -59,18 +61,18 @@ public:
     
     
     /**
-     *@class DAG
-     *@brief This class represents the direct acyclic graph as seen internally by the video engine.
-     *It provides means to sort the graph and access to the nodes in topological order. It also
-     *provides access to the input nodes and the output node of the graph.
+     *@class Tree
+     *@brief This class represents the tree upstream of the output node as seen internally by the video engine.
+     *It provides means to sort the tree and access to the nodes in topological order. It also
+     *provides access to the input nodes and the output node of the tree.
      *An input node is a node that does not depend on any upstream node,i.e :
      *it can generate data.
      *An output node is a node whose output cannot be connected to any other node and whose
      *sole purpose is to visulize the data flowing through the graph in a given configuration.
-     *A DAG is represented by 1 output node, connected to its input, and so on recursively.
+     *A Tree is represented by 1 output node, connected to its input, and so on recursively.
      *
      **/
-    class DAG{
+    class Tree{
         
     public:
         typedef std::vector<Node*>::const_iterator DAGIterator;
@@ -78,16 +80,16 @@ public:
         typedef std::vector<Node*>::const_iterator InputsIterator;
         
         /**
-         *@brief Construct an empty DAG that can be filled with nodes.
-         *To actually fill the dag you need to call DAG::resetAndSort(OutputNode*,bool) .
+         *@brief Construct an empty Tree that can be filled with nodes.
+         *To actually fill the dag you need to call Tree::resetAndSort(OutputNode*,bool) .
          *Once filled up, you can access the nodes in topological order with the iterators.
          *The reverse iterator will give you the opposite of the topological order.
          */
-        DAG():
+        Tree():
         _output(0)
         ,_isViewer(false)
         ,_isOutputOpenFXNode(false)
-        ,_dagMutex(QMutex::Recursive) /*recursive lock*/
+        ,_treeMutex(QMutex::Recursive) /*recursive lock*/
         {}
         
         /**
@@ -99,9 +101,9 @@ public:
         void resetAndSort(OutputNode* out);
         
         /*Lock the dag. You should call this before any access*/
-        void lock() const { _dagMutex.lock(); }
+        void lock() const { _treeMutex.lock(); }
         
-        void unlock() const { _dagMutex.unlock(); }
+        void unlock() const { _treeMutex.unlock(); }
                 
         /**
          *@brief Returns an iterator pointing to the first node in the graph in topological order.
@@ -129,26 +131,26 @@ public:
         
         /**
          *@brief Returns a pointer to the output node of the graph.
-         *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
+         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
          */
         OutputNode* getOutput() const {return _output;}
         
         
         /**
          *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
+         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
          */
         ViewerNode* outputAsViewer() const;
         
         /**
          *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
+         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
          */
         Writer* outputAsWriter() const;
         
         /**
          *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if DAG::resetAndSort(OutputNode*,bool) has never been called.
+         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
          */
         OfxNode* outputAsOpenFXNode() const;
         
@@ -185,16 +187,8 @@ public:
          */
         bool validate(bool doFullWork);
         
-        /**
-         *@brief Generate a string containing the concatenation of all
-         *the current frame file-names in all readers.
-         *For example if Reader_1 has for current frame toto1.jpg and 
-         *Reader_2 has for current frame lala.png, this would return
-         *toto1.jpglala2.jpg
-         **/
-        const QString generateConcatenationOfAllReadersFileNames() const;
-        
         void debug();
+        
     private:
         
         /*recursive topological sort*/
@@ -208,13 +202,13 @@ public:
         /*clears out the structure*/
         void clearGraph();
         
-        OutputNode* _output; /*!<the output of the DAG*/
-        std::vector<Node*> _graph;/*!<the un-sorted DAG*/
-        std::vector<Node*> _sorted; /*!<the sorted DAG*/
+        OutputNode* _output; /*!<the output of the Tree*/
+        std::vector<Node*> _graph;/*!<the un-sorted Tree*/
+        std::vector<Node*> _sorted; /*!<the sorted Tree*/
         std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
         bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
-        mutable QMutex _dagMutex; /*!< protects the dag*/
+        mutable QMutex _treeMutex; /*!< protects the dag*/
     };
     
 private:
@@ -225,12 +219,12 @@ private:
      */
     struct LastFrameInfos{
         LastFrameInfos():
-        _cachedEntry(NULL)
+        _cachedEntry()
         , _rows()
         , _textureRect()
         ,_dataSize(0){}
         
-        FrameEntry* _cachedEntry;
+        boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
         std::vector<int> _rows;
         TextureRect _textureRect;
         U64 _dataSize;
@@ -265,12 +259,12 @@ private:
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
-        OutputNode* _output;/*!< the output that will be used to build the DAG that will serve to render*/
+        OutputNode* _output;/*!< the output that will be used to build the Tree that will serve to render*/
     };
     
     Model* _model;/*!< pointer to the model*/
     
-    DAG _dag; /*!< The internal DAG instance.*/
+    Tree _tree; /*!< The internal Tree instance.*/
     
     QMutex _timerMutex;///protects timer
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
@@ -336,7 +330,7 @@ public slots:
         /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
-    void abort();
+    void abortRendering();
     /**
      *@brief Calls the video engine for the frame number frame. This is the slot called when the user scrub in the timeline.
      **/
@@ -454,11 +448,11 @@ public:
      *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
      *frame indicated on the timeline.
      *@param startingFrame[in] The frame to start with.
-     *@param output[in] The output from which we should build the DAG that will serve to render.
+     *@param output[in] The output from which we should build the Tree that will serve to render.
      *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
      *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
      *until the user explicitly stops it.
-     *@param updateDAG if true, the engine will rebuild the internal DAG in the startEngine() function.
+     *@param updateDAG if true, the engine will rebuild the internal Tree in the startEngine() function.
      *@param fitFrameToViewer[in] If true, it will fit the first frame to the viewport.
      *@param forward[in] If true, the engine runs forwards, otherwise backwards.
      *@param sameFrame[in] If true, that means the engine will not increment/decrement the frame indexes and will run
@@ -479,27 +473,27 @@ public:
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
      *taking into account the new parameters changed. Otherwise it will just refresh the same frame than the last frame rendered
      *on the viewer. This function is to be called exclusivly by the Viewer. This function should be called whenever
-     *a parameter changed but not the DAG itself.
+     *a parameter changed but not the Tree itself.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
-     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
-     *serve to render the frames in case we need to build the DAG.
+     *@param output[in] A pointer to the output whose inputs will determine the Tree that will
+     *serve to render the frames in case we need to build the Tree.
      *@param startingFrame[in] The frame to start rendering with.
      **/
     void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
-     *taking into account the new DAG that it has rebuilt using output.
+     *taking into account the new Tree that it has rebuilt using output.
      *Otherwise it will just refresh the same frame than the last frame rendered
      *on the viewer. This function should be called whenever
-     *a change has been made (potentially) to the DAG.
+     *a change has been made (potentially) to the Tree.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *@param output[in] A pointer to the output whose inputs will determine the DAG that will
+     *@param output[in] A pointer to the output whose inputs will determine the Tree that will
      *serve to render the frames.
      *@param startingFrame[in] The frame to start rendering with.
      **/
-    void updateDAGAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+    void updateTreeAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
 
     
     /**
@@ -511,24 +505,24 @@ public:
     }
     
     /**
-     *@brief Convenience function calling DAG::isOutputAViewer()
+     *@brief Convenience function calling Tree::isOutputAViewer()
      **/
-    bool isOutputAViewer() const {return _dag.isOutputAViewer();}
+    bool isOutputAViewer() const {return _tree.isOutputAViewer();}
     
     /**
-     *@returns Returns a const reference to the DAG used by the video engine.
+     *@returns Returns a const reference to the Tree used by the video engine.
      *You should bracket dag.lock() and dag.unlock() before any operation on 
      *the dag.
      **/
-    const DAG& getCurrentDAG() const { return _dag; }
+    const Tree& getTree() const { return _tree; }
     
-    /*@brief Calls DAG::validate(bool)*/
+    /*@brief Calls Tree::validate(bool)*/
     void validate(bool doFullWork){
-        _dag.validate(doFullWork);
+        _tree.validate(doFullWork);
     }
     
-    void resetAndSortDAG(OutputNode* output){
-        _dag.resetAndSort(output);
+    void resetAndSortTree(OutputNode* output){
+        _tree.resetAndSort(output);
     }
     
 	/**
@@ -568,7 +562,7 @@ private:
     void stopEngine();
     
     /**
-     *@brief Set up the video engine state, e.g: build DAG from the output node and activate some flags.
+     *@brief Set up the video engine state, e.g: build Tree from the output node and activate some flags.
      *It is used internally by the run function
      *@returns Returns true if started,false otherwise
      **/
@@ -608,6 +602,7 @@ private:
 /*Not used but leave it here if we need to use QThreadPool instead of
  QtConcurrent::map.
  */
+#if 0
 class RowRunnable : public QObject, public QRunnable{
     Q_OBJECT
     
@@ -629,7 +624,7 @@ signals:
     void finished(int,int);
     
 };
-
+#endif
 
 
 #endif /* defined(POWITER_ENGINE_VIDEOENGINE_H_) */

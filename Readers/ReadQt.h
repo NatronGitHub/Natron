@@ -17,7 +17,9 @@
 #include "Readers/Read.h"
 
 class QImage;
+namespace Powiter{
 class Row;
+}
 class ReadQt : public Read {
 
     QImage* _img;
@@ -45,7 +47,7 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+    virtual void engine(Powiter::Row* out) OVERRIDE;
     virtual bool supports_stereo() const OVERRIDE;
     virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
     virtual void readAllData(bool openBothViews) OVERRIDE;

@@ -24,6 +24,7 @@ namespace Powiter {
 namespace Color {
     class Lut;
 }
+    class Row;
 }
 
 class Read{
@@ -44,7 +45,7 @@ public:
     virtual std::string decoderName() const = 0;
     
     /*This must be implemented to do the to linear colorspace conversion*/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) = 0;
+	virtual void engine(Powiter::Row* out) = 0;
     
     /*can be overloaded to add knobs dynamically to the reader depending on the file type*/
 	virtual void createKnobDynamically();

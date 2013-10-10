@@ -49,6 +49,33 @@ class QAction;
 class SequenceFileDialog;
 class SequenceItemDelegate;
 
+
+#if QT_VERSION < 0x050000
+namespace Powiter{
+    inline bool removeRecursively(const QString& dirName){
+        bool result = false;
+        QDir dir(dirName);
+        
+        if (dir.exists(dirName)) {
+            Q_FOREACH(QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst)) {
+                if (info.isDir()) {
+                    result = removeRecursively(info.absoluteFilePath());
+                }
+                else {
+                    result = QFile::remove(info.absoluteFilePath());
+                }
+                
+                if (!result) {
+                    return result;
+                }
+            }
+            result = dir.rmdir(dirName);
+        }
+        return result;
+    }
+}
+#endif
+
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
  *the file system and some urls.

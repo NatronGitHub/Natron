@@ -75,7 +75,7 @@ public:
         
     virtual bool _validate(bool) OVERRIDE;
     
-    virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+    virtual void engine(Powiter::Row* out) OVERRIDE;
 
     virtual void drawOverlay();
     

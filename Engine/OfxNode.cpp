@@ -323,7 +323,9 @@ void OfxNode::openFilesForAllFileParams(){
 
 }
 
-void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, Row* out) {
+void OfxNode::engine(Row* out) {
+    const ChannelSet& channels = out->channels();
+    int y = out->y();
     OfxRectI renderW;
     const Format& dispW = info().displayWindow();
     assert(effectInstance());
@@ -351,32 +353,32 @@ void OfxNode::engine(int y, int /*offset*/, int /*range*/, ChannelSet channels, 
     assert(img);
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
-        const OfxRGBAColourB* srcPixels = img->pixelB(out->offset(), y);
+        const OfxRGBAColourB* srcPixels = img->pixelB(out->left(), y);
         assert(srcPixels);
         foreachChannels(chan, channels){
-            float* writeable = out->writable(chan);
-            if(writeable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            float* writable = out->begin(chan);
+            if(writable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->right()-out->left(), writable);
             }
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
     {
-        const OfxRGBAColourS* srcPixels = img->pixelS(out->offset(), y);
+        const OfxRGBAColourS* srcPixels = img->pixelS(out->left(), y);
         assert(srcPixels);
         foreachChannels(chan, channels){
-            float* writeable = out->writable(chan);
-            if(writeable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            float* writable = out->begin(chan);
+            if(writable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->right()-out->left(), writable);
             }
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
     {
-        const OfxRGBAColourF* srcPixels = img->pixelF(out->offset(), y);
+        const OfxRGBAColourF* srcPixels = img->pixelF(out->left(), y);
         assert(srcPixels);
         foreachChannels(chan, channels){
-            float* writeable = out->writable(chan);
-            if(writeable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->right()-out->offset(), writeable+out->offset());
+            float* writable = out->begin(chan);
+            if(writable){
+                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->right()-out->left(), writable);
             }
         }
     }

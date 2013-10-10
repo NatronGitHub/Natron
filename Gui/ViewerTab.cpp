@@ -440,7 +440,7 @@ _maximized(false)
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(play_Forward_Button,SIGNAL(clicked(bool)),this,SLOT(startPause(bool)));
-    QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abort()));
+    QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abortRendering()));
     QObject::connect(play_Backward_Button,SIGNAL(clicked(bool)),this,SLOT(startBackward(bool)));
     QObject::connect(previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()));
     QObject::connect(nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()));
@@ -498,7 +498,7 @@ void ViewerTab::updateZoomComboBox(int value){
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
+        _viewerNode->getVideoEngine()->render(_viewerNode,/*Tree output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
                                               true,/*rebuild dag?*/
@@ -506,15 +506,15 @@ void ViewerTab::startPause(bool b){
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
     }else{
-        abort();
+        abortRendering();
     }
 }
-void ViewerTab::abort(){
-    _viewerNode->getVideoEngine()->abort();
+void ViewerTab::abortRendering(){
+    _viewerNode->getVideoEngine()->abortRendering();
 }
 void ViewerTab::startBackward(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode,/*DAG output*/
+        _viewerNode->getVideoEngine()->render(_viewerNode,/*Tree output*/
                                               _viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
                                               true,/*rebuild dag?*/
@@ -522,40 +522,40 @@ void ViewerTab::startBackward(bool b){
                                               false,/*forward?*/
                                               false);/*same frame ?*/
     }else{
-        abort();
+        abortRendering();
     }
 }
 void ViewerTab::previousFrame(){
-    abort();
+    abortRendering();
     seek(_viewerNode->currentFrame()-1);
 }
 void ViewerTab::nextFrame(){
-    abort();
+    abortRendering();
     seek(_viewerNode->currentFrame()+1);
 }
 void ViewerTab::previousIncrement(){
-    abort();
+    abortRendering();
     seek(_viewerNode->currentFrame()-incrementSpinBox->value());
 }
 void ViewerTab::nextIncrement(){
-    abort();
+    abortRendering();
     seek(_viewerNode->currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
-    abort();
+    abortRendering();
     seek(_viewerNode->firstFrame());
 }
 void ViewerTab::lastFrame(){
-    abort();
+    abortRendering();
     seek(_viewerNode->lastFrame());
 }
 void ViewerTab::seek(int f){
-    abort();
+    abortRendering();
     _viewerNode->getVideoEngine()->seek(f);
 }
 
 void ViewerTab::centerViewer(){
-    abort();
+    abortRendering();
     if(viewer->displayingImage()){
         _viewerNode->refreshAndContinueRender(true);
 
@@ -568,7 +568,7 @@ void ViewerTab::centerViewer(){
 void ViewerTab::refresh(){
     abort();
     _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
-    _viewerNode->updateDAGAndRender();
+    _viewerNode->updateTreeAndRender();
 }
 
 ViewerTab::~ViewerTab()

@@ -120,7 +120,7 @@ public:
 public slots:
     
     void startPause(bool);
-    void abort();
+    void abortRendering();
     void startBackward(bool);
     void previousFrame();
     void nextFrame();

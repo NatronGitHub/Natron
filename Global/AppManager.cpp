@@ -43,13 +43,12 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
-#include "Engine/ViewerCache.h"
 #include "Engine/Knob.h"
-#include "Engine/NodeCache.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxNode.h"
 #include "Engine/Format.h"
+
 
 #include "Readers/Reader.h"
 #include "Readers/Read.h"
@@ -75,8 +74,6 @@ _age(QDateTime::currentDateTime()),
 _format(appPTR->findExistingFormat(2048, 1556,1.)){
     
 }
-
-using boost::scoped_ptr;
 
 AppInstance::AppInstance(int appID,const QString& projectName)
 : _model(new Model(this))
@@ -433,19 +430,18 @@ void AppInstance::disconnectViewersFromViewerCache(){
     _model->disconnectViewersFromViewerCache();
 }
 
-void AppInstance::clearPlaybackCache(){
-    appPTR->getViewerCache()->clearInMemoryPortion();
+void AppManager::clearPlaybackCache(){
+    _viewerCache->clearInMemoryPortion();
 }
 
 
-void AppInstance::clearDiskCache(){
-    appPTR->getViewerCache()->clearInMemoryPortion();
-    appPTR->getViewerCache()->clearDiskCache();
+void AppManager::clearDiskCache(){
+    _viewerCache->clear();
 }
 
 
-void  AppInstance::clearNodeCache(){
-    appPTR->getNodeCache()->clear();
+void  AppManager::clearNodeCache(){
+    _nodeCache->clear();
 }
 
 
@@ -513,27 +509,18 @@ AppManager::AppManager()
 , ofxHost(new Powiter::OfxHost())
 , _toolButtons()
 , _knobFactory(new KnobFactory())
-, _nodeCache(new NodeCache())
-, _viewerCache(new ViewerCache())
+,_nodeCache(new Cache<Row>("NodeCache",0x1, (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent -
+                                             Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
+,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache
+                                    ,Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent))
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
+
     
     /*loading all plugins*/
     loadAllPlugins();
-    
     loadBuiltinFormats();
-    
-    /*node cache initialisation & restoration*/
-    double maxCacheMemoryPercent = Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent;
-    double maxPlayBackMemoryPercent = Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent;
-    U64 nodeCacheMaxSize = (U64)((maxCacheMemoryPercent - maxPlayBackMemoryPercent)* getSystemTotalRAM());
-    _nodeCache->setMaximumCacheSize(nodeCacheMaxSize);    
-    
-    /*viewer cache initialisation & restoration*/
-    _viewerCache->setMaximumCacheSize((U64)((double)Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache));
-    _viewerCache->setMaximumInMemorySize(Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent);
-    _viewerCache->restore();
     
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
@@ -541,7 +528,6 @@ AppManager::AppManager()
 }
 
 AppManager::~AppManager(){
-    _viewerCache->save();
     for(ReadPluginsIterator it = _readPluginsLoaded.begin(); it!=_readPluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
@@ -555,9 +541,6 @@ AppManager::~AppManager(){
     foreach(PluginToolButton* p,_toolButtons){
         delete p;
     }
-    delete _knobFactory;
-    delete _nodeCache;
-    delete _viewerCache;
 }
 void AppManager::quit(){
     delete appPTR;
@@ -722,7 +705,7 @@ void AppManager::loadWritePlugins(){
 /*loads writes that are built-ins*/
 void AppManager::loadBuiltinWrites(){
     {
-        scoped_ptr<Write> writeQt(new WriteQt(NULL));
+        boost::scoped_ptr<Write> writeQt(new WriteQt(NULL));
         assert(writeQt);
         std::vector<std::string> extensions = writeQt->fileTypesEncoded();
         string encoderName = writeQt->encoderName();
@@ -737,7 +720,7 @@ void AppManager::loadBuiltinWrites(){
     }
     
     {
-        scoped_ptr<Write> writeEXR(new WriteExr(NULL));
+        boost::scoped_ptr<Write> writeEXR(new WriteExr(NULL));
         std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
         string encoderNameExr = writeEXR->encoderName();
         

@@ -16,8 +16,6 @@
 
 #include <QtCore/QMutex>
 #include <QtGui/QImage>
-#include <QtCore/QXmlStreamReader>
-#include <QtCore/QXmlStreamWriter>
 
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
@@ -31,7 +29,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Box.h"
 #include "Engine/Format.h"
-#include "Engine/ViewerCache.h"
+#include "Engine/FrameEntry.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
 
@@ -72,7 +70,7 @@ std::string Reader::description() const {
 
 void Reader::initKnobs(){
     std::string desc("File");
-    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory()->createKnob("InputFile", this, desc));
+    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", this, desc));
     QObject::connect(_fileKnob, SIGNAL(valueChangedByUser()), this, SLOT(showFilePreview()));
     QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
     assert(_fileKnob);
@@ -198,7 +196,7 @@ void Reader::readCurrentData(int current_frame){
 
 
 void Reader::showFilePreview(){
-#warning preview is un-safe especially with saved projects.
+#warning preview is un-safe especially with saved projects. We need to remove the _readHandle member of this class
     _buffer.clear();
     fitFrameToViewer(false);
     {
@@ -222,9 +220,9 @@ bool Reader::_validate(bool){
     return true;
 }
 
-void Reader::engine(int y,int offset,int range,ChannelSet c,Row* out){
+void Reader::engine(Row* out){
 	assert(_readHandle);
-    _readHandle->engine(y,offset,range,c,out);
+    _readHandle->engine(out);
 	
 }
 
@@ -381,155 +379,6 @@ void Reader::Buffer::ScanLineContext::merge(){
     _rowsToRead.clear();
 }
 
-
-//int _firstFrame;
-//int _lastFrame;
-//int _ydirection;
-//bool _blackOutside;
-//bool _rgbMode;
-//Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
-void ReaderInfo::writeToXml(QXmlStreamWriter* writer){
-    writer->writeAttribute("CurrentFrameName",_currentFrameName.c_str());
-    writer->writeAttribute("FirstFrame",QString::number(firstFrame()));
-    writer->writeAttribute("LastFrame",QString::number(lastFrame()));
-    writer->writeAttribute("RgbMode",QString::number(rgbMode()));
-    QString chans;
-    foreachChannels(chan, channels()){
-        chans += getChannelName(chan).c_str() + QString("|");
-    }
-    writer->writeAttribute("Channels",chans);
-    
-    const Format& dispW = displayWindow();
-    writer->writeStartElement("DisplayWindow");
-    writer->writeAttribute("left",QString::number(dispW.left()));
-    writer->writeAttribute("bottom",QString::number(dispW.bottom()));
-    writer->writeAttribute("right",QString::number(dispW.right()));
-    writer->writeAttribute("top",QString::number(dispW.top()));
-    writer->writeEndElement();
-    
-    const Box2D& dataW = dataWindow();
-    
-    writer->writeStartElement("DataWindow");
-    writer->writeAttribute("left",QString::number(dataW.left()));
-    writer->writeAttribute("bottom",QString::number(dataW.bottom()));
-    writer->writeAttribute("right",QString::number(dataW.right()));
-    writer->writeAttribute("top",QString::number(dataW.top()));
-    writer->writeEndElement();
-    
-}
-
-ReaderInfo* ReaderInfo::fromXml(QXmlStreamReader* reader){
-    QString currentFrameName;
-    QString firstFrameStr,lastFrameStr,rgbStr,frmtXStr,frmtYStr,frmtRStr,frmtTStr;
-    QString bboxXStr,bboxYStr,bboxRStr,bboxTStr,channelsStr;
-    
-    QXmlStreamAttributes attributes = reader->attributes();
-    if(attributes.hasAttribute("CurrentFrameName")){
-        currentFrameName = attributes.value("CurrentFrameName").toString();
-    }else{
-        return NULL;
-    }
-    if(attributes.hasAttribute("FirstFrame")){
-        firstFrameStr = attributes.value("FirstFrame").toString();
-    }else{
-        return NULL;
-    }
-    if(attributes.hasAttribute("LastFrame")){
-        lastFrameStr = attributes.value("LastFrame").toString();
-    }else{
-        return NULL;
-    }
-    if(attributes.hasAttribute("RgbMode")){
-        rgbStr = attributes.value("RgbMode").toString();
-    }else{
-        return NULL;
-    }
-    if(attributes.hasAttribute("Channels")){
-        channelsStr = attributes.value("Channels").toString();
-    }else{
-        return NULL;
-    }
-    QXmlStreamReader::TokenType token = reader->readNext();
-    int i = 0;
-    while(i < 2){
-        if(token == QXmlStreamReader::StartElement && reader->name() == "DisplayWindow"){
-            QXmlStreamAttributes dispWAtts = reader->attributes();
-            if(dispWAtts.hasAttribute("left")){
-                frmtXStr = dispWAtts.value("left").toString();
-            }else{
-                return NULL;
-            }
-            if(dispWAtts.hasAttribute("bottom")){
-                frmtYStr = dispWAtts.value("bottom").toString();
-            }else{
-                return NULL;
-            }
-            if(dispWAtts.hasAttribute("right")){
-                frmtRStr = dispWAtts.value("right").toString();
-            }else{
-                return NULL;
-            }
-            if(dispWAtts.hasAttribute("top")){
-                frmtTStr = dispWAtts.value("top").toString();
-            }else{
-                return NULL;
-            }
-            ++i;
-
-
-        }else if(token == QXmlStreamReader::StartElement && reader->name() == "DataWindow"){
-            QXmlStreamAttributes dataWAtts = reader->attributes();
-            if(dataWAtts.hasAttribute("left")){
-                bboxXStr = dataWAtts.value("left").toString();
-            }else{
-                return NULL;
-            }
-            if(dataWAtts.hasAttribute("bottom")){
-                bboxYStr = dataWAtts.value("bottom").toString();
-            }else{
-                return NULL;
-            }
-            if(dataWAtts.hasAttribute("right")){
-                bboxRStr = dataWAtts.value("right").toString();
-            }else{
-                return NULL;
-            }
-            if(dataWAtts.hasAttribute("top")){
-                bboxTStr = dataWAtts.value("top").toString();
-            }else{
-                return NULL;
-            }
-            ++i;
-
-        }
-        token = reader->readNext();
-    }
-
-    ReaderInfo* out = new ReaderInfo;
-
-    ChannelSet channels;
-    i = 0;
-    while(i < channelsStr.size()){
-        QString chan;
-        while(channelsStr.at(i) != QChar('|')){
-            chan.append(channelsStr.at(i));
-            ++i;
-        }
-        ++i;
-        // The following may throw if from is not a channel name which begins with "Channel_"
-        channels += getChannelByName(chan.toStdString());
-    }
-    Format dispW(frmtXStr.toInt(),frmtYStr.toInt(),frmtRStr.toInt(),frmtTStr.toInt(),"");
-    out->set_dataWindow(Box2D(bboxXStr.toInt(),bboxYStr.toInt(),bboxRStr.toInt(),bboxTStr.toInt()));
-    out->set_channels(channels);
-    out->set_rgbMode((bool)rgbStr.toInt());
-    out->set_displayWindow(dispW);
-    out->set_firstFrame(firstFrameStr.toInt());
-    out->set_lastFrame(lastFrameStr.toInt());
-    out->setCurrentFrameName(currentFrameName.toStdString());
-    return out;
-    
-}
 bool Reader::hasFrames() const{
     return _fileKnob->frameCount() > 0;
 }

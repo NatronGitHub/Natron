@@ -14,7 +14,6 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <boost/scoped_ptr.hpp>
 
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
@@ -27,14 +26,13 @@
 #include "Global/Macros.h"
 
 #include "Engine/Singleton.h"
-
+#include "Engine/Row.h"
+#include "Engine/FrameEntry.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
 class KnobFactory;
-class NodeCache;
-class ViewerCache;
 class NodeGui;
 class Node;
 class Model;
@@ -105,8 +103,6 @@ public:
     
     void autoSave();
     
-    void triggerAutoSave();
-            
     bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
     
     const Format& getProjectFormat() const {return *(_currentProject._format);}
@@ -143,17 +139,15 @@ public:
     
     void disconnectViewersFromViewerCache();
     
-    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
-
     QMutex* getAutoSaveMutex() const {return _autoSaveMutex;}
 
 public slots:
-    void clearPlaybackCache();
-
-    void clearDiskCache();
-
-    void clearNodeCache();
     
+    void triggerAutoSave();
+    
+    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+
+
 signals:
     
     void pluginsPopulated();
@@ -242,14 +236,20 @@ public:
     static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
                                                                             const std::vector<std::string>& functions);
     
-    ViewerCache* getViewerCache() const {return _viewerCache;}
+    const Powiter::Cache<Powiter::FrameEntry>& getViewerCache() const {return *_viewerCache;}
     
-    NodeCache* getNodeCache() const {return _nodeCache;}
+    const Powiter::Cache<Powiter::Row>& getNodeCache() const {return *_nodeCache;}
     
-    KnobFactory* getKnobFactory() const {return _knobFactory;}
+    const KnobFactory& getKnobFactory() const {return *_knobFactory;}
     
  
 public slots:
+    
+    void clearPlaybackCache();
+    
+    void clearDiskCache();
+    
+    void clearNodeCache();
     
     void addPluginToolButtons(const QStringList& groups,
                                 const QString& pluginName,
@@ -306,11 +306,11 @@ private:
     
     std::vector<PluginToolButton*> _toolButtons;
     
-    KnobFactory* _knobFactory;
+    boost::scoped_ptr<KnobFactory> _knobFactory;
     
-    NodeCache* _nodeCache;
+    boost::scoped_ptr<Powiter::Cache<Powiter::Row> >  _nodeCache;
     
-    ViewerCache* _viewerCache;
+    boost::scoped_ptr<Powiter::Cache<Powiter::FrameEntry> > _viewerCache;
     
 };
 

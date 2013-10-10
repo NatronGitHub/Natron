@@ -32,9 +32,8 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Lut.h"
 #include "Engine/Knob.h"
-#include "Engine/ViewerCache.h"
+#include "Engine/FrameEntry.h"
 #include "Engine/OfxHost.h"
-#include "Engine/NodeCache.h"
 #include "Engine/OfxImageEffectInstance.h"
 
 #include "Gui/Gui.h"
@@ -79,7 +78,7 @@ void Model::checkViewersConnection(){
         if (_currentNodes[i]->className() == "Viewer") {
             ViewerNode* n = dynamic_cast<ViewerNode*>(_currentNodes[i]);
             assert(n);
-            n->updateDAGAndRender();
+            n->updateTreeAndRender();
         }
     }
 }
@@ -93,6 +92,8 @@ Node* Model::createNode(const std::string& name) {
         node = new ViewerNode(this);
 	}else if(name == "Writer"){
 		node = new Writer(this);
+        QObject::connect(node,SIGNAL(renderingOnDiskStarted(Writer*,QString,int,int)),_appInstance,
+                         SLOT(onRenderingOnDiskStarted(Writer*, QString, int, int)));
     } else {
         node = appPTR->getOfxHost()->createOfxNode(name,this);
     }
@@ -100,6 +101,12 @@ Node* Model::createNode(const std::string& name) {
         return NULL;
     }
     _currentNodes.push_back(node);
+    QObject::connect(node,SIGNAL(deactivated()),this,SLOT(checkViewersConnection()));
+    QObject::connect(node, SIGNAL(deactivated()), _appInstance, SLOT(triggerAutoSave()));
+    QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
+    QObject::connect(node, SIGNAL(activated()), _appInstance, SLOT(triggerAutoSave()));
+    QObject::connect(node, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
+    QObject::connect(node, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
     return node;
 }
 void Model::initNodeCountersAndSetName(Node* n){
@@ -442,6 +449,4 @@ void Model::disconnectViewersFromViewerCache(){
         }
     }
 }
-void Model::onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
-    _appInstance->onRenderingOnDiskStarted(writer, sequenceName,firstFrame,lastFrame);
-}
+

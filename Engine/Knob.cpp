@@ -184,7 +184,7 @@ void KnobFactory::loadBultinKnobs(){
 }
 
 
-Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension){
+Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension) const{
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(name);
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -203,7 +203,7 @@ Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::st
         return knob;
     }
 }
-KnobGui* KnobFactory::createGuiForKnob(Knob* knob){
+KnobGui* KnobFactory::createGuiForKnob(Knob* knob) const {
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(knob->name());
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -291,6 +291,14 @@ void File_Knob::fillHashVector(){
     //this has nothing to do with the hash key but we need to do this call before the signal
     // valueChangedByuser is emitted
     getVideoSequenceFromFilesList();
+    _hashVector.clear();
+    QStringList files = _value.toStringList();
+    for (int i = 0; i < files.size(); ++i) {
+        const QString& file = files.at(i);
+        for (int j = 0; j < file.size(); ++j) {
+            _hashVector.push_back(file.at(j).unicode());
+        }
+    }
 }
 
 void File_Knob::tryStartRendering(){
@@ -407,6 +415,15 @@ void OutputFile_Knob::tryStartRendering(){
     emit filesSelected();
     startRendering(false);
 }
+
+void OutputFile_Knob::fillHashVector(){
+    _hashVector.clear();
+    QString file = _value.toString();
+    for (int j = 0; j < file.size(); ++j) {
+        _hashVector.push_back(file.at(j).unicode());
+    }
+}
+
 /***********************************INT_KNOB*****************************************/
 void Int_Knob::fillHashVector(){
     _hashVector.clear();

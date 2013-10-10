@@ -43,7 +43,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/Model.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Engine/ViewerCache.h"
+#include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/ViewerNode.h"
@@ -958,16 +958,14 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
             _g = (g != NULL) ? g[col] : 0.f;
             _b = (b != NULL) ? b[col] : 0.f;
             _a = (alpha != NULL) ? alpha[col] : 1.f;
-            if(!rgbMode()){ // FIXME: what does !rgbMode() mean?
-                _r = (_r + 1.0)*_r;
-                _g = _r; _b = _r;
-            }
-            _r*=_a;_g*=_a;_b*=_a;
-            _r*=exposure;_g*=exposure;_b*=exposure;
+//            if(!rgbMode()){ // FIXME: what does !rgbMode() mean?
+//                _r = (_r + 1.0)*_r;
+//                _g = _r; _b = _r;
+//            }
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)(_r*256),255);
-            g_ = (U8)std::min((int)(_g*256),255);
-            b_ = (U8)std::min((int)(_b*256),255);
+            r_ = (U8)std::min((int)(_r*_a*exposure*256),255);
+            g_ = (U8)std::min((int)(_g*_a*exposure*256),255);
+            b_ = (U8)std::min((int)(_b*_a*exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }else{ // !linear
@@ -981,11 +979,11 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         _colorSpace->validate();
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
             U8 r_,g_,b_,a_;
-            
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[columnSpan[i]] : 0.f);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[columnSpan[i]] : 0.f);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[columnSpan[i]] : 0.f);
-            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[columnSpan[i]] : 1.f)*256),255);
+            int col = columnSpan[i];
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[col] : 0.f);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[col] : 0.f);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[col] : 0.f);
+            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[col] : 1.f)*256),255);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -1157,7 +1155,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_displayingImage){
-        _viewerTab->getGui()->getApp()->clearPlaybackCache();
+        appPTR->clearPlaybackCache();
         _viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
@@ -1193,7 +1191,7 @@ void ViewerGL::zoomSlot(int v) {
 
     _zoomCtx._zoomFactor = newZoomFactor;
     if(_displayingImage){
-        _viewerTab->getGui()->getApp()->clearPlaybackCache();
+        appPTR->clearPlaybackCache();
         _viewerTab->getInternalNode()->refreshAndContinueRender();
     } else {
         updateGL();
@@ -1700,7 +1698,7 @@ void glLoadIdentity(M44f& matrix){
 #endif // WITH_EIGEN
 
 void ViewerGL::disconnectViewer(){
-    _viewerTab->getInternalNode()->getVideoEngine()->abort(); // aborting current work
+    _viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
     blankInfoForViewer();
     fitToFormat(displayWindow());
     clearViewer();

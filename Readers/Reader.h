@@ -18,15 +18,14 @@
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
-
-class FrameEntry;
+namespace Powiter{
+    class FrameEntry;
+}
 class File_Knob;
 
 /** @class special ReaderInfo deriving node Infos. This class add just a file name
  *to a frame, it is used internally to find frames in the buffer.
 **/
-class QXmlStreamWriter;
-class QXmlStreamReader;
 class ReaderInfo : public Node::Info{
 
 public:
@@ -39,15 +38,6 @@ public:
 
     std::string getCurrentFrameName(){return _currentFrameName;}
     
-    /**
-     * @brief Returns a string with all infos
-    **/
-    void writeToXml(QXmlStreamWriter* writer);
-    
-    /**
-     *@brief Constructs a new ReaderInfo from the xml reader
-    **/
-    static ReaderInfo* fromXml(QXmlStreamReader* reader);
     
     void operator=(const ReaderInfo& other){
         dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
@@ -441,7 +431,7 @@ public:
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)
      */
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out) OVERRIDE;
+	virtual void engine(Powiter::Row* out) OVERRIDE;
     
     /**
      * @brief cacheData

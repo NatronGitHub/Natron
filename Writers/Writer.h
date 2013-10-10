@@ -22,7 +22,9 @@
 
 class Write;
 class QMutex;
+namespace Powiter{
 class Row;
+}
 class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
@@ -78,7 +80,7 @@ public:
     virtual bool _validate(bool doFullWork);
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
-	virtual void engine(int y,int offset,int range,ChannelSet channels,Row* out);
+	virtual void renderRow(int left,int right,int y,const ChannelSet& channels);
         
 	virtual void createKnobDynamically();
     
@@ -117,8 +119,7 @@ public slots:
     void startRendering();
     
 signals:
-    
-    void startedRendering(const QString& sequenceName);
+    void renderingOnDiskStarted(Writer*,QString,int,int);
     
 protected:
 	virtual void initKnobs() OVERRIDE;
@@ -143,5 +144,5 @@ private:
     ComboBox_Knob* _filetypeCombo;
     
 };
-
+Q_DECLARE_METATYPE(Writer*);
 #endif /* defined(POWITER_WRITERS_WRITER_H_) */
