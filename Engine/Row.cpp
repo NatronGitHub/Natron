@@ -27,7 +27,7 @@ CacheEntryHelper<float,RowKey>(key,path){
 }
 
 Row::Row(int x,int y,int r,ChannelSet channels):
-CacheEntryHelper<float,RowKey>(makeKey(0, x, y, r, channels),(r-x)*sizeof(float)*channels.size(),0){
+CacheEntryHelper<float,RowKey>(makeKey(0,0, x, y, r, channels),(r-x)*sizeof(float)*channels.size(),0){
     initializePlanesOffset();
 }
 void Row::initializePlanesOffset(){

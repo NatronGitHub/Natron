@@ -827,7 +827,6 @@ void VideoEngine::seek(int frame){
 }
 
 void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
-    abortRendering();
     bool wasPlaybackRunning;
     {
         QMutexLocker startedLocker(&_workingMutex);
@@ -840,7 +839,6 @@ void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,in
     }
 }
 void VideoEngine::updateTreeAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
-    abortRendering();
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
     bool wasPlaybackRunning;
     {

@@ -33,6 +33,7 @@ namespace Powiter{
         
         RowKey():KeyHelper<U64>()
         ,_nodeHashKey(0)
+        ,_frameNb(0)
         ,_left(0)
         ,_y(0)
         ,_right(0)
@@ -41,16 +42,18 @@ namespace Powiter{
         
         RowKey(KeyHelper::hash_type hash):KeyHelper<U64>(hash)
         ,_nodeHashKey(0)
+        ,_frameNb(0)
         ,_left(0)
         ,_y(0)
         ,_right(0)
         ,_channels()
         {}
         
-        RowKey(U64 nodeHashKey,int x,int y,int r,ChannelSet channels)
+        RowKey(U64 nodeHashKey,int frameNb,int x,int y,int r,ChannelSet channels)
         :
         KeyHelper<U64>()
         ,_nodeHashKey(nodeHashKey)
+        ,_frameNb(frameNb)
         ,_left(x)
         ,_y(y)
         ,_right(r)
@@ -58,6 +61,7 @@ namespace Powiter{
         {}
         
         U64 _nodeHashKey;
+        int _frameNb;
         int _left;
         int _y;
         int _right;
@@ -65,6 +69,7 @@ namespace Powiter{
         
         void fillHash(Hash64* hash) const{
             hash->append(_nodeHashKey);
+            hash->append(_frameNb);
             hash->append(_left);
             hash->append(_y);
             hash->append(_right);
@@ -73,6 +78,7 @@ namespace Powiter{
         
         bool operator==(const RowKey& other) const {
             return _nodeHashKey == other._nodeHashKey &&
+            _frameNb == other._frameNb && 
             _left == other._left &&
             _y == other._y &&
             _right == other._right &&
@@ -117,8 +123,8 @@ namespace Powiter{
         
         Row(int left,int y,int right,ChannelSet channels);
         
-        static RowKey makeKey(U64 nodeHashKey,int x,int y,int r,ChannelSet channels){
-            return RowKey(nodeHashKey,x,y,r,channels);
+        static RowKey makeKey(U64 nodeHashKey,int frameNb,int x,int y,int r,ChannelSet channels){
+            return RowKey(nodeHashKey,frameNb,x,y,r,channels);
         }
         
         virtual ~Row() {}

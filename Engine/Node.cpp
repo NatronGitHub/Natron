@@ -418,7 +418,7 @@ void Node::createKnobDynamically(){
 
 boost::shared_ptr<const Row> Node::get(int y,int x,int r) {
     const Powiter::Cache<Row>& cache = appPTR->getNodeCache();    
-    RowKey params = Row::makeKey(_hashValue.value(), x, y, r, info().channels());
+    RowKey params = Row::makeKey(_hashValue.value(), _info.executingEngine()->getTree().getOutput()->currentFrame(), x, y, r, info().channels());
     boost::shared_ptr<const Row> entry = cache.get(params);
     if (entry) {
         return entry;
