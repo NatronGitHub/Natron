@@ -48,26 +48,39 @@
 
 namespace Powiter{
     
-        /*Calling getHash() the first time will force a computation of the hash key.
-         Whenever you want that the hash value gets updated on the next getHash() call
-         resetHash().
-         */
+        /** @brief Helper class that represents a Key in the cache. A key is a set
+         * of 1 or more parameters that represent a "unique" element in the cache.
+         * To create your own key you must derive this class and provide a HashType.
+         * The HashType is a value that will serve as a hash key and it will be computed
+         * the first time the getHash() function is called.
+         * If you need to notify the cache that the key have changed, call resetHash()
+         * and the next call to the getHash() function will compute the hash for you.
+         *
+         * Thread safety: This function is not thread-safe itself but it is used only
+         * by the CacheEntryHelper class which itself is used only by the cache which
+         * is thread-safe.
+         *
+         * Important: In order to compile this class must be boost::serializable, see
+         * FrameEntry.h or Row.h for an example on how to serialize a KeyHelper instance.
+         *
+         * Maybe should we move this class as an internal class of CacheEntryHelper to prevent elsewhere
+         * usages.
+         **/
         template<typename HashType>
         class KeyHelper {
             
         public:
             typedef HashType hash_type;
             
-            KeyHelper(): _hashMutex(), _hashComputed(false), _hash() {}
+            KeyHelper(): _hashComputed(false), _hash() {}
             
-            KeyHelper(hash_type hashValue): _hashMutex(), _hashComputed(true), _hash(hashValue){}
+            KeyHelper(hash_type hashValue):  _hashComputed(true), _hash(hashValue){}
 
-            KeyHelper(const KeyHelper& other) : _hashMutex(), _hashComputed(true), _hash(other.getHash()) {}
+            KeyHelper(const KeyHelper& other) : _hashComputed(true), _hash(other.getHash()) {}
 
             virtual ~KeyHelper(){}
 
             hash_type getHash() const {
-                QMutexLocker locker(&_hashMutex);
                 if(!_hashComputed) {
                     computeHashKey();
                     _hashComputed = true;
@@ -75,22 +88,22 @@ namespace Powiter{
                 return _hash;
             }
             
-            void resetHash() const {QMutexLocker locker(&_hashMutex); _hashComputed = false;}
+            void resetHash() const { _hashComputed = false;}
             
-        private:
+        protected:
 
             /*for now HashType can only be 64 bits...the implementation should
              fill the Hash64 using the append function with the values contained in the
              derived class.*/
             virtual void fillHash(Hash64* hash) const = 0;
 
+        private:
             void computeHashKey() const {
                 Hash64 hash;
                 fillHash(&hash);
                 hash.computeHash();
                 _hash = hash.value();
             }
-            mutable QMutex _hashMutex; // protects _hashComputed and _hash
             mutable bool _hashComputed;
             mutable hash_type _hash;
         };
@@ -98,7 +111,9 @@ namespace Powiter{
         
         template<typename ValueType> class Cache;
         
-        /*KeyType must inherit KeyHelper*/
+        /** @brief Abstract interface for cache entries.
+         * KeyType must inherit KeyHelper
+         **/
         template<typename KeyType>
         class AbstractCacheEntry : boost::noncopyable {
             
@@ -118,7 +133,19 @@ namespace Powiter{
             virtual size_t size() const = 0;
         };
     
-        
+        /** @brief Buffer represents  an internal buffer that can be allocated on different devices. 
+         * For now the class is simple and can only be either on disk using mmap or in RAM using malloc.
+         * The cost parameter given to the allocate() function is a hint that the Buffer classes uses
+         * to select a device to use. By default 0 means RAM and >= 1 means mmap. We could see this 
+         * scheme evolve in the future with other storage devices such as OpenGL textures, Cuda buffers,
+         * ... etc
+         *
+         * Thread safety : This class is not thread-safe but is used ONLY by the CacheEntryHelper class
+         * which is itself manipulated by the Cache which is thread-safe.
+         *
+         * Maybe should we move this class as an internal class of CacheEntryHelper to prevent elsewhere
+         * usages.
+         **/
         template<typename BitDepth>
         class Buffer{
             
@@ -154,7 +181,7 @@ namespace Powiter{
                 _size = size;
             }
             
-            void reOpenFileMapping() {
+            void reOpenFileMapping() const {
                 if(_allocated || _storageMode != DISK || _size == 0){
                     throw std::logic_error("Buffer<T>::allocate(...) must have been called once before calling reOpenFileMapping()!");
                 }
@@ -228,22 +255,19 @@ namespace Powiter{
             std::string _path;
             size_t _size;
             BitDepth* _buffer;
-            MemoryFile* _backingFile;
+            
+            /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
+             change the underlying data*/
+            mutable MemoryFile* _backingFile;
+            
             StorageMode _storageMode;
             bool _allocated;
         };
         
-        /* - KeyType must implement : void fillHash(Hash64* hash) which should fill the hash object
-         * with all the params of the key using hash->append(U64 value)
+        /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
+         * a set of metadatas called 'Key' and a buffer.
          *
-         * - KeyType must be boost::serializable
-         *
-         *
-         * - To access the storage :
-         *   + Call  _data.writable() to get a writable ptr
-         *   + Call  _data.readable() to get a const ptr
-         */
-        
+         **/
         template<typename BitDepth,typename KeyType>
         class CacheEntryHelper : public AbstractCacheEntry<KeyType> {
             
@@ -300,6 +324,33 @@ namespace Powiter{
                 return name;
             }
             
+            /** @brief This function is called by the get() function of the Cache when the entry is
+             * living only in the disk portion of the cache. No locking is required here because the
+             * caller is already preventing other threads to call this function.
+             **/
+            void reOpenFileMapping() const {
+                try{
+                    _data.reOpenFileMapping();
+                }catch(const std::logic_error& e){
+                    throw e;
+                }
+            }
+            
+            
+            void deallocate() {_data.deallocate();}
+            
+            size_t size() const {return _data.size();}
+            
+            bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<BitDepth>::DISK;}
+            
+            void removeAnyBackingFile() const {_data.removeAnyBackingFile();}
+            
+        private:
+            /** @brief This function is called upon the constructor and before the object is exposed
+             * to other threads. Hence this function doesn't need locking mechanism at all.
+             * We must ensure that this function is called ONLY by the constructor, that's why
+             * it is private.
+             **/
             void allocate(size_t size,int cost,std::string path = std::string()) {
                 std::string fileName;
                 if(cost != 0){
@@ -315,15 +366,12 @@ namespace Powiter{
                     throw e;
                 }
             }
-            
-            void reOpenFileMapping() const {
-                try{
-                    _data.reOpenFileMapping();
-                }catch(const std::logic_error& e){
-                    throw e;
-                }
-            }
-            
+
+            /** @brief This function is called upon the constructor and before the object is exposed
+             * to other threads. Hence this function doesn't need locking mechanism at all.
+             * We must ensure that this function is called ONLY by the constructor, that's why
+             * it is private.
+             **/
             void restoreBufferFromFile(const std::string& path) {
                 std::string fileName;
                 try{
@@ -337,14 +385,7 @@ namespace Powiter{
                     throw e;
                 }
             }
-            
-            void deallocate() const {_data.deallocate();}
-            
-            size_t size() const {return _data.size();}
-            
-            bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<BitDepth>::DISK;}
-            
-            void removeAnyBackingFile() const {_data.removeAnyBackingFile();}
+
             
         protected:
             
@@ -451,20 +492,26 @@ namespace Powiter{
             
             U64 _maximumCacheSize; // maximum size allowed for the cache
             
-            U64 _memoryCacheSize; // current size of the cache in bytes
-            
-            U64 _diskCacheSize;
+            /*mutable because we need to change modify it in the sealEntryInternal function which 
+             is called by an external object that have a const ref to the cache.
+             */
+            mutable U64 _memoryCacheSize; // current size of the cache in bytes
+            mutable U64 _diskCacheSize;
             
             mutable QMutex _lock;
             
-            CacheContainer _memoryCache;
-            CacheContainer _diskCache;
+            /*These 2 are mutable because we need to modify the LRU list even
+             when we call get() and we want this function to be const.*/
+            mutable CacheContainer _memoryCache;
+            mutable CacheContainer _diskCache;
             
             const std::string _cacheName;
             
             const unsigned int _version;
             
-            CacheSignalEmitter* _signalEmitter;
+            /*mutable because it doesn't hold any data, it just emits signals but signals cannot
+             be const somehow .*/
+            mutable CacheSignalEmitter* _signalEmitter;
             
         public:
             
@@ -490,8 +537,8 @@ namespace Powiter{
             }
             
             ~Cache() {
-                QMutexLocker locker(&_lock);
                 clearInMemoryPortion();
+                QMutexLocker locker(&_lock);
                 save();
                 _memoryCache.clear();
                 _diskCache.clear();
@@ -513,7 +560,7 @@ namespace Powiter{
 
             }
             
-            value_type get(const typename ValueType::key_type& params) const{
+            value_type get(const typename ValueType::key_type& params) const {
                 QMutexLocker locker(&_lock);
                 value_type ret = _memoryCache(params.getHash());
                 if(ret){
@@ -559,14 +606,13 @@ namespace Powiter{
                     _diskCacheSize -= p.second->size();
                     p.second->removeAnyBackingFile();
                 }
-                cleanUpDiskAndReset();
             }
             
             void clearInMemoryPortion(){
                 QMutexLocker locker(&_lock);
                 while (_memoryCache.size() > 0) {
                     std::pair<hash_type,value_type> evicted = _memoryCache.evict();
-                    evicted.second->deallocate();
+                    boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
                     _memoryCacheSize -= evicted.second->size();
                     /*insert it back into the disk portion */
                     while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
@@ -593,7 +639,6 @@ namespace Powiter{
             
             /*Returns the name of the cache with its path preprended*/
             QString getCachePath() const {
-                 QMutexLocker locker(&_lock);
 #if QT_VERSION < 0x050000
                 QString cacheFolderName(QDesktopServices::storageLocation(QDesktopServices::CacheLocation));
 #else
@@ -620,7 +665,17 @@ namespace Powiter{
                     _signalEmitter = new CacheSignalEmitter;
                 return _signalEmitter;
             }
-
+            /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
+             * function. Once sealEntry is called you should not modify the value pointed by entry
+             * anymore. This function is public but should never be called explicitly. 
+             * The correct way of using the cache is to:
+             * 1) Call the newEntry() function and store the return value of type CachedValue
+             * 2) Fill the object's buffer contained in the CachedValue using the getObject() function.
+             * 3) Let the CachedValue be deleted. Upon the destructor this will call the sealEntry function
+             * automatically.
+             * If you don't want to use the newEntry() function, make sure to call sealEntry() to
+             * register the function into the cache
+             **/
             void sealEntry(const value_type& entry) const {
                 QMutexLocker locker(&_lock);
                 sealEntryInternal(entry);
@@ -640,7 +695,7 @@ namespace Powiter{
                         _signalEmitter->emitRemovedEntry();
                     /*if it is stored using mmap, remove it from memory*/
                     if(evicted.second->isStoredOnDisk()){
-                        evicted.second->deallocate();
+                        boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
                         /*insert it back into the disk portion */
                         while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
                             std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
@@ -668,7 +723,6 @@ namespace Powiter{
                 boost::archive::binary_oarchive oArchive(ofile);
                 CacheTOC tableOfContents;
                 {
-                    QMutexLocker locker(&_lock);
                     for(CacheIterator it = _diskCache.begin(); it!= _diskCache.end() ; ++it) {
                         value_type value  = getValueFromIterator(it);
                         if(value->isStoredOnDisk()){
@@ -682,8 +736,6 @@ namespace Powiter{
             
             /*Restores the cache from disk.*/
             void restore() {
-                //QMutexLocker locker(&_lock); // no need to lock in private functions: the caller is responsible for locking
-                assert(!_lock.tryLock()); // must be locked
                 try { // if anything throws an exception, just recreate the cache
                     QString newCachePath(getCachePath());
                     QString settingsFilePath(newCachePath+QDir::separator()+"restoreFile.powc");
@@ -723,10 +775,6 @@ namespace Powiter{
                     CacheTOC tableOfContents;
                     iArchive >> tableOfContents;
 
-                    // NEVER UNLOCK FOR A BAD REASON!!!!!!!!!!!!!!!!!!!!!!!!!
-                    //   this is a wide open door to race conditions.
-                    //   You must keep the lock during the whole critical section!
-                    //locker.unlock();
                     for (typename CacheTOC::const_iterator it =
                          tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
                         if (it->first != it->second.getHash()) {
@@ -741,7 +789,6 @@ namespace Powiter{
                         }
                         sealEntryInternal(value_type(value));
                     }
-                    //locker.relock();
                     ifile.close();
                     QFile restoreFile(settingsFilePath);
                     restoreFile.remove();
@@ -756,7 +803,6 @@ namespace Powiter{
             
             /*used by the restore func.*/
             void cleanUpDiskAndReset(){
-                assert(!_lock.tryLock());
                 QString dirName(getCachePath());
 #   if QT_VERSION < 0x050000
                 removeRecursively(dirName);
@@ -774,7 +820,6 @@ namespace Powiter{
              Must be called explicitely after the constructor
              */
             void initializeSubDirectories(){
-                assert(!_lock.tryLock()); // must be locked
                 QDir cacheFolder(getCachePath());
                 cacheFolder.mkpath(".");
                 
