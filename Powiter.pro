@@ -187,7 +187,6 @@ HEADERS += \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
-    Engine/Sleeper.h \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/VideoEngine.h \
