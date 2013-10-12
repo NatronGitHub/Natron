@@ -498,10 +498,9 @@ void ViewerTab::updateZoomComboBox(int value){
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode,/*Tree output*/
-                                              _viewerNode->currentFrame(),/*starting frame*/
+        _viewerNode->getVideoEngine()->render(_viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
-                                              true,/*rebuild dag?*/
+                                              true,/*rebuild tree?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
                                               false); /*same frame ?*/
@@ -514,10 +513,9 @@ void ViewerTab::abortRendering(){
 }
 void ViewerTab::startBackward(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode,/*Tree output*/
-                                              _viewerNode->currentFrame(),/*starting frame*/
+        _viewerNode->getVideoEngine()->render(_viewerNode->currentFrame(),/*starting frame*/
                                               -1, /*frame count*/
-                                              true,/*rebuild dag?*/
+                                              true,/*rebuild tree?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
                                               false);/*same frame ?*/

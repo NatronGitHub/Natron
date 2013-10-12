@@ -85,20 +85,14 @@ public:
          *Once filled up, you can access the nodes in topological order with the iterators.
          *The reverse iterator will give you the opposite of the topological order.
          */
-        Tree():
-        _output(0)
-        ,_isViewer(false)
-        ,_isOutputOpenFXNode(false)
-        ,_treeMutex(QMutex::Recursive) /*recursive lock*/
-        {}
+        Tree(OutputNode* output);
         
         /**
-         *@brief Clears the structure and fill it with a new graph, represented by the OutputNode.
-         *@param out[in] This is the output of the graph, i.e either a viewer or a writer. The rest
-         *of the graph is fetched recursivly starting from this node.
+         *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
+         *The rest of the tree is fetched recursivly starting from this node.
          *@TODO Throw some exception to detect cycles in the graph
          */
-        void resetAndSort(OutputNode* out);
+        void refreshTree();
         
         /*Lock the dag. You should call this before any access*/
         void lock() const { _treeMutex.lock(); }
@@ -243,69 +237,65 @@ private:
         _fitToViewer(false),
         _recursiveCall(false),
         _forward(true),
-        _updateDAG(false),
+        _refreshTree(false),
         _frameRequestsCount(0),
-        _frameRequestIndex(0),
-        _output(0)
+        _frameRequestIndex(0)
         {}
         
         int _startingFrame;
         float _zoomFactor;
-        bool _sameFrame;/*!< on if we want the subsequent videoEngine call to be on the same frame(zoom)*/
+        bool _sameFrame;/*!< on if we want the subsequent render call to be on the same frame(zoom)*/
         bool _fitToViewer;
         bool _recursiveCall;
         bool _forward;/*!< forwards/backwards video engine*/
-        bool _updateDAG;
+        bool _refreshTree;
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
-        OutputNode* _output;/*!< the output that will be used to build the Tree that will serve to render*/
     };
-    
-    Model* _model;/*!< pointer to the model*/
-    
+        
     Tree _tree; /*!< The internal Tree instance.*/
     
-    QMutex _timerMutex;///protects timer
+    mutable QMutex _timerMutex;///protects timer
     boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
     
-    QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
+    mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
     bool _abortBeingProcessed; /*true when someone is processing abort*/
 
     QWaitCondition _abortedRequestedCondition;
-    QMutex _abortedRequestedMutex; //!< protects _abortRequested
+    mutable QMutex _abortedRequestedMutex; //!< protects _abortRequested
     int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
-    QMutex _mustQuitMutex; //!< protects _mustQuit
+    mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
     
     U64 _treeVersion;/*!< the hash key associated to the current graph*/
     bool _treeVersionValid;/*!< was _treeVersion initialized? */
     
-    QMutex _loopModeMutex;///protects _loopMode
+    mutable QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/
     
     /*Accessed and modified only by the run() thread*/
     bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
     
-    QMutex _forceRenderMutex;
+    mutable QMutex _forceRenderMutex;
     bool _forceRender;/*!< true when we want to by-pass the cache*/
     
-    QMutex _workerThreadsWatcherMutex;
+    mutable QMutex _workerThreadsWatcherMutex;
     QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
                                                  the current frame. Its finished() signal will call
                                                  Worker::finishComputeFrameRequest()*/    
 
     QWaitCondition _pboUnMappedCondition;
-    QMutex _pboUnMappedMutex; //!< protects *_openGLCount
+    mutable QMutex _pboUnMappedMutex; //!< protects *_openGLCount
     int _pboUnMappedCount;
 
        
     QWaitCondition _startCondition;
-    QMutex _startMutex; //!< protects _startCount
+    mutable QMutex _startMutex; //!< protects _startCount
     int _startCount; //!< if > 0 that means start requests are pending
     
-    QMutex _workingMutex;//!< protects _working
+    mutable QMutex _workingMutex;//!< protects _working
     bool _working; //!< true if a thread is working
 
     /*These member doesn't need to be protected by a mutex: 
@@ -439,7 +429,7 @@ signals:
 public:
    
     
-    VideoEngine(Model* model, QObject* parent = NULL);
+    VideoEngine(OutputNode* owner, QObject* parent = NULL);
     
     virtual ~VideoEngine();
     
@@ -459,10 +449,9 @@ public:
      *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
      *is on, frameCount MUST be 1.
      **/
-    void render(OutputNode* output,
-                int startingFrame,
+    void render(int startingFrame,
                 int frameCount,
-                bool updateDAG,
+                bool refreshTree,
                 bool fitFrameToViewer = false,
                 bool forward = true,
                 bool sameFrame = false);
@@ -476,11 +465,9 @@ public:
      *a parameter changed but not the Tree itself.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
-     *@param output[in] A pointer to the output whose inputs will determine the Tree that will
-     *serve to render the frames in case we need to build the Tree.
      *@param startingFrame[in] The frame to start rendering with.
      **/
-    void refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+    void refreshAndContinueRender(bool initViewer,int startingFrame);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
@@ -489,11 +476,9 @@ public:
      *on the viewer. This function should be called whenever
      *a change has been made (potentially) to the Tree.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *@param output[in] A pointer to the output whose inputs will determine the Tree that will
-     *serve to render the frames.
      *@param startingFrame[in] The frame to start rendering with.
      **/
-    void updateTreeAndContinueRender(bool initViewer,OutputNode* output,int startingFrame);
+    void updateTreeAndContinueRender(bool initViewer,int startingFrame);
 
     
     /**
@@ -521,8 +506,8 @@ public:
         _tree.validate(doFullWork);
     }
     
-    void resetAndSortTree(OutputNode* output){
-        _tree.resetAndSort(output);
+    void refreshTree(){
+        _tree.refreshTree();
     }
     
 	/**

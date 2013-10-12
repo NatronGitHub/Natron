@@ -417,7 +417,8 @@ void Node::createKnobDynamically(){
 
 
 boost::shared_ptr<const Row> Node::get(int y,int x,int r) {
-    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();    
+    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();
+#warning Calling _info.executingEngine()->getTree().getOutput()->currentFrame() is not thread-safe: another render process might have changed the executing engine pointer. We need to figure-out a way to get the current time/frame on any node in a thread-safe manner: I think we need to make a new instance of every nodes for each rendering tree.
     RowKey params = Row::makeKey(_hashValue.value(), _info.executingEngine()->getTree().getOutput()->currentFrame(), x, y, r, info().channels());
     boost::shared_ptr<const Row> entry = cache.get(params);
     if (entry) {
@@ -534,7 +535,7 @@ void Node::onFrameRangeChanged(int first,int last){
 OutputNode::OutputNode(Model* model)
 : Node(model)
 , _timeline(new TimeLine)
-, _videoEngine(new VideoEngine(_model))
+, _videoEngine(new VideoEngine(this))
 {
 }
 
@@ -571,8 +572,8 @@ int OutputNode::lastFrame() const {
     return _timeline->lastFrame();
 }
 void OutputNode::updateTreeAndRender(bool initViewer){
-    _videoEngine->updateTreeAndContinueRender(initViewer, this,currentFrame());
+    _videoEngine->updateTreeAndContinueRender(initViewer,currentFrame());
 }
 void OutputNode::refreshAndContinueRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer,this,currentFrame());
+    _videoEngine->refreshAndContinueRender(initViewer,currentFrame());
 }

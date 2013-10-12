@@ -422,7 +422,7 @@ protected:
 
 	virtual bool _validate(bool /*doFullWork*/) = 0;
     
-    Model* _model; // pointer to the model
+    Model* _model; // pointer to the model: needed to access the application's default-project's format
 	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
 
     bool _marked; //used by the topological sort algorithm
@@ -465,7 +465,13 @@ private:
 typedef Node* (*NodeBuilder)();
 
 
-
+/**
+ *@brief A node whose role is to output an image. 
+ * It is the composition of a rendering engine (VideoEngine) and a timeline.
+ * For now only 3 kind of OutputNode exist: Viewer,Writer and OfxNode.
+ * The last one is particular and is not actually acting as an output node
+ * every times. It depends upon the plug-in hosted by the OfxNode.
+ **/
 class OutputNode : public Node {
 public:
     

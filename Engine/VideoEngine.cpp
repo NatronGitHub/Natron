@@ -49,10 +49,9 @@
 using namespace std;
 using namespace Powiter;
 
-VideoEngine::VideoEngine(Model* model,QObject* parent)
+VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 : QThread(parent)
-, _model(model)
-, _tree()
+, _tree(owner)
 , _timerMutex()
 , _timer(new Timer)
 , _abortBeingProcessedMutex()
@@ -154,17 +153,16 @@ static void ofxOutputNodeRenderFunctor(Row* row,OfxNode* output){
 }
 
 
-void VideoEngine::render(OutputNode* output,
-                         int startingFrame,
+void VideoEngine::render(int startingFrame,
                          int frameCount,
-                         bool updateDAG,
+                         bool refreshTree,
                          bool fitFrameToViewer,
                          bool forward,
                          bool sameFrame) {
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
      so there's no null pointers hanging around*/
-    if(!_tree.getOutput() && !updateDAG) updateDAG = true;
+    if(!_tree.getOutput() && !refreshTree) refreshTree = true;
     
     double zoomFactor;
     if(_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()){
@@ -185,11 +183,9 @@ void VideoEngine::render(OutputNode* output,
     _lastRequestedRunArgs._fitToViewer = fitFrameToViewer;
     _lastRequestedRunArgs._recursiveCall = false;
     _lastRequestedRunArgs._forward = forward;
-    _lastRequestedRunArgs._updateDAG = updateDAG;
+    _lastRequestedRunArgs._refreshTree = refreshTree;
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
-    if(_lastRequestedRunArgs._updateDAG)
-        _lastRequestedRunArgs._output = output;
     
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_mustQuitMutex);
@@ -224,8 +220,8 @@ bool VideoEngine::startEngine() {
     
     _currentRunArgs = _lastRequestedRunArgs;
     
-    if(_currentRunArgs._updateDAG)
-        _tree.resetAndSort(_currentRunArgs._output);/*rebuilding the dag from the output provided*/
+    if(_currentRunArgs._refreshTree)
+        _tree.refreshTree();/*refresh the tree*/
     
     
     ViewerNode* viewer = dynamic_cast<ViewerNode*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
@@ -250,6 +246,9 @@ bool VideoEngine::startEngine() {
         return false;
     }
     
+    /**
+     * START of the critical section: we modify node's infos: other threads should not modify infos
+     **/
     if(!_tree.validate(false)){ // < validating sequence (mostly getting the same frame range for all nodes).
         return false;
     }
@@ -368,26 +367,25 @@ void VideoEngine::run(){
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
         ViewerNode* viewer = _tree.outputAsViewer();
         /*Get the frame range*/
-        assert(_currentRunArgs._output);
-        firstFrame = _currentRunArgs._output->firstFrame();
-        lastFrame = _currentRunArgs._output->lastFrame();
+        firstFrame = _tree.getOutput()->firstFrame();
+        lastFrame = _tree.getOutput()->lastFrame();
         if (!_currentRunArgs._recursiveCall) {
-            if(_currentRunArgs._startingFrame < _currentRunArgs._output->firstFrame()){
-                _currentRunArgs._startingFrame = _currentRunArgs._output->firstFrame();
-            }else if(_currentRunArgs._startingFrame > _currentRunArgs._output->lastFrame()){
-                _currentRunArgs._startingFrame = _currentRunArgs._output->lastFrame();
+            if(_currentRunArgs._startingFrame < _tree.getOutput()->firstFrame()){
+                _currentRunArgs._startingFrame = _tree.getOutput()->firstFrame();
+            }else if(_currentRunArgs._startingFrame > _tree.getOutput()->lastFrame()){
+                _currentRunArgs._startingFrame = _tree.getOutput()->lastFrame();
             }
             currentFrame = _currentRunArgs._startingFrame;
-            _currentRunArgs._output->seekFrame(currentFrame);
+            _tree.getOutput()->seekFrame(currentFrame);
         } else if(!_currentRunArgs._sameFrame){
             if(_currentRunArgs._forward){
-                _currentRunArgs._output->incrementCurrentFrame();
-                currentFrame = _currentRunArgs._output->currentFrame();
+                _tree.getOutput()->incrementCurrentFrame();
+                currentFrame = _tree.getOutput()->currentFrame();
                 if(currentFrame > lastFrame){
                     QMutexLocker loopModeLocker(&_loopModeMutex);
                     if(_loopMode && _tree.isOutputAViewer()){ // loop only for a viewer
                         currentFrame = firstFrame;
-                        _currentRunArgs._output->seekFrame(currentFrame);
+                        _tree.getOutput()->seekFrame(currentFrame);
                     }else{
                         loopModeLocker.unlock();
                         stopEngine();
@@ -396,13 +394,13 @@ void VideoEngine::run(){
                 }
                 
             }else{
-                _currentRunArgs._output->decrementCurrentFrame();
-                currentFrame = _currentRunArgs._output->currentFrame();
+                _tree.getOutput()->decrementCurrentFrame();
+                currentFrame = _tree.getOutput()->currentFrame();
                 if(currentFrame < firstFrame){
                     QMutexLocker loopModeLocker(&_loopModeMutex);
                     if(_loopMode && _tree.isOutputAViewer()){ //loop only for a viewer
                         currentFrame = lastFrame;
-                        _currentRunArgs._output->seekFrame(currentFrame);
+                        _tree.getOutput()->seekFrame(currentFrame);
                     }else{
                         loopModeLocker.unlock();
                         stopEngine();
@@ -420,7 +418,7 @@ void VideoEngine::run(){
 
                (_tree.isOutputAViewer() // #2 the Tree contains only 1 frame and we rendered it
                 &&  _currentRunArgs._recursiveCall
-                && _currentRunArgs._output->lastFrame() == _currentRunArgs._output->firstFrame()
+                && _tree.getOutput()->lastFrame() == _tree.getOutput()->firstFrame()
                 && _currentRunArgs._frameRequestsCount == -1
                 && _currentRunArgs._frameRequestIndex == 1)
 
@@ -608,7 +606,7 @@ void VideoEngine::run(){
             /*case #2 output is a Powiter-Writer*/
         } else {// channels requested are those requested by the user
             if (!_tree.isOutputAnOpenFXNode()) {
-                outChannels = dynamic_cast<Writer*>(_currentRunArgs._output)->requestedChannels();
+                outChannels = dynamic_cast<Writer*>(_tree.getOutput())->requestedChannels();
                 QMutexLocker workerThreadLocker(&_workerThreadsWatcherMutex);
                 _workerThreadsWatcher->setFuture(QtConcurrent::map(rows,boost::bind(writerRenderFunctor,
                                                                                     _1,x,r,outChannels,_tree.outputAsWriter())));
@@ -823,32 +821,31 @@ void VideoEngine::abortRendering(){
 
 void VideoEngine::seek(int frame){
     if(frame >= _tree.getOutput()->firstFrame() && frame <= _tree.getOutput()->lastFrame())
-        refreshAndContinueRender(false,_tree.getOutput(),frame);
+        refreshAndContinueRender(false,frame);
 }
 
-void VideoEngine::refreshAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
+void VideoEngine::refreshAndContinueRender(bool initViewer,int startingFrame){
     bool wasPlaybackRunning;
     {
         QMutexLocker startedLocker(&_workingMutex);
         wasPlaybackRunning = _working && _currentRunArgs._frameRequestsCount == -1;
     }
     if(wasPlaybackRunning){
-        render(output,startingFrame,-1,false,initViewer,_currentRunArgs._forward,false);
+        render(startingFrame,-1,false,initViewer,_currentRunArgs._forward,false);
     }else{
-        render(output,startingFrame,1,false,initViewer,_currentRunArgs._forward,true);
+        render(startingFrame,1,false,initViewer,_currentRunArgs._forward,true);
     }
 }
-void VideoEngine::updateTreeAndContinueRender(bool initViewer,OutputNode* output,int startingFrame){
-    ViewerNode* viewer = dynamic_cast<ViewerNode*>(output);
+void VideoEngine::updateTreeAndContinueRender(bool initViewer,int startingFrame){
     bool wasPlaybackRunning;
     {
         QMutexLocker startedLocker(&_workingMutex);
         wasPlaybackRunning = _working && _currentRunArgs._frameRequestsCount == -1;
     }
-    if(!viewer || wasPlaybackRunning){
-        render(output,startingFrame,-1,true,initViewer,_currentRunArgs._forward,false);
+    if(!_tree.isOutputAViewer() || wasPlaybackRunning){
+        render(startingFrame,-1,true,initViewer,_currentRunArgs._forward,false);
     }else{
-        render(output,startingFrame,1,true,initViewer,_currentRunArgs._forward,true);
+        render(startingFrame,1,true,initViewer,_currentRunArgs._forward,true);
     }
 }
 
@@ -889,6 +886,18 @@ void VideoEngine::Tree::fillGraph(Node* n){
         }
     }
 }
+
+VideoEngine::Tree::Tree(OutputNode* output):
+_output(output)
+,_isViewer(false)
+,_isOutputOpenFXNode(_output->isOpenFXNode())
+,_treeMutex(QMutex::Recursive) /*recursive lock*/
+{
+    
+    assert(output);
+}
+
+
 void VideoEngine::Tree::clearGraph(){
     _graph.clear();
     _sorted.clear();
@@ -936,21 +945,11 @@ OfxNode* VideoEngine::Tree::outputAsOpenFXNode() const{
     }
 }
 
-void VideoEngine::Tree::resetAndSort(OutputNode* out){
+void VideoEngine::Tree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
-    _output = out;
-    _isViewer = dynamic_cast<ViewerNode*>(out) != NULL;
-    if(out && out->isOpenFXNode()){
-        _isOutputOpenFXNode = true;
-    }else{
-        _isOutputOpenFXNode = false;
-    }
+    _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
     clearGraph();
-    if(!_output){
-        return;
-    }
-    fillGraph(out);
-    
+    fillGraph(_output);
     topologicalSort();
 }
 void VideoEngine::Tree::debug(){
