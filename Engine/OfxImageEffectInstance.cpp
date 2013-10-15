@@ -20,7 +20,8 @@
 #include "Engine/OfxParamInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
-
+#include "Engine/Model.h"
+#include "Global/AppManager.h"
 
 using namespace std;
 using namespace Powiter;
@@ -30,7 +31,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string& context,
                                                bool interactive)
 : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-, _node(NULL)
+, _node()
 , _parentingMap()
 {
 }
@@ -54,7 +55,6 @@ OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OF
                                                                               OFX::Host::ImageEffect::ClipDescriptor* descriptor,
                                                                               int index) {
     (void)plugin;
-    assert(plugin == this);
     return new OfxClipInstance(node(),node()->effectInstance(),index, descriptor);
 }
 
@@ -94,15 +94,15 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
     }
 }
 
-
 // The size of the current project in canonical coordinates.
 // The size of a project is a sub set of the kOfxImageEffectPropProjectExtent. For example a
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
 void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
-    assert(node());
-    xSize = node()->width();
-    ySize = node()->height();
+    assert(_node);
+    const Format& f = _node->getProjectDefaultFormat();
+    xSize = f.width();
+    ySize = f.height();
 }
 
 // The offset of the current project in canonical coordinates.
@@ -111,9 +111,10 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
-    assert(node());
-    xOffset = node()->info().dataWindow().left();
-    yOffset = node()->info().dataWindow().bottom();
+    assert(_node);
+    const Format& f = _node->getProjectDefaultFormat();
+    xOffset = f.left();
+    yOffset = f.bottom();
 }
 
 // The extent of the current project in canonical coordinates.
@@ -122,15 +123,16 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
-    assert(node());
-    xSize = node()->info().dataWindow().width();
-    ySize = node()->info().dataWindow().height();
+    assert(_node);
+    const Format& f = _node->getProjectDefaultFormat();
+    xSize = f.right();
+    ySize = f.top();
 }
 
 // The pixel aspect ratio of the current project
 double OfxImageEffectInstance::getProjectPixelAspectRatio() const {
-    assert(node());
-    return node()->info().displayWindow().pixel_aspect();
+    assert(_node);
+    return _node->getProjectDefaultFormat().getPixelAspect();
 }
 
 // The duration of the effect
@@ -394,55 +396,24 @@ bool OfxImageEffectInstance::progressUpdate(double /*t*/) {
 /// get the current time on the timeline. This is not necessarily the same
 /// time as being passed to an action (eg render)
 double OfxImageEffectInstance::timeLineGetTime() {
-    VideoEngine* engine = node()->getExecutingEngine();
-    if(!engine)
-        return -1.;
-    const VideoEngine::Tree& dag = engine->getTree();
-    dag.lock();
-    OutputNode* outputNode = dag.getOutput();
-    dag.unlock();
-    assert(outputNode);
-    return outputNode->currentFrame();
+    
+    return _node->getModel()->getApp()->getTimeLine()->currentFrame();
 }
 
 
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
-    // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::Tree& dag = node()->getExecutingEngine()->getTree();
-    dag.lock();
-    if(!dag.getOutput()){
-        dag.unlock();
-        return;
-    }
-    // FIXME: wrong Temporal Coordinates!!!
-    // See http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id476301
-    // - the effect may not begin at frame 0
-    // - it depends on the input and output FPS of the effect
-    OutputNode* outputNode = dag.getOutput();
-    dag.unlock();
-    assert(outputNode);
-    return outputNode->seekFrame((int)t);
+    
+    return _node->getModel()->getApp()->getTimeLine()->seekFrame((int)t);
     
 }
 
 
 /// get the first and last times available on the effect's timeline
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
-    // FIXME-seeabove: disconnect timeline handling from GUI
-    const VideoEngine::Tree& dag = node()->getExecutingEngine()->getTree();
-    dag.lock();
-    if(!dag.getOutput()){
-        t1 = -1.;
-        t2 = -1.;
-        dag.unlock();
-        return;
-    }
-    OutputNode* outputNode = dag.getOutput();
-    dag.unlock();
-    assert(outputNode);
-    t1 = outputNode->firstFrame();
-    t2 = outputNode->lastFrame();
+    
+    t1 = _node->getModel()->getApp()->getTimeLine()->firstFrame();
+    t2 = _node->getModel()->getApp()->getTimeLine()->lastFrame();
 }
 
 

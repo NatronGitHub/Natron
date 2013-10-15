@@ -17,9 +17,8 @@
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
+#include "Engine/ImageInfo.h"
 
-
-class ViewerInfos;
 class TabWidget;
 class ViewerTab;
 namespace Powiter{
@@ -27,15 +26,16 @@ namespace Powiter{
 }
 
 class QKeyEvent;
+
 class ViewerNode: public OutputNode
 {
     Q_OBJECT
     
-    ViewerInfos* _viewerInfos;
 	ViewerTab* _uiContext;
-    int _pboIndex;
     int _inputsCount;
     int _activeInput;
+    int _pboIndex;
+
 public:
     
         
@@ -43,15 +43,15 @@ public:
     
     virtual ~ViewerNode();
     
-    virtual int maximumInputs() const OVERRIDE { return _inputsCount; }
+    int maximumInputs() const { return _inputsCount; }
     
-    virtual int minimumInputs() const OVERRIDE { return 1; }
+    int minimumInputs() const { return 1; }
     
-    virtual bool cacheData() const OVERRIDE { return false; }
+    virtual std::string className() const {return "Viewer";}
     
-    virtual std::string setInputLabel(int inputNb){
-        return QString::number(inputNb+1).toStdString();
-    }
+    virtual std::string description() const {return "The Viewer node can display the output of a node graph.";}
+    
+    virtual bool cacheData() const {return false;}
     
     bool connectInput(Node* input,int inputNumber,bool autoConnection = false);
     
@@ -71,21 +71,10 @@ public:
     
     /*Add a new viewer tab to the GUI*/
     void initializeViewerTab(TabWidget* where);
-    
-    ViewerInfos* getViewerInfos(){return _viewerInfos;}
-    
-    ViewerTab* getUiContext(){return _uiContext;}
+        
+    ViewerTab* getUiContext() const {return _uiContext;}
     
     void setUiContext(ViewerTab* ptr){_uiContext = ptr;}
-    
-    virtual std::string className() const OVERRIDE { return "Viewer"; }
-    
-    virtual std::string description() const OVERRIDE;
-    
-    void renderRow(int left,int right,int y,int textureY);
-    
-    /*This function MUST be called in the main thread.*/
-    void cachedFrameEngine(boost::shared_ptr<const Powiter::FrameEntry> frame);
     
     void disconnectViewer(){
         emit viewerDisconnected();
@@ -109,6 +98,7 @@ public:
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
+    /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays() const;
     
     void notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos);
@@ -127,41 +117,47 @@ public:
     
     void notifyOverlaysFocusLost();
     
+    void renderRow(SequenceTime time,int left,int right,int y,int textureY);
+
+    /*This function MUST be called in the main thread.*/
+    void cachedFrameEngine(boost::shared_ptr<const Powiter::FrameEntry> frame);
+
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
+    
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
 public slots:
+    
     void onCachedFrameAdded();
+    
     void onCachedFrameRemoved();
+    
     void onViewerCacheCleared();
     
 protected:
     
     virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
     
+    virtual std::string setInputLabel(int inputNb) const {
+        return QString::number(inputNb+1).toStdString();
+    }
+
+    
 signals:
     void viewerDisconnected();
+    
     void addedCachedFrame(int);
+    
     void removedCachedFrame();
+    
     void clearedViewerCache();
     
     void mustSwapBuffers();
-    void mustRedraw();
-private:
     
-    virtual bool _validate(bool doFullWork);
+    void mustRedraw();
     
     
 };
 
-/*#ifdef __cplusplus
- extern "C" {
- #endif
- #ifdef _WIN32
- VIEWER_EXPORT Viewer* BuildViewer(Node *node){return new Viewer(node);}
- #elif defined(unix) || defined(__unix__) || defined(__unix)
- Viewer* BuildViewer(Node *node){return new Viewer(node);}
- #endif
- #ifdef __cplusplus
- }
- #endif*/
 
 
 #endif // POWITER_ENGINE_VIEWERNODE_H_

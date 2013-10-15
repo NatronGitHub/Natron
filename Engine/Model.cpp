@@ -49,8 +49,7 @@ using namespace std;
 using namespace Powiter;
 
 Model::Model(AppInstance* appInstance)
-: _appInstance(appInstance),
-_generalMutex(new QMutex)
+: _appInstance(appInstance)
 {
 }
 
@@ -59,8 +58,6 @@ Model::~Model() {
         _currentNodes[i]->deleteNode();
     }
 	_currentNodes.clear();
-    
-    delete _generalMutex;
 }
 
 
@@ -119,14 +116,14 @@ void Model::initNodeCountersAndSetName(Node* n){
         _nodeCounters.insert(make_pair(n->className(), 1));
         n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)).toStdString());
     }
-
+    
 }
 
 bool Model::connect(int inputNumber,const std::string& inputName,Node* output){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
         assert(_currentNodes[i]);
         if (_currentNodes[i]->getName() == inputName) {
-
+            
             connect(inputNumber,_currentNodes[i], output);
             return true;
         }
@@ -159,7 +156,7 @@ bool Model::disconnect(Node* input,Node* output){
 QString Model::serializeNodeGraph() const{
     /*Locking the nodes while autosaving*/
     QMutexLocker l(_appInstance->getAutoSaveMutex());
-
+    
     const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
     QString ret;
     

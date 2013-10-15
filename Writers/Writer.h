@@ -28,6 +28,7 @@ class Row;
 class OutputFile_Knob;
 class ComboBox_Knob;
 class WriteKnobs;
+class Int_Knob;
 class Writer: public OutputNode{
     
     Q_OBJECT
@@ -62,9 +63,8 @@ public:
         int size(){return _tasks.size();}
         
     };
-    
-    
-    Writer(Model* model);
+      
+    Writer(Model* treeRoot);
         
     virtual ~Writer();
     
@@ -77,13 +77,13 @@ public:
      the filename selected in the GUI. If the buffer is full, it appends
      the Write task to the _queuedTasks vector. They will be launched
      by the notifyWriterForCompletion() function.*/
-    virtual bool _validate(bool doFullWork);
+    virtual bool validate() const;
+    
+    virtual Powiter::Status preProcessFrame(SequenceTime time) OVERRIDE;
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
-	virtual void renderRow(int left,int right,int y,const ChannelSet& channels);
-        
-	virtual void createKnobDynamically();
-    
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels);
+            
     /* This function is called by startWriting()
      - Initialises the output color-space for _writeHandle
       - Calls Write::writeAllData for _writeHandle, and removes it from the buffer
@@ -112,19 +112,23 @@ public:
     
     virtual bool cacheData() const OVERRIDE {return false;}
     
+    
+    int firstFrame() const {return _frameRange.first;}
+    
+    int lastFrame() const {return _frameRange.second;}
+    
 public slots:
     void notifyWriterForCompletion();
     void onFilesSelected();
     void fileTypeChanged();
     void startRendering();
-    
+    void onFrameRangeChoosalChanged();
 signals:
     void renderingOnDiskStarted(Writer*,QString,int,int);
     
 protected:
 	virtual void initKnobs() OVERRIDE;
     
-    virtual ChannelSet supportedComponents() OVERRIDE {return Powiter::Mask_All;}
     
 private:
     
@@ -139,9 +143,13 @@ private:
     std::string _fileType;
     std::vector<std::string> _allFileTypes;
     
+    std::pair<int,int> _frameRange;
     
     OutputFile_Knob* _fileKnob;
     ComboBox_Knob* _filetypeCombo;
+    ComboBox_Knob* _frameRangeChoosal;
+    Int_Knob* _firstFrameKnob;
+    Int_Knob* _lastFrameKnob;
     
 };
 Q_DECLARE_METATYPE(Writer*);

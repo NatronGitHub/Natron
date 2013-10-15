@@ -20,6 +20,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
+#include "Gui/KnobGui.h"
 
 #include "Readers/Reader.h"
 
@@ -62,7 +63,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
     QObject::connect(node, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
     QObject::connect(node, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
-    QObject::connect(node, SIGNAL(knobsInitialied()),this,SLOT(initializeKnobs()));
+    QObject::connect(node, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
     QObject::connect(node, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
     QObject::connect(node, SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()));
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
@@ -70,6 +71,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
     QObject::connect(node, SIGNAL(canUndoChanged(bool)), this, SLOT(onCanUndoChanged(bool)));
     QObject::connect(node, SIGNAL(canRedoChanged(bool)), this, SLOT(onCanRedoChanged(bool)));
+    QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
@@ -94,47 +96,29 @@ NodeGui::NodeGui(NodeGraph* dag,
     channels->setY(itemPos.y()+1);
 	
     name = new QGraphicsSimpleTextItem(node->getName().c_str(),this);
-	
-	if(node->canMakePreviewImage()){
-		name->setX(itemPos.x()+35);
+    if(node->canMakePreviewImage()){
+        name->setX(itemPos.x()+35);
 		name->setY(itemPos.y()+1);
+
+        QImage preview = node->getPreview(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT);
+        if(preview.isNull()){
+                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+                prev.fill(Qt::black);
+                QPixmap prev_pixmap=QPixmap::fromImage(prev);
+                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
+            
+        }else{
+            QPixmap prev_pixmap=QPixmap::fromImage(preview);
+            prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
+            prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
+        }
+        prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
+        prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
 	}else{
 		name->setX(itemPos.x()+10);
 		name->setY(itemPos.y()+channels->boundingRect().height()+5);
 	}
-    if(int ret = node->canMakePreviewImage()){
-        if(ret == 1){
-            Reader* n = dynamic_cast<Reader*>(node);
-            if(n->hasPreview()){
-                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
-                prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
-                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-                
-            }else{
-                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-                prev.fill(Qt::black);
-                QPixmap prev_pixmap=QPixmap::fromImage(prev);
-                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-            }
-            
-        }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node);
-            if(n->hasPreviewImage()){
-                QPixmap prev_pixmap=QPixmap::fromImage(n->getPreview());
-                prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
-                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
 
-            }else{
-                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-                prev.fill(Qt::black);
-                QPixmap prev_pixmap=QPixmap::fromImage(prev);
-                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-            }
-
-        }
-        prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-        prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-	}
     
     /*building settings panel*/
 	if(node->className() != "Viewer"){
@@ -170,6 +154,9 @@ NodeGui::~NodeGui(){
     if(!node->isOpenFXNode())
         delete node;
 
+    //removing parentship otherwise Qt will attempt to delete knobs a second time
+    for(map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it)
+        it->second->setParent(NULL);
 }
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
@@ -222,10 +209,10 @@ void NodeGui::markInputNull(Edge* e){
 
 
 
-void NodeGui::updateChannelsTooltip(){
+void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
     QString tooltip;
     tooltip.append("Channels in input: ");
-    foreachChannels( z,node->info().channels()){
+    foreachChannels( z,chan){
         tooltip.append("\n");
         tooltip.append(getChannelName(z).c_str());
         
@@ -234,21 +221,10 @@ void NodeGui::updateChannelsTooltip(){
 }
 
 void NodeGui::updatePreviewImage(){
-    if(int ret = node->canMakePreviewImage()){
-        if(ret == 1){
-            Reader* reader = dynamic_cast<Reader*>(node);
-            QPixmap prev_pixmap=QPixmap::fromImage(reader->getPreview());
-            prev_pixmap=prev_pixmap.scaled(60,40);
-            prev_pix->setPixmap(prev_pixmap);
-        }else if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node);
-            if(n->hasPreviewImage()){
-                QPixmap prev_pixmap = QPixmap::fromImage(n->getPreview());
-                prev_pixmap=prev_pixmap.scaled(60,40);
-                prev_pix->setPixmap(prev_pixmap);
-            }
-            
-        }
+    if(node->canMakePreviewImage()){
+        QPixmap prev_pixmap=QPixmap::fromImage(node->getPreview(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT));
+        prev_pixmap = prev_pixmap.scaled(60,40);
+        prev_pix->setPixmap(prev_pixmap);
     }
 }
 void NodeGui::initializeInputs(){
@@ -356,8 +332,6 @@ void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, 
     font.setBold(true);
     font.setPointSize(14);
     painter->setFont(font);
-
-    updateChannelsTooltip();
 }
 bool NodeGui::isNearby(QPointF &point){
     QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
@@ -516,6 +490,7 @@ KnobGui* NodeGui::findKnobGuiOrCreate(Knob* knob){
     map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
     if (it == _knobs.end()) {
         KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob);
+        QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
         if(!ret){
             std::cout << "Failed to create gui for Knob" << std::endl;
             return NULL;
@@ -527,3 +502,11 @@ KnobGui* NodeGui::findKnobGuiOrCreate(Knob* knob){
     }
 }
 
+void NodeGui::onKnobDeletion(KnobGui* k){
+    for(map<Knob*,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+        if (it->second == k) {
+            _knobs.erase(it);
+            return;
+        }
+    }
+}

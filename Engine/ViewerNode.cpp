@@ -24,17 +24,18 @@
 #include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxNode.h"
+#include "Engine/ImageInfo.h"
+#include "Engine/TimeLine.h"
 
 #include "Readers/Reader.h"
 using namespace std;
 using namespace Powiter;
-
+using namespace boost;
 ViewerNode::ViewerNode(Model* model):OutputNode(model),
-_viewerInfos(0),
 _uiContext(0),
-_pboIndex(0),
 _inputsCount(1),
-_activeInput(0)
+_activeInput(0),
+_pboIndex(0)
 {
     connectSlotsToViewerCache();
 }
@@ -59,27 +60,19 @@ void ViewerNode::initializeViewerTab(TabWidget* where){
 ViewerNode::~ViewerNode(){
     if(_uiContext && _uiContext->getGui())
         _uiContext->getGui()->removeViewerTab(_uiContext,true);
-    if(_viewerInfos)
-        delete _viewerInfos;
 }
 
-bool ViewerNode::_validate(bool doFullWork){
-    if(doFullWork){
-        if(_viewerInfos){
-            delete _viewerInfos;
-        }
-        _viewerInfos = new ViewerInfos;
-        _viewerInfos->set_channels(info().channels());
-        _viewerInfos->set_dataWindow(info().dataWindow());
-        _viewerInfos->set_displayWindow(info().displayWindow());
-        _viewerInfos->set_firstFrame(info().firstFrame());
-        _viewerInfos->set_lastFrame(info().lastFrame());
-        
-        assert(_uiContext);
-        _uiContext->setCurrentViewerInfos(_viewerInfos,false);
-    }
-    return true;
+Powiter::Status ViewerNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
+    return input(_activeInput)->getRegionOfDefinition(time,rod);
 }
+
+void ViewerNode::getFrameRange(SequenceTime *first,SequenceTime *last){
+    SequenceTime inpFirst,inpLast;
+    input(_activeInput)->getFrameRange(&inpFirst,&inpLast);
+    *first = inpFirst;
+    *last = inpLast;
+}
+
 bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
     assert(input);
     InputMap::iterator found = _inputs.find(inputNumber);
@@ -184,12 +177,8 @@ int ViewerNode::disconnectInput(Node* input){
     return -1;
 }
 
-std::string ViewerNode::description() const {
-    return "The Viewer node can display the output of a node graph.";
-}
-
-void ViewerNode::renderRow(int left,int right,int y,int textureY){
-    boost::shared_ptr<const Row> row = input(_activeInput)->get(y,left,right);
+void ViewerNode::renderRow(SequenceTime time,int left,int right,int y,int textureY){
+    shared_ptr<const Row> row = input(activeInput())->get(time,y,left,right,_uiContext->displayChannels());
     if (row) {
         /*drawRow will fill a portion of the RAM buffer holding the frame.
          This will write at the appropriate offset in the buffer thanks
@@ -207,48 +196,8 @@ void ViewerNode::renderRow(int left,int right,int y,int textureY){
             b -= row->left();
         if(a)
             a -= row->left();
-        assert(_uiContext);
         _uiContext->viewer->drawRow(r,g,b,a,textureY);
     }
-}
-
-
-
-void ViewerInfos::reset(){
-    set_firstFrame(-1);
-    set_lastFrame(-1);
-    set_channels(Mask_None);
-    _dataWindow.set(0, 0, 0, 0);
-    _displayWindow.set(0,0,0,0);
-}
-
-void ViewerInfos::merge_displayWindow(const Format& other){
-    _displayWindow.merge(other);
-    _displayWindow.pixel_aspect(other.pixel_aspect());
-    if(_displayWindow.name().empty()){
-        _displayWindow.name(other.name());
-    }
-}
-
-bool ViewerInfos::operator==( const ViewerInfos& other){
-	if(other.channels()==this->channels() &&
-       other.firstFrame()==this->firstFrame() &&
-       other.lastFrame()==this->lastFrame() &&
-       other.displayWindow()==this->displayWindow()
-       ){
-        return true;
-	}else{
-		return false;
-	}
-    
-}
-void ViewerInfos::operator=(const ViewerInfos &other){
-    set_channels(other.channels());
-    set_firstFrame(other.firstFrame());
-    set_lastFrame(other.lastFrame());
-    set_displayWindow(other.displayWindow());
-    set_dataWindow(other.dataWindow());
-    set_rgbMode(other.rgbMode());
 }
 
 void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
@@ -261,29 +210,20 @@ void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
     }else{
         dataSize  = w * h  * sizeof(float) * 4;
     }
-    assert(_uiContext);
-    ViewerGL* gl_viewer = _uiContext->viewer;
-    if(_viewerInfos){
-        delete _viewerInfos;
-    }
-    _viewerInfos = new ViewerInfos;
-    _viewerInfos->set_dataWindow(frame->getKey()._dataWindow);
-    _viewerInfos->set_channels(Mask_RGBA);
-    _viewerInfos->set_displayWindow(frame->getKey()._displayWindow);
-    _viewerInfos->set_firstFrame(_info.firstFrame());
-    _viewerInfos->set_lastFrame(_info.lastFrame());
-    _uiContext->setCurrentViewerInfos(_viewerInfos,false);
+    const Box2D& dataW = frame->getKey()._dataWindow;
+    _uiContext->viewer->setDataWindow(dataW);
+    Format dispW(dataW.left(),dataW.bottom(),dataW.right(),dataW.top(),"",1.);
+    _uiContext->viewer->setDisplayWindow(dispW);
     /*allocating pbo*/
-    void* output = gl_viewer->allocateAndMapPBO(dataSize, gl_viewer->getPBOId(_pboIndex));
+    void* output = _uiContext->viewer->allocateAndMapPBO(dataSize, _uiContext->viewer->getPBOId(_pboIndex));
     checkGLErrors();
     assert(output); // FIXME: crashes here when using two viewers, each connected to a different reader
     _pboIndex = (_pboIndex+1)%2;
-    assert(_uiContext->viewer);
     _uiContext->viewer->fillPBO((const char*)frame->data(), output, dataSize);
 }
 
 void ViewerNode::onCachedFrameAdded(){
-    emit addedCachedFrame(currentFrame());
+    emit addedCachedFrame(_model->getApp()->getTimeLine()->currentFrame());
 }
 void ViewerNode::onCachedFrameRemoved(){
     emit removedCachedFrame();
@@ -310,7 +250,7 @@ void ViewerNode::swapBuffers(){
 void ViewerNode::pixelScale(double &x,double &y) {
     assert(_uiContext);
     assert(_uiContext->viewer);
-    x = _uiContext->viewer->displayWindow().pixel_aspect();
+    x = _uiContext->viewer->displayWindow().getPixelAspect();
     y = 2. - x;
 }
 
@@ -332,7 +272,7 @@ void ViewerNode::drawOverlays() const{
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock(); /*it might be locked already if a node forced a re-render*/
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->drawOverlay();
         }
@@ -344,7 +284,7 @@ void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF&
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenDown(viewportPos, pos);
         }
@@ -356,7 +296,7 @@ void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPoint
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenMotion(viewportPos, pos);
         }
@@ -368,7 +308,7 @@ void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& p
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenUp(viewportPos, pos);
         }
@@ -380,7 +320,7 @@ void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyDown(e);
         }
@@ -392,7 +332,7 @@ void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyUp(e);
         }
@@ -404,7 +344,7 @@ void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyRepeat(e);
         }
@@ -416,7 +356,7 @@ void ViewerNode::notifyOverlaysFocusGained(){
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusGained();
         }
@@ -428,7 +368,7 @@ void ViewerNode::notifyOverlaysFocusLost(){
     const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::DAGIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusLost();
         }

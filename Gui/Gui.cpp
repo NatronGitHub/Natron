@@ -159,14 +159,11 @@ void Gui::closeEvent(QCloseEvent *e) {
 
 
 NodeGui* Gui::createNodeGUI( Node* node){
-    if(int ret = node->canMakePreviewImage()){
-        if(ret == 2){
-            OfxNode* n = dynamic_cast<OfxNode*>(node);
-            n->computePreviewImage();
-        }
-    }
     assert(_nodeGraphTab);
     assert(_nodeGraphTab->_nodeGraphArea);
+    if(node->canMakePreviewImage() && node->isOpenFXNode()){
+        dynamic_cast<OfxNode*>(node)->computePreviewImage(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT);
+    }
     NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
     return gui;
 }
@@ -1156,7 +1153,7 @@ _lastFrame(lastFrame){
     _cancelButton = new Button("Cancel",this);
     _cancelButton->setMaximumWidth(50);
     _mainLayout->addWidget(_cancelButton);
-    VideoEngine* videoEngine = writer->getVideoEngine();
+    VideoEngine* videoEngine = writer->getVideoEngine().get();
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(onCancelation()));
     QObject::connect(videoEngine, SIGNAL(frameRendered(int)), this, SLOT(onFrameRendered(int)));
     QObject::connect(videoEngine, SIGNAL(progressChanged(int)),this,SLOT(onCurrentFrameProgress(int)));

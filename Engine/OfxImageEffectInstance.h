@@ -12,6 +12,8 @@
 
 #include <string>
 #include <cstdarg>
+#include <boost/shared_ptr.hpp>
+
 #include <ofxhImageEffect.h>
 
 #include "Global/Macros.h"
@@ -30,7 +32,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxNodePointer(OfxNode* node){_node = node;}
+    void setOfxNodePointer(OfxNode *node){_node = node;}
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -47,11 +49,14 @@ public:
                                                                   OFX::Host::ImageEffect::ClipDescriptor* descriptor,
                                                                   int index) OVERRIDE;
 
+    
     virtual OfxStatus vmessage(const char* type,
                                const char* id,
                                const char* format,
                                va_list args) OVERRIDE;
 
+    
+    
     //
     // live parameters
     //
@@ -159,13 +164,10 @@ public:
     //
 
     
-    OfxNode* node() { return _node; }
+    OfxNode* node() const { return _node; }
     
     const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const {return _parentingMap;}
     
-private:
-    const OfxNode* node() const { return _node; }
-
 private:
     OfxNode* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 

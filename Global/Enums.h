@@ -57,6 +57,11 @@ namespace Powiter{
         if_exists_truncate_if_not_exists_fail,
         if_exists_truncate_if_not_exists_create};
     
+    enum Status{
+        StatOK = 0,
+        StatFailed = 1,
+        StatReplyDefault = 14
+    };
 }
 
 

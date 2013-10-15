@@ -16,6 +16,7 @@
 #include <map>
 #include <cassert>
 #include <QtCore/QString>
+#include <QtCore/QMetaType>
 #include <QtCore/QStringList>
 #include <QUndoCommand>
 #include <QLineEdit>
@@ -97,6 +98,10 @@ public slots:
             updateGUI(variant);
     }
     
+    void deleteKnob(){
+        delete this;
+    }
+
     virtual void setVisible(bool b){
         if(b){
             show();
@@ -105,9 +110,11 @@ public slots:
         }
     }
     
+    
     virtual void setEnabled(bool b) =0;
     
 signals:
+    void deleted(KnobGui*);
     
     /*Must be emitted when a value is changed by the user or by
      an external source.*/
@@ -144,6 +151,8 @@ private:
     int _spacingBetweenItems;
     bool _widgetCreated;
 };
+Q_DECLARE_METATYPE(KnobGui*);
+
 //================================
 
 
@@ -188,7 +197,7 @@ public:
     
     File_KnobGui(Knob* knob);
 
-    virtual ~File_KnobGui(){}
+    virtual ~File_KnobGui();
             
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -233,7 +242,7 @@ public:
     
     OutputFile_KnobGui(Knob* knob);
     
-    virtual ~OutputFile_KnobGui(){}
+    virtual ~OutputFile_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -280,7 +289,7 @@ public:
     
     Int_KnobGui(Knob* knob);
     
-    virtual ~Int_KnobGui(){}
+    virtual ~Int_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -317,6 +326,25 @@ private:
 
 };
 
+class ClickableLabel : public QLabel{
+    Q_OBJECT
+    bool _toggled;
+public:
+    
+    ClickableLabel(const QString& text, QWidget * parent):QLabel(text,parent),_toggled(false){}
+    
+    virtual ~ClickableLabel(){}
+    
+    void setClicked(bool b){_toggled = b;}
+protected:
+    void mousePressEvent ( QMouseEvent *  ){
+        _toggled = !_toggled;
+        emit clicked(_toggled);
+    }
+signals:
+    void clicked(bool);
+};
+
 //================================
 class Bool_KnobGui :public KnobGui
 {
@@ -328,7 +356,7 @@ public:
     
     Bool_KnobGui(Knob* knob):KnobGui(knob){}
 
-    virtual ~Bool_KnobGui(){}
+    virtual ~Bool_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -351,7 +379,7 @@ protected:
 private:
 
 	QCheckBox* _checkBox;
-    QLabel* _descriptionLabel;
+    ClickableLabel* _descriptionLabel;
 };
 
 
@@ -366,7 +394,7 @@ public:
     
     Double_KnobGui(Knob* knob);
     
-    virtual ~Double_KnobGui(){}
+    virtual ~Double_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -410,7 +438,7 @@ public:
     
     Button_KnobGui(Knob* knob):KnobGui(knob){}
     
-    virtual ~Button_KnobGui(){}
+    virtual ~Button_KnobGui();
 
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -444,7 +472,7 @@ public:
     
     ComboBox_KnobGui(Knob* knob);
     
-    virtual ~ComboBox_KnobGui(){}
+    virtual ~ComboBox_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -478,7 +506,7 @@ public:
 
     Separator_KnobGui(Knob* knob):KnobGui(knob){}
     
-    virtual ~Separator_KnobGui(){}
+    virtual ~Separator_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -507,7 +535,7 @@ public:
     
     RGBA_KnobGui(Knob* knob):KnobGui(knob),_alphaEnabled(true){}
     
-    virtual ~RGBA_KnobGui(){}
+    virtual ~RGBA_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -571,7 +599,7 @@ public:
     
     String_KnobGui(Knob* knob):KnobGui(knob) {}
 	
-    virtual ~String_KnobGui(){}
+    virtual ~String_KnobGui();
     
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -637,7 +665,7 @@ public:
     
     Group_KnobGui(Knob* knob):KnobGui(knob),_checked(false){}
     
-    virtual ~Group_KnobGui(){}
+    virtual ~Group_KnobGui();
 
     virtual void createWidget(QGridLayout* layout,int row);
     
@@ -686,7 +714,7 @@ public:
     
     Tab_KnobGui(Knob* knob):KnobGui(knob){}
     
-    ~Tab_KnobGui(){}
+    ~Tab_KnobGui();
 
     virtual void createWidget(QGridLayout* layout,int row);
     

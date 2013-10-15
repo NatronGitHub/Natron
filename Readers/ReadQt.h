@@ -28,7 +28,9 @@ public:
     static Read* BuildRead(Reader* reader){return new ReadQt(reader);}
     
     ReadQt(Reader* op);
+    
     virtual ~ReadQt();
+    
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE {
         std::vector<std::string> out;
@@ -47,12 +49,17 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
-    virtual void engine(Powiter::Row* out) OVERRIDE;
-    virtual bool supports_stereo() const OVERRIDE;
-    virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
-    virtual void readAllData(bool openBothViews) OVERRIDE;
-    virtual bool supportsScanLine() const OVERRIDE {return false;}
-    virtual void make_preview() OVERRIDE;
+    
+    virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
+    
+    virtual bool supports_stereo() const OVERRIDE {return false;}
+    
+    virtual void readHeader(const QString& filename) OVERRIDE;
+    
+    virtual void readData() OVERRIDE;
+    
+    virtual QImage getPreview(int width,int height) OVERRIDE;
+    
     virtual void initializeColorSpace() OVERRIDE;
 };
 

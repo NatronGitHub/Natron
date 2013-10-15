@@ -16,7 +16,7 @@
 #include <string>
 #include <map>
 #include <cfloat>
-
+#include <boost/shared_ptr.hpp>
 #include <QtGui/QVector4D>
 #include <QtCore/QVariant>
 #include <QtCore/QStringList>
@@ -175,7 +175,7 @@ class Knob : public QObject
     
 public:    
     
-    Knob(Node* node,const std::string& description,int dimension = 1);
+    Knob(Node*  node,const std::string& description,int dimension = 1);
     
     virtual ~Knob();
     
@@ -183,7 +183,7 @@ public:
     
     const std::vector<U64>& getHashVector() const { return _hashVector; }
     
-    Node* getNode() const { return _node; }
+    Node*  getNode() const { return _node; }
     
     int getDimension() const {return _dimension;}
     
@@ -304,7 +304,7 @@ protected:
     //This is can be called in the implementation of tryStartRendering
     void startRendering(bool initViewer);
     
-    Node *_node;
+    Node*  _node;
     Variant _value;
     std::vector<U64> _hashVector;
     int _dimension;
@@ -335,11 +335,11 @@ class File_Knob:public Knob
     std::map<int,QString> _filesSequence;///mapping <frameNumber,fileName>
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new File_Knob(node,description,dimension);
     }
     
-    File_Knob(Node* node, const std::string& description,int dimension):
+    File_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {}
     
@@ -405,11 +405,11 @@ class OutputFile_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new OutputFile_Knob(node,description,dimension);
     }
     
-    OutputFile_Knob(Node* node, const std::string& description,int dimension):
+    OutputFile_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {}
     
@@ -447,11 +447,11 @@ class Int_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Int_Knob(node,description,dimension);
     }
     
-    Int_Knob(Node* node, const std::string& description,int dimension):
+    Int_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {}
     
@@ -620,11 +620,11 @@ class Bool_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Bool_Knob(node,description,dimension);
     }
     
-    Bool_Knob(Node* node, const std::string& description,int dimension):
+    Bool_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {}
     
@@ -655,11 +655,11 @@ class Double_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Double_Knob(node,description,dimension);
     }
     
-    Double_Knob(Node* node, const std::string& description,int dimension):
+    Double_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {}
     
@@ -845,11 +845,11 @@ class Button_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Button_Knob(node,description,dimension);
     }
     
-    Button_Knob(Node* node, const std::string& description,int dimension);
+    Button_Knob(Node*  node, const std::string& description,int dimension);
     
     virtual void fillHashVector(){}
     
@@ -877,11 +877,11 @@ class ComboBox_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new ComboBox_Knob(node,description,dimension);
     }
     
-    ComboBox_Knob(Node* node, const std::string& description,int dimension):
+    ComboBox_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {
         
@@ -920,11 +920,11 @@ class Separator_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Separator_Knob(node,description,dimension);
     }
     
-    Separator_Knob(Node* node, const std::string& description,int dimension):
+    Separator_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension){
         
     }
@@ -947,11 +947,11 @@ class RGBA_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new RGBA_Knob(node,description,dimension);
     }
     
-    RGBA_Knob(Node* node, const std::string& description,int dimension):
+    RGBA_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension),_alphaEnabled(true)
     {
         
@@ -989,11 +989,11 @@ class String_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new String_Knob(node,description,dimension);
     }
     
-    String_Knob(Node* node, const std::string& description,int dimension):
+    String_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension){
         
     }
@@ -1026,11 +1026,11 @@ class Group_Knob:public Knob
     std::vector<Knob*> _children;
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Group_Knob(node,description,dimension);
     }
     
-    Group_Knob(Node* node, const std::string& description,int dimension):
+    Group_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension)
     {
         
@@ -1060,11 +1060,11 @@ class Tab_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node* node, const std::string& description,int dimension){
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
         return new Tab_Knob(node,description,dimension);
     }
     
-    Tab_Knob(Node* node, const std::string& description,int dimension):
+    Tab_Knob(Node*  node, const std::string& description,int dimension):
     Knob(node,description,dimension){
         
     }

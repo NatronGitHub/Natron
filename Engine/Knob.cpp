@@ -32,7 +32,7 @@ using namespace Powiter;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef Knob* (*KnobBuilder)(Node* node,const std::string& description,int dimension);
+typedef Knob* (*KnobBuilder)(Node*  node,const std::string& description,int dimension);
 
 typedef KnobGui* (*KnobGuiBuilder)(Knob* knob);
 
@@ -184,7 +184,11 @@ void KnobFactory::loadBultinKnobs(){
 }
 
 
-Knob* KnobFactory::createKnob(const std::string& name, Node* node, const std::string& description,int dimension) const{
+Knob* KnobFactory::createKnob(const std::string& name,
+                              Node*  node,
+                              const std::string& description,int dimension) const{
+    
+    
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(name);
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -222,7 +226,7 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob) const {
 /***********************************KNOB BASE******************************************/
 
 
-Knob::Knob(Node* node,const std::string& description,int dimension):
+Knob::Knob(Node*  node,const std::string& description,int dimension):
 _node(node),
 _value(),
 _dimension(dimension),
@@ -238,10 +242,12 @@ _canUndo(true)
 }
 
 Knob::~Knob(){
+    if(_node)
+        _node->removeKnob(this);
 }
 
 void Knob::startRendering(bool initViewer){
-    ViewerNode* viewer = Node::hasViewerConnected(_node);
+    ViewerNode* viewer = _node->hasViewerConnected();
     if(viewer){
         viewer->refreshAndContinueRender(initViewer);
     }
@@ -600,7 +606,7 @@ void Double_Knob::tryStartRendering(){
 }
 /***********************************BUTTON_KNOB*****************************************/
 
-Button_Knob::Button_Knob(Node* node, const std::string& description,int dimension):
+Button_Knob::Button_Knob(Node*  node, const std::string& description,int dimension):
 Knob(node,description,dimension)
 {
     //QObject::connect(this,SIGNAL(valueChanged(const Variant&)),this,SLOT(connectToSlot(const Variant&)));

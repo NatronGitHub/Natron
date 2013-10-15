@@ -13,7 +13,7 @@
 #define POWITER_ENGINE_CHANNELSET_H_
 
 #include <string>
-
+#include <QtCore/QMetaType>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
@@ -177,5 +177,6 @@ std::string getChannelName(Powiter::Channel c);
 /*useful function to check whether alpha is on in the mask*/
 bool hasAlpha(ChannelSet mask);
 
+Q_DECLARE_METATYPE(ChannelSet);
 
 #endif // POWITER_ENGINE_CHANNELSET_H_

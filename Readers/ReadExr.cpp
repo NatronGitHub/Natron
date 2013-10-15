@@ -30,7 +30,7 @@
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
-
+#include "Engine/ImageInfo.h"
 using namespace std;
 using namespace Powiter;
 
@@ -214,7 +214,7 @@ std::string ExrChannelExctractor::exrName() const
         return _layer + "." + _chan;
     return _chan;
 }
-void ReadExr::readHeader(const QString& filename, bool){
+void ReadExr::readHeader(const QString& filename){
     
     _channel_map.clear();
      views.clear();
@@ -281,7 +281,6 @@ void ReadExr::readHeader(const QString& filename, bool){
 
         // handling channels in the exr file to convert them to powiter channels
         ChannelSet mask;
-        bool rgb= true;
         const Imf::ChannelList& imfchannels = _inputfile->header().channels();
         Imf::ChannelList::ConstIterator chan;
         
@@ -314,7 +313,6 @@ void ReadExr::readHeader(const QString& filename, bool){
                         if(writeChannelMapping){
                             _channel_map[channel] = chan.name();
                         }
-                        if(!strcmp(chan.name(),"Y") || !strcmp(chan.name(),"BY") || !strcmp(chan.name(),"RY") ) rgb=false;
                         mask += channel;
                     }
                 }
@@ -350,15 +348,11 @@ void ReadExr::readHeader(const QString& filename, bool){
             by--;
             br++;
             bt++;
-            _readerInfo.set_blackOutside(true);
+            //            _readerInfo->setBlackOutside(true);
         }
         bbox.set(bx, by, br+1, bt+1);
         
-        int ydirection = -1;
-        if (_inputfile->header().lineOrder() != Imf::INCREASING_Y){
-            ydirection=1;
-        }
-        set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+        setReaderInfo(imageFormat, bbox, mask);
     }
     catch (const std::exception& exc) {
         //iop->error(exc.what());
@@ -366,20 +360,26 @@ void ReadExr::readHeader(const QString& filename, bool){
         delete _inputfile;
     }
 }
-
+void ReadExr::readData() {
+    const Box2D& dataW = readerInfo().getDataWindow();
+    for (int i = dataW.bottom(); i < dataW.top(); ++i) {
+        readScanLine(i);
+    }
+    
+}
 void ReadExr::readScanLine(int y){
     const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
     const Imath::Box2i& datawin = _inputfile->header().dataWindow();
     
     // Invert to EXR y coordinate:
     int exrY = dispwin.max.y - y;
-    const Box2D& bbox = readerInfo().dataWindow();
+    const Box2D& bbox = readerInfo().getDataWindow();
     // const Format& dispW = readerInfo().displayWindow();
     int r = bbox.right();
     //bbox.right() > dispW.right() ? r = bbox.right() : r = dispW.right();
     int x= bbox.left();
     //bbox.x() < dispW.x() ? x = bbox.x() : x = dispW.x();
-    const ChannelSet& channels = readerInfo().channels();
+    const ChannelSet& channels = readerInfo().getChannels();
     Row* out = new Row(x,y,r,channels);
     _img.insert(make_pair(exrY,out));
     // Figure out intersection of x,r with the data in exr file:
@@ -440,7 +440,7 @@ ReadExr::~ReadExr(){
     delete _inputfile;
 }
 
-void ReadExr::engine(Row* out){
+void ReadExr::render(SequenceTime /*time*/,Row* out){
     const ChannelSet& channels = out->channels();
     const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
     const Imath::Box2i& datawin = _inputfile->header().dataWindow();
@@ -476,15 +476,15 @@ void ReadExr::engine(Row* out){
 }
 
 
-void ReadExr::make_preview(){
+QImage ReadExr::getPreview(int width,int height){
     Imf::Header header = _inputfile->header();
     Imath::Box2i &dataWindow = header.dataWindow();
     Imath::Box2i &dispWindow = header.displayWindow();
     int dh = dataWindow.max.y - dataWindow.min.y + 1;
     int dw = dataWindow.max.x - dataWindow.min.x + 1;
     int h,w;
-    dh < POWITER_PREVIEW_HEIGHT ? h = dh : h = POWITER_PREVIEW_HEIGHT;
-    dw < POWITER_PREVIEW_WIDTH ? w = dw : w = POWITER_PREVIEW_WIDTH;
+    dh < height ? h = dh : h = height;
+    dw < width ? w = dw : w = width;
     float yZoomFactor = (float)h/(float)dh;
     float xZoomFactor = (float)w/(float)dw;
     for (int i =0 ; i < h; ++i) {
@@ -515,7 +515,7 @@ void ReadExr::make_preview(){
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
         }
     }
-    op->setPreview(img);
+    return img;
 }
 
 //META DATA HANDLING:

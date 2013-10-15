@@ -23,15 +23,16 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "Engine/ImageInfo.h"
 #include "Engine/Format.h"
 #include "Engine/ChannelSet.h"
-#include "Gui/TextRenderer.h"
 #include "Gui/Texture.h"
 
 class QKeyEvent;
 class QEvent;
 class QMenu;
 class QGLShaderProgram;
+class FTTextureFont;
 namespace Powiter {
     namespace Color {
         class Lut;
@@ -61,61 +62,7 @@ class ViewerTab;
         } \
         }
 #endif
-                
-        
-        /**
-         *@class ViewerInfos
-         *@brief Holds info necessary to render like channels,display window...See the documentation of
-         *Node::Info for a more complete documentation.
-         **/
-        class ViewerInfos {
-            
-            int _firstFrame; /*!< first frame in the sequence*/
-            int _lastFrame; /*!< last frame in the sequence*/
-            bool _rgbMode; /*!< true if displaying RGB image, otherwise it assumes YCbCr*/
-            Box2D _dataWindow;
-            Format _displayWindow; /*!< display window of the data, for the data window see x,y,range,offset parameters*/
-            ChannelSet _channels; /*!< all channels defined by the current Node ( that are allocated)*/
-            
-        public:
-            
-            ViewerInfos():_firstFrame(-1),_lastFrame(-1),_rgbMode(true),_dataWindow(),_displayWindow(),_channels(){}
-            
-            virtual ~ViewerInfos(){}
-            
-            void set_displayWindow(const Format& format) { _displayWindow=format; }
-            
-            const Format& displayWindow() const { return _displayWindow; }
-            
-            void merge_displayWindow(const Format& other);
-            
-            void set_dataWindow(const Box2D& win) { _dataWindow = win; }
 
-            const Box2D& dataWindow() const { return _dataWindow; }
-            
-            bool operator==(const ViewerInfos& other);
-            
-            void operator=(const ViewerInfos &other);
-            
-            void set_firstFrame(int nb) { _firstFrame=nb; }
-            
-            void set_lastFrame(int nb) { _lastFrame=nb; }
-            
-            int firstFrame() const { return _firstFrame; }
-            
-            int lastFrame() const { return _lastFrame; }
-            
-            void set_channels(ChannelSet mask) { _channels=mask; }
-            
-            const ChannelSet& channels() const { return _channels; }
-            
-            void set_rgbMode(bool m) { _rgbMode=m; }
-            
-            bool rgbMode() const { return _rgbMode; }
-            
-            void reset();
-        };
-        
         
         /**
          *@class ViewerGL
@@ -216,8 +163,6 @@ class ViewerTab;
              **/
             enum MOUSE_STATE{DRAGGING,UNDEFINED};
             
-            TextRenderer _textRenderer; /*!< The class used to render text in the viewport*/
-            
             GLuint _pboIds[2]; /*!< PBO's id's used by the OpenGL context*/
             
             //   GLuint _vaoId; /*!< VAO holding the rendering VBOs for texture mapping.*/
@@ -255,9 +200,9 @@ class ViewerTab;
             double exposure ;/*!< Current exposure setting, all pixels are multiplied
                              by pow(2,expousre) before they appear on the screen.*/
             
-            ViewerInfos* _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
+            ImageInfo _currentViewerInfos;/*!< Pointer to the ViewerInfos  used for rendering*/
             
-            ViewerInfos* _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
+            ImageInfo _blankViewerInfos;/*!< Pointer to the infos used when the viewer is disconnected.*/
             
             bool _displayingImage;/*!< True if the viewer is connected and not displaying black.*/
             bool _must_initBlackTex;
@@ -296,7 +241,9 @@ class ViewerTab;
             QColor _clearColor;
             
             QMenu* _menu;
-                        
+            
+            FTTextureFont* _font;
+            
         public:
             
             
@@ -340,30 +287,21 @@ class ViewerTab;
              *@returns Returns true if the viewer is displaying something.
              **/
             bool displayingImage() const { return _displayingImage; }
-
-            /**
-             *@brief Convenience function.
-             *Ydirection is the order of fill of the display texture:
-             *either bottom to top or top to bottom.
-             **/
-            int Ydirection();
             
-            /**
-             *@brief Convenience function.
-             *@returns true when we have rgba data.
-             *False means it is luminance chroma
-             **/
-            bool rgbMode();
             
             /**
              *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
              **/
-            const Box2D& dataWindow();
+            const Box2D& dataWindow() const ;
+            
+            void setDataWindow(const Box2D& dataWindow);
             
             /**
              *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
              **/
-            const Format& displayWindow();
+            const Format& displayWindow() const;
+            
+            void setDisplayWindow(const Format& displayWindow);
             
             /**
              *@brief Saves the OpenGL context so it can be restored later-on .
@@ -503,22 +441,12 @@ class ViewerTab;
              *@brief Handy function that zoom automatically the viewer so it fit
              *the displayWindow  entirely in the viewer
              **/
-            void fitToFormat(Format displayWindow);
-            
-            
-            /**
-             *@brief Set the member _currentViewerInfos to point to the infos passed in parameter.
-             *It also updates the infos displayed on the InfoViewerWidget.
-             *@param viewerInfos[in] A pointer to the ViewerInfos. The ViewerGL does not take ownership of the pointer.
-             *@param onInit[in] True if the this is called on initialisation of the widget. Call it always with false.
-             **/
-            void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);
-            
+            void fitToFormat(const Box2D& rod);
             
             /**
              *@returns Returns a pointer to the current viewer infos.
              **/
-            ViewerInfos* getCurrentViewerInfos() const {return _currentViewerInfos;}
+            const ImageInfo& getCurrentViewerInfos() const {return _currentViewerInfos;}
             
             ViewerTab* getViewerTab() const {return _viewerTab;}
             
@@ -654,6 +582,8 @@ class ViewerTab;
             
             void toggleOverlays(){ _overlay = ! _overlay; updateGL();}
             
+            void print( int x, int y, const QString&string, QColor color);
+            
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.
@@ -723,6 +653,8 @@ class ViewerTab;
              **/
             void initConstructor();
             
+            void initTextFont();
+            
             void populateMenu();
             
             /**
@@ -762,19 +694,6 @@ class ViewerTab;
              *@brief Makes the viewer display black only.
              **/
             void clearViewer();
-            
-            /**
-             *@brief Emits signals indicating that the data window and the display have changed
-             *and change the strings displayed as overlays.
-             **/
-            void updateDataWindowAndDisplayWindowInfo();
-            
-            
-            /**
-             *@brief set the current viewer infos to be blank(used when
-             displaying black)
-             **/
-            void blankInfoForViewer(bool onInit=false);
             
             /**
              *@brief Returns !=0 if the extension given by its name is supported by this OpenGL version.

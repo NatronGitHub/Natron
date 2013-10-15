@@ -615,13 +615,15 @@ namespace Powiter{
                     boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
                     _memoryCacheSize -= evicted.second->size();
                     /*insert it back into the disk portion */
-                    while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
-                        std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
-                        _diskCacheSize -= evicted.second->size();
-                        evictedFromDisk.second->removeAnyBackingFile();
+                    if(evicted.second->isStoredOnDisk()){
+                        while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
+                            std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
+                            _diskCacheSize -= evicted.second->size();
+                            evictedFromDisk.second->removeAnyBackingFile();
+                        }
+                        _diskCacheSize += evicted.second->size();
+                        _diskCache.insert(evicted.second->getHashKey(),evicted.second);
                     }
-                    _diskCacheSize += evicted.second->size();
-                    _diskCache.insert(evicted.second->getHashKey(),evicted.second);
                 }
                 if(_signalEmitter){
                     _signalEmitter->emitSignalClearedInMemoryPortion();

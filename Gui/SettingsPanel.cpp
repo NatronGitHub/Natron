@@ -140,7 +140,10 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent):QFrame(parent),_n
     _tabWidget->addTab(_labelWidget,"Label");
     
 }
-SettingsPanel::~SettingsPanel(){}
+SettingsPanel::~SettingsPanel(){
+
+
+}
 
 void SettingsPanel::showHelp(){
     QToolTip::showText(QCursor::pos(), _helpButton->toolTip());
@@ -211,6 +214,9 @@ void SettingsPanel::initialize_knobs(){
     if(maxSpacing > 0)
         _layoutSettings->setHorizontalSpacing(maxSpacing);
 }
+
+
+
 void SettingsPanel::close(){
     
     _nodeGUI->setSettingsPanelEnabled(false);

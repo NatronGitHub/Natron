@@ -416,7 +416,7 @@ _maximized(false)
 	/*=================================================*/
     
 	/*frame seeker*/
-	frameSeeker = new TimeLineGui(_viewerNode->getTimeLine(),this);
+	frameSeeker = new TimeLineGui(_gui->getApp()->getTimeLine(),this);
     frameSeeker->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Minimum);
 	_mainLayout->addWidget(frameSeeker);
 	/*================================================*/
@@ -435,7 +435,7 @@ _maximized(false)
     QObject::connect(frameSeeker,SIGNAL(currentFrameChanged(int)), _currentFrameBox, SLOT(setValue(int)));
     QObject::connect(_currentFrameBox, SIGNAL(valueChanged(double)), frameSeeker, SLOT(seekFrame(double)));
     
-    VideoEngine* vengine = _viewerNode->getVideoEngine();
+    VideoEngine* vengine = _viewerNode->getVideoEngine().get();
     
     QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
@@ -498,8 +498,7 @@ void ViewerTab::updateZoomComboBox(int value){
  explicitly we want to use this viewer and not another one.*/
 void ViewerTab::startPause(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode->currentFrame(),/*starting frame*/
-                                              -1, /*frame count*/
+        _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false, /*fit to viewer ?*/
                                               true, /*forward ?*/
@@ -513,8 +512,7 @@ void ViewerTab::abortRendering(){
 }
 void ViewerTab::startBackward(bool b){
     if(b){
-        _viewerNode->getVideoEngine()->render(_viewerNode->currentFrame(),/*starting frame*/
-                                              -1, /*frame count*/
+        _viewerNode->getVideoEngine()->render(-1, /*frame count*/
                                               true,/*rebuild tree?*/
                                               false,/*fit to viewer?*/
                                               false,/*forward?*/
@@ -525,35 +523,35 @@ void ViewerTab::startBackward(bool b){
 }
 void ViewerTab::previousFrame(){
     abortRendering();
-    seek(_viewerNode->currentFrame()-1);
+    seek(frameSeeker->currentFrame()-1);
 }
 void ViewerTab::nextFrame(){
     abortRendering();
-    seek(_viewerNode->currentFrame()+1);
+    seek(frameSeeker->currentFrame()+1);
 }
 void ViewerTab::previousIncrement(){
     abortRendering();
-    seek(_viewerNode->currentFrame()-incrementSpinBox->value());
+    seek(frameSeeker->currentFrame()-incrementSpinBox->value());
 }
 void ViewerTab::nextIncrement(){
     abortRendering();
-    seek(_viewerNode->currentFrame()+incrementSpinBox->value());
+    seek(frameSeeker->currentFrame()+incrementSpinBox->value());
 }
 void ViewerTab::firstFrame(){
     abortRendering();
-    seek(_viewerNode->firstFrame());
+    seek(frameSeeker->firstFrame());
 }
 void ViewerTab::lastFrame(){
     abortRendering();
-    seek(_viewerNode->lastFrame());
+    seek(frameSeeker->lastFrame());
 }
 void ViewerTab::seek(int f){
     abortRendering();
-    _viewerNode->getVideoEngine()->seek(f);
+    frameSeeker->seek_notSlot(f);
+    _viewerNode->refreshAndContinueRender();
 }
 
 void ViewerTab::centerViewer(){
-    abortRendering();
     if(viewer->displayingImage()){
         _viewerNode->refreshAndContinueRender(true);
 
@@ -601,19 +599,7 @@ void ViewerTab::keyPressEvent ( QKeyEvent * event ){
     
     
 }
-void ViewerTab::setCurrentViewerInfos(ViewerInfos* viewerInfos,bool onInit){
-    viewer->setCurrentViewerInfos(viewerInfos,onInit);
-    if(!onInit){
-        _currentFrameBox->setMaximum(viewerInfos->lastFrame());
-        _currentFrameBox->setMinimum(viewerInfos->firstFrame());
-        // int curFirstFrame = frameSeeker->firstFrame();
-        // int curLastFrame =  frameSeeker->lastFrame();
-        // if ((viewerInfos->firstFrame() != curFirstFrame) || (viewerInfos->lastFrame() != curLastFrame)) {
-        frameSeeker->setFrameRange(viewerInfos->firstFrame(), viewerInfos->lastFrame());
-        frameSeeker->setBoundaries(viewerInfos->firstFrame(), viewerInfos->lastFrame());
-        // }
-    }
-}
+
 void ViewerTab::onViewerChannelsChanged(int i){
     switch (i) {
         case 0:

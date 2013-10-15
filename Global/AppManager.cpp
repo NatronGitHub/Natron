@@ -47,8 +47,7 @@
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxNode.h"
-#include "Engine/Format.h"
-
+#include "Engine/TimeLine.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Read.h"
@@ -66,14 +65,6 @@
 using namespace Powiter;
 using namespace std;
 
-
-Project::Project():
-_projectName("Untitled.rs"),
-_hasProjectBeenSavedByUser(false),
-_age(QDateTime::currentDateTime()),
-_format(appPTR->findExistingFormat(2048, 1556,1.)){
-    
-}
 
 AppInstance::AppInstance(int appID,const QString& projectName)
 : _model(new Model(this))
@@ -115,7 +106,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
         if(!findAutoSave()){
             if(projectName.isEmpty()){
                 QString text(QCoreApplication::applicationName() + " - ");
-                text.append(_currentProject._projectName);
+                text.append(_currentProject.getProjectName());
                 _gui->setWindowTitle(text);
                 createNode("Viewer");
             }else{
@@ -127,7 +118,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
     }else{
         if(projectName.isEmpty()){
             QString text(QCoreApplication::applicationName() + " - ");
-            text.append(_currentProject._projectName);
+            text.append(_currentProject.getProjectName());
             _gui->setWindowTitle(text);
             createNode("Viewer");
         }else{
@@ -202,30 +193,30 @@ const std::vector<Node*> AppInstance::getAllActiveNodes() const{
 void AppInstance::loadProject(const QString& path,const QString& name){
     _model->loadProject(path+name);
     QDateTime time = QDateTime::currentDateTime();
-    _currentProject._hasProjectBeenSavedByUser = true;
-    _currentProject._projectName = name;
-    _currentProject._projectPath = path;
-    _currentProject._age = time;
-    _currentProject._lastAutoSave = time;
+    _currentProject.setHasProjectBeenSavedByUser(true);
+    _currentProject.setProjectName(name);
+    _currentProject.setProjectPath(path);
+    _currentProject.setProjectAgeSinceLastSave(time);
+    _currentProject.setProjectAgeSinceLastAutosaveSave(time);
     QString text(QCoreApplication::applicationName() + " - ");
-    text.append(_currentProject._projectName);
+    text.append(name);
     _gui->setWindowTitle(text);
 }
 void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
     QDateTime time = QDateTime::currentDateTime();
     if(!autoSave) {
         
-        if((_currentProject._age != _currentProject._lastAutoSave) ||
+        if((_currentProject.projectAgeSinceLastSave() != _currentProject.projectAgeSinceLastAutosave()) ||
            !QFile::exists(path+name)){
             
             _model->saveProject(path,name);
-            _currentProject._hasProjectBeenSavedByUser = true;
-            _currentProject._projectName = name;
-            _currentProject._projectPath = path;
-            _currentProject._age = time;
-            _currentProject._lastAutoSave = time;
+            _currentProject.setHasProjectBeenSavedByUser(true);
+            _currentProject.setProjectName(name);
+            _currentProject.setProjectPath(path);
+            _currentProject.setProjectAgeSinceLastSave(time);
+            _currentProject.setProjectAgeSinceLastAutosaveSave(time);
             QString text(QCoreApplication::applicationName() + " - ");
-            text.append(_currentProject._projectName);
+            text.append(name);
             _gui->setWindowTitle(text);
         }
     }else{
@@ -233,20 +224,20 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
             
             removeAutoSaves();
             _model->saveProject(path,name+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"),true);
-            _currentProject._projectName = name;
-            _currentProject._projectPath = path;
-            _currentProject._lastAutoSave = time;
+            _currentProject.setProjectName(name);
+            _currentProject.setProjectPath(path);
+            _currentProject.setProjectAgeSinceLastAutosaveSave(time);
         }
     }
 }
 
 void AppInstance::autoSave(){
-    saveProject(_currentProject._projectPath, _currentProject._projectName, true);
+    saveProject(_currentProject.getProjectPath(), _currentProject.getProjectName(), true);
 }
 void AppInstance::triggerAutoSave(){
     QtConcurrent::run(this,&AppInstance::autoSave);
     QString text(QCoreApplication::applicationName() + " - ");
-    text.append(_currentProject._projectName);
+    text.append(_currentProject.getProjectName());
     text.append(" (*)");
     _gui->setWindowTitle(text);
 }
@@ -268,14 +259,14 @@ void AppInstance::clearNodes(){
 }
 
 bool AppInstance::isSaveUpToDate() const{
-    return _currentProject._age == _currentProject._lastAutoSave;
+    return _currentProject.projectAgeSinceLastSave() == _currentProject.projectAgeSinceLastAutosave();
 }
 void AppInstance::resetCurrentProject(){
-    _currentProject._hasProjectBeenSavedByUser = false;
-    _currentProject._projectName = "Untitled.rs";
-    _currentProject._projectPath = "";
+    _currentProject.setHasProjectBeenSavedByUser(false);
+    _currentProject.setProjectName("Untitled.rs");
+    _currentProject.setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
-    text.append(_currentProject._projectName);
+    text.append(_currentProject.getProjectName());
     _gui->setWindowTitle(text);
 }
 
@@ -325,18 +316,18 @@ bool AppInstance::findAutoSave() {
                 _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
                 QDateTime now = QDateTime::currentDateTime();
                 if (exists) {
-                    _currentProject._hasProjectBeenSavedByUser = true;
-                    _currentProject._projectName = filename;
-                    _currentProject._projectPath = path;
+                    _currentProject.setHasProjectBeenSavedByUser(true);
+                    _currentProject.setProjectName(filename);
+                    _currentProject.setProjectPath(path);
                 } else {
-                    _currentProject._hasProjectBeenSavedByUser = false;
-                    _currentProject._projectName = "Untitled.rs";
-                    _currentProject._projectPath = "";
+                    _currentProject.setHasProjectBeenSavedByUser(false);
+                    _currentProject.setProjectName("Untitled.rs");
+                    _currentProject.setProjectPath("");
                 }
-                _currentProject._lastAutoSave = now;
-                _currentProject._age = now;
+                _currentProject.setProjectAgeSinceLastAutosaveSave(now);
+                _currentProject.setProjectAgeSinceLastSave(now);
                 QString title(QCoreApplication::applicationName() + " - ");
-                title.append(_currentProject._projectName);
+                title.append(_currentProject.getProjectName());
                 title.append(" (*)");
                 _gui->setWindowTitle(title);
                 removeAutoSaves(); // clean previous auto-saves
@@ -805,7 +796,7 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
 	for(U32 i =0;i< _formats.size();++i) {
 		Format* frmt = _formats[i];
         assert(frmt);
-		if(frmt->width() == w && frmt->height() == h && frmt->pixel_aspect()==pixel_aspect){
+		if(frmt->width() == w && frmt->height() == h && frmt->getPixelAspect() == pixel_aspect){
 			return frmt;
 		}
 	}
@@ -836,4 +827,44 @@ void AppInstance::onRenderingOnDiskStarted(Writer* writer,const QString& sequenc
     if(_gui){
         _gui->showProgressDialog(writer, sequenceName,firstFrame,lastFrame);
     }
+}
+
+
+Project::Project():
+_projectName("Untitled.rs"),
+_hasProjectBeenSavedByUser(false),
+_ageSinceLastSave(QDateTime::currentDateTime()),
+_format(appPTR->findExistingFormat(2048, 1556,1.)),
+_timeline(new TimeLine())
+{
+    
+    
+}
+
+
+void Project::setFrameRange(int first, int last){
+    _timeline->setFrameRange(first,last);
+}
+
+void Project::seekFrame(int frame){
+    _timeline->seekFrame(frame);
+}
+
+void Project::incrementCurrentFrame() {
+    _timeline->incrementCurrentFrame();
+}
+void Project::decrementCurrentFrame(){
+    _timeline->decrementCurrentFrame();
+}
+
+int Project::currentFrame() const {
+    return _timeline->currentFrame();
+}
+
+int Project::firstFrame() const {
+    return _timeline->firstFrame();
+}
+
+int Project::lastFrame() const {
+    return _timeline->lastFrame();
 }

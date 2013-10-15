@@ -34,8 +34,8 @@ using namespace Powiter;
 
 TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,ViewerTab* parentTab):
 QWidget(parentTab),
-_first(0),
-_last(100),
+_first(timeline->firstFrame()),
+_last(timeline->lastFrame()),
 _alphaCursor(false),
 _state(IDLE),
 _timeline(timeline),
@@ -45,13 +45,15 @@ _boundsColor(207,69,6),
 _cachedLineColor(143,201,103),
 _backgroundColor(50,50,50),
 _ticksColor(200,200,200),
-_scaleColor(100,100,100)
+_scaleColor(100,100,100),
+_firstPaintEvent(true)
 {
     
     QObject::connect(_timeline.get(), SIGNAL(frameChanged(int)), this, SLOT(seekFrame(int)));
+    QObject::connect(_timeline.get(), SIGNAL(frameRangeChanged(int,int,int,int)), this, SLOT(onFrameRangeChanged(int,int,int,int)));
+
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     setMouseTracking(true);
-        
 }
 
 QSize TimeLineGui::minimumSizeHint() const{
@@ -102,6 +104,11 @@ void TimeLineGui::updateScale(){
     
 }
 void TimeLineGui::paintEvent(QPaintEvent *){
+    if(_firstPaintEvent){
+        _firstPaintEvent = false;
+        updateScale();
+    }
+    
     int w = size().width();
     int h = size().height();
     QPainter p(this);
@@ -114,7 +121,6 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     p.drawLine(BORDER_OFFSET_, LINE_START, BORDER_OFFSET_, LINE_START+BORDER_HEIGHT_); // left border
     p.drawLine(w-BORDER_OFFSET_,LINE_START,w-BORDER_OFFSET_,LINE_START+BORDER_HEIGHT_); // right border
     p.drawLine(BORDER_OFFSET_,BORDER_HEIGHT_+LINE_START,w-BORDER_OFFSET_,BORDER_HEIGHT_+LINE_START); // horizontal line
-    updateScale();
     // draws ticks & sub-ticks
     drawTicks(&p,_scaleColor);
     QPolygonF cursorPoly;
@@ -194,13 +200,13 @@ void TimeLineGui::paintEvent(QPaintEvent *){
     
     /*drawing cached line*/
     p.setPen(_cachedLineColor);
-    for(U32 i =0 ; i < _cached.size() ; ++i) {
-        double pos = getCoordPosition(_cached[i]);
+    for(std::list<int>::const_iterator i = _cached.begin();i!= _cached.end();++i) {
+        double pos = getCoordPosition(*i);
         double previousOrNext;
-        if (_cached[i] == _timeline->firstFrame()) {
-            previousOrNext = getCoordPosition(_cached[i]+1);
+        if (*i == _timeline->firstFrame()) {
+            previousOrNext = getCoordPosition(*i+1);
         }else{
-            previousOrNext = getCoordPosition(_cached[i]-1);
+            previousOrNext = getCoordPosition(*i-1);
         }
         double width = pos - previousOrNext;
         p.drawLine((int)(pos-width/2.0+0.5),BORDER_HEIGHT_+LINE_START+2,
@@ -300,9 +306,6 @@ void TimeLineGui::seek_notSlot(int v){
     QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
 
-void TimeLineGui::changeFirstAndLast(QString str){
-    Q_UNUSED(str);
-}
 
 void TimeLineGui::mousePressEvent(QMouseEvent* e){
     
@@ -387,13 +390,16 @@ void TimeLineGui::addCachedFrame(int f){
 void TimeLineGui::removeCachedFrame(){
     // FIXME: std::vector is not the appropriate container! a list has a pop_front() method
     // erasing the first element of a vector is the worst that could happen
-    _cached.erase(_cached.begin());
+    _cached.pop_front();
    // repaint();
 }
 
-void TimeLineGui::setFrameRange(int min,int max){
-    _timeline->setFirstFrame(min);
-    _timeline->setLastFrame(max);
+void TimeLineGui::onFrameRangeChanged(int oldFirst,int oldLast,int first,int last){
+    if(oldFirst != first)
+        _first = first;
+    if(oldLast != last)
+        _last = last;
+    updateScale();
 }
 /*initialises the boundaries on the timeline*/
 void TimeLineGui::setBoundaries(int first,int last){

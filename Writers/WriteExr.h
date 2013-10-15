@@ -26,7 +26,6 @@ namespace Powiter{
 class Row;
 }
 class QMutex;
-class Box2D;
 class Writer;
 
 /*This class is used by Writer to load the filetype-specific knobs.
@@ -66,7 +65,7 @@ class WriteExr :public Write{
     Imf::Header* header;
     Imath::Box2i *exrDataW;
     Imath::Box2i *exrDispW;
-    Box2D* _dataW;
+    Box2D _dataW;
     QMutex* _lock;
 public:
     
@@ -93,12 +92,12 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void renderRow(int left,int right,int y,const ChannelSet& channels) OVERRIDE;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual void setupFile(const std::string& filename) OVERRIDE;
+    virtual void setupFile(const QString& filename,const Box2D& rod) OVERRIDE;
     
     /*This function must fill the pre-allocated structure with the data calculated by engine.
      This function must close the file as writeAllData is the LAST function called before the

@@ -23,25 +23,43 @@ class Format : public Box2D {
 	
 	
 public:
-	Format(int l, int b, int r, int t, const std::string& name, double pa=1.0);
-    Format(const Format& other):Box2D(other.left(),other.bottom(),other.right(),other.top()),_pixel_aspect(other.pixel_aspect()),_name(other.name()){}
-  
-    Format();
+    Format(int l, int b, int r, int t, const std::string& name, double pa)
+    : Box2D(l,b,r,t)
+    , _pixel_aspect(pa)
+    , _name(name)
+    {}
+    
+    Format(const Format& other)
+    :Box2D(other.left(),other.bottom(),other.right(),other.top())
+    ,_pixel_aspect(other.getPixelAspect())
+    ,_name(other.getName())
+    {}
+    
+    Format()
+    : Box2D()
+    , _pixel_aspect(1.0)
+    , _name()
+    {
+    }
+    
     virtual ~Format(){}
-    std::string name() const ;
-    void name(const std::string& n) const{this->_name = n;}
-    double pixel_aspect() const;
+    
+    const std::string& getName() const {return _name;}
+    
+    void setName(const std::string& n) {_name = n;}
+    
+    double getPixelAspect() const {return _pixel_aspect;}
 
-    void pixel_aspect( double p) ;
+    void setPixelAspect( double p) {_pixel_aspect = p;}
 	
 	Format operator=(const Format& other){
         set(other.left(), other.bottom(), other.right(), other.top());
-        _name = other.name();
-        pixel_aspect(other.pixel_aspect());
+        setName(other.getName());
+        setPixelAspect(other.getPixelAspect());
         return *this;
     }
-    bool operator==(const Format& other){
-        return _pixel_aspect == other.pixel_aspect() &&
+    bool operator==(const Format& other) const {
+        return _pixel_aspect == other.getPixelAspect() &&
         left() == other.left() &&
         bottom() == other.bottom() &&
         right() == other.right() &&
@@ -50,7 +68,7 @@ public:
     
 private:
 	double _pixel_aspect;
-    mutable std::string _name;
+    std::string _name;
     
     friend class boost::serialization::access;
     template<class Archive>

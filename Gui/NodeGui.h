@@ -149,7 +149,7 @@ public slots:
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip();
+    void updateChannelsTooltip(const ChannelSet& channels);
     
     void onLineEditNameChanged(const QString&);
     
@@ -170,6 +170,9 @@ public slots:
     
     /*Use NULL for src to disconnect.*/
     bool connectEdge(int edgeNumber);
+    
+    void onKnobDeletion(KnobGui* k);
+    
 signals:
     void nameChanged(QString);
     

@@ -36,7 +36,7 @@ public:
      !!WARNING: When the image fetcher object is deleted, all the Rows will be
      deleted too, it's important to maintain the image fetcher living thoughout the
      entire duration you need to use the Rows contained in that object.*/
-    ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels);
+    ImageFetcher(Node* node,SequenceTime time, int x, int y, int r, int t, ChannelSet channels);
     
     
     /*Launches new thread to fetch all the rows necessary from the node to fill the range (y,t).
@@ -92,10 +92,11 @@ signals:
     
 private:
     // on output, the row is locked, and must be unlocked using Row::unlock()
-    boost::shared_ptr<const Powiter::Row> getInputRow(Node* node,int y, int x,int r);
+    boost::shared_ptr<const Powiter::Row> getInputRow(Node* node,SequenceTime time,int y, int x,int r,const ChannelSet& channels);
 
 private:
     int _x,_y,_r,_t;
+    SequenceTime _time;
     ChannelSet _channels;
     Node* _node;
     bool _isFinished;

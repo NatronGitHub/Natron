@@ -185,8 +185,8 @@ void WriteExr::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void WriteExr::renderRow(int left,int right,int y,const ChannelSet& channels){
-    boost::shared_ptr<const Row> row = op->input(0)->get(y,left,right);
+void WriteExr::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
+    boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
     const float* a = row->begin(Channel_alpha);
    
     Row* toRow = new Row(left,y,right,channels);
@@ -205,42 +205,40 @@ void WriteExr::renderRow(int left,int right,int y,const ChannelSet& channels){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteExr::setupFile(const std::string& filename){
+void WriteExr::setupFile(const QString& filename,const Box2D& rod){
     _lock = new QMutex;
-    
-    _filename = filename;
+    _dataW = rod;
+    _filename = filename.toStdString();
     ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
-    const Format& dispW = op->info().displayWindow();
-    const Box2D& dataW = op->info().dataWindow();
     const ChannelSet& channels = op->requestedChannels();
-    _dataW = new Box2D;
-    if(op->info().blackOutside()){
-        if(dataW.left() + 2 < dataW.right()){
-            _dataW->set_left(dataW.left()+1);
-            _dataW->set_right(dataW.right()-1);
-        }
-        if(dataW.bottom() +2 < dataW.top()){
-            _dataW->set_bottom(dataW.bottom()+1);
-            _dataW->set_top(dataW.top()-1);
-        }
-    }else{
-        _dataW->set(dataW);
-    }
+    _dataW = rod;
+//    if(op->info().blackOutside()){
+//        if(dataW.left() + 2 < dataW.right()){
+//            _dataW->set_left(dataW.left()+1);
+//            _dataW->set_right(dataW.right()-1);
+//        }
+//        if(dataW.bottom() +2 < dataW.top()){
+//            _dataW->set_bottom(dataW.bottom()+1);
+//            _dataW->set_top(dataW.top()-1);
+//        }
+//    }else{
+//        _dataW->set(dataW);
+//    }
     exrDataW = new Imath::Box2i;
     exrDispW = new Imath::Box2i;
-    exrDataW->min.x = _dataW->left();
-    exrDataW->min.y = dispW.height() - _dataW->top();
-    exrDataW->max.x = _dataW->right() - 1;
-    exrDataW->max.y = dispW.height() - _dataW->bottom() - 1;
+    exrDataW->min.x = _dataW.left();
+    exrDataW->min.y = _dataW.height() - _dataW.top();
+    exrDataW->max.x = _dataW.right() - 1;
+    exrDataW->max.y = _dataW.height() - _dataW.bottom() - 1;
     
     exrDispW->min.x = 0;
     exrDispW->min.y = 0;
-    exrDispW->max.x = dispW.width() - 1;
-    exrDispW->max.y = dispW.height() - 1;
+    exrDispW->max.x = _dataW.width() - 1;
+    exrDispW->max.y = _dataW.height() - 1;
     
-    header=new Imf::Header(*exrDispW, *exrDataW,dispW.pixel_aspect(),
+    header=new Imf::Header(*exrDispW, *exrDataW,1.,
                           Imath::V2f(0, 0), 1, Imf::INCREASING_Y, compression);
     
     foreachChannels(z, channels){
@@ -267,7 +265,7 @@ void WriteExr::writeAllData(){
         outfile = new Imf::OutputFile(_filename.c_str(), *header);
         const ChannelSet& channels = op->requestedChannels();
 
-        for (int y = _dataW->top()-1; y >= _dataW->bottom(); y--) {
+        for (int y = _dataW.top()-1; y >= _dataW.bottom(); y--) {
             if(op->aborted()){
                 break;
             }
@@ -283,7 +281,7 @@ void WriteExr::writeAllData(){
                                            sizeof(float), 0));
                 }
             }else{
-                halfwriterow = new Imf::Array2D<half>(channels.size() , _dataW->width());
+                halfwriterow = new Imf::Array2D<half>(channels.size() , _dataW.width());
                 
                 int cur = 0;
                 foreachChannels(z, channels){

@@ -880,7 +880,7 @@ void ConnectCommand::undo(){
     }
     
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
+    ViewerNode* viewer = _edge->getDest()->getNode()->hasViewerConnected();
     if(viewer){
         viewer->updateTreeAndRender();
     }
@@ -924,7 +924,7 @@ void ConnectCommand::redo(){
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerNode* viewer = Node::hasViewerConnected(_edge->getDest()->getNode());
+    ViewerNode* viewer = _edge->getDest()->getNode()->hasViewerConnected();
     if(viewer){
         viewer->updateTreeAndRender();
     }

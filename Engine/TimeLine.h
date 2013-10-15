@@ -11,8 +11,8 @@
 
 #include <QtCore/QObject>
 
-#include "Global/Macros.h"
 
+#include "Global/GlobalDefines.h"
 class TimeLine: public QObject {
     Q_OBJECT
 public:
@@ -25,34 +25,36 @@ public:
 
     virtual ~TimeLine(){}
 
-    int firstFrame() const {return _firstFrame;}
+    SequenceTime firstFrame() const {return _firstFrame;}
 
-    void setFirstFrame(int f) {_firstFrame = f;}
+    SequenceTime lastFrame() const {return _lastFrame;}
 
-    int lastFrame() const {return _lastFrame;}
-
-    void setLastFrame(int f){_lastFrame = f;}
-
-    int currentFrame() const {return _currentFrame;}
+    void setFrameRange(SequenceTime first,SequenceTime last){
+        emit frameRangeChanged(_firstFrame,_lastFrame,first, last);
+        _firstFrame = first;
+        _lastFrame = last;
+    }
+    
+    SequenceTime currentFrame() const {return _currentFrame;}
 
     void incrementCurrentFrame(){++_currentFrame; emit frameChanged(_currentFrame);}
 
     void decrementCurrentFrame(){--_currentFrame; emit frameChanged(_currentFrame);}
 
-    public slots:
+public slots:
 
-    void seekFrame(int frame);
+    void seekFrame(SequenceTime frame);
 
-    void seekFrame_noEmit(int frame);
+    void seekFrame_noEmit(SequenceTime frame);
 
 
 signals:
-
+    void frameRangeChanged(int,int,int,int);
     void frameChanged(int);
 
 private:
-    int _firstFrame;
-    int _lastFrame;
-    int _currentFrame;
+    SequenceTime _firstFrame;
+    SequenceTime _lastFrame;
+    SequenceTime _currentFrame;
 };
 #endif /* defined(POWITER_ENGINE_TIMELINE_H_) */

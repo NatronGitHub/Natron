@@ -39,7 +39,7 @@ ReadQt::~ReadQt(){
         delete _img;
 }
 
-void ReadQt::engine(Row* out) {
+void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
     const ChannelSet& channels = out->channels();
     int y = out->y();
     switch(_img->format()) {
@@ -57,7 +57,7 @@ void ReadQt::engine(Row* out) {
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         {
-            int h = op->info().displayWindow().height();
+            int h = _img->height();
             int Y = h - y - 1;
 //            if(autoAlpha() && !_img->hasAlphaChannel()){
 //                out->turnOn(Channel_alpha);
@@ -85,7 +85,7 @@ void ReadQt::engine(Row* out) {
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
         default:
         {
-            int h = op->info().displayWindow().height();
+            int h = _img->height();
             int Y = h - y - 1;
             for (int X = out->left(); X < out->right(); ++X) {
                 QRgb c = _img->pixel(X, Y);
@@ -100,12 +100,7 @@ void ReadQt::engine(Row* out) {
             break;
     }
 }
-
-bool ReadQt::supports_stereo() const {
-    return false;
-}
-
-void ReadQt::readHeader(const QString& filename_, bool)
+void ReadQt::readHeader(const QString& filename_)
 {
     filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.
@@ -119,9 +114,7 @@ void ReadQt::readHeader(const QString& filename_, bool)
     int width = _img->width();
     int height= _img->height();
     double aspect = _img->dotsPerMeterX()/ _img->dotsPerMeterY();
-    
-	bool rgb=true;
-	int ydirection = -1;
+
 	ChannelSet mask;    
     if(_autoCreateAlpha){
         
@@ -152,14 +145,13 @@ void ReadQt::readHeader(const QString& filename_, bool)
     
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
-    set_readerInfo(imageFormat, bbox, filename, mask, ydirection, rgb);
+    setReaderInfo(imageFormat, bbox, mask);
 }
-void ReadQt::readAllData(bool){
+void ReadQt::readData(){
 // does nothing
 }
 
 
-
-void ReadQt::make_preview() {
-    op->setPreview(_img->scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio));
+QImage ReadQt::getPreview(int width,int height){
+    return _img->scaled(width, height,Qt::KeepAspectRatio);
 }

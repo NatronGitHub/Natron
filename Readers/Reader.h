@@ -18,40 +18,15 @@
 #include <QtCore/QXmlStreamReader> // forward declaration does not work because of ugly #defines in qxmlstream.h
 #include <QtCore/QXmlStreamWriter> // forward declaration does not work because of ugly #defines in qxmlstream.h
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/Macros.h"
 #include "Engine/Node.h"
+#include "Engine/LRUcache.h"
 namespace Powiter{
     class FrameEntry;
 }
 class File_Knob;
-
-/** @class special ReaderInfo deriving node Infos. This class add just a file name
- *to a frame, it is used internally to find frames in the buffer.
-**/
-class ReaderInfo : public Node::Info{
-
-public:
-    ReaderInfo():Node::Info(){}
-
-    virtual ~ReaderInfo(){}
-    
-
-    void setCurrentFrameName(const std::string& str){_currentFrameName = str;}
-
-    std::string getCurrentFrameName(){return _currentFrameName;}
-    
-    
-    void operator=(const ReaderInfo& other){
-        dynamic_cast<Node::Info&>(*this) = dynamic_cast<const Node::Info&>(other);
-        _currentFrameName = other._currentFrameName;
-    }
-    
-    
-private:
-    std::string _currentFrameName;
-};
-
-
 class ViewerGL;
 class Read;
 class ViewerCache;
@@ -66,282 +41,142 @@ class Reader : public Node
 public:
         
     
-    /** @enum Internal enum used to determine whether we need to open both views from
-     * files that support stereo( e.g : OpenEXR multiview files).
-     * @warning This is depecrated and not used anymore.
-    **/
-    enum DecodeMode{DEFAULT_DECODE,STEREO_DECODE,DO_NOT_DECODE};
-    
-    /** @class This class manages the buffer of the reader, i.e:
+    /** @class This class manages the LRU buffer of the reader, i.e:
      *a reader can have several frames stored in its buffer.
      *The size of the buffer is variable, see Reader::setMaxFrameBufferSize(...)
     **/
     class Buffer{
     public:
         
-        /** @class This class represents the information needed to know how many scanlines were decoded for scan-line
-         *readers. This class is used to determine whether 2 decoded scan-line frames
-         *are equals and also as an optimization structure to read only needed scan-lines (for
-         *zoom/panning purpose).
-         *This class has "base" rows, that are describing the ScanLineContext when it was created.
-         *Any extra row added to this context is passed into the _rowsToRead map before the merge()
-         *function gets called.
-        **/
-        class ScanLineContext{
-
-        public:
-
-            typedef std::vector<int>::iterator ScanLineIterator;
-            typedef std::vector<int>::const_iterator ScanLineConstIterator;
-            typedef std::vector<int>::reverse_iterator ScanLineReverseIterator;
-            
-            ScanLineContext(){}
-
-            /** @brief Construct a new ScanLineContext with the rows passed in parameters.
-            **/
-            ScanLineContext(const std::vector<int>& rows):_rows(rows) {}
-            
-            /** @brief Set the base scan-lines that represents the context*
-             **/
-            void setRows(const std::vector<int>& rows) { _rows=rows; }
-
-            /**
-             * @brief getRows
-             * @return A non-const reference to the internal rows represented by the ScanLineContext
-             */
-            std::vector<int>& getRows(){return _rows;}
-            
-            /**
-             * @brief hasScanLines
-             * @return True if the internal scan-lines count is greater than 0.
-             */
-            bool hasScanLines(){return _rows.size() > 0;}
-            
-            /**
-             * @brief  Adds to _rowsToRead the rows in others that are missing to _rows
-            **/
-            void computeIntersectionAndSetRowsToRead(const std::vector<int>& others);
-            
-            /**
-             *@brief merges _rowsToRead and _rows and clears out _rowsToRead
-            **/
-            void merge();
-            
-            /**
-             * @brief begin
-             * @return Provides a begin iterator to the rows in the ScanLineContext
-             */
-            ScanLineIterator begin(){return _rows.begin();}
-
-            /**
-             * @brief end
-             * @return Provides an end iterator to the rows in the ScanLineContext
-             */
-            ScanLineIterator end(){return _rows.end();}
-
-            /**
-             * @brief rbegin
-             * @return Provides a reverse-begin iterator to the rows in the ScanLineContext
-             */
-            ScanLineReverseIterator rbegin(){return _rows.rbegin();}
-
-            /**
-             * @brief rend
-             * @return Provides a reverse-end iterator to the rows in the ScanLineContext
-             */
-            ScanLineReverseIterator rend(){return _rows.rend();}
-            
-            /**
-             * @brief getRowsToRead
-             * @return A const reference to the rows that were added on top of the original ones.
-             */
-            const std::vector<int>& getRowsToRead(){return _rowsToRead;}
-            
-        private:
-            std::vector<int> _rows; ///base rows
-            std::vector<int> _rowsToRead; /// rows that were added on top of the others and that need to be read
-        };
-        
         /**
          *@class This is the base class of descriptors that represent a frame living in the buffer.
         **/
         class Descriptor{
+            boost::shared_ptr<Read> _readHandle;
+            bool _hasDecodedData;
+            QMutex _lock;
         public:
-            Descriptor(Read* readHandle_, const std::string& filename)
-            : _readHandle(readHandle_)
-            , _filename(filename){}
+            Descriptor(boost::shared_ptr<Read> readHandle)
+            : _readHandle(readHandle)
+            , _hasDecodedData(false)
+            {}
             
             Descriptor()
-            : _readHandle(0)
-            , _filename("")
+            : _readHandle()
+            , _hasDecodedData(false)
             {}
             
             Descriptor(const Descriptor& other)
             : _readHandle(other._readHandle)
-            , _filename(other._filename)
+            , _hasDecodedData(other._hasDecodedData)
             {}
             
-            virtual ~Descriptor(){}
-            
-            /**
-             *@return Returns true if this descriptor has to decode some data
-            **/
-            virtual bool hasToDecode()=0;
-            
-            /** @return Returns true if this descriptor supports scan-lines
-             **/
-            virtual bool supportsScanLines()=0;
-            
-            /*!< In case the decoded frame was not issued from the diskcache this is a pointer to the
-             Read handle that operated/is operating the decoding.*/
-            Read* _readHandle;
-            
-            /*!< The name of the frame in the buffer.*/
-            std::string _filename;
-            
-        };
-        
-        /**
-         * @brief The ScanLineDescriptor class is a descriptor for ScanLine-based frames living in the buffer.
-         */
-        class ScanLineDescriptor : public Reader::Buffer::Descriptor{
-        public:
-            ScanLineDescriptor(Read* readHandle_,
-                       std::string filename,ScanLineContext *slContext):
-            Reader::Buffer::Descriptor(readHandle_, filename),_slContext(slContext),_hasRead(false){}
-            
-            ScanLineDescriptor(): Reader::Buffer::Descriptor(),_slContext(0),_hasRead(false){}
-            
-            ScanLineDescriptor(const ScanLineDescriptor& other):Reader::Buffer::Descriptor(other),_slContext(other._slContext)
-            ,_hasRead(other._hasRead){}
+            ~Descriptor(){}
             
             /**
              * @brief hasToDecode
-             * @return true if the _rows map is not empty or the _rowsToRead is not empty.
+             * @return Returns true if this descriptor has to decode some dat
              */
-            virtual bool hasToDecode(){ return !_hasRead || _slContext->getRowsToRead().size()>0;}
-            
-            virtual bool supportsScanLines() {return true;}
-            
-            ScanLineContext* _slContext;
-            bool _hasRead;
+            void decode();
+        
+            boost::shared_ptr<Read> getReadHandle() const {return _readHandle;}
+
         };
+        typedef boost::shared_ptr<Reader::Buffer::Descriptor> value_type;
+        typedef std::string key_type;
         
-        class FullFrameDescriptor : public Reader::Buffer::Descriptor{
-        public:
-            FullFrameDescriptor(Read* readHandle_,
-                               std::string filename):
-            Reader::Buffer::Descriptor(readHandle_, filename),_hasRead(false){}
-            
-            FullFrameDescriptor(): Reader::Buffer::Descriptor(),_hasRead(false){}
-            
-            FullFrameDescriptor(const FullFrameDescriptor& other):Reader::Buffer::Descriptor(other),
-            _hasRead(other._hasRead)
-            {}
-            
-            /**
-             * @brief hasToDecode
-             * @return True if the flag _hasRead is true
-             */
-            virtual bool hasToDecode(){ return _hasRead;}
-            
-            virtual bool supportsScanLines() {return false;}
-            
-            bool _hasRead;
-        };
+#ifdef USE_VARIADIC_TEMPLATES
         
-        typedef std::vector<Reader::Buffer::Descriptor*>::iterator DecodedFrameIterator;
-        typedef std::vector<Reader::Buffer::Descriptor*>::reverse_iterator DecodedFrameReverseIterator;
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
+        typedef BoostLRUCacheContainer<key_type, value_type >, boost::bimaps::unordered_set_of> CacheContainer;
+#else
+        typedef BoostLRUCacheContainer<key_type, value_type , boost::bimaps::set_of> CacheContainer;
+#endif
+        typedef typename CacheContainer::container_type::left_iterator CacheIterator;
+        typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+        static value_type getValueFromIterator(CacheIterator it){return it->second;}
         
-        /**
-         *Enum used to know what kind of frame is enqueued in the buffer, it is used by
-         *isEnqueued(...).
-         **/
-        enum SEARCH_TYPE{SCANLINE_FRAME = 1 ,FULL_FRAME = 2 ,ALL_FRAMES = 4};
-    
+#else // cache use STL
+        
+#ifdef POWITER_CACHE_USE_HASH
+        typedef StlLRUCache<key_type,value_type, std::unordered_map> CacheContainer;
+#else
+        typedef StlLRUCache<key_type,value_type, std::map> CacheContainer;
+#endif
+        typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
+        typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+        static value_type  getValueFromIterator(CacheIterator it){return it->second;}
+#endif // POWITER_CACHE_USE_BOOST
+        
+#else // !USE_VARIADIC_TEMPLATES
+        
+#ifdef POWITER_CACHE_USE_BOOST
+#ifdef POWITER_CACHE_USE_HASH
+        typedef BoostLRUHashCache<key_type, value_type > CacheContainer;
+#else
+        typedef BoostLRUTreeCache<key_type, value_type > CacheContainer;
+#endif
+        typedef typename CacheContainer::container_type::left_iterator CacheIterator;
+        typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+        static value_type  getValueFromIterator(CacheIterator it){return it->second;}
+        
+#else // cache use STL and tree (std map)
+        
+        typedef StlLRUTreeCache<key_type, value_type> CacheContainer;
+        typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
+        typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+        static value_type  getValueFromIterator(CacheIterator it){return it->second.first;}
+#endif // POWITER_CACHE_USE_BOOST
+#endif // USE_VARIADIC_TEMPLATES
+        
         /**
          * @brief Construct an Empty buffer capable of containing 2 frames.
          */
-        Buffer():_bufferSize(2){}
+        Buffer():_maximumBufferSize(5){}
 
         ~Buffer(){clear();}
 
         /**
-         * @brief Inserts a new frame into the buffer.
-         * @param desc  The frame will be identified by this descriptor.
-         */
-        void insert(Reader::Buffer::Descriptor* desc);
-
-        /**
-         * @brief Removes a frame in the buffer
-         * @param filename The name of the frame
-         */
-        void remove(const std::string& filename);
-
-        /**
-         * @brief decodeFinished can be used to query whether the Reader has finished to decode a frame.
-         * @param filename The name of the frame.
-         * @return True if the decoding is finished for that frame.
-         */
-        bool decodeFinished(const std::string& filename);
-
-        /**
-         * @brief isEnqueued is used to check whether a frame exists already into the buffer.
-         * @param filename The name of the frame.
-         * @param searchMode What kind of frame are we looking for.
-         * @return An iterator pointing to a valid descriptor if it found it,otherwise it points to the end of the buffer.
-         */
-        DecodedFrameIterator isEnqueued(const std::string& filename, SEARCH_TYPE searchMode);
-
-        /**
          * @brief Clears out the buffer.
          */
-        void clear();
+        void clear(){
+            QMutexLocker lock(&_lock);
+            _buffer.clear();
+        }
 
         /**
          * @brief SetSize will fix the maximum size of the buffer in frames.
          * @param size Size of the buffer in frames.
          */
-        void setSize(int size){_bufferSize = size;}
-
+        void setMaximumSize(int size){ QMutexLocker lock(&_lock); _maximumBufferSize = size; }
+        
         /**
-         * @brief isFull
-         * @return True if the buffer is full .
+         * @brief Inserts a new frame into the buffer.
+         * @param desc  The frame will be identified by this descriptor.
          */
-        bool isFull(){return _buffer.size() == (U32)_bufferSize;}
-
-        /**
-         * @brief begin
-         * @return An iterator pointing to the begin of the buffer.
-         */
-        DecodedFrameIterator begin(){return _buffer.begin();}
-
-        /**
-         * @brief end
-         * @return An iterator pointing to the end of the buffer.
-         */
-        DecodedFrameIterator end(){return _buffer.end();}
-
-        /**
-         * @brief Erases a specific frame from the buffer.
-         * @param it An iterator pointing to that frame's descriptor.
-         */
-        void erase(DecodedFrameIterator it);
-
+        void insert(const key_type& key,value_type value){
+            QMutexLocker lock(&_lock);
+            if((int)_buffer.size() > _maximumBufferSize){
+                _buffer.evict();
+            }
+            _buffer.insert(key,value);
+        }
+        
         /**
          * @brief  find
          * @param filename The name of the frame.
          * @return Returns an iterator pointing to a valid frame in the buffer if it could find it. Otherwise points to end()
          */
-        DecodedFrameIterator find(const std::string& filename);
+        value_type get(const key_type& key) {
+            QMutexLocker lock(&_lock);
+            return _buffer(key);
+        }
 
-        /**
-         * @brief debugBuffer
-         */
-        void debugBuffer();
     private:
-        std::vector<  Reader::Buffer::Descriptor*  > _buffer; /// decoding buffer
-        int _bufferSize; /// maximum size of the buffer
+        mutable QMutex _lock;
+        CacheContainer _buffer; /// decoding buffer
+        int _maximumBufferSize; /// maximum size of the buffer
     };
     
     Reader(Model* model);
@@ -353,20 +188,13 @@ public:
      * @return True if the files list contains at list a file.
      */
 	bool hasFrames() const;
-
-    /**
-     * @brief Reads the header of the file associated to the current frame.
-     * @param current_frame The index of the frame to read.
-     * @return True if it could decode the header.
-     */
-    bool readCurrentHeader(int current_frame) WARN_UNUSED_RETURN;
     
     /**
-     * @brief Reads the data of the file associated to the current frame.
+     * @brief Reads the data of the file associated to the time.
      * @warning readCurrentHeader with the same frame number must have been called beforehand.
      * @param current_frame The index of the frame to decode.
      */
-    void readCurrentData(int current_frame);
+    boost::shared_ptr<Reader::Buffer::Descriptor> decodeData(SequenceTime time);
     
     /**
      * @brief firstFrame
@@ -392,25 +220,14 @@ public:
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    virtual const QString getRandomFrameName(int /*frame*/) const;
+    const QString getRandomFrameName(int /*frame*/) const;
 
+    virtual bool canMakePreviewImage() const {return true;}
+    
     /**
-     * @brief hasPreview
-     * @return True if the preview image is valid.
+     * @brief Forwards to the Read
      */
-	bool hasPreview() { return _has_preview; }
-
-    /**
-     * @brief setPreview will set the preview image for this Reader.
-     * @param img The preview image
-     */
-	void setPreview(const QImage& img);
-
-    /**
-     * @brief getPreview
-     * @return A pointer to the preview image.
-     */
-	const QImage& getPreview() { return _preview; }
+	virtual QImage getPreview(int width,int height);
 
 
     /**
@@ -425,26 +242,25 @@ public:
      */
     virtual std::string description() const OVERRIDE;
 
-    /**
-     * @brief Not documented yet as it will be revisited soon.
-     */
-    virtual bool _validate(bool doFullWork) OVERRIDE;
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
 	
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last){
+        *first = _frameRange.first;
+        *last  = _frameRange.second;
+    }
+    
     /**
      * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)
      */
-	virtual void engine(Powiter::Row* out) OVERRIDE;
+	virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
     
     /**
      * @brief cacheData
      * @return true, indicating that the reader caches data.
      */
-    virtual bool cacheData() const OVERRIDE {return true;}
+    virtual bool cacheData() const OVERRIDE { return true; }
     
-    /**
-     * @brief Calls the base class version.
-     */
-	virtual void createKnobDynamically() OVERRIDE;
+   
     
     /** @brief Set the number of frames that a single reader can store.
     * Must be minimum 2. The appropriate way to call this
@@ -456,11 +272,9 @@ public:
     **/
     void setMaxFrameBufferSize(int size){
         if(size < 2) return;
-        _buffer.setSize(size);
+        _buffer.setMaximumSize(size);
     }
     
-    
-    void fitFrameToViewer(bool b){_fitFrameToViewer = b;}
     
     virtual int maximumInputs() const OVERRIDE {return 0;}
 
@@ -481,17 +295,13 @@ protected:
 
 	virtual void initKnobs() OVERRIDE;
     
-    virtual ChannelSet supportedComponents() OVERRIDE { return ChannelSet(Powiter::Mask_All); }
 private:
-	QImage _preview;
-	bool _has_preview;
-    /*useful when using readScanLine in the open(..) function, it determines
-     how many scanlines we'd need*/
-    bool _fitFrameToViewer;
-	Read* _readHandle;
+    
+    boost::shared_ptr<Read> decoderForFileType(const QString& fileName);
+    std::pair<int,int> _frameRange;
     Buffer _buffer;
     File_Knob* _fileKnob;
-    QMutex _readMutex;
+    QImage _preview;
 };
 
 

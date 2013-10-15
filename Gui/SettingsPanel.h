@@ -106,7 +106,6 @@ public slots:
     void close();
     void minimizeOrMaximize(bool toggled);
     void showHelp();
-
 private:
     
 

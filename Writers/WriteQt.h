@@ -17,12 +17,18 @@
 
 class WriteQt :public Write{
     
+    Box2D _rod;
     uchar* _buf;
-    std::string _filename;
+    QString _filename;
     
 public:
     
     static Write* BuildWrite(Writer* writer){return new WriteQt(writer);}
+    
+    WriteQt(Writer* writer);
+    
+    virtual ~WriteQt();
+
     
     /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesEncoded() const OVERRIDE;
@@ -39,12 +45,12 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void renderRow(int left,int right,int y,const ChannelSet& channels) OVERRIDE;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual void setupFile(const std::string& filename) OVERRIDE;
+    virtual void setupFile(const QString& filename,const Box2D& rod) OVERRIDE;
     
     /*This function must fill the pre-allocated structure with the data calculated by engine.
      This function must close the file as writeAllData is the LAST function called before the
@@ -53,8 +59,6 @@ public:
 
     virtual void supportsChannelsForWriting(ChannelSet& channels) const OVERRIDE;
     
-    WriteQt(Writer* writer);
-    virtual ~WriteQt();
-};
+    };
 
 #endif /* defined(POWITER_WRITERS_WRITEQT_H_) */

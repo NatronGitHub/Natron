@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 #include "Engine/ChannelSet.h"
-
+#include "Engine/Box.h"
 
 namespace Powiter {
     namespace Color {
@@ -128,7 +128,7 @@ public:
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
      * within the range specified by (offset,range) and for all the channels.
     **/
-	virtual void renderRow(int left,int right,int y,const ChannelSet& channels) = 0;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) = 0;
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
@@ -140,7 +140,7 @@ public:
      * meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      * otherwise it would stall the GUI.
     **/
-    virtual void setupFile(const std::string& filename) = 0;
+    virtual void setupFile(const QString& filename,const Box2D& rod) = 0;
     
     /** @brief This function must fill the pre-allocated structure with the data calculated by engine.
      * This function must close the file as writeAllData is the LAST function called before the

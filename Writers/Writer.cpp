@@ -37,7 +37,10 @@ _requestedChannels(Mask_RGB), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
 _writeHandle(0),
-_writeOptions(0)
+_writeOptions(0),
+_frameRangeChoosal(0),
+_firstFrameKnob(0),
+_lastFrameKnob(0)
 {
     
     _lock = new QMutex;
@@ -59,67 +62,70 @@ std::string Writer::description() const {
     return "The Writer node can render on disk the output of a node graph.";
 }
 
-bool Writer::_validate(bool doFullWork){
+bool Writer::validate() const{
     /*Defaults writing range to readers range, but
      the user may change it through GUI.*/
-    setFrameRange(info().firstFrame(), info().lastFrame());
     if(_filename.empty()){
         return false;
-    }
-    
-    if (doFullWork) {
-        Write* write = 0;
-        Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
-        if(!encoder){
-            cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
-            return false;
-        }else{
-            
-            
-            pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
-            if(func.first)
-                write = func.second(this);
-            else{
-                cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
-                return false;
-            }
-            write->premultiplyByAlpha(_premult);
-            /*check if the filename already contains the extension, otherwise appending it*/
-            QString extension;
-            QString filename(_filename.c_str());
-            int i = filename.lastIndexOf(QChar('.'));
-            if(i != -1){
-                extension.append(filename.toStdString().substr(i).c_str());
-                filename = filename.replace(i+1, extension.size(), _fileType.c_str());
-            }else{
-                filename.append(extension);
-            }
-            
-            i = filename.lastIndexOf(QChar('#'));
-            QString n = QString::number(currentFrame());
-            if(i != -1){
-                filename = filename.replace(i,1,n);
-            }else{
-                i = filename.lastIndexOf(QChar('.'));
-                filename = filename.insert(i, n);
-            }
-            
-            write->setOptionalKnobsPtr(_writeOptions);
-            write->setupFile(filename.toStdString());
-            write->initializeColorSpace();
-            _writeHandle = write;
-        }
+        
     }
     return true;
+}
+Powiter::Status Writer::preProcessFrame(SequenceTime time){
+    Write* write = 0;
+    // setFrameRange(info().getFirstFrame(), info().getLastFrame());
+    Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    if(!encoder){
+        cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
+        return StatFailed;
+    }else{
+        
+        
+        pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+        if(func.first)
+            write = func.second(this);
+        else{
+            cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
+            return StatFailed;
+        }
+        write->premultiplyByAlpha(_premult);
+        /*check if the filename already contains the extension, otherwise appending it*/
+        QString extension;
+        QString filename(_filename.c_str());
+        int i = filename.lastIndexOf(QChar('.'));
+        if(i != -1){
+            extension.append(filename.toStdString().substr(i).c_str());
+            filename = filename.replace(i+1, extension.size(), _fileType.c_str());
+        }else{
+            filename.append(extension);
+        }
+        
+        i = filename.lastIndexOf(QChar('#'));
+        QString n = QString::number(time);
+        if(i != -1){
+            filename = filename.replace(i,1,n);
+        }else{
+            i = filename.lastIndexOf(QChar('.'));
+            filename = filename.insert(i, n);
+        }
+        
+        write->setOptionalKnobsPtr(_writeOptions);
+        Box2D rod;
+        getRegionOfDefinition(time, &rod);
+        write->setupFile(filename,rod);
+        write->initializeColorSpace();
+        _writeHandle = write;
+        return StatOK;
+    }
+    
+}
 
-}
-void Writer::renderRow(int left,int right,int y,const ChannelSet& channels){
-    _writeHandle->renderRow(left,right,y,channels);
+
+void Writer::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
+    _writeHandle->renderRow(time,left,right,y,channels);
 }
 
-void Writer::createKnobDynamically(){
-    Node::createKnobDynamically();
-}
+
 void Writer::initKnobs(){
     std::string fileDesc("File");
     _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", this, fileDesc));
@@ -144,8 +150,40 @@ void Writer::initKnobs(){
         _allFileTypes.push_back(it->first.c_str());
     }
     _filetypeCombo->populate(_allFileTypes);
+    
+    
+    _frameRangeChoosal = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Frame range"));
+    QObject::connect(_frameRangeChoosal, SIGNAL(valueChangedByUser()), this, SLOT(onFrameRangeChoosalChanged()));
+    std::vector<std::string> frameRangeChoosalEntries;
+    frameRangeChoosalEntries.push_back("Inputs union");
+    frameRangeChoosalEntries.push_back("Manual");
+    _frameRangeChoosal->populate(frameRangeChoosalEntries);
+    
 }
-
+void Writer::onFrameRangeChoosalChanged(){
+    int index = _frameRangeChoosal->value<int>();
+    if(index == 0){
+        if(_firstFrameKnob){
+            _firstFrameKnob->deleteKnob();
+            _firstFrameKnob = 0;
+        }
+        if(_lastFrameKnob){
+            _lastFrameKnob->deleteKnob();
+            _lastFrameKnob = 0;
+        }
+    }else if(index == 1){
+        getFrameRange(&_frameRange.first, &_frameRange.second);
+        if(!_firstFrameKnob){
+            _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
+            _firstFrameKnob->setValue(_frameRange.first);
+        }
+        if(!_lastFrameKnob){
+            _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
+            _lastFrameKnob->setValue(_frameRange.second);
+        }
+        createKnobDynamically();
+    }
+}
 
 void Writer::write(Write* write,QFutureWatcher<void>* watcher){
     
@@ -233,7 +271,7 @@ bool Writer::validInfosForRendering(){
     delete write;
     
     /*check if frame range makes sense*/
-    if(firstFrame() > lastFrame()) return false;
+    if(_frameRange.first > _frameRange.second) return false;
     
     /*check if write specific knobs have valid values*/
     if (_writeOptions) {
@@ -249,14 +287,21 @@ bool Writer::validInfosForRendering(){
 }
 
 void Writer::startRendering(){
+    
     _fileType = _allFileTypes[_filetypeCombo->value<int>()];
     _filename = _fileKnob->value<QString>().toStdString();
+    int index = _frameRangeChoosal->value<int>();
+    if(index == 0){
+        getFrameRange(&_frameRange.first, &_frameRange.second);
+    }else{
+        _frameRange.first = _firstFrameKnob->value<int>();
+        _frameRange.second = _lastFrameKnob->value<int>();
+    }
+    
     if(validInfosForRendering()){
-        /*Calls validate just to get the appropriate frame range in the timeline*/
         getVideoEngine()->refreshTree();
-        getVideoEngine()->validate(false);
         updateTreeAndRender();
-        emit renderingOnDiskStarted(this,_filename.c_str(),firstFrame(),lastFrame());
+        emit renderingOnDiskStarted(this,_filename.c_str(),_frameRange.first,_frameRange.second);
         
     }
 }

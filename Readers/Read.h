@@ -14,12 +14,14 @@
 
 #include <QtCore/QString>
 #include <QtGui/QRgb>
+#include <boost/scoped_ptr.hpp>
+
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Readers/Reader.h"
 
 class ViewerGL;
-
+class ImageInfo;
 namespace Powiter {
 namespace Color {
     class Lut;
@@ -45,7 +47,7 @@ public:
     virtual std::string decoderName() const = 0;
     
     /*This must be implemented to do the to linear colorspace conversion*/
-	virtual void engine(Powiter::Row* out) = 0;
+	virtual void render(SequenceTime time,Powiter::Row* out) = 0;
     
     /*can be overloaded to add knobs dynamically to the reader depending on the file type*/
 	virtual void createKnobDynamically();
@@ -53,44 +55,15 @@ public:
     /*Must be implemented to tell whether this file type supports stereovision*/
 	virtual bool supports_stereo() const = 0;
     
-//    /*Must be implemented. This function opens the file specified by filename, reads
-//     all the meta-data and extracts all the data. If openBothViews is on, this function
-//     should read both views of the file.
-//     More precise documentation coming soon.*/
-//    virtual void open(const QString filename,bool openBothViews = false)=0;
-    
-    /*This function  calls readHeader and readAllData*/
-    void readData(bool openBothViews = false);
-    
-    /*This function calls readScanLine for the requested scanLines. It does not call readHeader.
-     If onlyExtaRows is true, this function reads only the content of the _rowsToCompute member
-     of slContext. Otherwise, it will compute the rows contained in the _rows of slContext.*/
-    void readScanLineData(Reader::Buffer::ScanLineContext* slContext);
-    
+
     /*Should open the file and call set_readerInfo with the infos from the file.*/
-    virtual void readHeader(const QString& filename, bool openBothViews) = 0;
+    virtual void readHeader(const QString& filename) = 0;
     
-    /*Must be implemented to know whether this Read* supports reading only
-     scanlines. In the case it does,the engine can be must faster by reading
-     only the lines that are needed.*/
-    virtual bool supportsScanLine() const = 0;
-    
-    /*Must be overloaded by reader that supports scanline. It should return
-     the current count of scanlines read by the Read* */
-    virtual int scanLinesCount() const { return 0; }
     
     /*Should read the already opened file and extract all the data for either 1 view or
      2 views. By default does nothing, you should either overload this function or readScanLine.*/
-    virtual void readAllData(bool) {}
+    virtual void readData() = 0;
     
-    /*Must be implemented if supportsScanLine() returns true. It should
-     read one scan line from the file.By default does nothing, you should
-     either overload this function or readScanLine*/
-    virtual void readScanLine(int) {}
-    
-    /*Must be overloaded: this function is used to create a little preview that
-     can be seen on the GUI node*/
-    virtual void make_preview() = 0;
     
     /*Returns true if the file is stereo*/
     bool fileStereo() const {return is_stereo;};
@@ -108,20 +81,23 @@ public:
      function getLut(datatype) */
     virtual void initializeColorSpace() = 0;
     
+    /**
+     * @brief You can implement this to return a preview image of size (width x height).
+     * By default it returns an empty image.
+     **/
+    virtual QImage getPreview(int /*width*/,int /*height*/) { return QImage(); }
+    
     /*Returns the reader colorspace*/
     const Powiter::Color::Lut* lut(){return _lut;}
     
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
-	void set_readerInfo(Format dispW,
+	void setReaderInfo(Format dispW,
                        const Box2D& dataW,
-                       const QString& file,
-                       ChannelSet channels,
-                       int Ydirection ,
-                       bool rgb );
+                       ChannelSet channels);
     
     /*Returns all the infos necessary for the current frame*/
-    const ReaderInfo& readerInfo() const { return _readerInfo; }
+    const ImageInfo& readerInfo() const { return *_readerInfo; }
     
 protected:
     
@@ -136,7 +112,7 @@ protected:
     bool _autoCreateAlpha;
 	Reader* op;
     const Powiter::Color::Lut* _lut;
-    ReaderInfo _readerInfo;
+    boost::scoped_ptr<ImageInfo> _readerInfo;
     
 };
 

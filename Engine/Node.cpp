@@ -36,7 +36,7 @@
 
 using namespace std;
 using namespace Powiter;
-
+using namespace boost;
 namespace {
     void Hash64_appendKnob(Hash64* hash, const Knob& knob){
         const std::vector<U64>& values= knob.getHashVector();
@@ -46,160 +46,25 @@ namespace {
     }
 }
 
-void Node::copy_info(Node* parent){
-    clear_info();
-	_info.set_firstFrame(parent->info().firstFrame());
-	_info.set_lastFrame(parent->info().lastFrame());
-	_info.set_ydirection(parent->info().ydirection());
-	_info.set_displayWindow(parent->info().displayWindow());
-	_info.set_channels(parent->info().channels());
-    _info.set_dataWindow(parent->info().dataWindow());
-    _info.set_rgbMode(parent->info().rgbMode());
-    _info.set_blackOutside(parent->info().blackOutside());
-}
-void Node::clear_info(){
-	_info.reset();
-   
-    
-}
-void Node::Info::reset(){
-    _firstFrame = 0;
-    _lastFrame = 0;
-    _ydirection = 0;
-    _channels = Mask_None;
-    _dataWindow.set(0, 0, 0, 0);
-    _displayWindow.set(0,0,0,0);
-    _blackOutside = false;
-    _executingEngine = 0;
-}
-
-
-
-void Node::Info::merge_displayWindow(const Format& other){
-    _displayWindow.merge(other);
-    _displayWindow.pixel_aspect(other.pixel_aspect());
-    if(_displayWindow.name().empty()){
-        _displayWindow.name(other.name());
-    }
-}
-void Node::merge_info(bool doFullWork){
-	
-    clear_info();
-	int final_direction=0;
-	ChannelSet chans;
-    bool displayMode = info().rgbMode();
-    int count = 0;
-	for (Node::InputMap::const_iterator it = getInputs().begin();
-         it!=getInputs().end();++it) {
-        if(!it->second)
-            continue;
-        if(className() == "Viewer"){
-            ViewerNode* n = dynamic_cast<ViewerNode*>(this);
-            if(n->activeInput()!=it->first)
-                continue;
-        }
-        Node* input = it->second;
-        if(count > 0)
-            merge_frameRange(input->info().firstFrame(),input->info().lastFrame());
-        else{
-            _info.set_firstFrame(input->info().firstFrame());
-            _info.set_lastFrame(input->info().lastFrame());
-        }
-        if(doFullWork){
-            final_direction+=input->info().ydirection();
-            chans += input->info().channels();
-            ChannelSet supportedComp = supportedComponents();
-            if ((supportedComp & chans) != chans) {
-                cout <<"WARNING:( " << getName() << ") does not support one or more of the following channels:\n " ;
-                chans.printOut();
-                cout << "Coming from node " << input->getName() << endl;
-            }
-            if(input->info().rgbMode()){
-                displayMode = true;
-            }
-            if(input->info().blackOutside()){
-                _info.set_blackOutside(true);
-            }
-           
-        }
-        _info.merge_dataWindow(input->info().dataWindow());
-        _info.merge_displayWindow(input->info().displayWindow());
-        ++count;
-    }
-    if(isOutputNode()){
-        OutputNode* node =  dynamic_cast<OutputNode*>(this);
-        assert(node);
-        node->setFrameRange(_info.firstFrame(), _info.lastFrame());
-    }
-    U32 size = getInputs().size();
-    if(size > 0)
-        final_direction = final_direction / size;
-	_info.set_channels(chans);
-    _info.set_rgbMode(displayMode);
-    _info.set_ydirection(final_direction);
-}
-void Node::merge_frameRange(int otherFirstFrame,int otherLastFrame){
-	if (info().firstFrame() == -1) { // if not initialized
-        _info.set_firstFrame(otherFirstFrame);
-    } else if (otherFirstFrame < info().firstFrame()) {
-         _info.set_firstFrame(otherFirstFrame);
-    }
-    
-    if (info().lastFrame() == -1)
-    {
-        _info.set_lastFrame(otherLastFrame);
-    }
-    else if (otherLastFrame > info().lastFrame()) {
-        _info.set_lastFrame(otherLastFrame);
-    }
-	
-}
-bool Node::Info::operator==( Node::Info &other){
-	if(other.channels()      == this->channels() &&
-       other.firstFrame()    == this->_firstFrame &&
-       other.lastFrame()     == this->_lastFrame &&
-       other.ydirection()    == this->_ydirection &&
-       other.dataWindow()    == this->_dataWindow && // FIXME: [FD] added this line, is it OK?
-       other.displayWindow() == this->_displayWindow
-       ) {
-        return true;
-	} else {
-		return false;
-	}
-    
-}
-void Node::Info::operator=(const Node::Info &other){
-    set_channels(other.channels());
-    set_firstFrame(other.firstFrame());
-    set_lastFrame(other.lastFrame());
-    set_displayWindow(other.displayWindow());
-    set_ydirection(other.ydirection());
-    set_dataWindow(other.dataWindow());
-    set_rgbMode(other.rgbMode());
-    set_blackOutside(other.blackOutside());
-}
-
-
 Node::Node(Model* model)
 : QObject()
 , _model(model)
-, _info()
-, _marked(false)
-, _inputLabelsMap()
-, _name()
-, _hashValue()
-, _requestedBox()
 , _outputs()
 , _inputs()
+, _inputLabelsMap()
+, _name()
 , _knobs()
 , _undoStack(new QUndoStack)
+, _deactivatedState()
+, _hashValue()
+, _markedByTopologicalSort(false)
 , _renderAborted(false)
 {
 }
 
 Node::~Node(){
     for (U32 i = 0; i < _knobs.size(); ++i) {
-        delete _knobs[i];
+        _knobs[i]->deleteKnob();
     }
 }
 
@@ -207,6 +72,43 @@ void Node::deleteNode(){
     emit deleteWanted();
 }
 
+
+void Node::initializeKnobs(){
+    initKnobs();
+    emit knobsInitialized();
+}
+void Node::createKnobDynamically(){
+    emit knobsInitialized();
+}
+
+/*called by hasViewerConnected(Node*) */
+static void _hasViewerConnected(Node* node,bool* ok,Node*& out){
+    if (*ok == true) {
+        return;
+    }
+    if(node->className() == "Viewer"){
+        out = node;
+        *ok = true;
+    }else{
+        const Node::OutputMap& outputs = node->getOutputs();
+        for (Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+            if(it->second)
+                _hasViewerConnected(it->second,ok,out);
+        }
+    }
+}
+
+ViewerNode* Node::hasViewerConnected()  {
+    Node* out = 0;
+    bool ok=false;
+    _hasViewerConnected(this,&ok,out);
+    if (ok) {
+        return dynamic_cast<ViewerNode*>(out);
+    }else{
+        return NULL;
+    }
+    
+}
 
 void Node::initializeInputs(){
     int inputCount = maximumInputs();
@@ -219,14 +121,6 @@ void Node::initializeInputs(){
     
     emit inputsInitialized();
 }
-const std::string Node::getInputLabel(int inputNb) const{
-    map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
-    if(it == _inputLabelsMap.end()){
-        return "";
-    }else{
-        return it->second;
-    }
-}
 
 Node* Node::input(int index) const{
     InputMap::const_iterator it = _inputs.find(index);
@@ -237,22 +131,33 @@ Node* Node::input(int index) const{
     }
 }
 
-
-/*To change label names : override setInputLabel to reflect what you want to have for input "inputNb" */
-std::string Node::setInputLabel(int inputNb){
+std::string Node::setInputLabel(int inputNb) const {
     string out;
     out.append(1,(char)(inputNb+65));
     return out;
 }
-
-bool Node::validate(bool doFullWork){
-    if(!isInputNode()){
-        merge_info(doFullWork);
+const std::string Node::getInputLabel(int inputNb) const{
+    map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
+    if(it == _inputLabelsMap.end()){
+        return "";
+    }else{
+        return it->second;
     }
-    if(!_validate(doFullWork))
+}
+
+
+bool Node::isInputConnected(int inputNb) const{
+    InputMap::const_iterator it = _inputs.find(inputNb);
+    if(it != _inputs.end()){
+        return it->second != NULL;
+    }else{
         return false;
-    emit channelsChanged();
-    return true;
+    }
+    
+}
+
+bool Node::hasOutputConnected() const{
+    return _outputs.size() > 0;
 }
 
 bool Node::connectInput(Node* input,int inputNumber) {
@@ -274,7 +179,6 @@ bool Node::connectInput(Node* input,int inputNumber) {
 
 void Node::connectOutput(Node* output,int outputNumber ){
     assert(output);
-    // disconnectOutput(output);
     _outputs.insert(make_pair(outputNumber,output));
 }
 
@@ -339,7 +243,7 @@ void Node::deactivate(){
         _deactivatedState._outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     emit deactivated();
-
+    
 }
 
 void Node::activate(){
@@ -358,7 +262,7 @@ void Node::activate(){
     for (OutputMap::const_iterator it = _outputs.begin(); it!=_outputs.end(); ++it) {
         if(!it->second)
             continue;
-
+        
         OutputConnectionsIterator found = _deactivatedState._outputsConnections.find(it->second);
         if(found == _deactivatedState._outputsConnections.end()){
             cout << "Big issue while activating this node, canceling process." << endl;
@@ -368,132 +272,7 @@ void Node::activate(){
         it->second->connectInput(this,found->second.first);
     }
     emit activated();
-
-}
-
-
-void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
-    /*If we already computed its hash,return*/
-    for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
-        if(alreadyComputedHash[i] == _name)
-            return;
-    }
-    /*Clear the values left to compute the hash key*/
-    _hashValue.reset();
-    /*append all values stored in knobs*/
-    for(U32 i = 0 ; i< _knobs.size();++i) {
-        Hash64_appendKnob(&_hashValue,*_knobs[i]);
-    }
-    /*append the node name*/
-    Hash64_appendQString(&_hashValue, QString(className().c_str()));
-    /*mark this node as already been computed*/
-    alreadyComputedHash.push_back(_name);
     
-    /*Recursive call to parents and add their hash key*/
-    for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(it->second){
-            if(className() == "Viewer"){
-                ViewerNode* v = dynamic_cast<ViewerNode*>(this);
-                if(it->first!=v->activeInput())
-                    continue;
-            }
-            it->second->computeTreeHash(alreadyComputedHash);
-            _hashValue.append(it->second->hash().value());
-        }
-    }
-    /*Compute the hash key*/
-    _hashValue.computeHash();
-}
-bool Node::hashChanged(){
-    U64 oldHash=_hashValue.value();
-    std::vector<std::string> v;
-    computeTreeHash(v);
-    return oldHash!=_hashValue.value();
-}
-
-void Node::createKnobDynamically(){
-    emit knobsInitialied();
-}
-
-
-boost::shared_ptr<const Row> Node::get(int y,int x,int r) {
-    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();
-#warning Calling _info.executingEngine()->getTree().getOutput()->currentFrame() is not thread-safe: another render process might have changed the executing engine pointer. We need to figure-out a way to get the current time/frame on any node in a thread-safe manner: I think we need to make a new instance of every nodes for each rendering tree.
-    RowKey params = Row::makeKey(_hashValue.value(), _info.executingEngine()->getTree().getOutput()->currentFrame(), x, y, r, info().channels());
-    boost::shared_ptr<const Row> entry = cache.get(params);
-    if (entry) {
-        return entry;
-    }else{
-        boost::shared_ptr<Row> out;
-        if (cacheData()) {
-            {
-                boost::shared_ptr<Powiter::CachedValue<Row> > newCacheEntry = cache.newEntry(params,
-                                                                                             (r-x)*sizeof(float)*info().channels().size(),0);
-                out = newCacheEntry->getObject();
-                engine(out.get());
-                
-            }
-            return out;
-        } else {
-            out.reset(new Row(x,y,r,info().channels()));
-            engine(out.get());
-        }
-        return out;
-    }
-}
-
-ViewerNode* Node::hasViewerConnected(Node* node){
-    Node* out = 0;
-    bool ok=false;
-    _hasViewerConnected(node,&ok,out);
-    if (ok) {
-        return dynamic_cast<ViewerNode*>(out);
-    }else{
-        return NULL;
-    }
-    
-}
-void Node::_hasViewerConnected(Node* node,bool* ok,Node*& out){
-    if (*ok == true) {
-        return;
-    }
-    if(node->className() == "Viewer"){
-        out = node;
-        *ok = true;
-    }else{
-        const OutputMap& outputs = node->getOutputs();
-        for (OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
-            if(it->second)
-                _hasViewerConnected(it->second,ok,out);
-        }
-    }
-}
-bool Node::isInputConnected(int inputNb) const{
-    InputMap::const_iterator it = _inputs.find(inputNb);
-    if(it != _inputs.end()){
-        return it->second != NULL;
-    }else{
-        return false;
-    }
-    
-}
-
-bool Node::hasOutputConnected() const{
-    return _outputs.size() > 0;
-}
-
-void Node::removeKnob(Knob* knob) {
-    assert(knob);
-    //_knobs.erase( std::remove(_knobs.begin(), _knobs.end(), knob), _knobs.end()); // erase all elements with value knobs
-    std::vector<Knob*>::iterator it = std::find(_knobs.begin(), _knobs.end(), knob);
-    if (it != _knobs.end()) {
-        _knobs.erase(it);
-    }
-}
-
-void Node::initializeKnobs(){
-    initKnobs();
-    emit knobsInitialied();
 }
 
 void Node::pushUndoCommand(QUndoCommand* command){
@@ -512,68 +291,140 @@ void Node::redoCommand(){
     emit canRedoChanged(_undoStack->canRedo());
 }
 
-int Node::canMakePreviewImage(){
-    if (className() == "Reader") {
-        return 1;
-    }
-    if(isOpenFXNode()){
-        OfxNode* n = dynamic_cast<OfxNode*>(this);
-        if(n->canHavePreviewImage())
-            return 2;
-        else
-            return 0;
-    }else{
-        return 0;
+
+const Format& Node::getProjectDefaultFormat() const{
+    return _model->getApp()->getProjectFormat();
+}
+void Node::removeKnob(Knob* knob){
+    for(U32 i = 0; i < _knobs.size() ; ++i){
+        if (_knobs[i] == knob) {
+            _knobs.erase(_knobs.begin()+i);
+            break;
+        }
     }
 }
 
-void Node::onFrameRangeChanged(int first,int last){
-    _info.set_firstFrame(first);
-    _info.set_lastFrame(last);
-}
 
+/************************OUTPUT NODE*****************************************/
 OutputNode::OutputNode(Model* model)
 : Node(model)
-, _timeline(new TimeLine)
-, _videoEngine(new VideoEngine(this))
+, _videoEngine()
 {
+    
+    _videoEngine.reset(new VideoEngine(this));
 }
 
-OutputNode::~OutputNode(){
-    _videoEngine->quitEngineThread();
-    delete _videoEngine;
-}
-
-void OutputNode::setFrameRange(int first, int last) {
-    _timeline->setFirstFrame(first);
-    _timeline->setLastFrame(last);
-}
-
-void OutputNode::seekFrame(int frame) {
-    return _timeline->seekFrame(frame);
-}
-
-void OutputNode::incrementCurrentFrame() {
-    _timeline->incrementCurrentFrame();
-}
-void OutputNode::decrementCurrentFrame(){
-    _timeline->decrementCurrentFrame();
-}
-
-int OutputNode::currentFrame() const {
-    return _timeline->currentFrame();
-}
-
-int OutputNode::firstFrame() const {
-    return _timeline->firstFrame();
-}
-
-int OutputNode::lastFrame() const {
-    return _timeline->lastFrame();
-}
 void OutputNode::updateTreeAndRender(bool initViewer){
-    _videoEngine->updateTreeAndContinueRender(initViewer,currentFrame());
+    _videoEngine->updateTreeAndContinueRender(initViewer);
 }
 void OutputNode::refreshAndContinueRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer,currentFrame());
+    _videoEngine->refreshAndContinueRender(initViewer);
+}
+/************************NODE INSTANCE*****************************************/
+
+
+boost::shared_ptr<const Row> Node::get(SequenceTime time,int y,int left,int right,const ChannelSet& channels) {
+    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();
+    RowKey params = Row::makeKey(_hashValue.value(), time, left, y, right,channels );
+    shared_ptr<const Row> entry = cache.get(params);
+    if (entry) {
+        return entry;
+    }else{
+        shared_ptr<Row> out;
+        if (cacheData()) {
+            {
+                shared_ptr<CachedValue<Row> > newCacheEntry = cache.newEntry(params,
+                                                                             (right-left)*sizeof(float)*channels.size(),0);
+                out = newCacheEntry->getObject();
+                render(time,out.get());
+                
+            }
+            return out;
+        } else {
+            out.reset(new Row(left,y,right,channels));
+            render(time,out.get());
+        }
+        return out;
+    }
+}
+
+void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
+    /*If we already computed its hash,return*/
+    for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
+        if(alreadyComputedHash[i] == getName())
+            return;
+    }
+    /*Clear the values left to compute the hash key*/
+    _hashValue.reset();
+    /*append all values stored in knobs*/
+    for(U32 i = 0 ; i< _knobs.size();++i) {
+        Hash64_appendKnob(&_hashValue,*(_knobs[i]));
+    }
+    /*append the node name*/
+    Hash64_appendQString(&_hashValue, QString(className().c_str()));
+    /*mark this node as already been computed*/
+    alreadyComputedHash.push_back(getName());
+    
+    /*Recursive call to parents and add their hash key*/
+    for (Node::InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second){
+            if(className() == "Viewer"){
+                ViewerNode* v = dynamic_cast<ViewerNode*>(this);
+                if(it->first != v->activeInput())
+                    continue;
+            }
+            it->second->computeTreeHash(alreadyComputedHash);
+            _hashValue.append(it->second->hash().value());
+        }
+    }
+    /*Compute the hash key*/
+    _hashValue.computeHash();
+}
+
+Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
+    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+        if (it->second) {
+            Box2D inputRod;
+            it->second->getRegionOfDefinition(time, &inputRod);
+            rod->merge(inputRod);
+        }
+    }
+    return StatReplyDefault;
+}
+
+void Node::getFrameRange(SequenceTime *first,SequenceTime *last){
+    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+        if (it->second) {
+            SequenceTime inpFirst,inpLast;
+            it->second->getFrameRange(&inpFirst, &inpLast);
+            if(it == _inputs.begin()){
+                *first = inpFirst;
+                *last = inpLast;
+            }else{
+                if (inpFirst < *first) {
+                    *first = inpFirst;
+                }
+                if (inpLast > *last) {
+                    *last = inpLast;
+                }
+            }
+        }
+    }
+}
+void Node::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
+    /*If the rod is infinite clip it to the project's default*/
+    const Format& projectDefault = getProjectDefaultFormat();
+    if(rod->left() == kOfxFlagInfiniteMin || rod->left() == -std::numeric_limits<double>::infinity()){
+        rod->set_left(projectDefault.left());
+    }
+    if(rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == -std::numeric_limits<double>::infinity()){
+        rod->set_bottom(projectDefault.bottom());
+    }
+    if(rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<double>::infinity()){
+        rod->set_right(projectDefault.right());
+    }
+    if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()){
+        rod->set_top(projectDefault.top());
+    }
+
 }

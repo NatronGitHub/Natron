@@ -74,17 +74,26 @@ public:
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "OpenEXR";}
-    virtual void engine(Powiter::Row* out) OVERRIDE;
-    virtual bool supportsScanLine() const OVERRIDE {return true;}
-    virtual int scanLinesCount() const OVERRIDE {return (int)_img.size();}
-    virtual void readHeader(const QString& filename, bool openBothViews) OVERRIDE;
-    virtual void readScanLine(int y) OVERRIDE;
+    
+    virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
+    
+    virtual void readHeader(const QString& filename) OVERRIDE;
+    
+    virtual void readData() OVERRIDE;
+    
     virtual bool supports_stereo() const OVERRIDE {return true;}
-    virtual void make_preview() OVERRIDE;
+    
+    virtual QImage getPreview(int width,int height) OVERRIDE;
+    
     virtual void initializeColorSpace() OVERRIDE;
+    
     void debug();
     
 private:
+    
+    
+    void readScanLine(int y);
+    
     Imf::InputFile* _inputfile;
     std::map<Powiter::Channel, const char*> _channel_map;
     std::vector<std::string> views;

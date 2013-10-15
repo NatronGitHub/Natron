@@ -26,6 +26,17 @@
 using namespace std;
 using namespace Powiter;
 
+WriteQt::WriteQt(Writer* writer)
+:Write(writer)
+,_rod()
+,_buf(NULL)
+,_filename(){
+    
+}
+WriteQt::~WriteQt(){
+    
+}
+
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
 std::vector<std::string> WriteQt::fileTypesEncoded() const {
     std::vector<std::string> out;
@@ -60,10 +71,10 @@ void WriteQt::initializeColorSpace(){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteQt::setupFile(const std::string& filename){
+void WriteQt::setupFile(const QString& filename,const Box2D& rod){
     _filename = filename;
-    const Format& frmt = op->info().displayWindow();
-    size_t dataSize = 4* frmt.width() * frmt.height();
+    _rod = rod;
+    size_t dataSize = 4* rod.width() * rod.height();
     _buf = (uchar*)malloc(dataSize);
 }
 
@@ -71,7 +82,6 @@ void WriteQt::setupFile(const std::string& filename){
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
 void WriteQt::writeAllData(){
-    const Format& frmt = op->info().displayWindow();
     const ChannelSet& channels = op->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -81,8 +91,8 @@ void WriteQt::writeAllData(){
     }else{
         type = QImage::Format_RGB32;
     }
-    QImage img(_buf,frmt.width(),frmt.height(),type);
-    img.save(QString(_filename.c_str()));
+    QImage img(_buf,_rod.width(),_rod.height(),type);
+    img.save(_filename);
     free(_buf);
 }
 
@@ -98,27 +108,27 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void WriteQt::renderRow(int left,int right,int y,const ChannelSet& channels){
-    boost::shared_ptr<const Row> row = op->input(0)->get(y,left,right);
-    const Format& frmt = op->info().displayWindow();
+void WriteQt::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
+    boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
+
     /*invert y to be in top-to-bottom increasing order*/
-    y = frmt.top()-y-1;
+    y = _rod.height()-y-1;
     uchar* toR=0;
     uchar* toG=0;
     uchar* toB=0;
     uchar* toA=0;
     if (channels & Channel_alpha && _premult) {
-        toA = _buf + y*4*frmt.width();
+        toA = _buf + y*4*_rod.width();
         toR = toA+1;
         toG = toR+1;
         toB = toG+1;
     }else if(channels & Channel_alpha && !_premult){
-        toA = _buf + y*4*frmt.width();
+        toA = _buf + y*4*_rod.width();
         toR = toA+1;
         toG = toR+1;
         toB = toG+1;
     }else{
-        toB  = _buf + y*4*frmt.width();
+        toB  = _buf + y*4*_rod.width();
         toG = toB+1;
         toR = toG+1;
         toA = toR+1;
@@ -136,9 +146,4 @@ void WriteQt::renderRow(int left,int right,int y,const ChannelSet& channels){
     to_byte(Channel_alpha, toA, alpha, alpha, row->width(),4);
 }
 
-WriteQt::WriteQt(Writer* writer):Write(writer),_buf(0){
-    
-}
-WriteQt::~WriteQt(){
-    
-}
+

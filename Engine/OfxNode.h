@@ -30,31 +30,76 @@
 class Tab_Knob;
 class QHBoxLayout;
 class QImage;
+class OfxClipInstance;
 class QKeyEvent;
 namespace Powiter {
     class OfxImageEffectInstance;
     class OfxOverlayInteract;
 }
 
-class OfxNode : public OutputNode
-{    
+class OfxNode : public OutputNode{
+        
+    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
+    QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
+    boost::scoped_ptr<Powiter::OfxOverlayInteract> _overlayInteract; // ptr to the overlay interact if any
+    bool _penDown; // true when the overlay trapped a penDow action
+    Powiter::OfxImageEffectInstance* effect_;
+    bool _firstTime; //used in engine(...) to operate once per frame
+    QMutex _firstTimeMutex;
+    bool _isOutput;//if the OfxNode can output a file somehow
+    QImage _preview;
+    
+    
+    std::pair<int,int> _frameRange;
 public:
+    
+    
     OfxNode(Model* model,
-             OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-             const std::string& context);
+            OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+            const std::string& context);
+    
     
     virtual ~OfxNode();
+    
+    Powiter::OfxImageEffectInstance* effectInstance(){ return effect_; }
+    
+    const Powiter::OfxImageEffectInstance* effectInstance() const{ return effect_; }
 
+    void setTabKnob(Tab_Knob* k){_tabKnob = k;}
+    
+    Tab_Knob* getTabKnob() const {return _tabKnob;}
+    
+    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout){_lastKnobLayoutWithNoNewLine = layout;}
+    
+    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const {return _lastKnobLayoutWithNoNewLine;}
+    
+    void tryInitializeOverlayInteracts();
+    
+    typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
+    
+    MappedInputV inputClipsCopyWithoutOutput() const;
+    
+    
+    
+    
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
     // overridden for Powiter::Node
-
+    
     virtual bool isInputNode() const OVERRIDE;
     
     virtual bool isOutputNode() const OVERRIDE;
+    
+    void setAsOutputNode() {_isOutput = true;}
+    
+    virtual bool canMakePreviewImage() const ;
+    
+    void computePreviewImage(int width,int height);
+    
+    virtual QImage getPreview(int width,int height) OVERRIDE;
     
     /*Returns the clips count minus the output clip*/
     virtual int maximumInputs() const OVERRIDE;
@@ -67,16 +112,20 @@ public:
     
     virtual std::string description() const OVERRIDE;
     
-    virtual std::string setInputLabel (int inputNb) OVERRIDE;
+    virtual std::string setInputLabel (int inputNb) const OVERRIDE;
     
     virtual bool isOpenFXNode() const OVERRIDE {return true;}
-        
-    virtual ChannelSet supportedComponents() OVERRIDE;
-        
-    virtual bool _validate(bool) OVERRIDE;
     
-    virtual void engine(Powiter::Row* out) OVERRIDE;
-
+    ChannelSet supportedComponents() const;
+    
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod) OVERRIDE;
+    
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+    
+    virtual Powiter::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE;
+    
+    virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
+    
     virtual void drawOverlay();
     
     virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos);
@@ -94,48 +143,7 @@ public:
     virtual void onOverlayFocusGained();
     
     virtual void onOverlayFocusLost();
-    
 
-    bool isInputOptional(int inpubNb) const;
-
-    void setAsOutputNode() {_isOutput = true;}
-
-    bool hasPreviewImage() const {return !_preview.isNull();}
-
-    bool canHavePreviewImage() const {return _canHavePreview;}
-
-    void setCanHavePreviewImage() {_canHavePreview = true;}
-
-    const QImage& getPreview() const { return _preview; }
-
-    void setTabKnob(Tab_Knob* k){_tabKnob = k;}
-    
-    Tab_Knob* getTabKnob() const {return _tabKnob;}
-    
-    void setLastKnobLayoutWithNoNewLine(QHBoxLayout* layout){_lastKnobLayoutWithNoNewLine = layout;}
-    
-    QHBoxLayout* getLastKnobLayoutWithNoNewLine() const {return _lastKnobLayoutWithNoNewLine;}
-
-    typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
-
-    
-    MappedInputV inputClipsCopyWithoutOutput() const;
-
-    void computePreviewImage();
-
-    Powiter::OfxImageEffectInstance* effectInstance() { return effect_; }
-
-    const Powiter::OfxImageEffectInstance* effectInstance() const { return effect_; }
-    
-    const std::string& getShortLabel() const; // forwarded to OfxImageEffectInstance
-    
-    /*group is a string as such:
-     Toto/Superplugins/blabla
-     This functions extracts the all parts of such a grouping, e.g in this case
-     it would return [Toto,Superplugins,blabla].*/
-    const QStringList getPluginGrouping() const; 
-
-    void openFilesForAllFileParams();
     
     void swapBuffersOfAttachedViewer();
     
@@ -147,31 +155,29 @@ public:
     
     void backgroundColorOfAttachedViewer(double &r,double &g,double &b);
 
-    void tryInitializeOverlayInteracts();
+    bool isInputOptional(int inpubNb) const;
     
-    /**
-     * @brief getRandomFrameName Valid only for nodes having a  OfxStringInstance's of type kOfxParamStringIsFilePath with
-     * an OfxImageEffectInstance of type kOfxImageEffectContextGenerator
-     * @param f The index of the frame.
-     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
-     */
-    virtual const QString getRandomFrameName(int f) const;
+    void openFilesForAllFileParams();
+
+    /*group is a string as such:
+     Toto/Superplugins/blabla
+     This functions extracts the all parts of such a grouping, e.g in this case
+     it would return [Toto,Superplugins,blabla].*/
+    const QStringList getPluginGrouping() const;
     
     void onInstanceChanged(const std::string& paramName);
     
-private:
+    const std::string& getShortLabel() const;
 
-    Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
-    QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
-    QMutex _firstTimeMutex; // lock used in engine(...) function, protects _firstTime
-    bool _firstTime; //used in engine(...) to operate once per frame
-    bool _isOutput;//if the OfxNode can output a file somehow
-    QImage _preview; // the preview if _canHavePreview is true
-    bool _canHavePreview; // does it have a preview? 
-    Powiter::OfxImageEffectInstance* effect_; // FIXME: use boost::shared_ptr (cannot be a scope_ptr, because Powiter::OfxHost::newInstance() must return it)
-    Powiter::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
-    bool _penDown; // true when the overlay trapped a penDow action
+    int firstFrame() const {return _frameRange.first;}
+    
+    int lastFrame() const {return _frameRange.second;}
+    
+public slots:
+    
+    void onFrameRangeChanged(int,int);
 };
+
 
 
 /*group is a string as such:

@@ -92,7 +92,7 @@ public:
     
     Box2D(int l, int b, int r, int t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
     
-    explicit Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
+    Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
     
 
     int left() const { return _l; }
@@ -128,9 +128,15 @@ public:
     void set(const Box2D& b) { *this = b; }
     
     
-    //bool is1x1() const { return (_r == _l + 1) && _t == _b + 1; }
+    bool isNull() const { return (_r <= _l) || (_t <= _b); }
     
-    bool isEmpty() const { return (_r <= _l) || (_t <= _b); }
+    operator bool() const { return !isNull(); }
+    
+    Box2D operator&(const Box2D& other) const{
+        Box2D inter;
+        intersect(other,&inter);
+        return inter;
+    }
     
     // reset to an empty box
     void clear() {
@@ -145,9 +151,7 @@ public:
         _t += dy;
     }
     
-    /*Pad the edges of the box by the input values.
-     *This is used by filters that increases the BBOX
-     *of the image.*/
+    /*Pad the edges of the box.*/
     void pad(int dl, int db, int dr, int dt)
     {
         if (_r + dr >= _l + dl) {
@@ -190,35 +194,30 @@ public:
     
     
 	/*intersection of two boxes*/
-    void intersect(const Box2D& box) {
-        intersect(box.left(), box.bottom(), box.right(), box.top());
+    bool intersect(const Box2D& box,Box2D* intersection) const {
+        return intersect(box.left(), box.bottom(), box.right(), box.top(),intersection);
     }
     
     
-    void intersect(int l, int b, int r, int t) {
-        if (l > left()) {
-            _l = l;
-        }
-        if (b > bottom()) {
-            _b = b;
-        }
-        if (r < right()) {
-            _r = r;
-        }
-        if (t < top()) {
-            _t = t;
-        }
+    bool intersect(int l, int b, int r, int t,Box2D* intersection) const {
+        if(r < _l || l > _r || b > _t || t < _b)
+            return false;
+        intersection->set_left(std::max(_l, l));
+        intersection->set_right(std::min(_r, r));
+        intersection->set_bottom(std::max(_b, b));
+        intersection->set_top(std::min(_t, t));
+        return true;
     }
     
     
     /// returns true if the Box2D passed as parameter is fully contained in this one
-    bool isContained(const Box2D& b) const {
-        return b.isEmpty() || ((b.left() >= left()) && (b.bottom() > bottom()) &&
+    bool intersects(const Box2D& b) const {
+        return b.isNull() || ((b.left() >= left()) && (b.bottom() > bottom()) &&
                                (b.right() <= right()) && (b.top() <= top()));
     }
     
-    bool isContained(int l,int b,int r,int t) const {
-        return isContained(Box2D(l,b,r,t));
+    bool intersects(int l,int b,int r,int t) const {
+        return intersects(Box2D(l,b,r,t));
     }
     
 	/*the area : w*h*/

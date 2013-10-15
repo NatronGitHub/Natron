@@ -15,7 +15,6 @@
 #include <QWidget>
 
 #include "Engine/ChannelSet.h"
-
 /*The ViewerTab encapsulates a viewer with all the graphical interface surrounding it. It should be instantiable as
  a tab , and several ViewerTab should run in parallel seemlessly.*/
 
@@ -36,7 +35,6 @@ class SpinBox;
 class ScaleSlider;
 class TimeLineGui;
 class ViewerNode;
-class ViewerInfos;
 class Gui;
 class ViewerTab: public QWidget 
 {
@@ -109,9 +107,6 @@ public:
     
     /*these are the channels the viewer wants to display*/
 	const ChannelSet& displayChannels(){return _channelsToDraw;}
-    
-    /*viewerInfo related functions)*/
-    void setCurrentViewerInfos(ViewerInfos *viewerInfos,bool onInit=false);
     
     Gui* getGui() const {return _gui;}
     

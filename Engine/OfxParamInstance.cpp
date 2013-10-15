@@ -84,16 +84,15 @@ Knob* OfxPushButtonInstance::getKnob() const {
 
 void OfxPushButtonInstance::triggerInstanceChanged() {
     _node->onInstanceChanged(getName());
-    ViewerNode* viewer = Node::hasViewerConnected(_node);
+    ViewerNode* viewer = _node->hasViewerConnected();
     if(viewer){
         viewer->updateTreeAndRender();
     }else if(_node->isOutputNode()){
-        OutputNode* n = dynamic_cast<OutputNode*>(_node);
-        n->updateTreeAndRender();
+        dynamic_cast<OutputNode*>(_node)->updateTreeAndRender();
     }
 }
 
-OfxIntegerInstance::OfxIntegerInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor)
+OfxIntegerInstance::OfxIntegerInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 , _node(node)
 , _descriptor(descriptor)
@@ -161,7 +160,7 @@ Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
-OfxDoubleInstance::OfxDoubleInstance(OfxNode *node,  OFX::Host::Param::Descriptor& descriptor)
+OfxDoubleInstance::OfxDoubleInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -237,7 +236,7 @@ Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
-OfxBooleanInstance::OfxBooleanInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
+OfxBooleanInstance::OfxBooleanInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -297,7 +296,7 @@ Knob* OfxBooleanInstance::getKnob() const{
 }
 
 
-OfxChoiceInstance::OfxChoiceInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
+OfxChoiceInstance::OfxChoiceInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -371,7 +370,7 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 
-OfxRGBAInstance::OfxRGBAInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor)
+OfxRGBAInstance::OfxRGBAInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -451,7 +450,7 @@ void OfxRGBAInstance::setSecret(){
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
-OfxRGBInstance::OfxRGBInstance(OfxNode *node,  OFX::Host::Param::Descriptor& descriptor)
+OfxRGBInstance::OfxRGBInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -527,7 +526,7 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
+OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
 :OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -714,7 +713,7 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor):
+OfxGroupInstance::OfxGroupInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor){
@@ -766,7 +765,7 @@ Knob* OfxGroupInstance::getKnob() const{
     }
 }
 
-OfxStringInstance::OfxStringInstance(OfxNode *node,OFX::Host::Param::Descriptor& descriptor):
+OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor):
 OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),
 _node(node),
 _descriptor(descriptor),
@@ -923,8 +922,8 @@ void OfxStringInstance::setSecret(){
 }
 
 void OfxStringInstance::triggerInstanceChanged() {
-    if (_fileKnob) {
-         _node->computePreviewImage();
+    if(_fileKnob){
+        _node->computePreviewImage(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_WIDTH);
     }
     _node->onInstanceChanged(getName());
 }

@@ -71,12 +71,11 @@ public:
 }
 
 class AppInstance;
-class OutputNode;
+class OutputNodeInstance;
 class VideoEngine;
 class ViewerNode;
 class QMutex;
 class Node;
-class OutputNode;
 class Writer;
 
 namespace Powiter{
@@ -102,9 +101,7 @@ public:
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
     AppInstance* getApp() const {return _appInstance;}
-        
-    QMutex* getGeneralMutex() const {return _generalMutex;}
-        
+                
     bool connect(int inputNumber,const std::string& inputName,Node* output);
     
     bool connect(int inputNumber,Node* input,Node* output);
@@ -142,8 +139,6 @@ private:
     std::vector<Node*> _currentNodes;
     
     std::map<std::string,int> _nodeCounters;
-        
-    QMutex* _generalMutex;//mutex to synchronize all VideoEngine's
-};
+    };
 
 #endif // POWITER_ENGINE_MODEL_H_

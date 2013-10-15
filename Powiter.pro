@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat #sanitizer
+CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat sanitizer
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -101,7 +101,6 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
 
 SOURCES += \
     Engine/ChannelSet.cpp \
-    Engine/Format.cpp \
     Engine/Hash64.cpp \
     Engine/ImageFetcher.cpp \
     Engine/Knob.cpp \
@@ -136,7 +135,6 @@ SOURCES += \
     Gui/SettingsPanel.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
-    Gui/TextRenderer.cpp \
     Gui/Texture.cpp \
     Gui/TimeLineGui.cpp \
     Gui/ViewerGL.cpp \
@@ -214,7 +212,6 @@ HEADERS += \
     Gui/Shaders.h \
     Gui/SpinBox.h \
     Gui/TabWidget.h \
-    Gui/TextRenderer.h \
     Gui/Texture.h \
     Gui/TimeLineGui.h \
     Gui/ViewerGL.h \
@@ -263,7 +260,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
+    Engine/ImageInfo.h
 
 
 INSTALLS += target

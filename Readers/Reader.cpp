@@ -32,6 +32,7 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
+#include "Engine/ImageInfo.h"
 
 #include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ReadExr.h"
@@ -46,13 +47,8 @@ using namespace std;
 
 Reader::Reader(Model* model)
 : Node(model)
-, _preview()
-, _has_preview(false)
-, _fitFrameToViewer(false)
-, _readHandle(0)
 , _buffer()
 , _fileKnob(0)
-, _readMutex()
 {
 }
 
@@ -76,257 +72,122 @@ void Reader::initKnobs(){
     assert(_fileKnob);
 }
 
-
-
-
-bool Reader::readCurrentHeader(int current_frame) {
-    QString filename = _fileKnob->getRandomFrameName(current_frame);
-    
-    /*the read handle used to decode the frame*/
-    Read* decoderReadHandle = 0;
-    
+void Reader::onFrameRangeChanged(int first,int last){
+    _frameRange.first = first;
+    _frameRange.second = last;
+}
+boost::shared_ptr<Read> Reader::decoderForFileType(const QString& fileName){
     QString extension;
-    for (int i = filename.size() - 1; i >= 0; --i) {
-        QChar c = filename.at(i);
+    for (int i = fileName.size() - 1; i >= 0; --i) {
+        QChar c = fileName.at(i);
         if(c != QChar('.'))
             extension.prepend(c);
         else
             break;
     }
-    
+
     Powiter::LibraryBinary* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
-        cout << "ERROR: Couldn't find an appropriate decoder for this filetype ( " << extension.toStdString() << " )" << endl;
-        return false;
+        string err("Couldn't find an appropriate decoder for this filetype");
+        err.append(extension.toStdString());
+        throw std::invalid_argument(err);
     }
-
+    
     pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
     if (func.first) {
-        decoderReadHandle = func.second(this);
+       return  boost::shared_ptr<Read>(func.second(this));
     } else {
-        cout << "ERROR: Failed to create the decoder for " << getName()  << ",something is wrong in the plugin."<< endl;
-        return false;
+        string err("Failed to create the decoder for");
+        err.append(getName());
+        err.append(",something is wrong in the plugin.");
+        throw std::invalid_argument(err);
     }
-    /*In case the read handle supports scanlines, we read the header to determine
-     how many scan-lines we would need, depending also on the viewer context.*/
-    std::string filenameStr = filename.toStdString();
-    std::vector<int> rows;
-    /*the slContext is useful to check the equality of 2 scan-line based frames.*/
-    Reader::Buffer::ScanLineContext *slContext = 0;
-    assert(decoderReadHandle);
-    if (decoderReadHandle->supportsScanLine()) {
-        decoderReadHandle->readHeader(filename, false);
-        slContext = new Reader::Buffer::ScanLineContext;
-        /*TEMPORARY FIX while OpenFX nodes still require the full RoD. This would let the Reads work
-         not properly since they need more rows than just what the viewer wants to display. */
-//        if(ctrlPTR->getModel()->getVideoEngine()->isOutputAViewer()){
-//            const Format &dispW = decoderReadHandle->getReaderInfo()->displayWindow();
-//            if(_fitFrameToViewer){
-//                currentViewer->getUiContext()->viewer->fitToFormat(dispW);
-//            }
-//            currentViewer->getUiContext()->viewer->computeRowSpan(rows,dispW);
-//        }else{
-            const Box2D& dataW = decoderReadHandle->readerInfo().dataWindow();
-            for (int i = dataW.bottom() ; i < dataW.top(); ++i) {
-                rows.push_back(i);
-            }            
-        // }
-        slContext->setRows(rows);
-    }
-    /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filenameStr,Buffer::ALL_FRAMES);
-    if (found !=_buffer.end()) {
-        assert(*found);
-        if (!(*found)->supportsScanLines() || !decoderReadHandle->supportsScanLine()) {
-            delete decoderReadHandle;
-        } else {
-            Reader::Buffer::ScanLineDescriptor *slDesc = static_cast<Reader::Buffer::ScanLineDescriptor*>(*found);
-            
-            /*we found a buffered frame with a scanline context. We can now compute
-             the intersection between the current scan-line context and the one found
-             to find out which rows we need to compute*/
-            assert(slDesc->_slContext);
-            assert(decoderReadHandle->supportsScanLine() && slContext);
-            slDesc->_slContext->computeIntersectionAndSetRowsToRead(slContext->getRows());
-            delete decoderReadHandle;
-        }
-        assert((*found)->_readHandle);
-        _info = (*found)->_readHandle->readerInfo();
-        _readHandle = (*found)->_readHandle;
-    } else {
-        decoderReadHandle->initializeColorSpace();
-        if (decoderReadHandle->supportsScanLine()) {
-            _buffer.insert(new Reader::Buffer::ScanLineDescriptor(decoderReadHandle,filenameStr,slContext));
-        } else {
-            decoderReadHandle->readHeader(filename, false);
-            _buffer.insert(new Reader::Buffer::FullFrameDescriptor(decoderReadHandle,filenameStr));
-        }
-        _info = decoderReadHandle->readerInfo();
-        _readHandle = decoderReadHandle;
-    }
-    return true;
+    return boost::shared_ptr<Read>();
 }
 
-void Reader::readCurrentData(int current_frame){
+Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
+    QString filename = _fileKnob->getRandomFrameName(time);
+    boost::shared_ptr<Buffer::Descriptor> found = _buffer.get(filename.toStdString());
+    if (found) {
+        *rod = found->getReadHandle()->readerInfo().getDataWindow();
+    }else{
+        /*the read handle used to decode the frame*/
+        boost::shared_ptr<Read> decoderReadHandle;
+        try{
+            decoderReadHandle = decoderForFileType(filename);
+        }catch(const std::invalid_argument& e){
+            cout << e.what() << endl;
+            return StatFailed;
+        }
+        assert(decoderReadHandle);
+
+        decoderReadHandle->readHeader(filename);
+        decoderReadHandle->initializeColorSpace();
+        _buffer.insert(filename.toStdString(),
+                       boost::shared_ptr<Buffer::Descriptor>(
+                                        new Buffer::Descriptor(decoderReadHandle)));
+        *rod =  decoderReadHandle->readerInfo().getDataWindow();
+    }
+    return StatOK;
+}
+
+
+
+boost::shared_ptr<Reader::Buffer::Descriptor> Reader::decodeData(SequenceTime time){
     
-    QString filename = _fileKnob->getRandomFrameName(current_frame);
+    QString filename = _fileKnob->getRandomFrameName(time);
     
     /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
-    Reader::Buffer::DecodedFrameIterator found = _buffer.isEnqueued(filename.toStdString(),Buffer::ALL_FRAMES);
-    if(found == _buffer.end()){
-        cout << "ERROR: Buffer does not contains the header for frame " << filename.toStdString()
-        <<". Something is wrong (" << getName() << ")" << endl;
-        return;
-    }
-    assert(*found);
-    if((*found)->hasToDecode()){
-        if((*found)->supportsScanLines()){
-            Buffer::ScanLineDescriptor* slDesc = static_cast<Buffer::ScanLineDescriptor*>(*found);
-            assert(slDesc->_readHandle);
-            slDesc->_readHandle->readScanLineData(slDesc->_slContext);
-            slDesc->_hasRead = true;
-        }else{
-            Buffer::FullFrameDescriptor* ffDesc = static_cast<Buffer::FullFrameDescriptor*>(*found);
-            assert(ffDesc->_readHandle);
-            ffDesc->_readHandle->readData();
-            ffDesc->_hasRead = true;
+    boost::shared_ptr<Buffer::Descriptor> found = _buffer.get(filename.toStdString());
+    if(!found){
+#ifdef POWITER_DEBUG
+        cout << "WARNING: Buffer does not contains the header for frame " << filename.toStdString()
+        <<". re-decoding header...(" << getName() << ")" << endl;
+#endif
+        /*the read handle used to decode the frame*/
+        boost::shared_ptr<Read> decoderReadHandle;
+        try{
+            decoderReadHandle = decoderForFileType(filename);
+        }catch(const std::invalid_argument& e){
+            cout << e.what() << endl;
+            return boost::shared_ptr<Reader::Buffer::Descriptor>();
         }
+        assert(decoderReadHandle);
+        decoderReadHandle->readHeader(filename);
+        decoderReadHandle->initializeColorSpace();
+        return boost::shared_ptr<Reader::Buffer::Descriptor>(new Reader::Buffer::Descriptor(decoderReadHandle));
+    }else{
+        /*decodes only once*/
+        found->decode();
+        return found;
     }
 }
 
 
 void Reader::showFilePreview(){
-#warning preview is un-safe especially with saved projects. We need to remove the _readHandle member of this class
-    _buffer.clear();
-    fitFrameToViewer(false);
-    {
-        QMutexLocker locker(&_readMutex);
-        if(readCurrentHeader(firstFrame())){
-            readCurrentData(firstFrame());
-            assert(_readHandle);
-            _readHandle->make_preview();
-        }
+    QString filename = _fileKnob->getRandomFrameName(firstFrame());
+    boost::shared_ptr<Read> decoderReadHandle;
+    try{
+        decoderReadHandle = decoderForFileType(filename);
+    }catch(const std::invalid_argument& e){
+        cout << e.what() << endl;
+        return ;
     }
-    _buffer.clear();
+    assert(decoderReadHandle);
+    decoderReadHandle->readHeader(filename);
+    decoderReadHandle->initializeColorSpace();
+    decoderReadHandle->readData();
+    _preview = decoderReadHandle->getPreview(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT);
+    _buffer.insert(filename.toStdString(),
+                   boost::shared_ptr<Reader::Buffer::Descriptor>(new Reader::Buffer::Descriptor(decoderReadHandle)));
+    notifyGuiPreviewChanged();
 }
 
 
-
-
-bool Reader::_validate(bool){
-    _info.set_firstFrame(firstFrame());
-    _info.set_lastFrame(lastFrame());
-    
-    return true;
-}
-
-void Reader::engine(Row* out){
-	assert(_readHandle);
-    _readHandle->engine(out);
+void Reader::render(SequenceTime time,Row* out){
+    boost::shared_ptr<Reader::Buffer::Descriptor> desc = decodeData(time);
+    desc->getReadHandle()->render(time,out);
 	
-}
-
-void Reader::createKnobDynamically(){
-	Node::createKnobDynamically();
-}
-
-
-void Reader::Buffer::insert(Reader::Buffer::Descriptor* desc){
-    //if buffer is full, we remove previously computed frame
-    if(_buffer.size() == (U32)_bufferSize){
-        for (U32 i = 0 ;i < _buffer.size(); ++i) {
-            Reader::Buffer::Descriptor* frameToRemove = _buffer[i];
-            assert(frameToRemove);
-            if(!frameToRemove->hasToDecode()){
-                erase(_buffer.begin()+i);
-                break;
-            }
-        }
-    }
-    _buffer.push_back(desc);
-}
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::find(const std::string& filename){
-    for (int i = _buffer.size()-1; i >= 0 ; --i) {
-        assert(_buffer[i]);
-        if(_buffer[i]->_filename==filename) {
-            return _buffer.begin()+i;
-        }
-    }
-    return _buffer.end();
-}
-
-void Reader::Buffer::remove(const std::string& filename){
-    DecodedFrameIterator it = find(filename);
-    if (it!=_buffer.end()) {
-        assert(*it);
-        if((*it)->_readHandle)
-            delete (*it)->_readHandle; // delete readHandle
-        delete (*it);
-        _buffer.erase(it);
-    }
-}
-
-
-bool Reader::Buffer::decodeFinished(const std::string& filename){
-    Buffer::DecodedFrameIterator it = find(filename);
-    return (it!=_buffer.end());
-}
-void Reader::Buffer::debugBuffer(){
-    cout << "=========BUFFER DUMP=============" << endl;
-    for (DecodedFrameIterator it = _buffer.begin(); it != _buffer.end(); ++it) {
-        assert(*it);
-        cout << (*it)->_filename << endl;
-    }
-    cout << "=================================" << endl;
-}
-
-Reader::Buffer::DecodedFrameIterator Reader::Buffer::isEnqueued(const std::string& filename,SEARCH_TYPE searchMode){
-    if(searchMode == SCANLINE_FRAME){
-        DecodedFrameIterator ret = find(filename);
-        if (ret != _buffer.end()) {
-            assert(*ret);
-            assert((*ret)->_readHandle);
-            if(!(*ret)->_readHandle->supportsScanLine()){
-                return _buffer.end();
-            }
-            return ret;
-        }else{
-            return _buffer.end();
-        }
-    }else if(searchMode == FULL_FRAME){
-        DecodedFrameIterator ret = find(filename);
-        if(ret != _buffer.end()){
-            assert(*ret);
-            assert((*ret)->_readHandle);
-            if((*ret)->_readHandle->supportsScanLine()){
-                return _buffer.end();
-            }
-            return ret;
-        }else{
-            return _buffer.end();
-        }
-    }else{ // all frames
-        return find(filename);
-    }
-}
-
-void Reader::Buffer::clear(){
-    DecodedFrameIterator it = _buffer.begin();
-    for (; it!=_buffer.end(); ++it) {
-        assert(*it);
-        if((*it)->_readHandle)
-            delete (*it)->_readHandle; // delete readHandle
-        delete *it;
-    }
-    _buffer.clear();
-}
-
-void Reader::Buffer::erase(DecodedFrameIterator it) {
-    assert(*it);
-    if((*it)->_readHandle)
-        delete (*it)->_readHandle; // delete readHandle
-    delete (*it);
-    _buffer.erase(it);
 }
 
 
@@ -344,41 +205,21 @@ const QString Reader::getRandomFrameName(int f) const{
     return _fileKnob->getRandomFrameName(f);
 }
 
-void Reader::onFrameRangeChanged(int first,int last){
-    _info.set_firstFrame(first);
-    _info.set_lastFrame(last);
+
+QImage Reader::getPreview(int /*width*/,int /*height*/){
+    return _preview;
 }
 
-void Reader::setPreview(const QImage& img){
-    _preview = img;
-    if (!img.isNull()) {
-        _has_preview = true;
-    }
-    notifyGuiPreviewChanged();
-}
-
-
-/*Adds to _rowsToRead the rows in others that are missing to _rows*/
-void Reader::Buffer::ScanLineContext::computeIntersectionAndSetRowsToRead(const std::vector<int>& others){
-    std::list<int> rowsCopy (_rows.begin(), _rows.end()); // std::list is more efficient with respect to erase()
-    for (ScanLineConstIterator it = others.begin(); it!=others.end(); ++it) {
-        std::list<int>::iterator found = std::find(rowsCopy.begin(),rowsCopy.end(),*it);
-        if(found == rowsCopy.end()){ // if not found, we add the row to rows
-            _rowsToRead.push_back(*it);
-        }else{
-            rowsCopy.erase(found); // otherwise , we erase the row from the copy to speed up the computation of the intersection
-        }
-    }
-}
-
-/*merges _rowsToRead and _rows*/
-void Reader::Buffer::ScanLineContext::merge(){
-    for( U32 i = 0; i < _rowsToRead.size(); ++i) {
-        _rows.push_back(_rowsToRead[i]);
-    }
-    _rowsToRead.clear();
-}
 
 bool Reader::hasFrames() const{
     return _fileKnob->frameCount() > 0;
+}
+void Reader::Buffer::Descriptor::decode(){
+    QMutexLocker lock(&_lock);
+    if(_hasDecodedData)
+        return;
+    else{
+        _hasDecodedData = true;
+        _readHandle->readData();
+    }
 }

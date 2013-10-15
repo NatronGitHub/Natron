@@ -25,11 +25,12 @@
 using namespace std;
 using namespace Powiter;
 
-ImageFetcher::ImageFetcher(Node* node, int x, int y, int r, int t, ChannelSet channels)
+ImageFetcher::ImageFetcher(Node* node, SequenceTime time,int x, int y, int r, int t, ChannelSet channels)
 : _x(x)
 , _y(y)
 , _r(r)
 , _t(t)
+, _time(time)
 , _channels(channels)
 , _node(node)
 , _isFinished(false)
@@ -49,10 +50,11 @@ void ImageFetcher::claimInterest(bool blocking) {
     QObject::connect(_results, SIGNAL(finished()), this, SLOT(onCompletion()));
     if (!blocking) {
         QFuture<boost::shared_ptr<const Row> > future = QtConcurrent::mapped(_sequence.begin(),_sequence.end(),
-                                                    boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
+                                                    boost::bind(&ImageFetcher::getInputRow,this,_node,_time,_1,_x,_r,_channels));
         _results->setFuture(future);
     } else {
-        QVector<boost::shared_ptr<const Row> > ret = QtConcurrent::blockingMapped(_sequence, boost::bind(&ImageFetcher::getInputRow,this,_node,_1,_x,_r));
+        QVector<boost::shared_ptr<const Row> > ret = QtConcurrent::blockingMapped(_sequence,
+                                                    boost::bind(&ImageFetcher::getInputRow,this,_node,_time,_1,_x,_r,_channels));
         for (int i = 0; i < ret.size(); i++) {
             _interest.insert(make_pair(ret.at(i)->y(),ret.at(i)));
         }
@@ -60,8 +62,8 @@ void ImageFetcher::claimInterest(bool blocking) {
 }
 
 // on output, the row is locked, and must be unlocked using Row::unlock()
-boost::shared_ptr<const Row> ImageFetcher::getInputRow(Node* node,int y,int x,int r) {
-    boost::shared_ptr<const Row> row = node->get(y,x,r);
+boost::shared_ptr<const Row> ImageFetcher::getInputRow(Node* node,SequenceTime time,int y,int x,int r,const ChannelSet& channels) {
+    boost::shared_ptr<const Row> row = node->get(time,y,x,r,channels);
     if (!row) {
         cout << "Interest failure for row " << y << endl;
         return boost::shared_ptr<const Row>();

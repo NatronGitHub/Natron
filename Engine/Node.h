@@ -34,173 +34,78 @@ class QUndoCommand;
 class ViewerNode;
 class QKeyEvent;
 class QUndoStack;
-class TimeLine;
+class Node;
+
 
 class Node : public QObject
 {
     Q_OBJECT
     
 public:
-	/*Per-node infos. This class is used to pass infos along the graph
-	 *and to know what we can request from a node.*/
-	class Info{
-        
-	public:
-		Info(int first_frame,int last_frame,int ydirection,Format displayWindow,ChannelSet channels,VideoEngine* engine)
-        : _firstFrame(first_frame)
-        , _lastFrame(last_frame)
-        , _ydirection(ydirection)
-        , _blackOutside(false)
-        , _rgbMode(true)
-        , _dataWindow()
-        , _displayWindow(displayWindow)
-        , _channels(channels),
-        _executingEngine(engine)
-        {}
-	    Info()
-        : _firstFrame(0)
-        , _lastFrame(0)
-        , _ydirection(0)
-        , _blackOutside(false)
-        , _rgbMode(true)
-        , _dataWindow()
-        , _displayWindow()
-        , _channels()
-        ,_executingEngine(NULL)
-        {}
-
-		void set_ydirection(int direction){_ydirection=direction;}
-		int ydirection() const {return _ydirection;}
-
-		void set_displayWindow(const Format& format) { _displayWindow = format; }
-        void merge_displayWindow(const Format& other);
-		const Format& displayWindow() const { return _displayWindow; }
-        
-		void set_dataWindow(const Box2D& win) { _dataWindow = win; }
-        void merge_dataWindow(const Box2D& other) { _dataWindow.merge(other); }
-		const Box2D& dataWindow() const { return _dataWindow; }
-
-        void set_firstFrame(int nb) { _firstFrame = nb; }
-		int firstFrame() const { return _firstFrame; }
-        
-		void set_lastFrame(int nb) { _lastFrame = nb; }
-		int lastFrame() const { return _lastFrame; }
-        
-		void set_channels(const ChannelSet& mask) { _channels = mask; }
-		const ChannelSet& channels() const { return _channels; }
-
-		bool blackOutside() const { return _blackOutside; }
-		void set_blackOutside(bool bo) { _blackOutside = bo; }
-
-        void set_rgbMode(bool m) { _rgbMode = m; }
-        bool rgbMode() const { return _rgbMode; }
-
-        bool operator==( Node::Info &other);
-        void operator=(const Node::Info &other);
-        
-        VideoEngine* executingEngine() const {return _executingEngine;}
-        
-        void setExecutingEngine(VideoEngine* engine){_executingEngine = engine;}
-
-        void reset();
-        
-	private:
-		int _firstFrame;
-		int _lastFrame;
-		int _ydirection;
-		bool _blackOutside;
-        bool _rgbMode;
-        Box2D _dataWindow;
-		Format _displayWindow; // display window of the data, for the data window see x,y,range,offset parameters
-		ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
-        VideoEngine* _executingEngine;// the engine owning the node currently. This is protected by a mutex and is thread-safe.
-	};
     
     typedef std::map<int,Node*> InputMap;
     typedef std::multimap<int,Node*> OutputMap;
     
-#define foreachInput(CUR,NODE)\
-for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->getInputs().end() ;++CUR) \
 
-    /*CONSTRUCTOR AND DESTRUCTORS*/
     Node(Model* model);
+    
     virtual ~Node();
     
+    /**
+     *@brief Deletes the node properly. You should not destroy the node manually but call this
+     * which will in turn notify the gui that we want to delete anything associated to this node.
+     **/
     void deleteNode();
-    /*============================*/
     
-    /*Hash related functions*/
-    const Hash64& hash() const { return _hashValue; }
-    
-    void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
-    
-    bool hashChanged();
-    
-    /*This function makes sense if the overloaded node is a node that reads a file.
-     You should then return the filename for the frame passed in parameter.*/
-    virtual const QString getRandomFrameName(int /*frame*/) const{ return ""; }
-    
-    /*============================*/
-    
-    /*overload this to init any knobs*/
-    
+    /**
+     * @brief Calls the virtual portion of initKnobs() and then notifies the GUI that
+     * the knobs have been created.
+     **/
     void initializeKnobs();
     
-	virtual void createKnobDynamically();
+
+
+    const std::vector<Knob*>& getKnobs() const { return _knobs; }
     
-    /*Called by KnobFactory::createKnob. You
-     should never call this yourself. The knob belongs only to this Node.*/
-    void addKnob(Knob* knob){_knobs.push_back(knob);}
-    
-    void removeKnob(Knob* knob);
-    
-    const std::vector<Knob*>& getKnobs() const {return _knobs;}
-    
-    /*============================*/
     /*Returns a pointer to the Viewer node ptr if this node has a viewer connected,
      otherwise returns NULL.*/
-    static ViewerNode* hasViewerConnected(Node* node);
+    ViewerNode* hasViewerConnected();
+    
+public:
+    
+    /**
+     * @brief Is this node an input node ? An input node means
+     * it has no input.
+     **/
+    virtual bool isInputNode() const { return false; }
+    
+    /**
+     * @brief Is this node an output node ? An output node means
+     * it has no output.
+     **/
+    virtual bool isOutputNode() const { return false; }
+    
+    /**
+     * @brief Is this node an OpenFX node?
+     **/
+    virtual bool isOpenFXNode() const { return false; }
     /*============================*/
-    
-    /*Tree related (topological sorting)*/
-    void setMarked(bool mark){_marked = mark;}
-    
-    bool isMarked(){return _marked;}
-    
-    
-    /*============================*/
-    
-	/*Node infos*/
-	const Info& info() const { return _info; }
-    
-    void clear_info();
-
-
-	Box2D& getRequestedBox(){return _requestedBox;}
-
-    int width() const {return info().displayWindow().width();}
-    int height() const {return info().displayWindow().height();}
-       
-    /*============================*/
-    
-    /*Node type related functions*/
-    virtual bool isInputNode() const {return false;}
-    
-    virtual bool isOutputNode() const {return false;}
-    /*============================*/
-    
-    /*Node Input related functions*/
+    /*Initialises inputs*/
     void initializeInputs();
     
-    virtual int maximumInputs() const {return 1;}
+    virtual int maximumInputs() const = 0;
     
-    virtual int minimumInputs() const {return 1;}
+    virtual int minimumInputs() const = 0;
     
+    /**
+     * @brief Returns a pointer to the input Node at index 'index'
+     * or NULL if it couldn't find such node.
+     **/
     Node* input(int index) const;
     
     const std::map<int, std::string>& getInputLabels() const { return _inputLabelsMap; }
     
-    virtual std::string setInputLabel(int inputNb);
+public:
     
     const std::string getInputLabel(int inputNb) const;
     
@@ -244,9 +149,9 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
 
     /*============================*/
     
-    
-    
-    /*node name related functions*/
+    /**
+     * @brief The node unique name.
+     **/
     const std::string& getName() const { return _name ; }
 
     void setName(const std::string& name) {
@@ -254,23 +159,84 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
         emit nameChanged(name.c_str());
     }
 
-    /*============================*/
 
-    /*Node utility functions*/
+    /**
+     * @brief Must be implemented to give a name to the class.
+     **/
     virtual std::string className() const = 0;
+    
+   
+    /**
+     * @brief Must be implemented to give a desription of the effect that this node does. This is typically
+     * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
+     **/
     virtual std::string description() const = 0;
+    
     /*============================*/
+  
     
-    /*Calculations related functions*/
-    bool validate(bool doFullWork);
+    Model* getModel() const {return _model;}
     
-    virtual void engine(Powiter::Row* out){
-        Q_UNUSED(out);
+    /*Make this node inactive. It will appear
+     as if it was removed from the graph editor
+     but the object still lives to allow
+     undo/redo operations.*/
+    void deactivate();
+    
+    /*Make this node active. It will appear
+     again on the node graph.
+     WARNING: this function can only be called
+     after a call to deactivate() has been made.
+     Calling activate() on a node whose already
+     been activated will not do anything.
+     */
+    void activate();
+    
+    void doRefreshEdgesGUI(){
+        emit refreshEdgesGUI();
     }
-	    
-    /*============================*/
+   
+    void notifyGuiPreviewChanged(){
+        emit previewImageChanged();
+    }
     
-    /*overlay support:
+    void notifyGuiChannelChanged(const ChannelSet& c){
+        emit channelsChanged(c);
+    }
+    
+    
+
+    const Format& getProjectDefaultFormat() const;
+
+    /*forwards to _fakeInstance*/
+    void undoCommand();
+    
+    /*forwards to _fakeInstance*/
+    void redoCommand();
+    
+    
+    
+    /*Called by KnobFactory::createKnob. You
+     should never call this yourself. The knob belongs only to this Node.*/
+    void addKnob(Knob* knob){ _knobs.push_back(knob); }
+    
+    void removeKnob(Knob* knob);
+    
+    void pushUndoCommand(QUndoCommand* command);
+    
+    /*@brief The derived class should query this to abort any long process
+     in the engine function.*/
+    bool aborted() const { return _renderAborted; }
+    
+    /**
+     * @brief Called externally when the rendering is aborted. You should never
+     * call this yourself.
+     **/
+    void setAborted(bool b) { _renderAborted = b; }
+
+    
+    
+    /*@brief Overlay support:
      *Just overload this function in your operator.
      *No need to include any OpenGL related header.
      *The coordinate space is  defined by the displayWindow
@@ -297,100 +263,131 @@ for(Node::InputMap::const_iterator CUR = NODE->getInputs().begin(); CUR!= NODE->
         return false;
     }
     
-    virtual void onOverlayKeyDown(QKeyEvent* e){
-        Q_UNUSED(e);
-    }
+    virtual void onOverlayKeyDown(QKeyEvent* e){ Q_UNUSED(e); }
     
-    virtual void onOverlayKeyUp(QKeyEvent* e){
-        Q_UNUSED(e);
-    }
+    virtual void onOverlayKeyUp(QKeyEvent* e){ Q_UNUSED(e); }
     
-    virtual void onOverlayKeyRepeat(QKeyEvent* e){
-        Q_UNUSED(e);
-    }
+    virtual void onOverlayKeyRepeat(QKeyEvent* e){ Q_UNUSED(e); }
     
     virtual void onOverlayFocusGained(){}
     
     virtual void onOverlayFocusLost(){}
-    /*cache related*/
     
-    /*Returns in row, a row containing the results expected of this node
-     for the line y , channels and range (r-x). Data may come from the cache,
-     otherwise engine() gets called.
-     The row is LOCKED and must be unlocked after use (using Row::unlock())
+    /**
+     * @brief Overload this and return true if your operator is capable of dislaying a preview image.
+     * You must also implement getPreview() to return a valid QImage.
+     **/
+    virtual bool canMakePreviewImage() const {return false;}
+    
+    /**
+     * @brief Overload this and return an image of size (width x height)
+     * that will serve as a preview on the node's graphical user interface.
+     * By default a null(empty) QImage is returned an no preview will be displayed.
+     **/
+    virtual QImage getPreview(int /*width*/,int /*height*/) {return QImage();}
+    
+    const Hash64& hash() const { return _hashValue; }
+    
+    void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
+
+    void setMarkedByTopologicalSort(bool marked) {_markedByTopologicalSort = marked;}
+    
+    bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}
+    
+    /** @brief Returns a row containing the results expected of the node
+     * inputNb for the scan-line y , the range [left-right] and the channels 'channels' at time 'time'
+     * Data may come from the cache, otherwise engine() gets called to compute fresh data.
+     * WARNING: Once the shared_ptr is deleted, the buffer in the Row may not
+     * be valid anymore.
      */
-    boost::shared_ptr<const Powiter::Row> get(int y,int x,int r);
+    boost::shared_ptr<const Powiter::Row> get(SequenceTime time,int y,int x,int r,const ChannelSet& channels);
     
-    /*Returns true if the node will cache rows in the node cache.
-     Otherwise results will not be cached.*/
-    virtual bool cacheData() const = 0;
+    /**
+     * @brief This is the place to initialise any per frame specific data or flag.
+     * If the return value is StatOK or StatReplyDefault the render will continue, otherwise
+     * the render will stop.
+     * If the status is StatFailed a message should be posted by the plugin.
+     **/
+    virtual Powiter::Status preProcessFrame(SequenceTime /*time*/) { return Powiter::StatReplyDefault; }
+
+    
+    /**
+     * @brief Can be derived to get the region that the plugin is capable of filling.
+     * This is meaningful for plugins that generate images or transform images.
+     * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
+     * In case of failure the plugin should return StatFailed.
+     **/
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
+    
+    // virtual void getFrameRange(double* first,double* second);
+    
+    void ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const;
+    
+    /**
+     * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
+     * By default it merges the frame range of the inputs.
+     * In case of failure the plugin should return StatFailed.
+     **/
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
+    
+    /**
+     * @brief
+     * You must call this in order to notify the GUI of any change (add/delete) for knobs
+     **/
+    void createKnobDynamically();
     
 
-    virtual bool isOpenFXNode() const {return false;}
-    
-    Model* getModel() const {return _model;}
-            
-    VideoEngine* getExecutingEngine() const {return _info.executingEngine();}
-        
-    void setExecutingEngine(VideoEngine* engine){_info.setExecutingEngine(engine);}
-
-    void set_firstFrame(int nb) { _info.set_firstFrame(nb); }
-
-    void set_lastFrame(int nb) { _info.set_lastFrame(nb); }
-    
-    
-    /*Make this node inactive. It will appear
-     as if it was removed from the graph editor
-     but the object still lives to allow
-     undo/redo operations.*/
-    void deactivate();
-    
-    /*Make this node active. It will appear
-     again on the node graph.
-     WARNING: this function can only be called
-     after a call to deactivate() has been made.
-     Calling activate() on a node whose already
-     been activated will not do anything.
-     */
-    void activate();
-        
-    void pushUndoCommand(QUndoCommand* command);
-    
-    void undoCommand();
-    
-    void redoCommand();
-    
-    void doRefreshEdgesGUI(){
-        emit refreshEdgesGUI();
-    }
-   
-    void notifyGuiPreviewChanged(){
-        emit previewImageChanged();
-    }
-    
-    /*0 if not, 1 if yes and this is a Reader, 2 if yes and this is an OpenFX node*/
-    int canMakePreviewImage();
-    
-    /*The overloaded node should query this to abort any long process 
-     in the engine function.*/
-    bool aborted() const {return _renderAborted;}
-    
-    void setAborted(bool b){_renderAborted = b;}
-    
 public slots:
     
     void onGUINameChanged(const QString& str){
         _name = str.toStdString();
     }
-    void onFrameRangeChanged(int first,int last);    
 
+    
+protected:
+    
+    /**
+     * @brief Must be implemented to do the rendering. You must write to the Row 'out'
+     * for the frame at time 'time'.
+     * You can access the size, range and Channels defined in the Row by calling
+     * Row::width()
+     * Row::left()
+     * Row::right()
+     * Row::channels()
+     *
+     * To retrieve the results of this row computed from nodes upstream you can call
+     * input(inputNb)->get(y,left,right)
+     **/
+    virtual void render(SequenceTime time,Powiter::Row* out){
+        Q_UNUSED(time);
+        Q_UNUSED(out);
+    }
+    
+  
+    /**
+     * @Returns true if the node will cache results in the node cache.
+     * Otherwise results will not be cached.
+     **/
+    virtual bool cacheData() const = 0;
+    
+    /**
+     * @brief Can be derived to give a more meaningful label to the input 'inputNb'
+     **/
+    virtual std::string setInputLabel(int inputNb) const;
+    
+
+    /**
+     * @brief Overload this to initialize any knob.
+     **/
+    virtual void initKnobs(){}
+    
+    
+    
 signals:
     
     void inputsInitialized();
     
-    void knobsInitialied();
-    
-    void channelsChanged();
+    void knobsInitialized();
     
     void inputChanged(int);
         
@@ -410,37 +407,17 @@ signals:
 
     void previewImageChanged();
     
+    void channelsChanged(ChannelSet);
+
     void knobUndoneChange();
     
     void knobRedoneChange();
     
 protected:
-    
-    virtual ChannelSet supportedComponents() = 0;
-        
-    virtual void initKnobs(){}
-
-	virtual bool _validate(bool /*doFullWork*/) = 0;
-    
     Model* _model; // pointer to the model: needed to access the application's default-project's format
-	Info _info; // contains all the info for this operator:the channels on which it is defined,the area of the image, the image format etc...this is set by validate
-
-    bool _marked; //used by the topological sort algorithm
-	std::map<int, std::string> _inputLabelsMap; // inputs name
-    std::string _name; //node name set by the user
-	Hash64 _hashValue; // hash value
-	Box2D _requestedBox; // composition of all the area requested by children
-    
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
-    std::vector<Knob*> _knobs;
-    
-    boost::scoped_ptr<QUndoStack> _undoStack;
-    
-    bool _renderAborted;
-
 private:
-    
     typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
     typedef OutputConnectionsIterator InputConnectionsIterator;
     struct DeactivatedState{
@@ -450,24 +427,26 @@ private:
         /*The input node was connected from outputNumber to the inputNumber of this...*/
         std::map<Node*,std::pair<int,int> > _inputConnections;
     };
-        
-    void merge_frameRange(int otherFirstFrame,int otherLastFrame);
     
-    void merge_info(bool doFullWork);
     
-    void copy_info(Node* parent);
+    std::map<int, std::string> _inputLabelsMap; // inputs name
+    std::string _name; //node name set by the user
+    std::vector<Knob*> _knobs;
     
-    static void _hasViewerConnected(Node* node,bool* ok,Node*& out);
-    
+    boost::scoped_ptr<QUndoStack> _undoStack;
     DeactivatedState _deactivatedState;
     
+    Hash64 _hashValue;
+    bool _markedByTopologicalSort; //< used by the topological sort algorithm
+    bool _renderAborted; //< was rendering aborted ?
+
+    
 };
-typedef Node* (*NodeBuilder)();
 
 
 /**
- *@brief A node whose role is to output an image. 
- * It is the composition of a rendering engine (VideoEngine) and a timeline.
+ *@brief A node whose role is to output an image.
+ * It owns rendering engine (VideoEngine)
  * For now only 3 kind of OutputNode exist: Viewer,Writer and OfxNode.
  * The last one is particular and is not actually acting as an output node
  * every times. It depends upon the plug-in hosted by the OfxNode.
@@ -477,44 +456,25 @@ public:
     
     OutputNode(Model* model);
     
-    virtual ~OutputNode();
+    virtual ~OutputNode(){}
     
-    virtual bool isOutputNode() const OVERRIDE {return true;}
-
+    /**
+     * @brief Is this node an output node ? An output node means
+     * it has no output.
+     **/
+    virtual bool isOutputNode() const { return true; }
     
-    /*Node utility functions*/
-    virtual std::string className() const OVERRIDE = 0; // should be const
+    boost::shared_ptr<VideoEngine> getVideoEngine() const {return _videoEngine;}
     
-    virtual std::string description() const OVERRIDE = 0; // should be const
-    /*Returns true if the node will cache rows in the node cache.
-     Otherwise results will not be cached.*/
-    virtual bool cacheData() const OVERRIDE = 0;
-   
-    VideoEngine* getVideoEngine() const {return _videoEngine;}
-  
     void updateTreeAndRender(bool initViewer = false);
     
     void refreshAndContinueRender(bool initViewer = false);
-
-    boost::shared_ptr<TimeLine> getTimeLine() const {return _timeline;}
-
-    // TimeLine operations (to avoid duplicating the shared_ptr when possible)
-    void setFrameRange(int first, int last);
-    void seekFrame(int frame);
-    void incrementCurrentFrame();
-    void decrementCurrentFrame();
-    int currentFrame() const;
-    int firstFrame() const;
-    int lastFrame() const;
-
-protected:
-    virtual ChannelSet supportedComponents() OVERRIDE = 0; // should be const
-    virtual bool _validate(bool /*doFullWork*/) OVERRIDE = 0;
-
+    
+    
+    
 private:
-    boost::shared_ptr<TimeLine> _timeline;
-    VideoEngine* _videoEngine;
-
+    boost::shared_ptr<VideoEngine> _videoEngine;
+    
 };
 
 

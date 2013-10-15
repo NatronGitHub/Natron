@@ -14,6 +14,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 #include <QtCore/QObject>
 #include <QStringList>
 #include <QVector4D>

@@ -21,6 +21,7 @@
 
 #ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -28,6 +29,7 @@
 #include "Engine/Singleton.h"
 #include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/Format.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -41,26 +43,71 @@ class Writer;
 class ViewerTab;
 class TabWidget;
 class Gui;
-class Format;
 class VideoEngine;
 class QMutex;
-class OutputNode;
-
+class OutputNodeInstance;
+class TimeLine;
 namespace Powiter {
     class LibraryBinary;
     class OfxHost;
 }
 
 class Project{
-public:
-    Project();
-    
     QString _projectName;
     QString _projectPath;
     bool _hasProjectBeenSavedByUser;
-    QDateTime _age;
+    QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
-    Format* _format;
+    Format* _format; // project default format FIXME: make this shared_ptr
+    boost::shared_ptr<TimeLine> _timeline; // global timeline
+
+    
+public:
+    Project();
+    
+    ~Project(){}
+    
+    const QString& getProjectName() const {return _projectName;}
+    
+    void setProjectName(const QString& name){_projectName = name;}
+    
+    const QString& getProjectPath() const {return _projectPath;}
+    
+    void setProjectPath(const QString& path){_projectPath = path;}
+    
+    bool hasProjectBeenSavedByUser() const {return _hasProjectBeenSavedByUser;}
+    
+    void setHasProjectBeenSavedByUser(bool s){_hasProjectBeenSavedByUser = s;}
+    
+    const QDateTime& projectAgeSinceLastSave() const {return _ageSinceLastSave;}
+    
+    void setProjectAgeSinceLastSave(const QDateTime& t){_ageSinceLastSave = t;}
+    
+    const QDateTime& projectAgeSinceLastAutosave() const {return _lastAutoSave;}
+    
+    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t){_lastAutoSave = t;}
+    
+    const Format& getProjectDefaultFormat() const {return *_format;}
+    
+    void setProjectDefaultFormat(Format* f){_format = f;}
+    
+    boost::shared_ptr<TimeLine> getTimeLine() const {return _timeline;}
+    
+    // TimeLine operations (to avoid duplicating the shared_ptr when possible)
+    void setFrameRange(int first, int last);
+    
+    void seekFrame(int frame);
+    
+    void incrementCurrentFrame();
+    
+    void decrementCurrentFrame();
+    
+    int currentFrame() const;
+    
+    int firstFrame() const;
+    
+    int lastFrame() const;
+
 };
 
 /*Controler (see Model-view-controler pattern on wikipedia). This class
@@ -91,11 +138,13 @@ public:
         
     const std::vector<Node*> getAllActiveNodes() const;
     
-    const QString& getCurrentProjectName() const {return _currentProject._projectName;}
+    const QString& getCurrentProjectName() const {return _currentProject.getProjectName();}
     
-    const QString& getCurrentProjectPath() const {return _currentProject._projectPath;}
+    const QString& getCurrentProjectPath() const {return _currentProject.getProjectPath();}
     
-    void setCurrentProjectName(const QString& name) {_currentProject._projectName = name;}
+    boost::shared_ptr<TimeLine> getTimeLine() const {return _currentProject.getTimeLine();}
+    
+    void setCurrentProjectName(const QString& name) {_currentProject.setProjectName(name);}
     
     void loadProject(const QString& path,const QString& name);
     
@@ -103,11 +152,13 @@ public:
     
     void autoSave();
     
-    bool hasProjectBeenSavedByUser() const {return _currentProject._hasProjectBeenSavedByUser;}
+    bool hasProjectBeenSavedByUser() const {return _currentProject.hasProjectBeenSavedByUser();}
     
-    const Format& getProjectFormat() const {return *(_currentProject._format);}
+    const Format& getProjectFormat() const {return _currentProject.getProjectDefaultFormat();}
     
-    void setProjectFormat(Format* frmt){_currentProject._format = frmt;}
+    void setProjectFormat(Format* frmt){_currentProject.setProjectDefaultFormat(frmt);}
+    
+    
     
     void resetCurrentProject();
     

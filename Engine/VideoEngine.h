@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <vector>
+#include <list>
 #include <QtCore/QObject>
 #include <QtCore/QThreadPool>
 #include <QtCore/QMutex>
@@ -25,6 +26,7 @@
 #ifndef Q_MOC_RUN
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -38,7 +40,6 @@ class Node;
 namespace Powiter{
 class Row;
 }
-class ReaderInfo;
 class Reader;
 class Model;
 class ViewerNode;
@@ -46,7 +47,7 @@ class Writer;
 class Timer;
 class OfxNode;
 class OutputNode;
-
+class TimeLine;
 /**
  *@class VideoEngine
  *@brief This is the engine that runs the playback. It handles all graph computations for the time range given by
@@ -75,9 +76,10 @@ public:
     class Tree{
         
     public:
-        typedef std::vector<Node*>::const_iterator DAGIterator;
-        typedef std::vector<Node*>::const_reverse_iterator DAGReverseIterator;
-        typedef std::vector<Node*>::const_iterator InputsIterator;
+        typedef std::list<Node* > TreeContainer;
+        typedef TreeContainer::const_iterator TreeIterator;
+        typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
+        typedef TreeContainer::const_iterator InputsIterator;
         
         /**
          *@brief Construct an empty Tree that can be filled with nodes.
@@ -103,29 +105,28 @@ public:
          *@brief Returns an iterator pointing to the first node in the graph in topological order.
          *Generally the first node is an input node.
          */
-        DAGIterator begin() const {return _sorted.begin();}
+        TreeIterator begin() const {return _sorted.begin();}
         
         /**
          *@brief Returns an iterator pointing after the last node in the graph in topological order.
          *Generally the last node is an output node.
          */
-        DAGIterator end() const {return _sorted.end();}
+        TreeIterator end() const {return _sorted.end();}
         
         /**
          *@brief Returns an iterator pointing to the last node in the graph in topological order.
          *Generally the last node is an output node.
          */
-        DAGReverseIterator rbegin() const {return _sorted.rbegin();}
+        TreeReverseIterator rbegin() const {return _sorted.rbegin();}
         
         /**
          *@brief Returns an iterator pointing before the first node in the graph in topological order.
          *Generally the first node is an input node.
          */
-        DAGReverseIterator rend() const {return _sorted.rend();}
+        TreeReverseIterator rend() const {return _sorted.rend();}
         
         /**
          *@brief Returns a pointer to the output node of the graph.
-         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
          */
         OutputNode* getOutput() const {return _output;}
         
@@ -163,7 +164,7 @@ public:
          *@brief Accesses the input nodes of the graph.
          *@returns A reference to a vector filled with all input nodes of the graph.
          */
-        const std::vector<Node*>& getInputs()const{return _inputs;}
+        const TreeContainer& getInputs() const {return _inputs;}
         
         /**
          *@brief Validates that all nodes parameters can fit together in the graph.
@@ -179,10 +180,11 @@ public:
          *false and all subsequent computations should be canceled.
          *@TODO: validate should throw a detailed exception of what failed.
          */
-        bool validate(bool doFullWork);
+        Powiter::Status preProcessFrame(SequenceTime time);
         
         void debug();
         
+               
     private:
         
         /*recursive topological sort*/
@@ -197,12 +199,13 @@ public:
         void clearGraph();
         
         OutputNode* _output; /*!<the output of the Tree*/
-        std::vector<Node*> _graph;/*!<the un-sorted Tree*/
-        std::vector<Node*> _sorted; /*!<the sorted Tree*/
-        std::vector<Node*> _inputs; /*!<all the inputs of the dag*/
+        TreeContainer _graph;/*!<the un-sorted Tree*/
+        TreeContainer _sorted; /*!<the sorted Tree*/
+        TreeContainer _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
         bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
         mutable QMutex _treeMutex; /*!< protects the dag*/
+
     };
     
 private:
@@ -231,7 +234,6 @@ private:
      */
     struct RunArgs{
         RunArgs():
-        _startingFrame(INT_MAX),
         _zoomFactor(1.f),
         _sameFrame(false),
         _fitToViewer(false),
@@ -242,7 +244,6 @@ private:
         _frameRequestIndex(0)
         {}
         
-        int _startingFrame;
         float _zoomFactor;
         bool _sameFrame;/*!< on if we want the subsequent render call to be on the same frame(zoom)*/
         bool _fitToViewer;
@@ -311,6 +312,10 @@ private:
     /*Accessed only by the run() thread*/
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
+    boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
+    
+    int _writerCurrentFrame;/*!< for writers only: indicates the current frame
+                             It avoids snchronizing all viewers in the app to the render*/
 protected:
     
     /*The function doing all the processing, called by render()*/
@@ -321,10 +326,6 @@ public slots:
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
     void abortRendering();
-    /**
-     *@brief Calls the video engine for the frame number frame. This is the slot called when the user scrub in the timeline.
-     **/
-    void seek(int frame);
    
     /**
      *@brief The slot called by the GUI to set the requested fps.
@@ -437,7 +438,6 @@ public:
     /**
      *@brief Starts the video engine. It can be called from anywhere and at anytime. It starts off at the current
      *frame indicated on the timeline.
-     *@param startingFrame[in] The frame to start with.
      *@param output[in] The output from which we should build the Tree that will serve to render.
      *@param frameCount[in] This is the number of frames you want to execute the engine for. -1 will make the
      *engine run until the end of the sequence is reached. If loop mode is enabled, the engine will never stops
@@ -449,8 +449,7 @@ public:
      *for the same frame than the last frame  computed. This is used exclusively when zooming/panning. When sameFrame
      *is on, frameCount MUST be 1.
      **/
-    void render(int startingFrame,
-                int frameCount,
+    void render(int frameCount,
                 bool refreshTree,
                 bool fitFrameToViewer = false,
                 bool forward = true,
@@ -465,9 +464,8 @@ public:
      *a parameter changed but not the Tree itself.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
      *serve to render the frames.
-     *@param startingFrame[in] The frame to start rendering with.
      **/
-    void refreshAndContinueRender(bool initViewer,int startingFrame);
+    void refreshAndContinueRender(bool initViewer);
     
     /**
      *@brief This function internally calls render(). If the playback is running, then it will resume the playback
@@ -476,9 +474,8 @@ public:
      *on the viewer. This function should be called whenever
      *a change has been made (potentially) to the Tree.
      *@param initViewer[in] If true,this will fit the next frame rendered to the viewer in case output is a viewer.
-     *@param startingFrame[in] The frame to start rendering with.
      **/
-    void updateTreeAndContinueRender(bool initViewer,int startingFrame);
+    void updateTreeAndContinueRender(bool initViewer);
 
     
     /**
@@ -501,10 +498,6 @@ public:
      **/
     const Tree& getTree() const { return _tree; }
     
-    /*@brief Calls Tree::validate(bool)*/
-    void validate(bool doFullWork){
-        _tree.validate(doFullWork);
-    }
     
     void refreshTree(){
         _tree.refreshTree();
@@ -513,7 +506,7 @@ public:
 	/**
      *@returns Returns true if the engine is currently working.
      **/
-	bool isWorking();
+	bool isWorking() const;
     
     /**
      *@returns Returns the 64-bits key associated to the output node of the current graph. This key
@@ -525,6 +518,7 @@ public:
     
 private:
     
+    void getFrameRange(int *firstFrame,int *lastFrame) const;
     
     /**
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node

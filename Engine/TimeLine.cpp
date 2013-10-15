@@ -10,13 +10,13 @@
 
 #include <cassert>
 
-void TimeLine::seekFrame(int frame){
+void TimeLine::seekFrame(SequenceTime frame){
     assert(frame <= _lastFrame && frame >= _firstFrame);
     _currentFrame = frame;
     emit frameChanged(_currentFrame);
 }
 
-void TimeLine::seekFrame_noEmit(int frame){
+void TimeLine::seekFrame_noEmit(SequenceTime frame){
     assert(frame <= _lastFrame && frame >= _firstFrame);
     _currentFrame = frame;
 }

@@ -31,7 +31,7 @@ Read::Read(Reader* op_)
 , _autoCreateAlpha(false)
 , op(op_)
 , _lut(0)
-, _readerInfo()
+, _readerInfo(new ImageInfo)
 {
 }
 
@@ -82,44 +82,11 @@ void Read::createKnobDynamically(){
     op->createKnobDynamically();
 }
 
-void Read::set_readerInfo(Format dispW,
+void Read::setReaderInfo(Format dispW,
 	const Box2D& dataW,
-	const QString& file,
-	ChannelSet channels,
-	int Ydirection,
-	bool rgb) {
-    _readerInfo.set_displayWindow(dispW);
-    _readerInfo.set_dataWindow(dataW);
-    _readerInfo.set_channels(channels);
-    _readerInfo.set_ydirection(Ydirection);
-    _readerInfo.set_rgbMode(rgb);
-    _readerInfo.setCurrentFrameName(file.toStdString());
+	ChannelSet channels) {
+    _readerInfo->setDisplayWindow(dispW);
+    _readerInfo->setDataWindow(dataW);
+    _readerInfo->setChannels(channels);
 }
 
-void Read::readScanLineData(Reader::Buffer::ScanLineContext* slContext){
-    if(slContext->getRowsToRead().size() == 0){
-        const std::vector<int>& rows = slContext->getRows();
-        if(_readerInfo.ydirection() < 0){
-            //top to bottom
-            vector<int>::const_reverse_iterator it  = rows.rbegin();
-            for(; it!=rows.rend() ; ++it) {
-                readScanLine(*it);
-            }
-        }else{
-            //bottom to top
-            vector<int>::const_iterator it = rows.begin();
-            for(; it!=rows.end() ; ++it) {
-                readScanLine(*it);
-            }
-        }
-    }else{
-        const std::vector<int>& rows = slContext->getRowsToRead();
-        for(U32 i = 0; i <rows.size();++i) {
-            readScanLine(rows[i]);
-        }
-        slContext->merge();
-    }
-}
-void Read::readData(bool openBothViews){
-    readAllData(openBothViews);
-}

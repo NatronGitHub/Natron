@@ -21,6 +21,8 @@
 #include "Global/AppManager.h"
 #include "Engine/Model.h"
 #include "Engine/Knob.h"
+#include "Engine/ChannelSet.h"
+#include "Gui/KnobGui.h"
 #include "Writers/Writer.h"
 
 using namespace std;
@@ -38,7 +40,8 @@ int main(int argc, char *argv[])
 
     qRegisterMetaType<Variant>();
     qRegisterMetaType<Writer*>();
-    
+    qRegisterMetaType<ChannelSet>();
+    qRegisterMetaType<KnobGui*>();
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
     filename.append(POWITER_IMAGES_PATH"splashscreen.png");

@@ -12,7 +12,7 @@
 #ifndef POWITER_GUI_TIMELINE_H_
 #define POWITER_GUI_TIMELINE_H_
 
-#include <vector>
+#include <list>
 #include <boost/shared_ptr.hpp>
 #include <QtCore/QList>
 #include <QtCore/QPointF>
@@ -46,9 +46,6 @@ public:
     /*clears out cached frames*/
     void clearCachedFrames(){_cached.clear();repaint();}
 
-    /*initialises the frame range displayed*/
-    void setFrameRange(int min,int max);
-    
     /*initialises the boundaries on the timeline*/
     void setBoundaries(int first,int last);
     
@@ -68,9 +65,7 @@ public:
 public slots:
     void seekFrame(int);
     void seekFrame(double d) { seekFrame((int)d); }
-    void changeFirstAndLast(QString); // for the spinbox
-
-
+    void onFrameRangeChanged(int oldFirst,int oldLast,int first,int last);
 protected:
     virtual void mousePressEvent(QMouseEvent* e);
     virtual void mouseMoveEvent(QMouseEvent* e);
@@ -98,8 +93,7 @@ private:
     bool _alphaCursor;
     QPointF _Mouse;
     Powiter::TIMELINE_STATE _state;
-
-    std::vector<int> _cached;
+    std::list<int> _cached;
 
     boost::shared_ptr<TimeLine> _timeline;
 
@@ -111,6 +105,8 @@ private:
     QColor _backgroundColor;
     QColor _ticksColor;
     QColor _scaleColor;
+
+    bool _firstPaintEvent;
 
 signals:
     void positionChanged(int);

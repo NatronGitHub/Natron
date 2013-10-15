@@ -34,6 +34,10 @@ typedef boost::uint64_t U64;
 typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
+typedef int SequenceTime;
+
+
+
 #ifdef __POWITER_WIN32__
 namespace PowiterWindows{
     /*Converts a std::string to wide string*/
