@@ -97,7 +97,7 @@ INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/include
 INCLUDEPATH += $$PWD/
 
 
-DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE
+DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 
 SOURCES += \
     Engine/ChannelSet.cpp \
@@ -254,8 +254,6 @@ HEADERS += \
     libs/OpenFX/include/ofxProgress.h \
     libs/OpenFX/include/ofxProperty.h \
     libs/OpenFX/include/ofxTimeLine.h \
-    libs/OpenFX_extensions//nuke/camera.h \
-    libs/OpenFX_extensions//nuke/fnPublicOfxExtensions.h \
     libs/OpenFX_extensions//tuttle/ofxGraphAPI.h \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
