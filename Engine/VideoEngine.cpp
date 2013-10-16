@@ -489,8 +489,8 @@ void VideoEngine::run(){
             byteMode = viewerGL->byteMode();
 
             key = new FrameKey(currentFrame, getCurrentTreeVersion(), zoomFactor, exposure, lut, byteMode,rod, textureRect);
-            x = columnSpan.first;
-            r = columnSpan.second+1;
+            //x = columnSpan.first;
+            //r = columnSpan.second+1;
             
             {
                 QMutexLocker forceRenderLocker(&_forceRenderMutex);
@@ -522,9 +522,10 @@ void VideoEngine::run(){
             for (int i = rod.bottom(); i < rod.top(); ++i) {
                 rows.push_back(i);
             }
-            x = rod.left();
-            r = rod.right();
+           
         }
+        x = rod.left();
+        r = rod.right();
         /*If it reaches here, it means the frame doesn't belong
          to the Viewer Cache, we must
          allocate resources and render the frame.*/

@@ -317,7 +317,6 @@ void ReadExr::readHeader(const QString& filename){
                     }
                 }
                 else {
-                    //iop->warning("Cannot assign channel number to %s", cName.name().c_str());
                 }
             }
         }
@@ -355,7 +354,6 @@ void ReadExr::readHeader(const QString& filename){
         setReaderInfo(imageFormat, bbox, mask);
     }
     catch (const std::exception& exc) {
-        //iop->error(exc.what());
         cout << "OpenExr error: " << exc.what() << endl;
         delete _inputfile;
     }
@@ -394,7 +392,7 @@ void ReadExr::readScanLine(int y){
     Imf::FrameBuffer fbuf;
     foreachChannels(z, channels){
         // blacking out what needs to be blacked out
-        float* dest = out->begin(z) ;
+        float* dest = out->begin(z) - out->left();
         for (int xx = x; xx < X; xx++)
             dest[xx] = 0;
         for (int xx = R; xx < r; xx++)
