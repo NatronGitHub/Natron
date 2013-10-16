@@ -15,10 +15,10 @@
 #include <QStringList>
 #include <QtCore/QMutex>
 #include <QtGui/QImage> // FIXME: should be pimpled
-#include <QtCore/QXmlStreamReader> // forward declaration does not work because of ugly #defines in qxmlstream.h
-#include <QtCore/QXmlStreamWriter> // forward declaration does not work because of ugly #defines in qxmlstream.h
+#include <QtCore/QFutureWatcher>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
@@ -44,6 +44,7 @@ public:
     /** @class This class manages the LRU buffer of the reader, i.e:
      *a reader can have several frames stored in its buffer.
      *The size of the buffer is variable, see Reader::setMaxFrameBufferSize(...)
+     *The thread-safety of the buffer is assured by the Reader
     **/
     class Buffer{
     public:
@@ -107,7 +108,6 @@ public:
          * @brief Clears out the buffer.
          */
         void clear(){
-            QMutexLocker lock(&_lock);
             _buffer.clear();
         }
 
@@ -115,14 +115,13 @@ public:
          * @brief SetSize will fix the maximum size of the buffer in frames.
          * @param size Size of the buffer in frames.
          */
-        void setMaximumSize(int size){ QMutexLocker lock(&_lock); _maximumBufferSize = size; }
+        void setMaximumSize(int size){ _maximumBufferSize = size; }
         
         /**
          * @brief Inserts a new frame into the buffer.
          * @param desc  The frame will be identified by this descriptor.
          */
         void insert(const key_type& key,value_type value){
-            QMutexLocker lock(&_lock);
             if((int)_buffer.size() > _maximumBufferSize){
                 _buffer.evict();
             }
@@ -135,12 +134,10 @@ public:
          * @return Returns an iterator pointing to a valid frame in the buffer if it could find it. Otherwise points to end()
          */
         value_type get(const key_type& key) {
-            QMutexLocker lock(&_lock);
             return _buffer(key);
         }
 
     private:
-        mutable QMutex _lock;
         CacheContainer _buffer; /// decoding buffer
         int _maximumBufferSize; /// maximum size of the buffer
     };
@@ -263,12 +260,15 @@ protected:
     
 private:
     
+    void showFilePreviewInternal();
+    
     boost::shared_ptr<Read> decoderForFileType(const QString& fileName);
     std::pair<int,int> _frameRange;
     Buffer _buffer;
     File_Knob* _fileKnob;
     QImage _preview;
     QMutex _lock;
+    boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };
 
 

@@ -192,19 +192,6 @@ public:
      */
     void activate();
     
-    void doRefreshEdgesGUI(){
-        emit refreshEdgesGUI();
-    }
-   
-    void notifyGuiPreviewChanged(){
-        emit previewImageChanged();
-    }
-    
-    void notifyGuiChannelChanged(const ChannelSet& c){
-        emit channelsChanged(c);
-    }
-    
-    
 
     const Format& getProjectDefaultFormat() const;
 
@@ -341,6 +328,18 @@ public slots:
     
     void onGUINameChanged(const QString& str){
         _name = str.toStdString();
+    }
+
+    void doRefreshEdgesGUI(){
+        emit refreshEdgesGUI();
+    }
+    
+    void notifyGuiPreviewChanged(){
+        emit previewImageChanged();
+    }
+    
+    void notifyGuiChannelChanged(const ChannelSet& c){
+        emit channelsChanged(c);
     }
 
     

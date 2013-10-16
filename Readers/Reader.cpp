@@ -16,6 +16,7 @@
 
 #include <QtCore/QMutex>
 #include <QtGui/QImage>
+#include <QtConcurrentRun>
 
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
@@ -50,7 +51,9 @@ Reader::Reader(Model* model)
 : Node(model)
 , _buffer()
 , _fileKnob(0)
+, _previewWatcher(new QFutureWatcher<void>())
 {
+    QObject::connect(_previewWatcher.get(),SIGNAL(finished()),this,SLOT(notifyGuiPreviewChanged()));
 }
 
 Reader::~Reader(){
@@ -156,6 +159,10 @@ static float clamp(float v, float min = 0.f, float max= 1.f){
 }
 
 void Reader::showFilePreview(){
+    _previewWatcher->setFuture(QtConcurrent::run(this,&Reader::showFilePreviewInternal));
+}
+
+void Reader::showFilePreviewInternal(){
     SequenceTime time = firstFrame();
     QString filename = _fileKnob->getRandomFrameName(time);
     boost::shared_ptr<Read> desc;
@@ -182,9 +189,8 @@ void Reader::showFilePreview(){
         double y = i*1.f/yZoomFactor;
         int nearestY = (int)(y+0.5);
         
-        boost::scoped_ptr<Row> row(new Row(rod.left(),nearestY,rod.right(),desc->readerInfo().getChannels()));
-        desc->render(time, row.get());
-        
+        /*get calls render and also caches the row!*/
+        boost::shared_ptr<const Row> row = get(time, nearestY, rod.left(), rod.right(), desc->readerInfo().getChannels());
         
         QRgb *dst_pixels = (QRgb *) img.scanLine(h-1-i);
         const float* red = row->begin(Channel_red);
@@ -201,13 +207,11 @@ void Reader::showFilePreview(){
             QColor c(r*255,g*255,b*255,a*255);
             dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
         }
-
+        
     }
     _preview = img;
-    notifyGuiPreviewChanged();
-    
-}
 
+}
 
 void Reader::render(SequenceTime time,Row* out){
     QString filename = _fileKnob->getRandomFrameName(time);
