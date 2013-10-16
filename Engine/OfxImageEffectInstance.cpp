@@ -100,9 +100,26 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
 // the size of this sub window.
 void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
     assert(_node);
-    const Format& f = _node->getProjectDefaultFormat();
-    xSize = f.width();
-    ySize = f.height();
+    Box2D rod;
+    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+        if (it->second) {
+            Box2D inputRod;
+#warning this is a Hack and shouldn't be the way to get the current time
+            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            if(st == StatFailed)
+                break;
+            rod.merge(inputRod);
+        }
+    }
+    if(!rod.isNull()){
+        xSize = rod.width();
+        ySize = rod.height();
+    }else{
+        
+        const Format& f = _node->getProjectDefaultFormat();
+        xSize = f.width();
+        ySize = f.height();
+    }
 }
 
 // The offset of the current project in canonical coordinates.
@@ -112,9 +129,26 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
     assert(_node);
-    const Format& f = _node->getProjectDefaultFormat();
-    xOffset = f.left();
-    yOffset = f.bottom();
+    Box2D rod;
+    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+        if (it->second) {
+            Box2D inputRod;
+#warning this is a Hack and shouldn't be the way to get the current time
+            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            if(st == StatFailed)
+                break;
+            rod.merge(inputRod);
+        }
+    }
+    if(!rod.isNull()){
+        xOffset = rod.left();
+        yOffset = rod.bottom();
+    }else{
+        
+        const Format& f = _node->getProjectDefaultFormat();
+        xOffset = f.left();
+        yOffset = f.bottom();
+    }
 }
 
 // The extent of the current project in canonical coordinates.
@@ -124,9 +158,26 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
     assert(_node);
-    const Format& f = _node->getProjectDefaultFormat();
-    xSize = f.right();
-    ySize = f.top();
+    Box2D rod;
+    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+        if (it->second) {
+            Box2D inputRod;
+#warning this is a Hack and shouldn't be the way to get the current time
+            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            if(st == StatFailed)
+                break;
+            rod.merge(inputRod);
+        }
+    }
+    if(!rod.isNull()){
+        xSize = rod.right();
+        ySize = rod.top();
+    }else{
+        
+        const Format& f = _node->getProjectDefaultFormat();
+        xSize = f.right();
+        ySize = f.top();
+    }
 }
 
 // The pixel aspect ratio of the current project

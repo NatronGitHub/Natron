@@ -56,13 +56,10 @@ public:
 	virtual bool supports_stereo() const = 0;
     
 
-    /*Should open the file and call set_readerInfo with the infos from the file.*/
-    virtual void readHeader(const QString& filename) = 0;
-    
-    
-    /*Should read the already opened file and extract all the data for either 1 view or
-     2 views. By default does nothing, you should either overload this function or readScanLine.*/
-    virtual void readData() = 0;
+    /*Should open the file and call setReaderInfo with the infos from the file.
+     In case of failure, return StatFailed and post an appropriate message, otherwise return StatOK.
+     */
+    virtual Powiter::Status readHeader(const QString& filename) = 0;
     
     
     /*Returns true if the file is stereo*/
@@ -80,12 +77,6 @@ public:
      the file type. You can initialize the _lut member by calling the
      function getLut(datatype) */
     virtual void initializeColorSpace() = 0;
-    
-    /**
-     * @brief You can implement this to return a preview image of size (width x height).
-     * By default it returns an empty image.
-     **/
-    virtual QImage getPreview(int /*width*/,int /*height*/) { return QImage(); }
     
     /*Returns the reader colorspace*/
     const Powiter::Color::Lut* lut(){return _lut;}

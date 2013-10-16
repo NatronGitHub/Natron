@@ -33,6 +33,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageInfo.h"
+#include "Engine/Lut.h"
 
 #include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ReadExr.h"
@@ -107,87 +108,128 @@ boost::shared_ptr<Read> Reader::decoderForFileType(const QString& fileName){
 
 Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     QString filename = _fileKnob->getRandomFrameName(time);
-    boost::shared_ptr<Buffer::Descriptor> found = _buffer.get(filename.toStdString());
+    
+    /*Locking any other thread: we want only 1 thread to create the descriptor*/
+    QMutexLocker lock(&_lock);
+    boost::shared_ptr<Read> found = _buffer.get(filename.toStdString());
     if (found) {
-        *rod = found->getReadHandle()->readerInfo().getDataWindow();
+        *rod = found->readerInfo().getDataWindow();
     }else{
-        /*the read handle used to decode the frame*/
-        boost::shared_ptr<Read> decoderReadHandle;
+        boost::shared_ptr<Read> desc;
         try{
-            decoderReadHandle = decoderForFileType(filename);
+            desc = decodeHeader(filename);
         }catch(const std::invalid_argument& e){
             cout << e.what() << endl;
             return StatFailed;
         }
-        assert(decoderReadHandle);
-
-        decoderReadHandle->readHeader(filename);
-        decoderReadHandle->initializeColorSpace();
-        _buffer.insert(filename.toStdString(),
-                       boost::shared_ptr<Buffer::Descriptor>(
-                                        new Buffer::Descriptor(decoderReadHandle)));
-        *rod =  decoderReadHandle->readerInfo().getDataWindow();
+        if(desc){
+            *rod =  desc->readerInfo().getDataWindow();
+        }else{
+            return StatFailed;
+        }
     }
     return StatOK;
 }
 
-
-
-boost::shared_ptr<Reader::Buffer::Descriptor> Reader::decodeData(SequenceTime time){
-    
-    QString filename = _fileKnob->getRandomFrameName(time);
-    
-    /*Now that we have the slContext we can check whether the frame is already enqueued in the buffer or not.*/
-    boost::shared_ptr<Buffer::Descriptor> found = _buffer.get(filename.toStdString());
-    if(!found){
-#ifdef POWITER_DEBUG
-        cout << "WARNING: Buffer does not contains the header for frame " << filename.toStdString()
-        <<". re-decoding header...(" << getName() << ")" << endl;
-#endif
-        /*the read handle used to decode the frame*/
-        boost::shared_ptr<Read> decoderReadHandle;
-        try{
-            decoderReadHandle = decoderForFileType(filename);
-        }catch(const std::invalid_argument& e){
-            cout << e.what() << endl;
-            return boost::shared_ptr<Reader::Buffer::Descriptor>();
-        }
-        assert(decoderReadHandle);
-        decoderReadHandle->readHeader(filename);
-        decoderReadHandle->initializeColorSpace();
-        return boost::shared_ptr<Reader::Buffer::Descriptor>(new Reader::Buffer::Descriptor(decoderReadHandle));
-    }else{
-        /*decodes only once*/
-        found->decode();
-        return found;
-    }
-}
-
-
-void Reader::showFilePreview(){
-    QString filename = _fileKnob->getRandomFrameName(firstFrame());
+boost::shared_ptr<Read> Reader::decodeHeader(const QString& filename){
+    /*the read handle used to decode the frame*/
     boost::shared_ptr<Read> decoderReadHandle;
     try{
         decoderReadHandle = decoderForFileType(filename);
     }catch(const std::invalid_argument& e){
-        cout << e.what() << endl;
-        return ;
+        throw e;
     }
     assert(decoderReadHandle);
-    decoderReadHandle->readHeader(filename);
+    Status st = decoderReadHandle->readHeader(filename);
+    if(st == StatFailed){
+        return boost::shared_ptr<Read>();
+    }
     decoderReadHandle->initializeColorSpace();
-    decoderReadHandle->readData();
-    _preview = decoderReadHandle->getPreview(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT);
-    _buffer.insert(filename.toStdString(),
-                   boost::shared_ptr<Reader::Buffer::Descriptor>(new Reader::Buffer::Descriptor(decoderReadHandle)));
+    _buffer.insert(filename.toStdString(),decoderReadHandle);
+    return decoderReadHandle;
+}
+
+static float clamp(float v, float min = 0.f, float max= 1.f){
+    if(v > max) v = max;
+    if(v < min) v = min;
+    return v;
+}
+
+void Reader::showFilePreview(){
+    SequenceTime time = firstFrame();
+    QString filename = _fileKnob->getRandomFrameName(time);
+    boost::shared_ptr<Read> desc;
+    {
+        QMutexLocker lock(&_lock);
+        desc = _buffer.get(filename.toStdString());
+        if(!desc){
+            try{
+                desc = decodeHeader(filename);
+            }catch(const std::invalid_argument& e){
+                cout << e.what() << endl;
+                return;
+            }
+        }
+    }
+    const Box2D& rod = desc->readerInfo().getDataWindow();
+    int h,w;
+    rod.height() < POWITER_PREVIEW_HEIGHT ? h = rod.height() : h = POWITER_PREVIEW_HEIGHT;
+    rod.width() < POWITER_PREVIEW_WIDTH ? w = rod.width() : w = POWITER_PREVIEW_WIDTH;
+    float yZoomFactor = (float)h/(float)rod.height();
+    float xZoomFactor = (float)w/(float)rod.width();
+    QImage img(w,h,QImage::Format_ARGB32);
+    for (int i=0; i< h; ++i) {
+        double y = i*1.f/yZoomFactor;
+        int nearestY = (int)(y+0.5);
+        
+        boost::scoped_ptr<Row> row(new Row(rod.left(),nearestY,rod.right(),desc->readerInfo().getChannels()));
+        desc->render(time, row.get());
+        
+        
+        QRgb *dst_pixels = (QRgb *) img.scanLine(h-1-i);
+        const float* red = row->begin(Channel_red);
+        const float* green = row->begin(Channel_green);
+        const float* blue = row->begin(Channel_blue);
+        const float* alpha = row->begin(Channel_alpha);
+        for (int j=0; j<w; ++j) {
+            double x = j*1.f/xZoomFactor;
+            int nearestX = (int)(x+0.5);
+            float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
+            float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
+            float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
+            float a = alpha ? clamp(alpha[nearestX]) : 1.f;
+            QColor c(r*255,g*255,b*255,a*255);
+            dst_pixels[j] = qRgba(r*255,g*255,b*255,a*255);
+        }
+
+    }
+    _preview = img;
     notifyGuiPreviewChanged();
+    
 }
 
 
 void Reader::render(SequenceTime time,Row* out){
-    boost::shared_ptr<Reader::Buffer::Descriptor> desc = decodeData(time);
-    desc->getReadHandle()->render(time,out);
-	
+    QString filename = _fileKnob->getRandomFrameName(time);
+    boost::shared_ptr<Read> found;
+    {
+        /*This section is critical: if we don't find it in the buffer we want only 1 thread to re-create the descriptor.
+         */
+        QMutexLocker lock(&_lock);
+        found = _buffer.get(filename.toStdString());
+        if(!found){
+#ifdef POWITER_DEBUG
+            cout << "WARNING: Buffer does not contains the header for frame " << filename.toStdString()
+            <<". re-decoding header...(" << getName() << "). Ignore this is the call was made by showFilePreview()" << endl;
+#endif
+            try{
+                found = decodeHeader(filename);
+            }catch(const std::invalid_argument& e){
+                cout << e.what() << endl;
+            }
+        }
+    }
+    found->render(time,out);
 }
 
 
@@ -214,12 +256,4 @@ QImage Reader::getPreview(int /*width*/,int /*height*/){
 bool Reader::hasFrames() const{
     return _fileKnob->frameCount() > 0;
 }
-void Reader::Buffer::Descriptor::decode(){
-    QMutexLocker lock(&_lock);
-    if(_hasDecodedData)
-        return;
-    else{
-        _hasDecodedData = true;
-        _readHandle->readData();
-    }
-}
+

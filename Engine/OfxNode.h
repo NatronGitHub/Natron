@@ -38,6 +38,8 @@ namespace Powiter {
 }
 
 class OfxNode : public OutputNode{
+    
+    Q_OBJECT
         
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension

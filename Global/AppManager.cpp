@@ -154,7 +154,6 @@ Node* AppInstance::createNode(const QString& name) {
             _gui->createViewerGui(node);
         }
         node->initializeKnobs();
-        autoConnect(selected, node);
         if(node->isOpenFXNode()){
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
             ofxNode->openFilesForAllFileParams();
@@ -164,6 +163,8 @@ Node* AppInstance::createNode(const QString& name) {
                 return NULL;
             }
         }
+        autoConnect(selected, node);
+
         
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;

@@ -562,7 +562,7 @@ void ViewerTab::centerViewer(){
 }
 
 void ViewerTab::refresh(){
-    abort();
+    abortRendering();
     _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
     _viewerNode->updateTreeAndRender();
 }

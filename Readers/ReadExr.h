@@ -17,6 +17,7 @@
 #ifdef __POWITER_WIN32__
 #include <fstream>
 #endif
+#include <QtCore/QMutex>
 #include "Readers/Read.h"
 #include "Global/Macros.h"
 
@@ -28,32 +29,6 @@ namespace Imf {
 namespace Powiter{
 class Row;
 }
-class ReaderInfo;
-class ExrChannelExctractor
-{
-public:
-    ExrChannelExctractor(const char* name, const std::vector<std::string>& views) :
-    _mappedChannel(Powiter::Channel_black),
-    _valid(false)
-    {     _valid = extractExrChannelName(name, views);  }
-    
-    ~ExrChannelExctractor() {}
-    
-    Powiter::Channel _mappedChannel;
-    bool _valid;
-    std::string _chan;
-    std::string _layer;
-    std::string _view;
-    std::string exrName() const;
-    bool isValid() const {return _valid;}
-    
-private:
-    
-    bool extractExrChannelName(const char* channelname,
-                               const std::vector<std::string>& views);
-};
-
-
 class ReadExr : public Read{
     
 public:
@@ -77,34 +52,28 @@ public:
     
     virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
     
-    virtual void readHeader(const QString& filename) OVERRIDE;
-    
-    virtual void readData() OVERRIDE;
+    virtual Powiter::Status readHeader(const QString& filename) OVERRIDE;
     
     virtual bool supports_stereo() const OVERRIDE {return true;}
-    
-    virtual QImage getPreview(int width,int height) OVERRIDE;
-    
+        
     virtual void initializeColorSpace() OVERRIDE;
-    
-    void debug();
+        
+    typedef std::map<Powiter::Channel, std::string> ChannelsMap;
     
 private:
     
     
-    void readScanLine(int y);
     
     Imf::InputFile* _inputfile;
-    std::map<Powiter::Channel, const char*> _channel_map;
+    std::map<Powiter::Channel, std::string> _channel_map;
     std::vector<std::string> views;
     int _dataOffset;
-    std::map< int, Powiter::Row* > _img;
 #ifdef __POWITER_WIN32__
     // FIXME: this kind of system-dependent members should really be put in a PIMPL
     std::ifstream* inputStr;
     Imf::StdIFStream* inputStdStream;
 #endif
-	
+	QMutex _lock;
     
 };
 

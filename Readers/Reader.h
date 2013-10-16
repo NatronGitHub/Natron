@@ -48,41 +48,7 @@ public:
     class Buffer{
     public:
         
-        /**
-         *@class This is the base class of descriptors that represent a frame living in the buffer.
-        **/
-        class Descriptor{
-            boost::shared_ptr<Read> _readHandle;
-            bool _hasDecodedData;
-            QMutex _lock;
-        public:
-            Descriptor(boost::shared_ptr<Read> readHandle)
-            : _readHandle(readHandle)
-            , _hasDecodedData(false)
-            {}
-            
-            Descriptor()
-            : _readHandle()
-            , _hasDecodedData(false)
-            {}
-            
-            Descriptor(const Descriptor& other)
-            : _readHandle(other._readHandle)
-            , _hasDecodedData(other._hasDecodedData)
-            {}
-            
-            ~Descriptor(){}
-            
-            /**
-             * @brief hasToDecode
-             * @return Returns true if this descriptor has to decode some dat
-             */
-            void decode();
-        
-            boost::shared_ptr<Read> getReadHandle() const {return _readHandle;}
-
-        };
-        typedef boost::shared_ptr<Reader::Buffer::Descriptor> value_type;
+        typedef boost::shared_ptr<Read> value_type;
         typedef std::string key_type;
         
 #ifdef USE_VARIADIC_TEMPLATES
@@ -189,12 +155,12 @@ public:
      */
 	bool hasFrames() const;
     
+    
     /**
-     * @brief Reads the data of the file associated to the time.
-     * @warning readCurrentHeader with the same frame number must have been called beforehand.
-     * @param current_frame The index of the frame to decode.
+     * @brief Reads the head of the file associated to the time.
+     * @param filename The file of the frame to decode.
      */
-    boost::shared_ptr<Reader::Buffer::Descriptor> decodeData(SequenceTime time);
+    boost::shared_ptr<Read> decodeHeader(const QString& filename);
     
     /**
      * @brief firstFrame
@@ -302,6 +268,7 @@ private:
     Buffer _buffer;
     File_Knob* _fileKnob;
     QImage _preview;
+    QMutex _lock;
 };
 
 

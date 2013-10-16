@@ -54,12 +54,8 @@ public:
     
     virtual bool supports_stereo() const OVERRIDE {return false;}
     
-    virtual void readHeader(const QString& filename) OVERRIDE;
-    
-    virtual void readData() OVERRIDE;
-    
-    virtual QImage getPreview(int width,int height) OVERRIDE;
-    
+    virtual Powiter::Status readHeader(const QString& filename) OVERRIDE;
+        
     virtual void initializeColorSpace() OVERRIDE;
 };
 

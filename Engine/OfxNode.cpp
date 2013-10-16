@@ -248,11 +248,15 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
 }
 void OfxNode::getFrameRange(SequenceTime *first,SequenceTime *last){
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectSimpleSourceClipName);
-    assert(clip);
-    double f,l;
-    clip->getFrameRange(f, l);
-    *first = (SequenceTime)f;
-    *last = (SequenceTime)l;
+    if(clip){
+        double f,l;
+        clip->getFrameRange(f, l);
+        *first = (SequenceTime)f;
+        *last = (SequenceTime)l;
+    }else{
+        *first = _frameRange.first;
+        *last = _frameRange.second;
+    }
 }
 
 Powiter::Status OfxNode::preProcessFrame(SequenceTime /*time*/){
@@ -314,7 +318,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
             assert(stat == kOfxStatOK);
         }
     }
-    const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage(0.0,NULL));
+    const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage((OfxTime)time,NULL));
     assert(img);
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
     {
@@ -390,42 +394,24 @@ void OfxNode::computePreviewImage(int width,int height){
     _preview = QImage(width, height, QImage::Format_ARGB32);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
-    OfxRectD rod;
+    OfxRectI renderW;
     //This function calculates the merge of the inputs RoD.
     OfxStatus stat = effectInstance()->beginRenderAction(0, 25, 1, true, rS);
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    stat = effectInstance()->getRegionOfDefinitionAction(1.0, rS, rod);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    const Format& format = getProjectDefaultFormat();
-    if (stat == kOfxStatReplyDefault) {
-        rod.x1 = format.left();
-        rod.x2 = format.right();
-        rod.y1 = format.bottom();
-        rod.y2 = format.top();
-    }
-    if (rod.x1 == kOfxFlagInfiniteMin) {
-        rod.x1 = format.left();
-    }
-    if (rod.x2 == kOfxFlagInfiniteMax) {
-        rod.x2 = format.right();
-    }
-    if (rod.y1 == kOfxFlagInfiniteMin) {
-        rod.y1 = format.bottom();
-    }
-    if (rod.y2 == kOfxFlagInfiniteMax) {
-        rod.y2 = format.top();
-    }
-    assert(!(rod.x1 ==  0. && rod.x2 == 0. && rod.y1 == 0. && rod.y2 == 0.));
-    OfxRectI renderW;
-    renderW.x1 = (int)std::floor(rod.x1);
-    renderW.y1 = (int)std::floor(rod.y1);
-    renderW.x2 = (int)std::ceil(rod.x2);
-    renderW.y2 = (int)std::ceil(rod.y2);
-    stat = effectInstance()->renderAction(0,kOfxImageFieldNone,renderW, rS);
+    Box2D rod;
+    getRegionOfDefinition(_frameRange.first, &rod);
+    ifInfiniteclipBox2DToProjectDefault(&rod);
+    renderW.x1 = (int)std::floor(rod.left());
+    renderW.x2 = (int)std::ceil(rod.right());
+    renderW.y1 = (int)std::floor(rod.bottom());
+    renderW.y2 = (int)std::ceil(rod.top());
+    
+    assert(!(renderW.x1 ==  0 && renderW.x2 == 0 && renderW.y1 == 0 && renderW.y2 == 0));
+    stat = effectInstance()->renderAction(_frameRange.first,kOfxImageFieldNone,renderW, rS);
     assert(stat == kOfxStatOK);
     OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(outputClip);
-    const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(0.0,NULL));
+    const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(_frameRange.first,NULL));
     assert(img);
     OfxRectI bounds = img->getBounds();
     int w = std::min(bounds.x2-bounds.x1, width);

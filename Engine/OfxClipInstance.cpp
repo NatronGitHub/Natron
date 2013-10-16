@@ -97,8 +97,10 @@ double OfxClipInstance::getFrameRate() const
 //  The frame range over which a clip has images.
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
-    SequenceTime first,last;
-    getAssociatedNode()->getFrameRange(&first, &last);
+    SequenceTime first = 0,last = 0;
+    Node* n = getAssociatedNode();
+    if(n)
+        n->getFrameRange(&first, &last);
     startFrame = first;
     endFrame = last;
 //    if (_effect->getContext() == kOfxImageEffectContextGenerator) {
@@ -165,11 +167,18 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     Box2D rod;
-    getAssociatedNode()->getRegionOfDefinition(time,&rod);
-    ret.x1 = rod.left();
-    ret.x2 = rod.right();
-    ret.y1 = rod.bottom();
-    ret.y2 = rod.top();
+    Node* n = getAssociatedNode();
+    if(n){
+        n->getRegionOfDefinition(time,&rod);
+        ret.x1 = rod.left();
+        ret.x2 = rod.right();
+        ret.y1 = rod.bottom();
+        ret.y2 = rod.top();
+    }
+    else{
+        _nodeInstance->effectInstance()->getProjectOffset(ret.x1, ret.y1);
+        _nodeInstance->effectInstance()->getProjectExtent(ret.x2, ret.y2);
+    }
     return ret;
 }
 
@@ -183,10 +192,12 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
     OfxRectD roi;
+    OfxPointD renderScale;
+    renderScale.x = renderScale.y = 1.0;
     if(optionalBounds){
         roi = *optionalBounds;
     }else{
-        roi = getRegionOfDefinition(time);
+        _nodeInstance->effectInstance()->getRegionOfDefinitionAction(time,renderScale,roi);
     }
     
     /*Return an empty image if the input is optional*/
@@ -224,8 +235,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             roiInput.x2 = (int)std::ceil(roi.x2);
             roiInput.y1 = (int)std::floor(roi.y1);
             roiInput.y2 = (int)std::ceil(roi.y2);
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.0;
+           
             assert(ofxNode->effectInstance());
             OfxStatus stat = ofxNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
             assert(stat == kOfxStatOK);

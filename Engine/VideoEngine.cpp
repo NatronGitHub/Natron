@@ -451,7 +451,7 @@ void VideoEngine::run(){
                 _currentRunArgs._zoomFactor = viewerGL->getZoomFactor();
             }
             viewerGL->setDataWindow(rod);
-#warning Not what we should do
+#warning Not what we should do for display window
             Format dispW(rod.left(),rod.bottom(),rod.right(),rod.top(),"",1.);
             viewerGL->setDisplayWindow(dispW);
         }

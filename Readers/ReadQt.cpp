@@ -100,7 +100,7 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
             break;
     }
 }
-void ReadQt::readHeader(const QString& filename_)
+Powiter::Status ReadQt::readHeader(const QString& filename_)
 {
     filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.
@@ -109,7 +109,7 @@ void ReadQt::readHeader(const QString& filename_)
 
     if(_img->format() == QImage::Format_Invalid){
         cout << "Couldn't load this image format" << endl;
-        return ;
+        return StatFailed;
     }
     int width = _img->width();
     int height= _img->height();
@@ -146,12 +146,6 @@ void ReadQt::readHeader(const QString& filename_)
     Format imageFormat(0,0,width,height,"",aspect);
     Box2D bbox(0,0,width,height);
     setReaderInfo(imageFormat, bbox, mask);
-}
-void ReadQt::readData(){
-// does nothing
+    return StatOK;
 }
 
-
-QImage ReadQt::getPreview(int width,int height){
-    return _img->scaled(width, height,Qt::KeepAspectRatio);
-}
