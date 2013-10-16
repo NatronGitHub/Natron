@@ -145,7 +145,7 @@ public slots:
     void onCanRedoChanged(bool);
     
     /*Updates the preview image.*/
-	void updatePreviewImage();
+	void updatePreviewImage(int time);
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/
@@ -176,7 +176,9 @@ public slots:
 signals:
     void nameChanged(QString);
     
-protected:
+private:
+    
+    void computePreviewImage(int time);
     
     /*pointer to the dag*/
     NodeGraph* _dag;

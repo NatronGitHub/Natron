@@ -14,7 +14,6 @@
 #include <QString>
 #include <QStringList>
 #include <QtCore/QMutex>
-#include <QtGui/QImage> // FIXME: should be pimpled
 #include <QtCore/QFutureWatcher>
 
 #include <boost/shared_ptr.hpp>
@@ -186,12 +185,6 @@ public:
     const QString getRandomFrameName(int /*frame*/) const;
 
     virtual bool canMakePreviewImage() const {return true;}
-    
-    /**
-     * @brief Forwards to the Read
-     */
-	virtual QImage getPreview(int width,int height);
-
 
     /**
      * @brief className
@@ -244,13 +237,9 @@ public:
     virtual int minimumInputs() const OVERRIDE {return 0;}
     
     virtual bool isInputNode() const OVERRIDE {return true;}
-    
+        
 public slots:
-    /**
-     * @brief showFilePreview This will effectivly show a preview of the 1st frame in the sequence recently loaded.
-     *The preview will appear on the Reader's node GUI.
-     */
-    void showFilePreview();
+    
     
     void onFrameRangeChanged(int first,int last);
 
@@ -260,13 +249,11 @@ protected:
     
 private:
     
-    void showFilePreviewInternal();
     
     boost::shared_ptr<Read> decoderForFileType(const QString& fileName);
     std::pair<int,int> _frameRange;
     Buffer _buffer;
     File_Knob* _fileKnob;
-    QImage _preview;
     QMutex _lock;
     boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };

@@ -41,12 +41,12 @@ namespace Powiter{
     enum ChannelMask {
         Mask_None  = 0,
         Mask_Red   = 1 << (Channel_red - 1),  //1
-        Mask_Green = 1 << (Channel_green - 1), // 2
-        Mask_Blue  = 1 << (Channel_blue - 1), //4
-        Mask_Alpha = 1 << (Channel_alpha - 1), //8
-        Mask_Z     = 1 << (Channel_Z - 1), //16
-        Mask_RGB   = Mask_Red | Mask_Green | Mask_Blue, // 7
-        Mask_RGBA  = Mask_RGB | Mask_Alpha, // 15       
+        Mask_Green = 1 << (Channel_green - 1), // 10
+        Mask_Blue  = 1 << (Channel_blue - 1), // 100
+        Mask_Alpha = 1 << (Channel_alpha - 1), // 1000
+        Mask_Z     = 1 << (Channel_Z - 1), //10000
+        Mask_RGB   = Mask_Red | Mask_Green | Mask_Blue, // 111
+        Mask_RGBA  = Mask_RGB | Mask_Alpha, // 1111       
         Mask_All   = 0xFFFFFFFF
     };
 

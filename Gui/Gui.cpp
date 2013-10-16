@@ -161,9 +161,6 @@ void Gui::closeEvent(QCloseEvent *e) {
 NodeGui* Gui::createNodeGUI( Node* node){
     assert(_nodeGraphTab);
     assert(_nodeGraphTab->_nodeGraphArea);
-    if(node->canMakePreviewImage() && node->isOpenFXNode()){
-        dynamic_cast<OfxNode*>(node)->computePreviewImage(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT);
-    }
     NodeGui* gui = _nodeGraphTab->_nodeGraphArea->createNodeGUI(_layoutPropertiesBin,node);
     return gui;
 }

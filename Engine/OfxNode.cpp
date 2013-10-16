@@ -13,7 +13,6 @@
 
 #include <locale>
 #include <limits>
-#include <QtGui/QImage>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
@@ -237,7 +236,8 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    if(stat!= kOfxStatOK && stat != kOfxStatReplyDefault)
+        return StatFailed;
     assert(!(ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.));
     ofxRectDToBox2D(ofxRod,rod);
     return (Powiter::Status)stat; // compatible enums
@@ -369,78 +369,6 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
 
 bool OfxNode::canMakePreviewImage() const { return effectInstance()->getContext() == kOfxImageEffectContextGenerator; }
 
-QImage OfxNode::getPreview(int /*width*/, int /*height*/){
-    return _preview;
-}
-
-void OfxNode::computePreviewImage(int width,int height){
-    assert(effectInstance());
-    if(effectInstance()->getContext() != kOfxImageEffectContextGenerator){
-        return;
-    }
-    //iterate over param and find if there's an unvalid param
-    // e.g: an empty filename
-    const map<string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
-        if(it->second->getType() == kOfxParamTypeString){
-            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
-            assert(param);
-            if(!param->isValid()){
-                return;
-            }
-        }
-    }
-
-    _preview = QImage(width, height, QImage::Format_ARGB32);
-    OfxPointD rS;
-    rS.x = rS.y = 1.0;
-    OfxRectI renderW;
-    //This function calculates the merge of the inputs RoD.
-    OfxStatus stat = effectInstance()->beginRenderAction(0, 25, 1, true, rS);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    Box2D rod;
-    getRegionOfDefinition(_frameRange.first, &rod);
-    ifInfiniteclipBox2DToProjectDefault(&rod);
-    renderW.x1 = (int)std::floor(rod.left());
-    renderW.x2 = (int)std::ceil(rod.right());
-    renderW.y1 = (int)std::floor(rod.bottom());
-    renderW.y2 = (int)std::ceil(rod.top());
-    
-    assert(!(renderW.x1 ==  0 && renderW.x2 == 0 && renderW.y1 == 0 && renderW.y2 == 0));
-    stat = effectInstance()->renderAction(_frameRange.first,kOfxImageFieldNone,renderW, rS);
-    assert(stat == kOfxStatOK);
-    OFX::Host::ImageEffect::ClipInstance* outputClip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(outputClip);
-    const OfxImage* img = dynamic_cast<OfxImage*>(outputClip->getImage(_frameRange.first,NULL));
-    assert(img);
-    OfxRectI bounds = img->getBounds();
-    int w = std::min(bounds.x2-bounds.x1, width);
-    int h = std::min(bounds.y2-bounds.y1, height);
-    double yZoomFactor = (double)h/(bounds.y2-bounds.y1);
-    double xZoomFactor = (double)w/(bounds.x2 - bounds.x1);
-    for (int i = 0; i < h; ++i) {
-        double y = i / yZoomFactor;
-        int nearestY = (int)(y+0.5);
-        OfxRGBAColourF* src_pixels = img->pixelF(0,bounds.y2 -1 - nearestY);
-        QRgb *dst_pixels = (QRgb *) _preview.scanLine(i);
-        assert(src_pixels);
-        for(int j = 0 ; j < w ; ++j) {
-            double x = (double)j / xZoomFactor;
-            int nearestX = (int)(x+0.5);
-            OfxRGBAColourF p = src_pixels[nearestX];
-            uchar r = (uchar)std::min(p.r*256., 255.);
-            uchar g = (uchar)std::min(p.g*256., 255.);
-            uchar b = (uchar)std::min(p.b*256., 255.);
-            uchar a = (p.a != 0.) ? (uchar)std::min(p.a*256., 255.) : 255;
-            dst_pixels[j] = qRgba(r, g, b, a);
-        }
-    }
-    stat = effectInstance()->endRenderAction(0, 25, 1, true, rS);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    
-    notifyGuiPreviewChanged();
-    
-}
 
 /*group is a string as such:
  Toto/Superplugins/blabla

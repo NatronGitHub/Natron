@@ -779,7 +779,7 @@ _outputFileKnob(0){
     if(mode == kOfxParamStringIsFilePath){
         if(_node->isInputNode()){
             _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", node, getParamLabel(this)));
-            QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
+            // QObject::connect(_fileKnob, SIGNAL(filesSelected()), this, SLOT(triggerInstanceChanged()));
             QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), _node, SLOT(onFrameRangeChanged(int,int)));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
@@ -923,7 +923,7 @@ void OfxStringInstance::setSecret(){
 
 void OfxStringInstance::triggerInstanceChanged() {
     if(_fileKnob){
-        _node->computePreviewImage(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_WIDTH);
+        _node->refreshPreviewImage(_fileKnob->firstFrame());
     }
     _node->onInstanceChanged(getName());
 }

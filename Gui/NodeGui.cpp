@@ -13,7 +13,7 @@
 #include <cassert>
 #include <QLayout>
 #include <QAction> 
-
+#include <QtConcurrentRun>
 
 #include "Gui/Edge.h"
 #include "Gui/SettingsPanel.h"
@@ -65,7 +65,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
     QObject::connect(node, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
     QObject::connect(node, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
-    QObject::connect(node, SIGNAL(previewImageChanged()), this, SLOT(updatePreviewImage()));
+    QObject::connect(node, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
@@ -99,19 +99,10 @@ NodeGui::NodeGui(NodeGraph* dag,
     if(node->canMakePreviewImage()){
         name->setX(itemPos.x()+35);
 		name->setY(itemPos.y()+1);
-
-        QImage preview = node->getPreview(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT);
-        if(preview.isNull()){
-                QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-                prev.fill(Qt::black);
-                QPixmap prev_pixmap=QPixmap::fromImage(prev);
-                prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-            
-        }else{
-            QPixmap prev_pixmap=QPixmap::fromImage(preview);
-            prev_pixmap=prev_pixmap.scaled(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, Qt::KeepAspectRatio);
-            prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-        }
+        QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+        prev.fill(Qt::black);
+        QPixmap prev_pixmap = QPixmap::fromImage(prev);
+        prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
         prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
         prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
 	}else{
@@ -220,12 +211,25 @@ void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
     channels->setToolTip(tooltip);
 }
 
-void NodeGui::updatePreviewImage(){
+void NodeGui::updatePreviewImage(int time){
     if(node->canMakePreviewImage()){
-        QPixmap prev_pixmap=QPixmap::fromImage(node->getPreview(POWITER_PREVIEW_WIDTH,POWITER_PREVIEW_HEIGHT));
-        prev_pixmap = prev_pixmap.scaled(60,40);
+        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+    }
+}
+
+void NodeGui::computePreviewImage(int time){
+    int w = POWITER_PREVIEW_WIDTH;
+    int h = POWITER_PREVIEW_HEIGHT;
+    size_t dataSize = 4*w*h;
+    U32* buf = (U32*)malloc(dataSize);
+    for(int i = 0; i < w*h ; ++i ){ buf[i] = qRgba(0, 0, 0, 255); }
+    node->makePreviewImage(time, w, h, buf);
+    {
+        QImage img((const uchar*)buf,w,h,QImage::Format_ARGB32_Premultiplied);
+        QPixmap prev_pixmap = QPixmap::fromImage(img);
         prev_pix->setPixmap(prev_pixmap);
     }
+    free(buf);
 }
 void NodeGui::initializeInputs(){
     int inputnb = node->maximumInputs();

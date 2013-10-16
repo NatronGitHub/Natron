@@ -310,10 +310,7 @@ void File_Knob::fillHashVector(){
 void File_Knob::tryStartRendering(){
     emit filesSelected();
     if(_filesSequence.size() > 0){
-        const std::string& className = _node->className();
-        if(className == "Reader"){
-            dynamic_cast<Reader*>(_node)->showFilePreview();
-        }
+        _node->refreshPreviewImage(_filesSequence.begin()->first);
         startRendering(true);
     }
 }

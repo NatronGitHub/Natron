@@ -262,16 +262,22 @@ public:
     
     /**
      * @brief Overload this and return true if your operator is capable of dislaying a preview image.
-     * You must also implement getPreview() to return a valid QImage.
+     * You should also implement makePreviewImage to make a valid preview (that is not black).
      **/
     virtual bool canMakePreviewImage() const {return false;}
     
     /**
-     * @brief Overload this and return an image of size (width x height)
-     * that will serve as a preview on the node's graphical user interface.
-     * By default a null(empty) QImage is returned an no preview will be displayed.
+     * @brief Makes a small 8bits preview image of size width x height of format ARGB32.
+     * Pre-condition:
+     *  - buf has been allocated for the correct amount of memory needed to fill the buffer.
+     * Post-condition:
+     *  - buf must not be freed or overflown.
+     * It will serve as a preview on the node's graphical user interface.
+     * This function is called directly by the GUI to display the preview.
+     * In order to notify the GUI that you want to refresh the preview, just
+     * call refreshPreviewImage(time).
      **/
-    virtual QImage getPreview(int /*width*/,int /*height*/) {return QImage();}
+    void makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf);
     
     const Hash64& hash() const { return _hashValue; }
     
@@ -334,8 +340,8 @@ public slots:
         emit refreshEdgesGUI();
     }
     
-    void notifyGuiPreviewChanged(){
-        emit previewImageChanged();
+    void refreshPreviewImage(int time){
+        emit previewImageChanged(time);
     }
     
     void notifyGuiChannelChanged(const ChannelSet& c){
@@ -404,7 +410,7 @@ signals:
         
     void refreshEdgesGUI();
 
-    void previewImageChanged();
+    void previewImageChanged(int);
     
     void channelsChanged(ChannelSet);
 

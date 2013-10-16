@@ -162,9 +162,10 @@ Node* AppInstance::createNode(const QString& name) {
                 node->deleteNode();
                 return NULL;
             }
+            if(node->canMakePreviewImage())
+                node->refreshPreviewImage(0);
         }
         autoConnect(selected, node);
-
         
     } else {
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;

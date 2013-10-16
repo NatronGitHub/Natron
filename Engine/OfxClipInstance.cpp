@@ -197,6 +197,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     if(optionalBounds){
         roi = *optionalBounds;
     }else{
+        assert(_nodeInstance->effectInstance());
         _nodeInstance->effectInstance()->getRegionOfDefinitionAction(time,renderScale,roi);
     }
     
@@ -208,7 +209,6 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
      _effect->isPixelDepthSupported(...)
      */
-
     if(isOutput()){
         if (!_outputImage) {
             //   cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;

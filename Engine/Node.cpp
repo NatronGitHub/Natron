@@ -13,6 +13,7 @@
 
 #include <QUndoStack>
 #include <QUndoCommand>
+#include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
@@ -25,6 +26,7 @@
 #include "Engine/Knob.h"
 #include "Engine/OfxNode.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Lut.h"
 
 
 #include "Readers/Reader.h"
@@ -427,6 +429,54 @@ void Node::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
     }
     if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()){
         rod->set_top(projectDefault.top());
+    }
+
+}
+
+
+static float clamp(float v, float min = 0.f, float max= 1.f){
+    if(v > max) v = max;
+    if(v < min) v = min;
+    return v;
+}
+
+
+void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
+    Box2D rod;
+    getRegionOfDefinition(time, &rod);
+    int h,w;
+    rod.height() < height ? h = rod.height() : h = height;
+    rod.width() < width ? w = rod.width() : w = width;
+    double yZoomFactor = (double)h/(double)rod.height();
+    double xZoomFactor = (double)w/(double)rod.width();
+    Powiter::Status stat =  preProcessFrame(time);
+    if(stat == StatFailed)
+        return;
+    for (int i=0; i < h; ++i) {
+        double y = (double)i/yZoomFactor;
+        int nearestY = (int)(y+0.5);
+        
+        /*get() calls render and also caches the row!*/
+        ChannelSet channels(Mask_RGBA);
+        boost::shared_ptr<const Row> row = get(time, nearestY, rod.left(), rod.right(), channels);
+        
+        U32 *dst_pixels = buf + width*(h-1-i);
+        
+        const float* red = row->begin(Channel_red);
+        const float* green = row->begin(Channel_green);
+        const float* blue = row->begin(Channel_blue);
+        const float* alpha = row->begin(Channel_alpha);
+        for(int j = 0;j < w;++j) {
+            double x = (double)j/xZoomFactor;
+            int nearestX = (int)(x+0.5);
+            float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
+            float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
+            float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
+            float a = alpha ? clamp(alpha[nearestX]) : 1.f;
+            dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
+
+        }
+        
     }
 
 }

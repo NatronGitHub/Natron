@@ -20,7 +20,6 @@
 #include <QtCore/QString>
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
-#include <QtGui/QImage>
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -49,7 +48,6 @@ class OfxNode : public OutputNode{
     bool _firstTime; //used in engine(...) to operate once per frame
     QMutex _firstTimeMutex;
     bool _isOutput;//if the OfxNode can output a file somehow
-    QImage _preview;
     
     
     std::pair<int,int> _frameRange;
@@ -98,11 +96,7 @@ public:
     void setAsOutputNode() {_isOutput = true;}
     
     virtual bool canMakePreviewImage() const ;
-    
-    void computePreviewImage(int width,int height);
-    
-    virtual QImage getPreview(int width,int height) OVERRIDE;
-    
+            
     /*Returns the clips count minus the output clip*/
     virtual int maximumInputs() const OVERRIDE;
     
