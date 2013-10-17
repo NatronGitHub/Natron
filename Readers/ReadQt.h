@@ -32,20 +32,7 @@ public:
     virtual ~ReadQt();
     
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
-    virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE {
-        std::vector<std::string> out;
-        out.push_back("jpg");
-        out.push_back("bmp");
-        out.push_back("jpeg");
-        out.push_back("png");
-        out.push_back("gif");
-        out.push_back("pbm");
-        out.push_back("pgm");
-        out.push_back("ppm");
-        out.push_back("xbm");
-        out.push_back("xpm");
-        return out;
-    };
+    virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE;
     
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}

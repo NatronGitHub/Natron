@@ -14,7 +14,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <QLabel>
 #include <QMessageBox>
-#include <QtGui/QImageReader>
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
@@ -584,16 +583,10 @@ void AppManager::loadReadPlugins(){
         if(it->first == "OpenEXR"){
             defaultMapping.insert(make_pair("exr", it->second.second));
         }else if(it->first == "QImage (Qt)"){
-            defaultMapping.insert(make_pair("jpg", it->second.second));
-            defaultMapping.insert(make_pair("bmp", it->second.second));
-            defaultMapping.insert(make_pair("jpeg", it->second.second));
-            defaultMapping.insert(make_pair("gif", it->second.second));
-            defaultMapping.insert(make_pair("png", it->second.second));
-            defaultMapping.insert(make_pair("pbm", it->second.second));
-            defaultMapping.insert(make_pair("pgm", it->second.second));
-            defaultMapping.insert(make_pair("ppm", it->second.second));
-            defaultMapping.insert(make_pair("xbm", it->second.second));
-            defaultMapping.insert(make_pair("xpm", it->second.second));
+            const std::vector<std::string>& decodedFormats = it->second.first;
+            for (U32 i = 0; i < decodedFormats.size(); ++i) {
+                defaultMapping.insert(make_pair(decodedFormats[i], it->second.second));
+            }
         }
     }
     Settings::getPowiterCurrentSettings()->_readersSettings.fillMap(defaultMapping);
@@ -683,12 +676,9 @@ void AppManager::loadWritePlugins(){
         if(it->first == "OpenEXR"){
             defaultMapping.insert(make_pair("exr", it->second.second));
         }else if(it->first == "QImage (Qt)"){
-            // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
-            const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
-            // Qt 4 supports: BMP, GIF, JPG, JPEG, MNG, PNG, PBM, PGM, PPM, TIFF, XBM, XPM, SVG
-            // Qt 5 doesn't support TIFF
-            for (int i = 0; i < supported.count(); ++i) {
-                defaultMapping.insert(make_pair(std::string(supported.at(i).toLower().data()), it->second.second));
+            const std::vector<std::string>& encodedFormats = it->second.first;
+            for (U32 i = 0; i < encodedFormats.size(); ++i) {
+                defaultMapping.insert(make_pair(encodedFormats[i], it->second.second));
             }
         }
     }

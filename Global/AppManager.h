@@ -346,7 +346,10 @@ private:
     
     int _topLevelInstanceID;
     
+    /*map< decoder name, pair< vector<file type decoded>, decoder library> >*/
     std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _readPluginsLoaded;
+    
+    /*map< encoder name, pair< vector<file type encoded>, encoder library> >*/
     std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _writePluginsLoaded;
     
     std::vector<Format*> _formats;

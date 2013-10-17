@@ -282,6 +282,9 @@ bool Writer::validInfosForRendering(){
     if(_filename.empty()){
         return false;
     }
+    if (!input(0)) {
+        return false;
+    }
     
     return true;
 }

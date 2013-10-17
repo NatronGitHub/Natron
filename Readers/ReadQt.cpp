@@ -13,6 +13,7 @@
 
 #include <QtGui/QImage>
 #include <QtGui/QColor>
+#include <QtGui/QImageReader>
 
 #include "Readers/Reader.h"
 
@@ -37,6 +38,16 @@ ReadQt::~ReadQt(){
     if(_img)
         delete _img;
 }
+
+std::vector<std::string> ReadQt::fileTypesDecoded() const {
+    std::vector<std::string> out;
+    const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
+    for (int i = 0; i < supported.size(); ++i) {
+        out.push_back(supported.at(i).data());
+    }
+    return out;
+};
+
 
 void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
     const ChannelSet& channels = out->channels();
