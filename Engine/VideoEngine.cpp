@@ -848,6 +848,7 @@ void VideoEngine::Tree::clearGraph(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
         (*it)->setMarkedByTopologicalSort(false);
     }
+    _output->setMarkedByTopologicalSort(false);
     _sorted.clear();
     _inputs.clear();
     
@@ -856,7 +857,6 @@ void VideoEngine::Tree::clearGraph(){
 void VideoEngine::Tree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
     _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
-    _graph.push_back(_output);
 
     /*unmark all nodes already present in the graph*/
     clearGraph();
@@ -866,6 +866,7 @@ void VideoEngine::Tree::refreshTree(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
         (*it)->setMarkedByTopologicalSort(false);
     }
+    _output->setMarkedByTopologicalSort(false);
 
 }
 void VideoEngine::Tree::fillGraph(Node* n){
