@@ -394,7 +394,7 @@ int File_Knob::nearestFrame(int f) const{
     }
     return distanceMap.begin()->second;
 }
-const QString File_Knob::getRandomFrameName(int f) const{
+QString File_Knob::getRandomFrameName(int f) const{
     f = nearestFrame(f);
     map<int, QString>::const_iterator it = _filesSequence.find(f);
     if(it!=_filesSequence.end()){

@@ -434,6 +434,8 @@ void VideoEngine::run(){
         Box2D rod;
         stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
         if(stat == StatFailed){
+            if(_tree.isOutputAViewer())
+                viewer->disconnectViewer();
             stopEngine();
             continue;
         }

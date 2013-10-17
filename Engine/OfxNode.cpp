@@ -236,11 +236,11 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     rS.x = rS.y = 1.0;
     OfxRectD ofxRod;
     OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
-    if(stat!= kOfxStatOK && stat != kOfxStatReplyDefault)
+    if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
+       (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
-    assert(!(ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.));
     ofxRectDToBox2D(ofxRod,rod);
-    return (Powiter::Status)stat; // compatible enums
+    return StatOK; 
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     //assert(clip);
@@ -314,6 +314,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
             renderW.y1 = rod.bottom();
             renderW.y2 = rod.top();
             OfxPointD renderScale;
+            renderScale.x = renderScale.y = 1.;
             OfxStatus stat = effectInstance()->renderAction((OfxTime)time, kOfxImageFieldNone, renderW, renderScale);
             assert(stat == kOfxStatOK);
         }

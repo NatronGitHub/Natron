@@ -379,7 +379,7 @@ public:
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    const QString getRandomFrameName(int f) const;
+    QString getRandomFrameName(int f) const;
     
 signals:
     void filesSelected();

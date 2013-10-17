@@ -237,7 +237,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             roiInput.y2 = (int)std::ceil(roi.y2);
            
             assert(ofxNode->effectInstance());
-            OfxStatus stat = ofxNode->effectInstance()->renderAction(0, kOfxImageFieldNone, roiInput , renderScale);
+            OfxStatus stat = ofxNode->effectInstance()->renderAction(time, kOfxImageFieldNone, roiInput , renderScale);
             assert(stat == kOfxStatOK);
             OFX::Host::ImageEffect::ClipInstance* clip = ofxNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
             assert(clip);
