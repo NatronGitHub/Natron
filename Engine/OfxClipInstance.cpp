@@ -199,6 +199,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
     }else{
         assert(_nodeInstance->effectInstance());
         _nodeInstance->effectInstance()->getRegionOfDefinitionAction(time,renderScale,roi);
+       
     }
     
     /*Return an empty image if the input is optional*/
@@ -210,6 +211,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
      _effect->isPixelDepthSupported(...)
      */
     if(isOutput()){
+        
+        QMutexLocker locker(&_lock);
         if (!_outputImage) {
             //   cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;
             _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);

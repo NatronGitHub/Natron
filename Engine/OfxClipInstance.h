@@ -14,6 +14,9 @@
 
 
 #include <cassert>
+
+#include <QtCore/QMutex>
+
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
@@ -124,6 +127,7 @@ private:
     Powiter::OfxImageEffectInstance* _effect;
     //int _clipIndex;
     OfxImage* _outputImage;
+    QMutex _lock; //<protects _outputImage
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image
