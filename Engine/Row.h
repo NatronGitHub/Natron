@@ -106,11 +106,11 @@ namespace boost {
 namespace Powiter{
     
     
-    /*The row is the  class that defines 1 line in an image.
-     It stores as many buffers as there're channels enabled for this row.
-     Note that it inherits InMemoryEntry so it fits into the in-RAM NodeCache,
-     but it doesn't use the allocate() and deallocate() version of the base-class.*/
-    // the user is responsible for locking the entry, using lock() and unlock()
+    /* @brief The row defines 1 scan-line in an image.
+     *It stores as many buffers (planes) as there're channels enabled for this row.
+     *Note that channels are not default initialized and that the user is
+     *responsible for filling them with an appropriate default value.
+     **/
     class Row : public CacheEntryHelper<float,RowKey>
     {
         

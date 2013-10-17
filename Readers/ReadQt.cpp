@@ -14,9 +14,8 @@
 #include <QtGui/QImage>
 #include <QtGui/QColor>
 
-#include "Gui/ViewerGL.h"
 #include "Readers/Reader.h"
-#include "Gui/NodeGui.h"
+
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 
@@ -64,9 +63,14 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
 //            }
             const QRgb* from = reinterpret_cast<const QRgb*>(_img->scanLine(Y)) + out->left();
             foreachChannels(z, channels){
-                float* to = out->begin(z) ;
-                if (to != NULL) {
-                    from_byteQt(z, out->begin(z), from, out->width(),1);
+                if((int)z <= 4){ // qrgb contains only rgba
+                    float* to = out->begin(z) ;
+                    if (to != NULL) {
+                        from_byteQt(z, out->begin(z), from, out->width(),1);
+                    }
+                }else{
+                    //default initialize to 0 the channel
+                    std::fill(out->begin(z), out->end(z), 0.);
                 }
             }
         }
@@ -90,9 +94,15 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
             for (int X = out->left(); X < out->right(); ++X) {
                 QRgb c = _img->pixel(X, Y);
                 foreachChannels(z, channels){
-                    float* to = out->begin(z) ;
-                    if (to != NULL) {
-                        from_byteQt(z, to+X , &c, 1, 1);
+                    if((int) z < 4){
+                        float* to = out->begin(z) ;
+                        if (to != NULL) {
+                            from_byteQt(z, to+X , &c, 1, 1);
+                        }
+                    }else{
+                        //default initialize to 0 the channel
+                        float *to = out->begin(z)+X;
+                        std::fill(to,to+1,0.);
                     }
                 }
             }
@@ -106,7 +116,7 @@ Powiter::Status ReadQt::readHeader(const QString& filename_)
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/
     _img= new QImage(filename);
-
+    
     if(_img->format() == QImage::Format_Invalid){
         cout << "Couldn't load this image format" << endl;
         return StatFailed;
