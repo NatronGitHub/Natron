@@ -403,7 +403,7 @@ void ReadExr::render(SequenceTime /*time*/,Row* out){
             if (z == Channel_alpha) {
                 fillValue = 1.f;
             }
-            std::fill(out->begin(z),out->end(z),fillValue);
+            out->fill(z,fillValue);
         }
     }
     {

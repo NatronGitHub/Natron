@@ -110,36 +110,20 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
 
 void WriteQt::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
     boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
-
+    
     /*invert y to be in top-to-bottom increasing order*/
     y = _rod.height()-y-1;
-    uchar* toR=0;
-    uchar* toG=0;
-    uchar* toB=0;
-    uchar* toA=0;
-    if (channels & Channel_alpha && _premult) {
-        toA = _buf + y*4*_rod.width();
-        toR = toA+1;
-        toG = toR+1;
-        toB = toG+1;
-    }else if(channels & Channel_alpha && !_premult){
-        toA = _buf + y*4*_rod.width();
-        toR = toA+1;
-        toG = toR+1;
-        toB = toG+1;
-    }else{
-        toB  = _buf + y*4*_rod.width();
-        toG = toB+1;
-        toR = toG+1;
-        toA = toR+1;
-    }
-
+    
+    uchar* toB  = _buf + y*4*_rod.width();
+    uchar* toG = toB+1;
+    uchar* toR = toG+1;
+    uchar* toA = toR+1;
+    
     const float* red = row->begin(Channel_red);
     const float* green = row->begin(Channel_green);
     const float* blue = row->begin(Channel_blue);
     const float* alpha = row->begin(Channel_alpha);
-
-
+    
     to_byte(Channel_red, toR, red, alpha, row->width(),4);
     to_byte(Channel_green, toG, green, alpha, row->width(),4);
     to_byte(Channel_blue, toB, blue, alpha, row->width(),4);

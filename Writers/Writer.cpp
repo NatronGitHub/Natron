@@ -33,7 +33,7 @@ using namespace Powiter;
 
 Writer::Writer(Model* model):
 OutputNode(model),
-_requestedChannels(Mask_RGB), // temporary
+_requestedChannels(Mask_RGBA), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
 _writeHandle(0),

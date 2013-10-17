@@ -70,7 +70,7 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
                     }
                 }else{
                     //default initialize to 0 the channel
-                    std::fill(out->begin(z), out->end(z), 0.);
+                    out->fill(z,0.f);
                 }
             }
         }

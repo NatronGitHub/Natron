@@ -151,6 +151,10 @@ namespace Powiter{
             }
         }
         
+        void fill(Powiter::Channel c,float fillValue){
+            std::fill(begin(c),end(c),fillValue);
+        }
+        
         // the user is responsible for locking the entry, using lock() and unlock()
         int y() const {return _params._y; }
         
