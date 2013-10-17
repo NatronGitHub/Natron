@@ -405,7 +405,7 @@ void ReadExr::render(SequenceTime /*time*/,Row* out){
             _inputfile->readPixels(exrY);
         }
         catch (const std::exception& exc) {
-            cout << " ERROR READING PIXELS FROM FILE : " << exc.what() <<  endl;
+            cout << exc.what() <<  endl;
             return;
         }
     }

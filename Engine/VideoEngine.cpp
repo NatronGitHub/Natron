@@ -845,53 +845,31 @@ _output(output)
 
 
 void VideoEngine::Tree::clearGraph(){
-    foreach(Node* n ,_graph){
-        n->setMarkedByTopologicalSort(false);
+    for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->setMarkedByTopologicalSort(false);
     }
-    _graph.clear();
     _sorted.clear();
     _inputs.clear();
     
 }
-void VideoEngine::Tree::topologicalSort(){
-    TreeIterator it = _graph.begin();
-    while(it!=_graph.end()){
-        if(!(*it)->isMarkedByTopologicalSort()){
-            _depthCycle(*it);
-        }
-        ++it;
-    }
-}
-void VideoEngine::Tree::_depthCycle(Node* n){
-    n->setMarkedByTopologicalSort(true);
-    const Node::InputMap& inputs = n->getInputs();
-    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
-        if(it->second){
-            _depthCycle(it->second);
-        }
-    }
-    _sorted.push_back(n);
-}
-
 
 void VideoEngine::Tree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
     _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
     _graph.push_back(_output);
-    _sorted.clear();
-    _inputs.clear();
+
     /*unmark all nodes already present in the graph*/
     clearGraph();
     fillGraph(_output);
-    topologicalSort();
+    
+    /*clear the marked flags for the sort*/
+    for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it)->setMarkedByTopologicalSort(false);
+    }
+
 }
 void VideoEngine::Tree::fillGraph(Node* n){
-    if(!n->isMarkedByTopologicalSort()){
-        _graph.push_back(n);
-        if(n->isInputNode()){
-            _inputs.push_back(n);
-        }
-    }
+    
     /*call fillGraph recursivly on all the node's inputs*/
     const Node::InputMap& inputs = n->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
@@ -904,6 +882,13 @@ void VideoEngine::Tree::fillGraph(Node* n){
                 }
             }
             fillGraph(it->second);
+        }
+    }
+    if(!n->isMarkedByTopologicalSort()){
+        n->setMarkedByTopologicalSort(true);
+        _sorted.push_back(n);
+        if(n->isInputNode()){
+            _inputs.push_back(n);
         }
     }
 }

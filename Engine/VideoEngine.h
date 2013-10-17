@@ -167,18 +167,7 @@ public:
         const TreeContainer& getInputs() const {return _inputs;}
         
         /**
-         *@brief Validates that all nodes parameters can fit together in the graph.
-         *This function will propagate in topological order all infos in the graph,
-         *starting from input nodes and finishing to the output node. During that pass all frame ranges
-         *are merged (retaining only the minimum and the maximum) and some other influencial infos are
-         *passed as well. i.e : channels that a node needs from its input, the requested region of processing...etc
-         *@param doFullWork[in] If true,this pass will actually do more work and will make sure to propagate all infos
-         *through the graph. Generally this is called AFTER that all readers have read the headers of their current frame
-         *so they know what display window/channels...etc to pass down to their outputs.
-         *If false, validate is much lighter and will only merge the frame range.
-         *@returns Returns true if the validation passed detected that there is no issue in the graph. Otherwise returns
-         *false and all subsequent computations should be canceled.
-         *@TODO: validate should throw a detailed exception of what failed.
+         *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
          */
         Powiter::Status preProcessFrame(SequenceTime time);
         
@@ -186,12 +175,6 @@ public:
         
                
     private:
-        
-        /*recursive topological sort*/
-        void topologicalSort();
-        /*function called internally by the sorting
-         *algorithm*/
-        void _depthCycle(Node* n);
         /*called by resetAndSort(...) to fill the structure
          *upstream of the output given in parameter of resetAndSort(...)*/
         void fillGraph(Node* n);
@@ -199,7 +182,6 @@ public:
         void clearGraph();
         
         OutputNode* _output; /*!<the output of the Tree*/
-        TreeContainer _graph;/*!<the un-sorted Tree*/
         TreeContainer _sorted; /*!<the sorted Tree*/
         TreeContainer _inputs; /*!<all the inputs of the dag*/
         bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
