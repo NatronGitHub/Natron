@@ -96,59 +96,6 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
     8,12,9,13,10,14,11,15
 };
 
-#ifdef WITH_EIGEN
-/**
- *@typedef Typedef used by all _gl functions. It defines an Eigen 4x4 matrix of floats.
- **/
-typedef Eigen::Matrix4f M44f;
-
-/**
- *@brief Computes the inverse matrix of m and stores it in out
- **/
-static bool _glInvertMatrix(float* m ,float* invOut);
-
-/**
- *@brief Multiplys matrix1 by matrix2 and stores the result in result
- **/
-static void _glMultMats44(float *result, float *matrix1, float *matrix2);
-
-/**
- *@brief Multiply the matrix by the vector and stores it in resultvector
- **/
-static void _glMultMat44Vect(float *resultvector, const float *matrix, const float *pvector);
-
-/**
- *@brief Multiplies matrix by pvector and stores only the ycomponent (multiplied by the homogenous coordinates)
- **/
-static int _glMultMat44Vect_onlyYComponent(float *yComponent, const M44f& matrix, const Eigen::Vector4f&);
-
-/**
- *@brief Replicate of the glOrtho func, but for an identity matrix.
- WARNING: All the content of matrix will be modified when returning from this function.
- **/
-static void _glOrthoFromIdentity(M44f& matrix,float left,float right,float bottom,float top,float near_,float far_);
-
-/**
- *@brief Replicate of the glScale function but for a custom matrix
- **/
-static void _glScale(M44f& result,const M44f& matrix,float x,float y,float z);
-
-/**
- *@brief Replicate of the glTranslate function but for a custom matrix
- **/
-static void _glTranslate(M44f& result,const M44f& matrix,float x,float y,float z);
-
-/**
- *@brief Replicate of the glRotate function but for a custom matrix.
- **/
-static void _glRotate(M44f& result,const M44f& matrix,float a,float x,float y,float z);
-
-/**
- *@briefReplicate of the glLoadIdentity function but for a custom matrix
- **/
-static void _glLoadIdentity(M44f& matrix);
-#endif
-
 /*
  ASCII art of the vertices used to render.
  The actual texture seen on the viewport is the rect (5,9,10,6).
