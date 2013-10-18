@@ -622,4 +622,7 @@ void OfxNode::onOverlayFocusLost(){
 void OfxNode::onFrameRangeChanged(int first,int last){
     _frameRange.first = first;
     _frameRange.second = last;
+    if(isInputNode()){
+        notifyFrameRangeChanged(first,last);
+    }
 }

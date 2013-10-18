@@ -44,6 +44,10 @@ _lastFrameKnob(0)
 {
     
     _lock = new QMutex;
+    QObject::connect(_model->getApp()->getTimeLine().get(),
+                     SIGNAL(frameRangeChanged(int,int)),
+                     this,
+                     SLOT(onTimelineFrameRangeChanged(int, int)));
 }
 
 Writer::~Writer(){
@@ -172,14 +176,25 @@ void Writer::onFrameRangeChoosalChanged(){
             _lastFrameKnob = 0;
         }
     }else if(index == 1){
-        getFrameRange(&_frameRange.first, &_frameRange.second);
+        _frameRange.first = _model->getApp()->getTimeLine()->firstFrame();
+        _frameRange.second = _model->getApp()->getTimeLine()->lastFrame();
         if(!_firstFrameKnob){
             _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
             _firstFrameKnob->setValue(_frameRange.first);
+            _firstFrameKnob->setDisplayMinimum(_frameRange.first);
+            _firstFrameKnob->setDisplayMaximum(_frameRange.second);
+            _firstFrameKnob->setMinimum(_frameRange.first);
+            _firstFrameKnob->setMaximum(_frameRange.second);
+
         }
         if(!_lastFrameKnob){
             _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
             _lastFrameKnob->setValue(_frameRange.second);
+            _lastFrameKnob->setDisplayMinimum(_frameRange.first);
+            _lastFrameKnob->setDisplayMaximum(_frameRange.second);
+            _lastFrameKnob->setMinimum(_frameRange.first);
+            _lastFrameKnob->setMaximum(_frameRange.second);
+
         }
         createKnobDynamically();
     }
@@ -309,6 +324,26 @@ void Writer::startRendering(){
     }
 }
 
+void Writer::onTimelineFrameRangeChanged(int f,int l){
+    
+    if(_firstFrameKnob){
+        _firstFrameKnob->setValue(f);
+        _firstFrameKnob->setMinimum(f);
+        _firstFrameKnob->setDisplayMinimum(f);
+        _firstFrameKnob->setDisplayMaximum(l);
+        _firstFrameKnob->setMaximum(l);
+        
+    }
+    if(_lastFrameKnob){
+        _lastFrameKnob->setValue(l);
+        _lastFrameKnob->setDisplayMinimum(f);
+        _lastFrameKnob->setDisplayMaximum(l);
+        _lastFrameKnob->setMinimum(f);
+        _lastFrameKnob->setMaximum(l);
+        
+    }
+
+}
 void Writer::fileTypeChanged(){
     int index = _filetypeCombo->value<int>();
     assert(index < (int)_allFileTypes.size());

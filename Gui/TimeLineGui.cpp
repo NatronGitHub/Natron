@@ -50,7 +50,7 @@ _firstPaintEvent(true)
 {
     
     QObject::connect(_timeline.get(), SIGNAL(frameChanged(int)), this, SLOT(seekFrame(int)));
-    QObject::connect(_timeline.get(), SIGNAL(frameRangeChanged(int,int,int,int)), this, SLOT(onFrameRangeChanged(int,int,int,int)));
+    QObject::connect(_timeline.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
 
     setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     setMouseTracking(true);
@@ -394,11 +394,9 @@ void TimeLineGui::removeCachedFrame(){
    // repaint();
 }
 
-void TimeLineGui::onFrameRangeChanged(int oldFirst,int oldLast,int first,int last){
-    if(oldFirst != first)
-        _first = first;
-    if(oldLast != last)
-        _last = last;
+void TimeLineGui::onFrameRangeChanged(int first,int last){
+    _first = first;
+    _last = last;
     updateScale();
 }
 /*initialises the boundaries on the timeline*/

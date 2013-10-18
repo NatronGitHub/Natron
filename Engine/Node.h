@@ -358,6 +358,9 @@ public slots:
         emit channelsChanged(c);
     }
 
+    void notifyFrameRangeChanged(int f,int l){
+        emit frameRangeChanged(f,l);
+    }
     
 protected:
     
@@ -428,6 +431,7 @@ signals:
     
     void knobRedoneChange();
     
+    void frameRangeChanged(int,int);
 protected:
     Model* _model; // pointer to the model: needed to access the application's default-project's format
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
@@ -467,6 +471,7 @@ private:
  * every times. It depends upon the plug-in hosted by the OfxNode.
  **/
 class OutputNode : public Node {
+    
 public:
     
     OutputNode(Model* model);
@@ -484,7 +489,6 @@ public:
     void updateTreeAndRender(bool initViewer = false);
     
     void refreshAndContinueRender(bool initViewer = false);
-    
     
     
 private:

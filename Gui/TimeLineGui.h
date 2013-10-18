@@ -65,7 +65,7 @@ public:
 public slots:
     void seekFrame(int);
     void seekFrame(double d) { seekFrame((int)d); }
-    void onFrameRangeChanged(int oldFirst,int oldLast,int first,int last);
+    void onFrameRangeChanged(int first,int last);
 protected:
     virtual void mousePressEvent(QMouseEvent* e);
     virtual void mouseMoveEvent(QMouseEvent* e);

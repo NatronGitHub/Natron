@@ -123,6 +123,7 @@ public slots:
     void fileTypeChanged();
     void startRendering();
     void onFrameRangeChoosalChanged();
+    void onTimelineFrameRangeChanged(int,int);
 signals:
     void renderingOnDiskStarted(Writer*,QString,int,int);
     

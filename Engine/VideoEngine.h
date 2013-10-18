@@ -48,6 +48,149 @@ class Timer;
 class OfxNode;
 class OutputNode;
 class TimeLine;
+
+
+
+/**
+ *@class Tree
+ *@brief This class represents the tree upstream of the output node as seen internally by the video engine.
+ *It provides means to sort the tree and access to the nodes in topological order. It also
+ *provides access to the input nodes and the output node of the tree.
+ *An input node is a node that does not depend on any upstream node,i.e :
+ *it can generate data.
+ *An output node is a node whose output cannot be connected to any other node and whose
+ *sole purpose is to visulize the data flowing through the graph in a given configuration.
+ *A Tree is represented by 1 output node, connected to its input, and so on recursively.
+ *
+ **/
+class Tree : public QObject{
+    
+    Q_OBJECT
+    
+public:
+    typedef std::list<Node* > TreeContainer;
+    typedef TreeContainer::const_iterator TreeIterator;
+    typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
+    typedef TreeContainer::const_iterator InputsIterator;
+    
+    /**
+     *@brief Construct an empty Tree that can be filled with nodes.
+     *To actually fill the dag you need to call Tree::resetAndSort(OutputNode*,bool) .
+     *Once filled up, you can access the nodes in topological order with the iterators.
+     *The reverse iterator will give you the opposite of the topological order.
+     */
+    Tree(OutputNode* output);
+    
+    /**
+     *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
+     *The rest of the tree is fetched recursivly starting from this node.
+     *@TODO Throw some exception to detect cycles in the graph
+     */
+    void refreshTree();
+    
+    /*Lock the dag. You should call this before any access*/
+    void lock() const { _treeMutex.lock(); }
+    
+    void unlock() const { _treeMutex.unlock(); }
+    
+    /**
+     *@brief Returns an iterator pointing to the first node in the graph in topological order.
+     *Generally the first node is an input node.
+     */
+    TreeIterator begin() const {return _sorted.begin();}
+    
+    /**
+     *@brief Returns an iterator pointing after the last node in the graph in topological order.
+     *Generally the last node is an output node.
+     */
+    TreeIterator end() const {return _sorted.end();}
+    
+    /**
+     *@brief Returns an iterator pointing to the last node in the graph in topological order.
+     *Generally the last node is an output node.
+     */
+    TreeReverseIterator rbegin() const {return _sorted.rbegin();}
+    
+    /**
+     *@brief Returns an iterator pointing before the first node in the graph in topological order.
+     *Generally the first node is an input node.
+     */
+    TreeReverseIterator rend() const {return _sorted.rend();}
+    
+    /**
+     *@brief Returns a pointer to the output node of the graph.
+     */
+    OutputNode* getOutput() const {return _output;}
+    
+    
+    /**
+     *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
+     *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
+     */
+    ViewerNode* outputAsViewer() const;
+    
+    /**
+     *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
+     *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
+     */
+    Writer* outputAsWriter() const;
+    
+    /**
+     *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
+     *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
+     */
+    OfxNode* outputAsOpenFXNode() const;
+    
+    /**
+     *@brief Returns true if the output node is a viewer.
+     */
+    bool isOutputAViewer() const {return _isViewer;}
+    
+    
+    /**
+     *@brief Returns true if the output node is an OpenFX node.
+     */
+    bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
+    
+    /**
+     *@brief Accesses the input nodes of the graph.
+     *@returns A reference to a vector filled with all input nodes of the graph.
+     */
+    const TreeContainer& getInputs() const {return _inputs;}
+    
+    /**
+     *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
+     */
+    Powiter::Status preProcessFrame(SequenceTime time);
+    
+    SequenceTime firstFrame() const {return _firstFrame;}
+    
+    SequenceTime lastFrame() const {return _lastFrame;}
+    
+    void debug();
+public slots:
+    void onInputFrameRangeChanged(int first,int last);
+    
+signals:
+    
+    void inputFrameRangeChanged(int first,int last);
+    
+private:
+    /*called by resetAndSort(...) to fill the structure
+     *upstream of the output given in parameter of resetAndSort(...)*/
+    void fillGraph(Node* n);
+    /*clears out the structure*/
+    void clearGraph();
+    
+    OutputNode* _output; /*!<the output of the Tree*/
+    TreeContainer _sorted; /*!<the sorted Tree*/
+    TreeContainer _inputs; /*!<all the inputs of the dag*/
+    bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
+    bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
+    mutable QMutex _treeMutex; /*!< protects the dag*/
+    SequenceTime _firstFrame,_lastFrame;/*!< first frame and last frame of the union range of all inputs*/
+};
+
 /**
  *@class VideoEngine
  *@brief This is the engine that runs the playback. It handles all graph computations for the time range given by
@@ -57,138 +200,6 @@ class VideoEngine : public QThread{
     
     Q_OBJECT
     
-public:
-    
-    
-    
-    /**
-     *@class Tree
-     *@brief This class represents the tree upstream of the output node as seen internally by the video engine.
-     *It provides means to sort the tree and access to the nodes in topological order. It also
-     *provides access to the input nodes and the output node of the tree.
-     *An input node is a node that does not depend on any upstream node,i.e :
-     *it can generate data.
-     *An output node is a node whose output cannot be connected to any other node and whose
-     *sole purpose is to visulize the data flowing through the graph in a given configuration.
-     *A Tree is represented by 1 output node, connected to its input, and so on recursively.
-     *
-     **/
-    class Tree{
-        
-    public:
-        typedef std::list<Node* > TreeContainer;
-        typedef TreeContainer::const_iterator TreeIterator;
-        typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
-        typedef TreeContainer::const_iterator InputsIterator;
-        
-        /**
-         *@brief Construct an empty Tree that can be filled with nodes.
-         *To actually fill the dag you need to call Tree::resetAndSort(OutputNode*,bool) .
-         *Once filled up, you can access the nodes in topological order with the iterators.
-         *The reverse iterator will give you the opposite of the topological order.
-         */
-        Tree(OutputNode* output);
-        
-        /**
-         *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
-         *The rest of the tree is fetched recursivly starting from this node.
-         *@TODO Throw some exception to detect cycles in the graph
-         */
-        void refreshTree();
-        
-        /*Lock the dag. You should call this before any access*/
-        void lock() const { _treeMutex.lock(); }
-        
-        void unlock() const { _treeMutex.unlock(); }
-                
-        /**
-         *@brief Returns an iterator pointing to the first node in the graph in topological order.
-         *Generally the first node is an input node.
-         */
-        TreeIterator begin() const {return _sorted.begin();}
-        
-        /**
-         *@brief Returns an iterator pointing after the last node in the graph in topological order.
-         *Generally the last node is an output node.
-         */
-        TreeIterator end() const {return _sorted.end();}
-        
-        /**
-         *@brief Returns an iterator pointing to the last node in the graph in topological order.
-         *Generally the last node is an output node.
-         */
-        TreeReverseIterator rbegin() const {return _sorted.rbegin();}
-        
-        /**
-         *@brief Returns an iterator pointing before the first node in the graph in topological order.
-         *Generally the first node is an input node.
-         */
-        TreeReverseIterator rend() const {return _sorted.rend();}
-        
-        /**
-         *@brief Returns a pointer to the output node of the graph.
-         */
-        OutputNode* getOutput() const {return _output;}
-        
-        
-        /**
-         *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
-         */
-        ViewerNode* outputAsViewer() const;
-        
-        /**
-         *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
-         */
-        Writer* outputAsWriter() const;
-        
-        /**
-         *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-         *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
-         */
-        OfxNode* outputAsOpenFXNode() const;
-        
-        /**
-         *@brief Returns true if the output node is a viewer.
-         */
-        bool isOutputAViewer() const {return _isViewer;}
-        
-        
-        /**
-         *@brief Returns true if the output node is an OpenFX node.
-         */
-        bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
-        
-        /**
-         *@brief Accesses the input nodes of the graph.
-         *@returns A reference to a vector filled with all input nodes of the graph.
-         */
-        const TreeContainer& getInputs() const {return _inputs;}
-        
-        /**
-         *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
-         */
-        Powiter::Status preProcessFrame(SequenceTime time);
-        
-        void debug();
-        
-               
-    private:
-        /*called by resetAndSort(...) to fill the structure
-         *upstream of the output given in parameter of resetAndSort(...)*/
-        void fillGraph(Node* n);
-        /*clears out the structure*/
-        void clearGraph();
-        
-        OutputNode* _output; /*!<the output of the Tree*/
-        TreeContainer _sorted; /*!<the sorted Tree*/
-        TreeContainer _inputs; /*!<all the inputs of the dag*/
-        bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
-        bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
-        mutable QMutex _treeMutex; /*!< protects the dag*/
-
-    };
     
 private:
     

@@ -30,9 +30,14 @@ public:
     SequenceTime lastFrame() const {return _lastFrame;}
 
     void setFrameRange(SequenceTime first,SequenceTime last){
-        emit frameRangeChanged(_firstFrame,_lastFrame,first, last);
+        SequenceTime oldFirst = _firstFrame;
+        SequenceTime oldLast = _lastFrame;
         _firstFrame = first;
         _lastFrame = last;
+        if(first != oldFirst || last != oldLast){
+            emit frameRangeChanged(first, last);
+        }
+       
     }
     
     SequenceTime currentFrame() const {return _currentFrame;}
@@ -49,7 +54,7 @@ public slots:
 
 
 signals:
-    void frameRangeChanged(int,int,int,int);
+    void frameRangeChanged(int,int);
     void frameChanged(int);
 
 private:

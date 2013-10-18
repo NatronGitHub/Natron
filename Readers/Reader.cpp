@@ -74,6 +74,7 @@ void Reader::initKnobs(){
 void Reader::onFrameRangeChanged(int first,int last){
     _frameRange.first = first;
     _frameRange.second = last;
+    notifyFrameRangeChanged(first,last);
 }
 boost::shared_ptr<Read> Reader::decoderForFileType(const QString& fileName){
     QString extension;

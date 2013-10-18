@@ -67,8 +67,11 @@ Powiter::Status ViewerNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
 }
 
 void ViewerNode::getFrameRange(SequenceTime *first,SequenceTime *last){
-    SequenceTime inpFirst,inpLast;
-    input(_activeInput)->getFrameRange(&inpFirst,&inpLast);
+    SequenceTime inpFirst = 0,inpLast = 0;
+    Node* n = input(_activeInput);
+    if(n){
+        n->getFrameRange(&inpFirst,&inpLast);
+    }
     *first = inpFirst;
     *last = inpLast;
 }
@@ -269,10 +272,10 @@ void ViewerNode::viewportSize(double &w,double &h) {
 }
 
 void ViewerNode::drawOverlays() const{
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock(); /*it might be locked already if a node forced a re-render*/
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->drawOverlay();
         }
@@ -281,10 +284,10 @@ void ViewerNode::drawOverlays() const{
 }
 
 void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenDown(viewportPos, pos);
         }
@@ -293,10 +296,10 @@ void ViewerNode::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF&
 }
 
 void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenMotion(viewportPos, pos);
         }
@@ -305,10 +308,10 @@ void ViewerNode::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPoint
 }
 
 void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayPenUp(viewportPos, pos);
         }
@@ -317,10 +320,10 @@ void ViewerNode::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& p
 }
 
 void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyDown(e);
         }
@@ -329,10 +332,10 @@ void ViewerNode::notifyOverlaysKeyDown(QKeyEvent* e){
 }
 
 void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyUp(e);
         }
@@ -341,10 +344,10 @@ void ViewerNode::notifyOverlaysKeyUp(QKeyEvent* e){
 }
 
 void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayKeyRepeat(e);
         }
@@ -353,10 +356,10 @@ void ViewerNode::notifyOverlaysKeyRepeat(QKeyEvent* e){
 }
 
 void ViewerNode::notifyOverlaysFocusGained(){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusGained();
         }
@@ -365,10 +368,10 @@ void ViewerNode::notifyOverlaysFocusGained(){
 }
 
 void ViewerNode::notifyOverlaysFocusLost(){
-    const VideoEngine::Tree& _dag = getVideoEngine()->getTree();
+    const Tree& _dag = getVideoEngine()->getTree();
     _dag.lock();
     if(_dag.getOutput()){
-        for (VideoEngine::Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
+        for (Tree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(*it);
             (*it)->onOverlayFocusLost();
         }

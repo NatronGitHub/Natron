@@ -223,9 +223,10 @@ bool VideoEngine::startEngine() {
         return false;
     }
     
+    
     SequenceTime firstFrame,lastFrame;
-    _tree.getOutput()->getFrameRange(&firstFrame, &lastFrame);
-    _timeline->setFrameRange(firstFrame, lastFrame);
+    firstFrame = _tree.firstFrame();
+    lastFrame = _tree.lastFrame();
 
     /*update the tree hash */
     bool oldVersionValid = _treeVersionValid;
@@ -834,20 +835,23 @@ void VideoEngine::updateTreeVersion(){
 
 
 
-VideoEngine::Tree::Tree(OutputNode* output):
+Tree::Tree(OutputNode* output):
 _output(output)
 ,_isViewer(false)
 ,_isOutputOpenFXNode(false)
 ,_treeMutex(QMutex::Recursive) /*recursive lock*/
+,_firstFrame(0)
+,_lastFrame(0)
 {
-    
     assert(output);
+    
 }
 
 
-void VideoEngine::Tree::clearGraph(){
+void Tree::clearGraph(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
         (*it)->setMarkedByTopologicalSort(false);
+        QObject::disconnect((*it), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onInputFrameRangeChanged(int,int)));
     }
     _output->setMarkedByTopologicalSort(false);
     _sorted.clear();
@@ -855,10 +859,12 @@ void VideoEngine::Tree::clearGraph(){
     
 }
 
-void VideoEngine::Tree::refreshTree(){
+void Tree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
     _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFXNode();
+    
+    
     /*unmark all nodes already present in the graph*/
     clearGraph();
     fillGraph(_output);
@@ -868,9 +874,11 @@ void VideoEngine::Tree::refreshTree(){
         (*it)->setMarkedByTopologicalSort(false);
     }
     _output->setMarkedByTopologicalSort(false);
-
+    
+    /*update frame range*/
+    onInputFrameRangeChanged(0, 0); //non signifiant args
 }
-void VideoEngine::Tree::fillGraph(Node* n){
+void Tree::fillGraph(Node* n){
     
     /*call fillGraph recursivly on all the node's inputs*/
     const Node::InputMap& inputs = n->getInputs();
@@ -891,25 +899,26 @@ void VideoEngine::Tree::fillGraph(Node* n){
         _sorted.push_back(n);
         if(n->isInputNode()){
             _inputs.push_back(n);
+            QObject::connect(n, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onInputFrameRangeChanged(int,int)));
         }
     }
 }
 
 
-ViewerNode* VideoEngine::Tree::outputAsViewer() const {
+ViewerNode* Tree::outputAsViewer() const {
     if(_output && _isViewer)
         return dynamic_cast<ViewerNode*>(_output);
     else
         return NULL;
 }
 
-Writer* VideoEngine::Tree::outputAsWriter() const {
+Writer* Tree::outputAsWriter() const {
     if(_output && !_isViewer)
         return dynamic_cast<Writer*>(_output);
     else
         return NULL;
 }
-OfxNode* VideoEngine::Tree::outputAsOpenFXNode() const{
+OfxNode* Tree::outputAsOpenFXNode() const{
     if(_output && _isOutputOpenFXNode){
         return dynamic_cast<OfxNode*>(_output);
     }else{
@@ -918,7 +927,7 @@ OfxNode* VideoEngine::Tree::outputAsOpenFXNode() const{
 }
 
 
-void VideoEngine::Tree::debug(){
+void Tree::debug(){
     cout << "Topological ordering of the Tree is..." << endl;
     for(Tree::TreeIterator it = begin(); it != end() ;++it) {
         cout << (*it)->getName() << endl;
@@ -926,7 +935,7 @@ void VideoEngine::Tree::debug(){
 }
 
 /*sets infos accordingly across all the Tree*/
-Powiter::Status VideoEngine::Tree::preProcessFrame(SequenceTime time){
+Powiter::Status Tree::preProcessFrame(SequenceTime time){
     /*Validating the Tree in topological order*/
     for (TreeIterator it = begin(); it != end(); ++it) {
         Powiter::Status st = (*it)->preProcessFrame(time);
@@ -936,7 +945,11 @@ Powiter::Status VideoEngine::Tree::preProcessFrame(SequenceTime time){
     }
     return Powiter::StatOK;
 }
-
+void Tree::onInputFrameRangeChanged(int,int){
+    _output->getFrameRange(&_firstFrame,&_lastFrame);
+    _output->getModel()->getApp()->getTimeLine()->setFrameRange(_firstFrame ,_lastFrame);
+    
+}
 
 #ifdef POWITER_DEBUG
 bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
