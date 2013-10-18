@@ -402,12 +402,13 @@ void ViewerGL::drawOverlay(){
     
     ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
-    print(displayWindow().width(),0, _resolutionOverlay,QColor(233,233,233));
+    const Box2D& dispW = displayWindow();
+    print(dispW.right(),dispW.bottom(), _resolutionOverlay,QColor(233,233,233));
     
-    QPoint topRight(displayWindow().width(),displayWindow().height());
-    QPoint topLeft(0,displayWindow().height());
-    QPoint btmLeft(0,0);
-    QPoint btmRight(displayWindow().width(),0 );
+    QPoint topRight(dispW.right(),dispW.top());
+    QPoint topLeft(dispW.left(),dispW.top());
+    QPoint btmLeft(dispW.left(),dispW.bottom());
+    QPoint btmRight(dispW.right(),dispW.bottom() );
     
     glBegin(GL_LINES);
     glColor4f(0.5, 0.5, 0.5,1.0);
@@ -425,16 +426,17 @@ void ViewerGL::drawOverlay(){
     
     glEnd();
     checkGLErrors();
-    if(displayWindow() != dataWindow()){
+    const Box2D& dataW = dataWindow();
+    if(dispW != dataW){
         
-        print(dataWindow().right(), dataWindow().top(),_topRightBBOXoverlay, QColor(150,150,150));
-        print(dataWindow().left(), dataWindow().bottom(), _btmLeftBBOXoverlay, QColor(150,150,150));
+        print(dataW.right(), dataW.top(),_topRightBBOXoverlay, QColor(150,150,150));
+        print(dataW.left(), dataW.bottom(), _btmLeftBBOXoverlay, QColor(150,150,150));
         
         
-        QPoint topRight2(dataWindow().right(), dataWindow().top());
-        QPoint topLeft2(dataWindow().left(),dataWindow().top());
-        QPoint btmLeft2(dataWindow().left(),dataWindow().bottom() );
-        QPoint btmRight2(dataWindow().right(),dataWindow().bottom() );
+        QPoint topRight2(dataW.right(), dataW.top());
+        QPoint topLeft2(dataW.left(),dataW.top());
+        QPoint btmLeft2(dataW.left(),dataW.bottom() );
+        QPoint btmRight2(dataW.right(),dataW.bottom() );
         glPushAttrib(GL_LINE_BIT);
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);

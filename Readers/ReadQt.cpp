@@ -72,16 +72,19 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
 //            if(autoAlpha() && !_img->hasAlphaChannel()){
 //                out->turnOn(Channel_alpha);
 //            }
-            const QRgb* from = reinterpret_cast<const QRgb*>(_img->scanLine(Y)) + out->left();
+            const QRgb* from = reinterpret_cast<const QRgb*>(_img->scanLine(Y));
             foreachChannels(z, channels){
                 if((int)z <= 4){ // qrgb contains only rgba
                     float* to = out->begin(z) ;
                     if (to != NULL) {
-                        from_byteQt(z, out->begin(z), from, out->width(),1);
+                        from_byteQt(z, out->begin(z) - out->left(), from, _img->width(),1);
                     }
                 }else{
-                    //default initialize to 0 the channel
-                    out->fill(z,0.f);
+                    //default initialize  the channel
+                    if(z != Channel_alpha)
+                        out->fill(z,0.f);
+                    else
+                        out->fill(z, 1.f);
                 }
             }
         }
@@ -113,7 +116,10 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
                     }else{
                         //default initialize to 0 the channel
                         float *to = out->begin(z)+X;
-                        std::fill(to,to+1,0.);
+                        if(z != Channel_alpha)
+                            *to = 0.f;
+                        else
+                            *to = 1.f;
                     }
                 }
             }

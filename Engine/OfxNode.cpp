@@ -330,6 +330,8 @@ void OfxNode::render(SequenceTime time,Row* out) {
             assert(stat == kOfxStatOK);
         }
     }
+#warning RACE CONDITION HERE! We asked for a render action which effictively created the output image for the output clip but another concurrent thread might have at thie point created another image. We need to do all the copying from the output image to the rows in a single thread. We should cache the images in the clip with respect of the time and the image bounds. 
+    
     const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage((OfxTime)time,NULL));
     assert(img);
     if(img->bitDepth() == OfxImage::eBitDepthUByte)
@@ -339,7 +341,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
         foreachChannels(chan, channels){
             float* writable = out->begin(chan);
             if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->right()-out->left(), writable);
+                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->width(), writable);
             }
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
@@ -349,7 +351,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
         foreachChannels(chan, channels){
             float* writable = out->begin(chan);
             if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->right()-out->left(), writable);
+                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->width(), writable);
             }
         }
     }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
@@ -359,7 +361,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
         foreachChannels(chan, channels){
             float* writable = out->begin(chan);
             if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->right()-out->left(), writable);
+                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->width(), writable);
             }
         }
     }
@@ -379,7 +381,7 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }
 
-bool OfxNode::canMakePreviewImage() const { return effectInstance()->getContext() == kOfxImageEffectContextGenerator; }
+bool OfxNode::canMakePreviewImage() const { return isInputNode() || Node::isInputAndProcessingNode(); }
 
 
 /*group is a string as such:

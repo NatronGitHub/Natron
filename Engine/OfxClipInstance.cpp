@@ -238,7 +238,6 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             roiInput.x2 = (int)std::ceil(roi.x2);
             roiInput.y1 = (int)std::floor(roi.y1);
             roiInput.y2 = (int)std::ceil(roi.y2);
-           
             assert(ofxNode->effectInstance());
             OfxStatus stat = ofxNode->effectInstance()->renderAction(time, kOfxImageFieldNone, roiInput , renderScale);
             assert(stat == kOfxStatOK);
@@ -252,25 +251,19 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
                                 (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2), (int)std::ceil(roi.y2),
                                 channels);
             srcImg.claimInterest(true);
-            // all rows are locked
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
-            /*Copying all rows living in the InputFetcher to the ofx image*/
+            /*Copying all rows living in the ImageFetcher to the ofx image*/
             for (int y = (int)std::floor(roi.y1); y < (int)std::ceil(roi.y2); ++y) {
-                OfxRGBAColourF* dstImg = ret->pixelF(0, y);
+                OfxRGBAColourF* dstImg = ret->pixelF(roi.x1, y);
                 assert(dstImg);
                 boost::shared_ptr<const Row> row = srcImg.at(y);
                 assert(row);
-                const float* r = row->begin(Channel_red);
-                const float* g = row->begin(Channel_green);
-                const float* b = row->begin(Channel_blue);
-                const float* a = row->begin(Channel_alpha);
-                rowPlaneToOfxPackedBuffer(Channel_red,   r , row->width(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_green, g , row->width(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_blue,  b , row->width(), dstImg);
-                rowPlaneToOfxPackedBuffer(Channel_alpha, a , row->width(), dstImg);
+                foreachChannels(z, channels){
+                    rowPlaneToOfxPackedBuffer(z, row->begin(z), row->width(), dstImg);
+                }
                 srcImg.erase(y);
-             }
+            }
             
             return ret;
         }

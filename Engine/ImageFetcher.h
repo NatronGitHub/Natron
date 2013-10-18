@@ -21,22 +21,23 @@
 
 class Node;
 /*This class is useful for spatial operators that need several rows, up to the whole image, of an input
- nodes. This object is kind of a generalisation of the node->get() function.
+ node. This object is kind of a generalisation of the node->get() function.
  Note that this object launches new threads to actually get the rows.*/
 class ImageFetcher : public QObject{
     Q_OBJECT
 public:
-    /*Construct an image fetcher object that will fetch all the row in the range (y,t)
+    /*Construct an image fetcher object that will fetch all the row in the range (b,t)
      for the given channels for the node specified in parameters. No fetching
      actually occurs in the constructor, you have to call claimInterest()
      to start computations. This lazy computation fashion allows you to 
      connect to the signal hasFinishedAt(int) to maybe update your piece
      of code for a specific row, or to signal the GUI of some modifications.
      
-     !!WARNING: When the image fetcher object is deleted, all the Rows will be
-     deleted too, it's important to maintain the image fetcher living thoughout the
+     !!WARNING: When the image fetcher object is deleted, all the buffers owned
+     by the rows might be invalid.
+     It's important to maintain the image fetcher living thoughout the
      entire duration you need to use the Rows contained in that object.*/
-    ImageFetcher(Node* node,SequenceTime time, int x, int y, int r, int t, ChannelSet channels);
+    ImageFetcher(Node* node,SequenceTime time, int l, int b, int r, int t, ChannelSet channels);
     
     
     /*Launches new thread to fetch all the rows necessary from the node to fill the range (y,t).
@@ -68,7 +69,7 @@ public:
     boost::shared_ptr<const Powiter::Row> at(int y) const;
 
     // erase the row at y
-    // the row must be locked
+    // the buffers owned by that row might be invalid after this call
     void erase(int y);
 
     /*write the rows to an image on disk using QImage.*/
