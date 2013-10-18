@@ -202,11 +202,6 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
        
     }
     
-    /*Return an empty image if the input is optional*/
-    if(isOptional()){
-        return new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
-    }
-    
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
      _effect->isPixelDepthSupported(...)
      */
