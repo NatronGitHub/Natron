@@ -331,6 +331,10 @@ void ViewerGL::paintGL()
     double left = _zoomCtx._left;
     double top =  bottom +  h / (double)_zoomCtx._zoomFactor;
     double right = left +  w / (double)_zoomCtx._zoomFactor;
+    if(left == right || top == bottom){
+        clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
+        return;
+    }
     assert(left != right);
     assert(top != bottom);
     glOrtho(left, right, bottom, top, -1, 1);
