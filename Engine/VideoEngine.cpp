@@ -838,7 +838,7 @@ void VideoEngine::updateTreeVersion(){
 VideoEngine::Tree::Tree(OutputNode* output):
 _output(output)
 ,_isViewer(false)
-,_isOutputOpenFXNode(_output->isOpenFXNode())
+,_isOutputOpenFXNode(false)
 ,_treeMutex(QMutex::Recursive) /*recursive lock*/
 {
     
@@ -859,7 +859,7 @@ void VideoEngine::Tree::clearGraph(){
 void VideoEngine::Tree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
     _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
-
+    _isOutputOpenFXNode = _output->isOpenFXNode();
     /*unmark all nodes already present in the graph*/
     clearGraph();
     fillGraph(_output);

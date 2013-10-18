@@ -246,10 +246,11 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             assert(clip);
             return clip->getImage(time, optionalBounds);
         } else {
+            ChannelSet channels(Mask_RGBA);
             ImageFetcher srcImg(input,
                                 time,
                                 (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2), (int)std::ceil(roi.y2),
-                                Mask_RGBA);
+                                channels);
             srcImg.claimInterest(true);
             // all rows are locked
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
@@ -302,6 +303,7 @@ OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
     int ymax = (int)std::ceil(bounds.y2);
 
     _data = malloc(_rowBytes * (ymax-ymin)) ;
+    
     // render scale x and y of 1.0
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 1);

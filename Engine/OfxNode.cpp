@@ -142,9 +142,18 @@ bool OfxNode::isOutputNode() const {
 
 bool OfxNode::isInputNode() const {
     assert(effectInstance());
-    if(effectInstance()->getContext() == kOfxImageEffectContextGenerator)
+    const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
+    std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
+    if(foundGenerator != contexts.end())
         return true;
     return false;
+}
+
+bool OfxNode::isInputAndProcessingNode() const {
+    const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
+    std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
+    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGenerator);
+    return foundGenerator!=contexts.end() && foundGeneral!=contexts.end();
 }
 
 static std::string getEffectInstanceLabel(const Powiter::OfxImageEffectInstance* effect){
@@ -192,7 +201,7 @@ OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
 }
 
 int OfxNode::maximumInputs() const {
-    if(isInputNode()){
+    if(isInputNode() && !isInputAndProcessingNode()){
         return 0;
     } else {
         assert(effectInstance());
@@ -261,11 +270,13 @@ void OfxNode::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 Powiter::Status OfxNode::preProcessFrame(SequenceTime /*time*/){
     _firstTime = true;
-    /*Checking if all mandatory inputs are connected!*/
-    MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
-    for (U32 i = 0; i < ofxInputs.size(); ++i) {
-        if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
-            return StatFailed;
+    if(!isInputNode() && !isInputAndProcessingNode()){
+        /*Checking if all mandatory inputs are connected!*/
+        MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
+        for (U32 i = 0; i < ofxInputs.size(); ++i) {
+            if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
+                return StatFailed;
+            }
         }
     }
     //iterate over param and find if there's an unvalid param

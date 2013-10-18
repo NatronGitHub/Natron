@@ -93,9 +93,13 @@ public:
     
     virtual bool isOutputNode() const OVERRIDE;
     
+    virtual bool isInputAndProcessingNode() const OVERRIDE;
+    
+    virtual bool isOpenFXNode() const OVERRIDE {return true;}
+    
     void setAsOutputNode() {_isOutput = true;}
     
-    virtual bool canMakePreviewImage() const ;
+    virtual bool canMakePreviewImage() const OVERRIDE ;
             
     /*Returns the clips count minus the output clip*/
     virtual int maximumInputs() const OVERRIDE;
@@ -110,8 +114,6 @@ public:
     
     virtual std::string setInputLabel (int inputNb) const OVERRIDE;
     
-    virtual bool isOpenFXNode() const OVERRIDE {return true;}
-    
     ChannelSet supportedComponents() const;
     
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod) OVERRIDE;
@@ -122,23 +124,23 @@ public:
     
     virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
     
-    virtual void drawOverlay();
+    virtual void drawOverlay() OVERRIDE;
     
-    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos);
+    virtual bool onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
     
-    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos);
+    virtual bool onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
     
-    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos);
+    virtual bool onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos) OVERRIDE;
     
-    virtual void onOverlayKeyDown(QKeyEvent* e);
+    virtual void onOverlayKeyDown(QKeyEvent* e) OVERRIDE;
     
-    virtual void onOverlayKeyUp(QKeyEvent* e);
+    virtual void onOverlayKeyUp(QKeyEvent* e) OVERRIDE;
     
-    virtual void onOverlayKeyRepeat(QKeyEvent* e);
+    virtual void onOverlayKeyRepeat(QKeyEvent* e) OVERRIDE;
     
-    virtual void onOverlayFocusGained();
+    virtual void onOverlayFocusGained() OVERRIDE;
     
-    virtual void onOverlayFocusLost();
+    virtual void onOverlayFocusLost() OVERRIDE;
 
     
     void swapBuffersOfAttachedViewer();

@@ -57,7 +57,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 , settings(0)
 {
 
-
+    assert(node_);
     QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
     QObject::connect(this, SIGNAL(nameChanged(QString)), this, SLOT(onLineEditNameChanged(QString)));
     QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));

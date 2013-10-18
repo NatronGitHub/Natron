@@ -85,10 +85,20 @@ public:
      **/
     virtual bool isOutputNode() const { return false; }
     
+    
+    /**
+     * @brief Returns true if the node is capable of generating
+     * data and process data on the input as well
+     **/
+    virtual bool isInputAndProcessingNode() const { return false; }
+    
     /**
      * @brief Is this node an OpenFX node?
      **/
     virtual bool isOpenFXNode() const { return false; }
+    
+    
+    
     /*============================*/
     /*Initialises inputs*/
     void initializeInputs();

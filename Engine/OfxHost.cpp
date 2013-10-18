@@ -155,29 +155,36 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
         return NULL;
     }
     const std::set<std::string>& contexts = plugin->getContexts();
-    
-    std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextFilter);
     std::string context;
-    if(found != contexts.end()){
-        context = *found;
+   
+    if (contexts.size() == 1) {
+        context = (*contexts.begin());
     }else{
-        found = contexts.find(kOfxImageEffectContextGenerator);
+        std::set<std::string>::iterator found = contexts.find(kOfxImageEffectContextGeneral);
         if(found != contexts.end()){
             context = *found;
         }else{
-            found = contexts.find(kOfxImageEffectContextTransition);
+            found = contexts.find(kOfxImageEffectContextFilter);
             if(found != contexts.end()){
                 context = *found;
             }else{
-                found = contexts.find(kOfxImageEffectContextPaint);
+                found = contexts.find(kOfxImageEffectContextGenerator);
                 if(found != contexts.end()){
                     context = *found;
                 }else{
-                    context = kOfxImageEffectContextGeneral;
+                    found = contexts.find(kOfxImageEffectContextTransition);
+                    if(found != contexts.end()){
+                        context = *found;
+                    }else{
+                        context = kOfxImageEffectContextPaint;
+                    }
                 }
             }
         }
+
     }
+    
+    
     bool rval = false;
     try{
         rval = plugin->getPluginHandle();
