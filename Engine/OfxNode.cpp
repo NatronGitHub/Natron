@@ -326,6 +326,8 @@ void OfxNode::render(SequenceTime time,Row* out) {
             renderW.y2 = rod.top();
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.;
+//            cout << "Asking to render image: l = " << renderW.x1 << " b = " << renderW.y1 <<
+//            " r = " << renderW.x2 << " t = " << renderW.y2 << endl;
             OfxStatus stat = effectInstance()->renderAction((OfxTime)time, kOfxImageFieldNone, renderW, renderScale);
             assert(stat == kOfxStatOK);
         }
@@ -378,7 +380,7 @@ void OfxNode::onInstanceChanged(const std::string& paramName){
     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault); 
 }
 
 bool OfxNode::canMakePreviewImage() const { return isInputNode() || Node::isInputAndProcessingNode(); }

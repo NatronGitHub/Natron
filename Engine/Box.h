@@ -13,6 +13,7 @@
 #define POWITER_ENGINE_BOX_H_
 
 #include <cassert>
+#include <iostream>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
@@ -230,6 +231,14 @@ public:
         _r = other.right();
         _t = other.top();
         return *this;
+    }
+    
+    void debug(){
+        std::cout << "Box2D is..." << std::endl;
+        std::cout << "left = " << _l << std::endl;
+        std::cout << "bottom = " << _b << std::endl;
+        std::cout << "right = " << _r << std::endl;
+        std::cout << "top = " << _t << std::endl;
     }
 };
 /// equality of boxes

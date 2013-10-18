@@ -225,6 +225,10 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         return _outputImage;
     }else{
         Node* input = getAssociatedNode();
+        if(isOptional() && !input) {
+            return  new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
+        }
+        
         assert(input);
         if(input->isOpenFXNode()){
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(input);
@@ -241,21 +245,28 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             return clip->getImage(time, optionalBounds);
         } else {
             ChannelSet channels(Mask_RGBA);
+            Box2D roiInput;
+            input->getRegionOfDefinition(time, &roiInput);
             ImageFetcher srcImg(input,
                                 time,
-                                (int)floor(roi.x1), (int)std::floor(roi.y1), (int)std::ceil(roi.x2), (int)std::ceil(roi.y2),
+                                roiInput.left(),roiInput.bottom(),roiInput.right(),roiInput.top(),
                                 channels);
             srcImg.claimInterest(true);
             OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
             assert(ret);
+//            cout << "Input image: l = " << roiInput.left() << " b = " << roiInput.bottom() <<
+//            " r = " << roiInput.right() << " t = " << roiInput.top() << endl;
+//            cout << "Output image: l = " << roi.x1 << " b = " << roi.y1 <<
+//            " r = " << roi.x2 << " t = " << roi.y2 << endl;
             /*Copying all rows living in the ImageFetcher to the ofx image*/
-            for (int y = (int)std::floor(roi.y1); y < (int)std::ceil(roi.y2); ++y) {
+            for (int y = std::max((int)roi.y1,roiInput.bottom()); y < (std::min((int)roi.y2,roiInput.top())); ++y) {
                 OfxRGBAColourF* dstImg = ret->pixelF(roi.x1, y);
                 assert(dstImg);
                 boost::shared_ptr<const Row> row = srcImg.at(y);
                 assert(row);
+                
                 foreachChannels(z, channels){
-                    rowPlaneToOfxPackedBuffer(z, row->begin(z), row->width(), dstImg);
+                    rowPlaneToOfxPackedBuffer(z, row->begin(z), std::min(row->width(),(int)(roi.x2 - roi.x1)), dstImg);
                 }
                 srcImg.erase(y);
             }

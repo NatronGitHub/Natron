@@ -390,7 +390,11 @@ Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
             Status st = it->second->getRegionOfDefinition(time, &inputRod);
             if(st == StatFailed)
                 return st;
-            rod->merge(inputRod);
+            if(it == _inputs.begin()){
+                *rod = inputRod;
+            }else{
+                rod->merge(inputRod);
+            }
         }
     }
     return StatReplyDefault;

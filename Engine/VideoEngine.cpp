@@ -440,7 +440,6 @@ void VideoEngine::run(){
             continue;
         }
         _tree.getOutput()->ifInfiniteclipBox2DToProjectDefault(&rod);
-        
         /*Fit the frame to the viewer if this was requested by the call to render()*/
         if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
             ViewerGL* viewerGL = viewer->getUiContext()->viewer;
