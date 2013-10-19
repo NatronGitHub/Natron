@@ -24,7 +24,7 @@
 #include <QAction>
 #include <QMainWindow>
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 class QString;
 class TabWidget;
@@ -237,7 +237,18 @@ public:
     
     bool isGraphWorthless() const;
     
+    /**
+     * @brief An error dialog with title and text customizable
+     **/
     void errorDialog(const QString& title,const QString& text);
+    
+    void warningDialog(const QString& title,const QString& text);
+    
+    void informationDialog(const QString& title,const QString& text);
+    
+    Powiter::StandardButton questionDialog(const QString& title,const QString& message,Powiter::StandardButtons buttons =
+                                           Powiter::StandardButtons(Powiter::Yes | Powiter::No),
+                                           Powiter::StandardButton defaultButton = Powiter::NoButton);
     
     void selectNode(NodeGui* node);
     

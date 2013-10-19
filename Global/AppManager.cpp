@@ -11,9 +11,9 @@
 #include "AppManager.h"
 
 #include <cassert>
+#include <QMessageBox>
 #include <boost/scoped_ptr.hpp>
 #include <QLabel>
-#include <QMessageBox>
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
@@ -354,10 +354,26 @@ void AppInstance::deselectAllNodes() const{
     _gui->_nodeGraphTab->_nodeGraphArea->deselect();
 }
 
-void AppInstance::showErrorDialog(const QString& title,const QString& message) const{
-    _gui->errorDialog(title, message);
+void AppInstance::errorDialog(const std::string& title,const std::string& message) const{
+    _gui->errorDialog(title.c_str(), message.c_str());
     
 }
+
+void AppInstance::warningDialog(const std::string& title,const std::string& message) const{
+    _gui->warningDialog(title.c_str(), message.c_str());
+
+}
+
+void AppInstance::informationDialog(const std::string& title,const std::string& message) const{
+    _gui->informationDialog(title.c_str(), message.c_str());
+
+}
+
+Powiter::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
+                                       Powiter::StandardButton defaultButton) const{
+     return _gui->questionDialog(title.c_str(), message.c_str(),buttons,defaultButton);
+}
+
 
 ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
     return  _gui->addNewViewerTab(node, where);
@@ -517,6 +533,8 @@ AppManager::AppManager()
     /*Adjusting multi-threading for OpenEXR library.*/
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
+    
+  
 }
 
 AppManager::~AppManager(){

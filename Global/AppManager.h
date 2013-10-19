@@ -19,12 +19,13 @@
 #include <QtCore/QDateTime>
 #include <QtCore/QStringList>
 
+
 #ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #include "Engine/Singleton.h"
 #include "Engine/Row.h"
@@ -167,9 +168,7 @@ public:
     bool isSaveUpToDate() const;
     
     void deselectAllNodes() const;
-    
-    void showErrorDialog(const QString& title,const QString& message) const;
-    
+        
     static QString autoSavesDir();
     
     ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
@@ -192,7 +191,21 @@ public:
     
     QMutex* getAutoSaveMutex() const {return _autoSaveMutex;}
 
+    void errorDialog(const std::string& title,const std::string& message) const;
+    
+    void warningDialog(const std::string& title,const std::string& message) const;
+    
+    void informationDialog(const std::string& title,const std::string& message) const;
+    
+    Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
+                                           Powiter::StandardButtons(Powiter::Yes | Powiter::No),
+                                           Powiter::StandardButton defaultButton = Powiter::NoButton) const;
+    
+    
+    
 public slots:
+
+    
     
     void triggerAutoSave();
     
@@ -367,6 +380,27 @@ private:
     boost::scoped_ptr<Powiter::Cache<Powiter::FrameEntry> > _viewerCache;
     
 };
+
+namespace Powiter{
+    
+    static void errorDialog(const std::string& title,const std::string& message){
+        appPTR->getTopLevelInstance()->errorDialog(title,message);
+    }
+    
+    static void warningDialog(const std::string& title,const std::string& message){
+        appPTR->getTopLevelInstance()->warningDialog(title,message);
+    }
+    
+    static void informationDialog(const std::string& title,const std::string& message){
+        appPTR->getTopLevelInstance()->informationDialog(title,message);
+    }
+    
+    static Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
+                                           Powiter::StandardButtons(Powiter::Yes | Powiter::No),
+                                                  Powiter::StandardButton defaultButton = Powiter::NoButton){
+        appPTR->getTopLevelInstance()->questionDialog(title,message,buttons,defaultButton);
+    }
+}
 
 
 #endif // POWITER_GLOBAL_CONTROLER_H_

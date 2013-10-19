@@ -249,7 +249,8 @@ void Model::restoreGraphFromString(const QString& str){
                 /* Let's check that we're really getting a Node. */
                 if(reader.tokenType() != QXmlStreamReader::StartElement &&
                    reader.name() == "Node") {
-                    _appInstance->showErrorDialog("Loader", QString("Unable to restore the graph:\n") + reader.errorString());
+                    QString err = QString("Unable to restore the graph:\n") + reader.errorString();
+                    Powiter::errorDialog("Loader", err.toStdString());
                     return;
                 }
                 QString className,label;
@@ -269,7 +270,7 @@ void Model::restoreGraphFromString(const QString& str){
                     text.append(className);
                     text.append(" was found in the auto-save script but doesn't seem \n"
                                 "to exist in the currently loaded plug-ins.");
-                    _appInstance->showErrorDialog("Autosave", text );
+                    Powiter::errorDialog("Autosave", text.toStdString() );
                     _appInstance->clearNodes();
                     _appInstance->createNode("Viewer");
                     return;
@@ -348,7 +349,8 @@ void Model::restoreGraphFromString(const QString& str){
         }
     }
     if(reader.hasError()){
-        _appInstance->showErrorDialog("Loader", QString("Unable to restore the graph :\n") + reader.errorString());
+        QString err =  QString("Unable to restore the graph :\n") + reader.errorString();
+        Powiter::errorDialog("Loader",err.toStdString());
         return;
     }
     //adjusting knobs & connecting nodes now

@@ -163,7 +163,8 @@ void Reader::render(SequenceTime time,Row* out){
         if(!found){
 #ifdef POWITER_DEBUG
             cout << "WARNING: Buffer does not contains the header for frame " << filename.toStdString()
-            <<". re-decoding header...(" << getName() << "). Ignore this is the call was made by makePreviewImage(...)" << endl;
+            <<". re-decoding header...(" << getName() << "). It might indicate that the buffer of the reader is"
+            " not big enough. You might want to change the maximum buffer size."<< endl;
 #endif
             try{
                 found = decodeHeader(filename);

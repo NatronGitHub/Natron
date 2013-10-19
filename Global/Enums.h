@@ -14,6 +14,9 @@
 #define POWITER_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
 #define POWITER_MAX_VALID_CHANNEL_INDEX 6
 
+#include <QFlags>
+#include <QMessageBox>
+
 namespace Powiter{
     
     
@@ -62,6 +65,31 @@ namespace Powiter{
         StatFailed = 1,
         StatReplyDefault = 14
     };
+    
+    /*Copy of QMessageBox::StandardButton*/
+    enum StandardButton {
+        NoButton           = 0x00000000,
+        Ok                 = 0x00000400,
+        Save               = 0x00000800,
+        SaveAll            = 0x00001000,
+        Open               = 0x00002000,
+        Yes                = 0x00004000,
+        YesToAll           = 0x00008000,
+        No                 = 0x00010000,
+        NoToAll            = 0x00020000,
+        Abort              = 0x00040000,
+        Retry              = 0x00080000,
+        Ignore             = 0x00100000,
+        Close              = 0x00200000,
+        Cancel             = 0x00400000,
+        Discard            = 0x00800000,
+        Help               = 0x01000000,
+        Apply              = 0x02000000,
+        Reset              = 0x04000000,
+        RestoreDefaults    = 0x08000000
+    };
+    
+    typedef QFlags<QMessageBox::StandardButton> StandardButtons;
 }
 
 

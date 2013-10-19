@@ -334,7 +334,7 @@ Powiter::Status ReadExr::readHeader(const QString& filename){
         return StatOK;
     }
     catch (const std::exception& exc) {
-        cout << "OpenExr error: " << exc.what() << endl;
+        cout << "OpenEXR error: " << exc.what() << endl;
         delete _inputfile;
         _inputfile = 0;
         return StatFailed;

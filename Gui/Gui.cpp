@@ -1040,6 +1040,21 @@ void Gui::errorDialog(const QString& title,const QString& text){
     QMessageBox::critical(this, title, text);
 }
 
+void Gui::warningDialog(const QString& title,const QString& text){
+    QMessageBox::warning(this, title, text);
+}
+
+void Gui::informationDialog(const QString& title,const QString& text){
+    QMessageBox::information(this, title, text);
+}
+
+Powiter::StandardButton Gui::questionDialog(const QString& title,const QString& message,Powiter::StandardButtons buttons,
+                                       Powiter::StandardButton defaultButton) {
+    return (Powiter::StandardButton)QMessageBox::question(this,title,message,
+                                                          (QMessageBox::StandardButtons)buttons,
+                                                          (QMessageBox::StandardButtons)defaultButton);
+}
+
 void Gui::selectNode(NodeGui* node){
     _nodeGraphTab->_nodeGraphArea->selectNode(node);
 }
