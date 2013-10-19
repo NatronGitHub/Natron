@@ -47,8 +47,9 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
 , _node(node)
 , _descriptor(descriptor)
 {
-    
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -58,14 +59,14 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
 }
 
 
@@ -98,7 +99,9 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode* node,OFX::Host::Param::Descripto
 , _node(node)
 , _descriptor(descriptor)
 {
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -107,18 +110,18 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode* node,OFX::Host::Param::Descripto
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    int min = getProperties().getIntProperty(kOfxParamPropMin);
-    int max = getProperties().getIntProperty(kOfxParamPropMax);
-    int incr = getProperties().getIntProperty(kOfxParamPropIncrement);
-    int def = getProperties().getIntProperty(kOfxParamPropDefault);
-    int displayMin = getProperties().getIntProperty(kOfxParamPropDisplayMin);
-    int displayMax = getProperties().getIntProperty(kOfxParamPropDisplayMax);
+    int min = properties.getIntProperty(kOfxParamPropMin);
+    int max = properties.getIntProperty(kOfxParamPropMax);
+    int incr = properties.getIntProperty(kOfxParamPropIncrement);
+    int def = properties.getIntProperty(kOfxParamPropDefault);
+    int displayMin = properties.getIntProperty(kOfxParamPropDisplayMin);
+    int displayMax = properties.getIntProperty(kOfxParamPropDisplayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
 
@@ -126,8 +129,8 @@ OfxIntegerInstance::OfxIntegerInstance(OfxNode* node,OFX::Host::Param::Descripto
     if(incr > 0)
         _knob->setIncrement(incr);
     _knob->setMaximum(max);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     set(def);
 }
 OfxStatus OfxIntegerInstance::get(int& v) {
@@ -163,10 +166,13 @@ Knob* OfxIntegerInstance::getKnob() const{
 }
 
 OfxDoubleInstance::OfxDoubleInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -174,20 +180,20 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
-    double min = getProperties().getDoubleProperty(kOfxParamPropMin);
-    double max = getProperties().getDoubleProperty(kOfxParamPropMax);
-    double incr = getProperties().getDoubleProperty(kOfxParamPropIncrement);
-    double def = getProperties().getDoubleProperty(kOfxParamPropDefault);
-    int decimals = getProperties().getIntProperty(kOfxParamPropDigits);
-    double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
-    double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
+    double min = properties.getDoubleProperty(kOfxParamPropMin);
+    double max = properties.getDoubleProperty(kOfxParamPropMax);
+    double incr = properties.getDoubleProperty(kOfxParamPropIncrement);
+    double def = properties.getDoubleProperty(kOfxParamPropDefault);
+    int decimals = properties.getIntProperty(kOfxParamPropDigits);
+    double displayMin = properties.getDoubleProperty(kOfxParamPropDisplayMin);
+    double displayMax = properties.getDoubleProperty(kOfxParamPropDisplayMax);
     _knob->setDisplayMinimum(displayMin);
     _knob->setDisplayMaximum(displayMax);
     _knob->setMinimum(min);
@@ -196,8 +202,8 @@ _descriptor(descriptor){
         _knob->setIncrement(incr);
     if(decimals > 0)
         _knob->setDecimals(decimals);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     set(def);
     
 }
@@ -240,10 +246,13 @@ Knob* OfxDoubleInstance::getKnob() const{
 }
 
 OfxBooleanInstance::OfxBooleanInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -252,15 +261,15 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
-    int def = getProperties().getIntProperty(kOfxParamPropDefault);
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    int def = properties.getIntProperty(kOfxParamPropDefault);
     set((bool)def);
     
 }
@@ -301,10 +310,13 @@ Knob* OfxBooleanInstance::getKnob() const{
 
 
 OfxChoiceInstance::OfxChoiceInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -312,22 +324,21 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
-    OFX::Host::Property::Set& pSet = getProperties();
-    for (int i = 0 ; i < pSet.getDimension(kOfxParamPropChoiceOption) ; ++i) {
-        std::string str = pSet.getStringProperty(kOfxParamPropChoiceOption,i);
+    for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
+        std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
         _entries.push_back(str);
     }
     _knob->populate(_entries);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
-    int def = pSet.getIntProperty(kOfxParamPropDefault);    
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    int def = properties.getIntProperty(kOfxParamPropDefault);
     set(def);
 }
 OfxStatus OfxChoiceInstance::get(int& v){
@@ -376,10 +387,13 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 OfxRGBAInstance::OfxRGBAInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -388,18 +402,18 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
-    double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
-    double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
-    double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
-    double defA = getProperties().getDoubleProperty(kOfxParamPropDefault,3);
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+    double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
+    double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
+    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
+    double defA = properties.getDoubleProperty(kOfxParamPropDefault,3);
     set(defR, defG, defB, defA);
 }
 OfxStatus OfxRGBAInstance::get(double& r, double& g, double& b, double& a) {
@@ -456,11 +470,16 @@ void OfxRGBAInstance::setSecret(){
 Knob* OfxRGBAInstance::getKnob() const{
     return _knob;
 }
+
+
 OfxRGBInstance::OfxRGBInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::RGBInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -470,17 +489,17 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    double defR = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
-    double defG = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
-    double defB = getProperties().getDoubleProperty(kOfxParamPropDefault,2);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
+    double defG = properties.getDoubleProperty(kOfxParamPropDefault,1);
+    double defB = properties.getDoubleProperty(kOfxParamPropDefault,2);
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     set(defR, defG, defB);
 }
 OfxStatus OfxRGBInstance::get(double& r, double& g, double& b) {
@@ -533,11 +552,15 @@ Knob* OfxRGBInstance::getKnob() const{
     return _knob;
 }
 
+
 OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -546,14 +569,14 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     vector<double> minimum;
     vector<double> maximum;
     vector<double> increment;
@@ -561,23 +584,23 @@ _descriptor(descriptor){
     vector<double> displayMaxs;
     vector<int> decimals;
     double def[2];
-    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropMin,0));
-    displayMins.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,0));
-    displayMaxs.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,0));
-    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropMax,0));
-    double incr1 = getProperties().getDoubleProperty(kOfxParamPropIncrement,0);
+    minimum.push_back(properties.getDoubleProperty(kOfxParamPropMin,0));
+    displayMins.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMin,0));
+    displayMaxs.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMax,0));
+    maximum.push_back(properties.getDoubleProperty(kOfxParamPropMax,0));
+    double incr1 = properties.getDoubleProperty(kOfxParamPropIncrement,0);
     incr1 != 0 ? increment.push_back(incr1) : increment.push_back(0.1);
-    decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
-    def[0] = getProperties().getDoubleProperty(kOfxParamPropDefault,0);
+    decimals.push_back(properties.getIntProperty(kOfxParamPropDigits,0));
+    def[0] = properties.getDoubleProperty(kOfxParamPropDefault,0);
     
-    minimum.push_back(getProperties().getDoubleProperty(kOfxParamPropMin,1));
-    maximum.push_back(getProperties().getDoubleProperty(kOfxParamPropMax,1));
-    displayMins.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMin,1));
-    displayMaxs.push_back(getProperties().getDoubleProperty(kOfxParamPropDisplayMax,1));
-    double incr2 = getProperties().getDoubleProperty(kOfxParamPropIncrement,0);
+    minimum.push_back(properties.getDoubleProperty(kOfxParamPropMin,1));
+    maximum.push_back(properties.getDoubleProperty(kOfxParamPropMax,1));
+    displayMins.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMin,1));
+    displayMaxs.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMax,1));
+    double incr2 = properties.getDoubleProperty(kOfxParamPropIncrement,0);
     incr2 != 0 ? increment.push_back(incr2) : increment.push_back(0.1);
-    decimals.push_back(getProperties().getIntProperty(kOfxParamPropDigits,0));
-    def[1] = getProperties().getDoubleProperty(kOfxParamPropDefault,1);
+    decimals.push_back(properties.getIntProperty(kOfxParamPropDigits,0));
+    def[1] = properties.getDoubleProperty(kOfxParamPropDefault,1);
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setDecimals(decimals);
@@ -629,11 +652,15 @@ Knob* OfxDouble2DInstance::getKnob() const{
     return _knob;
 }
 
+
 OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
-:OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+: OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -642,36 +669,36 @@ _descriptor(descriptor){
     if(layoutHint == 2){
         _knob->turnOffNewLine();
     }
-    _knob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-    if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+    _knob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+    if(!properties.getIntProperty(kOfxParamPropCanUndo)){
         _knob->turnOffUndoRedo();
     }
-    const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+    const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
     _knob->setHintToolTip(hint);
-    _knob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-    _knob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+    _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+    _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     vector<int> minimum;
     vector<int> maximum;
     vector<int> increment;
     vector<int> displayMins;
     vector<int> displayMaxs;
     int def[2];
-    minimum.push_back(getProperties().getIntProperty(kOfxParamPropMin,0));
-    displayMins.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,0));
-    displayMaxs.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,0));
-    maximum.push_back(getProperties().getIntProperty(kOfxParamPropMax,0));
-    int incr1 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
+    minimum.push_back(properties.getIntProperty(kOfxParamPropMin,0));
+    displayMins.push_back(properties.getIntProperty(kOfxParamPropDisplayMin,0));
+    displayMaxs.push_back(properties.getIntProperty(kOfxParamPropDisplayMax,0));
+    maximum.push_back(properties.getIntProperty(kOfxParamPropMax,0));
+    int incr1 = properties.getIntProperty(kOfxParamPropIncrement,0);
     incr1 != 0 ? increment.push_back(incr1) : increment.push_back(1);
-    def[0] = getProperties().getIntProperty(kOfxParamPropDefault,0);
+    def[0] = properties.getIntProperty(kOfxParamPropDefault,0);
     
-    minimum.push_back(getProperties().getIntProperty(kOfxParamPropMin,1));
-    maximum.push_back(getProperties().getIntProperty(kOfxParamPropMax,1));
-    displayMins.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMin,1));
-    displayMaxs.push_back(getProperties().getIntProperty(kOfxParamPropDisplayMax,1));
+    minimum.push_back(properties.getIntProperty(kOfxParamPropMin,1));
+    maximum.push_back(properties.getIntProperty(kOfxParamPropMax,1));
+    displayMins.push_back(properties.getIntProperty(kOfxParamPropDisplayMin,1));
+    displayMaxs.push_back(properties.getIntProperty(kOfxParamPropDisplayMax,1));
 
-    int incr2 = getProperties().getIntProperty(kOfxParamPropIncrement,0);
+    int incr2 = properties.getIntProperty(kOfxParamPropIncrement,0);
     incr2 != 0 ? increment.push_back(incr2) : increment.push_back(1);
-    def[1] = getProperties().getIntProperty(kOfxParamPropDefault,1);
+    def[1] = properties.getIntProperty(kOfxParamPropDefault,1);
     _knob->setMinimumsAndMaximums(minimum, maximum);
     _knob->setIncrement(increment);
     _knob->setValue<int>(def,2);
@@ -722,11 +749,14 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::GroupInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor){
-    int isTab = getProperties().getIntProperty(kFnOfxParamPropGroupIsTab);
+OfxGroupInstance::OfxGroupInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+{
+    const OFX::Host::Property::Set &properties = getProperties();
+
+    int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
     if(isTab){
         Tab_Knob* _tabKnob = _node->getTabKnob();
         std::string name = getParamLabel(this);
@@ -736,23 +766,23 @@ _descriptor(descriptor){
         }
         _groupKnob = 0;
         _tabKnob->addTab(name);
-        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        if(!properties.getIntProperty(kOfxParamPropCanUndo)){
             _tabKnob->turnOffUndoRedo();
         }
-        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _tabKnob->setHintToolTip(hint);
-        _tabKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
+        _tabKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     }else{
         _groupKnob = dynamic_cast<Group_Knob*>(appPTR->getKnobFactory().createKnob("Group", node, getParamLabel(this)));
-        int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
+        int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
         _groupKnob->setValue((bool)opened);
-        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        if(!properties.getIntProperty(kOfxParamPropCanUndo)){
             _groupKnob->turnOffUndoRedo();
         }
-        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _groupKnob->setHintToolTip(hint);
-        _groupKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-        _groupKnob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+        _groupKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+        _groupKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
     }
     
     
@@ -781,8 +811,9 @@ _node(node),
 _descriptor(descriptor),
 _fileKnob(0),
 _outputFileKnob(0){
-    std::string mode = getProperties().getStringProperty(kOfxParamPropStringMode);
-    int layoutHint = getProperties().getIntProperty(kOfxParamPropLayoutHint);
+    const OFX::Host::Property::Set &properties = getProperties();
+    std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
+    int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
     if(layoutHint == 1){
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
@@ -794,14 +825,14 @@ _outputFileKnob(0){
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
             }
-            _fileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-            if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+            _fileKnob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+            if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
                 _fileKnob->turnOffUndoRedo();
             }
-            const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+            const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
             _fileKnob->setHintToolTip(hint);
-            _fileKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-            _fileKnob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+            _fileKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+            _fileKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
         }else{
             _node->setAsOutputNode(); // IMPORTANT ! 
             _outputFileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", node, getParamLabel(this)));
@@ -809,14 +840,14 @@ _outputFileKnob(0){
             if(layoutHint == 2){
                 _outputFileKnob->turnOffNewLine();
             }
-            _outputFileKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-            if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+            _outputFileKnob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+            if(!properties.getIntProperty(kOfxParamPropCanUndo)){
                 _outputFileKnob->turnOffUndoRedo();
             }
-            const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+            const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
             _outputFileKnob->setHintToolTip(hint);
-            _outputFileKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-            _outputFileKnob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
+            _outputFileKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+            _outputFileKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
 
         }
     }else if(mode == kOfxParamStringIsSingleLine || mode == kOfxParamStringIsLabel){
@@ -829,16 +860,15 @@ _outputFileKnob(0){
         if(layoutHint == 2){
             _stringKnob->turnOffNewLine();
         }
-        _stringKnob->setSpacingBetweenItems(getProperties().getIntProperty(kOfxParamPropLayoutPadWidth));
-        if(!getProperties().getIntProperty(kOfxParamPropCanUndo)){
+        _stringKnob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+        if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
             _stringKnob->turnOffUndoRedo();
         }
-        const std::string& hint = getProperties().getStringProperty(kOfxParamPropHint);
+        const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
         _stringKnob->setHintToolTip(hint);
-        _stringKnob->setEnabled((bool)getProperties().getIntProperty(kOfxParamPropEnabled));
-        _stringKnob->setVisible(!(bool)getProperties().getIntProperty(kOfxParamPropSecret));
-        _returnValue = getProperties().getStringProperty(kOfxParamPropDefault,1);
-        set(_returnValue.c_str());
+        _stringKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+        _stringKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+        set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
     }
     
     
