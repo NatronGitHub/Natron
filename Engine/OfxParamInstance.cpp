@@ -805,12 +805,15 @@ Knob* OfxGroupInstance::getKnob() const{
     }
 }
 
-OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor):
-OFX::Host::Param::StringInstance(descriptor,node->effectInstance()),
-_node(node),
-_descriptor(descriptor),
-_fileKnob(0),
-_outputFileKnob(0){
+
+OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+: OFX::Host::Param::StringInstance(descriptor,node->effectInstance())
+, _node(node)
+, _descriptor(descriptor)
+, _fileKnob(0)
+, _outputFileKnob(0)
+, _stringKnob(0)
+{
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
     int layoutHint = properties.getIntProperty(kOfxParamPropLayoutHint);
@@ -898,9 +901,8 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(const char* str) {
-    _returnValue = str;
     if(_fileKnob){
-        _fileKnob->setValue(_returnValue);
+        _fileKnob->setValue(str);
     }
     if(_outputFileKnob){
         _outputFileKnob->setValue(str);
@@ -911,9 +913,8 @@ OfxStatus OfxStringInstance::set(const char* str) {
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
-    _returnValue = str;
     if(_fileKnob){
-        _fileKnob->setValue(_returnValue);
+        _fileKnob->setValue(str);
     }
     if(_outputFileKnob){
          _outputFileKnob->setValue(str);
