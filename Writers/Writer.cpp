@@ -318,7 +318,7 @@ void Writer::startRendering(){
     
     if(validInfosForRendering()){
         getVideoEngine()->refreshTree();
-        updateTreeAndRender();
+        getVideoEngine()->render(-1,true,false,true,false);
         emit renderingOnDiskStarted(this,_filename.c_str(),_frameRange.first,_frameRange.second);
         
     }

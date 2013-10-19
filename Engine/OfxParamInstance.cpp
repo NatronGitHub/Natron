@@ -89,7 +89,7 @@ void OfxPushButtonInstance::triggerInstanceChanged() {
     if(viewer){
         viewer->updateTreeAndRender();
     }else if(_node->isOutputNode()){
-        dynamic_cast<OutputNode*>(_node)->updateTreeAndRender();
+        dynamic_cast<OutputNode*>(_node)->getVideoEngine()->render(-1,true,false,true,false);;
     }
 }
 

@@ -811,7 +811,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
         QMutexLocker startedLocker(&_workingMutex);
         wasPlaybackRunning = _working && _currentRunArgs._frameRequestsCount == -1;
     }
-    if(!_tree.isOutputAViewer() || wasPlaybackRunning){
+    if(wasPlaybackRunning){
         render(-1,true,initViewer,_currentRunArgs._forward,false);
     }else{
         render(1,true,initViewer,_currentRunArgs._forward,true);
