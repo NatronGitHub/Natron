@@ -801,7 +801,7 @@ void AppManager::loadBuiltinFormats(){
     
 }
 
-Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect){
+Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const {
     
 	for(U32 i =0;i< _formats.size();++i) {
 		Format* frmt = _formats[i];

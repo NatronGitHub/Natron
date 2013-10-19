@@ -68,31 +68,31 @@ public:
     
     ~Project(){}
     
-    const QString& getProjectName() const {return _projectName;}
+    const QString& getProjectName() const WARN_UNUSED_RETURN {return _projectName;}
     
-    void setProjectName(const QString& name){_projectName = name;}
+    void setProjectName(const QString& name) {_projectName = name;}
     
-    const QString& getProjectPath() const {return _projectPath;}
+    const QString& getProjectPath() const WARN_UNUSED_RETURN {return _projectPath;}
     
-    void setProjectPath(const QString& path){_projectPath = path;}
+    void setProjectPath(const QString& path) {_projectPath = path;}
     
-    bool hasProjectBeenSavedByUser() const {return _hasProjectBeenSavedByUser;}
+    bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN {return _hasProjectBeenSavedByUser;}
     
-    void setHasProjectBeenSavedByUser(bool s){_hasProjectBeenSavedByUser = s;}
+    void setHasProjectBeenSavedByUser(bool s) {_hasProjectBeenSavedByUser = s;}
     
-    const QDateTime& projectAgeSinceLastSave() const {return _ageSinceLastSave;}
+    const QDateTime& projectAgeSinceLastSave() const WARN_UNUSED_RETURN {return _ageSinceLastSave;}
     
-    void setProjectAgeSinceLastSave(const QDateTime& t){_ageSinceLastSave = t;}
+    void setProjectAgeSinceLastSave(const QDateTime& t) {_ageSinceLastSave = t;}
     
-    const QDateTime& projectAgeSinceLastAutosave() const {return _lastAutoSave;}
+    const QDateTime& projectAgeSinceLastAutosave() const WARN_UNUSED_RETURN {return _lastAutoSave;}
     
-    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t){_lastAutoSave = t;}
+    void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_lastAutoSave = t;}
     
-    const Format& getProjectDefaultFormat() const {return *_format;}
+    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN {return *_format;}
     
-    void setProjectDefaultFormat(Format* f){_format = f;}
+    void setProjectDefaultFormat(Format* f) {_format = f;}
     
-    boost::shared_ptr<TimeLine> getTimeLine() const {return _timeline;}
+    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _timeline;}
     
     // TimeLine operations (to avoid duplicating the shared_ptr when possible)
     void setFrameRange(int first, int last);
@@ -103,11 +103,11 @@ public:
     
     void decrementCurrentFrame();
     
-    int currentFrame() const;
+    int currentFrame() const WARN_UNUSED_RETURN;
     
-    int firstFrame() const;
+    int firstFrame() const WARN_UNUSED_RETURN;
     
-    int lastFrame() const;
+    int lastFrame() const WARN_UNUSED_RETURN;
 
 };
 
@@ -129,21 +129,21 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(const QString& name);
+    Node* createNode(const QString& name) WARN_UNUSED_RETURN;
     
     /*Pointer to the GUI*/
-    Gui* getGui(){return _gui;}
+    Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
     
     /* The following methods are forwarded to the model */
     void checkViewersConnection();
         
-    const std::vector<Node*> getAllActiveNodes() const;
+    const std::vector<Node*> getAllActiveNodes() const WARN_UNUSED_RETURN;
     
-    const QString& getCurrentProjectName() const {return _currentProject.getProjectName();}
+    const QString& getCurrentProjectName() const WARN_UNUSED_RETURN {return _currentProject.getProjectName();}
     
-    const QString& getCurrentProjectPath() const {return _currentProject.getProjectPath();}
+    const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN {return _currentProject.getProjectPath();}
     
-    boost::shared_ptr<TimeLine> getTimeLine() const {return _currentProject.getTimeLine();}
+    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _currentProject.getTimeLine();}
     
     void setCurrentProjectName(const QString& name) {_currentProject.setProjectName(name);}
     
@@ -153,9 +153,9 @@ public:
     
     void autoSave();
     
-    bool hasProjectBeenSavedByUser() const {return _currentProject.hasProjectBeenSavedByUser();}
+    bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN {return _currentProject.hasProjectBeenSavedByUser();}
     
-    const Format& getProjectFormat() const {return _currentProject.getProjectDefaultFormat();}
+    const Format& getProjectFormat() const WARN_UNUSED_RETURN {return _currentProject.getProjectDefaultFormat();}
     
     void setProjectFormat(Format* frmt){_currentProject.setProjectDefaultFormat(frmt);}
     
@@ -165,31 +165,31 @@ public:
     
     void clearNodes();
         
-    bool isSaveUpToDate() const;
+    bool isSaveUpToDate() const WARN_UNUSED_RETURN;
     
     void deselectAllNodes() const;
         
-    static QString autoSavesDir();
+    static QString autoSavesDir() WARN_UNUSED_RETURN;
     
-    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
+    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where) WARN_UNUSED_RETURN;
     
-    bool connect(int inputNumber,const std::string& inputName,Node* output);
+    bool connect(int inputNumber,const std::string& inputName,Node* output) WARN_UNUSED_RETURN;
     
-    bool connect(int inputNumber,Node* input,Node* output);
+    bool connect(int inputNumber,Node* input,Node* output) WARN_UNUSED_RETURN;
     
-    bool disconnect(Node* input,Node* output);
+    bool disconnect(Node* input,Node* output) WARN_UNUSED_RETURN;
     
     void autoConnect(Node* target,Node* created);
     
-    NodeGui* getNodeGui(Node* n) const;
+    NodeGui* getNodeGui(Node* n) const WARN_UNUSED_RETURN;
     
-    Node* getNode(NodeGui* n) const;
+    Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
     
     void connectViewersToViewerCache();
     
     void disconnectViewersFromViewerCache();
     
-    QMutex* getAutoSaveMutex() const {return _autoSaveMutex;}
+    QMutex* getAutoSaveMutex() const WARN_UNUSED_RETURN {return _autoSaveMutex;}
 
     void errorDialog(const std::string& title,const std::string& message) const;
     
@@ -199,7 +199,7 @@ public:
     
     Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
                                            Powiter::StandardButtons(Powiter::Yes | Powiter::No),
-                                           Powiter::StandardButton defaultButton = Powiter::NoButton) const;
+                                           Powiter::StandardButton defaultButton = Powiter::NoButton) const WARN_UNUSED_RETURN;
     
     
     
@@ -224,7 +224,7 @@ private:
     /*Attemps to find an autosave. If found one,prompts the user
      whether he/she wants to load it. If something was loaded this function
      returns true,otherwise false.*/
-    bool findAutoSave();
+    bool findAutoSave() WARN_UNUSED_RETURN;
         
     boost::scoped_ptr<Model> _model; // the model of the MVC pattern
     Gui* _gui; // the view of the MVC pattern
@@ -272,7 +272,7 @@ public:
     
     virtual ~AppManager();
     
-    const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const {return ofxHost;}
+    const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
     
     AppInstance* newAppInstance(const QString& projectName = QString());
     
@@ -282,29 +282,29 @@ public:
     
     void setAsTopLevelInstance(int appID);
     
-    AppInstance* getTopLevelInstance () const;
+    AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
     
     /*Return a list of the name of all nodes available currently in the software*/
-    const QStringList& getNodeNameList(){return _nodeNames;}
+    const QStringList& getNodeNameList() const WARN_UNUSED_RETURN {return _nodeNames;}
     
     /*Find a builtin format with the same resolution and aspect ratio*/
-    Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0);
+    Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
     
-    const std::vector<PluginToolButton*>& getPluginsToolButtons() const {return _toolButtons;}
+    const std::vector<PluginToolButton*>& getPluginsToolButtons() const WARN_UNUSED_RETURN {return _toolButtons;}
     
     /*Tries to load all plugins in directory "where"*/
-    static std::vector<Powiter::LibraryBinary*> loadPlugins(const QString& where);
+    static std::vector<Powiter::LibraryBinary*> loadPlugins (const QString& where) WARN_UNUSED_RETURN;
     
     /*Tries to load all plugins in directory "where" that contains all the functions described by
      their name in "functions".*/
     static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
-                                                                            const std::vector<std::string>& functions);
+                                                                            const std::vector<std::string>& functions) WARN_UNUSED_RETURN;
     
-    const Powiter::Cache<Powiter::FrameEntry>& getViewerCache() const {return *_viewerCache;}
+    const Powiter::Cache<Powiter::FrameEntry>& getViewerCache() const WARN_UNUSED_RETURN {return *_viewerCache;}
     
-    const Powiter::Cache<Powiter::Row>& getNodeCache() const {return *_nodeCache;}
+    const Powiter::Cache<Powiter::Row>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
     
-    const KnobFactory& getKnobFactory() const {return *_knobFactory;}
+    const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
     
  
 public slots:
@@ -383,22 +383,22 @@ private:
 
 namespace Powiter{
     
-    static void errorDialog(const std::string& title,const std::string& message){
+    inline void errorDialog(const std::string& title,const std::string& message){
         appPTR->getTopLevelInstance()->errorDialog(title,message);
     }
     
-    static void warningDialog(const std::string& title,const std::string& message){
+    inline void warningDialog(const std::string& title,const std::string& message){
         appPTR->getTopLevelInstance()->warningDialog(title,message);
     }
     
-    static void informationDialog(const std::string& title,const std::string& message){
+    inline void informationDialog(const std::string& title,const std::string& message){
         appPTR->getTopLevelInstance()->informationDialog(title,message);
     }
     
-    static Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
+    inline Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
                                            Powiter::StandardButtons(Powiter::Yes | Powiter::No),
                                                   Powiter::StandardButton defaultButton = Powiter::NoButton){
-        appPTR->getTopLevelInstance()->questionDialog(title,message,buttons,defaultButton);
+        return appPTR->getTopLevelInstance()->questionDialog(title,message,buttons,defaultButton);
     }
 }
 
