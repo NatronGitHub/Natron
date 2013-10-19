@@ -326,8 +326,8 @@ void OfxNode::render(SequenceTime time,Row* out) {
             renderW.y2 = rod.top();
             OfxPointD renderScale;
             renderScale.x = renderScale.y = 1.;
-//            cout << "Asking to render image: l = " << renderW.x1 << " b = " << renderW.y1 <<
-//            " r = " << renderW.x2 << " t = " << renderW.y2 << endl;
+            //  cout << "Asking to render image at time = " <<  time << endl << "l = " << renderW.x1 << " b = " << renderW.y1 <<
+            //" r = " << renderW.x2 << " t = " << renderW.y2 << endl;
             OfxStatus stat = effectInstance()->renderAction((OfxTime)time, kOfxImageFieldNone, renderW, renderScale);
             assert(stat == kOfxStatOK);
         }

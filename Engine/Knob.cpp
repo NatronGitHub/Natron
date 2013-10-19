@@ -392,7 +392,10 @@ int File_Knob::nearestFrame(int f) const{
     for (std::map<int,QString>::const_iterator it = _filesSequence.begin(); it!=_filesSequence.end(); ++it) {
         distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
     }
-    return distanceMap.begin()->second;
+    if(!distanceMap.empty())
+        return distanceMap.begin()->second;
+    else
+        return 0;
 }
 QString File_Knob::getRandomFrameName(int f) const{
     f = nearestFrame(f);

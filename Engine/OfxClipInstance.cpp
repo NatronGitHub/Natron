@@ -201,7 +201,8 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         _nodeInstance->effectInstance()->getRegionOfDefinitionAction(time,renderScale,roi);
        
     }
-    
+    //cout << "Request image for clip " << getName() << endl;
+    //cout << " l = " << roi.x1 << " b = " << roi.y1 << " r = " << roi.x2 << " t = " << roi.y2 << endl;
     /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
      _effect->isPixelDepthSupported(...)
      */
@@ -209,7 +210,6 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         
         QMutexLocker locker(&_lock);
         if (!_outputImage) {
-            //   cout << "allocating output clip with w = " << roi.x2-roi.x1 << " and h = " << roi.y2-roi.y1 << endl;
             _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
         }else{
             OfxRectI outputImageBounds = _outputImage->getROD();
