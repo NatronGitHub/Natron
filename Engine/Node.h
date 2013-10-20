@@ -319,8 +319,13 @@ public:
      * This is meaningful for plugins that generate images or transform images.
      * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
      * In case of failure the plugin should return StatFailed.
+     * If displayWindow is not NULL the plug-in may change the displayWindow to inform what region
+     * should really be displayed. The displayWindow may differ from the rod.
+     * For instance EXR has different data window/display window and when NULL an EXR file should
+     * fill in a proper display window to reflect how the image is supposed to be viewed.
+     * By default the display window is the same as the rod.
      **/
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow = NULL);
     
     // virtual void getFrameRange(double* first,double* second);
     

@@ -17,12 +17,8 @@ In order to have Powiter compiling, first you need to install the required libra
 
 You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). 
 
-###FFMPEG
 
-You can retrieve pre-built binaries from (ffmpeg zeranoe build)[http://ffmpeg.zeranoe.com/builds/] . Select the developer files for the version of your system (32/64bits).
-
-
-###OpenEXR 2.0.0
+###OpenEXR
 
 This one is not easy. You have two solutions, either you can get the binaries I compiled for windows on dropbox, or you can download it from :
 (OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself. Warning : the .sln file provided to compile openexr does not include all the source files (especially the recently added deep compositing source files).
@@ -57,9 +53,6 @@ On windows,OpenGL API is not up to date to the features we need. You'll need to 
 
 (glew download)[http://glew.sourceforge.net/]
 
-### Eigen
-
-Download Eigen from (eigen website)[http://eigen.tuxfamily.org/index.php?title=Main_Page]
 
 ### OpenFX
 
@@ -98,10 +91,6 @@ ftgl{
     INCLUDEPATH +=  $$quote(C:\\ftgl_win32\\include)
     LIBS += -L$$quote(C:\\ftgl_win32\\lib) -lftgl
 }
-ffmpeg{
-    INCLUDEPATH +=  $$quote(C:\\ffmpeg_win32\\include)
-    LIBS += -L$$quote(C:\\ffmpeg_win32\\lib)  -lavcodec -lavformat -lavutil -lswscale -lavdevice -lavfilter
-}
 
 freetype2{
     INCLUDEPATH += $$quote(C:\\freetype2_win32\\include)
@@ -121,9 +110,6 @@ expat{
     INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/expat-2.0.1/lib
     LIBS += -L$$quote(C:\\Users\\Lex\\Desktop\\Powiter\\Powiter_Core\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
    # LIBS += shell32.lib
-}
-eigen2{
-    INCLUDEPATH +=  $$quote(C:\\Eigen2)
 }
 
 ###Copy the dll's over

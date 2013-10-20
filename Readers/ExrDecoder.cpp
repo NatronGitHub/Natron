@@ -9,7 +9,7 @@
 *
 */
 
-#include "ReadExr.h"
+#include "ExrDecoder.h"
 
 #ifdef __POWITER_WIN32__
 #include <fstream>
@@ -195,7 +195,7 @@ private:
 
 
 
-Powiter::Status ReadExr::readHeader(const QString& filename){
+Powiter::Status ExrDecoder::readHeader(const QString& filename){
     
     _channel_map.clear();
      views.clear();
@@ -343,7 +343,7 @@ Powiter::Status ReadExr::readHeader(const QString& filename){
 }
 
 
-ReadExr::ReadExr(Reader* op):Read(op)
+ExrDecoder::ExrDecoder(Reader* op):Decoder(op)
 ,_inputfile(0)
 ,_dataOffset(0){
 #ifdef __POWITER_WIN32__
@@ -352,11 +352,11 @@ ReadExr::ReadExr(Reader* op):Read(op)
 #endif
 }
 
-void ReadExr::initializeColorSpace(){
+void ExrDecoder::initializeColorSpace(){
     _lut=Color::getLut(Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
 }
 
-ReadExr::~ReadExr(){
+ExrDecoder::~ExrDecoder(){
 #ifdef __POWITER_WIN32__
     delete inputStr ;
     delete inputStdStream ;
@@ -364,7 +364,7 @@ ReadExr::~ReadExr(){
     delete _inputfile;
 }
 
-void ReadExr::render(SequenceTime /*time*/,Row* out){
+void ExrDecoder::render(SequenceTime /*time*/,Row* out){
     const ChannelSet& channels = out->channels();
     const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
     const Imath::Box2i& datawin = _inputfile->header().dataWindow();

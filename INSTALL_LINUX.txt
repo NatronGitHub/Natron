@@ -14,12 +14,8 @@ In order to have Powiter compiling, first you need to install the required libra
 
 You'll need to install Qt libraries from [Qt download](http://qt-project.org/downloads). Alternatively you can get it from apt-get.
 
-###FFMPEG
 
-You'll need to get ffmpegfrom the packet manager : 
-	sudo apt-get install ffmpeg
-
-###OpenEXR 2.0.0
+###OpenEXR
 
 You have two solutions, either you can get the binaries I compiled for linux on dropbox, or you can download it from :
 (OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself. 
@@ -46,12 +42,6 @@ Boost headers are required, but not the libraries. You can download boost from
 (boost download)[http://www.boost.org/users/download/]
 Alternatively you can install boost from apt-get:
 	sudo apt-get install libboost1.50-all-dev
-
-### Eigen
-
-You can download Eigen from apt-get :
-	sudo apt-get install eigen
-
 
 ### OpenFX
 

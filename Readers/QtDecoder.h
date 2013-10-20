@@ -14,22 +14,22 @@
 
 #include <vector>
 #include <string>
-#include "Readers/Read.h"
+#include "Readers/Decoder.h"
 
 class QImage;
 namespace Powiter{
 class Row;
 }
-class ReadQt : public Read {
+class QtDecoder : public Decoder {
 
     QImage* _img;
     QString filename;
 public:
-    static Read* BuildRead(Reader* reader){return new ReadQt(reader);}
+    static Decoder* BuildRead(Reader* reader){return new QtDecoder(reader);}
     
-    ReadQt(Reader* op);
+    QtDecoder(Reader* op);
     
-    virtual ~ReadQt();
+    virtual ~QtDecoder();
     
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesDecoded() const OVERRIDE;

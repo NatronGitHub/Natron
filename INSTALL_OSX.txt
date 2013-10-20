@@ -19,13 +19,8 @@ You'll need to install Qt libraries from [Qt download](http://qt-project.org/dow
 
 	sudo port install qt4-mac
 
-###FFMPEG
 
-Open a terminal and type:
-	sudo port install ffmpeg
-It should install it to your macports download tree. By default it should be something along the lines of /opt/local 
-
-###OpenEXR 2.0.0
+###OpenEXR 
 
 This one is not on macports yet. You have two solutions, either you can get the binaries I compiled for osx 64bit on dropbox, or you can download it from :
 (OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself.
@@ -50,12 +45,6 @@ Boost headers are required, but not the libraries. You can download boost from
 (boost download)[http://www.boost.org/users/download/]
 or through macports, but it will also install the boost libraries:
 	sudo port install boost
-
-
-### Eigen 2
-
-You can download Eigen 2 from macports :
-	sudo port install eigen
 
 We're done here for libraries.
 

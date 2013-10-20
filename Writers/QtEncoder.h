@@ -13,9 +13,9 @@
 #define POWITER_WRITERS_WRITEQT_H_
 
 #include "Global/Macros.h"
-#include "Writers/Write.h"
+#include "Writers/Encoder.h"
 
-class WriteQt :public Write{
+class QtEncoder :public Encoder{
     
     Box2D _rod;
     uchar* _buf;
@@ -23,11 +23,11 @@ class WriteQt :public Write{
     
 public:
     
-    static Write* BuildWrite(Writer* writer){return new WriteQt(writer);}
+    static Encoder* BuildWrite(Writer* writer){return new QtEncoder(writer);}
     
-    WriteQt(Writer* writer);
+    QtEncoder(Writer* writer);
     
-    virtual ~WriteQt();
+    virtual ~QtEncoder();
 
     
     /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/

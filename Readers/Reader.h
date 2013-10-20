@@ -27,7 +27,7 @@ namespace Powiter{
 }
 class File_Knob;
 class ViewerGL;
-class Read;
+class Decoder;
 class ViewerCache;
 
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
@@ -48,7 +48,7 @@ public:
     class Buffer{
     public:
         
-        typedef boost::shared_ptr<Read> value_type;
+        typedef boost::shared_ptr<Decoder> value_type;
         typedef std::string key_type;
         
 #ifdef USE_VARIADIC_TEMPLATES
@@ -156,7 +156,7 @@ public:
      * @brief Reads the head of the file associated to the time.
      * @param filename The file of the frame to decode.
      */
-    boost::shared_ptr<Read> decodeHeader(const QString& filename);
+    boost::shared_ptr<Decoder> decodeHeader(const QString& filename);
     
     /**
      * @brief firstFrame
@@ -250,7 +250,7 @@ protected:
 private:
     
     
-    boost::shared_ptr<Read> decoderForFileType(const QString& fileName);
+    boost::shared_ptr<Decoder> decoderForFileType(const QString& fileName);
     std::pair<int,int> _frameRange;
     Buffer _buffer;
     File_Knob* _fileKnob;

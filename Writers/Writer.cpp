@@ -25,7 +25,7 @@
 #include "Engine/Knob.h"
 #include "Engine/TimeLine.h"
 
-#include "Writers/Write.h"
+#include "Writers/Encoder.h"
 
 
 using namespace std;
@@ -76,7 +76,7 @@ bool Writer::validate() const{
     return true;
 }
 Powiter::Status Writer::preProcessFrame(SequenceTime time){
-    Write* write = 0;
+    Encoder* write = 0;
     // setFrameRange(info().getFirstFrame(), info().getLastFrame());
     Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     if(!encoder){
@@ -200,7 +200,7 @@ void Writer::onFrameRangeChoosalChanged(){
     }
 }
 
-void Writer::write(Write* write,QFutureWatcher<void>* watcher){
+void Writer::write(Encoder* write,QFutureWatcher<void>* watcher){
     
     _buffer.appendTask(write, watcher);
     if(!write) return;
@@ -239,13 +239,13 @@ void Writer::notifyWriterForCompletion(){
     }
 }
 
-void Writer::Buffer::appendTask(Write* task,QFutureWatcher<void>* future){
+void Writer::Buffer::appendTask(Encoder* task,QFutureWatcher<void>* future){
     _tasks.push_back(make_pair(task, future));
 }
 
-void Writer::Buffer::removeTask(Write* task){
+void Writer::Buffer::removeTask(Encoder* task){
     for (U32 i = 0 ; i < _tasks.size(); ++i) {
-        std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
+        std::pair<Encoder*,QFutureWatcher<void>* >& t = _tasks[i];
         if(t.first == task){
             _trash.push_back(t.second);
             _tasks.erase(_tasks.begin()+i);
@@ -262,7 +262,7 @@ void Writer::Buffer::emptyTrash(){
 
 Writer::Buffer::~Buffer(){
     for (U32 i = 0 ; i < _tasks.size(); ++i) {
-        std::pair<Write*,QFutureWatcher<void>* >& t = _tasks[i];
+        std::pair<Encoder*,QFutureWatcher<void>* >& t = _tasks[i];
         delete t.second;
     }
 }
@@ -276,7 +276,7 @@ bool Writer::validInfosForRendering(){
     /*checking if channels are supported*/
     pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
     assert(func.second);
-    Write* write = func.second(this);
+    Encoder* write = func.second(this);
     assert(write);
     try {
         write->supportsChannelsForWriting(_requestedChannels);
@@ -365,7 +365,7 @@ void Writer::fileTypeChanged(){
     /*checking if channels are supported*/
     pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
     if(func.first){
-        Write* write = func.second(this);
+        Encoder* write = func.second(this);
         _writeOptions = write->initSpecificKnobs();
         if(_writeOptions)
             _writeOptions->initKnobs(_fileType);

@@ -139,14 +139,13 @@ SOURCES += \
     Gui/TimeLineGui.cpp \
     Gui/ViewerGL.cpp \
     Gui/ViewerTab.cpp \
-    Readers/Read.cpp \
-    Readers/ReadExr.cpp \
-    Readers/ReadFfmpeg_deprecated.cpp \
-    Readers/ReadQt.cpp \
+    Readers/Decoder.cpp \
+    Readers/ExrDecoder.cpp \
+    Readers/QtDecoder.cpp \
     Readers/Reader.cpp \
-    Writers/Write.cpp \
-    Writers/WriteExr.cpp \
-    Writers/WriteQt.cpp \
+    Writers/Encoder.cpp \
+    Writers/ExrEncoder.cpp \
+    Writers/QtEncoder.cpp \
     Writers/Writer.cpp \
     libs/OpenFX/HostSupport/src/ofxhBinary.cpp \
     libs/OpenFX/HostSupport/src/ofxhClip.cpp \
@@ -216,14 +215,13 @@ HEADERS += \
     Gui/TimeLineGui.h \
     Gui/ViewerGL.h \
     Gui/ViewerTab.h \
-    Readers/Read.h \
-    Readers/ReadExr.h \
-    Readers/ReadFfmpeg_deprecated.h \
-    Readers/ReadQt.h \
+    Readers/Decoder.h \
+    Readers/ExrDecoder.h \
+    Readers/QtDecoder.h \
     Readers/Reader.h \
-    Writers/Write.h \
-    Writers/WriteExr.h \
-    Writers/WriteQt.h \
+    Writers/Encoder.h \
+    Writers/ExrEncoder.h \
+    Writers/QtEncoder.h \
     Writers/Writer.h \
     libs/OpenFX/HostSupport/include/ofxhBinary.h \
     libs/OpenFX/HostSupport/include/ofxhClip.h \

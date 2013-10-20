@@ -29,16 +29,16 @@ namespace Color {
     class Row;
 }
 
-class Read{
+class Decoder{
     
 public:
     /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
      are oftenly re-created. To initialize the input color-space , you can do so by overloading
      initializeColorSpace. This function is called after the constructor and before any
      reading occurs.*/
-	Read(Reader* op);
+    Decoder(Reader* op);
     
-	virtual ~Read();
+    virtual ~Decoder();
     
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/
     virtual std::vector<std::string> fileTypesDecoded() const = 0;
@@ -108,7 +108,7 @@ protected:
 };
 
 
-typedef Read* (*ReadBuilder)(void*);
+typedef Decoder* (*ReadBuilder)(void*);
 /*Classes deriving Read should implement a function named BuildRead with the following signature:
 static Read* BuildRead(Reader*);
  */

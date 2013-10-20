@@ -18,7 +18,7 @@
 #include <fstream>
 #endif
 #include <QtCore/QMutex>
-#include "Readers/Read.h"
+#include "Readers/Decoder.h"
 #include "Global/Macros.h"
 
 namespace Imf {
@@ -29,15 +29,15 @@ namespace Imf {
 namespace Powiter{
 class Row;
 }
-class ReadExr : public Read{
+class ExrDecoder : public Decoder{
     
 public:
     
-    static Read* BuildRead(Reader* reader){return new ReadExr(reader);}
+    static Decoder* BuildRead(Reader* reader){return new ExrDecoder(reader);}
     
-	ReadExr(Reader* op);
+    ExrDecoder(Reader* op);
     
-	virtual ~ReadExr();
+    virtual ~ExrDecoder();
     
 	
     /*Should return the list of file types supported by the decoder: "png","jpg", etc..*/

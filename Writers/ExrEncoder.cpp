@@ -9,7 +9,7 @@
 *
 */
 
-#include "WriteExr.h"
+#include "ExrEncoder.h"
 
 #include <stdexcept>
 #include <QtCore/QMutexLocker>
@@ -128,20 +128,20 @@ static bool edgeCodeFromString(const std::string& str, Imf::KeyCode& a)
 #endif //0
 } // namespace EXR
 
-WriteExr::WriteExr(Writer* writer):Write(writer),outfile(0),_lock(0){
+ExrEncoder::ExrEncoder(Writer* writer):Encoder(writer),outfile(0),_lock(0){
 
 }
-WriteExr::~WriteExr(){
+ExrEncoder::~ExrEncoder(){
 
 }
 
-std::vector<std::string> WriteExr::fileTypesEncoded() const {
+std::vector<std::string> ExrEncoder::fileTypesEncoded() const {
     vector<string> out;
     out.push_back("exr");
     return out;
 }
 
-void ExrWriteKnobs::initKnobs(const std::string& fileType) {
+void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
     sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory().createKnob("Separator", _op, separatorDesc));
@@ -165,27 +165,27 @@ void ExrWriteKnobs::initKnobs(const std::string& fileType) {
     depthCBKnob->setValue(1);
     
     /*calling base-class version at the end*/
-    WriteKnobs::initKnobs(fileType);
+    EncoderKnobs::initKnobs(fileType);
 }
-void ExrWriteKnobs::cleanUpKnobs(){
+void ExrEncoderKnobs::cleanUpKnobs(){
     sepKnob->deleteKnob();
     compressionCBKnob->deleteKnob();
     depthCBKnob->deleteKnob();
 }
 
-bool ExrWriteKnobs::allValid(){
+bool ExrEncoderKnobs::allValid(){
     return _dataType!="/" && _compression!="/";
 }
 
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
  function getLut(datatype) */
-void WriteExr::initializeColorSpace(){
+void ExrEncoder::initializeColorSpace(){
     _lut = Color::getLut(Color::LUT_DEFAULT_FLOAT);
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void WriteExr::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
+void ExrEncoder::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
     boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
     const float* a = row->begin(Channel_alpha);
    
@@ -205,11 +205,11 @@ void WriteExr::renderRow(SequenceTime time,int left,int right,int y,const Channe
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteExr::setupFile(const QString& filename,const Box2D& rod){
+void ExrEncoder::setupFile(const QString& filename,const Box2D& rod){
     _lock = new QMutex;
     _dataW = rod;
     _filename = filename.toStdString();
-    ExrWriteKnobs* knobs = dynamic_cast<ExrWriteKnobs*>(_optionalKnobs);
+    ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
     const ChannelSet& channels = op->requestedChannels();
@@ -259,7 +259,7 @@ void WriteExr::setupFile(const QString& filename,const Box2D& rod){
 /*This function must fill the pre-allocated structure with the data calculated by engine.
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
-void WriteExr::writeAllData(){
+void ExrEncoder::writeAllData(){
     
     try{
         outfile = new Imf::OutputFile(_filename.c_str(), *header);
@@ -318,7 +318,7 @@ void WriteExr::writeAllData(){
     
 }
 
-void WriteExr::debug(){
+void ExrEncoder::debug(){
     int notValidC = 0;
     for (map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); ++it) {
         cout << "img[" << it->first << "] = ";

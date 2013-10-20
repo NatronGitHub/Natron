@@ -23,23 +23,23 @@
 using namespace std;
 using namespace Powiter;
 
-ReadQt::ReadQt(Reader* op)
-: Read(op)
+QtDecoder::QtDecoder(Reader* op)
+: Decoder(op)
 , _img(0)
 , filename()
 {
 }
 
-void ReadQt::initializeColorSpace(){
+void QtDecoder::initializeColorSpace(){
     _lut=Color::getLut(Color::LUT_DEFAULT_VIEWER);
 }
 
-ReadQt::~ReadQt(){
+QtDecoder::~QtDecoder(){
     if(_img)
         delete _img;
 }
 
-std::vector<std::string> ReadQt::fileTypesDecoded() const {
+std::vector<std::string> QtDecoder::fileTypesDecoded() const {
     std::vector<std::string> out;
     const QList<QByteArray>& supported = QImageReader::supportedImageFormats();
     for (int i = 0; i < supported.size(); ++i) {
@@ -49,7 +49,7 @@ std::vector<std::string> ReadQt::fileTypesDecoded() const {
 };
 
 
-void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
+void QtDecoder::render(SequenceTime /*time*/,Powiter::Row* out) {
     const ChannelSet& channels = out->channels();
     int y = out->y();
     switch(_img->format()) {
@@ -127,7 +127,7 @@ void ReadQt::render(SequenceTime /*time*/,Powiter::Row* out) {
             break;
     }
 }
-Powiter::Status ReadQt::readHeader(const QString& filename_)
+Powiter::Status QtDecoder::readHeader(const QString& filename_)
 {
     filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.

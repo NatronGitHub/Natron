@@ -383,7 +383,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     _hashValue.computeHash();
 }
 
-Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
+Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow) {
     for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
         if (it->second) {
             Box2D inputRod;
@@ -397,6 +397,7 @@ Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
             }
         }
     }
+    displayWindow->set(rod->left(), rod->bottom(), rod->right(), rod->top());
     return StatReplyDefault;
 }
 

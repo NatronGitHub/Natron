@@ -49,15 +49,14 @@
 #include "Engine/TimeLine.h"
 
 #include "Readers/Reader.h"
-#include "Readers/Read.h"
-#include "Readers/ReadExr.h"
-#include "Readers/ReadFfmpeg_deprecated.h"
-#include "Readers/ReadQt.h"
+#include "Readers/Decoder.h"
+#include "Readers/ExrDecoder.h"
+#include "Readers/QtDecoder.h"
 
 #include "Writers/Writer.h"
-#include "Writers/Write.h"
-#include "Writers/WriteQt.h"
-#include "Writers/WriteExr.h"
+#include "Writers/Encoder.h"
+#include "Writers/QtEncoder.h"
+#include "Writers/ExrEncoder.h"
 
 
 
@@ -585,7 +584,7 @@ void AppManager::loadReadPlugins(){
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
         if(func.first){
-            Read* read = func.second(NULL);
+            Decoder* read = func.second(NULL);
             assert(read);
             vector<string> extensions = read->fileTypesDecoded();
             string decoderName = read->decoderName();
@@ -612,13 +611,13 @@ void AppManager::loadReadPlugins(){
 
 void AppManager::loadBuiltinReads(){
     {
-        Read* readExr = ReadExr::BuildRead(NULL);
+        Decoder* readExr = ExrDecoder::BuildRead(NULL);
         assert(readExr);
         std::vector<std::string> extensions = readExr->fileTypesDecoded();
         std::string decoderName = readExr->decoderName();
         
         std::map<std::string,void*> EXRfunctions;
-        EXRfunctions.insert(make_pair("BuildRead", (void*)&ReadExr::BuildRead));
+        EXRfunctions.insert(make_pair("BuildRead", (void*)&ExrDecoder::BuildRead));
         LibraryBinary *EXRplugin = new LibraryBinary(EXRfunctions);
         assert(EXRplugin);
         for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -627,13 +626,13 @@ void AppManager::loadBuiltinReads(){
         delete readExr;
     }
     {
-        Read* readQt = ReadQt::BuildRead(NULL);
+        Decoder* readQt = QtDecoder::BuildRead(NULL);
         assert(readQt);
         std::vector<std::string> extensions = readQt->fileTypesDecoded();
         std::string decoderName = readQt->decoderName();
         
         std::map<std::string,void*> Qtfunctions;
-        Qtfunctions.insert(make_pair("BuildRead", (void*)&ReadQt::BuildRead));
+        Qtfunctions.insert(make_pair("BuildRead", (void*)&QtDecoder::BuildRead));
         LibraryBinary *Qtplugin = new LibraryBinary(Qtfunctions);
         assert(Qtplugin);
         for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -680,7 +679,7 @@ void AppManager::loadWritePlugins(){
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
         if(func.first){
-            Write* write = func.second(NULL);
+            Encoder* write = func.second(NULL);
             assert(write);
             vector<string> extensions = write->fileTypesEncoded();
             string encoderName = write->encoderName();
@@ -706,13 +705,13 @@ void AppManager::loadWritePlugins(){
 /*loads writes that are built-ins*/
 void AppManager::loadBuiltinWrites(){
     {
-        boost::scoped_ptr<Write> writeQt(new WriteQt(NULL));
+        boost::scoped_ptr<Encoder> writeQt(new QtEncoder(NULL));
         assert(writeQt);
         std::vector<std::string> extensions = writeQt->fileTypesEncoded();
         string encoderName = writeQt->encoderName();
         
         std::map<std::string,void*> Qtfunctions;
-        Qtfunctions.insert(make_pair("BuildWrite",(void*)&WriteQt::BuildWrite));
+        Qtfunctions.insert(make_pair("BuildWrite",(void*)&QtEncoder::BuildWrite));
         LibraryBinary *QtWritePlugin = new LibraryBinary(Qtfunctions);
         assert(QtWritePlugin);
         for (U32 i = 0 ; i < extensions.size(); ++i) {
@@ -721,12 +720,12 @@ void AppManager::loadBuiltinWrites(){
     }
     
     {
-        boost::scoped_ptr<Write> writeEXR(new WriteExr(NULL));
+        boost::scoped_ptr<Encoder> writeEXR(new ExrEncoder(NULL));
         std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
         string encoderNameExr = writeEXR->encoderName();
         
         std::map<std::string,void*> EXRfunctions;
-        EXRfunctions.insert(make_pair("BuildWrite",(void*)&WriteExr::BuildWrite));
+        EXRfunctions.insert(make_pair("BuildWrite",(void*)&ExrEncoder::BuildWrite));
         LibraryBinary *ExrWritePlugin = new LibraryBinary(EXRfunctions);
         assert(ExrWritePlugin);
         for (U32 i = 0 ; i < extensionsExr.size(); ++i) {

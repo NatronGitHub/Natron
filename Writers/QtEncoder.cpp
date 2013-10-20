@@ -10,7 +10,7 @@
 */
 
 
-#include "WriteQt.h"
+#include "QtEncoder.h"
 
 #include <string>
 #include <vector>
@@ -26,19 +26,19 @@
 using namespace std;
 using namespace Powiter;
 
-WriteQt::WriteQt(Writer* writer)
-:Write(writer)
+QtEncoder::QtEncoder(Writer* writer)
+:Encoder(writer)
 ,_rod()
 ,_buf(NULL)
 ,_filename(){
     
 }
-WriteQt::~WriteQt(){
+QtEncoder::~QtEncoder(){
     
 }
 
 /*Should return the list of file types supported by the encoder: "png","jpg", etc..*/
-std::vector<std::string> WriteQt::fileTypesEncoded() const {
+std::vector<std::string> QtEncoder::fileTypesEncoded() const {
     std::vector<std::string> out;
     // Qt Image reader should be the last solution (it cannot read 16-bits ppm or png)
     const QList<QByteArray>& supported = QImageWriter::supportedImageFormats();
@@ -51,12 +51,12 @@ std::vector<std::string> WriteQt::fileTypesEncoded() const {
 }
 
 /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
-std::string WriteQt::encoderName() const {
+std::string QtEncoder::encoderName() const {
     return "QImage (Qt)";
 }
 
 /*Must be implemented to tell whether this file type supports stereovision*/
-bool WriteQt::supports_stereo() const {
+bool QtEncoder::supports_stereo() const {
     return false;
 }
 
@@ -64,14 +64,14 @@ bool WriteQt::supports_stereo() const {
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
  function getLut(datatype) */
-void WriteQt::initializeColorSpace(){
+void QtEncoder::initializeColorSpace(){
     _lut = Color::getLut(Color::LUT_DEFAULT_INT8);
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void WriteQt::setupFile(const QString& filename,const Box2D& rod){
+void QtEncoder::setupFile(const QString& filename,const Box2D& rod){
     _filename = filename;
     _rod = rod;
     size_t dataSize = 4* rod.width() * rod.height();
@@ -81,7 +81,7 @@ void WriteQt::setupFile(const QString& filename,const Box2D& rod){
 /*This function must fill the pre-allocated structure with the data calculated by engine.
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
-void WriteQt::writeAllData(){
+void QtEncoder::writeAllData(){
     const ChannelSet& channels = op->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -96,7 +96,7 @@ void WriteQt::writeAllData(){
     free(_buf);
 }
 
-void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
+void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
     foreachChannels(z, channels){
         if(z!= Channel_red &&
            z!= Channel_green &&
@@ -108,7 +108,7 @@ void WriteQt::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void WriteQt::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
+void QtEncoder::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
     boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
     
     /*invert y to be in top-to-bottom increasing order*/

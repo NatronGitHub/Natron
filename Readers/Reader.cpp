@@ -35,9 +35,9 @@
 #include "Engine/ImageInfo.h"
 
 #include "Readers/ReadFfmpeg_deprecated.h"
-#include "Readers/ReadExr.h"
-#include "Readers/ReadQt.h"
-#include "Readers/Read.h"
+#include "Readers/ExrDecoder.h"
+#include "Readers/QtDecoder.h"
+#include "Readers/Decoder.h"
 
 #include "Writers/Writer.h"
 
@@ -76,7 +76,7 @@ void Reader::onFrameRangeChanged(int first,int last){
     _frameRange.second = last;
     notifyFrameRangeChanged(first,last);
 }
-boost::shared_ptr<Read> Reader::decoderForFileType(const QString& fileName){
+boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString extension;
     for (int i = fileName.size() - 1; i >= 0; --i) {
         QChar c = fileName.at(i);
@@ -95,14 +95,14 @@ boost::shared_ptr<Read> Reader::decoderForFileType(const QString& fileName){
     
     pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
     if (func.first) {
-       return  boost::shared_ptr<Read>(func.second(this));
+       return  boost::shared_ptr<Decoder>(func.second(this));
     } else {
         string err("Failed to create the decoder for");
         err.append(getName());
         err.append(",something is wrong in the plugin.");
         throw std::invalid_argument(err);
     }
-    return boost::shared_ptr<Read>();
+    return boost::shared_ptr<Decoder>();
 }
 
 Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
@@ -110,11 +110,11 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     
     /*Locking any other thread: we want only 1 thread to create the descriptor*/
     QMutexLocker lock(&_lock);
-    boost::shared_ptr<Read> found = _buffer.get(filename.toStdString());
+    boost::shared_ptr<Decoder> found = _buffer.get(filename.toStdString());
     if (found) {
         *rod = found->readerInfo().getDataWindow();
     }else{
-        boost::shared_ptr<Read> desc;
+        boost::shared_ptr<Decoder> desc;
         try{
             desc = decodeHeader(filename);
         }catch(const std::invalid_argument& e){
@@ -130,9 +130,9 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     return StatOK;
 }
 
-boost::shared_ptr<Read> Reader::decodeHeader(const QString& filename){
+boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
     /*the read handle used to decode the frame*/
-    boost::shared_ptr<Read> decoderReadHandle;
+    boost::shared_ptr<Decoder> decoderReadHandle;
     try{
         decoderReadHandle = decoderForFileType(filename);
     }catch(const std::invalid_argument& e){
@@ -141,7 +141,7 @@ boost::shared_ptr<Read> Reader::decodeHeader(const QString& filename){
     assert(decoderReadHandle);
     Status st = decoderReadHandle->readHeader(filename);
     if(st == StatFailed){
-        return boost::shared_ptr<Read>();
+        return boost::shared_ptr<Decoder>();
     }
     decoderReadHandle->initializeColorSpace();
     _buffer.insert(filename.toStdString(),decoderReadHandle);
@@ -154,7 +154,7 @@ boost::shared_ptr<Read> Reader::decodeHeader(const QString& filename){
 
 void Reader::render(SequenceTime time,Row* out){
     QString filename = _fileKnob->getRandomFrameName(time);
-    boost::shared_ptr<Read> found;
+    boost::shared_ptr<Decoder> found;
     {
         /*This section is critical: if we don't find it in the buffer we want only 1 thread to re-create the descriptor.
          */

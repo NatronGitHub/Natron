@@ -20,14 +20,14 @@
 #include "Global/Macros.h"
 #include "Engine/Node.h"
 
-class Write;
+class Encoder;
 class QMutex;
 namespace Powiter{
 class Row;
 }
 class OutputFile_Knob;
 class ComboBox_Knob;
-class WriteKnobs;
+class EncoderKnobs;
 class Int_Knob;
 class Writer: public OutputNode{
     
@@ -39,7 +39,7 @@ public:
      to a file. When done,the write will be removed from the buffer.*/
     class Buffer{
         int _maxBufferSize;
-        std::vector< std::pair<Write*,QFutureWatcher<void>* > > _tasks;
+        std::vector< std::pair<Encoder*,QFutureWatcher<void>* > > _tasks;
         
         std::vector<QFutureWatcher<void>* > _trash;
     public:
@@ -47,10 +47,10 @@ public:
         ~Buffer();
         
         /*Append a task with its future*/
-        void appendTask(Write* task,QFutureWatcher<void>* future);
+        void appendTask(Encoder* task,QFutureWatcher<void>* future);
         
         /*Remove the task.Does not delete it, but deletes its future.*/
-        void removeTask(Write* task);
+        void removeTask(Encoder* task);
         
         /*Deletes futures that needs to be deleted*/
         void emptyTrash();
@@ -90,7 +90,7 @@ public:
      when done.
      WARNING: This function assumes _validate(true) has been called ! Otherwise
      the _writeHandle member would be NULL.*/
-    void write(Write* write,QFutureWatcher<void>*);
+    void write(Encoder* write,QFutureWatcher<void>*);
     
     /*calls write() appropriatly in another thread. When finished, the thread
      calls notifyWriterForCompletion(). */
@@ -137,9 +137,9 @@ private:
     QMutex* _lock;
     bool _premult;
     Buffer _buffer;
-    Write* _writeHandle;
-    std::vector<Write*> _writeQueue;
-    WriteKnobs* _writeOptions;
+    Encoder* _writeHandle;
+    std::vector<Encoder*> _writeQueue;
+    EncoderKnobs* _writeOptions;
     std::string _filename;
     std::string _fileType;
     std::vector<std::string> _allFileTypes;

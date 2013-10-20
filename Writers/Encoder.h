@@ -35,14 +35,14 @@ class Separator_Knob;
 * create a class inheriting WriteKnobs, and implement the virtual
 * function createExtraKnobs() to return a valid object.
 **/
-class WriteKnobs {
+class EncoderKnobs {
     
 protected:
     Writer* _op; ///pointer to the Writer
 public:
-    WriteKnobs(Writer* op):_op(op){}
+    EncoderKnobs(Writer* op):_op(op){}
 
-    virtual ~WriteKnobs(){}
+    virtual ~EncoderKnobs(){}
     
     /** @brief Must initialise all filetype-specific knobs you want
     * in this function. You can register them to the callback
@@ -72,13 +72,13 @@ public:
 
 
 
-class Write {
+class Encoder {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
     const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* op; /// a pointer to the Writer
-    WriteKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
+    EncoderKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
 public:
     
     /** @brief Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
@@ -86,9 +86,9 @@ public:
     * initializeColorSpace. This function is called after the constructor and before any
     * reading occurs.
     **/
-	Write(Writer* writer);
+    Encoder(Writer* writer);
     
-	virtual ~Write();
+    virtual ~Encoder();
     
     /** @brief Set the pointer to the WriteKnobs. It will contain
      * all the values stored by extra knobs created by the derived WriteKnobs
@@ -96,7 +96,7 @@ public:
      * class to retrieve the values.
      * If the initSpecificKnobs() function returns NULL (default), then
      * the parameter passed here will always be NULL.*/
-    void setOptionalKnobsPtr(WriteKnobs* knobs){_optionalKnobs = knobs;}
+    void setOptionalKnobsPtr(EncoderKnobs* knobs){_optionalKnobs = knobs;}
     
     /**
      * @brief premultiplyByAlpha Enables alpha-premultiplication when writing out the frame.
@@ -161,7 +161,7 @@ public:
     /** @brief Overload it if you need fileType specific knobs. See the
     * comment in WriteKnobs.
     **/
-    virtual WriteKnobs* initSpecificKnobs() {return NULL;}
+    virtual EncoderKnobs* initSpecificKnobs() {return NULL;}
     
     /**
      * @brief to_byte converts a buffer of float to a buffer of bytes to the output color-space.
@@ -184,7 +184,7 @@ public:
 /** @typedef Classes deriving Write should implement a function named BuildWrite with the following signature:
  * static Write* BuildWrite(Writer*);
  **/
-typedef Write* (*WriteBuilder)(void*);
+typedef Encoder* (*WriteBuilder)(void*);
 
 
 

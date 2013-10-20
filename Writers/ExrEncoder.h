@@ -17,7 +17,7 @@
 #include <vector>
 #include <ImfOutputFile.h> // FIXME: should be PIMPL'ed
 
-#include "Writers/Write.h"
+#include "Writers/Encoder.h"
 #include "Global/Macros.h"
 
 class ComboBox_Knob;
@@ -32,7 +32,7 @@ class Writer;
  Due to the lifetime of Write objects, it's not possible to use the
  createKnobDynamically interface there. We must use an extra class.
  Class inheriting*/
-class ExrWriteKnobs : public WriteKnobs{
+class ExrEncoderKnobs : public EncoderKnobs{
     Separator_Knob* sepKnob;
     ComboBox_Knob *compressionCBKnob;
     ComboBox_Knob *depthCBKnob ;
@@ -42,8 +42,8 @@ public:
     std::string _dataType;
     std::string _compression;
     
-    ExrWriteKnobs(Writer* op):WriteKnobs(op){}
-    virtual ~ExrWriteKnobs(){}
+    ExrEncoderKnobs(Writer* op):EncoderKnobs(op){}
+    virtual ~ExrEncoderKnobs(){}
     
     virtual void initKnobs(const std::string& fileType) OVERRIDE;
     
@@ -53,7 +53,7 @@ public:
 };
 
 
-class WriteExr :public Write{
+class ExrEncoder :public Encoder{
     
    
     std::string _filename;
@@ -69,12 +69,12 @@ class WriteExr :public Write{
     QMutex* _lock;
 public:
     
-    static Write* BuildWrite(Writer* writer){return new WriteExr(writer);}
+    static Encoder* BuildWrite(Writer* writer){return new ExrEncoder(writer);}
     
-    WriteExr(Writer* writer);
-    virtual ~WriteExr();
+    ExrEncoder(Writer* writer);
+    virtual ~ExrEncoder();
     
-    virtual WriteKnobs* initSpecificKnobs() OVERRIDE {return new ExrWriteKnobs(op);}
+    virtual EncoderKnobs* initSpecificKnobs() OVERRIDE {return new ExrEncoderKnobs(op);}
     
     /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
     virtual std::string encoderName() const OVERRIDE {return "OpenEXR";}
