@@ -38,10 +38,12 @@ Again, you can get it from apt-get:
 
 ###boost
 
-Boost headers are required, but not the libraries. You can download boost from 
+You can download boost from 
 (boost download)[http://www.boost.org/users/download/]
 Alternatively you can install boost from apt-get:
 	sudo apt-get install libboost1.50-all-dev
+
+For now just boost serialisation is required.
 
 ### OpenFX
 
@@ -73,6 +75,7 @@ LIBS is the path to the libs
 
 boost{
     INCLUDEPATH += /usr/include
+    LIBS +=  LIBS += -L/usr/lib/ -lboost_serialization-mt
 }
 
 

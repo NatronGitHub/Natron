@@ -36,7 +36,7 @@ public:
      are oftenly re-created. To initialize the input color-space , you can do so by overloading
      initializeColorSpace. This function is called after the constructor and before any
      reading occurs.*/
-    Decoder(Reader* op);
+    Decoder(Reader* _reader);
     
     virtual ~Decoder();
     
@@ -60,10 +60,6 @@ public:
      In case of failure, return StatFailed and post an appropriate message, otherwise return StatOK.
      */
     virtual Powiter::Status readHeader(const QString& filename) = 0;
-    
-    
-    /*Returns true if the file is stereo*/
-    bool fileStereo() const {return is_stereo;};
     
     /*Returns true if the file has alpha premultiplied data*/
     bool premultiplied() const {return _premult;}
@@ -97,11 +93,9 @@ protected:
     void from_short(Powiter::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
     void from_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
    
-        
-	bool is_stereo;
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;
-	Reader* op;
+    Reader* _reader;
     const Powiter::Color::Lut* _lut;
     boost::scoped_ptr<ImageInfo> _readerInfo;
     

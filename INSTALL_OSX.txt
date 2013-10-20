@@ -41,10 +41,12 @@ Or download it and compile it yourself from (FTGL download)[http://sourceforge.n
 
 ###boost
 
-Boost headers are required, but not the libraries. You can download boost from 
+You can download boost from 
 (boost download)[http://www.boost.org/users/download/]
-or through macports, but it will also install the boost libraries:
+or through macports
 	sudo port install boost
+
+For now only boost serialisation is required.
 
 We're done here for libraries.
 

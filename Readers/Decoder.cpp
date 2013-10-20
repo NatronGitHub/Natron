@@ -25,11 +25,10 @@
 using namespace std;
 using namespace Powiter;
 
-Decoder::Decoder(Reader* op_)
-: is_stereo(false)
-, _premult(false)
+Decoder::Decoder(Reader* op_):
+_premult(false)
 , _autoCreateAlpha(false)
-, op(op_)
+, _reader(op_)
 , _lut(0)
 , _readerInfo(new ImageInfo)
 {
@@ -79,7 +78,7 @@ void Decoder::from_float(Channel z, float* to, const float* from, const float* a
 
 
 void Decoder::createKnobDynamically(){
-    op->createKnobDynamically();
+    _reader->createKnobDynamically();
 }
 
 void Decoder::setReaderInfo(Format dispW,

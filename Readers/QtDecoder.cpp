@@ -9,7 +9,7 @@
 *
 */
 
-#include "ReadQt.h"
+#include "QtDecoder.h"
 
 #include <QtGui/QImage>
 #include <QtGui/QColor>

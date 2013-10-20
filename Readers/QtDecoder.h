@@ -27,7 +27,7 @@ class QtDecoder : public Decoder {
 public:
     static Decoder* BuildRead(Reader* reader){return new QtDecoder(reader);}
     
-    QtDecoder(Reader* op);
+    QtDecoder(Reader* _reader);
     
     virtual ~QtDecoder();
     

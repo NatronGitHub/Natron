@@ -165,10 +165,6 @@ private:
             _chan = newSplits.at(0).toStdString();
         }
         
-        // std::string viewpart = (channelName._view.length() > 0) ? channelName._view : heroview;
-        
-        //if (viewname(view) == viewpart) {
-        //is_stereo= true;
         try{
             _mappedChannel = EXR::fromExrChannel(_chan);
         } catch (const std::exception &e) {
@@ -176,16 +172,6 @@ private:
             return false;
         }
         return true;
-        //}
-        
-        //    if (viewpart != "" && viewpart != heroview) {
-        //        return false;
-        //    }
-        
-        //    exrToPowiterChannelMapping(channel, otherpart.c_str());
-        
-        //    return true;
-
     }
 };
 
@@ -224,7 +210,6 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
 
         // multiview is only supported with OpenEXR >= 1.7.0
 #ifdef INCLUDED_IMF_STRINGVECTOR_ATTRIBUTE_H // use ImfStringVectorAttribute.h's #include guard
-        //int view = r->view_for_reader();
         const Imf::StringAttribute* stringMultiView = 0;
         const Imf::StringVectorAttribute* vectorMultiView = 0;
         
@@ -314,23 +299,23 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
         double aspect = _inputfile->header().pixelAspectRatio();
         Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
-        Box2D bbox;
+        Box2D rod;
         
-        int bx = datawin.min.x + _dataOffset;
-        int by = dispwin.max.y - datawin.max.y;
-        int br = datawin.max.x + _dataOffset;
-        int bt = dispwin.max.y - datawin.min.y;
+        int left = datawin.min.x + _dataOffset;
+        int bottom = dispwin.max.y - datawin.max.y;
+        int right = datawin.max.x + _dataOffset;
+        int top = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
                 datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
-            bx--;
-            by--;
-            br++;
-            bt++;
+            --left;
+            --bottom;
+            ++right;
+            ++top;
             //            _readerInfo->setBlackOutside(true);
         }
-        bbox.set(bx, by, br+1, bt+1);
+        rod.set(left, bottom, right+1, top+1);
         
-        setReaderInfo(imageFormat, bbox, mask);
+        setReaderInfo(imageFormat, rod, mask);
         return StatOK;
     }
     catch (const std::exception& exc) {
@@ -428,148 +413,3 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
         }
     }
 }
-
-//META DATA HANDLING:
-//    const Imf::Header header = inputfile->header();
-//    /*if (pixelTypes[Imf::FLOAT] > 0) {
-//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_FLOAT);
-//     }
-//     else if (pixelTypes[Imf::UINT] > 0) {
-//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_32);
-//     }
-//     if (pixelTypes[Imf::HALF] > 0) {
-//     _meta.setData(MetaData::DEPTH, MetaData::DEPTH_HALF);
-//     }
-//     MakeNeededViews(views);*/
-//    for (Imf::Header::ConstIterator i = header.begin();
-//         i != header.end();
-//         ++i) {
-//        //const char* type = i.attribute().typeName();
-//
-//        /*std::string key = std::string(MetaData::EXR::EXR_PREFIX) + i.name();
-//
-//         if ( inputfile->header().hasTileDescription() ) {
-//         _meta.setData( std::string(MetaData::EXR::EXR_TILED), true);
-//         }
-//
-//         if (!strcmp(i.name(), "timeCode")) {
-//         key = MetaData::TIMECODE;
-//         }
-//
-//         if (!strcmp(i.name(), "expTime")) {
-//         key = MetaData::EXPOSURE;
-//         }
-//
-//         if (!strcmp(i.name(), "framesPerSecond")) {
-//         key = MetaData::FRAME_RATE;
-//         }
-//
-//         if (!strcmp(i.name(), "keyCode")) {
-//         key = MetaData::EDGECODE;
-//         }
-//
-//         if (!strcmp(i.name(), MetaData::Nuke::NODE_HASH )) {
-//         key = MetaData::Nuke::NODE_HASH;
-//         }
-//
-//         if (!strcmp(type, "string")) {
-//         const Imf::StringAttribute* attr = static_cast<const Imf::StringAttribute*>(&i.attribute());
-//         _meta.setData(key, attr->value());
-//         }
-//         else if (!strcmp(type, "int")) {
-//         const Imf::IntAttribute* attr = static_cast<const Imf::IntAttribute*>(&i.attribute());
-//         _meta.setData(key, attr->value());
-//         }
-//         else if (!strcmp(type, "v2i")) {
-//         const Imf::V2iAttribute* attr = static_cast<const Imf::V2iAttribute*>(&i.attribute());
-//         int values[2] = {
-//         attr->value().x, attr->value().y
-//         };
-//         _meta.setData(key, values, 2);
-//         }
-//         else if (!strcmp(type, "v3i")) {
-//         const Imf::V3iAttribute* attr = static_cast<const Imf::V3iAttribute*>(&i.attribute());
-//         int values[3] = {
-//         attr->value().x, attr->value().y, attr->value().z
-//         };
-//         _meta.setData(key, values, 3);
-//         }
-//         else if (!strcmp(type, "box2i")) {
-//         const Imf::Box2iAttribute* attr = static_cast<const Imf::Box2iAttribute*>(&i.attribute());
-//         int values[4] = {
-//         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
-//         };
-//         _meta.setData(key, values, 4);
-//         }
-//         else if (!strcmp(type, "float")) {
-//         const Imf::FloatAttribute* attr = static_cast<const Imf::FloatAttribute*>(&i.attribute());
-//         _meta.setData(key, attr->value());
-//         }
-//         else if (!strcmp(type, "v2f")) {
-//         const Imf::V2fAttribute* attr = static_cast<const Imf::V2fAttribute*>(&i.attribute());
-//         float values[2] = {
-//         attr->value().x, attr->value().y
-//         };
-//         _meta.setData(key, values, 2);
-//         }
-//         else if (!strcmp(type, "v3f")) {
-//         const Imf::V3fAttribute* attr = static_cast<const Imf::V3fAttribute*>(&i.attribute());
-//         float values[3] = {
-//         attr->value().x, attr->value().y, attr->value().z
-//         };
-//         _meta.setData(key, values, 3);
-//         }
-//         else if (!strcmp(type, "box2f")) {
-//         const Imf::Box2fAttribute* attr = static_cast<const Imf::Box2fAttribute*>(&i.attribute());
-//         float values[4] = {
-//         attr->value().min.x, attr->value().min.y, attr->value().max.x, attr->value().max.y
-//         };
-//         _meta.setData(key, values, 4);
-//         }
-//         else if (!strcmp(type, "m33f")) {
-//         const Imf::M33fAttribute* attr = static_cast<const Imf::M33fAttribute*>(&i.attribute());
-//         std::vector<float> values;
-//         for (int i = 0; i < 3; ++i) {
-//         for (int j = 0; j < 3; ++j) {
-//         values.push_back((attr->value())[i][j]);
-//         }
-//         }
-//         _meta.setData(key, values);
-//         }
-//         else if (!strcmp(type, "m44f")) {
-//         const Imf::M44fAttribute* attr = static_cast<const Imf::M44fAttribute*>(&i.attribute());
-//         std::vector<float> values;
-//         for (int i = 0; i < 4; ++i) {
-//         for (int j = 0; j < 4; ++j) {
-//         values.push_back((attr->value())[i][j]);
-//         }
-//         }
-//         _meta.setData(key, values);
-//         }
-//         else if (!strcmp(type, "timecode")) {
-//         const Imf::TimeCodeAttribute* attr = static_cast<const Imf::TimeCodeAttribute*>(&i.attribute());
-//         char timecode[20];
-//         sprintf(timecode, "%02i:%02i:%02i:%02i", attr->value().hours(), attr->value().minutes(), attr->value().seconds(), attr->value().frame());
-//         _meta.setData(key, timecode);
-//         }
-//         else if (!strcmp(type, "keycode")) {
-//         const Imf::KeyCodeAttribute* attr = static_cast<const Imf::KeyCodeAttribute*>(&i.attribute());
-//         char keycode[30];
-//         sprintf(keycode, "%02i %02i %06i %04i %02i",
-//         attr->value().filmMfcCode(),
-//         attr->value().filmType(),
-//         attr->value().prefix(),
-//         attr->value().count(),
-//         attr->value().perfOffset());
-//         _meta.setData(key, keycode);
-//         }
-//         else if (!strcmp(type, "rational")) {
-//         const Imf::RationalAttribute* attr = static_cast<const Imf::RationalAttribute*>(&i.attribute());
-//         _meta.setData(key, (double)attr->value());
-//         //    } else {
-//         //      _meta.setData(key, "type " + std::string(type));
-//         }*/
-//    }
-//
-
-

@@ -122,9 +122,9 @@ public:
     /*This function MUST be called in the main thread.*/
     void cachedFrameEngine(boost::shared_ptr<const Powiter::FrameEntry> frame);
 
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow = NULL) OVERRIDE;
     
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last);
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 public slots:
     
     void onCachedFrameAdded();

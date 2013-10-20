@@ -45,8 +45,9 @@ Compile it by yourself from (Freetype download)[http://download.savannah.gnu.org
 Download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]. It should be pretty much straight forward. You can build it as a dll.
 ###boost
 
-Boost headers are required, but not the libraries. You can download boost from 
+You can download boost from 
 (boost download)[http://www.boost.org/users/download/]
+For now only boost serialisation is required.
 
 ###glew
 On windows,OpenGL API is not up to date to the features we need. You'll need to download glew, that provides a recent version of the OpenGL API:
@@ -99,6 +100,7 @@ freetype2{
 
 boost{
     INCLUDEPATH +=  $$quote(C:\\boost1.54)
+    LIBS += -L$$quote(C:\\boost1.54\\lib) -lboost_serialization-mt
 }
 
 glew{

@@ -35,7 +35,7 @@ public:
     
     static Decoder* BuildRead(Reader* reader){return new ExrDecoder(reader);}
     
-    ExrDecoder(Reader* op);
+    ExrDecoder(Reader* _reader);
     
     virtual ~ExrDecoder();
     

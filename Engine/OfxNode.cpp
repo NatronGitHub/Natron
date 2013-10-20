@@ -239,7 +239,7 @@ void ofxRectDToBox2D(const OfxRectD& ofxrect,Box2D* box){
     box->set_top(ymax);
 }
 
-Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
+Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow){
     assert(effect_);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
@@ -249,6 +249,7 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
        (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
     ofxRectDToBox2D(ofxRod,rod);
+    displayWindow->set(*rod);
     return StatOK; 
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);

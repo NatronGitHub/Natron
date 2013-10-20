@@ -34,7 +34,6 @@
 #include "Engine/Knob.h"
 #include "Engine/ImageInfo.h"
 
-#include "Readers/ReadFfmpeg_deprecated.h"
 #include "Readers/ExrDecoder.h"
 #include "Readers/QtDecoder.h"
 #include "Readers/Decoder.h"
@@ -105,7 +104,7 @@ boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     return boost::shared_ptr<Decoder>();
 }
 
-Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
+Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow){
     QString filename = _fileKnob->getRandomFrameName(time);
     
     /*Locking any other thread: we want only 1 thread to create the descriptor*/
@@ -123,6 +122,7 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
         }
         if(desc){
             *rod =  desc->readerInfo().getDataWindow();
+            *displayWindow = desc->readerInfo().getDisplayWindow();
         }else{
             return StatFailed;
         }
