@@ -654,11 +654,13 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
             else return;
         }
     }else{
-        name = from->getTabName(what);
+        if(what == _nodeGraphTab->_nodeGraphArea)
+            name = "Node Graph";
+        else if(what == _propertiesScrollArea)
+            name = "Properties";
+        else return;
         
-    }
-    
-    
+    }    
     from->removeTab(what);
     where->appendTab(name, what);
 }
@@ -953,7 +955,7 @@ void ToolButton::addTool(const QString& actionName,const QStringList& grouping,c
     _actions.push_back(actionRef);
 }
 void ActionRef::onTriggered(){
-    _app->createNode(_nodeName);
+    (void)_app->createNode(_nodeName);
 }
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);

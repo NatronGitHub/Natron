@@ -272,7 +272,7 @@ void Model::restoreGraphFromString(const QString& str){
                                 "to exist in the currently loaded plug-ins.");
                     Powiter::errorDialog("Autosave", text.toStdString() );
                     _appInstance->clearNodes();
-                    _appInstance->createNode("Viewer");
+                    (void)_appInstance->createNode("Viewer");
                     return;
                 }
                 n->setName(label.toStdString());

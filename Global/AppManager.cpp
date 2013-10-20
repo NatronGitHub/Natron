@@ -107,7 +107,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
                 QString text(QCoreApplication::applicationName() + " - ");
                 text.append(_currentProject.getProjectName());
                 _gui->setWindowTitle(text);
-                createNode("Viewer");
+                (void)createNode("Viewer");
             }else{
                 QString name = SequenceFileDialog::removePath(projectName);
                 QString path = projectName.left(projectName.indexOf(name));
@@ -119,7 +119,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
             QString text(QCoreApplication::applicationName() + " - ");
             text.append(_currentProject.getProjectName());
             _gui->setWindowTitle(text);
-            createNode("Viewer");
+            (void)createNode("Viewer");
         }else{
             QString name = SequenceFileDialog::removePath(projectName);
             QString path = projectName.left(projectName.indexOf(name));
@@ -844,7 +844,7 @@ Project::Project():
 _projectName("Untitled.rs"),
 _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
-_format(appPTR->findExistingFormat(2048, 1556,1.)),
+_format(*appPTR->findExistingFormat(2048, 1556,1.)),
 _timeline(new TimeLine())
 {
     

@@ -41,7 +41,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
 
     
     QString bbox;
-    bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
+    bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
         .arg(viewer->dataWindow().left())
         .arg(viewer->dataWindow().bottom())
         .arg(viewer->dataWindow().right())
@@ -202,7 +202,7 @@ void InfoViewerWidget::changeResolution(){
 }
 void InfoViewerWidget::changeDataWindow(){
     QString bbox;
-    bbox = QString("<font color=\"#DBE0E0\">bbox: %1 %2 %3 %4</font>")
+    bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
     .arg(viewer->dataWindow().left())
     .arg(viewer->dataWindow().bottom())
     .arg(viewer->dataWindow().right())

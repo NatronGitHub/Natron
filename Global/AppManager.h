@@ -59,7 +59,7 @@ class Project{
     bool _hasProjectBeenSavedByUser;
     QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
-    Format* _format; // project default format FIXME: make this shared_ptr
+    Format _format;
     boost::shared_ptr<TimeLine> _timeline; // global timeline
 
     
@@ -88,9 +88,9 @@ public:
     
     void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_lastAutoSave = t;}
     
-    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN {return *_format;}
+    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN {return _format;}
     
-    void setProjectDefaultFormat(Format* f) {_format = f;}
+    void setProjectDefaultFormat(const Format& f) {_format = f;}
     
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _timeline;}
     
@@ -157,9 +157,7 @@ public:
     
     const Format& getProjectFormat() const WARN_UNUSED_RETURN {return _currentProject.getProjectDefaultFormat();}
     
-    void setProjectFormat(Format* frmt){_currentProject.setProjectDefaultFormat(frmt);}
-    
-    
+    void setProjectFormat(const Format& frmt){_currentProject.setProjectDefaultFormat(frmt);}
     
     void resetCurrentProject();
     
