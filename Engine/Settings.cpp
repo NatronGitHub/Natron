@@ -15,9 +15,6 @@
 
 #include "Global/LibraryBinary.h"
 
-
-
-using namespace std;
 using namespace Powiter;
 
 Settings::CachingSettings::CachingSettings(){
@@ -94,7 +91,7 @@ void Settings::WritersSettings::fillMap(const std::map<std::string,LibraryBinary
 }
 
 std::vector<std::string> Settings::ReadersSettings::supportedFileTypes() const {
-    vector<string> out;
+    std::vector<std::string> out;
     for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it) {
         out.push_back(it->first);
     }

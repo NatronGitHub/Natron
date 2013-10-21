@@ -22,7 +22,6 @@
 #include "Engine/TimeLine.h"
 #include "Global/AppManager.h"
 
-using namespace std;
 using namespace Powiter;
 
 OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -219,8 +218,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     if(descriptor.getType()==kOfxParamTypeInteger){
         OfxIntegerInstance* ret = new OfxIntegerInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -234,8 +233,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeDouble){
         OfxDoubleInstance*  ret = new OfxDoubleInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -249,8 +248,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeBoolean){
         OfxBooleanInstance* ret = new OfxBooleanInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -264,8 +263,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeChoice){
         OfxChoiceInstance* ret = new OfxChoiceInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -279,8 +278,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeRGBA){
         OfxRGBAInstance* ret = new OfxRGBAInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -294,8 +293,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeRGB){
         OfxRGBInstance* ret = new OfxRGBInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -309,8 +308,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeDouble2D){
         OfxDouble2DInstance* ret = new OfxDouble2DInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -324,8 +323,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeInteger2D){
         OfxInteger2DInstance* ret = new OfxInteger2DInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -339,8 +338,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypePushButton){
         OfxPushButtonInstance* ret = new OfxPushButtonInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -354,8 +353,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
     }else if(descriptor.getType()==kOfxParamTypeGroup){
         OfxGroupInstance* ret = new OfxGroupInstance(node(),descriptor);
         if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);
@@ -371,8 +370,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
         return ret;
     }else if(descriptor.getType()==kOfxParamTypeString){
         OfxStringInstance* ret = new OfxStringInstance(node(),descriptor);if(ret){
-            string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
-            map<string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
+            std::string parent = ret->getProperties().getStringProperty(kOfxParamPropParent);
+            std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = _parentingMap.find(parent);
             if(it != _parentingMap.end()){
                 if(it->second->getType() == kOfxParamTypeGroup){
                     OfxGroupInstance* group = dynamic_cast<OfxGroupInstance*>(it->second);

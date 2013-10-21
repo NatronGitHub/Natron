@@ -11,6 +11,8 @@
 
 #include "ViewerNode.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/AppManager.h"
 
 #include "Gui/Gui.h"
@@ -27,9 +29,11 @@
 #include "Engine/TimeLine.h"
 
 #include "Readers/Reader.h"
-using namespace std;
+
 using namespace Powiter;
-using namespace boost;
+using std::make_pair;
+using boost::shared_ptr;
+
 ViewerNode::ViewerNode(AppInstance* app):OutputNode(app),
 _uiContext(0),
 _inputsCount(1),
@@ -111,7 +115,7 @@ bool ViewerNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
     }
     if (found != _inputs.end()) {
         _inputs.erase(found);
-        _inputs.insert(std::make_pair(inputNumber,input));
+        _inputs.insert(make_pair(inputNumber,input));
         emit inputChanged(inputNumber);
         tryAddEmptyInput();
         return true;

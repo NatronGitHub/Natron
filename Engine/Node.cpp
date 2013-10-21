@@ -32,10 +32,9 @@
 
 #include "Global/AppManager.h"
 
-
-
-using namespace std;
 using namespace Powiter;
+using std::make_pair;
+using std::cout; using std::endl;
 using boost::shared_ptr;
 
 namespace {
@@ -132,12 +131,12 @@ Node* Node::input(int index) const{
 }
 
 std::string Node::setInputLabel(int inputNb) const {
-    string out;
+    std::string out;
     out.append(1,(char)(inputNb+65));
     return out;
 }
 const std::string Node::getInputLabel(int inputNb) const{
-    map<int,string>::const_iterator it = _inputLabelsMap.find(inputNb);
+    std::map<int,std::string>::const_iterator it = _inputLabelsMap.find(inputNb);
     if(it == _inputLabelsMap.end()){
         return "";
     }else{

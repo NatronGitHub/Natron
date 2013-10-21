@@ -13,7 +13,6 @@
 
 #include "Engine/Node.h"
 
-using namespace std;
 using namespace Powiter;
 
 /*Constructor used by the cache*/

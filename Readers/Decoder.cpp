@@ -21,7 +21,6 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/Row.h"
 
-using namespace std;
 using namespace Powiter;
 
 Decoder::Decoder(Reader* op_):

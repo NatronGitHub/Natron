@@ -60,10 +60,10 @@ GCC_DIAG_ON(unused-parameter);
 #define glBindVertexArray glBindVertexArrayAPPLE
 #endif
 
-using namespace Imf;
-using namespace Imath;
-using namespace std;
+//using namespace Imf;
+//using namespace Imath;
 using namespace Powiter;
+using std::cout; using std::endl;
 
 static const double pi= 3.14159265358979323846264338327950288419717;
 

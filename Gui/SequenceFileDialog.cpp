@@ -63,7 +63,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/ComboBox.h"
 #include "Global/MemoryInfo.h"
 
-using namespace std;
+using std::make_pair;
 
 static inline bool nocase_equal_char (char c1, char c2)
 {
@@ -726,7 +726,7 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     
     /*Locking the access to the frame sequences multi-map*/
     QMutexLocker locker(&_frameSequencesMutex);
-    pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
+    std::pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
         /*we found a matching sequence name, we need to figure out if it has the same file type*/
         for(SequenceIterator it2 = it.first; it2!=it.second; ++it2) {
@@ -792,7 +792,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
          *This is corner case and is not useful anyway, we rather display it as several files
          */
         if(!frameRanges._frameIndexes.isEmpty()){
-            vector< pair<int,int> > chunks;
+            std::vector< std::pair<int,int> > chunks;
             int k = frameRanges._frameIndexes.firstFrame();
             
             while (k <= frameRanges._frameIndexes.lastFrame()) {
@@ -859,7 +859,7 @@ void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
     
 }
 const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
-    pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
+    std::pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
     for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
         if(it->second._fileType == extension){
             return it->second;
@@ -1079,7 +1079,7 @@ QString SequenceFileDialog::removePath(const QString& str){
             --i;
         }
         ++i;
-        string stdStr = str.toStdString();
+        std::string stdStr = str.toStdString();
         if(str.isEmpty()){
             return "";
         }
@@ -1094,7 +1094,7 @@ QString SequenceFileDialog::removePath(const QString& str){
             return str;
         }else{
             ++i;
-            string stdStr = str.toStdString();
+            std::string stdStr = str.toStdString();
             return stdStr.substr(i).c_str();
         }
     }
@@ -1532,7 +1532,7 @@ QStringList SequenceFileDialog::selectedFiles(){
         ++i;
         path = path.left(i);
         // FileSequence *sequence = 0;
-        pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
+        std::pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
         
         /*if this is not a registered sequence. i.e: this is a single image file*/
         if(range.first == range.second){

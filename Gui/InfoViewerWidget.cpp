@@ -18,7 +18,7 @@
 #include "Gui/ViewerGL.h"
 #include "Engine/Box.h"
 
-using namespace std;
+using std::cout; using std::endl;
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,QWidget* parent) : QWidget(parent),_colorAndMouseVisible(false),
 mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
@@ -183,7 +183,7 @@ void InfoViewerWidget::updateCoordMouse(){
 }
 void InfoViewerWidget::changeResolution(){
     format = viewer->getDisplayWindow();
-    if(format.getName() == string("")){
+    if(format.getName() == std::string("")){
         QString reso;
         reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
         .arg(viewer->getDisplayWindow().width())

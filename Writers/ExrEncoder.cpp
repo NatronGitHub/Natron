@@ -23,8 +23,9 @@
 #include "Gui/KnobGui.h"
 #include "Engine/Row.h"
 
-using namespace std;
 using namespace Powiter;
+using std::make_pair;
+using std::cout; using std::endl;
 
 namespace EXR {
 static std::string const compressionNames[6]={
@@ -136,7 +137,7 @@ ExrEncoder::~ExrEncoder(){
 }
 
 std::vector<std::string> ExrEncoder::fileTypesEncoded() const {
-    vector<string> out;
+    std::vector<std::string> out;
     out.push_back("exr");
     return out;
 }
@@ -320,7 +321,7 @@ void ExrEncoder::writeAllData(){
 
 void ExrEncoder::debug(){
     int notValidC = 0;
-    for (map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); ++it) {
+    for (std::map<int,Row*>::iterator it = _img.begin(); it!=_img.end(); ++it) {
         cout << "img[" << it->first << "] = ";
         if(it->second) cout << "valid row" << endl;
         else{

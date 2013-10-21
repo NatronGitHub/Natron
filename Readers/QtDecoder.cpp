@@ -20,8 +20,8 @@
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 
-using namespace std;
 using namespace Powiter;
+using std::cout; using std::endl;
 
 QtDecoder::QtDecoder(Reader* op)
 : Decoder(op)

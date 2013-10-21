@@ -52,8 +52,8 @@ CLANG_DIAG_ON(unused-private-field);
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
  
-using namespace std;
 using namespace Powiter;
+using std::make_pair;
 
 // Helper function: Get the icon with the given name from the icon theme.
 // If unavailable, fall back to the built-in icon. Icon names conform to this specification:
@@ -988,7 +988,7 @@ void Gui::saveProject(){
     }
 }
 void Gui::saveProjectAs(){
-    vector<string> filter;
+    std::vector<std::string> filter;
     filter.push_back("rs");
     SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
     QString outFile;

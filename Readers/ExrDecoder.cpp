@@ -31,8 +31,9 @@
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 #include "Engine/ImageInfo.h"
-using namespace std;
+
 using namespace Powiter;
+using std::cout; using std::endl;
 
 namespace EXR {
 static Powiter::Channel fromExrChannel(const std::string& from)
@@ -244,22 +245,22 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             }
         }
 #endif // !OPENEXR_NO_MULTIVIEW
-        map<Imf::PixelType, int> pixelTypes;
+        std::map<Imf::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
         ChannelSet mask;
         const Imf::ChannelList& imfchannels = _inputfile->header().channels();
         Imf::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
-            string chanName(chan.name());
+            std::string chanName(chan.name());
             if(chanName.empty())
                 continue;
             pixelTypes[chan.channel().type]++;
             EXR::ChannelExtractor exrExctractor(chan.name(), views);
-            set<Channel> channels;
+            std::set<Channel> channels;
             if (exrExctractor.isValid()) {
                 channels.insert(exrExctractor._mappedChannel);
                 //cout << "size : "<< channels.size() << endl;
-                for (set<Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
+                for (std::set<Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
                     Channel channel = *it;
                     //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
@@ -357,8 +358,8 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
     int r = out->right();
     int x = out->left();
     
-    const int X = max(x, datawin.min.x + _dataOffset);
-    const int R = min(r, datawin.max.x + _dataOffset +1);
+    const int X = std::max(x, datawin.min.x + _dataOffset);
+    const int R = std::min(r, datawin.max.x + _dataOffset +1);
     
     // if we're below or above the data window
     if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {

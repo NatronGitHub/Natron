@@ -53,8 +53,8 @@ CLANG_DIAG_ON(unused-private-field);
 
 #define POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
-using namespace std;
 using namespace Powiter;
+using std::cout; using std::endl;
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
 QGraphicsView(scene,parent),

@@ -59,8 +59,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Readers/Reader.h"
 
 using namespace Powiter;
-using namespace std;
-
+using std::make_pair;
 
 KnobGui::KnobGui(Knob* knob,DockablePanel* container):
 _knob(knob),

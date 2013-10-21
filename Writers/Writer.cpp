@@ -26,9 +26,9 @@
 
 #include "Writers/Encoder.h"
 
-
-using namespace std;
 using namespace Powiter;
+using std::cout; using std::endl;
+using std::make_pair;
 
 Writer::Writer(AppInstance* app):
 OutputNode(app),
@@ -84,7 +84,7 @@ Powiter::Status Writer::preProcessFrame(SequenceTime time){
     }else{
         
         
-        pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+        std::pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
         if(func.first)
             write = func.second(this);
         else{
@@ -273,7 +273,7 @@ bool Writer::validInfosForRendering(){
         return false;
     }
     /*checking if channels are supported*/
-    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
     assert(func.second);
     Encoder* write = func.second(this);
     assert(write);
@@ -362,7 +362,7 @@ void Writer::fileTypeChanged(){
     _fileKnob->setValue(file);
     
     /*checking if channels are supported*/
-    pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+    std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
     if(func.first){
         Encoder* write = func.second(this);
         _writeOptions = write->initSpecificKnobs();

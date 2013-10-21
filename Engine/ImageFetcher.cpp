@@ -22,8 +22,10 @@
 
 #include "Engine/Node.h"
 
-using namespace std;
 using namespace Powiter;
+using std::make_pair;
+using std::cout;
+using std::map;
 
 ImageFetcher::ImageFetcher(Node* node, SequenceTime time,int x, int y, int r, int t, ChannelSet channels)
 : _x(x)
