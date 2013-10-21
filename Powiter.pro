@@ -157,7 +157,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    Global/Project.cpp
 
 
 
@@ -255,7 +256,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/ImageInfo.h
+    Engine/ImageInfo.h \
+    Global/Project.h
 
 
 INSTALLS += target
