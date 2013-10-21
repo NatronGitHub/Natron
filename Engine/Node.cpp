@@ -335,7 +335,7 @@ boost::shared_ptr<const Row> Node::get(SequenceTime time,int y,int left,int righ
     shared_ptr<Row> out;
     if (cacheData()) {
         shared_ptr<CachedValue<Row> > newCacheEntry = cache.newEntry(params,
-                                                                     (right-left)*sizeof(float)*channels.size(),
+                                                                     (right-left) * channels.size(),
                                                                      0);
         out = newCacheEntry->getObject();
         render(time,out.get());

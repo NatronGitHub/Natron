@@ -146,8 +146,8 @@ namespace Powiter{
          * Maybe should we move this class as an internal class of CacheEntryHelper to prevent elsewhere
          * usages.
          **/
-        template<typename BitDepth>
-        class Buffer{
+        template<typename DataType>
+        class Buffer {
             
         public:
             
@@ -157,30 +157,32 @@ namespace Powiter{
             
             ~Buffer(){deallocate();}
             
-            void allocate(size_t size,int cost,std::string path = std::string()){
-                if(_allocated){
+            void allocate(size_t count, int cost, std::string path = std::string()) {
+                if (_allocated) {
                     return;
-                }else{
-                    _allocated = true;
                 }
-                if(cost >= 1){
+
+                if (cost >= 1) {
                     _storageMode = DISK;
                     _path = path;
-                    try{
+                    try {
                         _backingFile  = new MemoryFile(_path,Powiter::if_exists_keep_if_dont_exists_create);
-                    }catch(const std::runtime_error& r){
+                    } catch(const std::runtime_error& r) {
                         std::cout << r.what() << std::endl;
                         throw std::bad_alloc();
                     }
-                    if(!path.empty() && size != 0)//if the backing file has already the good size and we just wanted to re-open the mapping
-                        _backingFile->resize(size);
-                }else{
+                    if (!path.empty() && count != 0) {
+                        //if the backing file has already the good size and we just wanted to re-open the mapping
+                        _backingFile->resize(count*sizeof(DataType));
+                    }
+                } else {
                     _storageMode = RAM;
-                    _buffer = (BitDepth*)malloc(size);
+                    _buffer = new DataType[count];
                 }
-                _size = size;
+                _size = count;
+                _allocated = true;
             }
-            
+
             void reOpenFileMapping() const {
                 if(_allocated || _storageMode != DISK || _size == 0){
                     throw std::logic_error("Buffer<T>::allocate(...) must have been called once before calling reOpenFileMapping()!");
@@ -204,13 +206,14 @@ namespace Powiter{
                 _storageMode = DISK;
             }
             
-            void  deallocate(){
-                if(!_allocated)
+            void deallocate() {
+                if(!_allocated) {
                     return;
+                }
                 _allocated = false;
-                if(_storageMode == RAM){
-                    free(_buffer);
-                }else{
+                if (_storageMode == RAM) {
+                    delete [] _buffer;
+                } else {
                     delete _backingFile;
                 }
                 _buffer = 0;
@@ -228,22 +231,22 @@ namespace Powiter{
             
             size_t size() const {return _size;}
             
-            BitDepth* writable() const {
-                if(_storageMode == DISK){
-                    if(_backingFile){
-                        return (BitDepth*)_backingFile->data();
-                    }else{
+            DataType* writable() const {
+                if (_storageMode == DISK) {
+                    if(_backingFile) {
+                        return (DataType*)_backingFile->data();
+                    } else {
                         return NULL;
                     }
-                }else{
+                } else {
                     return _buffer;
                 }
             }
             
-            const BitDepth* readable() const {
-                if(_storageMode == DISK){
-                    return (BitDepth*)_backingFile->data();
-                }else{
+            const DataType* readable() const {
+                if (_storageMode == DISK) {
+                    return (DataType*)_backingFile->data();
+                } else {
                     return _buffer;
                 }
             }
@@ -254,7 +257,7 @@ namespace Powiter{
             
             std::string _path;
             size_t _size;
-            BitDepth* _buffer;
+            DataType* _buffer;
             
             /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
              change the underlying data*/
@@ -268,15 +271,17 @@ namespace Powiter{
          * a set of metadatas called 'Key' and a buffer.
          *
          **/
-        template<typename BitDepth,typename KeyType>
+        template <typename DataType, typename KeyType>
         class CacheEntryHelper : public AbstractCacheEntry<KeyType> {
             
             
         public:
+            typedef DataType data_t;
+            typedef KeyType key_t;
             
-            CacheEntryHelper(const KeyType& params,const std::string& path):
-            _params(params)
-            ,_data()
+            CacheEntryHelper(const KeyType& params,const std::string& path)
+            : _params(params)
+            , _data()
             {
                 try{
                     restoreBufferFromFile(path);
@@ -286,12 +291,13 @@ namespace Powiter{
                 }
             }
             
-            CacheEntryHelper(const KeyType& params,size_t size,int cost,std::string path = std::string()):
-            _params(params)
-            ,_data(){
-                try{
-                    allocate(size, cost,path);
-                }catch(const std::bad_alloc& e){
+            CacheEntryHelper(const KeyType& params, size_t count, int cost, std::string path = std::string())
+            : _params(params)
+            , _data()
+            {
+                try {
+                    allocate(count, cost, path);
+                } catch(const std::bad_alloc& e) {
                     throw e;
                 }
             }
@@ -341,7 +347,7 @@ namespace Powiter{
             
             size_t size() const {return _data.size();}
             
-            bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<BitDepth>::DISK;}
+            bool isStoredOnDisk() const {return _data.getStorageMode() == Buffer<DataType>::DISK;}
             
             void removeAnyBackingFile() const {_data.removeAnyBackingFile();}
             
@@ -351,18 +357,18 @@ namespace Powiter{
              * We must ensure that this function is called ONLY by the constructor, that's why
              * it is private.
              **/
-            void allocate(size_t size,int cost,std::string path = std::string()) {
+            void allocate(size_t count, int cost, std::string path = std::string()) {
                 std::string fileName;
                 if(cost != 0){
-                    try{
+                    try {
                         fileName = generateStringFromHash(path);
-                    }catch(const std::invalid_argument& e){
+                    } catch(const std::invalid_argument& e) {
                         std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
                     }
                 }
-                try{
-                    _data.allocate(size,cost,fileName);
-                }catch(const std::bad_alloc& e){
+                try {
+                    _data.allocate(count, cost, fileName);
+                } catch(const std::bad_alloc& e) {
                     throw e;
                 }
             }
@@ -390,7 +396,7 @@ namespace Powiter{
         protected:
             
             KeyType _params;
-            Buffer<BitDepth> _data;
+            Buffer<DataType> _data;
         };
         
         template<typename ValueType>
@@ -441,6 +447,9 @@ namespace Powiter{
         public:
             typedef boost::shared_ptr<const ValueType> value_type;
             typedef typename ValueType::hash_type hash_type;
+            typedef typename ValueType::data_t data_t;
+            typedef typename ValueType::key_t key_t;
+
 #ifdef USE_VARIADIC_TEMPLATES
             
 #ifdef POWITER_CACHE_USE_BOOST
@@ -549,11 +558,11 @@ namespace Powiter{
             /* Allocates a new entry by the cache. The storage is then handled by
              * the cache solely.
              */
-            boost::shared_ptr<CachedValue<ValueType> > newEntry(const typename ValueType::key_type& params,size_t size,int cost) const{
+            boost::shared_ptr<CachedValue<ValueType> > newEntry(const typename ValueType::key_type& params, size_t count, int cost) const {
                 ValueType* value;
                 try{
-                    value = new ValueType(params,size,cost,QString(getCachePath()+QDir::separator()).toStdString());
-                }catch(const std::bad_alloc& e){
+                    value = new ValueType(params, count, cost, QString(getCachePath()+QDir::separator()).toStdString());
+                } catch(const std::bad_alloc& e) {
                     return boost::shared_ptr<CachedValue<ValueType> >();
                 }
                 return boost::shared_ptr<CachedValue<ValueType> >(new CachedValue<ValueType>(value,this));

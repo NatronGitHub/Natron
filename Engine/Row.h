@@ -115,9 +115,8 @@ namespace Powiter{
     {
         
     public:
-        
         /*Constructor used by the cache*/
-        Row(const RowKey& key,size_t size,int cost,std::string path = std::string()) ;
+        Row(const RowKey& key, size_t count, int cost, std::string path = std::string()) ;
         
         Row(const RowKey& key,const std::string& path);
         

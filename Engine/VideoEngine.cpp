@@ -637,8 +637,8 @@ void VideoEngine::run(){
                 ViewerGL* viewerGL = viewer->getUiContext()->viewer;
                 assert(viewerGL);
                 viewerGL->stopDisplayingProgressBar();
-                boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame =
-                appPTR->getViewerCache().newEntry(*key, _currentFrameInfos._dataSize, 1);
+                assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
+                boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame = appPTR->getViewerCache().newEntry(*key, _currentFrameInfos._dataSize, 1);
                 memcpy(cachedFrame->getObject()->data(),viewerGL->getFrameData(),_currentFrameInfos._dataSize);
 
             } else if (!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
