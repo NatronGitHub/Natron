@@ -103,7 +103,7 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
     for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
         if (it->second) {
             Box2D inputRod;
-#warning this is a Hack and shouldn't be the way to get the current time
+#warning "this is a Hack and shouldn't be the way to get the current time"
             Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
@@ -132,7 +132,7 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
     for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
         if (it->second) {
             Box2D inputRod;
-#warning this is a Hack and shouldn't be the way to get the current time
+#warning "this is a Hack and shouldn't be the way to get the current time"
             Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
@@ -161,7 +161,7 @@ void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) cons
     for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
         if (it->second) {
             Box2D inputRod;
-#warning this is a Hack and shouldn't be the way to get the current time
+#warning "this is a Hack and shouldn't be the way to get the current time"
             Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
