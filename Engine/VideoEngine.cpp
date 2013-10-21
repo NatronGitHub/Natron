@@ -22,7 +22,6 @@
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
-#include "Engine/Model.h"
 #include "Engine/Hash64.h"
 #include "Engine/Lut.h"
 #include "Engine/FrameEntry.h"
@@ -83,7 +82,7 @@ VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 , _currentRunArgs()
 , _currentFrameInfos()
 , _startRenderFrameTime()
-, _timeline(owner->getModel()->getApp()->getTimeLine())
+, _timeline(owner->getApp()->getTimeLine())
 {
     
     setTerminationEnabled();
@@ -433,7 +432,8 @@ void VideoEngine::run(){
         }
         
         Box2D rod;
-        stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
+        Format dispW;
+        stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod,&dispW);
         if(stat == StatFailed){
             if(_tree.isOutputAViewer())
                 viewer->disconnectViewer();
@@ -441,6 +441,7 @@ void VideoEngine::run(){
             continue;
         }
         _tree.getOutput()->ifInfiniteclipBox2DToProjectDefault(&rod);
+        _tree.getOutput()->ifInfiniteclipBox2DToProjectDefault(&dispW);
         /*Fit the frame to the viewer if this was requested by the call to render()*/
         if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
             ViewerGL* viewerGL = viewer->getUiContext()->viewer;
@@ -448,14 +449,22 @@ void VideoEngine::run(){
             assert(viewer->getUiContext());
             assert(viewerGL);
             if (_currentRunArgs._fitToViewer) {
-                assert(rod.height() > 0. && rod.width() > 0);
+                assert(!rod.isNull());
                 viewerGL->fitToFormat(rod);
                 _currentRunArgs._zoomFactor = viewerGL->getZoomFactor();
             }
-            viewerGL->setDataWindow(rod);
-#warning Not what we should do for display window
-            Format dispW(rod.left(),rod.bottom(),rod.right(),rod.top(),"",1.);
-            viewerGL->setDisplayWindow(dispW);
+            bool shouldAutoSetProjectFormat = _tree.getOutput()->getApp()->shouldAutoSetProjectFormat();
+            if(dispW.isNull()){
+                dispW.set(rod);
+            }
+            if(shouldAutoSetProjectFormat){
+                /*Turn off auto project format once we got it once.*/
+                _tree.getOutput()->getApp()->setAutoSetProjectFormat(false);
+                _tree.getOutput()->getApp()->setProjectFormat(dispW);
+            }else{
+                dispW = _tree.getOutput()->getProjectDefaultFormat();
+            }
+            viewerGL->setRod(rod);
         }
         
         /*Now that we called validate we can check if the frame is in the cache (only if the output is a Viewer)*/
@@ -475,8 +484,15 @@ void VideoEngine::run(){
             assert(viewerGL);
             viewerGL->setDisplayingImage(true);
             
-            std::pair<int,int> rowSpan = viewerGL->computeRowSpan(rod, &rows);
-            std::pair<int,int> columnSpan = viewerGL->computeColumnSpan(rod, &columns);
+            if(!viewerGL->isClippingToDisplayWindow()){
+                dispW.set(rod);
+            }
+            int bottom = std::max(rod.bottom(),dispW.bottom());
+            int top = std::min(rod.top(),dispW.top());
+            int left = std::max(rod.left(),dispW.left());
+            int right = std::min(rod.right(), dispW.right());
+            std::pair<int,int> rowSpan = viewerGL->computeRowSpan(bottom,top, &rows);
+            std::pair<int,int> columnSpan = viewerGL->computeColumnSpan(left,right, &columns);
             
             TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
             /*Now checking if the frame is already in either the ViewerCache*/
@@ -490,10 +506,7 @@ void VideoEngine::run(){
             lut =  viewerGL->lutType();
             byteMode = viewerGL->byteMode();
 
-            key = new FrameKey(currentFrame, getCurrentTreeVersion(), zoomFactor, exposure, lut, byteMode,rod, textureRect);
-            //x = columnSpan.first;
-            //r = columnSpan.second+1;
-            
+            key = new FrameKey(currentFrame, getCurrentTreeVersion(), zoomFactor, exposure, lut, byteMode,rod,dispW, textureRect);            
             {
                 QMutexLocker forceRenderLocker(&_forceRenderMutex);
                 if(!_forceRender){
@@ -749,7 +762,7 @@ void VideoEngine::updateDisplay(){
     ViewerGL* viewer  = _tree.outputAsViewer()->getUiContext()->viewer;
     int width = viewer->width();
     int height = viewer->height();
-    double ap = viewer->displayWindow().getPixelAspect();
+    double ap = viewer->getDisplayWindow().getPixelAspect();
     if(ap > 1.f){
         glViewport (0, 0, (int)(width*ap), height);
     }else{
@@ -947,7 +960,7 @@ Powiter::Status Tree::preProcessFrame(SequenceTime time){
 }
 void Tree::onInputFrameRangeChanged(int,int){
     _output->getFrameRange(&_firstFrame,&_lastFrame);
-    _output->getModel()->getApp()->getTimeLine()->setFrameRange(_firstFrame ,_lastFrame);
+    _output->getApp()->getTimeLine()->setFrameRange(_firstFrame ,_lastFrame);
     
 }
 
@@ -996,6 +1009,7 @@ void VideoEngine::quitEngineThread(){
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
 }
+
 
 bool VideoEngine::isWorking() const {
     QMutexLocker workingLocker(&_workingMutex);

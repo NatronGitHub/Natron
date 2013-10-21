@@ -27,7 +27,7 @@
 namespace Powiter{
     class Row;
 }
-class Model;
+class AppInstance;
 class SettingsPanel;
 class Knob;
 class QUndoCommand;
@@ -47,7 +47,7 @@ public:
     typedef std::multimap<int,Node*> OutputMap;
     
 
-    Node(Model* model);
+    Node(AppInstance* app);
     
     virtual ~Node();
     
@@ -185,7 +185,7 @@ public:
     /*============================*/
   
     
-    Model* getModel() const {return _model;}
+    AppInstance* getApp() const {return _app;}
     
     /*Make this node inactive. It will appear
      as if it was removed from the graph editor
@@ -438,7 +438,7 @@ signals:
     
     void frameRangeChanged(int,int);
 protected:
-    Model* _model; // pointer to the model: needed to access the application's default-project's format
+    AppInstance* _app; // pointer to the model: needed to access the application's default-project's format
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
 private:
@@ -479,7 +479,7 @@ class OutputNode : public Node {
     
 public:
     
-    OutputNode(Model* model);
+    OutputNode(AppInstance* app);
     
     virtual ~OutputNode(){}
     

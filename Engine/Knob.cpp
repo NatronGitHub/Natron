@@ -13,7 +13,6 @@
 #include <QtCore/QDir>
 
 #include "Engine/Node.h"
-#include "Engine/Model.h"
 #include "Engine/ViewerNode.h"
 
 #include "Global/AppManager.h"

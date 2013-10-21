@@ -32,7 +32,7 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     layout = new QHBoxLayout(this);
     QString reso("<font color=\"#DBE0E0\">");
     //char tmp[10];
-    reso.append(viewer->displayWindow().getName().c_str());
+    reso.append(viewer->getDisplayWindow().getName().c_str());
     reso.append("\t");
     reso.append("</font>");
     resolution = new QLabel(reso,this);
@@ -42,10 +42,10 @@ mousePos(0,0),rectUser(0,0),colorUnderMouse(0,0,0,0),_fps(0){
     
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-        .arg(viewer->dataWindow().left())
-        .arg(viewer->dataWindow().bottom())
-        .arg(viewer->dataWindow().right())
-        .arg(viewer->dataWindow().top());
+        .arg(viewer->getRoD().left())
+        .arg(viewer->getRoD().bottom())
+        .arg(viewer->getRoD().right())
+        .arg(viewer->getRoD().top());
     
     _fpsLabel = new QLabel(this);
     
@@ -182,12 +182,12 @@ void InfoViewerWidget::updateCoordMouse(){
     coordMouse->setText(coord);
 }
 void InfoViewerWidget::changeResolution(){
-    format = viewer->displayWindow();
+    format = viewer->getDisplayWindow();
     if(format.getName() == string("")){
         QString reso;
         reso = QString("<font color=\"#DBE0E0\">%1x%2\t</font>")
-        .arg(viewer->displayWindow().width())
-        .arg(viewer->displayWindow().height());
+        .arg(viewer->getDisplayWindow().width())
+        .arg(viewer->getDisplayWindow().height());
         resolution->setText(reso);
         resolution->setMaximumWidth(resolution->sizeHint().width());
     }else{
@@ -203,10 +203,10 @@ void InfoViewerWidget::changeResolution(){
 void InfoViewerWidget::changeDataWindow(){
     QString bbox;
     bbox = QString("<font color=\"#DBE0E0\">RoD: %1 %2 %3 %4</font>")
-    .arg(viewer->dataWindow().left())
-    .arg(viewer->dataWindow().bottom())
-    .arg(viewer->dataWindow().right())
-    .arg(viewer->dataWindow().top());
+    .arg(viewer->getRoD().left())
+    .arg(viewer->getRoD().bottom())
+    .arg(viewer->getRoD().right())
+    .arg(viewer->getRoD().top());
 
     coordDispWindow->setText(bbox);
 }

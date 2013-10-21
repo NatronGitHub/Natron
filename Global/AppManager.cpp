@@ -22,6 +22,8 @@
 #else
 #include <QStandardPaths>
 #endif
+#include <QtCore/QXmlStreamReader>
+#include <QtCore/QXmlStreamWriter>
 
 #include <ImfThreading.h>
 
@@ -38,7 +40,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/SequenceFileDialog.h"
 
-#include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
@@ -64,10 +65,9 @@ using namespace Powiter;
 using namespace std;
 
 
-AppInstance::AppInstance(int appID,const QString& projectName)
-: _model(new Model(this))
-, _gui(new Gui(this))
-, _currentProject()
+AppInstance::AppInstance(int appID,const QString& projectName):
+_gui(new Gui(this))
+, _currentProject(this)
 , _appID(appID)
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
@@ -98,7 +98,7 @@ AppInstance::AppInstance(int appID,const QString& projectName)
     /* Create auto-save dir if it does not exists*/
     QDir dir = autoSavesDir();
     dir.mkpath(".");
-
+    
     /*If this is the first instance of the software*/
     if(_appID == 0){
         if(!findAutoSave()){
@@ -133,48 +133,78 @@ AppInstance::~AppInstance(){
     removeAutoSaves();
     appPTR->removeInstance(_appID);
     delete _autoSaveMutex;
+    
 }
 
 
 Node* AppInstance::createNode(const QString& name) {
-    Node* node = _model->createNode(name.toStdString());
-    NodeGui* nodegui = 0;
-    if (node) {
-        nodegui = _gui->createNodeGUI(node);
-        _nodeMapping.insert(make_pair(node,nodegui));
-        node->initializeInputs();
-        Node* selected  =  0;
-        if(_gui->getSelectedNode()){
-            selected = _gui->getSelectedNode()->getNode();
-        }
-        _model->initNodeCountersAndSetName(node);
-        if(node->className() == "Viewer"){
-            _gui->createViewerGui(node);
-        }
-        node->initializeKnobs();
-        if(node->isOpenFXNode()){
-            OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
-            ofxNode->openFilesForAllFileParams();
-            bool ok = ofxNode->effectInstance()->getClipPreferences();
-            if(!ok){
-                node->deleteNode();
-                return NULL;
-            }
-            if(node->canMakePreviewImage())
-                node->refreshPreviewImage(0);
-        }
-        autoConnect(selected, node);
-        
+    Node* node = 0;
+    if(name == "Reader"){
+		node = new Reader(this);
+	}else if(name =="Viewer"){
+        node = new ViewerNode(this);
+	}else if(name == "Writer"){
+		node = new Writer(this);
+        QObject::connect(node,SIGNAL(renderingOnDiskStarted(Writer*,QString,int,int)),this,
+                         SLOT(onRenderingOnDiskStarted(Writer*, QString, int, int)));
     } else {
+        node = appPTR->getOfxHost()->createOfxNode(name.toStdString(),this);
+    }
+    if(!node){
         cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
         return NULL;
     }
+    QObject::connect(node,SIGNAL(deactivated()),this,SLOT(checkViewersConnection()));
+    QObject::connect(node, SIGNAL(deactivated()), this, SLOT(triggerAutoSave()));
+    QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
+    QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
+    QObject::connect(node, SIGNAL(knobUndoneChange()), this, SLOT(triggerAutoSave()));
+    QObject::connect(node, SIGNAL(knobRedoneChange()), this, SLOT(triggerAutoSave()));
+    
+    NodeGui* nodegui = 0;
+    nodegui = _gui->createNodeGUI(node);
+    _nodeMapping.insert(make_pair(node,nodegui));
+    node->initializeInputs();
+    Node* selected  =  0;
+    if(_gui->getSelectedNode()){
+        selected = _gui->getSelectedNode()->getNode();
+    }
+    _currentProject.initNodeCountersAndSetName(node);
+    if(node->className() == "Viewer"){
+        _gui->createViewerGui(node);
+    }
+    node->initializeKnobs();
+    if(node->isOpenFXNode()){
+        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+        ofxNode->openFilesForAllFileParams();
+        bool ok = ofxNode->effectInstance()->getClipPreferences();
+        if(!ok){
+            node->deleteNode();
+            return NULL;
+        }
+        if(node->canMakePreviewImage())
+            node->refreshPreviewImage(0);
+    }
+    autoConnect(selected, node);
+    
     return node;
 }
 
-void AppInstance::checkViewersConnection() {
-    return _model->checkViewersConnection();
+
+void Project::initNodeCountersAndSetName(Node* n){
+    assert(n);
+    map<string,int>::iterator it = _nodeCounters.find(n->className());
+    if(it != _nodeCounters.end()){
+        it->second++;
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)).toStdString());
+    }else{
+        _nodeCounters.insert(make_pair(n->className(), 1));
+        n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(1)).toStdString());
+    }
+    _currentNodes.push_back(n);
 }
+
+
 
 void AppInstance::autoConnect(Node* target,Node* created){
     _gui->autoConnect(getNodeGui(target),getNodeGui(created));
@@ -191,8 +221,9 @@ const std::vector<Node*> AppInstance::getAllActiveNodes() const{
     return ret;
 }
 void AppInstance::loadProject(const QString& path,const QString& name){
-    _model->loadProject(path+name);
+    _currentProject.loadProject(path+name);
     QDateTime time = QDateTime::currentDateTime();
+    _currentProject.setAutoSetProjectFormat(false);
     _currentProject.setHasProjectBeenSavedByUser(true);
     _currentProject.setProjectName(name);
     _currentProject.setProjectPath(path);
@@ -209,7 +240,7 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
         if((_currentProject.projectAgeSinceLastSave() != _currentProject.projectAgeSinceLastAutosave()) ||
            !QFile::exists(path+name)){
             
-            _model->saveProject(path,name);
+            _currentProject.saveProject(path,name);
             _currentProject.setHasProjectBeenSavedByUser(true);
             _currentProject.setProjectName(name);
             _currentProject.setProjectPath(path);
@@ -223,7 +254,7 @@ void AppInstance::saveProject(const QString& path,const QString& name,bool autoS
         if(!_gui->isGraphWorthless()){
             
             removeAutoSaves();
-            _model->saveProject(path,name+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"),true);
+            _currentProject.saveProject(path,name+"."+time.toString("dd.MM.yyyy.hh:mm:ss:zzz"),true);
             _currentProject.setProjectName(name);
             _currentProject.setProjectPath(path);
             _currentProject.setProjectAgeSinceLastAutosaveSave(time);
@@ -254,14 +285,13 @@ void AppInstance::removeAutoSaves() const{
         }
     }
 }
-void AppInstance::clearNodes(){
-    _model->clearNodes();
-}
+
 
 bool AppInstance::isSaveUpToDate() const{
     return _currentProject.projectAgeSinceLastSave() == _currentProject.projectAgeSinceLastAutosave();
 }
 void AppInstance::resetCurrentProject(){
+    _currentProject.setAutoSetProjectFormat(true);
     _currentProject.setHasProjectBeenSavedByUser(false);
     _currentProject.setProjectName("Untitled.rs");
     _currentProject.setProjectPath("");
@@ -313,7 +343,7 @@ bool AppInstance::findAutoSave() {
                 resetCurrentProject();
                 return false;
             } else {
-                _model->loadProject(savesDir.path()+ QDir::separator() + entry,true);
+                _currentProject.loadProject(savesDir.path()+ QDir::separator() + entry,true);
                 QDateTime now = QDateTime::currentDateTime();
                 if (exists) {
                     _currentProject.setHasProjectBeenSavedByUser(true);
@@ -360,17 +390,17 @@ void AppInstance::errorDialog(const std::string& title,const std::string& messag
 
 void AppInstance::warningDialog(const std::string& title,const std::string& message) const{
     _gui->warningDialog(title.c_str(), message.c_str());
-
+    
 }
 
 void AppInstance::informationDialog(const std::string& title,const std::string& message) const{
     _gui->informationDialog(title.c_str(), message.c_str());
-
+    
 }
 
 Powiter::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
-                                       Powiter::StandardButton defaultButton) const{
-     return _gui->questionDialog(title.c_str(), message.c_str(),buttons,defaultButton);
+                                                    Powiter::StandardButton defaultButton) const{
+    return _gui->questionDialog(title.c_str(), message.c_str(),buttons,defaultButton);
 }
 
 
@@ -400,14 +430,34 @@ void AppManager::removeInstance(int appID){
 }
 
 bool AppInstance::connect(int inputNumber,const std::string& parentName,Node* output){
-    return _model->connect(inputNumber, parentName, output);
+    const std::vector<Node*>& nodes = _currentProject.getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->getName() == parentName) {
+            return connect(inputNumber,nodes[i], output);
+        }
+    }
+    return false;
 }
 
 bool AppInstance::connect(int inputNumber,Node* input,Node* output){
-    return _model->connect(inputNumber, input, output);
+    if(!output->connectInput(input, inputNumber)){
+        return false;
+    }
+    if(!input){
+        return true;
+    }
+    input->connectOutput(output);
+    return true;
 }
 bool AppInstance::disconnect(Node* input,Node* output){
-    return _model->disconnect(input, output);
+    if(input->disconnectOutput(output) < 0){
+        return false;
+    }
+    if(output->disconnectInput(input) < 0){
+        return false;
+    }
+    return true;
 }
 
 
@@ -430,11 +480,33 @@ Node* AppInstance::getNode(NodeGui* n) const{
 }
 
 void AppInstance::connectViewersToViewerCache(){
-    _model->connectViewersToViewerCache();
+    foreach(Node* n,_currentProject.getCurrentNodes()){
+        assert(n);
+        if(n->className() == "Viewer"){
+            dynamic_cast<ViewerNode*>(n)->connectSlotsToViewerCache();
+        }
+    }
 }
 
 void AppInstance::disconnectViewersFromViewerCache(){
-    _model->disconnectViewersFromViewerCache();
+    foreach(Node* n,_currentProject.getCurrentNodes()){
+        assert(n);
+        if(n->className() == "Viewer"){
+            dynamic_cast<ViewerNode*>(n)->disconnectSlotsToViewerCache();
+        }
+    }
+}
+
+
+void AppInstance::clearNodes(){
+    _currentProject.clearNodes();
+}
+
+void Project::clearNodes(){
+    foreach(Node* n,_currentNodes){
+        n->deleteNode();
+    }
+    _currentNodes.clear();
 }
 
 void AppManager::clearPlaybackCache(){
@@ -523,7 +595,7 @@ AppManager::AppManager()
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
-
+    
     
     /*loading all plugins*/
     loadAllPlugins();
@@ -533,7 +605,7 @@ AppManager::AppManager()
     Imf::setGlobalThreadCount(QThread::idealThreadCount());
     
     
-  
+    
 }
 
 AppManager::~AppManager(){
@@ -839,17 +911,23 @@ void AppInstance::onRenderingOnDiskStarted(Writer* writer,const QString& sequenc
 }
 
 
-Project::Project():
+Project::Project(AppInstance* appInstance):
 _projectName("Untitled.rs"),
 _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
 _format(*appPTR->findExistingFormat(2048, 1556,1.)),
 _timeline(new TimeLine())
+,_appInstance(appInstance)
 {
     
     
 }
-
+Project::~Project(){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        _currentNodes[i]->deleteNode();
+    }
+    _currentNodes.clear();
+}
 
 void Project::setFrameRange(int first, int last){
     _timeline->setFrameRange(first,last);
@@ -877,3 +955,315 @@ int Project::firstFrame() const {
 int Project::lastFrame() const {
     return _timeline->lastFrame();
 }
+
+
+void Project::loadProject(const QString& filename,bool autoSave){
+    QFile file(filename);
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    QTextStream in(&file);
+    QString content = in.readAll();
+    if(autoSave){
+        QString toRemove = content.left(content.indexOf('\n')+1);
+        content = content.remove(toRemove);
+    }
+    restoreGraphFromString(content);
+    file.close();
+}
+void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
+    if(autoSave){
+        QFile file(AppInstance::autoSavesDir()+QDir::separator()+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        if(!path.isEmpty())
+            out << path << endl;
+        else
+            out << "unsaved" << endl;
+        out << serializeNodeGraph();
+        file.close();
+    }else{
+        QFile file(path+filename);
+        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+            cout << (path+filename).toStdString() <<  file.errorString().toStdString() << endl;
+            return;
+        }
+        QTextStream out(&file);
+        out << serializeNodeGraph();
+        file.close();
+        
+    }
+}
+
+
+void AppInstance::setProjectFormat(const Format& frmt){
+    Format* df = appPTR->findExistingFormat(frmt.width(), frmt.height(),frmt.getPixelAspect());
+    if(df){
+        Format currentDW = frmt;
+        currentDW.setName(df->getName());
+        _currentProject.setProjectDefaultFormat(currentDW);
+        emit projectFormatChanged(currentDW);
+        
+        
+    }else{
+        _currentProject.setProjectDefaultFormat(frmt);
+        emit projectFormatChanged(frmt);
+        
+    }
+}
+
+void AppInstance::checkViewersConnection(){
+    const std::vector<Node*>& nodes = _currentProject.getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->className() == "Viewer") {
+            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            assert(n);
+            n->updateTreeAndRender();
+        }
+    }
+}
+
+
+
+
+QString Project::serializeNodeGraph() const{
+    /*Locking the nodes while autosaving*/
+    QMutexLocker l(_appInstance->getAutoSaveMutex());
+    
+    const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
+    QString ret;
+    
+    QXmlStreamWriter writer(&ret);
+    writer.setAutoFormatting(true);
+    writer.writeStartDocument();
+    writer.writeStartElement("Nodes");
+    foreach(Node* n, activeNodes){
+        //serialize inputs
+        assert(n);
+        writer.writeStartElement("Node");
+        
+        if(!n->isOpenFXNode()){
+            writer.writeAttribute("ClassName",n->className().c_str());
+        }else{
+            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
+            QString name = ofxNode->className().c_str();
+            QStringList groups = ofxNode->getPluginGrouping();
+            if (groups.size() >= 1) {
+                name.append("  [");
+                name.append(groups[0]);
+                name.append("]");
+            }
+            writer.writeAttribute("ClassName",name);
+        }
+        writer.writeAttribute("Label", n->getName().c_str());
+        
+        writer.writeStartElement("Inputs");
+        const Node::InputMap& inputs = n->getInputs();
+        for (Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
+            if(it->second){
+                writer.writeStartElement("Input");
+                writer.writeAttribute("Number", QString::number(it->first));
+                writer.writeAttribute("Name", it->second->getName().c_str());
+                writer.writeEndElement();// end input
+            }
+        }
+        writer.writeEndElement(); // end inputs
+                                  //serialize knobs
+        const std::vector<Knob*>& knobs = n->getKnobs();
+        writer.writeStartElement("Knobs");
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            writer.writeStartElement("Knob");
+            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
+            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
+            writer.writeEndElement();//end knob
+        }
+        writer.writeEndElement(); // end knobs
+        
+        //serialize gui infos
+        
+        writer.writeStartElement("Gui");
+        
+        NodeGui* nodeGui = _appInstance->getNodeGui(n);
+        double x=0,y=0;
+        if(nodeGui){
+            x = nodeGui->pos().x();
+            y = nodeGui->pos().y();
+        }
+        writer.writeAttribute("X", QString::number(x));
+        writer.writeAttribute("Y", QString::number(y));
+        writer.writeEndElement();//end gui
+        
+        writer.writeEndElement();//end node
+    }
+    writer.writeEndElement(); // end nodes
+    writer.writeEndDocument();
+    return ret;
+}
+
+void Project::restoreGraphFromString(const QString& str){
+    // pair< Node, pair< AttributeName, AttributeValue> >
+    std::vector<std::pair<Node*, XMLProjectLoader::XMLParsedElement* > > actionsMap;
+    QXmlStreamReader reader(str);
+    
+    while(!reader.atEnd() && !reader.hasError()){
+        QXmlStreamReader::TokenType token = reader.readNext();
+        /* If token is just StartDocument, we'll go to next.*/
+        if(token == QXmlStreamReader::StartDocument) {
+            continue;
+        }
+        /* If token is StartElement, we'll see if we can read it.*/
+        if(token == QXmlStreamReader::StartElement) {
+            /* If it's named Nodes, we'll go to the next.*/
+            if(reader.name() == "Nodes") {
+                continue;
+            }
+            /* If it's named Node, we'll dig the information from there.*/
+            if(reader.name() == "Node") {
+                /* Let's check that we're really getting a Node. */
+                if(reader.tokenType() != QXmlStreamReader::StartElement &&
+                   reader.name() == "Node") {
+                    QString err = QString("Unable to restore the graph:\n") + reader.errorString();
+                    Powiter::errorDialog("Loader", err.toStdString());
+                    return;
+                }
+                QString className,label;
+                QXmlStreamAttributes nodeAttributes = reader.attributes();
+                if(nodeAttributes.hasAttribute("ClassName")) {
+                    className = nodeAttributes.value("ClassName").toString();
+                }
+                if(nodeAttributes.hasAttribute("Label")) {
+                    label = nodeAttributes.value("Label").toString();
+                }
+                
+                assert(_appInstance);
+                _appInstance->deselectAllNodes();
+                Node* n = _appInstance->createNode(className);
+                if(!n){
+                    QString text("Failed to restore the graph! \n The node ");
+                    text.append(className);
+                    text.append(" was found in the auto-save script but doesn't seem \n"
+                                "to exist in the currently loaded plug-ins.");
+                    Powiter::errorDialog("Autosave", text.toStdString() );
+                    _appInstance->clearNodes();
+                    (void)_appInstance->createNode("Viewer");
+                    return;
+                }
+                n->setName(label.toStdString());
+                
+                reader.readNext();
+                while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                        reader.name() == "Node")) {
+                    if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                        
+                        if(reader.name() == "Inputs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Inputs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Input") {
+                                        QXmlStreamAttributes inputAttributes = reader.attributes();
+                                        int number = -1;
+                                        QString name;
+                                        if(inputAttributes.hasAttribute("Number")){
+                                            number = inputAttributes.value("Number").toString().toInt();
+                                        }
+                                        if(inputAttributes.hasAttribute("Name")){
+                                            name = inputAttributes.value("Name").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::InputXMLParsedElement(name,number)));
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        
+                        if(reader.name() == "Knobs") {
+                            
+                            while(!(reader.tokenType() == QXmlStreamReader::EndElement &&
+                                    reader.name() == "Knobs")) {
+                                reader.readNext();
+                                if(reader.tokenType() == QXmlStreamReader::StartElement) {
+                                    if(reader.name() == "Knob") {
+                                        QXmlStreamAttributes knobAttributes = reader.attributes();
+                                        QString description,param;
+                                        if(knobAttributes.hasAttribute("Description")){
+                                            description = knobAttributes.value("Description").toString();
+                                        }
+                                        if(knobAttributes.hasAttribute("Param")){
+                                            param = knobAttributes.value("Param").toString();
+                                        }
+                                        actionsMap.push_back(make_pair(n,new XMLProjectLoader::KnobXMLParsedElement(description,param)));
+                                    }
+                                }
+                            }
+                            
+                        }
+                        
+                        if(reader.name() == "Gui") {
+                            double x = 0,y = 0;
+                            QXmlStreamAttributes posAttributes = reader.attributes();
+                            QString description,param;
+                            if(posAttributes.hasAttribute("X")){
+                                x = posAttributes.value("X").toString().toDouble();
+                            }
+                            if(posAttributes.hasAttribute("Y")){
+                                y = posAttributes.value("Y").toString().toDouble();
+                            }
+                            
+                            
+                            actionsMap.push_back(make_pair(n,new XMLProjectLoader::NodeGuiXMLParsedElement(x,y)));
+                            
+                        }
+                    }
+                    reader.readNext();
+                }
+            }
+        }
+    }
+    if(reader.hasError()){
+        QString err =  QString("Unable to restore the graph :\n") + reader.errorString();
+        Powiter::errorDialog("Loader",err.toStdString());
+        return;
+    }
+    //adjusting knobs & connecting nodes now
+    for (U32 i = 0; i < actionsMap.size(); ++i) {
+        pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
+        analyseSerializedNodeString(action.first, action.second);
+    }
+    
+}
+void Project::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v){
+    assert(n);
+    if(v->_element == "Input"){
+        XMLProjectLoader::InputXMLParsedElement* inputEl = static_cast<XMLProjectLoader::InputXMLParsedElement*>(v);
+        assert(inputEl);
+        int inputNb = inputEl->_number;
+        if(!_appInstance->connect(inputNb,inputEl->_name.toStdString(), n)){
+            cout << "Failed to connect " << inputEl->_name.toStdString()  << " to " << n->getName() << endl;
+        }
+        //  cout << "Input: " << inputEl->_number << " :" << inputEl->_name.toStdString() << endl;
+    }else if(v->_element == "Knob"){
+        XMLProjectLoader::KnobXMLParsedElement* inputEl = static_cast<XMLProjectLoader::KnobXMLParsedElement*>(v);
+        assert(inputEl);
+        const std::vector<Knob*>& knobs = n->getKnobs();
+        for (U32 j = 0; j < knobs.size(); ++j) {
+            if (knobs[j]->getDescription() == inputEl->_description.toStdString()) {
+                knobs[j]->restoreFromString(inputEl->_param.toStdString());
+                break;
+            }
+        }
+        //cout << "Knob: " << inputEl->_description.toStdString() << " :" << inputEl->_param.toStdString() << endl;
+    }else if(v->_element == "Gui"){
+        XMLProjectLoader::NodeGuiXMLParsedElement* inputEl = static_cast<XMLProjectLoader::NodeGuiXMLParsedElement*>(v);
+        assert(inputEl);
+        NodeGui* nodeGui = _appInstance->getNodeGui(n);
+        if(nodeGui){
+            nodeGui->refreshPosition(inputEl->_x,inputEl->_y);
+        }
+        //  cout << "Gui/Pos: " << inputEl->_x << " , " << inputEl->_y << endl;
+    }
+}
+

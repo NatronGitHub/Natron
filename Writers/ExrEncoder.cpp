@@ -144,10 +144,10 @@ std::vector<std::string> ExrEncoder::fileTypesEncoded() const {
 void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     std::string separatorDesc(fileType);
     separatorDesc.append(" Options");
-    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory().createKnob("Separator", _op, separatorDesc));
+    sepKnob = dynamic_cast<Separator_Knob*>(appPTR->getKnobFactory().createKnob("Separator", _writer, separatorDesc));
     
     std::string compressionCBDesc("Compression");
-    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _op, compressionCBDesc));
+    compressionCBKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _writer, compressionCBDesc));
     std::vector<std::string> list;
     for (int i =0; i < 6; ++i) {
         list.push_back(EXR::compressionNames[i].c_str());
@@ -156,7 +156,7 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     compressionCBKnob->setValue(3);
     
     std::string depthCBDesc("Data type");
-    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _op,depthCBDesc));
+    depthCBKnob = static_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", _writer,depthCBDesc));
     list.clear();
     for(int i = 0 ; i < 2 ; ++i) {
         list.push_back(EXR::depthNames[i].c_str());
@@ -186,7 +186,7 @@ void ExrEncoder::initializeColorSpace(){
 
 /*This must be implemented to do the output colorspace conversion*/
 void ExrEncoder::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
-    boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
+    boost::shared_ptr<const Row> row = _writer->input(0)->get(time,y,left,right,channels);
     const float* a = row->begin(Channel_alpha);
    
     Row* toRow = new Row(left,y,right,channels);
@@ -212,7 +212,7 @@ void ExrEncoder::setupFile(const QString& filename,const Box2D& rod){
     ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
     compression = EXR::stringToCompression(knobs->_compression);
     depth = EXR::depthNameToInt(knobs->_dataType);
-    const ChannelSet& channels = op->requestedChannels();
+    const ChannelSet& channels = _writer->requestedChannels();
     _dataW = rod;
 //    if(op->info().blackOutside()){
 //        if(dataW.left() + 2 < dataW.right()){
@@ -263,10 +263,10 @@ void ExrEncoder::writeAllData(){
     
     try{
         outfile = new Imf::OutputFile(_filename.c_str(), *header);
-        const ChannelSet& channels = op->requestedChannels();
+        const ChannelSet& channels = _writer->requestedChannels();
 
         for (int y = _dataW.top()-1; y >= _dataW.bottom(); y--) {
-            if(op->aborted()){
+            if(_writer->aborted()){
                 break;
             }
             Imf::FrameBuffer fbuf;

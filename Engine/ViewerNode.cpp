@@ -21,7 +21,6 @@
 #include "Engine/Row.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/MemoryFile.h"
-#include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxNode.h"
 #include "Engine/ImageInfo.h"
@@ -31,7 +30,7 @@
 using namespace std;
 using namespace Powiter;
 using namespace boost;
-ViewerNode::ViewerNode(Model* model):OutputNode(model),
+ViewerNode::ViewerNode(AppInstance* app):OutputNode(app),
 _uiContext(0),
 _inputsCount(1),
 _activeInput(0),
@@ -54,7 +53,7 @@ void ViewerNode::disconnectSlotsToViewerCache(){
     QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
 }
 void ViewerNode::initializeViewerTab(TabWidget* where){
-    _uiContext = _model->getApp()->addNewViewerTab(this,where);
+    _uiContext = getApp()->addNewViewerTab(this,where);
 }
 
 ViewerNode::~ViewerNode(){
@@ -214,9 +213,12 @@ void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
         dataSize  = w * h  * sizeof(float) * 4;
     }
     const Box2D& dataW = frame->getKey()._dataWindow;
-    _uiContext->viewer->setDataWindow(dataW);
-    Format dispW(dataW.left(),dataW.bottom(),dataW.right(),dataW.top(),"",1.);
-    _uiContext->viewer->setDisplayWindow(dispW);
+    Format dispW = frame->getKey()._displayWindow;
+    _uiContext->viewer->setRod(dataW);
+    if(_app->shouldAutoSetProjectFormat()){
+        _app->setProjectFormat(dispW);
+        _app->setAutoSetProjectFormat(false);
+    }
     /*allocating pbo*/
     void* output = _uiContext->viewer->allocateAndMapPBO(dataSize, _uiContext->viewer->getPBOId(_pboIndex));
     checkGLErrors();
@@ -226,7 +228,7 @@ void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
 }
 
 void ViewerNode::onCachedFrameAdded(){
-    emit addedCachedFrame(_model->getApp()->getTimeLine()->currentFrame());
+    emit addedCachedFrame(_app->getTimeLine()->currentFrame());
 }
 void ViewerNode::onCachedFrameRemoved(){
     emit removedCachedFrame();
@@ -253,7 +255,7 @@ void ViewerNode::swapBuffers(){
 void ViewerNode::pixelScale(double &x,double &y) {
     assert(_uiContext);
     assert(_uiContext->viewer);
-    x = _uiContext->viewer->displayWindow().getPixelAspect();
+    x = _uiContext->viewer->getDisplayWindow().getPixelAspect();
     y = 2. - x;
 }
 
@@ -266,7 +268,7 @@ void ViewerNode::backgroundColor(double &r,double &g,double &b) {
 void ViewerNode::viewportSize(double &w,double &h) {
     assert(_uiContext);
     assert(_uiContext->viewer);
-    const Format& f = _uiContext->viewer->displayWindow();
+    const Format& f = _uiContext->viewer->getDisplayWindow();
     w = f.width();
     h = f.height();
 }

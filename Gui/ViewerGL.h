@@ -244,6 +244,8 @@ class ViewerTab;
             
             FTTextureFont* _font;
             
+            bool _clipToDisplayWindow;
+            
         public:
             
             
@@ -292,16 +294,19 @@ class ViewerTab;
             /**
              *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
              **/
-            const Box2D& dataWindow() const ;
-            
-            void setDataWindow(const Box2D& dataWindow);
+            const Box2D& getRoD() const ;
             
             /**
              *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
              **/
-            const Format& displayWindow() const;
+            const Format& getDisplayWindow() const;
             
-            void setDisplayWindow(const Format& displayWindow);
+            void setRod(const Box2D& rod);
+            
+            
+            void setClipToDisplayWindow(bool b) ;
+            
+            bool isClippingToDisplayWindow() const {return _clipToDisplayWindow;}
             
             /**
              *@brief Saves the OpenGL context so it can be restored later-on .
@@ -350,12 +355,12 @@ class ViewerTab;
             /**
              *@returns Returns the height of the frame with the scale factor applied to it.
              **/
-            double zoomedHeight(){return std::floor(displayWindow().height()*_zoomCtx._zoomFactor);}
+            double zoomedHeight(){return std::floor(getDisplayWindow().height()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the width of the frame with the scale factor applied to it.
              **/
-            double zoomedWidth(){return std::floor(displayWindow().width()*_zoomCtx._zoomFactor);}
+            double zoomedWidth(){return std::floor(getDisplayWindow().width()*_zoomCtx._zoomFactor);}
             
             /**
              *@returns Returns the current zoom factor that is applied to the display.
@@ -369,19 +374,14 @@ class ViewerTab;
              *as a vector of image coordinates.
              *This function does not use any OpenGL function, so it can be safely called in
              *a thread that does not own the context.
-             *@param ret[in,out] the map of rows that this function will fill. This is a map
-             *of scan-line indexes where the key is an index in the full-res frame and the value
-             *is an index in the zoomed version of the image.
-             *@param displayWindow[in] The display window used to do the computations.
-             *@param zoomFactor[in] The zoom factor applied to the display window.
              *@return Returns a pair with the first row index and the last row indexes.
              **/
-            std::pair<int,int> computeRowSpan(const Box2D& displayWindow, std::vector<int>* rows);
+            std::pair<int,int> computeRowSpan(int bottom,int top, std::vector<int>* rows);
             
             /**
-             *@brief same as computeRowSpan(std::map<int,int>& ret,const Box2D& displayWindow) but for columns.
+             *@brief same as computeRowSpan but for columns.
              **/
-            std::pair<int,int> computeColumnSpan(const Box2D& displayWindow, std::vector<int>* columns);
+            std::pair<int,int> computeColumnSpan(int left,int right, std::vector<int>* columns);
             
             /**
              *@brief Computes the viewport coordinates of the point passed in parameter.
@@ -538,7 +538,7 @@ class ViewerTab;
             
             void backgroundColor(double &r,double &g,double &b);
             
-            public slots:
+public slots:
             /**
              *@brief Slot used by the GUI to change the current viewer process applied to all pixels.
              *@param str[in] A string whose name is a valid color-space.
@@ -583,6 +583,8 @@ class ViewerTab;
             void toggleOverlays(){ _overlay = ! _overlay; updateGL();}
             
             void print( int x, int y, const QString&string, QColor color);
+            
+            void onProjectFormatChanged(const Format& format);
             
         signals:
             /**

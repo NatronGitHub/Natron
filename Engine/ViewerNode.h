@@ -39,7 +39,7 @@ class ViewerNode: public OutputNode
 public:
     
         
-    ViewerNode(Model* model);
+    ViewerNode(AppInstance* app);
     
     virtual ~ViewerNode();
     

@@ -139,10 +139,11 @@ public:
         return inter;
     }
     
-    // reset to an empty box
     void clear() {
-        _l = _b = 0;
-        _r = _t = 0;
+        _l = 0;
+        _b = 0;
+        _r = 0;
+        _t = 0;
     }
     
     void move(int dx, int dy) {

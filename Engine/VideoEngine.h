@@ -41,7 +41,6 @@ namespace Powiter{
 class Row;
 }
 class Reader;
-class Model;
 class ViewerNode;
 class Writer;
 class Timer;

@@ -17,7 +17,6 @@
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
-#include "Engine/Model.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
@@ -48,9 +47,9 @@ namespace {
     }
 }
 
-Node::Node(Model* model)
+Node::Node(AppInstance* app)
 : QObject()
-, _model(model)
+, _app(app)
 , _outputs()
 , _inputs()
 , _inputLabelsMap()
@@ -295,7 +294,7 @@ void Node::redoCommand(){
 
 
 const Format& Node::getProjectDefaultFormat() const{
-    return _model->getApp()->getProjectFormat();
+    return getApp()->getProjectFormat();
 }
 void Node::removeKnob(Knob* knob){
     for(U32 i = 0; i < _knobs.size() ; ++i){
@@ -308,8 +307,8 @@ void Node::removeKnob(Knob* knob){
 
 
 /************************OUTPUT NODE*****************************************/
-OutputNode::OutputNode(Model* model)
-: Node(model)
+OutputNode::OutputNode(AppInstance* app)
+: Node(app)
 , _videoEngine()
 {
     
@@ -397,7 +396,8 @@ Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format*
             }
         }
     }
-    displayWindow->set(rod->left(), rod->bottom(), rod->right(), rod->top());
+    if(displayWindow)
+        displayWindow->set(rod->left(), rod->bottom(), rod->right(), rod->top());
     return StatReplyDefault;
 }
 

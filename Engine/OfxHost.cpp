@@ -144,7 +144,7 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
     }
 }
 
-OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
+OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* app) {
     OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
@@ -194,7 +194,7 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,Model* model) {
     if(!rval) {
         return NULL;
     }
-    OfxNode* node = new OfxNode(model,plugin,context);
+    OfxNode* node = new OfxNode(app,plugin,context);
     assert(node);
     Powiter::OfxImageEffectInstance* effect = node->effectInstance();
     if (effect) {

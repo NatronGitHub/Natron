@@ -41,7 +41,6 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/Lut.h"
 #include "Global/AppManager.h"
 #include "Gui/InfoViewerWidget.h"
-#include "Engine/Model.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
 #include "Engine/FrameEntry.h"
@@ -117,24 +116,24 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  */
 void ViewerGL::drawRenderingVAO(){
     const TextureRect& r = _displayingImage ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
-    const Format& img = displayWindow();
+    const Box2D& img = _clipToDisplayWindow ? getDisplayWindow() : getRoD();
     GLfloat vertices[32] = {
-        0.f               , (GLfloat)img.height()  , //0
-        (GLfloat)r.x      , (GLfloat)img.height()  , //1
-        (GLfloat)r.r + 1.f, (GLfloat)img.height()  , //2
-        (GLfloat)img.width()  , (GLfloat)img.height()  , //3
-        0.f               , (GLfloat)r.t + 1.f, //4
-        (GLfloat)r.x      , (GLfloat)r.t + 1.f, //5
-        (GLfloat)r.r + 1.f, (GLfloat)r.t + 1.f, //6
-        (GLfloat)img.width()  , (GLfloat)r.t + 1.f, //7
-        0.f               , (GLfloat)r.y      , //8
-        (GLfloat)r.x      , (GLfloat)r.y      , //9
-        (GLfloat)r.r + 1.f, (GLfloat)r.y      , //10
-        (GLfloat)img.width()  , (GLfloat)r.y      , //11
-        0.f               , 0.f               , //12
-        (GLfloat)r.x      , 0.f               , //13
-        (GLfloat)r.r + 1.f, 0.f               , //14
-        (GLfloat)img.width()  , 0.f                 //15
+        (GLfloat)img.left() ,(GLfloat)img.top()  , //0
+        (GLfloat)r.x       , (GLfloat)img.top()  , //1
+        (GLfloat)r.r + 1.f , (GLfloat)img.top()  , //2
+        (GLfloat)img.right(),(GLfloat)img.top()  , //3
+        (GLfloat)img.left(), (GLfloat)r.t + 1.f, //4
+        (GLfloat)r.x      ,  (GLfloat)r.t + 1.f, //5
+        (GLfloat)r.r + 1.f,  (GLfloat)r.t + 1.f, //6
+        (GLfloat)img.right(),(GLfloat)r.t + 1.f, //7
+        (GLfloat)img.left() ,(GLfloat)r.y      , //8
+        (GLfloat)r.x      ,  (GLfloat)r.y      , //9
+        (GLfloat)r.r + 1.f,  (GLfloat)r.y      , //10
+        (GLfloat)img.right(),(GLfloat)r.y      , //11
+        (GLfloat)img.left(), (GLfloat)img.bottom(), //12
+        (GLfloat)r.x      ,  (GLfloat)img.bottom(), //13
+        (GLfloat)r.r + 1.f,  (GLfloat)img.bottom(), //14
+        (GLfloat)img.right(),(GLfloat)img.bottom() //15
     };
     
     glBindBuffer(GL_ARRAY_BUFFER, _vboVerticesId);
@@ -193,11 +192,11 @@ void ViewerGL::initConstructor(){
     
     _hasHW = true;
     _blankViewerInfos.setChannels(Powiter::Mask_RGBA);
-    Format frmt(0, 0, 2048, 1556,"2K_Super_35(full-ap)",1.0);
-    _blankViewerInfos.setDataWindow(Box2D(0, 0, 2048, 1556));
+    Format frmt(0, 0, 1920, 1080,"HD",1.0);
+    _blankViewerInfos.setRoD(Box2D(0, 0, 1920, 1080));
     _blankViewerInfos.setDisplayWindow(frmt);
-    setDisplayWindow(_blankViewerInfos.getDisplayWindow());
-    setDataWindow(_blankViewerInfos.getDataWindow());
+    setRod(_blankViewerInfos.getRoD());
+    onProjectFormatChanged(frmt);
 	_displayingImage = false;
 	exposure = 1;
 	setMouseTracking(true);
@@ -217,6 +216,7 @@ void ViewerGL::initConstructor(){
     _updatingTexture = false;
     populateMenu();
     initTextFont();
+    _clipToDisplayWindow = true;
 }
 
 void ViewerGL::initTextFont(){
@@ -299,7 +299,7 @@ QSize ViewerGL::sizeHint() const{
 void ViewerGL::resizeGL(int width, int height){
     if(height == 0)// prevent division by 0
         height=1;
-    float ap = displayWindow().getPixelAspect();
+    float ap = getDisplayWindow().getPixelAspect();
     if(ap > 1.f){
         glViewport (0, 0, (int)(width*ap), height);
     }else{
@@ -402,32 +402,35 @@ void ViewerGL::drawOverlay(){
     
     ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
-    const Box2D& dispW = displayWindow();
-    print(dispW.right(),dispW.bottom(), _resolutionOverlay,QColor(233,233,233));
+    const Box2D& dispW = getDisplayWindow();
     
-    QPoint topRight(dispW.right(),dispW.top());
-    QPoint topLeft(dispW.left(),dispW.top());
-    QPoint btmLeft(dispW.left(),dispW.bottom());
-    QPoint btmRight(dispW.right(),dispW.bottom() );
-    
-    glBegin(GL_LINES);
-    glColor4f(0.5, 0.5, 0.5,1.0);
-    glVertex3f(btmRight.x(),btmRight.y(),1);
-    glVertex3f(btmLeft.x(),btmLeft.y(),1);
-    
-    glVertex3f(btmLeft.x(),btmLeft.y(),1);
-    glVertex3f(topLeft.x(),topLeft.y(),1);
-    
-    glVertex3f(topLeft.x(),topLeft.y(),1);
-    glVertex3f(topRight.x(),topRight.y(),1);
-    
-    glVertex3f(topRight.x(),topRight.y(),1);
-    glVertex3f(btmRight.x(),btmRight.y(),1);
-    
-    glEnd();
-    checkGLErrors();
-    const Box2D& dataW = dataWindow();
-    if(dispW != dataW){
+    if(_clipToDisplayWindow){
+        print(dispW.right(),dispW.bottom(), _resolutionOverlay,QColor(233,233,233));
+        
+        QPoint topRight(dispW.right(),dispW.top());
+        QPoint topLeft(dispW.left(),dispW.top());
+        QPoint btmLeft(dispW.left(),dispW.bottom());
+        QPoint btmRight(dispW.right(),dispW.bottom() );
+        
+        glBegin(GL_LINES);
+        glColor4f(0.5, 0.5, 0.5,1.0);
+        glVertex3f(btmRight.x(),btmRight.y(),1);
+        glVertex3f(btmLeft.x(),btmLeft.y(),1);
+        
+        glVertex3f(btmLeft.x(),btmLeft.y(),1);
+        glVertex3f(topLeft.x(),topLeft.y(),1);
+        
+        glVertex3f(topLeft.x(),topLeft.y(),1);
+        glVertex3f(topRight.x(),topRight.y(),1);
+        
+        glVertex3f(topRight.x(),topRight.y(),1);
+        glVertex3f(btmRight.x(),btmRight.y(),1);
+        
+        glEnd();
+        checkGLErrors();
+    }
+    const Box2D& dataW = getRoD();
+    if((dispW != dataW && _clipToDisplayWindow) || !_clipToDisplayWindow){
         
         print(dataW.right(), dataW.top(),_topRightBBOXoverlay, QColor(150,150,150));
         print(dataW.left(), dataW.bottom(), _btmLeftBBOXoverlay, QColor(150,150,150));
@@ -466,7 +469,7 @@ void ViewerGL::drawOverlay(){
     checkGLErrors();
 }
 void ViewerGL::drawProgressBar(){
-    const Format& dW = displayWindow();
+    const Format& dW = getDisplayWindow();
     glLineWidth(5);
     glBegin(GL_LINES);
     
@@ -542,7 +545,7 @@ void ViewerGL::makeCurrent(){
 	}
 }
 
-std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vector<int>* rows) {
+std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
     /*First off,we test the 1st and last row to check wether the
      image is contained in the viewer*/
     // testing top of the image
@@ -552,8 +555,8 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
     int y = 0;
     int prev = -1;
     double res = toImgCoordinates_fast(0,y).y();
-    ret.first = displayWindow.bottom();
-    ret.second = displayWindow.top()-1;
+    ret.first = bottom;
+    ret.second = top-1;
     if (res < 0.) { // all the image is above the viewer
         return ret; // do not add any row
     }
@@ -562,15 +565,15 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
     res = toImgCoordinates_fast(0,y).y();
     /*for all the others row (apart the first and last) we can check.
      */
-    while(y >= 0 && res < displayWindow.bottom()){
+    while(y >= 0 && res < bottom){
         /*while y is an invalid line, iterate*/
         --y;
         res = toImgCoordinates_fast(0,y).y();
     }
-    while(y >= 0 && res >= displayWindow.bottom() && res < displayWindow.top()){
+    while(y >= 0 && res >= bottom && res < top){
         /*y is a valid line in widget coord && res contains the image y coord.*/
         int row = (int)std::floor(res);
-        assert(row >= displayWindow.bottom() && row < displayWindow.top());
+        assert(row >= bottom && row < top);
         if(row != prev){
             rows->push_back(row);
             prev = row;
@@ -582,12 +585,12 @@ std::pair<int,int> ViewerGL::computeRowSpan(const Box2D& displayWindow, std::vec
         ret.first = rows->front();
         ret.second = rows->back();
     }
-    assert(ret.first >= displayWindow.bottom() && ret.first <= std::max(displayWindow.bottom(), displayWindow.top()-1));
-    assert(ret.second >= std::min(displayWindow.bottom(),displayWindow.top()-1) && ret.second < displayWindow.top());
+    assert(ret.first >= bottom && ret.first <= std::max(bottom, top-1));
+    assert(ret.second >= std::min(bottom,top-1) && ret.second < top);
     return ret;
 }
 
-std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::vector<int>* columns) {
+std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<int>* columns) {
     /*First off,we test the 1st and last columns to check wether the
      image is contained in the viewer*/
     // testing right of the image
@@ -597,8 +600,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::
     int x = width()-1;
     int prev = -1;
     double res = toImgCoordinates_fast(x,0).x();
-    ret.first = displayWindow.left();
-    ret.second = displayWindow.right()-1;
+    ret.first = left;
+    ret.second = right-1;
     if (res < 0.) { // all the image is on the left of the viewer
         _textureColumns.clear();
         return ret;
@@ -608,15 +611,15 @@ std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::
     res = toImgCoordinates_fast(x,0).x();
     /*for all the others columns (apart the first and last) we can check.
      */
-    while(x < width() && res < displayWindow.left()) {
+    while(x < width() && res < left) {
         /*while x is an invalid column, iterate from left to right*/
         ++x;
         res = toImgCoordinates_fast(x,0).x();
     }
-    while(x < width() && res >= displayWindow.left() && res < displayWindow.right()) {
+    while(x < width() && res >= left && res < right) {
         /*y is a valid column in widget coord && res contains the image x coord.*/
         int column = (int)std::floor(res);
-        assert(column >= displayWindow.left() && column < displayWindow.right());
+        assert(column >= left && column < right);
         if(column != prev){
             columns->push_back(column);
             prev = column;
@@ -628,8 +631,8 @@ std::pair<int,int> ViewerGL::computeColumnSpan(const Box2D& displayWindow, std::
         ret.first = columns->front();
         ret.second = columns->back();
     }
-    assert(ret.first >= displayWindow.left() && ret.first <= std::max(displayWindow.left(), displayWindow.right()-1));
-    assert(ret.second >= std::min(displayWindow.left(),displayWindow.right()-1) && ret.second < displayWindow.right());
+    assert(ret.first >= left && ret.first <= std::max(left, right-1));
+    assert(ret.second >= std::min(left,right-1) && ret.second < right);
     _textureColumns = *columns;
     return ret;
 }
@@ -747,7 +750,7 @@ void ViewerGL::restoreGLState()
 
 void ViewerGL::initBlackTex(){
     // assert(_must_initBlackTex);
-    fitToFormat(displayWindow());
+    fitToFormat(getDisplayWindow());
     
     TextureRect texSize(0, 0, 2047, 1555,2048,1556);
     assert_checkGLErrors();
@@ -1009,7 +1012,7 @@ void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
 }
 void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     QPointF pos = toImgCoordinates_fast(event->x(), event->y());
-    const Format& dispW = displayWindow();
+    const Format& dispW = getDisplayWindow();
     // if the mouse is inside the image, update the color picker
     if (pos.x() >= dispW.left() &&
         pos.x() <= dispW.width() &&
@@ -1179,7 +1182,7 @@ QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
 QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     
     QPointF pos = toImgCoordinates_fast(x, y);
-    if(pos.x() < displayWindow().left() || pos.x() >= displayWindow().width() || pos.y() < displayWindow().bottom() || pos.y() >=displayWindow().height())
+    if(pos.x() < getDisplayWindow().left() || pos.x() >= getDisplayWindow().width() || pos.y() < getDisplayWindow().bottom() || pos.y() >=getDisplayWindow().height())
         return QVector4D(0,0,0,0);
     if(byteMode()==1 || !_hasHW){
         U32 pixel;
@@ -1276,47 +1279,56 @@ void ViewerGL::updateExposure(double d){
 
 void ViewerGL::disconnectViewer(){
     _viewerTab->getInternalNode()->getVideoEngine()->abortRendering(); // aborting current work
-    setDataWindow(_blankViewerInfos.getDataWindow());
-    setDisplayWindow(_blankViewerInfos.getDisplayWindow());
-    fitToFormat(displayWindow());
+    setRod(_blankViewerInfos.getRoD());
+    fitToFormat(getDisplayWindow());
     clearViewer();
 }
 
 
 
 /*The dataWindow of the currentFrame(BBOX)*/
-const Box2D& ViewerGL::dataWindow() const {return _currentViewerInfos.getDataWindow();}
-
-void ViewerGL::setDataWindow(const Box2D& dataWindow){
-    _currentViewerInfos.setDataWindow(dataWindow);
-    emit infoDataWindowChanged();
-    _btmLeftBBOXoverlay.clear();
-    _btmLeftBBOXoverlay.append(QString::number(dataWindow.left()));
-    _btmLeftBBOXoverlay.append(",");
-    _btmLeftBBOXoverlay.append(QString::number(dataWindow.bottom()));
-    _topRightBBOXoverlay.clear();
-    _topRightBBOXoverlay.append(QString::number(dataWindow.right()));
-    _topRightBBOXoverlay.append(",");
-    _topRightBBOXoverlay.append(QString::number(dataWindow.top()));
-}
+const Box2D& ViewerGL::getRoD() const {return _currentViewerInfos.getRoD();}
 
 /*The displayWindow of the currentFrame(Resolution)*/
-const Format& ViewerGL::displayWindow() const {return _currentViewerInfos.getDisplayWindow();}
+const Format& ViewerGL::getDisplayWindow() const {return _currentViewerInfos.getDisplayWindow();}
 
-void ViewerGL::setDisplayWindow(const Format& displayWindow){
-    Format* df = appPTR->findExistingFormat(displayWindow.width(), displayWindow.height());
-    if(df){
-        Format currentDW = displayWindow;
-        currentDW.setName(df->getName());
-        _currentViewerInfos.setDisplayWindow(currentDW);
-    }else{
-        _currentViewerInfos.setDisplayWindow(displayWindow);
-    }
+
+void ViewerGL::setRod(const Box2D& rod){
+
+    _currentViewerInfos.setRoD(rod);
+    emit infoDataWindowChanged();
+    _btmLeftBBOXoverlay.clear();
+    _btmLeftBBOXoverlay.append(QString::number(rod.left()));
+    _btmLeftBBOXoverlay.append(",");
+    _btmLeftBBOXoverlay.append(QString::number(rod.bottom()));
+    _topRightBBOXoverlay.clear();
+    _topRightBBOXoverlay.append(QString::number(rod.right()));
+    _topRightBBOXoverlay.append(",");
+    _topRightBBOXoverlay.append(QString::number(rod.top()));
+    
+    
+    
+}
+void ViewerGL::onProjectFormatChanged(const Format& format){
+    _currentViewerInfos.setDisplayWindow(format);
+    _blankViewerInfos.setDisplayWindow(format);
+    _blankViewerInfos.setRoD(format);
     emit infoResolutionChanged();
     _resolutionOverlay.clear();
-    _resolutionOverlay.append(QString::number(displayWindow.width()));
+    _resolutionOverlay.append(QString::number(format.width()));
     _resolutionOverlay.append("x");
-    _resolutionOverlay.append(QString::number(displayWindow.height()));
+    _resolutionOverlay.append(QString::number(format.height()));
+
+}
+
+void ViewerGL::setClipToDisplayWindow(bool b) {
+    _clipToDisplayWindow = b;
+    ViewerNode* viewer = _viewerTab->getInternalNode();
+    assert(viewer);
+    if (viewer->getUiContext()) {
+        _viewerTab->abortRendering();
+        _viewerTab->getInternalNode()->refreshAndContinueRender(false);
+    }
 }
 
 /*display black in the viewer*/
@@ -1424,7 +1436,7 @@ void ViewerGL::print( int x, int y, const QString &string,QColor color )
     float zoomFactor = getZoomFactor();
     glTranslatef( x, y , 0 );
     glScalef(1.f/zoomFactor,1.f/zoomFactor, 1);
-    double pa = displayWindow().getPixelAspect();
+    double pa = getDisplayWindow().getPixelAspect();
     if(pa >1){
         glScalef(1/pa, 1, 1);
     }else if(pa < 1){

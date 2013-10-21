@@ -32,7 +32,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
-#include "Engine/Model.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
@@ -112,6 +111,13 @@ _maximized(false)
     _centerViewerButton = new Button(_firstSettingsRow);
     _firstRowLayout->addWidget(_centerViewerButton);
     
+    
+    _clipToProjectFormatButton = new Button(_firstSettingsRow);
+    _clipToProjectFormatButton->setCheckable(true);
+    _clipToProjectFormatButton->setChecked(true);
+    _clipToProjectFormatButton->setDown(true);
+    _firstRowLayout->addWidget(_clipToProjectFormatButton);
+    
     _firstRowLayout->addStretch();
     
     /*2nd row of buttons*/
@@ -164,6 +170,7 @@ _maximized(false)
     
 	/*OpenGL viewer*/
 	viewer = new ViewerGL(this);
+    QObject::connect(_gui->getApp(),SIGNAL(projectFormatChanged(Format)),viewer,SLOT(onProjectFormatChanged(Format)));
     viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/
@@ -361,6 +368,7 @@ _maximized(false)
     QImage imgRefresh(POWITER_IMAGES_PATH"refresh.png");
     QImage imgCenterViewer(POWITER_IMAGES_PATH"centerViewer.png");
     QImage imgLoopMode(POWITER_IMAGES_PATH"loopmode.png");
+    QImage imgClipToProject(POWITER_IMAGES_PATH"cliptoproject.png");
     
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);
@@ -376,6 +384,7 @@ _maximized(false)
     QPixmap pixRefresh = QPixmap::fromImage(imgRefresh);
     QPixmap pixCenterViewer = QPixmap::fromImage(imgCenterViewer);
     QPixmap pixLoopMode = QPixmap::fromImage(imgLoopMode);
+    QPixmap pixClipToProject = QPixmap::fromImage(imgClipToProject);
     
     int iW=20,iH=20;
     pixFirst = pixFirst.scaled(iW,iH);
@@ -392,6 +401,7 @@ _maximized(false)
     pixRefresh = pixRefresh.scaled(iW, iH);
     pixCenterViewer = pixCenterViewer.scaled(50, 50);
     pixLoopMode = pixLoopMode.scaled(iW, iH);
+    pixClipToProject = pixClipToProject.scaled(50,50);
     
     firstFrame_Button->setIcon(QIcon(pixFirst));
     previousKeyFrame_Button->setIcon(QIcon(pixPrevKF));
@@ -407,12 +417,19 @@ _maximized(false)
     _refreshButton->setIcon(QIcon(pixRefresh));
     _centerViewerButton->setIcon(QIcon(pixCenterViewer));
     loopMode_Button->setIcon(QIcon(pixLoopMode));
+    _clipToProjectFormatButton->setIcon(QIcon(pixClipToProject));
     
     
-    _centerViewerButton->setToolTip("Scale the image so it doesn't exceed the size of the viewer and center it."
+    _centerViewerButton->setToolTip("Scales the image so it doesn't exceed the size of the viewer and centers it."
                                     "<p></br><b>Keyboard shortcut: F</b></p>");
     _centerViewerButton->setShortcut(QKeySequence(Qt::Key_F));
     
+    _clipToProjectFormatButton->setToolTip("<p> Clips the portion of the image displayed <br/>"
+                                           "on the viewer to the project format. <br/>"
+                                           "When off, everything in the union of all nodes <br/>"
+                                           "region of definition will be displayed. <br/> <br/>"
+                                           "<b>Keyboard shortcut: C</b></p>");
+    _clipToProjectFormatButton->setShortcut(QKeySequence(Qt::Key_C));
 	/*=================================================*/
     
 	/*frame seeker*/
@@ -466,11 +483,19 @@ _maximized(false)
     
     QObject::connect(_viewerNode, SIGNAL(mustRedraw()), viewer, SLOT(updateGL()));
     QObject::connect(_viewerNode, SIGNAL(mustSwapBuffers()), viewer, SLOT(doSwapBuffers()));
+    
+    QObject::connect(_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
 }
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);
     _viewerNode->getVideoEngine()->toggleLoopMode(b);
 }
+
+void ViewerTab::onClipToProjectButtonToggle(bool b){
+    _clipToProjectFormatButton->setDown(b);
+    viewer->setClipToDisplayWindow(b);
+}
+
 void ViewerTab::onEngineStarted(bool forward){
     play_Forward_Button->setChecked(forward);
     play_Forward_Button->setDown(forward);
@@ -556,7 +581,7 @@ void ViewerTab::centerViewer(){
         _viewerNode->refreshAndContinueRender(true);
 
     }else{
-        viewer->fitToFormat(viewer->displayWindow());
+        viewer->fitToFormat(viewer->getDisplayWindow());
         viewer->updateGL();
     }
 }

@@ -19,13 +19,22 @@
 #include <QtGui/QPixmap>
 #include "Global/Macros.h"
 #include "Global/AppManager.h"
-#include "Engine/Model.h"
 #include "Engine/Knob.h"
 #include "Engine/ChannelSet.h"
 #include "Gui/KnobGui.h"
 #include "Writers/Writer.h"
 
 using namespace std;
+
+
+void registerMetaTypes(){
+    qRegisterMetaType<Variant>();
+    qRegisterMetaType<Writer*>();
+    qRegisterMetaType<ChannelSet>();
+    qRegisterMetaType<KnobGui*>();
+    qRegisterMetaType<Format>();
+
+}
 
 int main(int argc, char *argv[])
 {	
@@ -38,10 +47,9 @@ int main(int argc, char *argv[])
     app.setOrganizationDomain(POWITER_ORGANIZATION_DOMAIN);
     app.setApplicationName(POWITER_APPLICATION_NAME);
 
-    qRegisterMetaType<Variant>();
-    qRegisterMetaType<Writer*>();
-    qRegisterMetaType<ChannelSet>();
-    qRegisterMetaType<KnobGui*>();
+    registerMetaTypes();
+    
+    
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
     filename.append(POWITER_IMAGES_PATH"splashscreen.png");

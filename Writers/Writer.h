@@ -64,7 +64,7 @@ public:
         
     };
       
-    Writer(Model* treeRoot);
+    Writer(AppInstance* app);
         
     virtual ~Writer();
     

@@ -27,7 +27,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
-#include "Engine/Model.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
@@ -59,10 +58,10 @@ namespace {
     }
 }
 
-OfxNode::OfxNode(Model* model,
+OfxNode::OfxNode(AppInstance* app,
         OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
         const std::string& context)
-:OutputNode(model)
+:OutputNode(app)
 , _tabKnob(0)
 , _lastKnobLayoutWithNoNewLine(0)
 , _overlayInteract()
@@ -249,7 +248,8 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Form
        (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
     ofxRectDToBox2D(ofxRod,rod);
-    displayWindow->set(*rod);
+    if(displayWindow)
+        displayWindow->set(*rod);
     return StatOK; 
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);

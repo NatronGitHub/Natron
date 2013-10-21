@@ -32,7 +32,6 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Global/AppManager.h"
 
-#include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
@@ -962,12 +961,6 @@ void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
 	menuEdit->addAction(redoAction);
 }
 void Gui::newProject(){
-//    int ret = saveWarning();
-//    if(ret == 0){
-//        saveProject();
-//    }else if(ret == 2){
-//        return;
-//    }
     appPTR->newAppInstance();
 }
 void Gui::openProject(){

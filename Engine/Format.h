@@ -13,6 +13,7 @@
 #define POWITER_ENGINE_FORMAT_H_
 
 #include <string>
+#include <QtCore/QMetaType>
 #include "Engine/Box.h"
 
 /*This class is used to hold the format of a frame (its resolution).
@@ -80,6 +81,8 @@ private:
         
     }
 };
+
+Q_DECLARE_METATYPE(Format);
 
 
 #endif // POWITER_ENGINE_FORMAT_H_

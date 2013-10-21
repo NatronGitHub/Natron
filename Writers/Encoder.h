@@ -38,9 +38,9 @@ class Separator_Knob;
 class EncoderKnobs {
     
 protected:
-    Writer* _op; ///pointer to the Writer
+    Writer* _writer; ///pointer to the Writer
 public:
-    EncoderKnobs(Writer* op):_op(op){}
+    EncoderKnobs(Writer* op):_writer(op){}
 
     virtual ~EncoderKnobs(){}
     
@@ -72,12 +72,18 @@ public:
 
 
 
+/**
+ * @brief An Encoder is a light-weight object used to encode a single file in a sequence of image. For each image an object
+ * is re-created.
+ * This is used by the Writer when it needs to encode a particular file type. You can implement this class to make
+ * a new encoder for a specific file type.
+ **/
 class Encoder {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
     const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
-    Writer* op; /// a pointer to the Writer
+    Writer* _writer; /// a pointer to the Writer
     EncoderKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
 public:
     

@@ -141,7 +141,7 @@ public:
         int _maximumBufferSize; /// maximum size of the buffer
     };
     
-    Reader(Model* model);
+    Reader(AppInstance* app);
 
     virtual ~Reader();
     

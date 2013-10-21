@@ -20,7 +20,6 @@
 
 #include "Engine/Row.h"
 #include "Engine/Settings.h"
-#include "Engine/Model.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
 #include "Engine/TimeLine.h"
@@ -31,8 +30,8 @@
 using namespace std;
 using namespace Powiter;
 
-Writer::Writer(Model* model):
-OutputNode(model),
+Writer::Writer(AppInstance* app):
+OutputNode(app),
 _requestedChannels(Mask_RGBA), // temporary
 _premult(false),
 _buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
@@ -44,7 +43,7 @@ _lastFrameKnob(0)
 {
     
     _lock = new QMutex;
-    QObject::connect(_model->getApp()->getTimeLine().get(),
+    QObject::connect(getApp()->getTimeLine().get(),
                      SIGNAL(frameRangeChanged(int,int)),
                      this,
                      SLOT(onTimelineFrameRangeChanged(int, int)));
@@ -176,8 +175,8 @@ void Writer::onFrameRangeChoosalChanged(){
             _lastFrameKnob = 0;
         }
     }else if(index == 1){
-        _frameRange.first = _model->getApp()->getTimeLine()->firstFrame();
-        _frameRange.second = _model->getApp()->getTimeLine()->lastFrame();
+        _frameRange.first = getApp()->getTimeLine()->firstFrame();
+        _frameRange.second = getApp()->getTimeLine()->lastFrame();
         if(!_firstFrameKnob){
             _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
             _firstFrameKnob->setValue(_frameRange.first);

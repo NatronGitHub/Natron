@@ -22,7 +22,7 @@ using namespace Powiter;
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
  initializeColorSpace. This function is called after the constructor and before any
  reading occurs.*/
-Encoder::Encoder(Writer* writer):_premult(false),_lut(0),op(writer),_optionalKnobs(0){
+Encoder::Encoder(Writer* writer):_premult(false),_lut(0),_writer(writer),_optionalKnobs(0){
     
 }
 
@@ -72,6 +72,6 @@ void Encoder::to_float(Channel z, float* to, const float* from, const float* alp
 
 void EncoderKnobs::initKnobs(const std::string&){
     
-    _op->createKnobDynamically();
+    _writer->createKnobDynamically();
 }
 

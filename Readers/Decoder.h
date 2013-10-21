@@ -29,6 +29,12 @@ namespace Color {
     class Row;
 }
 
+/**
+ * @brief A Decoder is a light-weight object used to decode a single file in a sequence of image. For each image an object 
+ * is re-created.
+ * This is used by the Reader when it needs to decode a particular file type. You can implement this class to make
+ * a new decoder for a specific file type.
+ **/
 class Decoder{
     
 public:

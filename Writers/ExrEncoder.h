@@ -74,7 +74,7 @@ public:
     ExrEncoder(Writer* writer);
     virtual ~ExrEncoder();
     
-    virtual EncoderKnobs* initSpecificKnobs() OVERRIDE {return new ExrEncoderKnobs(op);}
+    virtual EncoderKnobs* initSpecificKnobs() OVERRIDE {return new ExrEncoderKnobs(_writer);}
     
     /*Should return the name of the write handle : "ffmpeg", "OpenEXR" ...*/
     virtual std::string encoderName() const OVERRIDE {return "OpenEXR";}

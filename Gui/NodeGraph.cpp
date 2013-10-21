@@ -43,7 +43,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxNode.h"
 #include "Engine/ViewerNode.h"
-#include "Engine/Model.h"
 #include "Engine/Hash64.h"
 #include "Engine/FrameEntry.h"
 
@@ -865,10 +864,10 @@ void ConnectCommand::undo(){
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
-        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        (void)_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        (void)_graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
     if(_oldSrc){

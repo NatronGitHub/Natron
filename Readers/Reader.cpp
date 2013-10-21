@@ -25,7 +25,6 @@
 #include "Engine/Node.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
-#include "Engine/Model.h"
 #include "Engine/Settings.h"
 #include "Engine/Box.h"
 #include "Engine/Format.h"
@@ -44,8 +43,8 @@ using namespace Powiter;
 using namespace std;
 
 
-Reader::Reader(Model* model)
-: Node(model)
+Reader::Reader(AppInstance* app)
+: Node(app)
 , _buffer()
 , _fileKnob(0)
 {
@@ -111,7 +110,9 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Forma
     QMutexLocker lock(&_lock);
     boost::shared_ptr<Decoder> found = _buffer.get(filename.toStdString());
     if (found) {
-        *rod = found->readerInfo().getDataWindow();
+        *rod = found->readerInfo().getRoD();
+        if(displayWindow)
+            *displayWindow = found->readerInfo().getDisplayWindow();
     }else{
         boost::shared_ptr<Decoder> desc;
         try{
@@ -121,8 +122,9 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Forma
             return StatFailed;
         }
         if(desc){
-            *rod =  desc->readerInfo().getDataWindow();
-            *displayWindow = desc->readerInfo().getDisplayWindow();
+            *rod =  desc->readerInfo().getRoD();
+            if(displayWindow)
+                *displayWindow = desc->readerInfo().getDisplayWindow();
         }else{
             return StatFailed;
         }

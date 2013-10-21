@@ -22,7 +22,6 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
-#include "Engine/Model.h"
 
 using namespace std;
 using namespace Powiter;

@@ -17,7 +17,6 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
-#include "Engine/Model.h"
 
 #include "Global/AppManager.h"
 #include "Global/Macros.h"

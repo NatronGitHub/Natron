@@ -106,7 +106,6 @@ SOURCES += \
     Engine/Knob.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
-    Engine/Model.cpp \
     Engine/Node.cpp \
     Engine/OfxClipInstance.cpp \
     Engine/OfxHost.cpp \
@@ -173,7 +172,6 @@ HEADERS += \
     Engine/LRUcache.h \
     Engine/Lut.h \
     Engine/MemoryFile.h \
-    Engine/Model.h \
     Engine/Node.h \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \

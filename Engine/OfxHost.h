@@ -19,7 +19,7 @@
 #include "Global/Macros.h"
 
 class OfxNode;
-class Model;
+class AppInstance;
 namespace Powiter {
 
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
@@ -61,7 +61,7 @@ public:
                                const char* format,
                                va_list args) OVERRIDE;
 
-    OfxNode* createOfxNode(const std::string& name,Model* model);
+    OfxNode* createOfxNode(const std::string& name,AppInstance* app);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/

@@ -47,5 +47,6 @@
         <file>Resources/Images/openeffects.png</file>
         <file>Resources/Images/loopmode.png</file>
         <file>Resources/Images/help.png</file>
+        <file>Resources/Images/cliptoproject.png</file>
     </qresource>
 </RCC>

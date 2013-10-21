@@ -54,7 +54,7 @@ class OfxNode : public OutputNode{
 public:
     
     
-    OfxNode(Model* model,
+    OfxNode(AppInstance* app,
             OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
             const std::string& context);
     

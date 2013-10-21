@@ -82,7 +82,7 @@ void QtEncoder::setupFile(const QString& filename,const Box2D& rod){
  This function must close the file as writeAllData is the LAST function called before the
  destructor of Write.*/
 void QtEncoder::writeAllData(){
-    const ChannelSet& channels = op->requestedChannels();
+    const ChannelSet& channels = _writer->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
         type = QImage::Format_ARGB32_Premultiplied;
@@ -109,7 +109,7 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
 }
 
 void QtEncoder::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
-    boost::shared_ptr<const Row> row = op->input(0)->get(time,y,left,right,channels);
+    boost::shared_ptr<const Row> row = _writer->input(0)->get(time,y,left,right,channels);
     
     /*invert y to be in top-to-bottom increasing order*/
     y = _rod.height()-y-1;

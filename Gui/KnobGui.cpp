@@ -38,7 +38,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Node.h"
-#include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/Settings.h"

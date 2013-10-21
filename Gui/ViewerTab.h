@@ -37,7 +37,7 @@ class TimeLineGui;
 class ViewerNode;
 class Gui;
 class ViewerTab: public QWidget 
-{
+{ 
     Q_OBJECT
     
     Gui* _gui;
@@ -68,6 +68,7 @@ public:
 	ComboBox* _viewerChannels;
     ComboBox* _zoomCombobox;
     Button* _centerViewerButton;
+    Button* _clipToProjectFormatButton;
 
     /*2nd row*/
     SpinBox* _gainBox;
@@ -128,6 +129,7 @@ public slots:
     void centerViewer();
     void toggleLoopMode(bool);
     void onViewerChannelsChanged(int);
+    void onClipToProjectButtonToggle(bool);
 
     /*Updates the comboBox according to the real zoomFactor. Value is in % */
     void updateZoomComboBox(int value);

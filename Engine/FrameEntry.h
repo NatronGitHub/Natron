@@ -36,6 +36,7 @@ namespace Powiter{
         float _lut;
         float _byteMode;
         Box2D _dataWindow;//RoD
+        Format _displayWindow;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
         
         
@@ -47,6 +48,7 @@ namespace Powiter{
         ,_lut(0)
         ,_byteMode(0)
         ,_dataWindow()
+        ,_displayWindow()
         ,_textureRect()
         {}
         
@@ -58,11 +60,12 @@ namespace Powiter{
         ,_lut(0)
         ,_byteMode(0)
         ,_dataWindow()
+        ,_displayWindow()
         ,_textureRect()
         {}
         
         FrameKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                 float lut,float byteMode,const Box2D& dataWindow,const TextureRect& textureRect):
+                 float lut,float byteMode,const Box2D& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
         ,_frameNb(frameNb)
         ,_treeVersion(treeVersion)
@@ -71,6 +74,7 @@ namespace Powiter{
         ,_lut(lut)
         ,_byteMode(byteMode)
         ,_dataWindow(dataWindow)
+        ,_displayWindow(displayWindow)
         ,_textureRect(textureRect)
         {
             
@@ -87,6 +91,11 @@ namespace Powiter{
             hash->append(_dataWindow.right());
             hash->append(_dataWindow.top());
             hash->append(_dataWindow.bottom());
+            hash->append(_displayWindow.left());
+            hash->append(_displayWindow.right());
+            hash->append(_displayWindow.top());
+            hash->append(_displayWindow.bottom());
+            hash->append(_displayWindow.getPixelAspect());
             hash->append(_textureRect.x);
             hash->append(_textureRect.y);
             hash->append(_textureRect.r);
@@ -102,6 +111,7 @@ namespace Powiter{
             _lut == other._lut &&
             _byteMode == other._byteMode &&
             _dataWindow == other._dataWindow &&
+            _displayWindow == other._displayWindow &&
             _textureRect == other._textureRect;
         }
     };
@@ -121,6 +131,7 @@ namespace boost {
             ar & f._lut;
             ar & f._byteMode;
             ar & f._dataWindow;
+            ar & f._displayWindow;
             ar & f._textureRect;
         }
     }
@@ -145,8 +156,8 @@ namespace Powiter{
         ~FrameEntry(){}
         
         static FrameKey makeKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                                float lut,float byteMode,const Box2D& dataWindow,const TextureRect& textureRect){
-            return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,dataWindow,textureRect);
+                                float lut,float byteMode,const Box2D& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
+            return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,dataWindow,displayWindow,textureRect);
         }
         
         U8* data() const {return _data.writable();}

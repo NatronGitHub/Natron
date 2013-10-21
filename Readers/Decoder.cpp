@@ -18,7 +18,6 @@
 #include "Gui/ViewerGL.h"
 #include "Engine/Lut.h"
 #include "Global/AppManager.h"
-#include "Engine/Model.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Row.h"
 
@@ -85,7 +84,7 @@ void Decoder::setReaderInfo(Format dispW,
 	const Box2D& dataW,
 	ChannelSet channels) {
     _readerInfo->setDisplayWindow(dispW);
-    _readerInfo->setDataWindow(dataW);
+    _readerInfo->setRoD(dataW);
     _readerInfo->setChannels(channels);
 }
 

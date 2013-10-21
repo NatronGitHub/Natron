@@ -20,7 +20,6 @@
 #include "Engine/OfxParamInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
-#include "Engine/Model.h"
 #include "Global/AppManager.h"
 
 using namespace std;
@@ -105,7 +104,7 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
         if (it->second) {
             Box2D inputRod;
 #warning this is a Hack and shouldn't be the way to get the current time
-            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
             rod.merge(inputRod);
@@ -134,7 +133,7 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
         if (it->second) {
             Box2D inputRod;
 #warning this is a Hack and shouldn't be the way to get the current time
-            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
             rod.merge(inputRod);
@@ -163,7 +162,7 @@ void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) cons
         if (it->second) {
             Box2D inputRod;
 #warning this is a Hack and shouldn't be the way to get the current time
-            Status st = it->second->getRegionOfDefinition(_node->getModel()->getApp()->getTimeLine()->currentFrame(), &inputRod);
+            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
             if(st == StatFailed)
                 break;
             rod.merge(inputRod);
@@ -448,14 +447,14 @@ bool OfxImageEffectInstance::progressUpdate(double /*t*/) {
 /// time as being passed to an action (eg render)
 double OfxImageEffectInstance::timeLineGetTime() {
     
-    return _node->getModel()->getApp()->getTimeLine()->currentFrame();
+    return _node->getApp()->getTimeLine()->currentFrame();
 }
 
 
 /// set the timeline to a specific time
 void OfxImageEffectInstance::timeLineGotoTime(double t) {
     
-    return _node->getModel()->getApp()->getTimeLine()->seekFrame((int)t);
+    return _node->getApp()->getTimeLine()->seekFrame((int)t);
     
 }
 
@@ -463,8 +462,8 @@ void OfxImageEffectInstance::timeLineGotoTime(double t) {
 /// get the first and last times available on the effect's timeline
 void OfxImageEffectInstance::timeLineGetBounds(double &t1, double &t2) {
     
-    t1 = _node->getModel()->getApp()->getTimeLine()->firstFrame();
-    t2 = _node->getModel()->getApp()->getTimeLine()->lastFrame();
+    t1 = _node->getApp()->getTimeLine()->firstFrame();
+    t2 = _node->getApp()->getTimeLine()->lastFrame();
 }
 
 
