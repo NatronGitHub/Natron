@@ -24,7 +24,6 @@
 
 using namespace Powiter;
 using namespace std;
-using namespace boost;
 
 Project::Project(AppInstance* appInstance):
 _projectName("Untitled.rs"),

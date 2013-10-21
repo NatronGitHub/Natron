@@ -47,7 +47,6 @@
 
 using namespace std;
 using namespace Powiter;
-using namespace boost;
 
 VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 : QThread(parent)

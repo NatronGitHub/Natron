@@ -36,7 +36,8 @@
 
 using namespace std;
 using namespace Powiter;
-using namespace boost;
+using boost::shared_ptr;
+
 namespace {
     void Hash64_appendKnob(Hash64* hash, const Knob& knob){
         const std::vector<U64>& values= knob.getHashVector();
