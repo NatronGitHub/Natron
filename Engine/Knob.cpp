@@ -24,16 +24,18 @@
 
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/KnobGui.h"
+#include "Gui/DockablePanel.h"
 
 using namespace std;
 using namespace Powiter;
+
 
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef Knob* (*KnobBuilder)(Node*  node,const std::string& description,int dimension);
 
-typedef KnobGui* (*KnobGuiBuilder)(Knob* knob);
+typedef KnobGui* (*KnobGuiBuilder)(Knob* knob,DockablePanel*);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory(){
@@ -161,15 +163,6 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
     delete rgbaKnob;
     
-    
-    Knob* tabKnob = Tab_Knob::BuildKnob(NULL,stub,1);
-    
-    std::map<std::string,void*> TABfunctions;
-    TABfunctions.insert(make_pair("BuildKnob",(void*)&Tab_Knob::BuildKnob));
-    TABfunctions.insert(make_pair("BuildKnobGui",(void*)&Tab_KnobGui::BuildKnobGui));
-    LibraryBinary *TABKnobPlugin = new LibraryBinary(TABfunctions);
-    _loadedKnobs.insert(make_pair(tabKnob->name(),TABKnobPlugin));
-    delete tabKnob;
     Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1);
     
     std::map<std::string,void*> STRfunctions;
@@ -206,7 +199,7 @@ Knob* KnobFactory::createKnob(const std::string& name,
         return knob;
     }
 }
-KnobGui* KnobFactory::createGuiForKnob(Knob* knob) const {
+KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) const {
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(knob->name());
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -216,7 +209,7 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob) const {
             return NULL;
         }
         KnobGuiBuilder guiBuilder = (KnobGuiBuilder)(guiBuilderFunc.second);
-        return guiBuilder(knob);
+        return guiBuilder(knob,container);
     }
 }
 
@@ -246,6 +239,8 @@ Knob::~Knob(){
 }
 
 void Knob::startRendering(bool initViewer){
+    if(!_node)
+        return;
     ViewerNode* viewer = _node->hasViewerConnected();
     if(viewer){
         viewer->refreshAndContinueRender(initViewer);
@@ -308,6 +303,8 @@ void File_Knob::fillHashVector(){
 
 void File_Knob::tryStartRendering(){
     emit filesSelected();
+    if(!_node)
+        return;
     if(_filesSequence.size() > 0){
         _node->refreshPreviewImage(_filesSequence.begin()->first);
         startRendering(true);

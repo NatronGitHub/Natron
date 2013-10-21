@@ -15,7 +15,6 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
@@ -30,10 +29,8 @@ namespace Powiter{
 class AppInstance;
 class SettingsPanel;
 class Knob;
-class QUndoCommand;
 class ViewerNode;
 class QKeyEvent;
-class QUndoStack;
 class Node;
 
 
@@ -217,9 +214,8 @@ public:
      should never call this yourself. The knob belongs only to this Node.*/
     void addKnob(Knob* knob){ _knobs.push_back(knob); }
     
+    /*Called by KnobFactory::createKnob.*/
     void removeKnob(Knob* knob);
-    
-    void pushUndoCommand(QUndoCommand* command);
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
@@ -457,7 +453,6 @@ private:
     std::string _name; //node name set by the user
     std::vector<Knob*> _knobs;
     
-    boost::scoped_ptr<QUndoStack> _undoStack;
     DeactivatedState _deactivatedState;
     
     Hash64 _hashValue;

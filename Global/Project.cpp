@@ -32,6 +32,8 @@ _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
 _format(*appPTR->findExistingFormat(2048, 1556,1.)),
 _timeline(new TimeLine())
+,_autoSetProjectFormat(true)
+,_currentNodes()
 ,_appInstance(appInstance)
 {
     

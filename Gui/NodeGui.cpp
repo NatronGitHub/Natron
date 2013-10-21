@@ -16,7 +16,7 @@
 #include <QtConcurrentRun>
 
 #include "Gui/Edge.h"
-#include "Gui/SettingsPanel.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
@@ -52,7 +52,6 @@ NodeGui::NodeGui(NodeGraph* dag,
 , channels(NULL)
 , prev_pix(NULL)
 , inputs()
-, _knobs()
 , settingsPanel_displayed(false)
 , settings(0)
 {
@@ -69,8 +68,6 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
-    QObject::connect(node, SIGNAL(canUndoChanged(bool)), this, SLOT(onCanUndoChanged(bool)));
-    QObject::connect(node, SIGNAL(canRedoChanged(bool)), this, SLOT(onCanRedoChanged(bool)));
     QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
     
     setCacheMode(DeviceCoordinateCache);
@@ -144,10 +141,6 @@ NodeGui::~NodeGui(){
     }
     if(!node->isOpenFXNode())
         delete node;
-
-    //removing parentship otherwise Qt will attempt to delete knobs a second time
-    for(map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it)
-        it->second->setParent(NULL);
 }
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
@@ -169,26 +162,6 @@ void NodeGui::refreshEdges(){
     }
 }
 
-
-void NodeGui::onCanUndoChanged(bool b){
-    if(settings){
-        settings->setEnabledUndoButton(b);
-    }
-}
-
-void NodeGui::onCanRedoChanged(bool b){
-    if(settings){
-        settings->setEnabledRedoButton(b);
-    }
-
-}
-
-void NodeGui::undoCommand(){
-    node->undoCommand();
-}
-void NodeGui::redoCommand(){
-    node->redoCommand();
-}
 
 void NodeGui::markInputNull(Edge* e){
     for (U32 i = 0; i < inputs.size(); ++i) {
@@ -353,7 +326,7 @@ void NodeGui::onLineEditNameChanged(const QString& s){
 void NodeGui::onInternalNameChanged(const QString& s){
     name->setText(s);
     if(settings)
-        settings->setNodeName(s);
+        settings->onNameChanged(s);
     scene()->update();
 }
 
@@ -440,9 +413,8 @@ void NodeGui::activate(){
         }
     }
     if(node->className() != "Viewer"){
-        if(isThisPanelEnabled()){
-            setSettingsPanelEnabled(false);
-            getSettingPanel()->setVisible(true);
+        if(isSettingsPanelVisible()){
+            setVisibleSettingsPanel(false);
         }
     }else{
         ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
@@ -467,9 +439,8 @@ void NodeGui::deactivate(){
     }
    
     if(node->className() != "Viewer"){
-        if(isThisPanelEnabled()){
-            setSettingsPanelEnabled(false);
-            getSettingPanel()->close();
+        if(isSettingsPanelVisible()){
+            setVisibleSettingsPanel(false);
         }
         
     }else{
@@ -486,31 +457,22 @@ void NodeGui::deactivate(){
 
 void NodeGui::initializeKnobs(){
     if(settings){
-        settings->initialize_knobs();
+        settings->initializeKnobs();
     }
 }
 
-KnobGui* NodeGui::findKnobGuiOrCreate(Knob* knob){
-    map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
-    if (it == _knobs.end()) {
-        KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob);
-        QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
-        if(!ret){
-            std::cout << "Failed to create gui for Knob" << std::endl;
-            return NULL;
-        }
-        _knobs.insert(make_pair(knob, ret));
-        return ret;
+
+
+void NodeGui::setVisibleSettingsPanel(bool b){
+    if(settings){
+        settings->setVisible(b);
+    }
+}
+
+bool NodeGui::isSettingsPanelVisible() const{
+    if(settings){
+        return settings->isVisible();
     }else{
-        return it->second;
-    }
-}
-
-void NodeGui::onKnobDeletion(KnobGui* k){
-    for(map<Knob*,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
-        if (it->second == k) {
-            _knobs.erase(it);
-            return;
-        }
+        return false;
     }
 }

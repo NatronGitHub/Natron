@@ -31,7 +31,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
-#include "Gui/SettingsPanel.h"
+#include "Gui/DockablePanel.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/ViewerGL.h"
@@ -379,9 +379,8 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
         
         QPointF evpt = n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt) && n->getNode()->className() != "Viewer"){
-            if(!n->isThisPanelEnabled()){
-                n->setSettingsPanelEnabled(true);
-                n->getSettingPanel()->setVisible(true);
+            if(!n->isSettingsPanelVisible()){
+                n->setVisibleSettingsPanel(true);
             }
             n->putSettingsPanelFirst();
             /*scrolling back to the top the selected node's property tab is visible*/

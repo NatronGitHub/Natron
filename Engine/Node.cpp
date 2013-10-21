@@ -4,15 +4,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "Node.h"
 
-#include <QUndoStack>
-#include <QUndoCommand>
+
 #include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
@@ -55,7 +54,6 @@ Node::Node(AppInstance* app)
 , _inputLabelsMap()
 , _name()
 , _knobs()
-, _undoStack(new QUndoStack)
 , _deactivatedState()
 , _hashValue()
 , _markedByTopologicalSort(false)
@@ -276,21 +274,7 @@ void Node::activate(){
     
 }
 
-void Node::pushUndoCommand(QUndoCommand* command){
-    _undoStack->push(command);
-    emit canUndoChanged(_undoStack->canUndo());
-    emit canRedoChanged(_undoStack->canRedo());
-}
-void Node::undoCommand(){
-    _undoStack->undo();
-    emit canUndoChanged(_undoStack->canUndo());
-    emit canRedoChanged(_undoStack->canRedo());
-}
-void Node::redoCommand(){
-    _undoStack->redo();
-    emit canUndoChanged(_undoStack->canUndo());
-    emit canRedoChanged(_undoStack->canRedo());
-}
+
 
 
 const Format& Node::getProjectDefaultFormat() const{
@@ -435,7 +419,7 @@ void Node::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
     if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()){
         rod->set_top(projectDefault.top());
     }
-
+    
 }
 
 
@@ -479,9 +463,9 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
             float a = alpha ? clamp(alpha[nearestX]) : 1.f;
             dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
-
+            
         }
         
     }
-
+    
 }

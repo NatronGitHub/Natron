@@ -923,6 +923,21 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
     }
     return kOfxStatOK;
 }
+OfxStatus OfxStringInstance::getV(va_list arg){
+    const char **value = va_arg(arg, const char **);
+    
+    OfxStatus stat = get(_localString.localData());
+    *value = _localString.localData().c_str();
+    return stat;
+
+}
+OfxStatus OfxStringInstance::getV(OfxTime time, va_list arg){
+    const char **value = va_arg(arg, const char **);
+    
+    OfxStatus stat = get(time,_localString.localData());
+    *value = _localString.localData().c_str();
+    return stat;
+}
 
 Knob* OfxStringInstance::getKnob() const{
     

@@ -42,6 +42,7 @@ class QVBoxLayout;
 class QHBoxLayout;
 class ScaleSlider;
 class QGridLayout;
+class DockablePanel;
 class KnobGui : public QObject
 {
     Q_OBJECT
@@ -51,7 +52,7 @@ public:
     
     friend class KnobUndoCommand;
     
-    KnobGui(Knob* knob);
+    KnobGui(Knob* knob,DockablePanel* container);
     
     virtual ~KnobGui();
         
@@ -150,6 +151,7 @@ private:
     bool _triggerNewLine;
     int _spacingBetweenItems;
     bool _widgetCreated;
+    DockablePanel* _container;
 };
 Q_DECLARE_METATYPE(KnobGui*);
 
@@ -193,9 +195,9 @@ class File_KnobGui:public KnobGui
     
 public:
     
-    static KnobGui* BuildKnobGui(Knob* knob){ return new File_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new File_KnobGui(knob,container); }
     
-    File_KnobGui(Knob* knob);
+    File_KnobGui(Knob* knob,DockablePanel* container);
 
     virtual ~File_KnobGui();
             
@@ -238,9 +240,9 @@ class OutputFile_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    static KnobGui* BuildKnobGui(Knob* knob){ return new OutputFile_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new OutputFile_KnobGui(knob,container); }
     
-    OutputFile_KnobGui(Knob* knob);
+    OutputFile_KnobGui(Knob* knob,DockablePanel* container);
     
     virtual ~OutputFile_KnobGui();
     
@@ -284,10 +286,10 @@ class Int_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Int_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Int_KnobGui(knob,container); }
 
     
-    Int_KnobGui(Knob* knob);
+    Int_KnobGui(Knob* knob,DockablePanel* container);
     
     virtual ~Int_KnobGui();
     
@@ -351,10 +353,10 @@ class Bool_KnobGui :public KnobGui
 	Q_OBJECT
 public:
     
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Bool_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Bool_KnobGui(knob,container); }
 
     
-    Bool_KnobGui(Knob* knob):KnobGui(knob){}
+    Bool_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
 
     virtual ~Bool_KnobGui();
     
@@ -389,10 +391,10 @@ class Double_KnobGui : public KnobGui
     Q_OBJECT
 public:
     
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Double_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Double_KnobGui(knob,container); }
 
     
-    Double_KnobGui(Knob* knob);
+    Double_KnobGui(Knob* knob,DockablePanel* container);
     
     virtual ~Double_KnobGui();
     
@@ -433,10 +435,10 @@ class Button_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Button_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Button_KnobGui(knob,container); }
 
     
-    Button_KnobGui(Knob* knob):KnobGui(knob){}
+    Button_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
     
     virtual ~Button_KnobGui();
 
@@ -467,10 +469,10 @@ class ComboBox_KnobGui : public KnobGui
 {
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new ComboBox_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new ComboBox_KnobGui(knob,container); }
 
     
-    ComboBox_KnobGui(Knob* knob);
+    ComboBox_KnobGui(Knob* knob,DockablePanel* container);
     
     virtual ~ComboBox_KnobGui();
     
@@ -502,9 +504,9 @@ private:
 class Separator_KnobGui : public KnobGui
 {
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Separator_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Separator_KnobGui(knob,container); }
 
-    Separator_KnobGui(Knob* knob):KnobGui(knob){}
+    Separator_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){}
     
     virtual ~Separator_KnobGui();
     
@@ -530,10 +532,10 @@ private:
 class RGBA_KnobGui : public KnobGui{
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new RGBA_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new RGBA_KnobGui(knob,container); }
 
     
-    RGBA_KnobGui(Knob* knob):KnobGui(knob),_alphaEnabled(true){}
+    RGBA_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_alphaEnabled(true){}
     
     virtual ~RGBA_KnobGui();
     
@@ -594,10 +596,10 @@ private:
 class String_KnobGui : public KnobGui{
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new String_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new String_KnobGui(knob,container); }
 
     
-    String_KnobGui(Knob* knob):KnobGui(knob) {}
+    String_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container) {}
 	
     virtual ~String_KnobGui();
     
@@ -660,10 +662,10 @@ signals:
 class Group_KnobGui : public KnobGui{
     Q_OBJECT
 public:
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Group_KnobGui(knob); }
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new Group_KnobGui(knob,container); }
 
     
-    Group_KnobGui(Knob* knob):KnobGui(knob),_checked(false){}
+    Group_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_checked(false){}
     
     virtual ~Group_KnobGui();
 
@@ -701,41 +703,6 @@ private:
     std::vector< std::pair< KnobGui*,std::pair<int,int> > > _children;
 };
 
-
-/*****************************/
-class QTabWidget;
-class Tab_KnobGui : public KnobGui{
-  
-public:
-    typedef std::map<std::string, std::pair<QVBoxLayout*, std::vector<KnobGui*> > > KnobsTabMap;
-    
-    static KnobGui* BuildKnobGui(Knob* knob){ return new Tab_KnobGui(knob); }
-
-    
-    Tab_KnobGui(Knob* knob):KnobGui(knob){}
-    
-    ~Tab_KnobGui();
-
-    virtual void createWidget(QGridLayout* layout,int row);
-    
-    void addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs);
-    
-    virtual void hide();
-    
-    virtual void show();
-    
-    virtual void setEnabled(bool b);
-    
-    virtual void addToLayout(QHBoxLayout* layout);
-    
-protected:
-    
-    virtual void updateGUI(const Variant& variant){(void)variant;}
-    
-private:
-  
-    QTabWidget* _tabWidget;
-};
 
 
 

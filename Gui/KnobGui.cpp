@@ -44,7 +44,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/Knob.h"
 
 #include "Gui/Button.h"
-#include "Gui/SettingsPanel.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/TimeLineGui.h"
 #include "Gui/Gui.h"
@@ -62,11 +62,12 @@ using namespace Powiter;
 using namespace std;
 
 
-KnobGui::KnobGui(Knob* knob):
+KnobGui::KnobGui(Knob* knob,DockablePanel* container):
 _knob(knob),
 _triggerNewLine(true),
 _spacingBetweenItems(0),
-_widgetCreated(false)
+_widgetCreated(false),
+_container(container)
 {
     QObject::connect(knob,SIGNAL(valueChanged(const Variant&)),this,SLOT(onInternalValueChanged(const Variant&)));
     QObject::connect(this,SIGNAL(valueChanged(const Variant&)),knob,SLOT(onValueChanged(const Variant&)));
@@ -85,7 +86,7 @@ KnobGui::~KnobGui(){
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
     if(_knob->canBeUndone()){
-        _knob->getNode()->pushUndoCommand(cmd);
+        _container->pushUndoCommand(cmd);
     }else{
         cmd->redo();
     }
@@ -128,7 +129,7 @@ bool KnobUndoCommand::mergeWith(const QUndoCommand *command){
 }
 
 //===========================FILE_KNOB_GUI=====================================
-File_KnobGui::File_KnobGui(Knob* knob):KnobGui(knob){
+File_KnobGui::File_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){
     File_Knob* fileKnob = dynamic_cast<File_Knob*>(knob);
     QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
@@ -221,7 +222,7 @@ void File_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_openFileButton);
 }
 //============================OUTPUT_FILE_KNOB_GUI====================================
-OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob):KnobGui(knob){
+OutputFile_KnobGui::OutputFile_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){
     OutputFile_Knob* fileKnob = dynamic_cast<OutputFile_Knob*>(knob);
     QObject::connect(fileKnob,SIGNAL(shouldOpenFile()),this,SLOT(open_file()));
 }
@@ -306,7 +307,7 @@ void OutputFile_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_openFileButton);
 }
 //==========================INT_KNOB_GUI======================================
-Int_KnobGui::Int_KnobGui(Knob* knob):KnobGui(knob),_slider(0){
+Int_KnobGui::Int_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_slider(0){
     Int_Knob* intKnob = dynamic_cast<Int_Knob*>(_knob);
     assert(intKnob);
     QObject::connect(intKnob, SIGNAL(minMaxChanged(int,int,int)), this, SLOT(onMinMaxChanged(int, int,int)));
@@ -525,7 +526,7 @@ void Bool_KnobGui::addToLayout(QHBoxLayout* layout){
     layout->addWidget(_checkBox);
 }
 //=============================DOUBLE_KNOB_GUI===================================
-Double_KnobGui::Double_KnobGui(Knob* knob):KnobGui(knob),_slider(0){
+Double_KnobGui::Double_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container),_slider(0){
     Double_Knob* dbl_knob = dynamic_cast<Double_Knob*>(_knob);
     assert(dbl_knob);
     QObject::connect(dbl_knob, SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double, double,int)));
@@ -745,7 +746,7 @@ void Button_KnobGui::addToLayout(QHBoxLayout* layout){
 }
 
 //=============================COMBOBOX_KNOB_GUI===================================
-ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob):KnobGui(knob){
+ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){
     ComboBox_Knob* cbKnob = dynamic_cast<ComboBox_Knob*>(knob);
     _entries = cbKnob->getEntries();
 }
@@ -1202,44 +1203,4 @@ void Group_KnobGui::addToLayout(QHBoxLayout* layout){
         mainLayout->addWidget(container);
     }
     layout->addWidget(mainWidget);
-}
-//=============================TAB_KNOB_GUI===================================
-void Tab_KnobGui::createWidget(QGridLayout* layout,int row){
-    _tabWidget = new QTabWidget(layout->parentWidget());
-    _tabWidget->setToolTip(_knob->getHintToolTip().c_str());
-    layout->addWidget(_tabWidget,row,0,Qt::AlignLeft);
-    
-}
-
-Tab_KnobGui::~Tab_KnobGui(){
-    delete _tabWidget;
-}
-void Tab_KnobGui::addKnobs(const std::map<std::string,std::vector<KnobGui*> >& knobs_){
-    for (std::map<std::string,std::vector<KnobGui*> >::const_iterator it = knobs_.begin();
-         it!=knobs_.end(); ++it) {
-        std::string name = it->first;
-        QWidget* newTab = new QWidget(_tabWidget);
-        _tabWidget->addTab(newTab,name.c_str());
-        QVBoxLayout* newLayout = new QVBoxLayout(newTab);
-        newTab->setLayout(newLayout);
-        vector<KnobGui*> knobs = it->second;
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            knobs[i]->moveToLayout(newLayout);
-        }
-    }
-}
-
-void Tab_KnobGui::show(){
-    _tabWidget->show();
-    
-}
-void Tab_KnobGui::hide(){
-    _tabWidget->hide();
-    
-}
-void Tab_KnobGui::setEnabled(bool b){
-    _tabWidget->setEnabled(b);
-}
-void Tab_KnobGui::addToLayout(QHBoxLayout* layout){
-    layout->addWidget(_tabWidget);
 }

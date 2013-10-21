@@ -86,12 +86,6 @@ public:
     
     QVBoxLayout* getSettingsLayout(){return dockContainer;}
     
-    /*Returns true if the settings panel for this node is displayed*/
-    bool isThisPanelEnabled(){return settingsPanel_displayed;}
-    
-    /*Set the boolean to true if the settings panel for this node will be displayed.*/
-    void setSettingsPanelEnabled(bool enabled){settingsPanel_displayed=enabled;}
-    
     /*Returns a pointer to the settings panel of this node.*/
     SettingsPanel* getSettingPanel(){return settings;}
     
@@ -133,16 +127,9 @@ public:
     
     void refreshPosition(double x,double y);
     
-    KnobGui* findKnobGuiOrCreate(Knob* knob);
-    
+    bool isSettingsPanelVisible() const;
 public slots:
-    void undoCommand();
-    
-    void redoCommand();
-    
-    void onCanUndoChanged(bool);
-    
-    void onCanRedoChanged(bool);
+  
     
     /*Updates the preview image.*/
 	void updatePreviewImage(int time);
@@ -171,7 +158,7 @@ public slots:
     /*Use NULL for src to disconnect.*/
     bool connectEdge(int edgeNumber);
     
-    void onKnobDeletion(KnobGui* k);
+    void setVisibleSettingsPanel(bool b);
     
 signals:
     void nameChanged(QString);
@@ -206,11 +193,7 @@ private:
     
     /*the graphical input arrows*/
     std::map<int,Edge*> inputs;
-    
-    /*the graphical knobs*/
-    std::map<Knob*,KnobGui*> _knobs;
-    
-    /*settings panel related*/
+       /*settings panel related*/
     bool settingsPanel_displayed;
     SettingsPanel* settings;
     

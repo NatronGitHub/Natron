@@ -26,6 +26,7 @@
 
 class Knob;
 class Node;
+class DockablePanel;
 
 /******************************VARIANT**************************************/
 
@@ -156,7 +157,7 @@ public:
     
     Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1) const;
     
-    KnobGui* createGuiForKnob(Knob* knob) const;
+    KnobGui* createGuiForKnob(Knob* knob,DockablePanel* container) const;
     
 private:
     

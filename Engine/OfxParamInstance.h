@@ -18,7 +18,10 @@
 #include <QtCore/QObject>
 #include <QStringList>
 #include <QVector4D>
+#include <QThreadStorage>
 
+
+#include "Global/GlobalDefines.h"
 //ofx
 #include "ofxhImageEffect.h"
 
@@ -322,15 +325,26 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
-    
+    QThreadStorage<std::string> _localString;
 public:
     
     OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor);
     
-    virtual OfxStatus get(std::string&);
-    virtual OfxStatus get(OfxTime time, std::string&);
-    virtual OfxStatus set(const char*);
-    virtual OfxStatus set(OfxTime time, const char*);
+    virtual OfxStatus get(std::string&) OVERRIDE;
+    virtual OfxStatus get(OfxTime time, std::string&) OVERRIDE;
+    virtual OfxStatus set(const char*) OVERRIDE;
+    virtual OfxStatus set(OfxTime time, const char*) OVERRIDE;
+    
+    /// implementation of var args function
+    /// Be careful: the char* is only valid until next API call
+    /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
+    virtual OfxStatus getV(va_list arg) OVERRIDE;
+    
+    /// implementation of var args function
+    /// Be careful: the char* is only valid until next API call
+    /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
+    virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE;
+
     
     // callback which should set enabled state as appropriate
     virtual void setEnabled();

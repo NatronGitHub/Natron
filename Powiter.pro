@@ -131,7 +131,7 @@ SOURCES += \
     Gui/NodeGui.cpp \
     Gui/ScaleSlider.cpp \
     Gui/SequenceFileDialog.cpp \
-    Gui/SettingsPanel.cpp \
+    Gui/DockablePanel.cpp \
     Gui/SpinBox.cpp \
     Gui/TabWidget.cpp \
     Gui/Texture.cpp \
@@ -206,7 +206,7 @@ HEADERS += \
     Gui/NodeGui.h \
     Gui/ScaleSlider.h \
     Gui/SequenceFileDialog.h \
-    Gui/SettingsPanel.h \
+    Gui/DockablePanel.h \
     Gui/Shaders.h \
     Gui/SpinBox.h \
     Gui/TabWidget.h \
