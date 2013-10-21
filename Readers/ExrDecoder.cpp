@@ -378,9 +378,9 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
         ChannelsMap::const_iterator found = _channel_map.find(z);
         if(found != _channel_map.end()){
             if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
-                fbuf.insert(found->second,Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
+                fbuf.insert(found->second.c_str(),Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
             }else{
-                fbuf.insert(found->second,Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0,2,2));
+                fbuf.insert(found->second.c_str(),Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0,2,2));
             }
         }else{
             //not found in the file, we zero it out
