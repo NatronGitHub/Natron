@@ -333,7 +333,7 @@ void OfxNode::render(SequenceTime time,Row* out) {
             assert(stat == kOfxStatOK);
         }
     }
-#warning RACE CONDITION HERE! We asked for a render action which effictively created the output image for the output clip but another concurrent thread might have at thie point created another image. We need to do all the copying from the output image to the rows in a single thread. We should cache the images in the clip with respect of the time and the image bounds. 
+#warning "RACE CONDITION HERE! We asked for a render action which effictively created the output image for the output clip but another concurrent thread might have at thie point created another image. We need to do all the copying from the output image to the rows in a single thread. We should cache the images in the clip with respect of the time and the image bounds."
     
     const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage((OfxTime)time,NULL));
     assert(img);

@@ -115,9 +115,8 @@ namespace Powiter{
     {
         
     public:
-        
         /*Constructor used by the cache*/
-        Row(const RowKey& key,size_t size,int cost,std::string path = std::string()) ;
+        Row(const RowKey& key, size_t count, int cost, std::string path = std::string()) ;
         
         Row(const RowKey& key,const std::string& path);
         
@@ -139,20 +138,19 @@ namespace Powiter{
 
         /*set to 0s the entirety of the channel c*/
         void erase(Powiter::Channel c){
-            float* chan = begin(c);
-            if (chan) {
-                memset(chan , 0, width()*sizeof(float));
+            if (begin(c)) {
+                std::fill(begin(c), end(c), 0.);
             }
         }
         
-        void eraseAll(){
-            foreachChannels(chan,_params._channels){
-                memset(begin(chan), 0, width()*sizeof(float));
+        void eraseAll() {
+            foreachChannels(c, _params._channels) {
+                std::fill(begin(c), end(c), 0.);
             }
         }
         
-        void fill(Powiter::Channel c,float fillValue){
-            std::fill(begin(c),end(c),fillValue);
+        void fill(Powiter::Channel c,float fillValue) {
+            std::fill(begin(c), end(c), fillValue);
         }
         
         // the user is responsible for locking the entry, using lock() and unlock()

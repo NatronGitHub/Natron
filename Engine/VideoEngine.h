@@ -216,7 +216,7 @@ private:
         boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
         std::vector<int> _rows;
         TextureRect _textureRect;
-        U64 _dataSize;
+        size_t _dataSize;
         
     };
     

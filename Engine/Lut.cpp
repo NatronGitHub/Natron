@@ -477,10 +477,10 @@ void linear_to_short(U16* to, const float* from, int W, int bits , int delta ){
     (void)delta;
     cout << "linear_to_short not implemented yet." << endl;
 }
-void linear_to_float(float* to, const float* from, int W, int delta ){
 
+void linear_to_float(float* to, const float* from, int W, int delta ) {
     (void)delta;
-    memcpy(reinterpret_cast<char*>(to), reinterpret_cast<const char*>(from), W*sizeof(float));
+    std::copy(from, from+W, to);
 }
 
 //////////////////////////

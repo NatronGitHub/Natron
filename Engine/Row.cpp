@@ -17,19 +17,24 @@ using namespace std;
 using namespace Powiter;
 
 /*Constructor used by the cache*/
-Row::Row(const RowKey& key,size_t size,int cost,std::string path )
-: CacheEntryHelper<float,RowKey>(key,size,cost,path){
-    initializePlanesOffset();
-}
-Row::Row(const RowKey& key,const std::string& path):
-CacheEntryHelper<float,RowKey>(key,path){
+Row::Row(const RowKey& key, size_t count, int cost, std::string path )
+: CacheEntryHelper<float,RowKey>(key, count, cost, path)
+{
     initializePlanesOffset();
 }
 
-Row::Row(int x,int y,int r,ChannelSet channels):
-CacheEntryHelper<float,RowKey>(makeKey(0,0, x, y, r, channels),(r-x)*sizeof(float)*channels.size(),0){
+Row::Row(const RowKey& key,const std::string& path)
+: CacheEntryHelper<float,RowKey>(key,path)
+{
     initializePlanesOffset();
 }
+
+Row::Row(int x,int y,int r,ChannelSet channels)
+: CacheEntryHelper<float,RowKey>(makeKey(0,0, x, y, r, channels), (r-x)*channels.size(), 0)
+{
+    initializePlanesOffset();
+}
+
 void Row::initializePlanesOffset(){
     int count = 0;
     for(int i = 0; i <= POWITER_MAX_VALID_CHANNEL_INDEX ; ++i){

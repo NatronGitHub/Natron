@@ -314,23 +314,21 @@ boost::shared_ptr<const Row> Node::get(SequenceTime time,int y,int left,int righ
     shared_ptr<const Row> entry = cache.get(params);
     if (entry) {
         return entry;
-    }else{
-        shared_ptr<Row> out;
-        if (cacheData()) {
-            {
-                shared_ptr<CachedValue<Row> > newCacheEntry = cache.newEntry(params,
-                                                                             (right-left)*sizeof(float)*channels.size(),0);
-                out = newCacheEntry->getObject();
-                render(time,out.get());
-                
-            }
-            return out;
-        } else {
-            out.reset(new Row(left,y,right,channels));
-            render(time,out.get());
-        }
-        return out;
     }
+
+    shared_ptr<Row> out;
+    if (cacheData()) {
+        shared_ptr<CachedValue<Row> > newCacheEntry = cache.newEntry(params,
+                                                                     (right-left) * channels.size(),
+                                                                     0);
+        out = newCacheEntry->getObject();
+        render(time,out.get());
+    } else {
+        out.reset(new Row(left,y,right,channels));
+        render(time,out.get());
+    }
+
+    return out;
 }
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
