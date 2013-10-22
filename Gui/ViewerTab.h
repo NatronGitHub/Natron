@@ -44,7 +44,7 @@ class ViewerTab: public QWidget
     
     ViewerNode* _viewerNode;// < pointer to the internal node
     
-    ChannelSet _channelsToDraw;
+    Powiter::ChannelSet _channelsToDraw;
     
     /*True if the viewer is currently fullscreen*/
 	bool _maximized;
@@ -107,7 +107,7 @@ public:
 	TimeLineGui* frameSeeker;
     
     /*these are the channels the viewer wants to display*/
-	const ChannelSet& displayChannels(){return _channelsToDraw;}
+	const Powiter::ChannelSet& displayChannels(){return _channelsToDraw;}
     
     Gui* getGui() const {return _gui;}
     

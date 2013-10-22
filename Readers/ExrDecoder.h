@@ -28,7 +28,7 @@ class ExrDecoder : public Decoder {
     
 public:
     
-    static Decoder* BuildRead(Reader* reader){return new ExrDecoder(reader);}
+    static Decoder* BuildRead(Reader* reader) {return new ExrDecoder(reader);}
     
     ExrDecoder(Reader* _reader);
     

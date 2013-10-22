@@ -532,7 +532,7 @@ class ViewerTab;
             /**
              *@brief set the channels the viewer should display 
              **/
-            void setDisplayChannel(const ChannelSet& channels,bool yMode = false);
+            void setDisplayChannel(const Powiter::ChannelSet& channels,bool yMode = false);
             
             void stopDisplayingProgressBar() {_drawProgressBar = false;}
             

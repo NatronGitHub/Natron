@@ -28,6 +28,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/ChannelSet.h"
 
 #include "Global/AppManager.h"
 
@@ -172,12 +173,12 @@ void NodeGui::markInputNull(Edge* e){
 
 
 
-void NodeGui::updateChannelsTooltip(const ChannelSet& chan){
+void NodeGui::updateChannelsTooltip(const Powiter::ChannelSet& chan){
     QString tooltip;
     tooltip.append("Channels in input: ");
     foreachChannels( z,chan){
         tooltip.append("\n");
-        tooltip.append(getChannelName(z).c_str());
+        tooltip.append(Powiter::getChannelName(z).c_str());
         
     }
     channels->setToolTip(tooltip);

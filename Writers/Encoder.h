@@ -134,7 +134,7 @@ public:
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
      * within the range specified by (offset,range) and for all the channels.
     **/
-	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) = 0;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels) = 0;
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
@@ -159,7 +159,7 @@ public:
     * so it can be returned to the user.
     **/
     // FIXME: the above doc is obviously wrong.
-    virtual void supportsChannelsForWriting(ChannelSet& channels) const = 0;
+    virtual void supportsChannelsForWriting(Powiter::ChannelSet& channels) const = 0;
     
     /** @return Returns the reader colorspace*/
     const Powiter::Color::Lut* lut() const {return _lut;}

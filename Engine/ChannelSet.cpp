@@ -16,8 +16,9 @@
 #include <stdexcept>
 #include <cassert>
 
-using namespace Powiter;
 using std::endl;
+
+namespace Powiter {
 
 // variable-precision SWAR algorithm
 // see http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer
@@ -380,3 +381,4 @@ bool hasAlpha(ChannelSet mask) {
     return ((mask & 1) || (mask & (1 << Channel_alpha)));
 }
 
+} // namespace Powiter

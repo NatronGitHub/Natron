@@ -20,6 +20,8 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+namespace Powiter {
+
 class ChannelSet{
     U32 mask; // 1 bit per channel and LSB is for "all" channels
     unsigned int _size;
@@ -177,6 +179,8 @@ std::string getChannelName(Powiter::Channel c);
 /*useful function to check whether alpha is on in the mask*/
 bool hasAlpha(ChannelSet mask);
 
-Q_DECLARE_METATYPE(ChannelSet);
+} // namespace Powiter
+
+Q_DECLARE_METATYPE(Powiter::ChannelSet);
 
 #endif // POWITER_ENGINE_CHANNELSET_H_

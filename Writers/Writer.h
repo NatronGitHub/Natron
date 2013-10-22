@@ -82,7 +82,7 @@ public:
     virtual Powiter::Status preProcessFrame(SequenceTime time) OVERRIDE;
 	
     /*Does the colorspace conversion using the appropriate LUT (using Write::engine)*/
-	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels);
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels);
             
     /* This function is called by startWriting()
      - Initialises the output color-space for _writeHandle
@@ -104,7 +104,7 @@ public:
      This is used to know whether it should start the engine or not.*/
     bool validInfosForRendering();
     
-    const ChannelSet& requestedChannels() const {return _requestedChannels;}    
+    const Powiter::ChannelSet& requestedChannels() const {return _requestedChannels;}
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
     
@@ -133,7 +133,7 @@ protected:
     
 private:
     
-    ChannelSet _requestedChannels;
+    Powiter::ChannelSet _requestedChannels;
     QMutex* _lock;
     bool _premult;
     Buffer _buffer;

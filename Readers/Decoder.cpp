@@ -81,7 +81,7 @@ void Decoder::createKnobDynamically(){
 
 void Decoder::setReaderInfo(Format dispW,
 	const Box2D& dataW,
-	ChannelSet channels) {
+    Powiter::ChannelSet channels) {
     _readerInfo->setDisplayWindow(dispW);
     _readerInfo->setRoD(dataW);
     _readerInfo->setChannels(channels);

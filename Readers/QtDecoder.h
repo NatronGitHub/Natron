@@ -25,7 +25,7 @@ class QtDecoder : public Decoder {
     QImage* _img;
     QString filename;
 public:
-    static Decoder* BuildRead(Reader* reader){return new QtDecoder(reader);}
+    static Decoder* BuildRead(Reader* reader) {return new QtDecoder(reader);}
     
     QtDecoder(Reader* _reader);
     

@@ -37,7 +37,7 @@ public:
      by the rows might be invalid.
      It's important to maintain the image fetcher living thoughout the
      entire duration you need to use the Rows contained in that object.*/
-    ImageFetcher(Node* node,SequenceTime time, int l, int b, int r, int t, ChannelSet channels);
+    ImageFetcher(Node* node,SequenceTime time, int l, int b, int r, int t, Powiter::ChannelSet channels);
     
     
     /*Launches new thread to fetch all the rows necessary from the node to fill the range (y,t).
@@ -93,12 +93,12 @@ signals:
     
 private:
     // on output, the row is locked, and must be unlocked using Row::unlock()
-    boost::shared_ptr<const Powiter::Row> getInputRow(Node* node,SequenceTime time,int y, int x,int r,const ChannelSet& channels);
+    boost::shared_ptr<const Powiter::Row> getInputRow(Node* node,SequenceTime time,int y, int x,int r,const Powiter::ChannelSet& channels);
 
 private:
     int _x,_y,_r,_t;
     SequenceTime _time;
-    ChannelSet _channels;
+    Powiter::ChannelSet _channels;
     Node* _node;
     bool _isFinished;
     std::map<int,boost::shared_ptr<const Powiter::Row> > _interest;

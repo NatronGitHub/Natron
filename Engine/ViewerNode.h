@@ -135,7 +135,7 @@ public slots:
     
 protected:
     
-    virtual ChannelSet supportedComponents(){return Powiter::Mask_All;}
+    virtual Powiter::ChannelSet supportedComponents(){return Powiter::Mask_All;}
     
     virtual std::string setInputLabel(int inputNb) const {
         return QString::number(inputNb+1).toStdString();

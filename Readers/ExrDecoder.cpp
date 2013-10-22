@@ -100,7 +100,7 @@ static Powiter::Channel fromExrChannel(const std::string& from)
         return Powiter::Channel_Z;
     }
     // The following may throw if from is not a channel name which begins with "Channel_"
-    return getChannelByName(from);
+    return Powiter::getChannelByName(from);
 }
 
 class ChannelExtractor
@@ -267,7 +267,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
 #endif // !OPENEXR_NO_MULTIVIEW
         std::map<Imf_::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
-        ChannelSet mask;
+        Powiter::ChannelSet mask;
         const Imf_::ChannelList& imfchannels = _imp->_inputfile->header().channels();
         Imf_::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
@@ -282,7 +282,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
                 //cout << "size : "<< channels.size() << endl;
                 for (std::set<Powiter::Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
                     Powiter::Channel channel = *it;
-                    //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
+                    //cout <<" channel_map[" << Powiter::getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
                     ChannelsMap::const_iterator found = _imp->_channel_map.find(channel);
                     if(found != _imp->_channel_map.end()){
@@ -378,7 +378,7 @@ ExrDecoder::~ExrDecoder(){
 }
 
 void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
-    const ChannelSet& channels = out->channels();
+    const Powiter::ChannelSet& channels = out->channels();
     const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
     const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
     int exrY = dispwin.max.y - out->y();
