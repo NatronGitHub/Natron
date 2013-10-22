@@ -17,7 +17,6 @@
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
 #include <ImfPixelType.h>
-#include <ImfInputFile.h>
 #include <ImfChannelList.h>
 #ifdef __POWITER_WIN32__
 #include <ImfStdIO.h>

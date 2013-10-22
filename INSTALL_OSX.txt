@@ -22,10 +22,9 @@ You'll need to install Qt libraries from [Qt download](http://qt-project.org/dow
 
 ###OpenEXR 
 
-This one is not on macports yet. You have two solutions, either you can get the binaries I compiled for osx 64bit on dropbox, or you can download it from :
-(OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself.
+Download OpenEXR from http://www.openexr.com/downloads.html and install it.
+2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
 
-Here's the dropbox link for 64bit binaries :(Dropbox link)[https://www.dropbox.com/sh/ru7cjns0fjvn7aa/U8iRn3xQEn]
 
 ###freetype2
 

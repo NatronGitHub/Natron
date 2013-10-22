@@ -18,13 +18,12 @@
 #include <fstream>
 #endif
 #include <QtCore/QMutex>
+#include <ImfInputFile.h>
+
+
 #include "Readers/Decoder.h"
 #include "Global/Macros.h"
 
-namespace Imf {
-    class StdIFStream;
-    class InputFile;
-}
 
 namespace Powiter{
 class Row;

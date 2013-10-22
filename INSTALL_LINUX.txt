@@ -17,12 +17,8 @@ You'll need to install Qt libraries from [Qt download](http://qt-project.org/dow
 
 ###OpenEXR
 
-You have two solutions, either you can get the binaries I compiled for linux on dropbox, or you can download it from :
-(OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself. 
-
-Here's the dropbox link for 32bit binaries :(Dropbox link)[https://www.dropbox.com/sh/a42hus72e39wf3g/WkRPPcR1TS]
-
-(64bit) will come soon.
+Download OpenEXR from http://www.openexr.com/downloads.html and install it.
+2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
 
 ###freetype2
 
