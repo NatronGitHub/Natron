@@ -18,8 +18,6 @@
 #include <dlfcn.h>
 #endif
 
-
-using namespace std;
 using namespace Powiter;
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
@@ -30,7 +28,7 @@ LibraryBinary::LibraryBinary(LibraryBinary::LibraryType type)
     
 }
 
-LibraryBinary::LibraryBinary(const std::map<string, void *> &functions)
+LibraryBinary::LibraryBinary(const std::map<std::string, void *> &functions)
 : _type(LibraryBinary::BUILTIN)
 , _library(0)
 , _valid(false)
@@ -105,7 +103,7 @@ bool LibraryBinary::loadFunctions(const std::vector<std::string>& funcNames) {
             ret = false;
             continue;
         }
-        _functions.insert(std::make_pair(funcNames[i],v));
+        _functions.insert(make_pair(funcNames[i],v));
     }
     return ret;
 }

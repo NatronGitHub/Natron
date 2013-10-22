@@ -17,7 +17,6 @@
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerNode.h"
-using namespace std;
 
 const qreal pi= 3.14159265358979323846264338327950288419717;
 static const qreal UNATTACHED_ARROW_LENGTH=60.;

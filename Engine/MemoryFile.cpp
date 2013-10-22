@@ -28,9 +28,6 @@
 
 #include "Global/Macros.h"
 
-
-using namespace std;
-
 InputMemoryFile::InputMemoryFile(const char *pathname):
 data_(0),
 size_(0),
@@ -111,7 +108,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
     const size_t min_file_size = 4096;
     file_handle_ = ::open(pathname.c_str(), posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (file_handle_ == -1){
-        string str("MemoryFile EXC : Failed to open ");
+        std::string str("MemoryFile EXC : Failed to open ");
         str.append(pathname);
         throw std::runtime_error(str);
         
@@ -119,7 +116,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
     }
     struct stat sbuf;
     if (::fstat(file_handle_, &sbuf) == -1){
-        string str("MemoryFile EXC : Failed to get file infos: ");
+        std::string str("MemoryFile EXC : Failed to get file infos: ");
         str.append(pathname);
         throw std::runtime_error(str);
         
@@ -132,7 +129,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
                                       0, adjusted_file_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
     if (data_ == MAP_FAILED){
         data_ = 0;
-        string str("MemoryFile EXC : Failed to create mapping: ");
+        std::string str("MemoryFile EXC : Failed to create mapping: ");
         str.append(pathname);
         throw std::runtime_error(str);
         

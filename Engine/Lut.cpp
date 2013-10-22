@@ -19,11 +19,13 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
+using std::cout; using std::endl;
+using std::make_pair;
+
 #ifndef FLT_MAX
 # define FLT_MAX 3.40282347e+38F
 #endif
 
-using namespace std;
 using namespace Powiter;
 using namespace Powiter::Color;
 

@@ -40,8 +40,7 @@
 #include "Writers/Writer.h"
 
 using namespace Powiter;
-using namespace std;
-
+using std::cout; using std::endl;
 
 Reader::Reader(AppInstance* app)
 : Node(app)
@@ -86,16 +85,16 @@ boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
 
     Powiter::LibraryBinary* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
-        string err("Couldn't find an appropriate decoder for this filetype");
+        std::string err("Couldn't find an appropriate decoder for this filetype");
         err.append(extension.toStdString());
         throw std::invalid_argument(err);
     }
     
-    pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
+    std::pair<bool,ReadBuilder> func = decoder->findFunction<ReadBuilder>("BuildRead");
     if (func.first) {
        return  boost::shared_ptr<Decoder>(func.second(this));
     } else {
-        string err("Failed to create the decoder for");
+        std::string err("Failed to create the decoder for");
         err.append(getName());
         err.append(",something is wrong in the plugin.");
         throw std::invalid_argument(err);

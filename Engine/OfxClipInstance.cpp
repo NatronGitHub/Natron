@@ -22,7 +22,6 @@
 #include "Global/Macros.h"
 
 using namespace Powiter;
-using namespace std;
 
 OfxClipInstance::OfxClipInstance(OfxNode* nodeInstance
                                  ,Powiter::OfxImageEffectInstance* effect
@@ -46,10 +45,10 @@ const std::string& OfxClipInstance::getUnmappedBitDepth() const
 /// Get the Raw Unmapped Components from the host. In our example we are always RGBA
 const std::string &OfxClipInstance::getUnmappedComponents() const
 {
-    static const string rgbStr(kOfxImageComponentRGB);
-    static const string noneStr(kOfxImageComponentNone);
-    static const string rgbaStr(kOfxImageComponentRGBA);
-    static const string alphaStr(kOfxImageComponentAlpha);
+    static const std::string rgbStr(kOfxImageComponentRGB);
+    static const std::string noneStr(kOfxImageComponentNone);
+    static const std::string rgbaStr(kOfxImageComponentRGBA);
+    static const std::string alphaStr(kOfxImageComponentAlpha);
     
     //bool rgb = false;
     //bool alpha = false;

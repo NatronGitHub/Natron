@@ -24,8 +24,6 @@
 #include "Gui/KnobGui.h"
 #include "Writers/Writer.h"
 
-using namespace std;
-
 
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();

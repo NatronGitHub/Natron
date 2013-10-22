@@ -23,7 +23,6 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerNode.h"
 
-using namespace std;
 using namespace Powiter;
 
 static std::string getParamLabel(OFX::Host::Param::Instance* param){
@@ -576,12 +575,12 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descri
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    vector<double> minimum;
-    vector<double> maximum;
-    vector<double> increment;
-    vector<double> displayMins;
-    vector<double> displayMaxs;
-    vector<int> decimals;
+    std::vector<double> minimum;
+    std::vector<double> maximum;
+    std::vector<double> increment;
+    std::vector<double> displayMins;
+    std::vector<double> displayMaxs;
+    std::vector<int> decimals;
     double def[2];
     minimum.push_back(properties.getDoubleProperty(kOfxParamPropMin,0));
     displayMins.push_back(properties.getDoubleProperty(kOfxParamPropDisplayMin,0));
@@ -607,13 +606,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descri
     
 }
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
-    const vector<double>& _values = _knob->getValues();
+    const std::vector<double>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::get(OfxTime /*time*/, double& x1, double& x2) {
-    const vector<double>& _values = _knob->getValues();
+    const std::vector<double>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
@@ -676,11 +675,11 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Desc
     _knob->setHintToolTip(hint);
     _knob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
     _knob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
-    vector<int> minimum;
-    vector<int> maximum;
-    vector<int> increment;
-    vector<int> displayMins;
-    vector<int> displayMaxs;
+    std::vector<int> minimum;
+    std::vector<int> maximum;
+    std::vector<int> increment;
+    std::vector<int> displayMins;
+    std::vector<int> displayMaxs;
     int def[2];
     minimum.push_back(properties.getIntProperty(kOfxParamPropMin,0));
     displayMins.push_back(properties.getIntProperty(kOfxParamPropDisplayMin,0));
@@ -703,13 +702,13 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Desc
     _knob->setValue<int>(def,2);
 }
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
-    const vector<int>& _values = _knob->getValues();
+    const std::vector<int>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::get(OfxTime /*time*/, int& x1, int& x2) {
-    const vector<int>& _values = _knob->getValues();
+    const std::vector<int>& _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;

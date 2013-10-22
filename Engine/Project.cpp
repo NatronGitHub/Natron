@@ -26,8 +26,8 @@
 #include "Gui/ViewerGL.h"
 
 using namespace Powiter;
-using namespace std;
-using namespace boost;
+using std::cout; using std::endl;
+using std::make_pair;
 
 Project::Project(AppInstance* appInstance):
 _projectName("Untitled.rs"),
@@ -90,7 +90,7 @@ const Format& Project::getProjectDefaultFormat() const{
 
 void Project::initNodeCountersAndSetName(Node* n){
     assert(n);
-    map<string,int>::iterator it = _nodeCounters.find(n->className());
+    std::map<std::string,int>::iterator it = _nodeCounters.find(n->className());
     if(it != _nodeCounters.end()){
         it->second++;
         n->setName(QString(QString(n->className().c_str())+ "_" + QString::number(it->second)).toStdString());
@@ -389,7 +389,7 @@ void Project::restoreGraphFromString(const QString& str){
     }
     //adjusting knobs & connecting nodes now
     for (U32 i = 0; i < actionsMap.size(); ++i) {
-        pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
+        std::pair<Node*,XMLProjectLoader::XMLParsedElement*>& action = actionsMap[i];
         analyseSerializedNodeString(action.first, action.second);
     }
     

@@ -26,7 +26,7 @@
 
 #include "Engine/OfxNode.h"
 #include "Engine/OfxImageEffectInstance.h"
-using namespace std;
+
 using namespace Powiter;
 
 Powiter::OfxHost::OfxHost()

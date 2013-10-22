@@ -20,8 +20,6 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
 
-using namespace std;
-
 ScaleSlider::ScaleSlider(double bottom, double top, int nbValues, double initialPos, Powiter::Scale_Type type, int nbDisplayedValues, QWidget* parent):
 QWidget(parent),
 _minimum(bottom),

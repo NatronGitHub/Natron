@@ -43,11 +43,9 @@
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
 
-
-
-using namespace std;
 using namespace Powiter;
-using namespace boost;
+using std::make_pair;
+using std::cout; using std::endl;
 
 VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 : QThread(parent)
@@ -468,8 +466,8 @@ void VideoEngine::run(){
         }
         
         /*Now that we called validate we can check if the frame is in the cache (only if the output is a Viewer)*/
-        vector<int> rows;
-        vector<int> columns;
+        std::vector<int> rows;
+        std::vector<int> columns;
         int x=0,r=0;
         boost::shared_ptr<const FrameEntry> iscached;
         float lut = 0.f;
@@ -585,7 +583,7 @@ void VideoEngine::run(){
             QVector<std::pair<int,int> > sequence;
             sequence.reserve(rows.size());
             int counter = 0;
-            for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+            for (std::vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
                 sequence.push_back(make_pair(*it, counter));
                 ++counter;
             }
@@ -610,7 +608,7 @@ void VideoEngine::run(){
                 QVector<Row*> sequence;
                 sequence.reserve(rows.size());
                 /*Creating the sequence of rows*/
-                for (vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
+                for (std::vector<int>::const_iterator it = rows.begin(); it!=rows.end(); ++it) {
                     Row* row = new Row(x,*it,r,outChannels);
                     assert(row);
                     sequence.push_back(row);

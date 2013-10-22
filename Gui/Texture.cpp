@@ -14,8 +14,6 @@
 #include "Global/GLIncludes.h"
 #include "Gui/ViewerGL.h"
 
-using namespace std;
-
 Texture::Texture(){
     glGenTextures(1, &_texID);
     

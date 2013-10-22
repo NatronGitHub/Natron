@@ -26,9 +26,8 @@
 #include "Gui/KnobGui.h"
 #include "Gui/DockablePanel.h"
 
-using namespace std;
 using namespace Powiter;
-
+using std::make_pair; using std::pair;
 
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
@@ -50,13 +49,13 @@ KnobFactory::~KnobFactory(){
 }
 
 void KnobFactory::loadKnobPlugins(){
-    vector<LibraryBinary*> plugins = AppManager::loadPlugins(POWITER_KNOBS_PLUGINS_PATH);
-    vector<string> functions;
+    std::vector<LibraryBinary*> plugins = AppManager::loadPlugins(POWITER_KNOBS_PLUGINS_PATH);
+    std::vector<std::string> functions;
     functions.push_back("BuildKnob");
     functions.push_back("BuildKnobGui");
     for (U32 i = 0; i < plugins.size(); ++i) {
         if (plugins[i]->loadFunctions(functions)) {
-            pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
+            std::pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if(builder.first){
                 Knob* knob = builder.second(NULL,"",1);
                 _loadedKnobs.insert(make_pair(knob->name(), plugins[i]));
@@ -356,7 +355,7 @@ void File_Knob::getVideoSequenceFromFilesList(){
                     int number = frameIndexStr.toInt();
                     _filesSequence.insert(make_pair(number,unModifiedName));
                 }else{
-                    cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << endl;
+                    std::cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << endl;
                 }
             }
         }
@@ -384,7 +383,7 @@ int File_Knob::nearestFrame(int f) const{
     if(f < first) return first;
     if(f > last) return last;
     
-    map<int,int> distanceMap;
+    std::map<int,int> distanceMap;
     for (std::map<int,QString>::const_iterator it = _filesSequence.begin(); it!=_filesSequence.end(); ++it) {
         distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
     }
@@ -395,7 +394,7 @@ int File_Knob::nearestFrame(int f) const{
 }
 QString File_Knob::getRandomFrameName(int f) const{
     f = nearestFrame(f);
-    map<int, QString>::const_iterator it = _filesSequence.find(f);
+    std::map<int, QString>::const_iterator it = _filesSequence.find(f);
     if(it!=_filesSequence.end()){
         return it->second;
     }else{
@@ -483,7 +482,7 @@ void Int_Knob::_restoreFromString(const std::string& str){
 }
 
 const std::vector<int> Int_Knob::getValues() const {
-    vector<int> ret;
+    std::vector<int> ret;
     if(_dimension > 1){
     QList<QVariant> list = _value.toList();
     for (int i = 0; i < list.size(); ++i) {
@@ -585,7 +584,7 @@ void Double_Knob::_restoreFromString(const std::string& str){
 }
 
 const std::vector<double> Double_Knob::getValues() const {
-    vector<double> ret;
+    std::vector<double> ret;
     if(_dimension > 1){
         QList<QVariant> list = _value.toList();
         for (int i = 0; i < list.size(); ++i) {

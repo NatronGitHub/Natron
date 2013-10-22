@@ -30,7 +30,7 @@
 #include "Gui/Button.h"
 #include "Gui/NodeGraph.h"
 
-using namespace std;
+using std::make_pair;
 
 DockablePanel::DockablePanel(QVBoxLayout* container
                              ,bool readOnlyName
@@ -164,7 +164,7 @@ DockablePanel::DockablePanel(QVBoxLayout* container
 DockablePanel::~DockablePanel(){
     delete _undoStack;
     //removing parentship otherwise Qt will attempt to delete knobs a second time
-    for(map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it)
+    for(std::map<Knob*,KnobGui*>::const_iterator it = _knobs.begin();it!=_knobs.end();++it)
         it->second->setParent(NULL);
 }
 
@@ -265,7 +265,7 @@ void DockablePanel::closePanel(){
     
     setVisible(false);
     
-    vector<QWidget*> _panels;
+    std::vector<QWidget*> _panels;
     for(int i =0 ; i < _container->count(); ++i) {
         if (QWidget *myItem = dynamic_cast <QWidget*>(_container->itemAt(i))){
             _panels.push_back(myItem);
@@ -295,7 +295,7 @@ void DockablePanel::minimizeOrMaximize(bool toggled){
         emit maximized();
     }
     _tabWidget->setVisible(!_minimized);
-    vector<QWidget*> _panels;
+    std::vector<QWidget*> _panels;
     for(int i =0 ; i < _container->count(); ++i) {
         if (QWidget *myItem = dynamic_cast <QWidget*>(_container->itemAt(i))){
             _panels.push_back(myItem);
@@ -325,7 +325,7 @@ Button* DockablePanel::insertHeaderButton(int headerPosition){
 }
 
 KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob){
-    map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
+    std::map<Knob*,KnobGui*>::const_iterator it = _knobs.find(knob);
     if (it == _knobs.end()) {
         KnobGui* ret =  appPTR->getKnobFactory().createGuiForKnob(knob,this);
         QObject::connect(ret,SIGNAL(deleted(KnobGui*)),this,SLOT(onKnobDeletion(KnobGui*)));
@@ -341,7 +341,7 @@ KnobGui* DockablePanel::findKnobGuiOrCreate(Knob* knob){
 }
 
 void DockablePanel::onKnobDeletion(KnobGui* k){
-    for(map<Knob*,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
+    for(std::map<Knob*,KnobGui*>::iterator it = _knobs.begin();it!=_knobs.end();++it){
         if (it->second == k) {
             _knobs.erase(it);
             return;

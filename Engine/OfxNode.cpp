@@ -39,8 +39,8 @@ CLANG_DIAG_ON(unused-private-field);
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
-using namespace std;
 using namespace Powiter;
+using std::cout; using std::endl;
 
 namespace {
     ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
@@ -127,9 +127,9 @@ ChannelSet OfxNode::supportedComponents() const {
     assert(effectInstance());
     const OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     assert(clip);
-    const vector<string>& suppComponents = clip->getSupportedComponents();
+    const std::vector<std::string>& suppComponents = clip->getSupportedComponents();
     ChannelSet supportedComp;
-    for (vector<string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
+    for (std::vector<std::string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
         supportedComp += ofxComponentsToPowiterChannels(*it);
     }
     return supportedComp;
@@ -282,8 +282,8 @@ Powiter::Status OfxNode::preProcessFrame(SequenceTime /*time*/){
     }
     //iterate over param and find if there's an unvalid param
     // e.g: an empty filename
-    const map<string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
+    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
         if(it->second->getType() == kOfxParamTypeString){
             OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
             assert(param);
@@ -296,8 +296,8 @@ Powiter::Status OfxNode::preProcessFrame(SequenceTime /*time*/){
 }
 
 void OfxNode::openFilesForAllFileParams(){
-    const map<string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (map<string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
+    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
         if(it->second->getType() == kOfxParamTypeString){
             OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
             assert(param);

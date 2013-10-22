@@ -23,7 +23,6 @@
 #include "Writers/Writer.h"
 #include "Engine/Row.h"
 
-using namespace std;
 using namespace Powiter;
 
 QtEncoder::QtEncoder(Writer* writer)

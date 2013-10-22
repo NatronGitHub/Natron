@@ -16,8 +16,8 @@
 #include <stdexcept>
 #include <cassert>
 
-using namespace std;
 using namespace Powiter;
+using std::endl;
 
 // variable-precision SWAR algorithm
 // see http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer

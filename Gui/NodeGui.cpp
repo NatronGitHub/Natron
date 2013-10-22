@@ -31,8 +31,7 @@
 
 #include "Global/AppManager.h"
 
-
-using namespace std;
+using std::make_pair;
 
 static const double pi=3.14159265358979323846264338327950288419717;
 

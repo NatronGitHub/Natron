@@ -28,7 +28,6 @@ CLANG_DIAG_ON(unused-private-field);
 
 #define UNITS_PIXELS_SPACING 3
 
-using namespace std;
 using namespace Powiter;
 
 

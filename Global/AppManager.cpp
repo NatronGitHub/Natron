@@ -58,11 +58,9 @@
 #include "Writers/QtEncoder.h"
 #include "Writers/ExrEncoder.h"
 
-
-
 using namespace Powiter;
-using namespace std;
-
+using std::cout; using std::endl;
+using std::make_pair;
 
 AppInstance::AppInstance(int appID,const QString& projectName):
 _gui(new Gui(this))
@@ -73,7 +71,7 @@ _gui(new Gui(this))
 {
     _gui->createGui();
     
-    const vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
+    const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
         QString name = _toolButtons[i]->_pluginName;
@@ -200,7 +198,7 @@ void AppInstance::autoConnect(Node* target,Node* created){
 const std::vector<Node*> AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
     const std::vector<NodeGui*>&  actives= _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
-    vector<Node*> ret;
+    std::vector<Node*> ret;
     for (U32 j = 0; j < actives.size(); ++j) {
         ret.push_back(actives[j]->getNode());
     }
@@ -394,7 +392,7 @@ AppInstance* AppManager::newAppInstance(const QString& projectName){
 }
 
 AppInstance* AppManager::getAppInstance(int appID) const{
-    map<int,AppInstance*>::const_iterator it;
+    std::map<int,AppInstance*>::const_iterator it;
     it = _appInstances.find(appID);
     if(it != _appInstances.end()){
         return it->second;
@@ -439,7 +437,7 @@ bool AppInstance::disconnect(Node* input,Node* output){
 
 
 NodeGui* AppInstance::getNodeGui(Node* n) const {
-    map<Node*,NodeGui*>::const_iterator it = _nodeMapping.find(n);
+    std::map<Node*,NodeGui*>::const_iterator it = _nodeMapping.find(n);
     if(it==_nodeMapping.end()){
         return NULL;
     }else{
@@ -447,7 +445,7 @@ NodeGui* AppInstance::getNodeGui(Node* n) const {
     }
 }
 Node* AppInstance::getNode(NodeGui* n) const{
-    for (map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin(); it!=_nodeMapping.end(); ++it) {
+    for (std::map<Node*,NodeGui*>::const_iterator it = _nodeMapping.begin(); it!=_nodeMapping.end(); ++it) {
         if(it->second == n){
             return it->first;
         }
@@ -511,7 +509,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
                 QString className;
                 int index = filename.lastIndexOf("." POWITER_LIBRARY_EXT);
                 className = filename.left(index);
-                string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
+                std::string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
                 if(!plugin->isValid()){
                     delete plugin;
@@ -539,7 +537,7 @@ std::vector<Powiter::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(con
 }
 
 AppInstance* AppManager::getTopLevelInstance () const{
-    map<int,AppInstance*>::const_iterator it = _appInstances.find(_topLevelInstanceID);
+    std::map<int,AppInstance*>::const_iterator it = _appInstances.find(_topLevelInstanceID);
     if(it == _appInstances.end()){
         return NULL;
     }else{
@@ -622,16 +620,16 @@ void AppManager::loadAllPlugins() {
 }
 
 void AppManager::loadReadPlugins(){
-    vector<string> functions;
+    std::vector<std::string> functions;
     functions.push_back("BuildRead");
-    vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_READERS_PLUGINS_PATH, functions);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_READERS_PLUGINS_PATH, functions);
     for (U32 i = 0 ; i < plugins.size(); ++i) {
-        pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
+        std::pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
         if(func.first){
             Decoder* read = func.second(NULL);
             assert(read);
-            vector<string> extensions = read->fileTypesDecoded();
-            string decoderName = read->decoderName();
+            std::vector<std::string> extensions = read->fileTypesDecoded();
+            std::string decoderName = read->decoderName();
             _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,plugins[i])));
             delete read;
         }
@@ -717,16 +715,16 @@ void AppManager::loadBuiltinNodePlugins(){
 /*loads extra writer plug-ins*/
 void AppManager::loadWritePlugins(){
     
-    vector<string> functions;
+    std::vector<std::string> functions;
     functions.push_back("BuildWrite");
-    vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_WRITERS_PLUGINS_PATH, functions);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_WRITERS_PLUGINS_PATH, functions);
     for (U32 i = 0 ; i < plugins.size(); ++i) {
-        pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
+        std::pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
         if(func.first){
             Encoder* write = func.second(NULL);
             assert(write);
-            vector<string> extensions = write->fileTypesEncoded();
-            string encoderName = write->encoderName();
+            std::vector<std::string> extensions = write->fileTypesEncoded();
+            std::string encoderName = write->encoderName();
             _writePluginsLoaded.insert(make_pair(encoderName,make_pair(extensions,plugins[i])));
             delete write;
         }
@@ -752,7 +750,7 @@ void AppManager::loadBuiltinWrites(){
         boost::scoped_ptr<Encoder> writeQt(new QtEncoder(NULL));
         assert(writeQt);
         std::vector<std::string> extensions = writeQt->fileTypesEncoded();
-        string encoderName = writeQt->encoderName();
+        std::string encoderName = writeQt->encoderName();
         
         std::map<std::string,void*> Qtfunctions;
         Qtfunctions.insert(make_pair("BuildWrite",(void*)&QtEncoder::BuildWrite));
@@ -766,7 +764,7 @@ void AppManager::loadBuiltinWrites(){
     {
         boost::scoped_ptr<Encoder> writeEXR(new ExrEncoder(NULL));
         std::vector<std::string> extensionsExr = writeEXR->fileTypesEncoded();
-        string encoderNameExr = writeEXR->encoderName();
+        std::string encoderNameExr = writeEXR->encoderName();
         
         std::map<std::string,void*> EXRfunctions;
         EXRfunctions.insert(make_pair("BuildWrite",(void*)&ExrEncoder::BuildWrite));
@@ -868,7 +866,7 @@ void AppManager::setAsTopLevelInstance(int appID){
         return;
     }
     _topLevelInstanceID = appID;
-    for(map<int,AppInstance*>::iterator it = _appInstances.begin();it!=_appInstances.end();++it){
+    for(std::map<int,AppInstance*>::iterator it = _appInstances.begin();it!=_appInstances.end();++it){
         if (it->first != _topLevelInstanceID) {
             it->second->disconnectViewersFromViewerCache();
         }else{
