@@ -62,6 +62,8 @@ public:
     
     QString itemText(int index) const;
     
+    int count() const;
+    
     int itemIndex(const QString& str) const;
     
     void removeItem(const QString& item);

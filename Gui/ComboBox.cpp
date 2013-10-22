@@ -107,7 +107,9 @@ void ComboBox::createMenu(){
     style()->polish(this);
     
 }
-
+int ComboBox::count() const{
+    return (int)_actions.size();
+}
 void ComboBox::insertItem(int index,const QString& item,QIcon icon,QKeySequence key){
     assert(index >= 0);
     QAction* action =  new QAction(this);

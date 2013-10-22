@@ -430,29 +430,27 @@ const std::vector<Knob*>& Project::getProjectKnobs() const{
     return _projectKnobs;
 }
 
-
-void Project::setProjectDefaultFormat(const Format& f) {
+int Project::tryAddProjectFormat(const Format& f){
     for (U32 i = 0; i < _availableFormats.size(); ++i) {
         if(f == _availableFormats[i]){
-            _formatKnob->setValue(i);
-            return;
+            return i;
         }
     }
-    const std::vector<Format*>& appFormats = appPTR->getFormats();
-    std::vector<std::string> entries;
+    std::vector<Format> currentFormats = _availableFormats;
     _availableFormats.clear();
-    for (U32 i = 0; i < appFormats.size(); ++i) {
-        Format* f = appFormats[i];
+    std::vector<std::string> entries;
+    for (U32 i = 0; i < currentFormats.size(); ++i) {
+        const Format& f = currentFormats[i];
         QString formatStr;
-        formatStr.append(f->getName().c_str());
+        formatStr.append(f.getName().c_str());
         formatStr.append("  ");
-        formatStr.append(QString::number(f->width()));
+        formatStr.append(QString::number(f.width()));
         formatStr.append(" x ");
-        formatStr.append(QString::number(f->height()));
+        formatStr.append(QString::number(f.height()));
         formatStr.append("  ");
-        formatStr.append(QString::number(f->getPixelAspect()));
+        formatStr.append(QString::number(f.getPixelAspect()));
         entries.push_back(formatStr.toStdString());
-        _availableFormats.push_back(*f);
+        _availableFormats.push_back(f);
     }
     QString formatStr;
     formatStr.append(f.getName().c_str());
@@ -465,7 +463,12 @@ void Project::setProjectDefaultFormat(const Format& f) {
     entries.push_back(formatStr.toStdString());
     _availableFormats.push_back(f);
     _formatKnob->populate(entries);
-    _formatKnob->setValue((int)_availableFormats.size()-1);
+    return _availableFormats.size() - 1;
+}
+
+void Project::setProjectDefaultFormat(const Format& f) {
+    int index = tryAddProjectFormat(f);
+    _formatKnob->setValue(index);
     emit projectFormatChanged(f);
 
 }

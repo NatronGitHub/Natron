@@ -106,7 +106,7 @@ public:
 
     void autoSave();
 
-
+    void tryAddProjectFormat(const Format& frmt);
 
     void setProjectFormat(const Format& frmt);
 

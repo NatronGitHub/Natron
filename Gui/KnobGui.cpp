@@ -775,15 +775,16 @@ void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     
 }
 void ComboBox_KnobGui::onEntriesPopulated(){
+    int i = _comboBox->activeIndex();
     _comboBox->clear();
     const std::vector<std::string> entries = dynamic_cast<ComboBox_Knob*>(_knob)->getEntries();
     _entries = entries;
     for (U32 i = 0; i < _entries.size(); ++i) {
         _comboBox->addItem(_entries[i].c_str());
     }
-    if(_entries.size() > 0)
-        _comboBox->setCurrentText(_entries[0].c_str());
-
+    if(i < _comboBox->count()){
+        _comboBox->setCurrentIndex(i);
+    }
 }
 
 void ComboBox_KnobGui::updateGUI(const Variant& variant){

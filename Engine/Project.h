@@ -126,6 +126,9 @@ public:
     
     void setProjectDefaultFormat(const Format& f);
     
+    /*Returns the index of the format*/
+    int tryAddProjectFormat(const Format& f);
+    
     bool shouldAutoSetProjectFormat() const {return _autoSetProjectFormat;}
     
     void setAutoSetProjectFormat(bool b){_autoSetProjectFormat = b;}

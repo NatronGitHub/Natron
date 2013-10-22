@@ -880,7 +880,9 @@ void AppInstance::onRenderingOnDiskStarted(Writer* writer,const QString& sequenc
     }
 }
 
-
+void AppInstance::tryAddProjectFormat(const Format& frmt){
+    _currentProject->tryAddProjectFormat(frmt);
+}
 void AppInstance::setProjectFormat(const Format& frmt){
     Format* df = appPTR->findExistingFormat(frmt.width(), frmt.height(),frmt.getPixelAspect());
     if(df){
