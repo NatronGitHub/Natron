@@ -200,6 +200,10 @@ void DockablePanel::initializeKnobs(){
                      }
                  }
                  ++parentTab->second.second;
+                 
+                 gui->setParent(parentTab->second.first);
+                 if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
+                 gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
                  if(parentKnob && parentKnob->name() == "Group"){
                      Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
                      parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
@@ -208,12 +212,8 @@ void DockablePanel::initializeKnobs(){
                      }else{
                          gui->hide();
                      }
-
+                     
                  }
-                 gui->setParent(parentTab->second.first);
-                 if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
-                 gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
-                 
                  
 
              }
