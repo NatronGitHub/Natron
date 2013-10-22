@@ -16,6 +16,7 @@
 #endif
 #include <QtGui/QImage>
 #include <QtCore/QByteArray>
+#include <QtCore/QMutex>
 #include <ImfPixelType.h>
 #include <ImfInputFile.h>
 #include <ImfChannelList.h>
@@ -38,6 +39,21 @@
 namespace Imf_ = OPENEXR_IMF_NAMESPACE;
 
 using std::cout; using std::endl;
+
+struct ExrDecoder::Implementation {
+    Implementation();
+
+    Imf::InputFile* _inputfile;
+    std::map<Powiter::Channel, std::string> _channel_map;
+    std::vector<std::string> _views;
+    int _dataOffset;
+#ifdef __POWITER_WIN32__
+    std::ifstream* _inputStr;
+    Imf::StdIFStream* _inputStdStream;
+#endif
+	QMutex _lock;
+};
+
 
 namespace EXR {
 static Powiter::Channel fromExrChannel(const std::string& from)
@@ -188,29 +204,29 @@ private:
 
 Powiter::Status ExrDecoder::readHeader(const QString& filename){
     
-    _channel_map.clear();
-     views.clear();
+    _imp->_channel_map.clear();
+    _imp->_views.clear();
     try {
 #ifdef __POWITER_WIN32__
         QByteArray ba = filename.toLocal8Bit();
-        if(inputStr){
-            delete inputStr;
+        if(_imp->_inputStr){
+            delete _imp->_inputStr;
         }
-        if(inputStdStream){
-            delete inputStdStream;
+        if(_imp->_inputStdStream){
+            delete _imp->_inputStdStream;
         }
-        if(inputfile){
-            delete inputfile;
+        if(_imp->_inputfile){
+            delete _imp->_inputfile;
         }
-        inputStr = new std::ifstream(PowiterWindows::s2ws(ba.data()),std::ios_base::binary);
-        inputStdStream = new Imf_::StdIFStream(*inputStr,ba.data());
-        inputfile = new Imf_::InputFile(*inputStdStream);
+        _imp->_inputStr = new std::ifstream(PowiterWindows::s2ws(ba.data()),std::ios_base::binary);
+        _imp->_inputStdStream = new Imf_::StdIFStream(*_inputStr,ba.data());
+        _imp->_inputfile = new Imf_::InputFile(*_inputStdStream);
 #else
         QByteArray ba = filename.toLatin1();
-        if(_inputfile){
-            delete _inputfile;
+        if(_imp->_inputfile){
+            delete _imp->_inputfile;
         }
-        _inputfile = new Imf_::InputFile(ba.constData());
+        _imp->_inputfile = new Imf_::InputFile(ba.constData());
 #endif
 
         // multiview is only supported with OpenEXR >= 1.7.0
@@ -240,7 +256,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             
             for (size_t i = 0; i < s.size(); ++i) {
                 if (s[i].length()) {
-                    views.push_back(s[i]);
+                    _views.push_back(s[i]);
                     if (!setHero) {
                         heroview = s[i];
                         setHero = true;
@@ -252,14 +268,14 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         std::map<Imf_::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
         ChannelSet mask;
-        const Imf_::ChannelList& imfchannels = _inputfile->header().channels();
+        const Imf_::ChannelList& imfchannels = _imp->_inputfile->header().channels();
         Imf_::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
             std::string chanName(chan.name());
             if(chanName.empty())
                 continue;
             pixelTypes[chan.channel().type]++;
-            EXR::ChannelExtractor exrExctractor(chan.name(), views);
+            EXR::ChannelExtractor exrExctractor(chan.name(), _imp->_views);
             std::set<Powiter::Channel> channels;
             if (exrExctractor.isValid()) {
                 channels.insert(exrExctractor._mappedChannel);
@@ -268,8 +284,8 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
                     Powiter::Channel channel = *it;
                     //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
-                    ChannelsMap::const_iterator found = _channel_map.find(channel);
-                    if(found != _channel_map.end()){
+                    ChannelsMap::const_iterator found = _imp->_channel_map.find(channel);
+                    if(found != _imp->_channel_map.end()){
                         int existingLength = found->second.size();
                         int newLength = chanName.size();
                         if ((existingLength > 0) && found->second.at(0) == '.' && existingLength == (newLength + 1)) {                                writeChannelMapping = true;
@@ -279,7 +295,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
                         }
                     }
                     if(writeChannelMapping){
-                        _channel_map.insert(make_pair(channel,chanName));
+                        _imp->_channel_map.insert(make_pair(channel,chanName));
                     }
                     mask += channel;
                 }
@@ -290,25 +306,25 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             
         }
         
-        const Imath::Box2i& datawin = _inputfile->header().dataWindow();
-        const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
+        const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
+        const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
         Imath::Box2i formatwin(dispwin);
         formatwin.min.x = 0;
         formatwin.min.y = 0;
-        _dataOffset = 0;
+        _imp->_dataOffset = 0;
         if (dispwin.min.x != 0) {
             // Shift both to get dispwindow over to 0,0.
-            _dataOffset = -dispwin.min.x;
-            formatwin.max.x = dispwin.max.x + _dataOffset;
+            _imp->_dataOffset = -dispwin.min.x;
+            formatwin.max.x = dispwin.max.x + _imp->_dataOffset;
         }
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
-        double aspect = _inputfile->header().pixelAspectRatio();
+        double aspect = _imp->_inputfile->header().pixelAspectRatio();
         Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
         Box2D rod;
         
-        int left = datawin.min.x + _dataOffset;
+        int left = datawin.min.x + _imp->_dataOffset;
         int bottom = dispwin.max.y - datawin.max.y;
-        int right = datawin.max.x + _dataOffset;
+        int right = datawin.max.x + _imp->_dataOffset;
         int top = dispwin.max.y - datawin.min.y;
         if (datawin.min.x != dispwin.min.x || datawin.max.x != dispwin.max.x ||
                 datawin.min.y != dispwin.min.y || datawin.max.y != dispwin.max.y) {
@@ -325,21 +341,28 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
     }
     catch (const std::exception& exc) {
         cout << "OpenEXR error: " << exc.what() << endl;
-        delete _inputfile;
-        _inputfile = 0;
+        delete _imp->_inputfile;
+        _imp->_inputfile = 0;
         return Powiter::StatFailed;
     }
     
 }
 
 
-ExrDecoder::ExrDecoder(Reader* op):Decoder(op)
-,_inputfile(0)
-,_dataOffset(0){
+ExrDecoder::ExrDecoder(Reader* op)
+: Decoder(op)
+, _imp(new Implementation)
+{
+}
+
+ExrDecoder::Implementation::Implementation()
+: _inputfile(0)
+, _dataOffset(0)
 #ifdef __POWITER_WIN32__
-    inputStr = NULL;
-    inputStdStream = NULL;
+, _inputStr(NULL)
+, _inputStdStream(NULL)
 #endif
+{
 }
 
 void ExrDecoder::initializeColorSpace(){
@@ -348,22 +371,22 @@ void ExrDecoder::initializeColorSpace(){
 
 ExrDecoder::~ExrDecoder(){
 #ifdef __POWITER_WIN32__
-    delete inputStr ;
-    delete inputStdStream ;
+    delete _imp->_inputStr ;
+    delete _imp->_inputStdStream ;
 #endif
-    delete _inputfile;
+    delete _imp->_inputfile;
 }
 
 void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
     const ChannelSet& channels = out->channels();
-    const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
-    const Imath::Box2i& datawin = _inputfile->header().dataWindow();
+    const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
+    const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
     int exrY = dispwin.max.y - out->y();
     int r = out->right();
     int x = out->left();
     
-    const int X = std::max(x, datawin.min.x + _dataOffset);
-    const int R = std::min(r, datawin.max.x + _dataOffset +1);
+    const int X = std::max(x, datawin.min.x + _imp->_dataOffset);
+    const int R = std::min(r, datawin.max.x + _imp->_dataOffset +1);
     
     // if we're below or above the data window
     if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
@@ -379,8 +402,8 @@ void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
             dest[xx] = 0;
         for (int xx = R; xx < r; xx++)
             dest[xx] = 0;
-        ChannelsMap::const_iterator found = _channel_map.find(z);
-        if(found != _channel_map.end()){
+        ChannelsMap::const_iterator found = _imp->_channel_map.find(z);
+        if(found != _imp->_channel_map.end()){
             if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
                 fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
             }else{
@@ -397,12 +420,11 @@ void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
         }
     }
     {
-        QMutexLocker locker(&_lock);
+        QMutexLocker locker(&_imp->_lock);
         try {
-            _inputfile->setFrameBuffer(fbuf);
-            _inputfile->readPixels(exrY);
-        }
-        catch (const std::exception& exc) {
+            _imp->_inputfile->setFrameBuffer(fbuf);
+            _imp->_inputfile->readPixels(exrY);
+        } catch (const std::exception& exc) {
             cout << exc.what() <<  endl;
             return;
         }
