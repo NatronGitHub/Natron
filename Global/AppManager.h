@@ -56,10 +56,6 @@ class Project;
 
 
 
-/*Controler (see Model-view-controler pattern on wikipedia). This class
- implements the singleton pattern to ensure there's only 1 single
- instance of the object living. Also you can access the controler
- by the handy macro appPTR*/
 class AppInstance : public QObject,public boost::noncopyable
 {
     Q_OBJECT
@@ -79,7 +75,7 @@ public:
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
 
-    const std::vector<Node*> getAllActiveNodes() const WARN_UNUSED_RETURN;
+    const std::vector<NodeGui*>& getAllActiveNodes() const WARN_UNUSED_RETURN;
 
     const QString& getCurrentProjectName() const WARN_UNUSED_RETURN ;
 

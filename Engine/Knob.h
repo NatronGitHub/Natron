@@ -21,6 +21,9 @@
 #include <QtCore/QVariant>
 #include <QtCore/QStringList>
 
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
 
@@ -101,6 +104,7 @@ public:
         QVariant::setValue(list);
     }
     
+    QString serialize() const;
     
     int toInt(bool *ok = 0) const { return QVariant::toInt(ok); }
     uint toUInt(bool *ok = 0) const { return QVariant::toUInt(ok); }
@@ -191,15 +195,6 @@ public:
     /*Must return the name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
     virtual const std::string name()=0;
-    
-    virtual std::string serialize() const =0;
-    
-    void restoreFromString(const std::string& str){
-        _restoreFromString(str);
-        fillHashVector();
-        emit valueChanged(_value);
-        tryStartRendering();
-    }
     
     template<typename T>
     void setValue(T variant[],int count){
@@ -293,8 +288,6 @@ signals:
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
-    virtual void _restoreFromString(const std::string& str) =0;
-    
     
     /*Should implement this to start rendering by calling startRendering.
      This is called by the onValueChanged() slot. If you don't want to
@@ -347,8 +340,6 @@ public:
     virtual void fillHashVector();
     
     virtual const std::string name(){return "InputFile";}
-    
-    virtual std::string serialize() const;
     
     void openFile(){
         emit shouldOpenFile();
@@ -418,8 +409,6 @@ public:
                                 
     virtual const std::string name(){return "OutputFile";}
     
-    virtual std::string serialize() const;
-    
     void openFile(){
         emit shouldOpenFile();
     }
@@ -459,8 +448,6 @@ public:
     virtual void fillHashVector();
     
     virtual const std::string name(){return "Int";}
-    
-    virtual std::string serialize() const;
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
@@ -633,9 +620,6 @@ public:
     
     virtual const std::string name(){return "Bool";}
     
-    virtual std::string serialize() const;
-    
-    
     bool getValue() const { return _value.toBool(); }
     
 protected:
@@ -667,8 +651,6 @@ public:
     virtual void fillHashVector();
     
     virtual const std::string name(){return "Double";}
-    
-    virtual std::string serialize() const;
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
@@ -856,8 +838,6 @@ public:
     
     virtual const std::string name(){return "Button";}
     
-    virtual std::string serialize() const{return "";}
-    
     public slots:
     void connectToSlot(const char* v);
     
@@ -892,8 +872,6 @@ public:
     virtual void fillHashVector();
     
     virtual const std::string name(){return "ComboBox";}
-    
-    virtual std::string serialize() const;
     
     /*Must be called right away after the constructor.*/
     void populate(const std::vector<std::string>& entries){
@@ -938,8 +916,6 @@ public:
     
     virtual const std::string name(){return "Separator";}
     
-    virtual std::string serialize() const{return "";}
-    
 protected:
     
     virtual void tryStartRendering(){}
@@ -965,8 +941,6 @@ public:
     virtual void fillHashVector();
     
     virtual const std::string name(){return "RGBA";}
-    
-    virtual std::string serialize() const;
     
     QVector4D getValues() const {return _value.value<QVector4D>();}
     
@@ -1007,8 +981,6 @@ public:
     
     virtual const std::string name(){return "String";}
     
-    virtual std::string serialize() const;
-    
     std::string getString() const {return _value.toString().toStdString();}
     
 protected:
@@ -1045,8 +1017,6 @@ public:
     
     virtual const std::string name(){return "Group";}
     
-    virtual std::string serialize() const{return "";}
-    
     void addKnob(Knob* k);
     
     const std::vector<Knob*>& getChildren() const {return _children;}
@@ -1077,8 +1047,6 @@ public:
     virtual void fillHashVector(){}
     
     virtual const std::string name(){return "Tab";}
-    
-    virtual std::string serialize() const{return "";}
     
     void addTab(const std::string& name);
     

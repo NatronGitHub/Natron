@@ -58,6 +58,7 @@ Node::Node(AppInstance* app)
 , _hashValue()
 , _markedByTopologicalSort(false)
 , _renderAborted(false)
+, _activated(true)
 {
 }
 
@@ -242,6 +243,7 @@ void Node::deactivate(){
         _deactivatedState._outputsConnections.insert(make_pair(it->second, make_pair(inputNb, it->first)));
     }
     emit deactivated();
+    _activated = false;
     
 }
 
@@ -271,7 +273,7 @@ void Node::activate(){
         it->second->connectInput(this,found->second.first);
     }
     emit activated();
-    
+    _activated = true;
 }
 
 

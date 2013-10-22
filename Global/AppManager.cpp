@@ -195,14 +195,10 @@ void AppInstance::autoConnect(Node* target,Node* created){
 }
 
 
-const std::vector<Node*> AppInstance::getAllActiveNodes() const{
+const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
     assert(_gui->_nodeGraphTab->_nodeGraphArea);
-    const std::vector<NodeGui*>&  actives= _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
-    std::vector<Node*> ret;
-    for (U32 j = 0; j < actives.size(); ++j) {
-        ret.push_back(actives[j]->getNode());
-    }
-    return ret;
+    return  _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
+    
 }
 void AppInstance::loadProject(const QString& path,const QString& name){
     _currentProject->loadProject(path,name);

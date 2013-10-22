@@ -10,8 +10,16 @@
 
 #include "Project.h"
 
+#include <fstream>
 #include <QtCore/QXmlStreamReader>
 #include <QtCore/QXmlStreamWriter>
+
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/vector.hpp>
+
 
 #include "Global/AppManager.h"
 
@@ -158,109 +166,131 @@ void Project::loadProject(const QString& path,const QString& name,bool autoSave)
     setProjectAgeSinceLastAutosaveSave(time);
 }
 void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
+    QString filePath;
     if(autoSave){
-        QFile file(AppInstance::autoSavesDir()+QDir::separator()+filename);
-        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
-            cout <<  file.errorString().toStdString() << endl;
-            return;
-        }
-        QTextStream out(&file);
-        if(!path.isEmpty())
-            out << path << endl;
-        else
-            out << "unsaved" << endl;
-        out << serializeNodeGraph();
-        file.close();
+        filePath = AppInstance::autoSavesDir()+QDir::separator()+filename;
+//        QFile file(AppInstance::autoSavesDir()+QDir::separator()+filename);
+//        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+//            cout <<  file.errorString().toStdString() << endl;
+//            return;
+//        }
+//        
+       //        QTextStream out(&file);
+//        if(!path.isEmpty())
+//            out << path << endl;
+//        else
+//            out << "unsaved" << endl;
+// out << serializeNodeGraph();
+        
+        //file.close();
     }else{
-        QFile file(path+filename);
-        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
-            cout << (path+filename).toStdString() <<  file.errorString().toStdString() << endl;
-            return;
-        }
-        QTextStream out(&file);
-        out << serializeNodeGraph();
-        file.close();
+        filePath = path+filename;
+//        QFile file(path+filename);
+//        if(!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)){
+//            cout << (path+filename).toStdString() <<  file.errorString().toStdString() << endl;
+//            return;
+//        }
+//        QTextStream out(&file);
+//        out << serializeNodeGraph();
+//        file.close();
         
     }
+    std::ofstream ofile(filePath.toStdString().c_str(),std::ofstream::out);
+    boost::archive::text_oarchive oArchive(ofile);
+    if(!ofile.is_open()){
+        cout << "Failed to open file " << filePath.toStdString() << endl;
+        return;
+    }
+    std::list<NodeGui::SerializedState> nodeStates;
+    const std::vector<NodeGui*>& activeNodes = _appInstance->getAllActiveNodes();
+    for (U32 i = 0; i < activeNodes.size(); ++i) {
+        nodeStates.push_back(activeNodes[i]->serialize());
+    }
+    
+    oArchive << nodeStates;
+    oArchive << _availableFormats;
+    
+    ofile.close();
+
 }
 
 
 
 
-QString Project::serializeNodeGraph() const{
-    /*Locking the nodes while autosaving*/
-    QMutexLocker l(_appInstance->getAutoSaveMutex());
-    
-    const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
-    QString ret;
-    
-    QXmlStreamWriter writer(&ret);
-    writer.setAutoFormatting(true);
-    writer.writeStartDocument();
-    writer.writeStartElement("Nodes");
-    foreach(Node* n, activeNodes){
-        //serialize inputs
-        assert(n);
-        writer.writeStartElement("Node");
-        
-        if(!n->isOpenFXNode()){
-            writer.writeAttribute("ClassName",n->className().c_str());
-        }else{
-            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
-            QString name = ofxNode->className().c_str();
-            QStringList groups = ofxNode->getPluginGrouping();
-            if (groups.size() >= 1) {
-                name.append("  [");
-                name.append(groups[0]);
-                name.append("]");
-            }
-            writer.writeAttribute("ClassName",name);
-        }
-        writer.writeAttribute("Label", n->getName().c_str());
-        
-        writer.writeStartElement("Inputs");
-        const Node::InputMap& inputs = n->getInputs();
-        for (Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
-            if(it->second){
-                writer.writeStartElement("Input");
-                writer.writeAttribute("Number", QString::number(it->first));
-                writer.writeAttribute("Name", it->second->getName().c_str());
-                writer.writeEndElement();// end input
-            }
-        }
-        writer.writeEndElement(); // end inputs
-                                  //serialize knobs
-        const std::vector<Knob*>& knobs = n->getKnobs();
-        writer.writeStartElement("Knobs");
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            writer.writeStartElement("Knob");
-            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
-            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
-            writer.writeEndElement();//end knob
-        }
-        writer.writeEndElement(); // end knobs
-        
-        //serialize gui infos
-        
-        writer.writeStartElement("Gui");
-        
-        NodeGui* nodeGui = _appInstance->getNodeGui(n);
-        double x=0,y=0;
-        if(nodeGui){
-            x = nodeGui->pos().x();
-            y = nodeGui->pos().y();
-        }
-        writer.writeAttribute("X", QString::number(x));
-        writer.writeAttribute("Y", QString::number(y));
-        writer.writeEndElement();//end gui
-        
-        writer.writeEndElement();//end node
-    }
-    writer.writeEndElement(); // end nodes
-    writer.writeEndDocument();
-    return ret;
-}
-
+//QString Project::serializeNodeGraph() const{
+//    /*Locking the nodes while autosaving*/
+//    QMutexLocker l(_appInstance->getAutoSaveMutex());
+//    
+//    const std::vector<Node*>& activeNodes = _appInstance->getAllActiveNodes();
+//    QString ret;
+//    
+//    QXmlStreamWriter writer(&ret);
+//    writer.setAutoFormatting(true);
+//    writer.writeStartDocument();
+//    writer.writeStartElement("Nodes");
+//    foreach(Node* n, activeNodes){
+//        //serialize inputs
+//        assert(n);
+//        writer.writeStartElement("Node");
+//        
+//        if(!n->isOpenFXNode()){
+//            writer.writeAttribute("ClassName",n->className().c_str());
+//        }else{
+//            OfxNode* ofxNode = dynamic_cast<OfxNode*>(n);
+//            QString name = ofxNode->className().c_str();
+//            QStringList groups = ofxNode->getPluginGrouping();
+//            if (groups.size() >= 1) {
+//                name.append("  [");
+//                name.append(groups[0]);
+//                name.append("]");
+//            }
+//            writer.writeAttribute("ClassName",name);
+//        }
+//        writer.writeAttribute("Label", n->getName().c_str());
+//        
+//        writer.writeStartElement("Inputs");
+//        const Node::InputMap& inputs = n->getInputs();
+//        for (Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it) {
+//            if(it->second){
+//                writer.writeStartElement("Input");
+//                writer.writeAttribute("Number", QString::number(it->first));
+//                writer.writeAttribute("Name", it->second->getName().c_str());
+//                writer.writeEndElement();// end input
+//            }
+//        }
+//        writer.writeEndElement(); // end inputs
+//                                  //serialize knobs
+//        const std::vector<Knob*>& knobs = n->getKnobs();
+//        writer.writeStartElement("Knobs");
+//        for (U32 i = 0; i < knobs.size(); ++i) {
+//            writer.writeStartElement("Knob");
+//            writer.writeAttribute("Description", knobs[i]->getDescription().c_str());
+//            writer.writeAttribute("Param", knobs[i]->serialize().c_str());
+//            writer.writeEndElement();//end knob
+//        }
+//        writer.writeEndElement(); // end knobs
+//        
+//        //serialize gui infos
+//        
+//        writer.writeStartElement("Gui");
+//        
+//        NodeGui* nodeGui = _appInstance->getNodeGui(n);
+//        double x=0,y=0;
+//        if(nodeGui){
+//            x = nodeGui->pos().x();
+//            y = nodeGui->pos().y();
+//        }
+//        writer.writeAttribute("X", QString::number(x));
+//        writer.writeAttribute("Y", QString::number(y));
+//        writer.writeEndElement();//end gui
+//        
+//        writer.writeEndElement();//end node
+//    }
+//    writer.writeEndElement(); // end nodes
+//    writer.writeEndDocument();
+//    return ret;
+//}
+//
 void Project::restoreGraphFromString(const QString& str){
     // pair< Node, pair< AttributeName, AttributeValue> >
     std::vector<std::pair<Node*, XMLProjectLoader::XMLParsedElement* > > actionsMap;

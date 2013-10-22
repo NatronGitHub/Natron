@@ -472,3 +472,40 @@ bool NodeGui::isSettingsPanelVisible() const{
         return false;
     }
 }
+
+NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
+    
+    const std::vector<Knob*>& knobs = _node->getNode()->getKnobs();
+    for (U32 i  = 0; i < knobs.size(); ++i) {
+        _knobsValues.insert(std::make_pair(knobs[i]->getDescription(), knobs[i]->getValueAsVariant().serialize()));
+    }
+    
+    _name = _node->getNode()->getName();
+    _className = _node->getNode()->className();
+    
+    const Node::InputMap& inputs = _node->getNode()->getInputs();
+    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+        if(it->second){
+            _inputs.insert(std::make_pair(it->first, it->second->getName()));
+        }else{
+             _inputs.insert(std::make_pair(it->first, ""));
+        }
+    }
+    
+    const Node::OutputMap& outputs = _node->getNode()->getOutputs();
+    for(Node::OutputMap::const_iterator it = outputs.begin();it!=outputs.end();++it){
+        if(it->second){
+            _outputs.insert(std::make_pair(it->first, it->second->getName()));
+        }else{
+            _outputs.insert(std::make_pair(it->first, ""));
+        }
+    }
+    
+    QPointF pos = _node->pos();
+    _posX = pos.x();
+    _posY = pos.y();
+}
+
+NodeGui::SerializedState NodeGui::serialize() const{
+    return NodeGui::SerializedState(this);
+}

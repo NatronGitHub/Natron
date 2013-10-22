@@ -17,6 +17,13 @@
 #include <QtCore/QRectF>
 #include <QGraphicsItem>
 
+
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/map.hpp>
+
+#include "Engine/Knob.h"
 #include "Global/Macros.h"
 
 class Edge;
@@ -31,12 +38,49 @@ class KnobGui;
 class Knob;
 class ChannelSet;
 class Node;
-
 class NodeGui : public QObject,public QGraphicsItem
 {
     Q_OBJECT
     Q_INTERFACES(QGraphicsItem)
+    
+    
+    
 public:
+    
+    
+    class SerializedState {
+        
+        const NodeGui* _node;
+        std::map<std::string,QString> _knobsValues;
+        std::string _name;
+        std::string _className;
+        
+        std::map<int,std::string> _inputs;
+        std::multimap<int,std::string> _outputs;
+        double _posX,_posY;
+        
+        
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version)
+        {
+            (void)version;
+            ar & _knobsValues;
+            ar & _name;
+            ar & _className;
+            ar & _inputs;
+            ar & _outputs;
+            ar & _posX;
+            ar & _posY;
+        }
+        
+    public:
+        
+        
+        SerializedState(const NodeGui* n);
+        
+    };
+    
 
     typedef std::map<int,Edge*> InputEdgesMap;
     
@@ -47,6 +91,8 @@ public:
             QGraphicsItem *parent=0);
 
     ~NodeGui();
+    
+    NodeGui::SerializedState serialize() const;
     
     Node* getNode() const {return node;}
     

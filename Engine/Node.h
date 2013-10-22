@@ -33,7 +33,6 @@ class ViewerNode;
 class QKeyEvent;
 class Node;
 
-
 class Node : public QObject
 {
     Q_OBJECT
@@ -42,7 +41,6 @@ public:
     
     typedef std::map<int,Node*> InputMap;
     typedef std::multimap<int,Node*> OutputMap;
-    
 
     Node(AppInstance* app);
     
@@ -340,6 +338,10 @@ public:
      **/
     void createKnobDynamically();
     
+    /**
+     * @brief Returns true if the node is active for use in the graph editor.
+     **/
+    bool isActivated() const {return _activated;}
 
 public slots:
     
@@ -458,7 +460,7 @@ private:
     Hash64 _hashValue;
     bool _markedByTopologicalSort; //< used by the topological sort algorithm
     bool _renderAborted; //< was rendering aborted ?
-
+    bool _activated;
     
 };
 
