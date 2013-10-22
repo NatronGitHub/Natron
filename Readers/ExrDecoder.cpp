@@ -32,7 +32,11 @@
 #include "Engine/Row.h"
 #include "Engine/ImageInfo.h"
 
-using namespace Powiter;
+#ifndef OPENEXR_IMF_NAMESPACE
+#define OPENEXR_IMF_NAMESPACE Imf
+#endif
+namespace Imf_ = OPENEXR_IMF_NAMESPACE;
+
 using std::cout; using std::endl;
 
 namespace EXR {
@@ -199,31 +203,31 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             delete inputfile;
         }
         inputStr = new std::ifstream(PowiterWindows::s2ws(ba.data()),std::ios_base::binary);
-        inputStdStream = new Imf::StdIFStream(*inputStr,ba.data());
-        inputfile = new Imf::InputFile(*inputStdStream);
+        inputStdStream = new Imf_::StdIFStream(*inputStr,ba.data());
+        inputfile = new Imf_::InputFile(*inputStdStream);
 #else
         QByteArray ba = filename.toLatin1();
         if(_inputfile){
             delete _inputfile;
         }
-        _inputfile = new Imf::InputFile(ba.constData());
+        _inputfile = new Imf_::InputFile(ba.constData());
 #endif
 
         // multiview is only supported with OpenEXR >= 1.7.0
 #ifdef INCLUDED_IMF_STRINGVECTOR_ATTRIBUTE_H // use ImfStringVectorAttribute.h's #include guard
-        const Imf::StringAttribute* stringMultiView = 0;
-        const Imf::StringVectorAttribute* vectorMultiView = 0;
+        const Imf_::StringAttribute* stringMultiView = 0;
+        const Imf_::StringVectorAttribute* vectorMultiView = 0;
         
         try {
-            vectorMultiView = inputfile->header().findTypedAttribute<Imf::StringVectorAttribute>("multiView");
+            vectorMultiView = inputfile->header().findTypedAttribute<Imf_::StringVectorAttribute>("multiView");
             
             if (!vectorMultiView) {
-                Imf::Header::ConstIterator it = inputfile->header().find("multiView");
+                Imf_::Header::ConstIterator it = inputfile->header().find("multiView");
                 if (it != inputfile->header().end() && !strcmp(it.attribute().typeName(), "stringvector"))
-                    vectorMultiView = static_cast<const Imf::StringVectorAttribute*>(&it.attribute());
+                    vectorMultiView = static_cast<const Imf_::StringVectorAttribute*>(&it.attribute());
             }
             
-            stringMultiView = inputfile->header().findTypedAttribute<Imf::StringAttribute>("multiView");
+            stringMultiView = inputfile->header().findTypedAttribute<Imf_::StringAttribute>("multiView");
         }
         catch (...) {
             return StatFailed;
@@ -245,23 +249,23 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             }
         }
 #endif // !OPENEXR_NO_MULTIVIEW
-        std::map<Imf::PixelType, int> pixelTypes;
+        std::map<Imf_::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
         ChannelSet mask;
-        const Imf::ChannelList& imfchannels = _inputfile->header().channels();
-        Imf::ChannelList::ConstIterator chan;
+        const Imf_::ChannelList& imfchannels = _inputfile->header().channels();
+        Imf_::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
             std::string chanName(chan.name());
             if(chanName.empty())
                 continue;
             pixelTypes[chan.channel().type]++;
             EXR::ChannelExtractor exrExctractor(chan.name(), views);
-            std::set<Channel> channels;
+            std::set<Powiter::Channel> channels;
             if (exrExctractor.isValid()) {
                 channels.insert(exrExctractor._mappedChannel);
                 //cout << "size : "<< channels.size() << endl;
-                for (std::set<Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
-                    Channel channel = *it;
+                for (std::set<Powiter::Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
+                    Powiter::Channel channel = *it;
                     //cout <<" channel_map[" << getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
                     ChannelsMap::const_iterator found = _channel_map.find(channel);
@@ -317,13 +321,13 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         rod.set(left, bottom, right+1, top+1);
         
         setReaderInfo(imageFormat, rod, mask);
-        return StatOK;
+        return Powiter::StatOK;
     }
     catch (const std::exception& exc) {
         cout << "OpenEXR error: " << exc.what() << endl;
         delete _inputfile;
         _inputfile = 0;
-        return StatFailed;
+        return Powiter::StatFailed;
     }
     
 }
@@ -339,7 +343,7 @@ ExrDecoder::ExrDecoder(Reader* op):Decoder(op)
 }
 
 void ExrDecoder::initializeColorSpace(){
-    _lut=Color::getLut(Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
+    _lut=Powiter::Color::getLut(Powiter::Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
 }
 
 ExrDecoder::~ExrDecoder(){
@@ -350,7 +354,7 @@ ExrDecoder::~ExrDecoder(){
     delete _inputfile;
 }
 
-void ExrDecoder::render(SequenceTime /*time*/,Row* out){
+void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
     const ChannelSet& channels = out->channels();
     const Imath::Box2i& dispwin = _inputfile->header().displayWindow();
     const Imath::Box2i& datawin = _inputfile->header().dataWindow();
@@ -367,7 +371,7 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
         return;
     }
     
-    Imf::FrameBuffer fbuf;
+    Imf_::FrameBuffer fbuf;
     foreachChannels(z, channels){
         // blacking out the extra padding we added
         float* dest = out->begin(z) - out->left();
@@ -378,15 +382,15 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
         ChannelsMap::const_iterator found = _channel_map.find(z);
         if(found != _channel_map.end()){
             if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
-                fbuf.insert(found->second.c_str(),Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
+                fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
             }else{
-                fbuf.insert(found->second.c_str(),Imf::Slice(Imf::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0,2,2));
+                fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0,2,2));
             }
         }else{
             //not found in the file, we zero it out
             // we're responsible for filling all channels requested by the row
             float fillValue = 0.f;
-            if (z == Channel_alpha) {
+            if (z == Powiter::Channel_alpha) {
                 fillValue = 1.f;
             }
             out->fill(z,fillValue);
@@ -405,7 +409,7 @@ void ExrDecoder::render(SequenceTime /*time*/,Row* out){
     }
     
     //  colorspace conversion
-    const float* alpha = out->begin(Channel_alpha);
+    const float* alpha = out->begin(Powiter::Channel_alpha);
     foreachChannels(z, channels){
         float* to = out->begin(z) - out->left();
         const float* from = out->begin(z) - out->left();

@@ -16,15 +16,12 @@
 #include <vector>
 #ifdef __POWITER_WIN32__
 #include <fstream>
+#include <ImfStdIO.h>
 #endif
+#include <ImfInputFile.h>
 #include <QtCore/QMutex>
 #include "Readers/Decoder.h"
 #include "Global/Macros.h"
-
-namespace Imf {
-    class StdIFStream;
-    class InputFile;
-}
 
 namespace Powiter{
 class Row;
