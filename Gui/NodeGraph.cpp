@@ -382,9 +382,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
             if(!n->isSettingsPanelVisible()){
                 n->setVisibleSettingsPanel(true);
             }
-            n->putSettingsPanelFirst();
-            /*scrolling back to the top the selected node's property tab is visible*/
-            _propertyBin->verticalScrollBar()->setValue(0);
+            _gui->putSettingsPanelFirst(n->getSettingPanel());
             break;
         }
         ++i;
@@ -964,7 +962,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
         if(appPTR->getNodeNameList().contains(res)){
-            graph->getGui()->getApp()->createNode(res);
+            (void)graph->getGui()->getApp()->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             //textEdit->releaseKeyboard();

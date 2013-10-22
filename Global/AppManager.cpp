@@ -29,7 +29,7 @@
 
 #include "Global/LibraryBinary.h"
 #include "Global/MemoryInfo.h"
-#include "Global/Project.h"
+#include "Engine/Project.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
@@ -889,12 +889,10 @@ void AppInstance::setProjectFormat(const Format& frmt){
         Format currentDW = frmt;
         currentDW.setName(df->getName());
         _currentProject->setProjectDefaultFormat(currentDW);
-        emit projectFormatChanged(currentDW);
         
         
     }else{
         _currentProject->setProjectDefaultFormat(frmt);
-        emit projectFormatChanged(frmt);
         
     }
 }

@@ -89,6 +89,8 @@ public:
     
     int activeIndex() const;
     
+    void clear();
+    
     public slots:
     
     void setCurrentIndex(int index);

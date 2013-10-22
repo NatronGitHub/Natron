@@ -85,6 +85,8 @@ public:
 
     const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN ;
 
+    boost::shared_ptr<Powiter::Project> getProject() const { return _currentProject;}
+
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
 
     void setCurrentProjectName(const QString& name) ;
@@ -167,7 +169,6 @@ public slots:
 signals:
 
     void pluginsPopulated();
-    void projectFormatChanged(Format);
 
 private:
 
@@ -183,7 +184,7 @@ private:
 
     Gui* _gui; // the view of the MVC pattern
 
-    boost::scoped_ptr<Powiter::Project> _currentProject;
+    boost::shared_ptr<Powiter::Project> _currentProject;
 
     int _appID;
 
@@ -245,6 +246,8 @@ public:
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
+
+    const std::vector<Format*>& getFormats() const {return _formats;}
 
     const std::vector<PluginToolButton*>& getPluginsToolButtons() const WARN_UNUSED_RETURN {return _toolButtons;}
 

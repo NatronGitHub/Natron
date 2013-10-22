@@ -74,8 +74,10 @@ _container(container)
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleteWanted()),this,SLOT(deleteKnob()));
-    QObject::connect(this, SIGNAL(knobUndoneChange()), knob->getNode(), SIGNAL(knobUndoneChange()));
-    QObject::connect(this, SIGNAL(knobRedoneChange()), knob->getNode(), SIGNAL(knobRedoneChange()));
+    if(knob->getNode()){
+        QObject::connect(this, SIGNAL(knobUndoneChange()), knob->getNode(), SIGNAL(knobUndoneChange()));
+        QObject::connect(this, SIGNAL(knobRedoneChange()), knob->getNode(), SIGNAL(knobRedoneChange()));
+    }
 }
 
 KnobGui::~KnobGui(){
@@ -749,6 +751,7 @@ void Button_KnobGui::addToLayout(QHBoxLayout* layout){
 ComboBox_KnobGui::ComboBox_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container){
     ComboBox_Knob* cbKnob = dynamic_cast<ComboBox_Knob*>(knob);
     _entries = cbKnob->getEntries();
+    QObject::connect(cbKnob,SIGNAL(populated()),this,SLOT(onEntriesPopulated()));
 }
 ComboBox_KnobGui::~ComboBox_KnobGui(){
     delete _comboBox;
@@ -771,6 +774,17 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
     pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(i)));
     
+}
+void ComboBox_KnobGui::onEntriesPopulated(){
+    _comboBox->clear();
+    const std::vector<std::string> entries = dynamic_cast<ComboBox_Knob*>(_knob)->getEntries();
+    _entries = entries;
+    for (U32 i = 0; i < _entries.size(); ++i) {
+        _comboBox->addItem(_entries[i].c_str());
+    }
+    if(_entries.size() > 0)
+        _comboBox->setCurrentText(_entries[0].c_str());
+
 }
 
 void ComboBox_KnobGui::updateGUI(const Variant& variant){

@@ -22,7 +22,7 @@
 class Edge;
 class QPainterPath;
 class QScrollArea;
-class SettingsPanel;
+class NodeSettingsPanel;
 class QVBoxLayout;
 class AppInstance;
 class NodeGraph;
@@ -87,7 +87,7 @@ public:
     QVBoxLayout* getSettingsLayout(){return dockContainer;}
     
     /*Returns a pointer to the settings panel of this node.*/
-    SettingsPanel* getSettingPanel(){return settings;}
+    NodeSettingsPanel* getSettingPanel(){return settings;}
     
     /*Returns a pointer to the layout containing settings panels.*/
     QVBoxLayout* getDockContainer(){return dockContainer;}
@@ -106,8 +106,6 @@ public:
      Return a valid ptr to the edge if it found it, otherwise returns NULL.*/
     Edge* findConnectedEdge(NodeGui* parent);
     
-    /*Moves the settings panel on top of the list of panels.*/
-    void putSettingsPanelFirst();
         
     void markInputNull(Edge* e);
     
@@ -195,7 +193,7 @@ private:
     std::map<int,Edge*> inputs;
        /*settings panel related*/
     bool settingsPanel_displayed;
-    SettingsPanel* settings;
+    NodeSettingsPanel* settings;
     
   
 };

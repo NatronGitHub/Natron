@@ -26,7 +26,8 @@
 class Node;
 class TimeLine;
 class AppInstance;
-
+class ComboBox_Knob;
+class Knob;
 namespace XMLProjectLoader {
     
     
@@ -73,20 +74,25 @@ namespace XMLProjectLoader {
 
 namespace Powiter{
 
-class Project{
+class Project : public QObject{
     
+    Q_OBJECT
+        
     QString _projectName;
     QString _projectPath;
     bool _hasProjectBeenSavedByUser;
     QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
-    Format _format;
+    ComboBox_Knob* _formatKnob;
     boost::shared_ptr<TimeLine> _timeline; // global timeline
     
     std::map<std::string,int> _nodeCounters;
     bool _autoSetProjectFormat;
     std::vector<Node*> _currentNodes;
     
+    std::vector<Format> _availableFormats;
+    
+    std::vector<Knob*> _projectKnobs;
     AppInstance* _appInstance;//ptr to the appInstance
 public:
     
@@ -116,14 +122,15 @@ public:
     
     void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_lastAutoSave = t;}
     
-    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN {return _format;}
+    const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
     
-    void setProjectDefaultFormat(const Format& f) {_format = f;}
+    void setProjectDefaultFormat(const Format& f);
     
     bool shouldAutoSetProjectFormat() const {return _autoSetProjectFormat;}
     
     void setAutoSetProjectFormat(bool b){_autoSetProjectFormat = b;}
     
+    const std::vector<Knob*>& getProjectKnobs() const;
     
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _timeline;}
     
@@ -150,6 +157,14 @@ public:
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
+public slots:
+    
+    void onProjectFormatChanged();
+    
+signals:
+    
+    void projectFormatChanged(Format);
+
 private:
     
     

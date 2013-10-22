@@ -29,6 +29,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QSettings>
+#include <QScrollBar>
 
 #include "Global/AppManager.h"
 
@@ -48,6 +49,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/NodeGui.h"
 #include "Gui/Button.h"
+#include "Gui/DockablePanel.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
@@ -108,7 +110,8 @@ menuDisplay(0),
 menuOptions(0),
 viewersMenu(0),
 viewerInputsMenu(0),
-cacheMenu(0)
+cacheMenu(0),
+_projectGui(0)
 {
 }
 
@@ -116,6 +119,7 @@ Gui::~Gui()
 {
     delete _nodeGraphTab;
     delete _appInstance;
+    _viewerTabs.clear();
 }
 
 bool Gui::exit(){
@@ -335,6 +339,7 @@ void Gui::setupUi()
 	actionProject_settings = new QAction(this);
 	actionProject_settings->setObjectName(QString::fromUtf8("actionProject_settings"));
     actionProject_settings->setIcon(get_icon("document-properties"));
+    actionProject_settings->setShortcut(QKeySequence(Qt::Key_S));
 	actionFullScreen = new QAction(this);
 	actionFullScreen->setObjectName(QString::fromUtf8("actionFullScreen"));
 	actionFullScreen->setShortcut(QKeySequence(Qt::CTRL+Qt::META+Qt::Key_F));
@@ -479,6 +484,10 @@ void Gui::setupUi()
     _mainLayout->addWidget(_leftRightSplitter);
 	
     
+    _projectGui = new ProjectSettingsPanel(_appInstance->getProject(),_layoutPropertiesBin,_propertiesContainer);
+    _projectGui->initializeKnobs();
+    _projectGui->hide();
+    
 	menubar->addAction(menuFile->menuAction());
 	menubar->addAction(menuEdit->menuAction());
 	menubar->addAction(menuDisplay->menuAction());
@@ -519,6 +528,7 @@ void Gui::setupUi()
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
     QObject::connect(actionClearNodeCache, SIGNAL(triggered()),appPTR,SLOT(clearNodeCache()));
     QObject::connect(actionExit,SIGNAL(triggered()),this,SLOT(exit()));
+    QObject::connect(actionProject_settings,SIGNAL(triggered()),this,SLOT(setVisibleProjectSettingsPanel()));
     
     QObject::connect(actionConnectInput1, SIGNAL(triggered()),this,SLOT(connectInput1()));
     QObject::connect(actionConnectInput2, SIGNAL(triggered()),this,SLOT(connectInput2()));
@@ -538,6 +548,19 @@ void Gui::setupUi()
     
 } // setupUi
 
+
+void Gui::putSettingsPanelFirst(DockablePanel* panel){
+    _layoutPropertiesBin->removeWidget(panel);
+    _layoutPropertiesBin->insertWidget(0, panel);
+    _propertiesScrollArea->verticalScrollBar()->setValue(0);
+}
+
+void Gui::setVisibleProjectSettingsPanel() {
+    putSettingsPanelFirst(_projectGui);
+    if(!_projectGui->isVisible()){
+        _projectGui->setVisible(true);
+    }
+}
 void Gui::loadStyleSheet(){
     QFile qss(":/Resources/Stylesheets/mainstyle.qss");
     if(qss.open(QIODevice::ReadOnly

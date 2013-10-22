@@ -112,7 +112,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 	if(node->className() != "Viewer"){
 		settingsPanel_displayed=true;
 		assert(dockContainer);
-		settings=new SettingsPanel(this,dockContainer->parentWidget());
+		settings=new NodeSettingsPanel(this,dockContainer->parentWidget());
 		dockContainer->addWidget(settings);
         if(node->isOpenFXNode()){
             OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
@@ -345,10 +345,7 @@ Edge* NodeGui::firstAvailableEdge(){
     return NULL;
 }
 
-void NodeGui::putSettingsPanelFirst(){
-    dockContainer->removeWidget(settings);
-    dockContainer->insertWidget(0, settings);
-}
+
 
 void NodeGui::setSelected(bool b){
     _selected = b;

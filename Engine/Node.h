@@ -27,7 +27,7 @@ namespace Powiter{
     class Row;
 }
 class AppInstance;
-class SettingsPanel;
+class NodeSettingsPanel;
 class Knob;
 class ViewerNode;
 class QKeyEvent;

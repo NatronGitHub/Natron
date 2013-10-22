@@ -490,6 +490,8 @@ public slots:
     
     void onCurrentIndexChanged(int i);
 
+    void onEntriesPopulated();
+    
 protected:
     
     virtual void updateGUI(const Variant& variant);

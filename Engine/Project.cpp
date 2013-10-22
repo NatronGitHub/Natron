@@ -19,8 +19,11 @@
 #include "Engine/Node.h"
 #include "Engine/OfxNode.h"
 #include "Engine/Knob.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/NodeGui.h"
+#include "Gui/ViewerTab.h"
+#include "Gui/ViewerGL.h"
 
 using namespace Powiter;
 using namespace std;
@@ -30,14 +33,37 @@ Project::Project(AppInstance* appInstance):
 _projectName("Untitled.rs"),
 _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
-_format(*appPTR->findExistingFormat(2048, 1556,1.)),
 _timeline(new TimeLine())
 ,_autoSetProjectFormat(true)
 ,_currentNodes()
+,_availableFormats()
 ,_appInstance(appInstance)
 {
     
+    //    _format(*appPTR->findExistingFormat(1920, 1080,1.)),
+    _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", NULL, "Output Format"));
+    const std::vector<Format*>& appFormats = appPTR->getFormats();
+    std::vector<std::string> entries;
+    for (U32 i = 0; i < appFormats.size(); ++i) {
+        Format* f = appFormats[i];
+        QString formatStr;
+        formatStr.append(f->getName().c_str());
+        formatStr.append("  ");
+        formatStr.append(QString::number(f->width()));
+        if(f->width() == 1920 && f->height() == 1080){
+            _formatKnob->setValue(i);
+        }
+        formatStr.append(" x ");
+        formatStr.append(QString::number(f->height()));
+        formatStr.append("  ");
+        formatStr.append(QString::number(f->getPixelAspect()));
+        entries.push_back(formatStr.toStdString());
+        _availableFormats.push_back(*f);
+    }
     
+    _formatKnob->populate(entries);
+    QObject::connect(_formatKnob,SIGNAL(valueChangedByUser()),this,SLOT(onProjectFormatChanged()));
+    _projectKnobs.push_back(_formatKnob);
 }
 Project::~Project(){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
@@ -46,7 +72,21 @@ Project::~Project(){
     _currentNodes.clear();
 }
 
+void Project::onProjectFormatChanged(){
+    const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
+    for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
+        if (_currentNodes[i]->className() == "Viewer") {
+            ViewerNode* n = dynamic_cast<ViewerNode*>(_currentNodes[i]);
+            n->getUiContext()->viewer->onProjectFormatChanged(f);
+            n->refreshAndContinueRender();
+        }
+    }
+}
 
+const Format& Project::getProjectDefaultFormat() const{
+    int index = _formatKnob->getActiveEntry();
+    return _availableFormats[index];
+}
 
 void Project::initNodeCountersAndSetName(Node* n){
     assert(n);
@@ -385,5 +425,47 @@ void Project::analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedEle
         //  cout << "Gui/Pos: " << inputEl->_x << " , " << inputEl->_y << endl;
     }
 }
+const std::vector<Knob*>& Project::getProjectKnobs() const{
+    
+    return _projectKnobs;
+}
 
 
+void Project::setProjectDefaultFormat(const Format& f) {
+    for (U32 i = 0; i < _availableFormats.size(); ++i) {
+        if(f == _availableFormats[i]){
+            _formatKnob->setValue(i);
+            return;
+        }
+    }
+    const std::vector<Format*>& appFormats = appPTR->getFormats();
+    std::vector<std::string> entries;
+    _availableFormats.clear();
+    for (U32 i = 0; i < appFormats.size(); ++i) {
+        Format* f = appFormats[i];
+        QString formatStr;
+        formatStr.append(f->getName().c_str());
+        formatStr.append("  ");
+        formatStr.append(QString::number(f->width()));
+        formatStr.append(" x ");
+        formatStr.append(QString::number(f->height()));
+        formatStr.append("  ");
+        formatStr.append(QString::number(f->getPixelAspect()));
+        entries.push_back(formatStr.toStdString());
+        _availableFormats.push_back(*f);
+    }
+    QString formatStr;
+    formatStr.append(f.getName().c_str());
+    formatStr.append("  ");
+    formatStr.append(QString::number(f.width()));
+    formatStr.append(" x ");
+    formatStr.append(QString::number(f.height()));
+    formatStr.append("  ");
+    formatStr.append(QString::number(f.getPixelAspect()));
+    entries.push_back(formatStr.toStdString());
+    _availableFormats.push_back(f);
+    _formatKnob->populate(entries);
+    _formatKnob->setValue((int)_availableFormats.size()-1);
+    emit projectFormatChanged(f);
+
+}

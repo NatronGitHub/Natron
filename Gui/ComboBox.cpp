@@ -256,6 +256,15 @@ void ComboBox::removeItem(const QString& item){
     }
 }
 
+void ComboBox::clear(){
+    _actions.clear();
+    _menu->clear();
+    _separators.clear();
+    _currentIndex = 0;
+    _maximumTextSize = 0;
+}
+
+
 void ComboBox::setItemText(int index,const QString& item){
     assert(0 <= index && index < (int)_actions.size());
     assert(_actions[index]);

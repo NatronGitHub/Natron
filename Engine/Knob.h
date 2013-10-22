@@ -876,6 +876,7 @@ protected:
 
 class ComboBox_Knob:public Knob
 {
+    Q_OBJECT
 public:
     
     static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
@@ -897,6 +898,7 @@ public:
     /*Must be called right away after the constructor.*/
     void populate(const std::vector<std::string>& entries){
         _entries = entries;
+        emit populated();
     }
     
     const std::vector<std::string>& getEntries() const {return _entries;}
@@ -909,7 +911,9 @@ protected:
     
     virtual void _restoreFromString(const std::string& str);
     
+signals:
     
+    void populated();
 private:
     std::vector<std::string> _entries;
 };

@@ -55,7 +55,8 @@ class Button;
 class QLabel;
 class Writer;
 class Gui;
-
+class DockablePanel;
+class ProjectSettingsPanel;
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
@@ -289,6 +290,9 @@ public slots:
     void connectInput9();
     void connectInput10();
     
+    
+    
+    
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -296,6 +300,10 @@ public slots:
      * 2 = Cancel or Escape
      **/
     int saveWarning();
+    
+    void setVisibleProjectSettingsPanel();
+    
+    void putSettingsPanelFirst(DockablePanel* panel);
     
 private:
     AppInstance* _appInstance;
@@ -382,6 +390,8 @@ public:
     
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
+    
+    ProjectSettingsPanel* _projectGui;
     
     void setupUi();
    

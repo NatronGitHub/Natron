@@ -32,6 +32,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
+#include "Engine/Project.h"
 
 #include "Gui/ViewerGL.h"
 #include "Gui/InfoViewerWidget.h"
@@ -170,7 +171,7 @@ _maximized(false)
     
 	/*OpenGL viewer*/
 	viewer = new ViewerGL(this);
-    QObject::connect(_gui->getApp(),SIGNAL(projectFormatChanged(Format)),viewer,SLOT(onProjectFormatChanged(Format)));
+    QObject::connect(_gui->getApp()->getProject().get(),SIGNAL(projectFormatChanged(Format)),viewer,SLOT(onProjectFormatChanged(Format)));
     viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/

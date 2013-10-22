@@ -16,6 +16,8 @@
 
 #include <QFrame>
 
+#include <boost/shared_ptr.hpp>
+
 #include "Global/GlobalDefines.h"
 
 class LineEdit;
@@ -31,6 +33,10 @@ class QHBoxLayout;
 class QLabel;
 class QUndoStack;
 class QUndoCommand;
+
+namespace Powiter{
+    class Project;
+};
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -71,7 +77,7 @@ class DockablePanel : public QFrame{
     
 public:
     
-    DockablePanel(QVBoxLayout* container
+    explicit DockablePanel(QVBoxLayout* container
                   ,bool readOnlyName
                   ,const QString& initialName
                   ,const QString& helpToolTip
@@ -120,6 +126,8 @@ public slots:
     
     /*Internal slot, not meant to be called externally.*/
     void onRedoPressed();
+    
+
 protected:
     
     virtual void mousePressEvent(QMouseEvent* e){
@@ -161,7 +169,7 @@ private:
        
 };
 
-class SettingsPanel : public DockablePanel
+class NodeSettingsPanel : public DockablePanel
 {
     Q_OBJECT
     
@@ -174,9 +182,9 @@ class SettingsPanel : public DockablePanel
 
 public:
 
-    explicit SettingsPanel(NodeGui* NodeUi, QWidget *parent = 0);
+    explicit NodeSettingsPanel(NodeGui* NodeUi, QWidget *parent = 0);
     
-    virtual ~SettingsPanel(){}
+    virtual ~NodeSettingsPanel(){}
     
     void setSelected(bool s);
     
@@ -186,6 +194,20 @@ protected:
    
     /*Must return a vector of knobs*/
     virtual const std::vector<Knob*>&  getKnobs() const OVERRIDE;
+};
+
+class ProjectSettingsPanel : public DockablePanel{
+    
+    boost::shared_ptr<Powiter::Project> _project;
+public:
+    explicit ProjectSettingsPanel(boost::shared_ptr<Powiter::Project> project,QVBoxLayout* container,QWidget *parent = 0);
+    
+    virtual  ~ProjectSettingsPanel(){}
+    
+protected:
+
+    /*Must return a vector of knobs*/
+    virtual const std::vector<Knob*>&  getKnobs() const OVERRIDE ;
 };
 
 #endif // POWITER_GUI_SETTINGSPANEL_H_

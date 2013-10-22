@@ -35,7 +35,7 @@ class QComboBox;
 class QEvent;
 class QKeyEvent;
 class Gui;
-class SettingsPanel;
+class NodeSettingsPanel;
 class NodeGui;
 class Node;
 class AppInstance;

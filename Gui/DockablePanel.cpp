@@ -22,7 +22,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/Node.h"
-
+#include "Engine/Project.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
@@ -143,6 +143,11 @@ DockablePanel::DockablePanel(QVBoxLayout* container
     }
     
     _headerLayout->addStretch();
+    
+    _headerLayout->addWidget(_undoButton);
+    _headerLayout->addWidget(_redoButton);
+    
+    _headerLayout->addStretch();
     _headerLayout->addWidget(_helpButton);
     _headerLayout->addWidget(_minimize);
     _headerLayout->addWidget(_cross);
@@ -234,6 +239,8 @@ void DockablePanel::addTab(const QString& name){
 
 void DockablePanel::pushUndoCommand(QUndoCommand* cmd){
     _undoStack->push(cmd);
+    _undoButton->setEnabled(_undoStack->canUndo());
+    _redoButton->setEnabled(_undoStack->canRedo());
 }
 
 void DockablePanel::onUndoPressed(){
@@ -342,7 +349,11 @@ void DockablePanel::onKnobDeletion(KnobGui* k){
     }
 }
 
-SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent)
+
+
+
+
+NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QWidget *parent)
 :DockablePanel(NodeUi->getDockContainer(),
                false,
                NodeUi->getNode()->getName().c_str(),
@@ -354,12 +365,29 @@ SettingsPanel::SettingsPanel(NodeGui* NodeUi ,QWidget *parent)
 
 
 
-void SettingsPanel::setSelected(bool s){
+void NodeSettingsPanel::setSelected(bool s){
     _selected = s;
     style()->unpolish(this);
     style()->polish(this);
 }
 
-const std::vector<Knob*>&  SettingsPanel::getKnobs() const{
+const std::vector<Knob*>&  NodeSettingsPanel::getKnobs() const{
     return _nodeGUI->getNode()->getKnobs();
+}
+
+
+ProjectSettingsPanel::ProjectSettingsPanel(boost::shared_ptr<Powiter::Project> project,QVBoxLayout* container,QWidget *parent)
+:DockablePanel(container,
+               true,
+               "Project Settings",
+               "The settings of the current project.",
+               "Rendering",
+               parent)
+,_project(project)
+{
+    
+}
+
+const std::vector<Knob*>&  ProjectSettingsPanel::getKnobs() const{
+    return _project->getProjectKnobs();
 }
