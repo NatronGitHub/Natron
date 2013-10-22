@@ -486,7 +486,7 @@ void Gui::setupUi()
     
     _projectGui = new ProjectSettingsPanel(_appInstance->getProject(),_layoutPropertiesBin,_propertiesContainer);
     _projectGui->initializeKnobs();
-    _projectGui->hide();
+    setVisibleProjectSettingsPanel();
     
 	menubar->addAction(menuFile->menuAction());
 	menubar->addAction(menuEdit->menuAction());
