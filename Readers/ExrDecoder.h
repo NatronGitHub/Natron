@@ -17,8 +17,10 @@
 #include <map>
 #include <boost/scoped_ptr.hpp>
 
+
 #include "Readers/Decoder.h"
 #include "Global/Macros.h"
+
 
 namespace Powiter{
 class Row;

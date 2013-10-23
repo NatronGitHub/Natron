@@ -20,12 +20,8 @@ You'll need to install Qt libraries from [Qt download](http://qt-project.org/dow
 
 ###OpenEXR
 
-This one is not easy. You have two solutions, either you can get the binaries I compiled for windows on dropbox, or you can download it from :
-(OpenEXR on github)[https://github.com/openexr/openexr] and compile it yourself. Warning : the .sln file provided to compile openexr does not include all the source files (especially the recently added deep compositing source files).
-
-Here's the dropbox link for 32bit binaries :(Dropbox link)[https://www.dropbox.com/sh/k3t7ycow3a45e54/P3pg62FCBr]
-
-(64bit) will come soon.
+Download OpenEXR from http://www.openexr.com/downloads.html and install it.
+2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
 
 If you're having troubles to compile OpenEXR , here's some documentation: 
 
