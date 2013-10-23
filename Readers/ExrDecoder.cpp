@@ -19,6 +19,7 @@
 #include <QtCore/QMutex>
 #include <ImfPixelType.h>
 #include <ImfChannelList.h>
+#include <ImfInputFile.h>
 #ifdef __POWITER_WIN32__
 #include <ImfStdIO.h>
 #endif
