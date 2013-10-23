@@ -30,10 +30,10 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & BOOST_SERIALIZATION_NVP(_l);
-        ar & BOOST_SERIALIZATION_NVP(_b);
-        ar & BOOST_SERIALIZATION_NVP(_r);
-        ar & BOOST_SERIALIZATION_NVP(_t);
+        ar & boost::serialization::make_nvp("Left",_l);
+        ar & boost::serialization::make_nvp("Bottom",_b);
+        ar & boost::serialization::make_nvp("Right",_r);
+        ar & boost::serialization::make_nvp("Top",_t);
         
     }
 public:

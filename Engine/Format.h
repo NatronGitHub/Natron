@@ -33,7 +33,7 @@ class Format : public Box2D {
                                                                 static_cast<Box2D *>(NULL)
                                                                );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Box2D);
-        ar & BOOST_SERIALIZATION_NVP(_pixel_aspect);
+        ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_pixel_aspect);
         
     }
 	

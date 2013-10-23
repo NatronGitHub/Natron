@@ -149,8 +149,8 @@ void Project::loadProject(const QString& path,const QString& name){
     std::ifstream ifile(filePath.toStdString().c_str(),std::ifstream::in);
     boost::archive::xml_iarchive iArchive(ifile);
     std::list<NodeGui::SerializedState> nodeStates;
-    iArchive >> BOOST_SERIALIZATION_NVP(nodeStates);
-    iArchive >> BOOST_SERIALIZATION_NVP(_availableFormats);
+    iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
+    iArchive >> boost::serialization::make_nvp("Project_formats",_availableFormats);
     
     ifile.close();
     
@@ -231,12 +231,11 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     std::list<NodeGui::SerializedState> nodeStates;
     const std::vector<NodeGui*>& activeNodes = _appInstance->getAllActiveNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
-        nodeStates.push_back(activeNodes[i]->serialize());
+        NodeGui::SerializedState state = activeNodes[i]->serialize();
+        nodeStates.push_back(state);
     }
-    
-    oArchive << BOOST_SERIALIZATION_NVP(nodeStates);
-    oArchive << BOOST_SERIALIZATION_NVP(_availableFormats);
-    
+    oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
+    oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
     ofile.close();
 }
 

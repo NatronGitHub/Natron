@@ -69,12 +69,12 @@ public:
         void serialize(Archive & ar, const unsigned int version)
         {
             (void)version;
-            ar & BOOST_SERIALIZATION_NVP(_knobsValues);
-            ar & BOOST_SERIALIZATION_NVP(_name);
-            ar & BOOST_SERIALIZATION_NVP(_className);
-            ar & BOOST_SERIALIZATION_NVP(_inputs);
-            ar & BOOST_SERIALIZATION_NVP(_posX);
-            ar & BOOST_SERIALIZATION_NVP(_posY);
+            ar & boost::serialization::make_nvp("Knobs_values_map", _knobsValues);
+            ar & boost::serialization::make_nvp("Node_instance_unique_name",_name);
+            ar & boost::serialization::make_nvp("Node_class_name",_className);
+            ar & boost::serialization::make_nvp("Input_nodes_map",_inputs);
+            ar & boost::serialization::make_nvp("X_position",_posX);
+            ar & boost::serialization::make_nvp("Y_position",_posY);
         }
         
     public:
