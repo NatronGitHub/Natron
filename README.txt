@@ -1,13 +1,13 @@
-**UPDATED on 09/20/2013**
+**UPDATED on 10/23/2013**
 
 #OPEN-SOURCE,CROSSPLATFORM(OSX/LINUX/WINDOWS) , NODAL, COMPOSITING SOFTWARE UNDER
 MOZILLA PUBLIC LICENSE V2.0 (MPL) #
 
-Check out http://mrkepzie.github.io/Powiter/ for a full presentation on what is Powiter and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in october)].
+Check out http://mrkepzie.github.io/Powiter/ for a full presentation on what is Powiter and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in november,before the 1st release)].
 
 The development is going very well and most of the features are not pushed on the master branch yet.
 
-Here's the state of the software as of today 09/20/2013:
+Here's the state of the software as of today 10/23/2013:
 
 - Support for dozens of OpenFX plugins: 
 
@@ -22,12 +22,13 @@ Here's the state of the software as of today 09/20/2013:
 - Overlays interaction of the viewer
 - Fast playback engine: possibility to run 32bit floating point 4K sequences at 60+ fps
 - Reader node (file sequence reader) working natively for EXR's
-- Writer node (rendering node) working natively for EXR's and faster than ever. No graphical user interface  indicating that rendering is occurring yet, this will be done for the release of the V1.
+- Writer node (rendering node) working natively for EXR's and faster than ever.
 - Multi-rendering (simultaneously) is possible as well as  several viewers running playback simultaneously
 - It is possible to separate on any number of screens the graphical user interface so that each viewer/graph editor belongs to one screen
 - Several projects can be opened simultaneously in separate windows
 - Auto-save support.
 - Project format written in XML and easily editable by human.
+
 
 ##Features to come very soon## (most likely part of the V1):
 
@@ -35,13 +36,12 @@ Here's the state of the software as of today 09/20/2013:
 - Real-time (30fps+) histograms,vectorscope,waveforms [All source code already exists,it's just a matter of hours to implement them]
 - Graphical user interface colours customisation
 - Possibility to save the layout of the application in the project file
-
+- Proxy mode(i.e: downscaling of the input images to render faster)
+- KeyFrames support [It will maybe be part of V2]
 
 ##Features to come in V2##
 
-- Progress report on the viewer
-- KeyFrames support [It will maybe be part of V1]
-- Engine optimisation to support Tile rendering 
+- Progress report on the viewer (it is already implemented)
 - TimeVarying OpenFX effects supports.
 - Multi-view (http://imagine.enpc.fr/~moulonp/openMVG/) support.
 - Meta-data support as well as per-plugin meta-data support by the node-graph

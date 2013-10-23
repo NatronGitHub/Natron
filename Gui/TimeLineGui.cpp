@@ -291,10 +291,11 @@ void TimeLineGui::changeLast(int v){
 
 
 void TimeLineGui::seekFrame(int v){
-    if(v >=_first && v<=_last)
+    if(v >=_first && v<=_last){
         _timeline->seekFrame_noEmit(v);
-    emit currentFrameChanged(v);
-    repaint();
+        emit currentFrameChanged(v);
+        repaint();
+    }
 }
 
 void TimeLineGui::seek_notSlot(int v){
