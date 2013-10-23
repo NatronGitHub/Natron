@@ -68,7 +68,9 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
     QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
-    QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
+    
+    /*Disabled for now*/
+    //QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
