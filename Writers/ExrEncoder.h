@@ -13,19 +13,13 @@
 #define POWITER_WRITERS_WRITEEXR_H_
 
 #include <string>
-#include <map>
 #include <vector>
-#include <ImfOutputFile.h> // FIXME: should be PIMPL'ed
 
 #include "Writers/Encoder.h"
 #include "Global/Macros.h"
 
 class ComboBox_Knob;
 class Separator_Knob;
-namespace Powiter{
-class Row;
-}
-class QMutex;
 class Writer;
 
 /*This class is used by Writer to load the filetype-specific knobs.
@@ -54,19 +48,6 @@ public:
 
 
 class ExrEncoder :public Encoder{
-    
-   
-    std::string _filename;
-    std::map<int,Powiter::Row*> _img;
-    
-    Imf::Compression compression;
-    int depth;
-    Imf::OutputFile* outfile;
-    Imf::Header* header;
-    Imath::Box2i *exrDataW;
-    Imath::Box2i *exrDispW;
-    Box2D _dataW;
-    QMutex* _lock;
 public:
     
     static Encoder* BuildWrite(Writer* writer){return new ExrEncoder(writer);}
@@ -92,7 +73,7 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) OVERRIDE;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
@@ -105,11 +86,13 @@ public:
     virtual void writeAllData() OVERRIDE;
     
     /*Doesn't throw any exception since OpenEXR can write all channels*/
-    virtual void supportsChannelsForWriting(ChannelSet&) const OVERRIDE {}
+    virtual void supportsChannelsForWriting(Powiter::ChannelSet&) const OVERRIDE {}
     
     void debug();
     
-    
+private:
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
 
 #endif /* defined(POWITER_WRITERS_WRITEEXR_H_) */

@@ -87,7 +87,7 @@ public:
      It set all the reader infos necessary for the read frame.*/
 	void setReaderInfo(Format dispW,
                        const Box2D& dataW,
-                       ChannelSet channels);
+                       Powiter::ChannelSet channels);
     
     /*Returns all the infos necessary for the current frame*/
     const ImageInfo& readerInfo() const { return *_readerInfo; }

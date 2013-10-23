@@ -299,7 +299,7 @@ public:
      * WARNING: Once the shared_ptr is deleted, the buffer in the Row may not
      * be valid anymore.
      */
-    boost::shared_ptr<const Powiter::Row> get(SequenceTime time,int y,int x,int r,const ChannelSet& channels);
+    boost::shared_ptr<const Powiter::Row> get(SequenceTime time,int y,int x,int r,const Powiter::ChannelSet& channels);
     
     /**
      * @brief This is the place to initialise any per frame specific data or flag.
@@ -359,7 +359,7 @@ public slots:
         emit previewImageChanged(time);
     }
     
-    void notifyGuiChannelChanged(const ChannelSet& c){
+    void notifyGuiChannelChanged(const Powiter::ChannelSet& c){
         emit channelsChanged(c);
     }
 
@@ -430,7 +430,7 @@ signals:
 
     void previewImageChanged(int);
     
-    void channelsChanged(ChannelSet);
+    void channelsChanged(Powiter::ChannelSet);
 
     void knobUndoneChange();
     

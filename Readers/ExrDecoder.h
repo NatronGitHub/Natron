@@ -14,26 +14,21 @@
 
 #include <string>
 #include <vector>
-#ifdef __POWITER_WIN32__
-#include <fstream>
-#endif
-#include <QtCore/QMutex>
+#include <map>
+#include <boost/scoped_ptr.hpp>
+
 #include "Readers/Decoder.h"
 #include "Global/Macros.h"
-
-namespace Imf {
-    class StdIFStream;
-    class InputFile;
-}
 
 namespace Powiter{
 class Row;
 }
-class ExrDecoder : public Decoder{
+
+class ExrDecoder : public Decoder {
     
 public:
     
-    static Decoder* BuildRead(Reader* reader){return new ExrDecoder(reader);}
+    static Decoder* BuildRead(Reader* reader) {return new ExrDecoder(reader);}
     
     ExrDecoder(Reader* _reader);
     
@@ -61,20 +56,8 @@ public:
     typedef std::map<Powiter::Channel, std::string> ChannelsMap;
     
 private:
-    
-    
-    
-    Imf::InputFile* _inputfile;
-    std::map<Powiter::Channel, std::string> _channel_map;
-    std::vector<std::string> views;
-    int _dataOffset;
-#ifdef __POWITER_WIN32__
-    // FIXME: this kind of system-dependent members should really be put in a PIMPL
-    std::ifstream* inputStr;
-    Imf::StdIFStream* inputStdStream;
-#endif
-	QMutex _lock;
-    
+    struct Implementation;
+    boost::scoped_ptr<Implementation> _imp; // hide implementation details
 };
 
 #endif // POWITER_READERS_READEXR_H_

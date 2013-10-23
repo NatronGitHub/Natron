@@ -28,7 +28,7 @@
 void registerMetaTypes(){
     qRegisterMetaType<Variant>();
     qRegisterMetaType<Writer*>();
-    qRegisterMetaType<ChannelSet>();
+    qRegisterMetaType<Powiter::ChannelSet>();
     qRegisterMetaType<KnobGui*>();
     qRegisterMetaType<Format>();
 

@@ -18,7 +18,7 @@
 
 class ImageInfo{
 public:
-    ImageInfo(Format displayWindow,ChannelSet channels)
+    ImageInfo(Format displayWindow,Powiter::ChannelSet channels)
     : _rod()
     , _displayWindow(displayWindow)
     , _channels(channels)
@@ -37,8 +37,8 @@ public:
     void setRoD(const Box2D& win) { _rod = win; }
     const Box2D& getRoD() const { return _rod; }
     
-    void setChannels(const ChannelSet& mask) { _channels = mask; }
-    const ChannelSet& getChannels() const { return _channels; }
+    void setChannels(const Powiter::ChannelSet& mask) { _channels = mask; }
+    const Powiter::ChannelSet& getChannels() const { return _channels; }
     
     bool operator==(const ImageInfo &other){
         return _rod == other._rod &&
@@ -55,7 +55,7 @@ private:
     
     Box2D _rod;
     Format _displayWindow; // display window of the data
-    ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
+    Powiter::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 };
 
 #endif // IMAGEINFO_H

@@ -114,7 +114,7 @@ public:
     
     virtual std::string setInputLabel (int inputNb) const OVERRIDE;
     
-    ChannelSet supportedComponents() const;
+    Powiter::ChannelSet supportedComponents() const;
     
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow = NULL) OVERRIDE;
     

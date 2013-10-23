@@ -45,7 +45,7 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels) OVERRIDE;
+	virtual void renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
@@ -57,7 +57,7 @@ public:
      destructor of Write.*/
     virtual void writeAllData() OVERRIDE;
 
-    virtual void supportsChannelsForWriting(ChannelSet& channels) const OVERRIDE;
+    virtual void supportsChannelsForWriting(Powiter::ChannelSet& channels) const OVERRIDE;
     
     };
 
