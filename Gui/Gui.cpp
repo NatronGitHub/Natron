@@ -999,6 +999,7 @@ void Gui::openProject(){
             QString file = selectedFiles.at(0);
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));
+            
             _appInstance->loadProject(path,name);
         }
     }

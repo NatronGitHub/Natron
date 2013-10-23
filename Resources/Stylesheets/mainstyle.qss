@@ -1,10 +1,10 @@
 /*%1 = selection-color  %2 = medium background  %3 = soft background %4 = strong background %5 = text colour*/
 /*You have to fill the arguments with  stylesheet-representable colours.*/
-SettingsPanel[_selected="true"]{
+NodeSettingsPanel[_selected="true"]{
 border:1px solid yellow;
 border-radius : 2px;
 }
-SettingsPanel[_selected="false"]{
+NodeSettingsPanel[_selected="false"]{
 border:1px solid black;
 border-radius : 2px;
 }
@@ -147,7 +147,7 @@ TabWidget{background-color: %2;}
 QWidget#_propertiesContainer{
 background-color: %2;
 }
-SettingsPanel{
+NodeSettingsPanel{
 background-color : %2;
 color: %5;
 }

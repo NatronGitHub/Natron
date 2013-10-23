@@ -18,10 +18,12 @@
 #include <QGraphicsItem>
 
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/serialization/version.hpp>
+
 
 #include "Engine/Knob.h"
 #include "Global/Macros.h"
@@ -51,12 +53,11 @@ public:
     class SerializedState {
         
         const NodeGui* _node;
-        std::map<std::string,QString> _knobsValues;
+        std::map<std::string,std::string> _knobsValues;
         std::string _name;
         std::string _className;
         
         std::map<int,std::string> _inputs;
-        std::multimap<int,std::string> _outputs;
         double _posX,_posY;
         
         
@@ -65,21 +66,34 @@ public:
         void serialize(Archive & ar, const unsigned int version)
         {
             (void)version;
-            ar & _knobsValues;
-            ar & _name;
-            ar & _className;
-            ar & _inputs;
-            ar & _outputs;
-            ar & _posX;
-            ar & _posY;
+            ar & BOOST_SERIALIZATION_NVP(_knobsValues);
+            ar & BOOST_SERIALIZATION_NVP(_name);
+            ar & BOOST_SERIALIZATION_NVP(_className);
+            ar & BOOST_SERIALIZATION_NVP(_inputs);
+            ar & BOOST_SERIALIZATION_NVP(_posX);
+            ar & BOOST_SERIALIZATION_NVP(_posY);
         }
         
     public:
         
+        SerializedState():_node(NULL){};
         
         SerializedState(const NodeGui* n);
         
+        const std::map<std::string,std::string>& getKnobsValues() const {return _knobsValues;}
+        
+        const std::string getName() const {return _name;}
+        
+        const std::string getClassName() const {return _className;}
+        
+        const std::map<int,std::string>& getInputs() const {return _inputs;}
+                
+        double getX() const {return _posX;}
+        
+        double getY() const {return _posY;}
+        
     };
+    
     
 
     typedef std::map<int,Edge*> InputEdgesMap;
@@ -243,5 +257,6 @@ private:
     
   
 };
+BOOST_CLASS_VERSION(NodeGui::SerializedState, 1)
 
 #endif // POWITER_GUI_NODEGUI_H_

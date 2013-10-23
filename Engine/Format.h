@@ -15,13 +15,27 @@
 #include <string>
 #include <QtCore/QMetaType>
 #include "Engine/Box.h"
-
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the
  *frame accordingly*/
 class Format : public Box2D {
 	
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        (void)version;
+        boost::serialization::void_cast_register<Format,Box2D>(
+                                                                static_cast<Format *>(NULL),
+                                                                static_cast<Box2D *>(NULL)
+                                                               );
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Box2D);
+        ar & BOOST_SERIALIZATION_NVP(_pixel_aspect);
+        
+    }
 	
 public:
     Format(int l, int b, int r, int t, const std::string& name, double pa)
@@ -67,19 +81,12 @@ public:
         top() == other.top();
     }
     
+  
+    
 private:
 	double _pixel_aspect;
     std::string _name;
     
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
-    {
-        (void)version;
-        ar & boost::serialization::base_object<Box2D>(*this);
-        ar & _pixel_aspect;
-        
-    }
 };
 
 Q_DECLARE_METATYPE(Format);

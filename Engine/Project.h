@@ -28,48 +28,7 @@ class TimeLine;
 class AppInstance;
 class ComboBox_Knob;
 class Knob;
-namespace XMLProjectLoader {
-    
-    
-    class XMLParsedElement{
-    public:
-        QString _element;
-        XMLParsedElement(const QString& element):
-        _element(element)
-        {
-        }
-    };
-    
-    class InputXMLParsedElement : public XMLParsedElement{
-    public:
-        int _number;
-        QString _name;
-        InputXMLParsedElement(const QString& name, int number):XMLParsedElement("Input"),
-        _number(number),_name(name)
-        {
-        }
-    };
-    
-    class KnobXMLParsedElement :  public XMLParsedElement{
-    public:
-        QString _description;
-        QString _param;
-        KnobXMLParsedElement(const QString& description, const QString& param):XMLParsedElement("Knob"),
-        _description(description),_param(param)
-        {
-        }
-    };
-    
-    class NodeGuiXMLParsedElement :  public XMLParsedElement{
-    public:
-        double _x,_y;
-        NodeGuiXMLParsedElement(double x, double y):XMLParsedElement("Gui"),
-        _x(x),_y(y)
-        {
-        }
-    };
-    
-}
+
 
 
 namespace Powiter{
@@ -156,7 +115,7 @@ public:
     
     void clearNodes();
     
-    void loadProject(const QString& path,const QString& name,bool autoSave = false);
+    void loadProject(const QString& path,const QString& name);
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     
@@ -171,17 +130,7 @@ signals:
 private:
     
     
-    /*Serializes the active nodes in the editor*/
-    QString serializeNodeGraph() const;
-    
-    /*restores the node graph from string*/
-    void restoreGraphFromString(const QString& str);
-    
-    /*Analyses and takes action for 1 node ,given 1 attribute from the serialized version
-     of the node graph.*/
-    void analyseSerializedNodeString(Node* n,XMLProjectLoader::XMLParsedElement* v);
-    
-};
+   };
 }
 
 #endif // PROJECT_H

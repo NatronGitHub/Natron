@@ -14,9 +14,8 @@
 
 #include <cassert>
 #include <iostream>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 // the y coordinate is towards the top
 // the x coordinate is towards the right
 class Box2D{
@@ -31,10 +30,10 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        ar & _l;
-        ar & _b;
-        ar & _r;
-        ar & _t;
+        ar & BOOST_SERIALIZATION_NVP(_l);
+        ar & BOOST_SERIALIZATION_NVP(_b);
+        ar & BOOST_SERIALIZATION_NVP(_r);
+        ar & BOOST_SERIALIZATION_NVP(_t);
         
     }
 public:
@@ -95,7 +94,8 @@ public:
     
     Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
     
-
+    virtual ~Box2D(){}
+    
     int left() const { return _l; }
     void set_left(int v) { _l = v; }
     
@@ -242,6 +242,7 @@ public:
         std::cout << "top = " << _t << std::endl;
     }
 };
+
 /// equality of boxes
 inline bool operator==(const Box2D& b1, const Box2D& b2)
 {
@@ -259,6 +260,7 @@ inline bool operator!=(const Box2D& b1, const Box2D& b2)
     b1.right() != b2.right() ||
     b1.top() != b2.top();
 }
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(Box2D);
 
 
 

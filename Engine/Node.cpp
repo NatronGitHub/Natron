@@ -291,6 +291,14 @@ void Node::removeKnob(Knob* knob){
     }
 }
 
+Knob* Node::getKnobByDescription(const std::string& desc) const{
+    for(U32 i = 0; i < _knobs.size() ; ++i){
+        if (_knobs[i]->getDescription() == desc) {
+            return _knobs[i];
+        }
+    }
+    return NULL;
+}
 
 /************************OUTPUT NODE*****************************************/
 OutputNode::OutputNode(AppInstance* app)

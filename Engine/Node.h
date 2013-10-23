@@ -215,6 +215,8 @@ public:
     /*Called by KnobFactory::createKnob.*/
     void removeKnob(Knob* knob);
     
+    Knob* getKnobByDescription(const std::string& desc) const;
+    
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
     bool aborted() const { return _renderAborted; }

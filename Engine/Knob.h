@@ -58,7 +58,7 @@ class DockablePanel;
 // Is there a reason for non-public inheritance?
 // Note [FD]: in the previous version, the QVariant was stored as a pointer, and was
 // never deleted.
-class Variant : private QVariant {
+class Variant : public QVariant {
 public:
     
     Variant()
@@ -103,9 +103,7 @@ public:
         }
         QVariant::setValue(list);
     }
-    
-    QString serialize() const;
-    
+        
     int toInt(bool *ok = 0) const { return QVariant::toInt(ok); }
     uint toUInt(bool *ok = 0) const { return QVariant::toUInt(ok); }
     qlonglong toLongLong(bool *ok = 0) const { return QVariant::toLongLong(ok); }
@@ -196,6 +194,15 @@ public:
      to create an instance of this knob.*/
     virtual const std::string name()=0;
     
+    virtual std::string serialize() const =0;
+    
+    void restoreFromString(const std::string& str){
+        _restoreFromString(str);
+        fillHashVector();
+        emit valueChanged(_value);
+        tryStartRendering();
+    }
+    
     template<typename T>
     void setValue(T variant[],int count){
         _value = Variant(variant,count);
@@ -221,6 +228,8 @@ public:
     }
     
     const Variant& getValueAsVariant() const { return _value; }
+    
+    
     
     /*You can call this when you want to remove this Knob
      at anytime.*/
@@ -288,6 +297,7 @@ signals:
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
+    virtual void _restoreFromString(const std::string& str) =0;
     
     /*Should implement this to start rendering by calling startRendering.
      This is called by the onValueChanged() slot. If you don't want to
@@ -373,6 +383,8 @@ public:
      */
     QString getRandomFrameName(int f) const;
     
+    virtual std::string serialize() const;
+
 signals:
     void filesSelected();
     void shouldOpenFile();
@@ -413,6 +425,9 @@ public:
         emit shouldOpenFile();
     }
     
+    virtual std::string serialize() const;
+
+    
 signals:
     
     void filesSelected();
@@ -424,7 +439,6 @@ protected:
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-    
     
 };
 
@@ -582,6 +596,8 @@ public:
     
     const std::vector<int>& getDisplayMaximums() const {return _displayMaxs;}
     
+    virtual std::string serialize() const;
+
     
 protected:
     
@@ -622,13 +638,14 @@ public:
     
     bool getValue() const { return _value.toBool(); }
     
+    virtual std::string serialize() const;
+
 protected:
     
     virtual void tryStartRendering();
     
+    
     virtual void _restoreFromString(const std::string& str);
-    
-    
     
 };
 
@@ -649,6 +666,9 @@ public:
     {}
     
     virtual void fillHashVector();
+    
+    virtual std::string serialize() const;
+
     
     virtual const std::string name(){return "Double";}
     
@@ -799,19 +819,18 @@ public:
             emit decimalsChanged(decis[i],i);
         }
     }
-    
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-    
 signals:
     void minMaxChanged(double mini,double maxi,int index = 0);
     
     void incrementChanged(double incr,int index = 0);
     
     void decimalsChanged(int deci,int index = 0);
+    
     
 private:
     
@@ -838,18 +857,17 @@ public:
     
     virtual const std::string name(){return "Button";}
     
+    virtual std::string serialize() const{return "";}
+
     public slots:
     void connectToSlot(const char* v);
-    
     
 protected:
     
     virtual void tryStartRendering(){}
     
+    
     virtual void _restoreFromString(const std::string& str){(void)str;}
-    
-    
-    
 };
 
 /******************************COMBOBOX_KNOB**************************************/
@@ -883,12 +901,12 @@ public:
     
     int getActiveEntry() const {return _value.toInt();}
     
+    virtual std::string serialize() const;
 protected:
     
     virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
-    
 signals:
     
     void populated();
@@ -916,12 +934,12 @@ public:
     
     virtual const std::string name(){return "Separator";}
     
+    virtual std::string serialize() const{return "";}
 protected:
     
     virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
-    
 };
 /******************************RGBA_KNOB**************************************/
 class RGBA_Knob:public Knob
@@ -948,6 +966,7 @@ public:
     
     bool isAlphaEnabled() const { return _alphaEnabled; }
     
+    virtual std::string serialize() const;
 protected:
     
     virtual void tryStartRendering(){
@@ -955,7 +974,6 @@ protected:
     }
     
     virtual void _restoreFromString(const std::string& str);
-    
     
 private:
     
@@ -983,15 +1001,15 @@ public:
     
     std::string getString() const {return _value.toString().toStdString();}
     
+    virtual std::string serialize() const;
 protected:
     
     virtual void tryStartRendering(){
         startRendering(true);
     }
     
+    
     virtual void _restoreFromString(const std::string& str);
-    
-    
 private:
     QStringList _entries;
 };
@@ -1021,12 +1039,12 @@ public:
     
     const std::vector<Knob*>& getChildren() const {return _children;}
     
+    virtual std::string serialize() const{return "";}
 protected:
     
     virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
-    
 };
 /******************************TAB_KNOB**************************************/
 
@@ -1053,6 +1071,8 @@ public:
     void addKnob(const std::string& tabName,Knob* k);
     
     const std::map<std::string,std::vector<Knob*> >& getKnobs() const {return _knobs;}
+    
+    virtual std::string serialize() const{return "";}
     
 protected:
     

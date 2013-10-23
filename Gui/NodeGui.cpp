@@ -477,11 +477,27 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
     const std::vector<Knob*>& knobs = _node->getNode()->getKnobs();
     for (U32 i  = 0; i < knobs.size(); ++i) {
-        _knobsValues.insert(std::make_pair(knobs[i]->getDescription(), knobs[i]->getValueAsVariant().serialize()));
+        std::string serializedValue = knobs[i]->serialize();
+        if(!serializedValue.empty()){
+            _knobsValues.insert(std::make_pair(knobs[i]->getDescription(), serializedValue));
+        }
     }
     
     _name = _node->getNode()->getName();
-    _className = _node->getNode()->className();
+    
+    if(!n->getNode()->isOpenFXNode()){
+        _className = _node->getNode()->className();
+    }else{
+        OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
+        QString name = ofxNode->className().c_str();
+        QStringList groups = ofxNode->getPluginGrouping();
+        if (groups.size() >= 1) {
+            name.append("  [");
+            name.append(groups[0]);
+            name.append("]");
+        }
+        _className = name.toStdString();
+    }
     
     const Node::InputMap& inputs = _node->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
@@ -489,15 +505,6 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
             _inputs.insert(std::make_pair(it->first, it->second->getName()));
         }else{
              _inputs.insert(std::make_pair(it->first, ""));
-        }
-    }
-    
-    const Node::OutputMap& outputs = _node->getNode()->getOutputs();
-    for(Node::OutputMap::const_iterator it = outputs.begin();it!=outputs.end();++it){
-        if(it->second){
-            _outputs.insert(std::make_pair(it->first, it->second->getName()));
-        }else{
-            _outputs.insert(std::make_pair(it->first, ""));
         }
     }
     
