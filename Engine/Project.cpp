@@ -37,6 +37,19 @@ using namespace Powiter;
 using std::cout; using std::endl;
 using std::make_pair;
 
+
+static QString generateStringFromFormat(const Format& f){
+    QString formatStr;
+    formatStr.append(f.getName().c_str());
+    formatStr.append("  ");
+    formatStr.append(QString::number(f.width()));
+    formatStr.append(" x ");
+    formatStr.append(QString::number(f.height()));
+    formatStr.append("  ");
+    formatStr.append(QString::number(f.getPixelAspect()));
+    return formatStr;
+}
+
 Project::Project(AppInstance* appInstance):
 _projectName("Untitled."POWITER_PROJECT_FILE_EXTENION),
 _hasProjectBeenSavedByUser(false),
@@ -54,17 +67,10 @@ _timeline(new TimeLine())
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
         Format* f = appFormats[i];
-        QString formatStr;
-        formatStr.append(f->getName().c_str());
-        formatStr.append("  ");
-        formatStr.append(QString::number(f->width()));
-        if(f->width() == 1920 && f->height() == 1080){
+        QString formatStr = generateStringFromFormat(*f);
+                if(f->width() == 1920 && f->height() == 1080){
             _formatKnob->setValue(i);
         }
-        formatStr.append(" x ");
-        formatStr.append(QString::number(f->height()));
-        formatStr.append("  ");
-        formatStr.append(QString::number(f->getPixelAspect()));
         entries.push_back(formatStr.toStdString());
         _availableFormats.push_back(*f);
     }
@@ -152,6 +158,18 @@ void Project::loadProject(const QString& path,const QString& name){
     iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
     iArchive >> boost::serialization::make_nvp("Project_formats",_availableFormats);
     
+    /*we must restore the entries in the combobox before restoring the value*/
+    std::vector<std::string> entries;
+    for (U32 i = 0; i < _availableFormats.size(); ++i) {
+        QString formatStr = generateStringFromFormat(_availableFormats[i]);
+        entries.push_back(formatStr.toStdString());
+    }
+    _formatKnob->populate(entries);
+    std::string currentFormat;
+    iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
+    _formatKnob->restoreFromString(currentFormat);
+    setAutoSetProjectFormat(false);
+
     ifile.close();
     
     /*first create all nodes and restore the knobs values*/
@@ -213,6 +231,7 @@ void Project::loadProject(const QString& path,const QString& name){
     setProjectAgeSinceLastAutosaveSave(time);
     
     /*Refresh all viewers as it was*/
+    emit projectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
     _appInstance->checkViewersConnection();
 }
 void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
@@ -236,6 +255,8 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     }
     oArchive << boost::serialization::make_nvp("Nodes",nodeStates);
     oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
+    std::string currentFormat = _formatKnob->serialize();
+    oArchive << boost::serialization::make_nvp("Project_output_format",currentFormat);
     ofile.close();
 }
 
@@ -256,25 +277,11 @@ int Project::tryAddProjectFormat(const Format& f){
     std::vector<std::string> entries;
     for (U32 i = 0; i < currentFormats.size(); ++i) {
         const Format& f = currentFormats[i];
-        QString formatStr;
-        formatStr.append(f.getName().c_str());
-        formatStr.append("  ");
-        formatStr.append(QString::number(f.width()));
-        formatStr.append(" x ");
-        formatStr.append(QString::number(f.height()));
-        formatStr.append("  ");
-        formatStr.append(QString::number(f.getPixelAspect()));
+        QString formatStr = generateStringFromFormat(f);
         entries.push_back(formatStr.toStdString());
         _availableFormats.push_back(f);
     }
-    QString formatStr;
-    formatStr.append(f.getName().c_str());
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.width()));
-    formatStr.append(" x ");
-    formatStr.append(QString::number(f.height()));
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.getPixelAspect()));
+    QString formatStr = generateStringFromFormat(f);
     entries.push_back(formatStr.toStdString());
     _availableFormats.push_back(f);
     _formatKnob->populate(entries);
