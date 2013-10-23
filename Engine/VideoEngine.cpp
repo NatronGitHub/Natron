@@ -460,7 +460,6 @@ void VideoEngine::run(){
                 _tree.getOutput()->getApp()->setAutoSetProjectFormat(false);
                 _tree.getOutput()->getApp()->setProjectFormat(dispW);
             }else{
-                _tree.getOutput()->getApp()->tryAddProjectFormat(dispW);
                 dispW = _tree.getOutput()->getProjectDefaultFormat();
             }
             viewerGL->setRod(rod);

@@ -144,6 +144,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
     if(st == StatFailed){
         return boost::shared_ptr<Decoder>();
     }
+    getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     decoderReadHandle->initializeColorSpace();
     _buffer.insert(filename.toStdString(),decoderReadHandle);
     return decoderReadHandle;

@@ -167,8 +167,8 @@ void Project::loadProject(const QString& path,const QString& name){
     _formatKnob->populate(entries);
     std::string currentFormat;
     iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
-    _formatKnob->restoreFromString(currentFormat);
     setAutoSetProjectFormat(false);
+    _formatKnob->restoreFromString(currentFormat);
 
     ifile.close();
     

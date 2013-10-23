@@ -248,9 +248,10 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Form
        (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
     ofxRectDToBox2D(ofxRod,rod);
-    if(displayWindow)
+    if(displayWindow){
         displayWindow->set(*rod);
-    return StatOK; 
+    }
+    return StatOK;
     
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     //assert(clip);
