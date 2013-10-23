@@ -38,7 +38,7 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 Project::Project(AppInstance* appInstance):
-_projectName("Untitled.rs"),
+_projectName("Untitled."POWITER_PROJECT_FILE_EXTENION),
 _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
 _timeline(new TimeLine())

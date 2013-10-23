@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     QString projectFile;
     QStringList args = QCoreApplication::arguments();
     for (int i = 0 ; i < args.size(); ++i) {
-        if(args.at(i).contains(".rs")){
+        if(args.at(i).contains("."POWITER_PROJECT_FILE_EXTENION)){
             projectFile = args.at(i);
         }
     }

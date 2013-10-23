@@ -988,7 +988,7 @@ void Gui::newProject(){
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
-    filters.push_back("rs");
+    filters.push_back(POWITER_PROJECT_FILE_EXTENION);
     SequenceFileDialog dialog(this,filters,false,
                               SequenceFileDialog::OPEN_DIALOG);
     if(dialog.exec()){
@@ -1013,15 +1013,15 @@ void Gui::saveProject(){
 }
 void Gui::saveProjectAs(){
     std::vector<std::string> filter;
-    filter.push_back("rs");
+    filter.push_back(POWITER_PROJECT_FILE_EXTENION);
     SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
     QString outFile;
     if(dialog.exec()){
         outFile = dialog.filesToSave();
     }
     if (outFile.size() > 0) {
-        if (outFile.indexOf(".rs") == -1) {
-            outFile.append(".rs");
+        if (outFile.indexOf("."POWITER_PROJECT_FILE_EXTENION) == -1) {
+            outFile.append("."POWITER_PROJECT_FILE_EXTENION);
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));

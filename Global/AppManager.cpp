@@ -272,7 +272,10 @@ void AppInstance::removeAutoSaves() const{
     QStringList entries = savesDir.entryList();
     for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
-        int suffixPos = entry.indexOf(".rs.");
+        QString searchStr('.');
+        searchStr.append(POWITER_PROJECT_FILE_EXTENION);
+        searchStr.append('.');
+        int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
             QFile::remove(savesDir.path()+QDir::separator()+entry);
         }
@@ -286,7 +289,7 @@ bool AppInstance::isSaveUpToDate() const{
 void AppInstance::resetCurrentProject(){
     _currentProject->setAutoSetProjectFormat(true);
     _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName("Untitled.rs");
+    _currentProject->setProjectName("Untitled."POWITER_PROJECT_FILE_EXTENION);
     _currentProject->setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -298,7 +301,10 @@ bool AppInstance::findAutoSave() {
     QStringList entries = savesDir.entryList();
     for (int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
-        int suffixPos = entry.indexOf(".rs.");
+        QString searchStr('.');
+        searchStr.append(POWITER_PROJECT_FILE_EXTENION);
+        searchStr.append('.');
+        int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
             QFile autoSaveFile(savesDir.path()+QDir::separator()+entry);
             autoSaveFile.open(QIODevice::ReadOnly);
@@ -349,7 +355,7 @@ bool AppInstance::findAutoSave() {
                     _currentProject->setProjectPath(path);
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName("Untitled.rs");
+                    _currentProject->setProjectName("Untitled."POWITER_PROJECT_FILE_EXTENION);
                     _currentProject->setProjectPath("");
                 }
            
