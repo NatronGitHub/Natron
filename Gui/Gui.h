@@ -26,6 +26,8 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Format.h"
+
 class QString;
 class TabWidget;
 class AppInstance;
@@ -55,6 +57,8 @@ class Button;
 class QLabel;
 class Writer;
 class Gui;
+class SpinBox;
+class LineEdit;
 class DockablePanel;
 class ProjectSettingsPanel;
 /*Holds just a reference to an action*/
@@ -398,5 +402,42 @@ public:
 	void retranslateUi(QMainWindow *MainWindow);
     
 };
+
+
+
+class AddFormatDialog : public QDialog {
+    
+    QVBoxLayout* _mainLayout;
+    
+    QWidget* _secondLine;
+    QHBoxLayout* _secondLineLayout;
+    QLabel* _widthLabel;
+    SpinBox* _widthSpinBox;
+    QLabel* _heightLabel;
+    SpinBox* _heightSpinBox;
+    QLabel* _pixelAspectLabel;
+    SpinBox* _pixelAspectSpinBox;
+    
+    
+    QWidget* _thirdLine;
+    QHBoxLayout* _thirdLineLayout;
+    QLabel* _nameLabel;
+    LineEdit* _nameLineEdit;
+    
+    QWidget* _fourthLine;
+    QHBoxLayout* _fourthLineLayout;
+    Button* _cancelButton;
+    Button* _okButton;
+    
+public:
+    
+    AddFormatDialog(QWidget* parent = 0);
+    
+    virtual ~AddFormatDialog(){}
+    
+    Format getFormat() const ;
+    
+};
+
 
 #endif // POWITER_GUI_GUI_H_

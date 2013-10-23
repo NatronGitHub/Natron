@@ -1256,3 +1256,75 @@ void Gui::saveGuiGeometry(){
     settings.endGroup();
 
 }
+
+
+AddFormatDialog::AddFormatDialog(QWidget* parent):QDialog(parent)
+{
+    _mainLayout = new QVBoxLayout(this);
+    _mainLayout->setSpacing(0);
+    _mainLayout->setContentsMargins(5, 5, 0, 0);
+    setLayout(_mainLayout);
+    setWindowTitle("New Format");
+    
+    _secondLine = new QWidget(this);
+    _secondLineLayout = new QHBoxLayout(_secondLine);
+    _mainLayout->addWidget(_secondLine);
+    
+    _widthLabel = new QLabel("w:",_secondLine);
+    _secondLineLayout->addWidget(_widthLabel);
+    _widthSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _widthSpinBox->setMaximum(99999);
+    _widthSpinBox->setMinimum(0);
+    _secondLineLayout->addWidget(_widthSpinBox);
+    
+    
+    _heightLabel = new QLabel("h:",_secondLine);
+    _secondLineLayout->addWidget(_heightLabel);
+    _heightSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
+    _heightSpinBox->setMaximum(99999);
+    _heightSpinBox->setMinimum(0);
+    _secondLineLayout->addWidget(_heightSpinBox);
+    
+    
+    _pixelAspectLabel = new QLabel("pixel aspect:",_secondLine);
+    _secondLineLayout->addWidget(_pixelAspectLabel);
+    _pixelAspectSpinBox = new SpinBox(this,SpinBox::DOUBLE_SPINBOX);
+    _pixelAspectSpinBox->setMinimum(0.);
+    _pixelAspectSpinBox->setValue(1.);
+    _secondLineLayout->addWidget(_pixelAspectSpinBox);
+
+    
+    _thirdLine = new QWidget(this);
+    _thirdLineLayout = new QHBoxLayout(_thirdLine);
+    _thirdLine->setLayout(_thirdLineLayout);
+    _mainLayout->addWidget(_thirdLine);
+
+    
+    _nameLabel = new QLabel("Name:",_thirdLine);
+    _thirdLineLayout->addWidget(_nameLabel);
+    _nameLineEdit = new LineEdit(_thirdLine);
+    _thirdLineLayout->addWidget(_nameLineEdit);
+    
+    _fourthLine = new QWidget(this);
+    _fourthLineLayout = new QHBoxLayout(_fourthLine);
+    _fourthLine->setLayout(_fourthLineLayout);
+    _mainLayout->addWidget(_fourthLine);
+    
+    
+    _cancelButton = new Button("Cancel",_fourthLine);
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
+    _fourthLineLayout->addWidget(_cancelButton);
+    
+    _okButton = new Button("Ok",_fourthLine);
+    QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
+    _fourthLineLayout->addWidget(_okButton);
+    
+}
+
+Format AddFormatDialog::getFormat() const{
+    int w = (int)_widthSpinBox->value();
+    int h = (int)_heightSpinBox->value();
+    double pa = _pixelAspectSpinBox->value();
+    QString name = _nameLineEdit->text();
+    return Format(0,0,w,h,name.toStdString(),pa);
+}

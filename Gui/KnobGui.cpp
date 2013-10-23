@@ -719,7 +719,7 @@ void Double_KnobGui::addToLayout(QHBoxLayout* layout){
 
 //=============================BUTTON_KNOB_GUI===================================
 void Button_KnobGui::createWidget(QGridLayout *layout, int row){
-    _button = new Button(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _button = new Button(QString(QString(_knob->getDescription().c_str())),layout->parentWidget());
     QObject::connect(_button, SIGNAL(pressed()),this,SLOT(emitValueChanged()));
     _button->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_button,row,0,Qt::AlignRight);

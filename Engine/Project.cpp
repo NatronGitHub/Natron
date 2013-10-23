@@ -32,6 +32,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
+#include "Gui/Gui.h"
 
 using namespace Powiter;
 using std::cout; using std::endl;
@@ -78,6 +79,13 @@ _timeline(new TimeLine())
     _formatKnob->populate(entries);
     QObject::connect(_formatKnob,SIGNAL(valueChangedByUser()),this,SLOT(onProjectFormatChanged()));
     _projectKnobs.push_back(_formatKnob);
+    
+    
+    
+    _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",NULL,"New format..."));
+    _projectKnobs.push_back(_addFormatKnob);
+    QObject::connect(_addFormatKnob, SIGNAL(valueChangedByUser()), this, SLOT(createNewFormat()));
+    
 }
 Project::~Project(){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
@@ -85,6 +93,8 @@ Project::~Project(){
     }
     _currentNodes.clear();
 }
+
+
 
 void Project::onProjectFormatChanged(){
     const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
@@ -293,4 +303,12 @@ void Project::setProjectDefaultFormat(const Format& f) {
     _formatKnob->setValue(index);
     emit projectFormatChanged(f);
 
+}
+
+
+void Project::createNewFormat(){
+    AddFormatDialog dialog(_appInstance->getGui());
+    if(dialog.exec()){
+        tryAddProjectFormat(dialog.getFormat());
+    }
 }

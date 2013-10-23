@@ -27,6 +27,7 @@ class Node;
 class TimeLine;
 class AppInstance;
 class ComboBox_Knob;
+class Button_Knob;
 class Knob;
 
 
@@ -43,6 +44,7 @@ class Project : public QObject{
     QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
     ComboBox_Knob* _formatKnob;
+    Button_Knob* _addFormatKnob;
     boost::shared_ptr<TimeLine> _timeline; // global timeline
     
     std::map<std::string,int> _nodeCounters;
@@ -122,6 +124,8 @@ public:
 public slots:
     
     void onProjectFormatChanged();
+    
+    void createNewFormat();
     
 signals:
     
