@@ -300,9 +300,10 @@ void TimeLineGui::seekFrame(int v){
 void TimeLineGui::seek_notSlot(int v){
     if(v >=_first && v<=_last) {
         _timeline->seekFrame_noEmit(v);
+        emit currentFrameChanged(v);
+        QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
+
     }
-    emit currentFrameChanged(v);
-    QMetaObject::invokeMethod(this, "repaint", Qt::QueuedConnection);
 }
 
 
