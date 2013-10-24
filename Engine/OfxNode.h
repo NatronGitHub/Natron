@@ -116,7 +116,7 @@ public:
     
     Powiter::ChannelSet supportedComponents() const;
     
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow = NULL) OVERRIDE;
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod) OVERRIDE;
     
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     

@@ -65,8 +65,8 @@ ViewerNode::~ViewerNode(){
         _uiContext->getGui()->removeViewerTab(_uiContext,true);
 }
 
-Powiter::Status ViewerNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow){
-    return input(_activeInput)->getRegionOfDefinition(time,rod,displayWindow);
+Powiter::Status ViewerNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
+    return input(_activeInput)->getRegionOfDefinition(time,rod);
 }
 
 void ViewerNode::getFrameRange(SequenceTime *first,SequenceTime *last){

@@ -16,6 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <QMutex>
 #include <QString>
 #include <QDateTime>
 
@@ -49,6 +50,7 @@ class Project : public QObject{
     
     std::map<std::string,int> _nodeCounters;
     bool _autoSetProjectFormat;
+    mutable QMutex _projectDataLock;
     std::vector<Node*> _currentNodes;
     
     std::vector<Format> _availableFormats;
@@ -120,6 +122,10 @@ public:
     void loadProject(const QString& path,const QString& name);
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
+    
+    void lock() const {_projectDataLock.lock();}
+    
+    void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
     
 public slots:
     

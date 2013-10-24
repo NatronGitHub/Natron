@@ -57,12 +57,12 @@ _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
 _timeline(new TimeLine())
 ,_autoSetProjectFormat(true)
+,_projectDataLock()
 ,_currentNodes()
 ,_availableFormats()
 ,_appInstance(appInstance)
 {
     
-    //    _format(*appPTR->findExistingFormat(1920, 1080,1.)),
     _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", NULL, "Output Format"));
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
@@ -299,13 +299,14 @@ int Project::tryAddProjectFormat(const Format& f){
 }
 
 void Project::setProjectDefaultFormat(const Format& f) {
+    
     int index = tryAddProjectFormat(f);
     _formatKnob->setValue(index);
     emit projectFormatChanged(f);
 
 }
 
-
+ 
 void Project::createNewFormat(){
     AddFormatDialog dialog(_appInstance->getGui());
     if(dialog.exec()){

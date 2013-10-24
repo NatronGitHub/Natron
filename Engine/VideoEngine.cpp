@@ -431,7 +431,7 @@ void VideoEngine::run(){
         
         Box2D rod;
         Format dispW;
-        stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod,&dispW);
+        stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
         if(stat == StatFailed){
             if(_tree.isOutputAViewer())
                 viewer->disconnectViewer();
@@ -439,7 +439,6 @@ void VideoEngine::run(){
             continue;
         }
         _tree.getOutput()->ifInfiniteclipBox2DToProjectDefault(&rod);
-        _tree.getOutput()->ifInfiniteclipBox2DToProjectDefault(&dispW);
         /*Fit the frame to the viewer if this was requested by the call to render()*/
         if (_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()) {
             ViewerGL* viewerGL = viewer->getUiContext()->viewer;
@@ -451,17 +450,7 @@ void VideoEngine::run(){
                 viewerGL->fitToFormat(rod);
                 _currentRunArgs._zoomFactor = viewerGL->getZoomFactor();
             }
-            bool shouldAutoSetProjectFormat = _tree.getOutput()->getApp()->shouldAutoSetProjectFormat();
-            if(dispW.isNull()){
-                dispW.set(rod);
-            }
-            if(shouldAutoSetProjectFormat){
-                /*Turn off auto project format once we got it once.*/
-                _tree.getOutput()->getApp()->setAutoSetProjectFormat(false);
-                _tree.getOutput()->getApp()->setProjectFormat(dispW);
-            }else{
-                dispW = _tree.getOutput()->getProjectDefaultFormat();
-            }
+            dispW = _tree.getOutput()->getProjectDefaultFormat();
             viewerGL->setRod(rod);
         }
         

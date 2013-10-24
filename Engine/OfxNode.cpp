@@ -30,6 +30,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/ViewerNode.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Project.h"
 
 #include "Writers/Writer.h"
 
@@ -238,7 +239,7 @@ void ofxRectDToBox2D(const OfxRectD& ofxrect,Box2D* box){
     box->set_top(ymax);
 }
 
-Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow){
+Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     assert(effect_);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
@@ -248,8 +249,20 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod,Form
        (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
     ofxRectDToBox2D(ofxRod,rod);
-    if(displayWindow){
-        displayWindow->set(*rod);
+    if(isInputNode()){
+        getApp()->getProject()->lock();
+        if(getApp()->getProject()->shouldAutoSetProjectFormat()){
+            getApp()->getProject()->setAutoSetProjectFormat(false);
+            Format dispW;
+            dispW.set(*rod);
+            getApp()->getProject()->setProjectDefaultFormat(dispW);
+        }else{
+            Format dispW;
+            dispW.set(*rod);
+
+            getApp()->tryAddProjectFormat(dispW);
+        }
+        getApp()->getProject()->unlock();
     }
     return StatOK;
     

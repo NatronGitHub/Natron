@@ -32,6 +32,7 @@
 #include "Engine/ViewerNode.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageInfo.h"
+#include "Engine/Project.h"
 
 #include "Readers/ExrDecoder.h"
 #include "Readers/QtDecoder.h"
@@ -102,7 +103,7 @@ boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     return boost::shared_ptr<Decoder>();
 }
 
-Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Format* displayWindow){
+Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     QString filename = _fileKnob->getRandomFrameName(time);
     
     /*Locking any other thread: we want only 1 thread to create the descriptor*/
@@ -110,8 +111,6 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Forma
     boost::shared_ptr<Decoder> found = _buffer.get(filename.toStdString());
     if (found) {
         *rod = found->readerInfo().getRoD();
-        if(displayWindow)
-            *displayWindow = found->readerInfo().getDisplayWindow();
     }else{
         boost::shared_ptr<Decoder> desc;
         try{
@@ -122,8 +121,6 @@ Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod,Forma
         }
         if(desc){
             *rod =  desc->readerInfo().getRoD();
-            if(displayWindow)
-                *displayWindow = desc->readerInfo().getDisplayWindow();
         }else{
             return StatFailed;
         }
@@ -144,7 +141,14 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
     if(st == StatFailed){
         return boost::shared_ptr<Decoder>();
     }
-    getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+    getApp()->getProject()->lock();
+    if(getApp()->getProject()->shouldAutoSetProjectFormat()){
+        getApp()->getProject()->setAutoSetProjectFormat(false);
+        getApp()->getProject()->setProjectDefaultFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+    }else{
+        getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+    }
+    getApp()->getProject()->unlock();
     decoderReadHandle->initializeColorSpace();
     _buffer.insert(filename.toStdString(),decoderReadHandle);
     return decoderReadHandle;
