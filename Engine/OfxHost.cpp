@@ -235,6 +235,8 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
 #endif
 
     /// now read an old cache
+    // The cache location depends on the OS.
+    // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
 #if QT_VERSION < 0x050000
     QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation) + QDir::separator() + "OFXCache.xml";
 #else
