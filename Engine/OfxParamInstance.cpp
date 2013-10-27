@@ -331,6 +331,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxNode* node, OFX::Host::Param::Descriptor
     QObject::connect(_knob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
+        // TODO: use kOfxParamPropChoiceLabelOption as a label if the property exists for that option
         _entries.push_back(str);
     }
     _knob->populate(_entries);
