@@ -137,7 +137,7 @@ bool OfxClipInstance::getConnected() const
 //  The unmaped frame range over which an output clip has images.
 double OfxClipInstance::getUnmappedFrameRate() const
 {
-    
+    //return getNode().asImageEffectNode().getOutputFrameRate();
     return 25;
 }
 
