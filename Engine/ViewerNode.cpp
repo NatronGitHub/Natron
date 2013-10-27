@@ -357,8 +357,8 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
     /*we copy the frame to the cache*/
     if(!_renderAborted){
         assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
-        boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._dataSize, 1);
-        size_t bytesToCopy = _interThreadInfos._dataSize;
+        boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._pixelsCount, 1);
+        size_t bytesToCopy = _interThreadInfos._pixelsCount;
         if(viewer->hasHardware() && !viewer->byteMode()){
             bytesToCopy *= sizeof(float);
         }
@@ -449,8 +449,8 @@ void ViewerNode::cachedEngine(){
 
 void ViewerNode::allocateFrameStorage(){
     QMutexLocker locker(&_pboUnMappedMutex);
-    _interThreadInfos._dataSize = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._dataSize);
+    _interThreadInfos._pixelsCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._pixelsCount);
     ++_pboUnMappedCount;
     _pboUnMappedCondition.wakeOne();
     

@@ -39,12 +39,12 @@ class ViewerNode: public OutputNode
         _cachedEntry()
         , _rows()
         , _textureRect()
-        ,_dataSize(0){}
+        ,_pixelsCount(0){}
         
         boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
         std::vector<int> _rows;
         TextureRect _textureRect;
-        size_t _dataSize;
+        size_t _pixelsCount;
     };
     
 	ViewerTab* _uiContext;

@@ -136,6 +136,8 @@ namespace Powiter{
             
         }
         
+        virtual ~Image(){}
+        
         static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,const Box2D& regionOfDefinition){
             return ImageKey(nodeHashKey,time,scale,regionOfDefinition);
         }

@@ -103,6 +103,7 @@ SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Hash64.cpp \
     Engine/ImageFetcher.cpp \
+    Engine/Image.cpp \
     Engine/Knob.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
@@ -113,6 +114,7 @@ SOURCES += \
     Engine/OfxNode.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
+    Engine/Project.cpp \
     Engine/Row.cpp \
     Engine/Settings.cpp \
     Engine/TimeLine.cpp \
@@ -157,9 +159,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    Engine/Project.cpp \
-    Engine/Image.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
 
 
 
@@ -170,6 +170,8 @@ HEADERS += \
     Engine/Format.h \
     Engine/Hash64.h \
     Engine/ImageFetcher.h \
+    Engine/ImageInfo.h \
+    Engine/Image.h \
     Engine/Knob.h \
     Engine/LRUcache.h \
     Engine/Lut.h \
@@ -181,6 +183,7 @@ HEADERS += \
     Engine/OfxNode.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
+    Engine/Project.h \
     Engine/Row.h \
     Engine/Settings.h \
     Engine/Singleton.h \
@@ -256,10 +259,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/ImageInfo.h \
-    Engine/Project.h \
-    Engine/Image.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
+
 
 
 INSTALLS += target
