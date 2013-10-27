@@ -228,7 +228,7 @@ void VideoEngine::stopEngine() {
         while(_startCount <= 0) {
             _startCondition.wait(&_startMutex);
         }
-        _startCount = 0;
+        _startCount = 0; // are we sure we don't want to do --_startCount ?
     }
    
     

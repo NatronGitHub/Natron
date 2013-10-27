@@ -487,7 +487,7 @@ private:
     
     bool _markedByTopologicalSort; //< used by the topological sort algorithm
     bool _activated;
-    QMutex _renderLock;
+    QMutex _nodeInstanceLock;
     
     std::map<SequenceTime,boost::shared_ptr<Powiter::Image> > _imagesBeingRendered; //< a map storing the ongoing render for this node
     

@@ -61,7 +61,7 @@ Node::Node(AppInstance* app)
 , _deactivatedState()
 , _markedByTopologicalSort(false)
 , _activated(true)
-,_renderLock()
+,_nodeInstanceLock()
 ,_imagesBeingRendered()
 {
 }
@@ -448,8 +448,10 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         image = cachedImage->getObject();
     }
     /*before rendering we add to the _imagesBeingRendered member the image*/
-    _imagesBeingRendered.insert(std::make_pair(time, image));
-    
+    {
+        QMutexLocker locker(&_nodeInstanceLock);
+        _imagesBeingRendered.insert(std::make_pair(time, image));
+    }
     /*now that we have our image, we check what is left to render. If the list contains only
      null Box2Ds then we already rendered it all*/
     std::list<Box2D> rectsToRender = image->getRestToRender(renderWindow);
@@ -467,10 +469,10 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
              amount of threads*/
             Node::RenderSafety safety = renderThreadSafety();
             if(safety == UNSAFE){
-                _renderLock.lock();
+                _nodeInstanceLock.lock();
                 render(time, scale, *it, image);
                 image->markForRendered(*it);
-                _renderLock.unlock();
+                _nodeInstanceLock.unlock();
             }else if(safety == INSTANCE_SAFE){
                 render(time, scale, *it, image);
                 image->markForRendered(*it);
@@ -483,9 +485,15 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         }
     }
     /*now that we rendered the image, remove it from the images being rendered*/
-    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::iterator it = _imagesBeingRendered.find(time);
-    assert(it != _imagesBeingRendered.end());
-    _imagesBeingRendered.erase(it);
+    {
+        QMutexLocker locker(&_nodeInstanceLock);
+        std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::iterator it = _imagesBeingRendered.find(time);
+        assert(it != _imagesBeingRendered.end());
+        //if another thread is rendering the same image, leave it
+        if(it->second.use_count() == 1){
+            _imagesBeingRendered.erase(it);
+        }
+    }
     
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
