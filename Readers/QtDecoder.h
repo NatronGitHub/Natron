@@ -23,7 +23,7 @@ class Row;
 class QtDecoder : public Decoder {
 
     QImage* _img;
-    QString filename;
+
 public:
     static Decoder* BuildRead(Reader* reader) {return new QtDecoder(reader);}
     
@@ -37,7 +37,7 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
     
-    virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
     
     virtual bool supports_stereo() const OVERRIDE {return false;}
     

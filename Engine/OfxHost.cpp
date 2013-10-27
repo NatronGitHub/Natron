@@ -51,7 +51,7 @@ Powiter::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);
-    _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 0 );
+    _properties.setIntProperty(kOfxParamHostPropSupportsCustomInteract, 1 );
     _properties.setIntProperty(kOfxParamHostPropSupportsStringAnimation, 0 );
     _properties.setIntProperty(kOfxParamHostPropSupportsChoiceAnimation, 0 );
     _properties.setIntProperty(kOfxParamHostPropSupportsBooleanAnimation, 0 );

@@ -377,66 +377,70 @@ ExrDecoder::~ExrDecoder(){
     delete _imp->_inputfile;
 }
 
-void ExrDecoder::render(SequenceTime /*time*/,Powiter::Row* out){
-    const Powiter::ChannelSet& channels = out->channels();
-    const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
-    const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
-    int exrY = dispwin.max.y - out->y();
-    int r = out->right();
-    int x = out->left();
-    
-    const int X = std::max(x, datawin.min.x + _imp->_dataOffset);
-    const int R = std::min(r, datawin.max.x + _imp->_dataOffset +1);
-    
-    // if we're below or above the data window
-    if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
-        out->eraseAll();
-        return;
-    }
-    
-    Imf_::FrameBuffer fbuf;
-    foreachChannels(z, channels){
-        // blacking out the extra padding we added
-        float* dest = out->begin(z) - out->left();
-        for (int xx = x; xx < X; xx++)
-            dest[xx] = 0;
-        for (int xx = R; xx < r; xx++)
-            dest[xx] = 0;
-        ChannelsMap::const_iterator found = _imp->_channel_map.find(z);
-        if(found != _imp->_channel_map.end()){
-            if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
-                fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0));
-            }else{
-                fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_dataOffset*/),sizeof(float), 0,2,2));
-            }
-        }else{
-            //not found in the file, we zero it out
-            // we're responsible for filling all channels requested by the row
-            float fillValue = 0.f;
-            if (z == Powiter::Channel_alpha) {
-                fillValue = 1.f;
-            }
-            out->fill(z,fillValue);
-        }
-    }
-    {
-        QMutexLocker locker(&_imp->_lock);
-        try {
-            _imp->_inputfile->setFrameBuffer(fbuf);
-            _imp->_inputfile->readPixels(exrY);
-        } catch (const std::exception& exc) {
-            cout << exc.what() <<  endl;
+void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+    for (int y = roi.bottom(); y < roi.top(); ++y) {
+        Powiter::ChannelSet channels(Powiter::Mask_RGBA);
+        Powiter::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);
+        const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
+        const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
+        int exrY = dispwin.max.y - row.y();
+        int r = row.right();
+        int x = row.left();
+        
+        const int X = std::max(x, datawin.min.x + _imp->_dataOffset);
+        const int R = std::min(r, datawin.max.x + _imp->_dataOffset +1);
+        
+        // if we're below or above the data window
+        if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
+            row.eraseAll();
             return;
         }
-    }
-    
-    //  colorspace conversion
-    const float* alpha = out->begin(Powiter::Channel_alpha);
-    foreachChannels(z, channels){
-        float* to = out->begin(z) - out->left();
-        const float* from = out->begin(z) - out->left();
-        if(from){
-            from_float(z,to + X ,from + X,alpha, R-X,1);
+        
+        Imf_::FrameBuffer fbuf;
+        foreachChannels(z, channels){
+            // blacking out the extra padding we added
+            float* dest = row.begin(z) - row.left();
+            for (int xx = x; xx < X; xx++)
+                dest[xx] = 0;
+            for (int xx = R; xx < r; xx++)
+                dest[xx] = 0;
+            ChannelsMap::const_iterator found = _imp->_channel_map.find(z);
+            if(found != _imp->_channel_map.end()){
+                if(found->second != "BY" && found->second != "RY"){ // if it is NOT a subsampled buffer
+                    fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_imp->_dataOffset*/),sizeof(float), 0));
+                }else{
+                    fbuf.insert(found->second.c_str(),Imf_::Slice(Imf_::FLOAT, (char*)(dest /*+_imp->_dataOffset*/),sizeof(float), 0,2,2));
+                }
+            }else{
+                //not found in the file, we zero it out
+                // we're responsible for filling all channels requested by the row
+                float fillValue = 0.f;
+                if (z == Powiter::Channel_alpha) {
+                    fillValue = 1.f;
+                }
+                row.fill(z,fillValue);
+            }
         }
+        {
+            QMutexLocker locker(&_imp->_lock);
+            try {
+                _imp->_inputfile->setFrameBuffer(fbuf);
+                _imp->_inputfile->readPixels(exrY);
+            } catch (const std::exception& exc) {
+                cout << exc.what() <<  endl;
+                return;
+            }
+        }
+        
+        //  colorspace conversion
+        const float* alpha = row.begin(Powiter::Channel_alpha);
+        foreachChannels(z, channels){
+            float* to = row.begin(z) - row.left();
+            const float* from = row.begin(z) - row.left();
+            if(from){
+                from_float(z,to + X ,from + X,alpha, R-X,1);
+            }
+        }
+        Powiter::copyRowToImage(row, y, row.left(), output.get());
     }
 }

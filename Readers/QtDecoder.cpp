@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 
 #include "QtDecoder.h"
 
@@ -17,6 +17,7 @@
 
 #include "Readers/Reader.h"
 
+#include "Engine/Image.h"
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 
@@ -26,7 +27,6 @@ using std::cout; using std::endl;
 QtDecoder::QtDecoder(Reader* op)
 : Decoder(op)
 , _img(0)
-, filename()
 {
 }
 
@@ -49,45 +49,19 @@ std::vector<std::string> QtDecoder::fileTypesDecoded() const {
 };
 
 
-void QtDecoder::render(SequenceTime /*time*/,Powiter::Row* out) {
-    const ChannelSet& channels = out->channels();
-    int y = out->y();
+void QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
     switch(_img->format()) {
         case QImage::Format_Invalid:
         {
-            foreachChannels(z, channels){
-                const float* to = out->begin(z) ;
-                if (to != NULL) {
-                    std::fill(out->begin(z), out->end(z), 0.f);
-                }
-            }
+            output->fill(roi,0.f,1.f);
         }
             break;
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
         case QImage::Format_ARGB32: // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         {
-            int h = _img->height();
-            int Y = h - y - 1;
-//            if(autoAlpha() && !_img->hasAlphaChannel()){
-//                out->turnOn(Channel_alpha);
-//            }
-            const QRgb* from = reinterpret_cast<const QRgb*>(_img->scanLine(Y));
-            foreachChannels(z, channels){
-                if((int)z <= 4){ // qrgb contains only rgba
-                    float* to = out->begin(z) ;
-                    if (to != NULL) {
-                        from_byteQt(z, out->begin(z) - out->left(), from, _img->width(),1);
-                    }
-                }else{
-                    //default initialize  the channel
-                    if(z != Channel_alpha)
-                        out->fill(z,0.f);
-                    else
-                        out->fill(z, 1.f);
-                }
-            }
-        }
+            //might have to invert y coordinates here
+            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Powiter::Color::Lut::BGRA,true);
             break;
         case QImage::Format_Mono: // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
         case QImage::Format_MonoLSB: // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -102,38 +76,20 @@ void QtDecoder::render(SequenceTime /*time*/,Powiter::Row* out) {
         case QImage::Format_RGB444: // The image is stored using a 16-bit RGB format (4-4-4). The unused bits are always zero.
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
         default:
-        {
-            int h = _img->height();
-            int Y = h - y - 1;
-            for (int X = out->left(); X < out->right(); ++X) {
-                QRgb c = _img->pixel(X, Y);
-                foreachChannels(z, channels){
-                    if((int) z < 4){
-                        float* to = out->begin(z) ;
-                        if (to != NULL) {
-                            from_byteQt(z, to+X , &c, 1, 1);
-                        }
-                    }else{
-                        //default initialize to 0 the channel
-                        float *to = out->begin(z)+X;
-                        if(z != Channel_alpha)
-                            *to = 0.f;
-                        else
-                            *to = 1.f;
-                    }
-                }
+            {
+                from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Powiter::Color::Lut::BGRA,true);
             }
-        }
             break;
+        }
     }
+    
 }
-Powiter::Status QtDecoder::readHeader(const QString& filename_)
+
+Powiter::Status QtDecoder::readHeader(const QString& filename)
 {
-    filename = filename_;
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/
     _img= new QImage(filename);
-    
     if(_img->format() == QImage::Format_Invalid){
         cout << "Couldn't load this image format" << endl;
         return StatFailed;
@@ -141,8 +97,8 @@ Powiter::Status QtDecoder::readHeader(const QString& filename_)
     int width = _img->width();
     int height= _img->height();
     double aspect = _img->dotsPerMeterX()/ _img->dotsPerMeterY();
-
-	ChannelSet mask;    
+    
+	ChannelSet mask;
     if(_autoCreateAlpha){
         
 		mask = Mask_RGBA;

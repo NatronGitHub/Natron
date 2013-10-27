@@ -234,7 +234,7 @@ public:
         return *this;
     }
     
-    void debug(){
+    void debug() const{
         std::cout << "Box2D is..." << std::endl;
         std::cout << "left = " << _l << std::endl;
         std::cout << "bottom = " << _b << std::endl;

@@ -20,7 +20,6 @@
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 
-#include <QFutureWatcher>
 #include <QtCore/QRunnable> // for RowRunnable => to remove if class RowRunnable is moved to VideoEngine.cpp
 
 #ifndef Q_MOC_RUN
@@ -43,7 +42,6 @@ class Row;
 class Reader;
 class ViewerNode;
 class Writer;
-class Timer;
 class OfxNode;
 class OutputNode;
 class TimeLine;
@@ -203,24 +201,6 @@ class VideoEngine : public QThread{
 private:
     
     /**
-     * @brief The RunArgs class contains info on the size of last frame computed
-     * by the engine.
-     */
-    struct LastFrameInfos{
-        LastFrameInfos():
-        _cachedEntry()
-        , _rows()
-        , _textureRect()
-        ,_dataSize(0){}
-        
-        boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
-        std::vector<int> _rows;
-        TextureRect _textureRect;
-        size_t _dataSize;
-        
-    };
-    
-    /**
      * @brief The RunArgs class is a convenience class storing the arguments
      * passed to the render function for the last frame computed.
      */
@@ -249,9 +229,7 @@ private:
         
     Tree _tree; /*!< The internal Tree instance.*/
     
-    mutable QMutex _timerMutex;///protects timer
-    boost::scoped_ptr<Timer> _timer; /*!< Timer regulating the engine execution. It is controlled by the GUI.*/
-    
+
     mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
     bool _abortBeingProcessed; /*true when someone is processing abort*/
 
@@ -271,18 +249,6 @@ private:
     /*Accessed and modified only by the run() thread*/
     bool _restart; /*!< if true, the run() function should call startEngine() on the next loop*/
     
-    mutable QMutex _forceRenderMutex;
-    bool _forceRender;/*!< true when we want to by-pass the cache*/
-    
-    mutable QMutex _workerThreadsWatcherMutex;
-    QFutureWatcher<void>* _workerThreadsWatcher;/*!< watcher of the thread pool running the meta engine for all rows of
-                                                 the current frame. Its finished() signal will call
-                                                 Worker::finishComputeFrameRequest()*/    
-
-    QWaitCondition _pboUnMappedCondition;
-    mutable QMutex _pboUnMappedMutex; //!< protects *_openGLCount
-    int _pboUnMappedCount;
-
        
     QWaitCondition _startCondition;
     mutable QMutex _startMutex; //!< protects _startCount
@@ -298,8 +264,6 @@ private:
     RunArgs _lastRequestedRunArgs; /*called upon render()*/
     RunArgs _currentRunArgs; /*the args used in the run() func*/
     
-    /*Accessed only by the run() thread*/
-    LastFrameInfos _currentFrameInfos; /*!< The stored infos generated for the last frame. Used by the gui thread slots.*/
     
     /*Accessed only by the run() thread*/
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
@@ -318,12 +282,6 @@ public slots:
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
     void abortRendering();
-   
-    /**
-     *@brief The slot called by the GUI to set the requested fps.
-     **/
-    void setDesiredFPS(double d);
-    
     
     /*
      *@brief Slot called internally by the render() function when it reports progress for the current frame.
@@ -343,25 +301,6 @@ public slots:
      */
     void onProgressUpdate(int i);
     
-    /*
-     *@brief Slot called internally by the render() function when it wants to refresh the viewer if
-     *the output is a viewer.
-     *Do not call this yourself.
-     */
-    void updateViewer();
-    
-    /*
-     *@brief Slot called internally by the render() function when it found a frame in cache.
-     *Do not call this yourself
-     **/
-    void cachedEngine();
-    
-    /*
-     *@brief Slot called internally by the render() function when the output is a viewer and it
-     *needs to allocate the output buffer for the current frame.
-     *Do not call this yourself.
-     */
-    void allocateFrameStorage();
     
     /*
      *@brief Slot called when the output node owning this VideoEngine is about to be deleted.
@@ -376,27 +315,7 @@ public slots:
    
     
 signals:
-    /**
-     *@brief Signal emitted when the function waits the time due to display the frame.
-     **/
-    void fpsChanged(double d);
-    
-    /**
-     *@brief Signal emitted when the engine needs to inform the main thread that it should refresh the
-     *viewer in case the output of the graph is a viewer.
-     **/
-    void doUpdateViewer();
-    
-    /**
-     *@brief Signal emitted when the engine needs to pass-on to the main thread the rendering of a cached frame.
-     **/
-    void doCachedEngine();
-    
-    /**
-     *@brief Signal emitted when the engine needs to warn the main thread that the storage for the current frame
-     *should be allocated in case the output is a viewer.
-     **/
-    void doFrameStorageAllocation();
+   
     
     /**
      *@brief emitted when the engine started to render a sequence (which can be only a sequence of 1 frame).
@@ -471,14 +390,6 @@ public:
 
     
     /**
-     *@brief Bypasses the cache so the next frame will be rendered fully
-     **/
-    void forceFullComputationOnNextFrame(){
-        QMutexLocker forceRenderLocker(&_forceRenderMutex);
-        _forceRender = true;
-    }
-    
-    /**
      *@brief Convenience function calling Tree::isOutputAViewer()
      **/
     bool isOutputAViewer() const {return _tree.isOutputAViewer();}
@@ -524,8 +435,6 @@ private:
      **/
     bool checkAndDisplayProgress(int y,int zoomedY);
 
-    void engineLoop();
-
     /**
      *@brief Resets the video engine state and ensures that all worker threads are stopped. It is called
      *internally by the run function.
@@ -570,32 +479,6 @@ private:
 };
 
 
-/*Not used but leave it here if we need to use QThreadPool instead of
- QtConcurrent::map.
- */
-#if 0
-class RowRunnable : public QObject, public QRunnable{
-    Q_OBJECT
-    
-    Row* _row;
-    Node* _output;
-    
-public:
-    
-    RowRunnable(Row* row,Node* output):
-    QRunnable(),_row(row),_output(output)
-    {
-    }
-    
-    virtual void run();
-    
-    virtual ~RowRunnable(){}
-    
-signals:
-    void finished(int,int);
-    
-};
-#endif
 
 
 #endif /* defined(POWITER_ENGINE_VIDEOENGINE_H_) */

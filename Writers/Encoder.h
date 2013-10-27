@@ -14,17 +14,17 @@
 
 #include <string>
 #include <vector>
+
+#include <boost/shared_ptr.hpp>
+
 #include "Engine/ChannelSet.h"
 #include "Engine/Box.h"
+#include "Engine/Lut.h"
 
-namespace Powiter {
-    namespace Color {
-        class Lut;
-    }
-}
 class Writer;
 namespace Powiter{
-class Row;
+    class Image;
+    class Row;
 }
 class Separator_Knob;
 
@@ -85,6 +85,7 @@ protected:
     const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* _writer; /// a pointer to the Writer
     EncoderKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
+    QString _filename;
 public:
     
     /** @brief Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
@@ -95,6 +96,8 @@ public:
     Encoder(Writer* writer);
     
     virtual ~Encoder();
+    
+    const QString& filename() const {return _filename;}
     
     /** @brief Set the pointer to the WriteKnobs. It will contain
      * all the values stored by extra knobs created by the derived WriteKnobs
@@ -109,11 +112,6 @@ public:
      * @param premult Whether we want to enable alpha premultiplication:
      */
     void premultiplyByAlpha(bool premult){_premult = premult;}
-    
-    /** @briefcalls writeAllData and calls the destructor
-     *@warning After this the object will be deleted and cannot be accessed anymore.
-    **/
-    void writeAndDelete();
     
     /**
      *@brief Should return the list of file types supported by the encoder: "png","jpg", etc..
@@ -132,9 +130,11 @@ public:
     
     
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
-     * within the range specified by (offset,range) and for all the channels.
     **/
-	virtual void renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels) = 0;
+	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,const Box2D& roi) = 0;
+    
+    /*@brief can be overloaded to finalize the file. This is called after the last call to render() was made for the frame*/
+    virtual void finalizeFile(){}
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
@@ -142,17 +142,10 @@ public:
     **/
     virtual void initializeColorSpace() = 0;
     
-    /** @brief This function initialises the output file/output storage structure and put necessary info in it, like
-     * meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
-     * otherwise it would stall the GUI.
-    **/
-    virtual void setupFile(const QString& filename,const Box2D& rod) = 0;
-    
-    /** @brief This function must fill the pre-allocated structure with the data calculated by engine.
-     * This function must close the file as writeAllData is the LAST function called before the
-     * destructor of Write.
-    **/
-    virtual void writeAllData() = 0;
+    Powiter::Status _setupFile(const QString& filename,const Box2D& rod){
+        _filename = filename;
+        return setupFile(filename,rod);
+    }
     
     /** @brief Must return true if this encoder can encode all the channels in channels.
     * Otherwise must throw a descriptive exception
@@ -169,6 +162,7 @@ public:
     **/
     virtual EncoderKnobs* initSpecificKnobs() {return NULL;}
     
+    
     /**
      * @brief to_byte converts a buffer of float to a buffer of bytes to the output color-space.
      * @param z The channel identifier
@@ -179,12 +173,33 @@ public:
      * @param delta How far apart the values in output should be spaced.
      */
     void to_byte(Powiter::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
-
+    
     /** @brief Same as to_byte but converts to shorts output buffer.**/
     void to_short(Powiter::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
-
+    
     /** @brief Same as to_byte but converts to float output buffer**/
     void to_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    
+    /**
+     * @brief to_byte converts a RGBA packed-buffer of float to a RGBA packed-buffer of bytes to the output color-space.
+     */
+    void to_byte_rect(uchar* to, const float* from,
+                      const Box2D& rect,const Box2D& rod,
+                      Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+
+    /** @brief Same as to_byte but converts to shorts output buffer.**/
+    void to_short_rect(U16* to, const float* from,
+                       const Box2D& rect,const Box2D& rod,
+                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+
+    /** @brief Same as to_byte but converts to float output buffer**/
+    void to_float_rect(float* to, const float* from,
+                       const Box2D& rect,const Box2D& rod,
+                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+    
+protected:
+    
+    virtual Powiter::Status setupFile(const QString& filename,const Box2D& rod) = 0;
 };
 
 /** @typedef Classes deriving Write should implement a function named BuildWrite with the following signature:

@@ -8,6 +8,7 @@
  *contact: immarespond at gmail dot com
  *
  */
+#if 0
 
 #include "ImageFetcher.h"
 
@@ -129,3 +130,4 @@ void ImageFetcher::debugImageFetcher(const std::string& filename){
     }
     img.save(filename.c_str());
 }
+#endif

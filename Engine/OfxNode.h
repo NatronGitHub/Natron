@@ -105,9 +105,7 @@ public:
     virtual int maximumInputs() const OVERRIDE;
     
     virtual int minimumInputs() const OVERRIDE;
-    
-    virtual bool cacheData() const OVERRIDE {return false;}
-    
+        
     virtual std::string className() const OVERRIDE;
     
     virtual std::string description() const OVERRIDE;
@@ -118,11 +116,11 @@ public:
     
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod) OVERRIDE;
     
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const Box2D& renderWindow) OVERRIDE;
+        
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
     
     virtual Powiter::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE;
-    
-    virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
     
     virtual void drawOverlay() OVERRIDE;
     
@@ -171,6 +169,11 @@ public:
     
     int lastFrame() const {return _frameRange.second;}
     
+protected:
+    
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+
+    virtual Node::RenderSafety renderThreadSafety() const OVERRIDE;
 public slots:
     
     void onFrameRangeChanged(int,int);

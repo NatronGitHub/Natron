@@ -603,7 +603,6 @@ std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<i
     ret.first = left;
     ret.second = right-1;
     if (res < 0.) { // all the image is on the left of the viewer
-        _textureColumns.clear();
         return ret;
     }
     // testing right now
@@ -633,7 +632,6 @@ std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<i
     }
     assert(ret.first >= left && ret.first <= std::max(left, right-1));
     assert(ret.second >= std::min(left,right-1) && ret.second < right);
-    _textureColumns = *columns;
     return ret;
 }
 
@@ -781,42 +779,37 @@ void ViewerGL::initBlackTex(){
 
 
 
-void ViewerGL::drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY){
+void ViewerGL::drawRow(const float* data ,const std::vector<int>& columns,int zoomedY){
     
     while(_updatingTexture){}
     if(byteMode()==0 && _hasHW){
-        convertRowToFitTextureBGRA_fp(r,g,b,_textureColumns,zoomedY,a);
+        convertRowToFitTextureBGRA_fp(data,columns,zoomedY);
     }
     else{
-        convertRowToFitTextureBGRA(r,g,b,_textureColumns,zoomedY,a);
+        convertRowToFitTextureBGRA(data,columns,zoomedY);
         
     }
 }
 
-size_t ViewerGL::allocateFrameStorage(int w,int h){
+void ViewerGL::allocateFrameStorage(size_t dataSize){
     GLint currentBoundPBO;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     if (currentBoundPBO != 0) {
         cout << "(ViewerGL::allocateFrameStorage): Another PBO is currently mapped, glMap failed." << endl;
-        return 0;
-    }
-    size_t dataSize = 0;
-    if(byteMode() == 1 || !_hasHW){
-        dataSize = sizeof(U32)*w*h;
-    }else{
-        dataSize = sizeof(float)*w*h*4;
+        return;
     }
     assert(!frameData);
     /*MUST map the PBO AFTER that we allocate the texture.*/
     frameData = (char*)allocateAndMapPBO(dataSize,_pboIds[0]);
     assert(frameData);
-    
     checkGLErrors();
-    return dataSize;
 }
 
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
     //cout << "    + mapping PBO" << endl;
+    if(byteMode() != 1 && _hasHW){
+        dataSize*=sizeof(float);
+    }
 	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     assert(!_pBOmapped);
@@ -830,6 +823,9 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
 void ViewerGL::fillPBO(const char *src, void *dst, size_t byteCount){
     assert(dst);
     assert(src);
+    if(byteMode() != 1 && _hasHW){
+        byteCount*=sizeof(float);
+    }
     memcpy(dst, src, byteCount);
 }
 
@@ -865,8 +861,7 @@ void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     checkGLErrors();
 }
 
-void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-                                          const std::vector<int>& columnSpan,int yOffset,const float* alpha){
+void ViewerGL::convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset){
     /*Converting one row (float32) to 8bit BGRA portion of texture. We apply a dithering algorithm based on error diffusion.
      This error diffusion will produce stripes in any image that has identical scanlines.
      To prevent this, a random horizontal position is chosen to start the error diffusion at,
@@ -885,29 +880,24 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         int start = (int)(rand() % row_width);
         /* go fowards from starting point to end of line: */
         for(unsigned int i = start ; i < row_width; ++i) {
-            int col = columnSpan[i];
-            double  _a = (alpha != NULL) ? alpha[col] : 1.f;
+            int col = columnSpan[i]*4;
+            double  _a = data[col+3];
             U8 a_,r_,g_,b_;
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)(((r != NULL) ? r[col] : 0.f)*_a*exposure*256),255);
-            g_ = (U8)std::min((int)(((g != NULL) ? g[col] : 0.f)*_a*exposure*256),255);
-            b_ = (U8)std::min((int)(((b != NULL) ? b[col] : 0.f)*_a*exposure*256),255);
+            r_ = (U8)std::min((int)((data[col])*_a*exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_a*exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_a*exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
         /* go backwards from starting point to start of line: */
         for(int i = start-1 ; i >= 0 ; --i){
-            double _r,_g,_b,_a;
-            U8 r_,g_,b_,a_;
-            int col = columnSpan[i];
-            _r = (r != NULL) ? r[col] : 0.f;
-            _g = (g != NULL) ? g[col] : 0.f;
-            _b = (b != NULL) ? b[col] : 0.f;
-            _a = (alpha != NULL) ? alpha[col] : 1.f;
-            
+            int col = columnSpan[i]*4;
+            double  _a = data[col+3];
+            U8 a_,r_,g_,b_;
             a_ = (U8)std::min((int)(_a*256),255);
-            r_ = (U8)std::min((int)(_r*_a*exposure*256),255);
-            g_ = (U8)std::min((int)(_g*_a*exposure*256),255);
-            b_ = (U8)std::min((int)(_b*_a*exposure*256),255);
+            r_ = (U8)std::min((int)((data[col])*_a*exposure*256),255);
+            g_ = (U8)std::min((int)((data[col+1])*_a*exposure*256),255);
+            b_ = (U8)std::min((int)((data[col+2])*_a*exposure*256),255);
             output[i] = toBGRA(r_,g_,b_,a_);
         }
     }else{ // !linear
@@ -920,13 +910,13 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         /* go fowards from starting point to end of line: */
         _colorSpace->validate();
         for (unsigned int i = start ; i < columnSpan.size() ; ++i) {
-            int col = columnSpan[i];
+            int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
-            double _a = (alpha != NULL) ? alpha[col] : 1.f;
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[col]*_a*exposure : 0.f);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[col]*_a*exposure : 0.f);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[col]*_a*exposure : 0.f);
-            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[col] : 1.f)*256),255);
+            double _a =  data[col+3];
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*exposure);
+            a_ = (U8)std::min(_a*256.,255.);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -938,13 +928,13 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
         error_b = 0x80;
         
         for (int i = start-1 ; i >= 0 ; --i) {
-            int col = columnSpan[i];
+            int col = columnSpan[i]*4;
             U8 r_,g_,b_,a_;
-            double _a = (alpha != NULL) ? alpha[col] : 1.f;
-            error_r = (error_r&0xff) + _colorSpace->toFloatFast((r != NULL) ? r[col]*_a*exposure : 0.f);
-            error_g = (error_g&0xff) + _colorSpace->toFloatFast((g != NULL) ? g[col]*_a*exposure : 0.f);
-            error_b = (error_b&0xff) + _colorSpace->toFloatFast((b != NULL) ? b[col]*_a*exposure : 0.f);
-            a_ = (U8)std::min((int)(((alpha != NULL) ? alpha[columnSpan[i]] : 1.f)*256),255);
+            double _a =  data[col+3];
+            error_r = (error_r&0xff) + _colorSpace->toFloatFast(data[col]*_a*exposure);
+            error_g = (error_g&0xff) + _colorSpace->toFloatFast(data[col+1]*_a*exposure);
+            error_b = (error_b&0xff) + _colorSpace->toFloatFast(data[col+2]*_a*exposure);
+            a_ = (U8)std::min(_a*256.,255.);
             r_ = (U8)(error_r >> 8);
             g_ = (U8)(error_g >> 8);
             b_ = (U8)(error_b >> 8);
@@ -960,19 +950,18 @@ void ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const fl
 }
 
 // nbbytesoutput is the size in bytes of 1 channel for the row
-void ViewerGL::convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-                                             const std::vector<int>& columnSpan,int yOffset,const float* alpha){
+void ViewerGL::convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset){
     assert(frameData);
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
     output+=yOffset;
     for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
-        int col = columnSpan[i];
-        output[i]   = (r != NULL) ? r[col] : 0.f;
-        output[i+1] = (g != NULL) ? g[col] : 0.f;
-        output[i+2] = (b != NULL) ? b[col] : 0.f;
-        output[i+3] = (alpha != NULL) ? alpha[col] : 1.f;
+        int col = columnSpan[i]*4;
+        output[i]   = data[col];
+        output[i+1] = data[col+1];
+        output[i+2] = data[col+2];
+        output[i+3] = data[col+3];
     }
     
 }

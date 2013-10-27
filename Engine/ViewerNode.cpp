@@ -12,6 +12,9 @@
 #include "ViewerNode.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/bind.hpp>
+
+#include <QtConcurrentMap>
 
 #include "Global/AppManager.h"
 
@@ -27,20 +30,41 @@
 #include "Engine/OfxNode.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Cache.h"
+#include "Engine/Timer.h"
 
 #include "Readers/Reader.h"
+
+#define POWITER_FPS_REFRESH_RATE 10
+
 
 using namespace Powiter;
 using std::make_pair;
 using boost::shared_ptr;
 
-ViewerNode::ViewerNode(AppInstance* app):OutputNode(app),
-_uiContext(0),
-_inputsCount(1),
-_activeInput(0),
-_pboIndex(0)
+ViewerNode::ViewerNode(AppInstance* app):OutputNode(app)
+,_uiContext(0)
+,_inputsCount(1)
+,_activeInput(0)
+,_pboIndex(0)
+,_frameCount(1)
+,_forceRenderMutex()
+,_forceRender(false)
+,_pboUnMappedCondition()
+,_pboUnMappedMutex()
+,_pboUnMappedCount(0)
+,_interThreadInfos()
+,_timerMutex()
+,_timer(new Timer)
 {
     connectSlotsToViewerCache();
+    
+    connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
+    connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
+    connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
+
+    _timer->playState = RUNNING; /*activating the timer*/
+
 }
 
 void ViewerNode::connectSlotsToViewerCache(){
@@ -63,10 +87,26 @@ void ViewerNode::initializeViewerTab(TabWidget* where){
 ViewerNode::~ViewerNode(){
     if(_uiContext && _uiContext->getGui())
         _uiContext->getGui()->removeViewerTab(_uiContext,true);
+    _timer->playState = PAUSE;
+
 }
 
 Powiter::Status ViewerNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
-    return input(_activeInput)->getRegionOfDefinition(time,rod);
+    Node* n = input(_activeInput);
+    if(n){
+        return n->getRegionOfDefinition(time,rod);
+    }else{
+        return StatFailed;
+    }
+}
+
+Node::RoIMap ViewerNode::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& renderWindow){
+    RoIMap ret;
+    Node* n = input(_activeInput);
+    if (n) {
+        ret.insert(std::make_pair(n, renderWindow));
+    }
+    return ret;
 }
 
 void ViewerNode::getFrameRange(SequenceTime *first,SequenceTime *last){
@@ -183,41 +223,215 @@ int ViewerNode::disconnectInput(Node* input){
     return -1;
 }
 
-void ViewerNode::renderRow(SequenceTime time,int left,int right,int y,int textureY){
-    shared_ptr<const Row> row = input(activeInput())->get(time,y,left,right,_uiContext->displayChannels());
-    if (row) {
-        /*drawRow will fill a portion of the RAM buffer holding the frame.
-         This will write at the appropriate offset in the buffer thanks
-         to the zoomedY(). Note that this can be called concurrently since
-         2 rows do not overlap in memory.*/
-        const float* r = row->begin(Channel_red) ;
-        const float* g = row->begin(Channel_green);
-        const float* b = row->begin(Channel_blue);
-        const float* a = row->begin(Channel_alpha);
-        if(r)
-            r -= row->left();
-        if(g)
-            g -= row->left();
-        if(b)
-            b -= row->left();
-        if(a)
-            a -= row->left();
-        _uiContext->viewer->drawRow(r,g,b,a,textureY);
+
+Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
+    
+    ViewerGL *viewer = _uiContext->viewer;
+    assert(viewer);
+    double zoomFactor = viewer->getZoomFactor();
+    
+    Box2D rod;
+    Status stat = getRegionOfDefinition(time, &rod);
+    if(stat == StatFailed){
+        return stat;
+    }
+    ifInfiniteclipBox2DToProjectDefault(&rod);
+    if(fitToViewer){
+        viewer->fitToFormat(rod);
+        zoomFactor = viewer->getZoomFactor();
+    }
+    viewer->setRod(rod);
+    Format dispW = getProjectDefaultFormat();
+
+    viewer->setDisplayingImage(true);
+    
+    if(!viewer->isClippingToDisplayWindow()){
+        dispW.set(rod);
+    }
+    
+    /*computing the RoI*/
+    std::vector<int> rows;
+    std::vector<int> columns;
+    int bottom = std::max(rod.bottom(),dispW.bottom());
+    int top = std::min(rod.top(),dispW.top());
+    int left = std::max(rod.left(),dispW.left());
+    int right = std::min(rod.right(), dispW.right());
+    std::pair<int,int> rowSpan = viewer->computeRowSpan(bottom,top, &rows);
+    std::pair<int,int> columnSpan = viewer->computeColumnSpan(left,right, &columns);
+    
+    TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
+    if(textureRect.w == 0 || textureRect.h == 0){
+        return StatFailed;
+    }
+    _interThreadInfos._textureRect = textureRect;
+    FrameKey key(time,
+                 getVideoEngine()->getCurrentTreeVersion(),
+                 zoomFactor,
+                 viewer->getExposure(),
+                 viewer->lutType(),
+                 viewer->byteMode(),
+                 rod,
+                 dispW,
+                 textureRect);
+    
+    boost::shared_ptr<const FrameEntry> iscached;
+    
+    /*if we want to force a refresh, we by-pass the cache*/
+    {
+        QMutexLocker forceRenderLocker(&_forceRenderMutex);
+        if(!_forceRender){
+            iscached = appPTR->getViewerCache().get(key);
+        }else{
+            _forceRender = false;
+        }
+    }
+
+    
+    if (iscached) {
+        /*Found in viewer cache, we execute the cached engine and leave*/
+        _interThreadInfos._cachedEntry = iscached;
+        _interThreadInfos._textureRect = iscached->getKey()._textureRect;
+        {
+            QMutexLocker locker(&_pboUnMappedMutex);
+            emit doCachedEngine();
+            while(_pboUnMappedCount <= 0) {
+                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+            }
+            --_pboUnMappedCount;
+        }
+        {
+            QMutexLocker locker(&_pboUnMappedMutex);
+            emit doUpdateViewer();
+            while(_pboUnMappedCount <= 0) {
+                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+            }
+            --_pboUnMappedCount;
+        }
+        return StatOK;
+    }
+    
+    /*We didn't find it in the viewer cache, hence we allocate
+     the frame storage*/
+    {
+        QMutexLocker locker(&_pboUnMappedMutex);
+        emit doFrameStorageAllocation();
+        while(_pboUnMappedCount <= 0) {
+            _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+        }
+        --_pboUnMappedCount;
+    }
+    
+
+    {
+        Box2D roi(textureRect.x,textureRect.y,textureRect.r+1,textureRect.t+1);
+        /*for now we skip the render scale*/
+        RenderScale scale;
+        scale.x = scale.y = 1.;
+        RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
+        //inputsRoi only contains 1 element
+        RoIMap::const_iterator it = inputsRoi.begin();
+        boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale, it->second);
+        
+        int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
+        // group of group of rows where first is image coordinate, second is texture coordinate
+        std::vector< std::vector<std::pair<int,int> > > splitRows;
+        U32 k = 0;
+        while (k < rows.size()) {
+            std::vector<std::pair<int,int> > rowsForThread;
+            for (int i = 0; i < rowsPerThread; ++i) {
+                rowsForThread.push_back(make_pair(rows[k],k));
+            }
+            ++k;
+            splitRows.push_back(rowsForThread);
+        }
+        
+        
+        QtConcurrent::blockingMap(splitRows,
+                                  boost::bind(&ViewerNode::renderFunctor,this,inputImage,_1,columns));
+    }
+    //we released the input image and force the cache to clear exceeding entries
+    appPTR->clearExceedingEntriesFromNodeCache();
+    
+    viewer->stopDisplayingProgressBar();
+    
+    /*we copy the frame to the cache*/
+    if(!_renderAborted){
+        assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
+        boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._dataSize, 1);
+        size_t bytesToCopy = _interThreadInfos._dataSize;
+        if(viewer->hasHardware() && !viewer->byteMode()){
+            bytesToCopy *= sizeof(float);
+        }
+        memcpy(cachedFrame->getObject()->data(),viewer->getFrameData(),bytesToCopy);
+    }
+    
+    QMutexLocker locker(&_pboUnMappedMutex);
+    emit doUpdateViewer();
+    while(_pboUnMappedCount <= 0) {
+        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+    }
+    --_pboUnMappedCount;
+    return StatOK;
+}
+
+void ViewerNode::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+                               const std::vector<std::pair<int,int> >& rows,
+                               const std::vector<int>& columns){
+    for(U32 i = 0; i < rows.size();++i){
+        _uiContext->viewer->drawRow(inputImage->pixelAt(0, rows[i].first), columns, rows[i].second);
     }
 }
 
-void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
-    assert(frame);
-    size_t dataSize = 0;
-    int w = frame->getKey()._textureRect.w;
-    int h = frame->getKey()._textureRect.h;
-    if(frame->getKey()._byteMode==1.0){
-        dataSize  = w * h * sizeof(U32) ;
+
+void ViewerNode::updateViewer(){
+    QMutexLocker locker(&_pboUnMappedMutex);
+    
+    ViewerGL* viewer = _uiContext->viewer;
+    
+    if(!_renderAborted){
+        viewer->copyPBOToRenderTexture(_interThreadInfos._textureRect); // returns instantly
     }else{
-        dataSize  = w * h  * sizeof(float) * 4;
+        viewer->unMapPBO();
+        viewer->unBindPBO();
     }
-    const Box2D& dataW = frame->getKey()._dataWindow;
-    Format dispW = frame->getKey()._displayWindow;
+    
+    {
+        QMutexLocker timerLocker(&_timerMutex);
+        _timer->waitUntilNextFrameIsDue(); // timer synchronizing with the requested fps
+    }
+    if((_frameCount%POWITER_FPS_REFRESH_RATE)==0){
+        emit fpsChanged(_timer->actualFrameRate()); // refreshing fps display on the GUI
+        _frameCount = 1; //reseting to 1
+    }else{
+        ++_frameCount;
+    }
+    // updating viewer & pixel aspect ratio if needed
+    int width = viewer->width();
+    int height = viewer->height();
+    double ap = viewer->getDisplayWindow().getPixelAspect();
+    if(ap > 1.f){
+        glViewport (0, 0, (int)(width*ap), height);
+    }else{
+        glViewport (0, 0, width, (int)(height/ap));
+    }
+    viewer->updateColorPicker();
+    viewer->updateGL();
+    
+    
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
+}
+
+void ViewerNode::cachedEngine(){
+    QMutexLocker locker(&_pboUnMappedMutex);
+    
+    assert(_interThreadInfos._cachedEntry);
+    size_t dataSize = 0;
+    int w = _interThreadInfos._textureRect.w;
+    int h = _interThreadInfos._textureRect.h;
+    dataSize  = w * h * 4 ;
+    const Box2D& dataW = _interThreadInfos._cachedEntry->getKey()._dataWindow;
+    Format dispW = _interThreadInfos._cachedEntry->getKey()._displayWindow;
     _uiContext->viewer->setRod(dataW);
     if(_app->shouldAutoSetProjectFormat()){
         _app->setProjectFormat(dispW);
@@ -225,10 +439,26 @@ void ViewerNode::cachedFrameEngine(boost::shared_ptr<const FrameEntry> frame){
     }
     /*allocating pbo*/
     void* output = _uiContext->viewer->allocateAndMapPBO(dataSize, _uiContext->viewer->getPBOId(_pboIndex));
-    checkGLErrors();
     assert(output); // FIXME: crashes here when using two viewers, each connected to a different reader
     _pboIndex = (_pboIndex+1)%2;
-    _uiContext->viewer->fillPBO((const char*)frame->data(), output, dataSize);
+    _uiContext->viewer->fillPBO((const char*)_interThreadInfos._cachedEntry->data(), output, dataSize);
+
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
+}
+
+void ViewerNode::allocateFrameStorage(){
+    QMutexLocker locker(&_pboUnMappedMutex);
+    _interThreadInfos._dataSize = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._dataSize);
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeOne();
+    
+}
+
+void ViewerNode::setDesiredFPS(double d){
+    QMutexLocker timerLocker(&_timerMutex);
+    _timer->setDesiredFrameRate(d);
 }
 
 void ViewerNode::onCachedFrameAdded(){

@@ -455,8 +455,6 @@ _maximized(false)
     
     VideoEngine* vengine = _viewerNode->getVideoEngine().get();
     
-    QObject::connect(vengine, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
-    QObject::connect(fpsBox, SIGNAL(valueChanged(double)),vengine, SLOT(setDesiredFPS(double)));
     QObject::connect(play_Forward_Button,SIGNAL(clicked(bool)),this,SLOT(startPause(bool)));
     QObject::connect(stop_Button,SIGNAL(clicked()),this,SLOT(abortRendering()));
     QObject::connect(play_Backward_Button,SIGNAL(clicked(bool)),this,SLOT(startBackward(bool)));
@@ -473,7 +471,8 @@ _maximized(false)
     
     QObject::connect(_centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()));
     QObject::connect(_viewerNode,SIGNAL(viewerDisconnected()),this,SLOT(disconnectViewer()));
-    
+    QObject::connect(fpsBox, SIGNAL(valueChanged(double)),_viewerNode, SLOT(setDesiredFPS(double)));
+    QObject::connect(_viewerNode, SIGNAL(fpsChanged(double)), _infosWidget, SLOT(setFps(double)));
     QObject::connect(_viewerNode,SIGNAL(addedCachedFrame(int)),this,SLOT(onCachedFrameAdded(int)));
     QObject::connect(_viewerNode,SIGNAL(removedCachedFrame()),this,SLOT(onCachedFrameRemoved()));
     QObject::connect(_viewerNode,SIGNAL(clearedViewerCache()),this,SLOT(onViewerCacheCleared()));
@@ -589,7 +588,7 @@ void ViewerTab::centerViewer(){
 
 void ViewerTab::refresh(){
     abortRendering();
-    _viewerNode->getVideoEngine()->forceFullComputationOnNextFrame();
+    _viewerNode->forceFullComputationOnNextFrame();
     _viewerNode->updateTreeAndRender();
 }
 

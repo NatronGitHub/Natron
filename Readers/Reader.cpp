@@ -137,7 +137,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
         throw e;
     }
     assert(decoderReadHandle);
-    Status st = decoderReadHandle->readHeader(filename);
+    Status st = decoderReadHandle->_readHeader(filename);
     if(st == StatFailed){
         return boost::shared_ptr<Decoder>();
     }
@@ -156,9 +156,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 
-
-
-void Reader::render(SequenceTime time,Row* out){
+void Reader::render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
     QString filename = _fileKnob->getRandomFrameName(time);
     boost::shared_ptr<Decoder> found;
     {
@@ -179,7 +177,7 @@ void Reader::render(SequenceTime time,Row* out){
             }
         }
     }
-    found->render(time,out);
+    found->render(time,scale,roi,output);
 }
 
 

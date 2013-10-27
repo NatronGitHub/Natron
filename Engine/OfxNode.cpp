@@ -270,6 +270,35 @@ Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
     //assert(clip);
     //double pa = clip->getAspectRatio();
 }
+
+OfxRectD box2DToOfxRect2D(const Box2D b){
+    OfxRectD out;
+    out.x1 = b.left();
+    out.x2 = b.right();
+    out.y1 = b.bottom();
+    out.y2 = b.top();
+    return out;
+}
+
+
+Node::RoIMap OfxNode::getRegionOfInterest(SequenceTime time,RenderScale scale,const Box2D& renderWindow) {
+    std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
+    Node::RoIMap ret;
+    OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, box2DToOfxRect2D(renderWindow), inputRois);
+    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault)
+        return ret;
+    for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
+        Node* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+        if(inputNode){
+            Box2D inputRoi;
+            ofxRectDToBox2D(it->second, &inputRoi);
+            ret.insert(std::make_pair(inputNode,inputRoi));
+        }
+    }
+    return ret;
+}
+
+
 void OfxNode::getFrameRange(SequenceTime *first,SequenceTime *last){
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectSimpleSourceClipName);
     if(clip){
@@ -320,72 +349,29 @@ void OfxNode::openFilesForAllFileParams(){
     }
 
 }
+void OfxNode::render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image>/* output*/){
+    OfxRectI ofxRoI;
+    ofxRoI.x1 = roi.left();
+    ofxRoI.x2 = roi.right();
+    ofxRoI.y1 = roi.bottom();
+    ofxRoI.y2 = roi.top();
+    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale);
+}
 
-void OfxNode::render(SequenceTime time,Row* out) {
-    const ChannelSet& channels = out->channels();
-    int y = out->y();
-    OfxRectI renderW;
-    assert(effectInstance());
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(clip);
-    
-    {
-        QMutexLocker l(&_firstTimeMutex);
-        if(_firstTime){
-            _firstTime = false;
-            Box2D rod;
-            Status st = getRegionOfDefinition(time, &rod);
-            if(st == StatFailed){
-                _firstTime = true;
-                return;
-            }
-            renderW.x1 = rod.left();
-            renderW.x2 = rod.right();
-            renderW.y1 = rod.bottom();
-            renderW.y2 = rod.top();
-            OfxPointD renderScale;
-            renderScale.x = renderScale.y = 1.;
-            // cout << "Asking to render image at time = " <<  time << endl << "l = " << renderW.x1 << " b = " << renderW.y1 <<
-            //" r = " << renderW.x2 << " t = " << renderW.y2 << endl;
-            OfxStatus stat = effectInstance()->renderAction((OfxTime)time, kOfxImageFieldNone, renderW, renderScale);
-            assert(stat == kOfxStatOK);
-        }
+Node::RenderSafety OfxNode::renderThreadSafety() const{
+    if(!effect_->getHostFrameThreading()){
+        return Node::INSTANCE_SAFE;
     }
-#warning "RACE CONDITION HERE! We asked for a render action which effictively created the output image for the output clip but another concurrent thread might have at thie point created another image. We need to do all the copying from the output image to the rows in a single thread. We should cache the images in the clip with respect of the time and the image bounds."
     
-    const OfxImage* img = dynamic_cast<OfxImage*>(clip->getImage((OfxTime)time,NULL));
-    assert(img);
-    if(img->bitDepth() == OfxImage::eBitDepthUByte)
-    {
-        const OfxRGBAColourB* srcPixels = img->pixelB(out->left(), y);
-        assert(srcPixels);
-        foreachChannels(chan, channels){
-            float* writable = out->begin(chan);
-            if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourB>(chan, srcPixels, out->width(), writable);
-            }
-        }
-    }else if(img->bitDepth() == OfxImage::eBitDepthUShort)
-    {
-        const OfxRGBAColourS* srcPixels = img->pixelS(out->left(), y);
-        assert(srcPixels);
-        foreachChannels(chan, channels){
-            float* writable = out->begin(chan);
-            if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourS>(chan, srcPixels, out->width(), writable);
-            }
-        }
-    }else if(img->bitDepth() == OfxImage::eBitDepthFloat)
-    {
-        const OfxRGBAColourF* srcPixels = img->pixelF(out->left(), y);
-        assert(srcPixels);
-        foreachChannels(chan, channels){
-            float* writable = out->begin(chan);
-            if(writable){
-                ofxPackedBufferToRowPlane<OfxRGBAColourF>(chan, srcPixels, out->width(), writable);
-            }
-        }
+    const std::string& safety = effect_->getRenderThreadSafety();
+    if (safety == kOfxImageEffectRenderUnsafe) {
+        return Node::UNSAFE;
+    }else if(safety == kOfxImageEffectRenderInstanceSafe){
+        return Node::INSTANCE_SAFE;
+    }else{
+        return Node::FULLY_SAFE;
     }
+    
 }
 
 void OfxNode::onInstanceChanged(const std::string& paramName){

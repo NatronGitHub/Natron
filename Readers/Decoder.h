@@ -15,17 +15,17 @@
 #include <QtCore/QString>
 #include <QtGui/QRgb>
 #include <boost/scoped_ptr.hpp>
-
+#include <boost/shared_ptr.hpp>
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
-#include "Readers/Reader.h"
+#include "Engine/Lut.h"
 
+class Reader;
 class ViewerGL;
 class ImageInfo;
 namespace Powiter {
-namespace Color {
-    class Lut;
-}
+
+    class Image;
     class Row;
 }
 
@@ -52,8 +52,15 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const = 0;
     
-    /*This must be implemented to do the to linear colorspace conversion*/
-	virtual void render(SequenceTime time,Powiter::Row* out) = 0;
+    /*must be implemented to decode the data for the given roi, and store it in the output image
+     at the given scale.*/
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) = 0;
+    
+    
+    Powiter::Status _readHeader(const QString& filename){
+        _filename = filename;
+        return readHeader(filename);
+    }
     
     /*can be overloaded to add knobs dynamically to the reader depending on the file type*/
 	virtual void createKnobDynamically();
@@ -61,11 +68,6 @@ public:
     /*Must be implemented to tell whether this file type supports stereovision*/
 	virtual bool supports_stereo() const = 0;
     
-
-    /*Should open the file and call setReaderInfo with the infos from the file.
-     In case of failure, return StatFailed and post an appropriate message, otherwise return StatOK.
-     */
-    virtual Powiter::Status readHeader(const QString& filename) = 0;
     
     /*Returns true if the file has alpha premultiplied data*/
     bool premultiplied() const {return _premult;}
@@ -92,18 +94,38 @@ public:
     /*Returns all the infos necessary for the current frame*/
     const ImageInfo& readerInfo() const { return *_readerInfo; }
     
+    const QString& filename() const {return _filename;}
 protected:
+    
+    
+    /*Should open the file and call setReaderInfo with the infos from the file.
+     In case of failure, return StatFailed and post an appropriate message, otherwise return StatOK.
+     */
+    virtual Powiter::Status readHeader(const QString& filename) = 0;
     
     void from_byte(Powiter::Channel z, float* to, const uchar* from, const uchar* alpha, int W, int delta = 1);
     void from_byteQt(Powiter::Channel z, float* to, const QRgb* from, int W, int delta = 1);
     void from_short(Powiter::Channel z, float* to, const U16* from, const U16* alpha, int W, int bits, int delta = 1);
     void from_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    
+    
+    void from_byte_rect(float* to,const uchar* from,
+                        const Box2D& rect,const Box2D& rod,
+                        Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
+ 
+    void from_short_rect(float* to,const U16* from,
+                         const Box2D& rect,const Box2D& rod,
+                         Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
+    void from_float_rect(float* to,const float* from,
+                         const Box2D& rect,const Box2D& rod,
+                         Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
    
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on
     bool _autoCreateAlpha;
     Reader* _reader;
     const Powiter::Color::Lut* _lut;
     boost::scoped_ptr<ImageInfo> _readerInfo;
+    QString _filename;
     
 };
 

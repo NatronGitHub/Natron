@@ -22,6 +22,7 @@
 #include "Engine/Format.h"
 #include "Writers/Writer.h"
 #include "Engine/Row.h"
+#include "Engine/Image.h"
 
 using namespace Powiter;
 
@@ -29,7 +30,8 @@ QtEncoder::QtEncoder(Writer* writer)
 :Encoder(writer)
 ,_rod()
 ,_buf(NULL)
-,_filename(){
+,_outputImage(NULL)
+{
     
 }
 QtEncoder::~QtEncoder(){
@@ -59,7 +61,6 @@ bool QtEncoder::supports_stereo() const {
     return false;
 }
 
-
 /*Must implement it to initialize the appropriate colorspace  for
  the file type. You can initialize the _lut member by calling the
  function getLut(datatype) */
@@ -70,17 +71,10 @@ void QtEncoder::initializeColorSpace(){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-void QtEncoder::setupFile(const QString& filename,const Box2D& rod){
-    _filename = filename;
+Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const Box2D& rod){
     _rod = rod;
-    size_t dataSize = 4* rod.width() * rod.height();
+    size_t dataSize = 4 * rod.area();
     _buf = (uchar*)malloc(dataSize);
-}
-
-/*This function must fill the pre-allocated structure with the data calculated by engine.
- This function must close the file as writeAllData is the LAST function called before the
- destructor of Write.*/
-void QtEncoder::writeAllData(){
     const ChannelSet& channels = _writer->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -90,8 +84,14 @@ void QtEncoder::writeAllData(){
     }else{
         type = QImage::Format_RGB32;
     }
-    QImage img(_buf,_rod.width(),_rod.height(),type);
-    img.save(_filename);
+    _outputImage = new QImage(_buf,_rod.width(),_rod.height(),type);
+    return Powiter::StatOK;
+}
+
+void QtEncoder::finalizeFile(){
+    
+    _outputImage->save(filename());
+    delete _outputImage;
     free(_buf);
 }
 
@@ -107,26 +107,8 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void QtEncoder::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
-    boost::shared_ptr<const Row> row = _writer->input(0)->get(time,y,left,right,channels);
-    
-    /*invert y to be in top-to-bottom increasing order*/
-    y = _rod.height()-y-1;
-    
-    uchar* toB  = _buf + y*4*_rod.width();
-    uchar* toG = toB+1;
-    uchar* toR = toG+1;
-    uchar* toA = toR+1;
-    
-    const float* red = row->begin(Channel_red);
-    const float* green = row->begin(Channel_green);
-    const float* blue = row->begin(Channel_blue);
-    const float* alpha = row->begin(Channel_alpha);
-    
-    to_byte(Channel_red, toR, red, alpha, row->width(),4);
-    to_byte(Channel_green, toG, green, alpha, row->width(),4);
-    to_byte(Channel_blue, toB, blue, alpha, row->width(),4);
-    to_byte(Channel_alpha, toA, alpha, alpha, row->width(),4);
+void QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,const Box2D& roi){
+    to_byte_rect(_buf, inputImage->pixelAt(0, 0), roi,inputImage->getRoD(),Powiter::Color::Lut::BGRA,true);
 }
 
 

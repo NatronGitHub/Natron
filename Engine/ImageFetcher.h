@@ -9,6 +9,7 @@
 *
 */
 
+#if 0
 #ifndef POWITER_ENGINE_IMAGEFETCHER_H_
 #define POWITER_ENGINE_IMAGEFETCHER_H_
 
@@ -107,3 +108,4 @@ private:
 };
 
 #endif /* defined(POWITER_ENGINE_IMAGEFETCHER_H_) */
+#endif

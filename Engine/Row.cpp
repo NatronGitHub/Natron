@@ -11,6 +11,7 @@
 
 #include "Row.h"
 
+#include "Engine/Image.h"
 #include "Engine/Node.h"
 
 using namespace Powiter;
@@ -46,3 +47,25 @@ void Row::initializePlanesOffset(){
         
     }
 }
+
+namespace Powiter{
+    
+void copyRowToImage(const Powiter::Row& row,int y,int x,Powiter::Image* output){
+    float* dst = output->pixelAt(x, y);
+    const float* r = row.begin(Powiter::Channel_red);
+    const float* g = row.begin(Powiter::Channel_green);
+    const float* b = row.begin(Powiter::Channel_blue);
+    const float* a = row.begin(Powiter::Channel_alpha);
+    
+    for (int i = 0; i < row.width(); ++i) {
+        int col = i*4;
+        dst[col] = r ? r[i] : 0.f;
+        dst[col+1] = g ? g[i] : 0.f;
+        dst[col+2] = b ? b[i] : 0.f;
+        dst[col+3] = a ? a[i] : 1.f;
+    }
+    
+}
+    
+}
+

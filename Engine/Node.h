@@ -15,6 +15,9 @@
 #include <vector>
 #include <string>
 #include <map>
+
+#include <QMutex>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
@@ -25,6 +28,7 @@
 #include "Engine/Hash64.h"
 namespace Powiter{
     class Row;
+    class Image;
 }
 class AppInstance;
 class NodeSettingsPanel;
@@ -33,11 +37,14 @@ class ViewerNode;
 class QKeyEvent;
 class Node;
 
+
 class Node : public QObject
 {
     Q_OBJECT
     
 public:
+    
+    enum RenderSafety{UNSAFE = 0,INSTANCE_SAFE = 1,FULLY_SAFE = 2};
     
     typedef std::map<int,Node*> InputMap;
     typedef std::multimap<int,Node*> OutputMap;
@@ -66,7 +73,6 @@ public:
      otherwise returns NULL.*/
     ViewerNode* hasViewerConnected();
     
-public:
     
     /**
      * @brief Is this node an input node ? An input node means
@@ -293,13 +299,10 @@ public:
     
     bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}
     
-    /** @brief Returns a row containing the results expected of the node
-     * inputNb for the scan-line y , the range [left-right] and the channels 'channels' at time 'time'
-     * Data may come from the cache, otherwise engine() gets called to compute fresh data.
-     * WARNING: Once the shared_ptr is deleted, the buffer in the Row may not
-     * be valid anymore.
+    /** @brief Returns the image computed by this node at the given time and scale.
+     * The image must have been rendered first otherwise an assertion will be raised.
      */
-    boost::shared_ptr<const Powiter::Row> get(SequenceTime time,int y,int x,int r,const Powiter::ChannelSet& channels);
+    boost::shared_ptr<const Powiter::Image> getImage(SequenceTime time,RenderScale scale);
     
     /**
      * @brief This is the place to initialise any per frame specific data or flag.
@@ -318,9 +321,22 @@ public:
      **/
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod);
     
-    // virtual void getFrameRange(double* first,double* second);
+    typedef std::map<Node*,Box2D> RoIMap;
+    /**
+     * @brief Can be derived to indicate for each input node what is the region of interest
+     * of the node at time 'time' and render scale 'scale' given a render window.
+     * For exemple a blur plugin would specify what it needs
+     * from inputs in order to do a blur taking into account the size of the blurring kernel.
+     * By default, it returns renderWindow for each input.
+     **/
+    virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const Box2D& renderWindow);
     
-    void ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const;
+    
+    boost::shared_ptr<const Powiter::Image> renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow);
+
+    
+    static std::vector<Box2D> splitRectIntoSmallerRect(const Box2D& rect,int splitsCount);
+    
     
     /**
      * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
@@ -340,6 +356,9 @@ public:
      **/
     bool isActivated() const {return _activated;}
 
+    
+    boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time) const;
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -363,30 +382,36 @@ public slots:
     }
     
 protected:
-    
     /**
-     * @brief Must be implemented to do the rendering. You must write to the Row 'out'
-     * for the frame at time 'time'.
-     * You can access the size, range and Channels defined in the Row by calling
-     * Row::width()
-     * Row::left()
-     * Row::right()
-     * Row::channels()
-     *
-     * To retrieve the results of this row computed from nodes upstream you can call
-     * input(inputNb)->get(y,left,right)
+     * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
+     * at the given scale.
+     * Pre-condition: render() has been called for all inputs so the portion of the image contained
+     * in output corresponding to the roi is valid.
+     * Note that this function can be called concurrently for the same output image but with different
+     * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual void render(SequenceTime time,Powiter::Row* out){
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
         Q_UNUSED(time);
-        Q_UNUSED(out);
+        Q_UNUSED(scale);
+        Q_UNUSED(roi);
+        Q_UNUSED(output);
     }
     
-  
     /**
-     * @Returns true if the node will cache results in the node cache.
-     * Otherwise results will not be cached.
+     * @brief Indicates how many simultaneous renders the plugin can deal with.
+     * RenderSafety::UNSAFE - indicating that only a single 'render' call can be made at any time amoung all instances,
+     * RenderSafety::INSTANCE_SAFE - indicating that any instance can have a single 'render' call at any one time,
+     * RenderSafety::FULLY_SAFE - indicating that any instance of a plugin can have multiple renders running simultaneously
+
      **/
-    virtual bool cacheData() const = 0;
+    virtual Node::RenderSafety renderThreadSafety() const = 0;
+    
+   
+    /**
+     * @brief Can be derived to indicate that the data rendered by the plug-in is expensive
+     * and should be stored in a persistent manner such as on disk.
+     **/
+    virtual bool shouldRenderedDataBePersistent() const {return false;}
     
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
@@ -436,7 +461,13 @@ protected:
     AppInstance* _app; // pointer to the model: needed to access the application's default-project's format
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
+    bool _renderAborted; //< was rendering aborted ?
+    Hash64 _hashValue;
+
 private:
+    
+    void tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output);
+    
     typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
     typedef OutputConnectionsIterator InputConnectionsIterator;
     struct DeactivatedState{
@@ -454,10 +485,11 @@ private:
     
     DeactivatedState _deactivatedState;
     
-    Hash64 _hashValue;
     bool _markedByTopologicalSort; //< used by the topological sort algorithm
-    bool _renderAborted; //< was rendering aborted ?
     bool _activated;
+    QMutex _renderLock;
+    
+    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> > _imagesBeingRendered; //< a map storing the ongoing render for this node
     
 };
 
@@ -489,6 +521,8 @@ public:
     
     void refreshAndContinueRender(bool initViewer = false);
     
+    void ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const;
+
     
 private:
     boost::shared_ptr<VideoEngine> _videoEngine;

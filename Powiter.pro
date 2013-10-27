@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost ffmpeg eigen2 opengl qt expat sanitizer
+CONFIG += openexr freetype2 ftgl boost opengl qt expat #sanitizer
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -159,6 +159,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
     libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
     Engine/Project.cpp \
+    Engine/Image.cpp
 
 
 
@@ -258,6 +259,7 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
     Engine/ImageInfo.h \
     Engine/Project.h \
+    Engine/Image.h
 
 
 INSTALLS += target

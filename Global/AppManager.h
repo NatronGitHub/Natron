@@ -30,6 +30,7 @@
 
 #include "Engine/Singleton.h"
 #include "Engine/Row.h"
+#include "Engine/Image.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Format.h"
 
@@ -257,7 +258,7 @@ public:
 
     const Powiter::Cache<Powiter::FrameEntry>& getViewerCache() const WARN_UNUSED_RETURN {return *_viewerCache;}
 
-    const Powiter::Cache<Powiter::Row>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
+    const Powiter::Cache<Powiter::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
@@ -269,6 +270,8 @@ public slots:
     void clearDiskCache();
 
     void clearNodeCache();
+
+    void clearExceedingEntriesFromNodeCache();
 
     void addPluginToolButtons(const QStringList& groups,
                               const QString& pluginName,
@@ -330,7 +333,7 @@ private:
 
     boost::scoped_ptr<KnobFactory> _knobFactory;
 
-    boost::scoped_ptr<Powiter::Cache<Powiter::Row> >  _nodeCache;
+    boost::scoped_ptr<Powiter::Cache<Powiter::Image> >  _nodeCache;
 
     boost::scoped_ptr<Powiter::Cache<Powiter::FrameEntry> > _viewerCache;
 

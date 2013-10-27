@@ -11,14 +11,16 @@
 
 #include "Writer.h"
 
-#include <QtCore/QMutex>
-#include <QtCore/QMutexLocker>
+#include <boost/bind.hpp>
+
 #include <QtConcurrentRun>
+#include <QtConcurrentMap>
+#include <QtCore/QFile>
 
 #include "Global/LibraryBinary.h"
 #include "Global/AppManager.h"
 
-#include "Engine/Row.h"
+#include "Engine/Image.h"
 #include "Engine/Settings.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
@@ -34,15 +36,12 @@ Writer::Writer(AppInstance* app):
 OutputNode(app),
 _requestedChannels(Mask_RGBA), // temporary
 _premult(false),
-_buffer(Settings::getPowiterCurrentSettings()->_writersSettings._maximumBufferSize),
-_writeHandle(0),
 _writeOptions(0),
 _frameRangeChoosal(0),
 _firstFrameKnob(0),
 _lastFrameKnob(0)
 {
     
-    _lock = new QMutex;
     QObject::connect(getApp()->getTimeLine().get(),
                      SIGNAL(frameRangeChanged(int,int)),
                      this,
@@ -54,7 +53,6 @@ Writer::~Writer(){
         //    _writeOptions->cleanUpKnobs();
         delete _writeOptions;
     }
-    delete _lock;
 }
 
 std::string Writer::className() const {
@@ -74,60 +72,55 @@ bool Writer::validate() const{
     }
     return true;
 }
-Powiter::Status Writer::preProcessFrame(SequenceTime time){
-    Encoder* write = 0;
-    // setFrameRange(info().getFirstFrame(), info().getLastFrame());
-    Powiter::LibraryBinary* encoder = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
-    if(!encoder){
-        cout << "ERROR: Couldn't find an appropriate encoder for filetype: " << _fileType << " (" << getName()<< ")" << endl;
-        return StatFailed;
+
+boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,const Box2D& rod){
+    Powiter::LibraryBinary* binary = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Encoder* encoder = NULL;
+    if(!binary){
+        std::string exc("ERROR: Couldn't find an appropriate encoder for filetype: ");
+        exc.append(_fileType);
+        exc.append(" (");
+        exc.append(getName());
+        exc.append(")");
+        throw std::invalid_argument(exc);
     }else{
-        
-        
-        std::pair<bool,WriteBuilder> func = encoder->findFunction<WriteBuilder>("BuildWrite");
+        std::pair<bool,WriteBuilder> func = binary->findFunction<WriteBuilder>("BuildWrite");
         if(func.first)
-            write = func.second(this);
+            encoder = func.second(this);
         else{
-            cout <<"ERROR: Couldn't create the encoder for " << getName() << ", something is wrong in the plugin." << endl;
-            return StatFailed;
+            throw std::runtime_error("Library failed to create encoder for unknown reason.");
         }
-        write->premultiplyByAlpha(_premult);
-        /*check if the filename already contains the extension, otherwise appending it*/
-        QString extension;
-        QString filename(_filename.c_str());
-        int i = filename.lastIndexOf(QChar('.'));
-        if(i != -1){
-            extension.append(filename.toStdString().substr(i).c_str());
-            filename = filename.replace(i+1, extension.size(), _fileType.c_str());
-        }else{
-            filename.append(extension);
-        }
-        
-        i = filename.lastIndexOf(QChar('#'));
-        QString n = QString::number(time);
-        if(i != -1){
-            filename = filename.replace(i,1,n);
-        }else{
-            i = filename.lastIndexOf(QChar('.'));
-            filename = filename.insert(i, n);
-        }
-        
-        write->setOptionalKnobsPtr(_writeOptions);
-        Box2D rod;
-        getRegionOfDefinition(time, &rod);
-        write->setupFile(filename,rod);
-        write->initializeColorSpace();
-        _writeHandle = write;
-        return StatOK;
     }
     
+    encoder->premultiplyByAlpha(_premult);
+    /*check if the filename already contains the extension, otherwise appending it*/
+    QString extension;
+    QString filename(_filename.c_str());
+    int i = filename.lastIndexOf(QChar('.'));
+    if(i != -1){
+        extension.append(filename.toStdString().substr(i).c_str());
+        filename = filename.replace(i+1, extension.size(), _fileType.c_str());
+    }else{
+        filename.append(extension);
+    }
+    
+    i = filename.lastIndexOf(QChar('#'));
+    QString n = QString::number(time);
+    if(i != -1){
+        filename = filename.replace(i,1,n);
+    }else{
+        i = filename.lastIndexOf(QChar('.'));
+        filename = filename.insert(i, n);
+    }
+    
+    encoder->setOptionalKnobsPtr(_writeOptions);
+    encoder->initializeColorSpace();
+    Status stat = encoder->_setupFile(filename, rod);
+    if(stat == StatFailed){
+        return boost::shared_ptr<Encoder>();
+    }
+    return boost::shared_ptr<Encoder>(encoder);
 }
-
-
-void Writer::renderRow(SequenceTime time,int left,int right,int y,const ChannelSet& channels){
-    _writeHandle->renderRow(time,left,right,y,channels);
-}
-
 
 void Writer::initKnobs(){
     std::string fileDesc("File");
@@ -199,72 +192,53 @@ void Writer::onFrameRangeChoosalChanged(){
     }
 }
 
-void Writer::write(Encoder* write,QFutureWatcher<void>* watcher){
+Powiter::Status Writer::renderWriter(SequenceTime time){
+    const Format& renderFormat = getProjectDefaultFormat();
+
+    //null RoD for key because the key hash computation doesn't take into account the box
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    /*now that we have our image, we check what is left to render. If the list contains only
+     null Box2Ds then we already rendered it all*/
+    boost::shared_ptr<Encoder> encoder;
+    try{
+        encoder = makeEncoder(time,renderFormat);
+    }catch(const std::exception& e){
+        cout << e.what() << endl;
+        return StatFailed;
+    }
+    if(!encoder){
+        return StatFailed;
+    }
     
-    _buffer.appendTask(write, watcher);
-    if(!write) return;
-    write->writeAndDelete();
-    _buffer.removeTask(write);
-}
-
-void Writer::startWriting(){
-    if(_buffer.size() < _buffer.getMaximumBufferSize()){
-        QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
-        QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));
-        QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeHandle,watcher);
-        _writeHandle = 0;
-        watcher->setFuture(future);
-        watcher->waitForFinished();
-    }else{
-        _writeQueue.push_back(_writeHandle);
-        _writeHandle = 0;
-    }
-}
-
-void Writer::notifyWriterForCompletion(){
-    _buffer.emptyTrash();
+    RoIMap inputsRoi = getRegionOfInterest(time, scale, renderFormat);
+    //inputsRoi only contains 1 element
+    RoIMap::const_iterator roi = inputsRoi.begin();
+    boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale, roi->second);
+    std::vector<Box2D> splitRects = splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
+    QtConcurrent::blockingMap(splitRects,
+                              boost::bind(&Writer::renderFunctor,this,inputImage,_1,encoder));
     
-    /*Several threads may fight here to try to start another task.
-     We ensure that at least 1 thread get into the condition, as more
-     are not needed. */
-    QMutexLocker locker(_lock);
-    if(_writeQueue.size() > 0 && _buffer.size() < _buffer.getMaximumBufferSize()){
-        QFutureWatcher<void>* watcher = new QFutureWatcher<void>;
-        QObject::connect(watcher, SIGNAL(finished()), this, SLOT(notifyWriterForCompletion()));
-        QFuture<void> future = QtConcurrent::run(this,&Writer::write,_writeQueue[0],watcher);
-        _writeQueue.erase(_writeQueue.begin());
-        watcher->setFuture(future);
-        watcher->waitForFinished();
+    
+    
+    //we released the input image and force the cache to clear exceeding entries
+    appPTR->clearExceedingEntriesFromNodeCache();
+    if(!_renderAborted){
+        // finalize file if needed
+        encoder->finalizeFile();
+    }else{//remove file!
+        QFile::remove(encoder->filename());
     }
+    return StatOK;
 }
 
-void Writer::Buffer::appendTask(Encoder* task,QFutureWatcher<void>* future){
-    _tasks.push_back(make_pair(task, future));
+void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+                           const Box2D& roi,
+                           boost::shared_ptr<Encoder> encoder){
+    encoder->render(inputImage, roi);
 }
 
-void Writer::Buffer::removeTask(Encoder* task){
-    for (U32 i = 0 ; i < _tasks.size(); ++i) {
-        std::pair<Encoder*,QFutureWatcher<void>* >& t = _tasks[i];
-        if(t.first == task){
-            _trash.push_back(t.second);
-            _tasks.erase(_tasks.begin()+i);
-            break;
-        }
-    }
-}
-void Writer::Buffer::emptyTrash(){
-    for (U32 i = 0; i < _trash.size(); ++i) {
-        delete _trash[i];
-    }
-    _trash.clear();
-}
 
-Writer::Buffer::~Buffer(){
-    for (U32 i = 0 ; i < _tasks.size(); ++i) {
-        std::pair<Encoder*,QFutureWatcher<void>* >& t = _tasks[i];
-        delete t.second;
-    }
-}
 
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/

@@ -23,9 +23,9 @@
 
 #define POWITER_MAX_BUFFERS_PER_ROW 10
 
-class MemoryFile;
-class Node;
 namespace Powiter{
+    
+    class Image;
     
     class RowKey : public KeyHelper<U64>{
         
@@ -173,6 +173,10 @@ namespace Powiter{
         
         float* _planesOffset[POWITER_MAX_VALID_CHANNEL_INDEX+1];
     };
+    
+    void copyRowToImage(const Powiter::Row& row,int y,int x,Powiter::Image* output);
+    
+    //function to convert row to image
     
 }
 

@@ -17,6 +17,8 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
+#include "Engine/Image.h"
+#include "Engine/Hash64.h"
 
 #include "Global/AppManager.h"
 #include "Global/Macros.h"
@@ -30,7 +32,6 @@ OfxClipInstance::OfxClipInstance(OfxNode* nodeInstance
 : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
 , _nodeInstance(nodeInstance)
 , _effect(effect)
-, _outputImage(NULL)
 {
 }
 
@@ -187,166 +188,63 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// on the effect instance. Outside a render call, the optionalBounds should
 /// be 'appropriate' for the.
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD */*optionalBounds*/)
 {
-    OfxRectD roi;
-    OfxPointD renderScale;
-    renderScale.x = renderScale.y = 1.0;
-    if(optionalBounds){
-        roi = *optionalBounds;
-    }else{
-        assert(_nodeInstance->effectInstance());
-        _nodeInstance->effectInstance()->getRegionOfDefinitionAction(time,renderScale,roi);
-       
-    }
-    //cout << "Request image for clip " << getName() << endl;
-    //cout << " l = " << roi.x1 << " b = " << roi.y1 << " r = " << roi.x2 << " t = " << roi.y2 << endl;
-    /*SHOULD CHECK WHAT BIT DEPTH IS SUPPORTED BY THE PLUGIN INSTEAD OF GIVING FLOAT
-     _effect->isPixelDepthSupported(...)
-     */
+  
     if(isOutput()){
-        
-        QMutexLocker locker(&_lock);
-        if (!_outputImage) {
-            _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
-        }else{
-            OfxRectI outputImageBounds = _outputImage->getROD();
-            if(outputImageBounds.x1 != roi.x1 ||
-               outputImageBounds.x2 != roi.x2 ||
-               outputImageBounds.y1 != roi.y1 ||
-               outputImageBounds.y2 != roi.y2){
-                delete _outputImage;
-                _outputImage = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
-            }
-        }
-        _outputImage->addReference();
-        return _outputImage;
+        boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time);
+        assert(outputImage);
+        return new OfxImage(outputImage,*this);
     }else{
+        RenderScale scale;
+        scale.x = scale.y = 1.;
+        // input has been rendered just find it in the cache
         Node* input = getAssociatedNode();
         if(isOptional() && !input) {
-            return  new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
+            //make an empty image
+            boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time);
+            assert(outputImage);
+            const Box2D& rod = outputImage->getRoD();
+            boost::shared_ptr<Powiter::Image> image(new Powiter::Image(rod,scale,time));
+            image->defaultInitialize();
+            return  new OfxImage(image,*this);
         }
-        
         assert(input);
-        if(input->isOpenFXNode()){
-            OfxNode* ofxNode = dynamic_cast<OfxNode*>(input);
-            OfxRectI roiInput;
-            roiInput.x1 = (int)std::floor(roi.x1);
-            roiInput.x2 = (int)std::ceil(roi.x2);
-            roiInput.y1 = (int)std::floor(roi.y1);
-            roiInput.y2 = (int)std::ceil(roi.y2);
-            assert(ofxNode->effectInstance());
-            OfxStatus stat = ofxNode->effectInstance()->renderAction(time, kOfxImageFieldNone, roiInput , renderScale);
-            assert(stat == kOfxStatOK);
-            OFX::Host::ImageEffect::ClipInstance* clip = ofxNode->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-            assert(clip);
-            return clip->getImage(time, optionalBounds);
-        } else {
-            ChannelSet channels(Mask_RGBA);
-            Box2D roiInput;
-            input->getRegionOfDefinition(time, &roiInput);
-            ImageFetcher srcImg(input,
-                                time,
-                                roiInput.left(),roiInput.bottom(),roiInput.right(),roiInput.top(),
-                                channels);
-            srcImg.claimInterest(true);
-            OfxImage* ret = new OfxImage(OfxImage::eBitDepthFloat,roi,*this,0);
-            assert(ret);
-//            cout << "Input image: l = " << roiInput.left() << " b = " << roiInput.bottom() <<
-//            " r = " << roiInput.right() << " t = " << roiInput.top() << endl;
-//            cout << "Output image: l = " << roi.x1 << " b = " << roi.y1 <<
-//            " r = " << roi.x2 << " t = " << roi.y2 << endl;
-            /*Copying all rows living in the ImageFetcher to the ofx image*/
-            for (int y = std::max((int)roi.y1,roiInput.bottom()); y < (std::min((int)roi.y2,roiInput.top())); ++y) {
-                OfxRGBAColourF* dstImg = ret->pixelF(roi.x1, y);
-                assert(dstImg);
-                boost::shared_ptr<const Row> row = srcImg.at(y);
-                assert(row);
-                
-                foreachChannels(z, channels){
-                    rowPlaneToOfxPackedBuffer(z, row->begin(z), std::min(row->width(),(int)(roi.x2 - roi.x1)), dstImg);
-                }
-                srcImg.erase(y);
-            }
-            
-            return ret;
-        }
+        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(input->getImage(time, scale)),*this);
     }
-    return NULL;
 }
 
-OfxImage::OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime /*t*/):
-OFX::Host::ImageEffect::Image(clip),_bitDepth(bitDepth){
-    size_t pixSize = 0;
-    if(bitDepth == eBitDepthUByte){
-        pixSize = 4;
-    }else if(bitDepth == eBitDepthUShort){
-        pixSize = 8;
-    }else if(bitDepth == eBitDepthFloat){
-        pixSize = 16;
-    }
-    assert(bounds.x1 != kOfxFlagInfiniteMin); // what should we do in this case?
-    assert(bounds.y1 != kOfxFlagInfiniteMin);
-    assert(bounds.x2 != kOfxFlagInfiniteMax);
-    assert(bounds.y2 != kOfxFlagInfiniteMax);
-    assert(bounds.x1 != -std::numeric_limits<double>::infinity()); // what should we do in this case?
-    assert(bounds.y1 != -std::numeric_limits<double>::infinity());
-    assert(bounds.x2 != std::numeric_limits<double>::infinity());
-    assert(bounds.y2 != std::numeric_limits<double>::infinity());
-    int xmin = (int)std::floor(bounds.x1);
-    int xmax = (int)std::ceil(bounds.x2);
-    _rowBytes = (xmax - xmin) * pixSize;
-    int ymin = (int)std::floor(bounds.y1);
-    int ymax = (int)std::ceil(bounds.y2);
-
-    _data = malloc(_rowBytes * (ymax-ymin)) ;
-    
-    // render scale x and y of 1.0
-    setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 0);
-    setDoubleProperty(kOfxImageEffectPropRenderScale, 1.0, 1);
+OfxImage::OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip):
+OFX::Host::ImageEffect::Image(clip)
+,_bitDepth(OfxImage::eBitDepthFloat)
+,_floatImage(internalImage)
+{
+    RenderScale scale = internalImage->getRenderScale();
+    setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
+    setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
-    setPointerProperty(kOfxImagePropData,_data);
+    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(0, 0));
     // bounds and rod
-    setIntProperty(kOfxImagePropBounds, xmin, 0);
-    setIntProperty(kOfxImagePropBounds, ymin, 1);
-    setIntProperty(kOfxImagePropBounds, xmax, 2);
-    setIntProperty(kOfxImagePropBounds, ymax, 3);
-    setIntProperty(kOfxImagePropRegionOfDefinition, xmin, 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, ymin, 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, xmax, 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, ymax, 3);
+    const Box2D& rod = internalImage->getRoD();
+    setIntProperty(kOfxImagePropBounds, rod.left(), 0);
+    setIntProperty(kOfxImagePropBounds, rod.bottom(), 1);
+    setIntProperty(kOfxImagePropBounds, rod.right(), 2);
+    setIntProperty(kOfxImagePropBounds, rod.top(), 3);
+    setIntProperty(kOfxImagePropRegionOfDefinition, rod.left(), 0);
+    setIntProperty(kOfxImagePropRegionOfDefinition, rod.bottom(), 1);
+    setIntProperty(kOfxImagePropRegionOfDefinition, rod.right(), 2);
+    setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, _rowBytes);
+    setIntProperty(kOfxImagePropRowBytes, rod.width()*16);
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
 
-OfxRGBAColourB* OfxImage::pixelB(int x, int y) const{
-    assert(_bitDepth == eBitDepthUByte);
-    OfxRectI bounds = getBounds();
-    if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
-    {
-        OfxRGBAColourB* p = reinterpret_cast<OfxRGBAColourB*>((U8*)_data + (y-bounds.y1)*_rowBytes);
-        return &(p[x - bounds.x1]);
-    }
-    return 0;
-}
-OfxRGBAColourS* OfxImage::pixelS(int x, int y) const{
-    assert(_bitDepth == eBitDepthUShort);
-    OfxRectI bounds = getBounds();
-    if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
-    {
-        OfxRGBAColourS* p = reinterpret_cast<OfxRGBAColourS*>((U8*)_data + (y-bounds.y1)*_rowBytes);
-        return &(p[x - bounds.x1]);
-    }
-    return 0;
-}
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     assert(_bitDepth == eBitDepthFloat);
-    OfxRectI bounds = getBounds();
-    if ((x >= bounds.x1) && ( x< bounds.x2) && ( y >= bounds.y1) && ( y < bounds.y2) )
+    const Box2D& bounds = _floatImage->getRoD();
+    if ((x >= bounds.left()) && ( x< bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
     {
-        OfxRGBAColourF* p = reinterpret_cast<OfxRGBAColourF*>((U8*)_data + (y-bounds.y1)*_rowBytes);
-        return &(p[x - bounds.x1]);
+        return reinterpret_cast<OfxRGBAColourF*>(_floatImage->pixelAt(x, y));
     }
     return 0;
 }

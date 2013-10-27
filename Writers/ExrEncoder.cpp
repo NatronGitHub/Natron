@@ -34,11 +34,11 @@ namespace Imf_ = OPENEXR_IMF_NAMESPACE;
 
 struct ExrEncoder::Implementation {
     Implementation();
-
-    std::string _filename;
-    std::map<int,Powiter::Row*> _img;
-
-    Box2D _dataW;
+    Imf_::OutputFile* _outputFile;
+    int _depth;
+    Powiter::ChannelSet _channels;
+    Imath::Box2i _exrDataW;
+    Imath::Box2i _exrDispW;
     QMutex _lock;
 };
 
@@ -151,10 +151,10 @@ ExrEncoder::ExrEncoder(Writer* writer)
 }
 
 ExrEncoder::Implementation::Implementation()
-: _filename()
-, _img()
-, _dataW()
-, _lock()
+: _outputFile(NULL)
+,_depth(0)
+,_channels()
+,_lock()
 {
 }
 
@@ -201,7 +201,7 @@ void ExrEncoderKnobs::cleanUpKnobs(){
 }
 
 bool ExrEncoderKnobs::allValid(){
-    return _dataType!="/" && _compression!="/";
+    return true;
 }
 
 /*Must implement it to initialize the appropriate colorspace  for
@@ -212,122 +212,102 @@ void ExrEncoder::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void ExrEncoder::renderRow(SequenceTime time,int left,int right,int y,const Powiter::ChannelSet& channels){
-    boost::shared_ptr<const Powiter::Row> row = _writer->input(0)->get(time,y,left,right,channels);
-    const float* a = row->begin(Powiter::Channel_alpha);
-   
-    Powiter::Row* toRow = new Powiter::Row(left,y,right,channels);
-    foreachChannels(z, channels){
-        const float* from = row->begin(z);
-        float* to = toRow->begin(z);
-        to_float(z, to , from, a, row->width());
-    }
-
-    {
-        QMutexLocker locker(&_imp->_lock);
-        _imp->_img.insert(make_pair(y,toRow));
-    }
-}
-
-/*This function initialises the output file/output storage structure and put necessary info in it, like
- meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
- otherwise it would stall the GUI.*/
-void ExrEncoder::setupFile(const QString& filename, const Box2D& rod) {
-    _imp->_dataW = rod;
-    _imp->_filename = filename.toStdString();
-}
-
-/*This function must fill the pre-allocated structure with the data calculated by engine.
- This function must close the file as writeAllData is the LAST function called before the
- destructor of Write.*/
-void ExrEncoder::writeAllData() {
-    ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
-    Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));
-    int depth = EXR::depthNameToInt(knobs->_dataType);
-    Imath::Box2i exrDataW;
-    exrDataW.min.x = _imp->_dataW.left();
-    exrDataW.min.y = _imp->_dataW.height() - _imp->_dataW.top();
-    exrDataW.max.x = _imp->_dataW.right() - 1;
-    exrDataW.max.y = _imp->_dataW.height() - _imp->_dataW.bottom() - 1;
-
-    Imath::Box2i exrDispW;
-    exrDispW.min.x = 0;
-    exrDispW.min.y = 0;
-    exrDispW.max.x = _imp->_dataW.width() - 1;
-    exrDispW.max.y = _imp->_dataW.height() - 1;
-
-    try {
-        const Powiter::ChannelSet& channels = _writer->requestedChannels();
-        Imf_::Header exrheader(exrDispW, exrDataW, 1.,
-                            Imath::V2f(0, 0), 1, Imf_::INCREASING_Y, compression);
-
-        foreachChannels(z, channels){
-            std::string channame = EXR::toExrChannel(z);
-            if (depth == 32) {
-                exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::FLOAT));
-            } else {
-                assert(depth == 16);
-                exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::HALF));
+void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,const Box2D& roi){
+    
+    try{
+        for (int y = roi.bottom(); y < roi.top(); ++y) {
+            const float* src_pixels = inputImage->pixelAt(roi.left(), y);
+            Powiter::Row row(roi.left(),y,roi.right(),Powiter::Mask_RGBA);
+            foreachChannels(z, _imp->_channels){
+                float* to = row.begin(z);
+                for (int i = 0; i < roi.width(); ++i) {
+                    to[i] = src_pixels[i*4 + z -1];
+                }
+                //colorspace conversion
+                to_float(z, to, to, row.begin(Powiter::Channel_alpha), row.width());
             }
-        }
-
-        Imf_::OutputFile outfile(_imp->_filename.c_str(), exrheader);
-
-        for (int y = _imp->_dataW.top()-1; y >= _imp->_dataW.bottom(); y--) {
+            
             if(_writer->aborted()){
-                break;
+                return;
             }
             Imf_::FrameBuffer fbuf;
             Imf_::Array2D<half>* halfwriterow = 0 ;
-            Powiter::Row* row = _imp->_img[y];
-            assert(row);
-            if (depth == 32) {
-                foreachChannels(z, channels){
+            if ( _imp->_depth == 32) {
+                foreachChannels(z, _imp->_channels){
+                  
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
-                                Imf_::Slice(Imf_::FLOAT, (char*)row->begin(z), // watch out begin does not point to 0 anymore
-                                           sizeof(float), 0));
+                                Imf_::Slice(Imf_::FLOAT, (char*)row.begin(z),
+                                            sizeof(float), 0));
                 }
             } else {
-                halfwriterow = new Imf_::Array2D<half>(channels.size() , _imp->_dataW.width());
+                halfwriterow = new Imf_::Array2D<half>(_imp->_channels.size() ,roi.width());
                 
                 int cur = 0;
-                foreachChannels(z, channels){
+                foreachChannels(z, _imp->_channels){
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
                                 Imf_::Slice(Imf_::HALF,
-                                           (char*)(&(*halfwriterow)[cur][0] - exrDataW.min.x),
-                                           sizeof((*halfwriterow)[cur][0]), 0));
-                    const float* from = row->begin(z); // watch out begin does not point to 0 anymore
-                    for (int i = exrDataW.min.x; i < exrDataW.max.x ; ++i) {
-                        (*halfwriterow)[cur][i - exrDataW.min.x] = from[i];
+                                            (char*)(&(*halfwriterow)[cur][0] - _imp->_exrDataW.min.x),
+                                            sizeof((*halfwriterow)[cur][0]), 0));
+                    const float* from = row.begin(z);
+                    for (int i = _imp->_exrDataW.min.x; i < _imp->_exrDataW.max.x ; ++i) {
+                        (*halfwriterow)[cur][i - _imp->_exrDataW.min.x] = from[i];
                     }
                     ++cur;
                 }
                 delete halfwriterow;
             }
-            _imp->_img.erase(y);
-            delete row;
-            // row is unlocked by release()
-            outfile.setFrameBuffer(fbuf);
-            outfile.writePixels(1);
+            QMutexLocker locker(&_imp->_lock);
+            _imp->_outputFile->setFrameBuffer(fbuf);
+            _imp->_outputFile->writePixels(1);
         }
-    } catch (const std::exception& exc) {
-        cout << "OpenEXR error: " << exc.what() << endl;
-        return;
+    }catch(const std::exception& e){
+        cout << e.what() << endl;
     }
     
+
 }
 
-void ExrEncoder::debug(){
-    int notValidC = 0;
-    for (std::map<int,Powiter::Row*>::iterator it = _imp->_img.begin(); it != _imp->_img.end(); ++it) {
-        cout << "img[" << it->first << "] = ";
-        if(it->second) cout << "valid row" << endl;
-        else{
-            cout << "NOT VALID" << endl;
-            ++notValidC;
+/*This function initialises the output file/output storage structure and put necessary info in it, like
+ meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
+ otherwise it would stall the GUI.*/
+Powiter::Status ExrEncoder::setupFile(const QString& filename, const Box2D& rod) {
+    try{
+        ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
+        Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));
+        _imp->_depth = EXR::depthNameToInt(knobs->_dataType);
+        Imath::Box2i exrDataW;
+        exrDataW.min.x = rod.left();
+        exrDataW.min.y = rod.height() - rod.top();
+        exrDataW.max.x = rod.right() - 1;
+        exrDataW.max.y = rod.height() - rod.bottom() - 1;
+        
+        Imath::Box2i exrDispW;
+        exrDispW.min.x = 0;
+        exrDispW.min.y = 0;
+        exrDispW.max.x = rod.width() - 1;
+        exrDispW.max.y = rod.height() - 1;
+        _imp->_channels  = _writer->requestedChannels();
+        Imf_::Header exrheader(exrDispW, exrDataW, 1.,
+                               Imath::V2f(0, 0), 1, Imf_::INCREASING_Y, compression);
+        
+        foreachChannels(z, _imp->_channels){
+            std::string channame = EXR::toExrChannel(z);
+            if (_imp->_depth == 32) {
+                exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::FLOAT));
+            } else {
+                assert(_imp->_depth == 16);
+                exrheader.channels().insert(channame.c_str(), Imf_::Channel(Imf_::HALF));
+            }
         }
+        
+        _imp->_outputFile = new Imf_::OutputFile(filename.toStdString().c_str(),exrheader);
+        _imp->_exrDataW = exrDataW;
+        _imp->_exrDispW = exrDispW;
+    }catch(const std::exception& e){
+        cout << e.what() << endl;
+        return Powiter::StatFailed;
     }
-    cout << "Img size : " << _imp->_img.size() << " . Invalid rows = " << notValidC << endl;
+    return Powiter::StatOK;
 }

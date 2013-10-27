@@ -22,12 +22,12 @@
 #include "Global/Macros.h"
 #include "Engine/Node.h"
 #include "Engine/LRUcache.h"
+#include "Readers/Decoder.h"
 namespace Powiter{
     class FrameEntry;
 }
 class File_Knob;
 class ViewerGL;
-class Decoder;
 class ViewerCache;
 
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
@@ -133,7 +133,13 @@ public:
          * @return Returns an iterator pointing to a valid frame in the buffer if it could find it. Otherwise points to end()
          */
         value_type get(const key_type& key) {
-            return _buffer(key);
+            
+            CacheIterator ret =  _buffer(key);
+            if(ret != _buffer.end()){
+                return getValueFromIterator(ret);
+            }else{
+                return value_type();
+            }
         }
 
     private:
@@ -205,18 +211,7 @@ public:
         *last  = _frameRange.second;
     }
     
-    /**
-     * @brief Calls Read::engine(int,int,int,ChannelSet,Row*)
-     */
-	virtual void render(SequenceTime time,Powiter::Row* out) OVERRIDE;
     
-    /**
-     * @brief cacheData
-     * @return true, indicating that the reader caches data.
-     */
-    virtual bool cacheData() const OVERRIDE { return true; }
-    
-   
     
     /** @brief Set the number of frames that a single reader can store.
     * Must be minimum 2. The appropriate way to call this
@@ -245,8 +240,16 @@ public slots:
 
 protected:
 
+    /**
+     * @brief Forwards to the decoder
+     */
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    
+
 	virtual void initKnobs() OVERRIDE;
     
+    
+    virtual Node::RenderSafety renderThreadSafety() const OVERRIDE {return Node::FULLY_SAFE;}
 private:
     
     

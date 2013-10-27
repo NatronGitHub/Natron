@@ -586,7 +586,7 @@ AppManager::AppManager()
 , ofxHost(new Powiter::OfxHost())
 , _toolButtons()
 , _knobFactory(new KnobFactory())
-,_nodeCache(new Cache<Row>("NodeCache",0x1, (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent -
+,_nodeCache(new Cache<Image>("NodeCache",0x1, (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent -
                                              Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
 ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache
                                     ,Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent))
@@ -953,3 +953,7 @@ void AppInstance::setAutoSetProjectFormat(bool b){_currentProject->setAutoSetPro
 bool AppInstance::hasProjectBeenSavedByUser() const  {return _currentProject->hasProjectBeenSavedByUser();}
 
 const Format& AppInstance::getProjectFormat() const  {return _currentProject->getProjectDefaultFormat();}
+
+void AppManager::clearExceedingEntriesFromNodeCache(){
+    _nodeCache->clearExceedingEntries();
+}

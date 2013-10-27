@@ -11,7 +11,9 @@
 
 #include "Node.h"
 
+#include <boost/bind.hpp>
 
+#include <QtConcurrentMap>
 #include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
@@ -25,7 +27,7 @@
 #include "Engine/OfxNode.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
-
+#include "Engine/Image.h"
 
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
@@ -51,14 +53,16 @@ Node::Node(AppInstance* app)
 , _app(app)
 , _outputs()
 , _inputs()
+, _renderAborted(false)
+, _hashValue()
 , _inputLabelsMap()
 , _name()
 , _knobs()
 , _deactivatedState()
-, _hashValue()
 , _markedByTopologicalSort(false)
-, _renderAborted(false)
 , _activated(true)
+,_renderLock()
+,_imagesBeingRendered()
 {
 }
 
@@ -300,45 +304,18 @@ Knob* Node::getKnobByDescription(const std::string& desc) const{
     return NULL;
 }
 
-/************************OUTPUT NODE*****************************************/
-OutputNode::OutputNode(AppInstance* app)
-: Node(app)
-, _videoEngine()
-{
-    
-    _videoEngine.reset(new VideoEngine(this));
-}
-
-void OutputNode::updateTreeAndRender(bool initViewer){
-    _videoEngine->updateTreeAndContinueRender(initViewer);
-}
-void OutputNode::refreshAndContinueRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer);
-}
-/************************NODE INSTANCE*****************************************/
 
 
-boost::shared_ptr<const Row> Node::get(SequenceTime time,int y,int left,int right,const ChannelSet& channels) {
-    const Powiter::Cache<Row>& cache = appPTR->getNodeCache();
-    RowKey params = Row::makeKey(_hashValue.value(), time, left, y, right,channels );
-    shared_ptr<const Row> entry = cache.get(params);
-    if (entry) {
-        return entry;
-    }
-
-    shared_ptr<Row> out;
-    if (cacheData()) {
-        shared_ptr<CachedValue<Row> > newCacheEntry = cache.newEntry(params,
-                                                                     (right-left) * channels.size(),
-                                                                     0);
-        out = newCacheEntry->getObject();
-        render(time,out.get());
-    } else {
-        out.reset(new Row(left,y,right,channels));
-        render(time,out.get());
-    }
-
-    return out;
+boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderScale scale){
+    const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
+    //making key with a null RoD since the hash key doesn't take the RoD into account
+    //we'll get our image back without the RoD in the key
+    Powiter::ImageKey params = Powiter::Image::makeKey(_hashValue.value(), time,scale,Box2D());
+    shared_ptr<const Image > entry = cache.get(params);
+    //the entry MUST be in the cache since we rendered it before and kept the pointer
+    //to avoid it being evicted.
+    assert(entry);
+    return entry;
 }
 
 void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
@@ -391,6 +368,16 @@ Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
     return StatReplyDefault;
 }
 
+Node::RoIMap Node::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& renderWindow){
+    RoIMap ret;
+    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
+        if (it->second) {
+            ret.insert(std::make_pair(it->second, renderWindow));
+        }
+    }
+    return ret;
+}
+
 void Node::getFrameRange(SequenceTime *first,SequenceTime *last){
     for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
         if (it->second) {
@@ -410,7 +397,111 @@ void Node::getFrameRange(SequenceTime *first,SequenceTime *last){
         }
     }
 }
-void Node::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
+
+std::vector<Box2D> Node::splitRectIntoSmallerRect(const Box2D& rect,int splitsCount){
+    std::vector<Box2D> ret;
+    int averagePixelsPerSplit = std::ceil(double(rect.width() * rect.height()) / (double)splitsCount);
+    /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
+    if(averagePixelsPerSplit < rect.width()){
+        for (int i = rect.bottom(); i < rect.top(); ++i) {
+            ret.push_back(Box2D(rect.left(),i,rect.right(),i+1));
+        }
+    }else{
+        //we round to the ceil
+        int scanLinesCount = std::ceil((double)averagePixelsPerSplit/(double)rect.width());
+        int startBox = rect.bottom();
+        while((startBox + scanLinesCount) < rect.top()){
+            ret.push_back(Box2D(rect.left(),startBox,rect.right(),startBox+scanLinesCount));
+            startBox += scanLinesCount;
+        }
+        if(startBox < rect.top()){
+            ret.push_back(Box2D(rect.left(),startBox,rect.right(),rect.top()));
+        }
+    }
+    return ret;
+}
+
+void Node::tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+    render(time, scale, roi, output);
+    output->markForRendered(roi);
+}
+boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow){
+
+    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,Box2D() );
+    boost::shared_ptr<Image> image;
+    
+    /*look-up the cache for any existing image already rendered*/
+    image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
+    
+    /*if not cached, we store the freshly allocated image in this member*/
+    boost::shared_ptr<CachedValue<Image> > cachedImage;
+    if(!image){
+        /*before allocating it we must fill the RoD of the image we want to render*/
+        getRegionOfDefinition(time, &key._rod);
+        int cost = 0;
+        /*should data be stored on a physical device ?*/
+        if(shouldRenderedDataBePersistent()){
+            cost = 1;
+        }
+        /*allocate a new image*/
+        cachedImage = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
+        image = cachedImage->getObject();
+    }
+    /*before rendering we add to the _imagesBeingRendered member the image*/
+    _imagesBeingRendered.insert(std::make_pair(time, image));
+    
+    /*now that we have our image, we check what is left to render. If the list contains only
+     null Box2Ds then we already rendered it all*/
+    std::list<Box2D> rectsToRender = image->getRestToRender(renderWindow);
+    for (std::list<Box2D>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+        if (!(*it).isNull()) {
+            RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
+            std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
+            /*we render each input first and store away their image in the inputImages list
+             in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
+             to remove them.*/
+            for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
+                inputImages.push_back(it2->first->renderRoI(time, scale, it2->second));
+            }
+            /*depending on the thread-safety of the plug-in we render with a different
+             amount of threads*/
+            Node::RenderSafety safety = renderThreadSafety();
+            if(safety == UNSAFE){
+                _renderLock.lock();
+                render(time, scale, *it, image);
+                image->markForRendered(*it);
+                _renderLock.unlock();
+            }else if(safety == INSTANCE_SAFE){
+                render(time, scale, *it, image);
+                image->markForRendered(*it);
+            }else{ // fully_safe, we do multi-threaded rendering on small tiles
+                std::vector<Box2D> splitRects = splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
+                QtConcurrent::blockingMap(splitRects,
+                        boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,image));
+            }
+            
+        }
+    }
+    /*now that we rendered the image, remove it from the images being rendered*/
+    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::iterator it = _imagesBeingRendered.find(time);
+    assert(it != _imagesBeingRendered.end());
+    _imagesBeingRendered.erase(it);
+    
+    //we released the input image and force the cache to clear exceeding entries
+    appPTR->clearExceedingEntriesFromNodeCache();
+    return image;
+}
+
+boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time) const{
+    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::const_iterator it = _imagesBeingRendered.find(time);
+    if(it!=_imagesBeingRendered.end()){
+        return it->second;
+    }else{
+        return boost::shared_ptr<Powiter::Image>();
+    }
+}
+
+void OutputNode::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
     /*If the rod is infinite clip it to the project's default*/
     const Format& projectDefault = getProjectDefaultFormat();
     if(rod->left() == kOfxFlagInfiniteMin || rod->left() == -std::numeric_limits<double>::infinity()){
@@ -447,31 +538,41 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     Powiter::Status stat =  preProcessFrame(time);
     if(stat == StatFailed)
         return;
+    
+    RenderScale scale;
+    scale.x = scale.y = 1.;
+    boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, rod);
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
         
-        /*get() calls render and also caches the row!*/
-        ChannelSet channels(Mask_RGBA);
-        boost::shared_ptr<const Row> row = get(time, nearestY, rod.left(), rod.right(), channels);
-        
         U32 *dst_pixels = buf + width*(h-1-i);
-        
-        const float* red = row->begin(Channel_red);
-        const float* green = row->begin(Channel_green);
-        const float* blue = row->begin(Channel_blue);
-        const float* alpha = row->begin(Channel_alpha);
+        const float* src_pixels = img->pixelAt(0, nearestY);
+
         for(int j = 0;j < w;++j) {
             double x = (double)j/xZoomFactor;
             int nearestX = (int)(x+0.5);
-            float r = red ? clamp(Color::linearrgb_to_srgb(red[nearestX])) : 0.f;
-            float g = green ? clamp(Color::linearrgb_to_srgb(green[nearestX])) : 0.f;
-            float b = blue ? clamp(Color::linearrgb_to_srgb(blue[nearestX])) : 0.f;
-            float a = alpha ? clamp(alpha[nearestX]) : 1.f;
+            float r = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4]));
+            float g = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4+1]));
+            float b = clamp(Color::linearrgb_to_srgb(src_pixels[nearestX*4+2]));
+            float a = clamp(src_pixels[nearestX*4+3]);
             dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
             
         }
-        
-    }
+    }    
+}
+
+OutputNode::OutputNode(AppInstance* app)
+: Node(app)
+, _videoEngine()
+{
     
+    _videoEngine.reset(new VideoEngine(this));
+}
+
+void OutputNode::updateTreeAndRender(bool initViewer){
+    _videoEngine->updateTreeAndContinueRender(initViewer);
+}
+void OutputNode::refreshAndContinueRender(bool initViewer){
+    _videoEngine->refreshAndContinueRender(initViewer);
 }

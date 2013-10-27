@@ -14,12 +14,13 @@
 #include <cstdlib>
 #include <QtGui/qrgb.h>
 
-#include "Readers/ExrDecoder.h"
-#include "Gui/ViewerGL.h"
-#include "Engine/Lut.h"
 #include "Global/AppManager.h"
-#include "Engine/VideoEngine.h"
+
 #include "Engine/Row.h"
+#include "Engine/ImageInfo.h"
+
+#include "Readers/Reader.h"
+#include "Readers/ExrDecoder.h"
 
 using namespace Powiter;
 
@@ -29,6 +30,7 @@ _premult(false)
 , _reader(op_)
 , _lut(0)
 , _readerInfo(new ImageInfo)
+, _filename()
 {
 }
 
@@ -74,6 +76,34 @@ void Decoder::from_float(Channel z, float* to, const float* from, const float* a
     }
 }
 
+void Decoder::from_byte_rect(float* to,const uchar* from,
+                             const Box2D& rect,const Box2D& rod,
+                             Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+    if(!_lut->linear()){
+        _lut->from_byte_rect(to,from,rect,rod,invertY,_premult,inputPacking);
+    }else{
+        Color::linear_from_byte_rect(to,from,rect,rod,invertY,inputPacking);
+    }
+}
+
+void Decoder::from_short_rect(float* to,const U16* from,
+                              const Box2D& rect,const Box2D& rod,
+                              Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+    if(!_lut->linear()){
+        _lut->from_short_rect(to,from,rect,rod,invertY,_premult,inputPacking);
+    }else{
+        Color::linear_from_short_rect(to,from,rect,rod,invertY,inputPacking);
+    }
+}
+void Decoder::from_float_rect(float* to,const float* from,
+                              const Box2D& rect,const Box2D& rod,
+                              Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+    if(!_lut->linear()){
+        _lut->from_float_rect(to,from,rect,rod,invertY,_premult,inputPacking);
+    }else{
+        Color::linear_from_float_rect(to,from,rect,rod,invertY,inputPacking);
+    }
+}
 
 void Decoder::createKnobDynamically(){
     _reader->createKnobDynamically();

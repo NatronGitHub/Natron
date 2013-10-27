@@ -86,6 +86,9 @@
 // containers; the default comparator/hash/allocator
 // will be used.
 
+///WARNING: Cached element must have a use_count() method that returns
+///the current reference counting of the object. Typically a shared_ptr.
+
 
 template <typename K,typename V,template<typename...> class MAP>
 class StlLRUCache
@@ -103,21 +106,16 @@ public:
     StlLRUCache(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k) {
-        typename key_to_value_type::iterator it;
-        {
-            // Attempt to find existing record
-            it =_key_to_value.find(k);
-        }
+    typename key_to_value_type::iterator operator()(const key_type& k) {
+        // Attempt to find existing record
+        typename key_to_value_type::iterator it =_key_to_value.find(k);
         if (it!=_key_to_value.end()) {
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
-            return it->second;
-
         }
-        return value_type();
+        return it;
     }
 
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
@@ -146,20 +144,20 @@ public:
     std::pair<key_type,value_type> evict() {
         // Assert method is never called when cache is empty
         assert(!_key_tracker.empty());
-        const typename key_to_value_type::iterator it;
-        {
-            // Identify least recently used key
-            it  =_key_to_value.find(_key_tracker.front());
-            assert(it!=_key_to_value.end());
+        // Identify least recently used key
+        const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
+        while(it->second.first.use_count() > 1 && it!= _key_to_value.end()){
+            ++it;
         }
-        
-        std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
-        {
+        if(it != _key_to_value.end()){
+            std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
             // Erase both elements to completely purge record
             _key_to_value.erase(it);
             _key_tracker.pop_front();
+            return ret;
+        }else{
+            return std::make_pair(key_type(),value_type());
         }
-        return ret;
     }
     
     unsigned int size() { return _container.size(); }
@@ -191,19 +189,15 @@ public:
     BoostLRUCacheContainer(){}
     
     // Obtain value of the cached function for k
-    value_type operator()(const key_type& k) {
-        typename container_type::left_iterator it;
-        {
-            // Attempt to find existing record
-            it=_container.left.find(k);
-        }
+    typename container_type::left_iterator operator()(const key_type& k) {
+        // Attempt to find existing record
+        typename container_type::left_iterator it=_container.left.find(k);
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
             _container.right.relocate(_container.right.end(),_container.project_right(it));
-            return it->second;
         }
-        return value_type();
+        return it;
     }
     
     // return end of the iterator
@@ -230,10 +224,17 @@ public:
     
     std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        assert(it != _container.right.end());
-        std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-        _container.right.erase(it);
-        return ret;
+        while(it->first.use_count() > 1 && it != _container.right.end()){
+            ++it;
+        }
+        if(it != _container.right.end()){
+            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
+            _container.right.erase(it);
+            return ret;
+        }else{
+            return std::make_pair(key_type(),value_type());
+        }
+        
     }
 
     unsigned int size(){return _container.size();}
@@ -264,21 +265,18 @@ public:
     StlLRUTreeCache(){}
     
     // Obtain value of the cached function for k
-     value_type operator()(const key_type& k)  {
-        typename key_to_value_type::iterator it;
-        {
-            // Attempt to find existing record
-            it =_key_to_value.find(k);
-        }
+    typename key_to_value_type::iterator operator()(const key_type& k) {
+        // Attempt to find existing record
+        typename key_to_value_type::iterator it =_key_to_value.find(k);
         if (it!=_key_to_value.end()) {
             // We do have it:
             // Update access record by moving
             // accessed key to back of list
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
-            return it->second.first;
         }
-         return value_type();
+        return it;
     }
+
     
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
@@ -303,22 +301,21 @@ public:
     std::pair<key_type,value_type> evict() {
         // Assert method is never called when cache is empty
         assert(!_key_tracker.empty());
-        typename key_to_value_type::iterator it;
-        {
-            // Identify least recently used key
-            it  =_key_to_value.find(_key_tracker.front());
-            assert(it!=_key_to_value.end());
+        // Identify least recently used key
+        const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
+        while(it->second.first.use_count() > 1 && it!= _key_to_value.end()){
+            ++it;
         }
-        
-        std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
-        {
+        if(it != _key_to_value.end()){
+            std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
             // Erase both elements to completely purge record
             _key_to_value.erase(it);
             _key_tracker.pop_front();
+            return ret;
+        }else{
+            return std::make_pair(key_type(),value_type());
         }
-        return ret;
     }
-    
     unsigned int size() { return _key_to_value.size(); }
   
     
@@ -342,22 +339,17 @@ public:
     
     BoostLRUHashCache(){}
     
-    // Obtain value of the cached function for k
-    value_type operator()(const key_type& k) {
-        typename container_type::left_iterator it;
-        {
-            // Attempt to find existing record
-            it=_container.left.find(k);
-        }
+    typename container_type::left_iterator operator()(const key_type& k) {
+        // Attempt to find existing record
+        typename container_type::left_iterator it=_container.left.find(k);
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
             _container.right.relocate(_container.right.end(),_container.project_right(it));
-            return it->second;
         }
-        return value_type();
+        return it;
     }
-
+    
     // return end of the iterator
     typename container_type::left_iterator end() {
         return _container.left.end();
@@ -383,10 +375,16 @@ public:
     
     std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        assert(it != _container.right.end());
-        std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-        _container.right.erase(it);
-        return ret;
+        while(it->first.use_count() > 1 && it != _container.right.end()){
+            ++it;
+        }
+        if(it != _container.right.end()){
+            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
+            _container.right.erase(it);
+            return ret;
+        }else{
+            return std::make_pair(key_type(),value_type());
+        }
         
     }
     
@@ -407,21 +405,15 @@ public:
     
     BoostLRUTreeCache(){}
     
-    // Obtain value of the cached function for k
-    value_type operator()(const key_type& k) {
-        typename container_type::left_iterator it;
-        {
-            // Attempt to find existing record
-            it=_container.left.find(k);
-        }
+    typename container_type::left_iterator operator()(const key_type& k) {
+        // Attempt to find existing record
+        typename container_type::left_iterator it=_container.left.find(k);
         if (it!=_container.left.end()) {
             // We do have it:
             // Update the access record view.
             _container.right.relocate(_container.right.end(),_container.project_right(it));
-            return it->second;
-
         }
-        return value_type();
+        return it;
     }
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -446,10 +438,16 @@ public:
     
     std::pair<key_type,value_type> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        assert(it != _container.right.end());
-        std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-        _container.right.erase(it);
-        return ret;
+        while(it->first.use_count() > 1 && it != _container.right.end()){
+            ++it;
+        }
+        if(it != _container.right.end()){
+            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
+            _container.right.erase(it);
+            return ret;
+        }else{
+            return std::make_pair(key_type(),value_type());
+        }
         
     }
     

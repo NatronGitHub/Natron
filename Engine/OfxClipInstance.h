@@ -16,18 +16,22 @@
 #include <cassert>
 
 #include <QtCore/QMutex>
-
+#include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
 #include <ofxPixels.h>
 
+#include "Global/GlobalDefines.h"
+
 #include "Engine/ChannelSet.h"
+#include "Engine/Image.h"
 
 class OfxImage;
 class OfxNode;
 class Node;
 namespace Powiter {
     class OfxImageEffectInstance;
+    class Image;
 }
 
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
@@ -119,14 +123,11 @@ public:
     /// override this to return the rod on the clip
     virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE;
 
-private:
     Node* getAssociatedNode() const;
 
 private:
     OfxNode* _nodeInstance;
     Powiter::OfxImageEffectInstance* _effect;
-    //int _clipIndex;
-    OfxImage* _outputImage;
     QMutex _lock; //<protects _outputImage
 };
 
@@ -140,7 +141,8 @@ class OfxImage : public OFX::Host::ImageEffect::Image
     enum BitDepthEnum {eBitDepthNone = 0, /**< @brief bit depth that indicates no data is present */
         eBitDepthUByte,
         eBitDepthUShort,
-        eBitDepthFloat
+        eBitDepthFloat,
+        eBitDepthDouble
     };
     /** @brief Enumerates the component types supported */
     enum PixelComponentEnum {ePixelComponentNone = 0,
@@ -149,32 +151,27 @@ class OfxImage : public OFX::Host::ImageEffect::Image
         ePixelComponentAlpha
     };
     
-
     
-    explicit OfxImage(BitDepthEnum bitDepth,const OfxRectD& bounds,OfxClipInstance &clip, OfxTime t);
+    explicit OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip);
+    
+    
+    virtual ~OfxImage(){}
     
     BitDepthEnum bitDepth() const {return _bitDepth;}
     
-    /*3 different functions depending on the current bitdepth.
-     Calling a version that is not suited to the current bit depth
-     will raise an assertion.*/
-    OfxRGBAColourB* pixelB(int x, int y) const;
-    OfxRGBAColourS* pixelS(int x, int y) const;
+    
     OfxRGBAColourF* pixelF(int x, int y) const;
+   
+    boost::shared_ptr<Powiter::Image> getInternalImageF() const {return _floatImage;}
+
+
+private :
     
-    //void writeToQImage_debug(const std::string& filename);
-    
-    
-    virtual ~OfxImage()
-    {
-        free(_data);
-    }
-    
-    protected :
-    
-    void   *_data; // where we are keeping our image data
-    size_t _rowBytes;
     BitDepthEnum _bitDepth;
+    
+    boost::shared_ptr<Powiter::Image> _floatImage;
+
+
 };
 
 inline void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,

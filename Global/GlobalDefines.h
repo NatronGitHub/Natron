@@ -34,9 +34,11 @@ typedef boost::uint64_t U64;
 typedef boost::uint8_t U8;
 typedef boost::uint16_t U16;
 
+#include <ofxhImageEffect.h>
+
 typedef int SequenceTime;
 
-
+typedef OfxPointD RenderScale;
 
 #ifdef __POWITER_WIN32__
 namespace PowiterWindows{

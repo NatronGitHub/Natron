@@ -16,6 +16,8 @@
 #include <sstream>
 #include <fstream>
 #include <functional>
+#include <list>
+
 #include <QtCore/QMutex>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
@@ -405,11 +407,17 @@ namespace Powiter{
             boost::shared_ptr<ValueType> _value;
             const Cache<ValueType>* _owner;
         public:
+            
+            CachedValue():_value(),_owner(NULL){}
+            
             CachedValue(ValueType* value,const Cache<ValueType>* owner):_value(value),_owner(owner){}
             
             CachedValue(const CachedValue<ValueType>& other):_value(other._value),_owner(other._owner){}
             
-            ~CachedValue(){_owner->sealEntry(_value);}
+            ~CachedValue(){
+                if(_value && _owner)
+                    _owner->sealEntry(_value);
+            }
             
             boost::shared_ptr<ValueType> getObject() const {return _value;}
         };
@@ -454,44 +462,44 @@ namespace Powiter{
             
 #ifdef POWITER_CACHE_USE_BOOST
 #ifdef POWITER_CACHE_USE_HASH
-            typedef BoostLRUCacheContainer<hash_type, value_type >, boost::bimaps::unordered_set_of> CacheContainer;
+            typedef BoostLRUCacheContainer<hash_type, boost::shared_ptr<std::list<value_type> > >, boost::bimaps::unordered_set_of> CacheContainer;
 #else
-            typedef BoostLRUCacheContainer<hash_type, value_type , boost::bimaps::set_of> CacheContainer;
+            typedef BoostLRUCacheContainer<hash_type, boost::shared_ptr<std::list<value_type> > , boost::bimaps::set_of> CacheContainer;
 #endif
             typedef typename CacheContainer::container_type::left_iterator CacheIterator;
             typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-            static value_type getValueFromIterator(CacheIterator it){return it->second;}
+            static boost::shared_ptr<std::list<value_type> > getValueFromIterator(CacheIterator it){return it->second;}
             
 #else // cache use STL
             
 #ifdef POWITER_CACHE_USE_HASH
-            typedef StlLRUCache<hash_type,value_type, std::unordered_map> CacheContainer;
+            typedef StlLRUCache<hash_type,boost::shared_ptr<std::list<value_type> >, std::unordered_map> CacheContainer;
 #else
-            typedef StlLRUCache<hash_type,value_type, std::map> CacheContainer;
+            typedef StlLRUCache<hash_type,boost::shared_ptr<std::list<value_type> >, std::map> CacheContainer;
 #endif
             typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
             typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-            static value_type  getValueFromIterator(CacheIterator it){return it->second;}
+            static boost::shared_ptr<std::list<value_type> >  getValueFromIterator(CacheIterator it){return it->second;}
 #endif // POWITER_CACHE_USE_BOOST
             
 #else // !USE_VARIADIC_TEMPLATES
             
 #ifdef POWITER_CACHE_USE_BOOST
 #ifdef POWITER_CACHE_USE_HASH
-            typedef BoostLRUHashCache<hash_type, value_type > CacheContainer;
+            typedef BoostLRUHashCache<hash_type, boost::shared_ptr<std::list<value_type> > > CacheContainer;
 #else
-            typedef BoostLRUTreeCache<hash_type, value_type > CacheContainer;
+            typedef BoostLRUTreeCache<hash_type, boost::shared_ptr<std::list<value_type> > > CacheContainer;
 #endif
             typedef typename CacheContainer::container_type::left_iterator CacheIterator;
             typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-            static value_type  getValueFromIterator(CacheIterator it){return it->second;}
+            static boost::shared_ptr<std::list<value_type> >  getValueFromIterator(CacheIterator it){return it->second;}
             
 #else // cache use STL and tree (std map)
             
-            typedef StlLRUTreeCache<hash_type, value_type> CacheContainer;
+            typedef StlLRUTreeCache<hash_type, boost::shared_ptr<std::list<value_type> > > CacheContainer;
             typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
             typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-            static value_type  getValueFromIterator(CacheIterator it){return it->second.first;}
+            static boost::shared_ptr<std::list<value_type> >  getValueFromIterator(CacheIterator it){return it->second.first;}
 #endif // POWITER_CACHE_USE_BOOST
             
 #endif // USE_VARIADIC_TEMPLATES
@@ -571,37 +579,51 @@ namespace Powiter{
             
             value_type get(const typename ValueType::key_type& params) const {
                 QMutexLocker locker(&_lock);
-                value_type ret = _memoryCache(params.getHash());
-                if(ret){
-                    if(ret->getKey() == params){
-                        if(_signalEmitter)
-                            _signalEmitter->emitAddedEntry();
-                            
-                        return ret;
-                    }else{
-                        return value_type();
-                    }
-                }else{
-                    ret = _diskCache(params.getHash());
-                    if(!ret){
-                        return value_type();
-                    }else{
-                        if (ret->getKey() == params) {
-                            try{
-                                ret->reOpenFileMapping();
-                            }catch(const std::exception& e){
-                                std::cout << e.what() << std::endl;
-                                return value_type();
-                            }
+                CacheIterator memoryCached = _memoryCache(params.getHash());
+                if(memoryCached != _memoryCache.end()){
+                    /*we found something with a matching hash key. There may be several entries linked to
+                     this key, we need to find one with matching params*/
+                    boost::shared_ptr<std::list<value_type> > ret = getValueFromIterator(memoryCached);
+                    for (typename std::list<value_type>::const_iterator it = ret->begin(); it!=ret->end(); ++it) {
+                        if((*it)->getKey() == params){
                             if(_signalEmitter)
                                 _signalEmitter->emitAddedEntry();
-                            // maybe we should move back the disk cache entry (ret) to the memory portion since
-                            // we reallocated it in RAM?
-                            return ret;
                             
-                        }else{
-                            return value_type();
+                            return *it;
                         }
+                    }
+                    /*if we reache here it means no entries linked to the hash key matches the params,then
+                     we return NULL.*/
+                    return value_type();
+                }else{
+                    CacheIterator diskCached = _diskCache(params.getHash());
+                    if(diskCached == _diskCache.end()){
+                        return value_type();
+                    }else{
+                        /*we found something with a matching hash key. There may be several entries linked to
+                         this key, we need to find one with matching params*/
+                        boost::shared_ptr<std::list<value_type> > ret = getValueFromIterator(diskCached);
+                        for (typename std::list<value_type>::const_iterator it = ret->begin();
+                             it!=ret->end(); ++it) {
+                            if ((*it)->getKey() == params) {
+                                try{
+                                    /*we try to reopen the mapping between disk & RAM*/
+                                    (*it)->reOpenFileMapping();
+                                }catch(const std::exception& e){
+                                    std::cout << e.what() << std::endl;
+                                    return value_type();
+                                }
+                                if(_signalEmitter)
+                                    _signalEmitter->emitAddedEntry();
+                                // maybe we should move back the disk cache entry (ret) to the memory portion since
+                                // we reallocated it in RAM?
+                                return (*it);
+                                
+                            }
+                        }
+                        /*if we reache here it means no entries linked to the hash key matches the params,then
+                         we return NULL.*/
+                        return value_type();
                     }
                 }
                 
@@ -611,31 +633,40 @@ namespace Powiter{
                 clearInMemoryPortion();
                 QMutexLocker locker(&_lock);
                 while(_diskCache.size() > 0){
-                    std::pair<hash_type,value_type> p = _diskCache.evict();
-                    _diskCacheSize -= p.second->size();
-                    p.second->removeAnyBackingFile();
+                    std::pair<hash_type,boost::shared_ptr<std::list<value_type> > > evictedFromDisk = _diskCache.evict();
+                    //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                    //we'll let the user of these entries purge the extra entries left in the cache later on
+                    if(!evictedFromDisk.second){
+                        break;
+                    }
+                    /*remove the sum of the size of all entries within the same hash key*/
+                    for(typename std::list<value_type>::iterator it2 = evictedFromDisk.second->begin();
+                        it2!= evictedFromDisk.second->end();++it2){
+                        _diskCacheSize -= (*it2)->size();
+                        (*it2)->removeAnyBackingFile();
+
+                    }
                 }
             }
             
             void clearInMemoryPortion(){
                 QMutexLocker locker(&_lock);
                 while (_memoryCache.size() > 0) {
-                    std::pair<hash_type,value_type> evicted = _memoryCache.evict();
-                    boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
-                    _memoryCacheSize -= evicted.second->size();
-                    /*insert it back into the disk portion */
-                    if(evicted.second->isStoredOnDisk()){
-                        while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
-                            std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
-                            _diskCacheSize -= evicted.second->size();
-                            evictedFromDisk.second->removeAnyBackingFile();
-                        }
-                        _diskCacheSize += evicted.second->size();
-                        _diskCache.insert(evicted.second->getHashKey(),evicted.second);
+                    if(!tryEvictEntry()){
+                        break;
                     }
                 }
                 if(_signalEmitter){
                     _signalEmitter->emitSignalClearedInMemoryPortion();
+                }
+            }
+            
+            void clearExceedingEntries(){
+                QMutexLocker locker(&_lock);
+                while(_memoryCacheSize >= _maximumInMemorySize){
+                    if(!tryEvictEntry()){
+                        break;
+                    }
                 }
             }
             
@@ -694,34 +725,93 @@ namespace Powiter{
         private:
             typedef std::list<std::pair<hash_type,typename ValueType::key_type> > CacheTOC;
 
-            /* Seal the entry into the cache: the entry must have been allocated
+            
+            
+            /* Seals the entry into the cache: the entry must have been allocated
              * previously by this cache*/
             void sealEntryInternal(const value_type& entry) const {
-                //QMutexLocker locker(&_lock); // no need to lock in private functions: the caller is responsible for locking, or you must use recursive locks
                 assert(!_lock.tryLock()); // must be locked
+                
+                /*If the cache size exceeds the maximum size allowed, try to make some space*/
                 while(_memoryCacheSize+entry->size() >= _maximumInMemorySize){
-                    std::pair<hash_type,value_type> evicted = _memoryCache.evict();
-                    _memoryCacheSize -= evicted.second->size();
-                    if(_signalEmitter)
-                        _signalEmitter->emitRemovedEntry();
-                    /*if it is stored using mmap, remove it from memory*/
-                    if(evicted.second->isStoredOnDisk()){
-                        boost::const_pointer_cast<ValueType>(evicted.second)->deallocate();
-                        /*insert it back into the disk portion */
-                        while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
-                            std::pair<hash_type,value_type> evictedFromDisk = _diskCache.evict();
-                            _diskCacheSize -= evicted.second->size();
-                        }
-                        _diskCacheSize += evicted.second->size();
-                        _diskCache.insert(evicted.second->getHashKey(),evicted.second);
+                    if(!tryEvictEntry()){
+                        break;
                     }
                 }
                 if(_signalEmitter)
                     _signalEmitter->emitAddedEntry();
+                typename ValueType::hash_type hash = entry->getHashKey();
+                /*if the entry doesn't exist on the memory cache,make a new list and insert it*/
+                CacheIterator existingEntry = _memoryCache(hash);
+                if(existingEntry == _memoryCache.end()){
+                    boost::shared_ptr<std::list<value_type> > newList(new std::list<value_type>);
+                    newList->push_back(entry);
+                    _memoryCache.insert(hash,newList);
+                }else{
+                     /*append to the existing list*/
+                    getValueFromIterator(existingEntry)->push_back(entry);
+                }
                 _memoryCacheSize += entry->size();
-                _memoryCache.insert(entry->getHashKey(),entry);
             }
 
+            bool tryEvictEntry() const {
+                std::pair<hash_type,boost::shared_ptr<std::list<value_type> > > evicted = _memoryCache.evict();
+                //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                //we'll let the user of these entries purge the extra entries left in the cache later on
+                if(!evicted.second){
+                    return false;
+                }
+                
+                /*If several entries belong to the same hash key, sum the size of all of them*/
+                U64 sizeEvictedFromMemory = 0;
+                for(typename std::list<value_type>::iterator it = evicted.second->begin();it!= evicted.second->end();++it){
+                    U64 size_el = (*it)->size();
+                    _memoryCacheSize -= size_el;
+                    sizeEvictedFromMemory += size_el;
+                }
+                
+                if(_signalEmitter)
+                    _signalEmitter->emitRemovedEntry();
+                
+                /*for all entries in the same hash key,if it is stored using mmap, remove it from memory*/
+                for(typename std::list<value_type>::iterator it = evicted.second->begin();it!= evicted.second->end();++it){
+                    if((*it)->isStoredOnDisk()){
+                        boost::const_pointer_cast<ValueType>((*it))->deallocate();
+                        /*insert it back into the disk portion */
+                        
+                        /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
+                        while (_diskCacheSize+evicted.second->size() >= _maximumCacheSize) {
+                            
+                            std::pair<hash_type,boost::shared_ptr<std::list<value_type> > > evictedFromDisk = _diskCache.evict();
+                            //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                            //we'll let the user of these entries purge the extra entries left in the cache later on
+                            if(!evictedFromDisk.second){
+                                break;
+                            }
+                            /*remove the sum of the size of all entries within the same hash key*/
+                            for(typename std::list<value_type>::iterator it2 = evictedFromDisk.second->begin();
+                                it2!= evictedFromDisk.second->end();++it2){
+                                _diskCacheSize -= (*it2)->size();
+                            }
+                        }
+                        
+                        /*update the disk cache size*/
+                        _diskCacheSize += (*it)->size();
+                        CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);
+                        /*if the entry doesn't exist on the disk cache,make a new list and insert it*/
+                        if(existingDiskCacheEntry == _diskCache.end()){
+                            boost::shared_ptr<std::list<value_type> > newList(new std::list<value_type>);
+                            newList->push_back((*it));
+                            _diskCache.insert(evicted.first,newList);
+                        }else{ /*append to the existing list*/
+                            getValueFromIterator(existingDiskCacheEntry)->push_back((*it));
+                        }
+                        
+                    }
+                }
+                return true;
+            }
+            
             
             /*Saves cache to disk as a settings file.
              */
@@ -735,10 +825,13 @@ namespace Powiter{
                 CacheTOC tableOfContents;
                 {
                     for(CacheIterator it = _diskCache.begin(); it!= _diskCache.end() ; ++it) {
-                        value_type value  = getValueFromIterator(it);
-                        if(value->isStoredOnDisk()){
-                            tableOfContents.push_back(std::make_pair(value->getHashKey(),value->getKey()));
+                        boost::shared_ptr<std::list<value_type> > listOfValues  = getValueFromIterator(it);
+                        for(typename std::list<value_type>::const_iterator it2 = listOfValues->begin() ;it2 != listOfValues->end(); ++it2){
+                            if((*it2)->isStoredOnDisk()){
+                                tableOfContents.push_back(std::make_pair((*it2)->getHashKey(),(*it2)->getKey()));
+                            }
                         }
+                        
                     }
                 }
                 oArchive << tableOfContents;

@@ -209,9 +209,6 @@ class ViewerTab;
 
             MOUSE_STATE _ms;/*!< Holds the mouse state*/
                         
-            std::vector<int> _textureColumns; /*!< The last columns computed by computeColumnSpan. This member is
-                                               used in the convertRowToFitTextureBGRA function.*/
-            
             ZoomContext _zoomCtx;/*!< All zoom related variables are packed into this object*/
             
             QString _resolutionOverlay;/*!< The string holding the resolution overlay, e.g: "1920x1080"*/
@@ -267,12 +264,8 @@ class ViewerTab;
              *different offset in the output buffer, this function is thread-safe.
              *Internally this function calls the appropriate function to fill the output buffer
              *depending on the bit-depth currently used by the viewer.
-             *@param r A pointer to the red component of the row to draw.
-             *@param g A pointer to the green component of the row to draw.
-             *@param b A pointer to the blue component of the row to draw.
-             *@param a A pointer to the alpha component of the row to draw.
              */
-            void drawRow(const float* r,const float* g,const float* b,const float* a,int zoomedY);
+            void drawRow(const float *data,const std::vector<int>& columns,int zoomedY);
             
             /**
              *@brief Toggles on/off the display on the viewer. If d is false then it will
@@ -462,10 +455,8 @@ class ViewerTab;
             
             /**
              *@brief Called by the video engine to allocate the frameData.
-             *@param w,h[in] The width and height of the scaled frame.
-             *@returns Returns the size in bytes of the space occupied in memory by the frame.
              **/
-            size_t allocateFrameStorage(int w,int h);
+            void allocateFrameStorage(size_t dataSize);
             
             /**
              *@brief Allocates the pbo represented by the pboID with dataSize bytes.
@@ -508,13 +499,6 @@ class ViewerTab;
              *@returns Returns true if a pbo is currently mapped
              **/
             bool hasPBOCurrentlyMapped() const {return _pBOmapped;}
-            
-            /**
-             *@returns A vector with the columns indexes of the full-size image that are
-             *really contained in the texture.
-             **/
-            const std::vector<int>& getTextureColumns() const {return _textureColumns;}
-            
             
             
             /**
@@ -731,15 +715,8 @@ public slots:
              *Since the frameData buffer holds the data "as seen" on the viewer (i.e with a scale-factor)
              *it will apply a "Nearest neighboor" algorithm to fill the buffer. Note that during the
              *conversion to 8bit in the viewer color-space, a dithering algorithm is used.
-             *@param r[in] Points to the red component of the scan-line.
-             *@param g[in] Points to the green component of the scan-line.
-             *@param b[in] Points to the blue component of the scan-line.
-             *@param alpha[in] Points to the alpha component of the scan-line.
-             *@param columnSpan[in] The columns in the row to keep.
-             *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
-            void convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
-                                            const std::vector<int>& columnSpan,int yOffset,const float* alpha);
+            void convertRowToFitTextureBGRA(const float* data,const std::vector<int>& columnSpan,int yOffset);
             
             /**
              *@brief This function fills the member frameData with the buffer in parameters.
@@ -748,15 +725,8 @@ public slots:
              *as ViewerGL::convertRowToFitTextureBGRA(const float* r,const float* g,const float* b,
              *int w,int yOffset,const float* alpha) except that it does not apply any dithering nor color-space
              *since the data are stored as 32bit floating points. The color-space will be applied by the shaders.
-             *@param r[in] Points to the red component of the scan-line.
-             *@param g[in] Points to the green component of the scan-line.
-             *@param b[in] Points to the blue component of the scan-line.
-             *@param alpha[in] Points to the alpha component of the scan-line.
-             *@param columnSpan[in] The columns in the row to keep.
-             *@param yOffset[in] The index of the scan-line in the scaled frame.
              **/
-            void convertRowToFitTextureBGRA_fp(const float* r,const float* g,const float* b,
-                                               const std::vector<int>& columnSpan,int yOffset,const float* alpha);
+            void convertRowToFitTextureBGRA_fp(const float* data,const std::vector<int>& columnSpan,int yOffset);
             
 
             /**
