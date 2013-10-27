@@ -17,6 +17,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
+#include <QtCore/QMutex>
+
 #include "Engine/Cache.h"
 #include "Engine/Box.h"
 
@@ -91,7 +93,7 @@ namespace Powiter{
     public:
         
         Bitmap(const Box2D& rod):_rod(rod),_pixelsRenderedCount(0){
-            _map = (char*)calloc(rod.width()*rod.height(),sizeof(char));
+            _map = (char*)calloc(rod.area(),sizeof(char));
         }
         
         ~Bitmap(){ free(_map); }
@@ -110,6 +112,7 @@ namespace Powiter{
     {
         
         Bitmap _bitmap;
+        mutable QMutex _lock;
         
     public:
         Image(const ImageKey& key, size_t count, int cost, std::string path = std::string()):
@@ -144,11 +147,13 @@ namespace Powiter{
         SequenceTime getTime() const {return this->_params._time;}
         
         float* pixelAt(int x,int y){
-            return this->_data.writable() + y*4*_bitmap.getRoD().width() + x*4;
+            const Box2D& rod = _bitmap.getRoD();
+            return this->_data.writable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
         }
         
         const float* pixelAt(int x,int y) const{
-            return this->_data.readable() + y*4*_bitmap.getRoD().width() + x*4;
+            const Box2D& rod = _bitmap.getRoD();
+            return this->_data.readable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
         }
         /**
          * @brief Returns a list of portions of image that are not yet rendered within the 
@@ -158,10 +163,12 @@ namespace Powiter{
          * of image returned may contain already rendered pixels.
          **/
         std::list<Box2D> getRestToRender(const Box2D& regionOfInterest) const{
+            QMutexLocker locker(&_lock);
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
         }
         
         void markForRendered(const Box2D& roi){
+            QMutexLocker locker(&_lock);
             _bitmap.markForRendered(roi);
         }
         
