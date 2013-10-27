@@ -448,34 +448,6 @@ private:
      **/
     bool startEngine();
     
-    /**
-     *@brief Forces each reader in the input nodes of the graph to read the header of their current frame's file.
-     *@param readers[in] A vector of all the readers in the current graph.
-     */
-    void readHeaders(const std::vector<Reader*>& readers);
-    
-    /**
-     *@brief Forces each reader in the input nodes of the graph to read the data of their current frame's file.
-     *@param readers[in] A vector of all the readers in the current graph.
-     */
-    void readFrames(const std::vector<Reader*>& readers);
-    
-    /**
-     *@brief Calls QGLWidget::updateGL() and causes the viewer to refresh.
-     *It also adjusts the pixel aspect ratio of the viewer.
-     */
-    void updateDisplay();
-    
-    
-#ifdef POWITER_DEBUG
-    /*
-     *@brief Range-check to be sure buffers are allocated correctly
-     *@param columns the indexes of the columns to compute.
-     *@param x The left edge of the rectangle to compute.
-     *@param r The right edge of the rectangle to compute.
-     */
-    bool rangeCheck(const std::vector<int>& columns,int x,int r);
-#endif
 };
 
 

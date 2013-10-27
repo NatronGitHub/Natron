@@ -443,28 +443,6 @@ void VideoEngine::onProgressUpdate(int /*i*/){
 }
 
 
-
-
-
-void VideoEngine::updateDisplay(){
-    ViewerGL* viewer  = _tree.outputAsViewer()->getUiContext()->viewer;
-    int width = viewer->width();
-    int height = viewer->height();
-    double ap = viewer->getDisplayWindow().getPixelAspect();
-    if(ap > 1.f){
-        glViewport (0, 0, (int)(width*ap), height);
-    }else{
-        glViewport (0, 0, width, (int)(height/ap));
-    }
-    viewer->updateColorPicker();
-    viewer->updateGL();
-}
-
-
-
-
-
-
 void VideoEngine::abortRendering(){
     {
         QMutexLocker workingLocker(&_workingMutex);
@@ -642,18 +620,6 @@ void Tree::onInputFrameRangeChanged(int,int){
     _output->getApp()->getTimeLine()->setFrameRange(_firstFrame ,_lastFrame);
     
 }
-
-#ifdef POWITER_DEBUG
-bool VideoEngine::rangeCheck(const std::vector<int>& columns,int x,int r){
-    for (unsigned int i = 0; i < columns.size(); ++i) {
-        if(columns[i] < x || columns[i] > r){
-            return false;
-        }
-    }
-    return true;
-}
-#endif
-
 
 
 bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
