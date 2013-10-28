@@ -13,6 +13,7 @@
 #include <cassert>
 #include <fstream>
 #include <QtCore/QDir>
+#include <QtCore/QMutex>
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -211,8 +212,8 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* ap
     return node;
 }
 
-QStringList Powiter::OfxHost::loadOFXPlugins() {
-    QStringList pluginNames;
+std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
+    std::map<QString,QMutex*> pluginNames;
 
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
@@ -289,15 +290,15 @@ QStringList Powiter::OfxHost::loadOFXPlugins() {
             groupIconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
             groupIconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
             groupIconFilename.append(groups[0]);
-//            if(bundlePath.size() > 0 && pluginCount > 1 && groups.size() > 1){
-//                groupIconFilename.append('/');
-//                groupIconFilename.append(groups[1]);
-//            }
             groupIconFilename.append(".png");
         }
         emit toolButtonAdded(groups, rawName, iconFilename, groupIconFilename);
         _ofxPlugins.insert(make_pair(name.toStdString(), make_pair(id.toStdString(), grouping.toStdString())));
-        pluginNames.append(name);
+        QMutex* pluginMutex = NULL;
+        if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
+            pluginMutex = new QMutex;
+        }
+        pluginNames.insert(std::make_pair(name,pluginMutex));
     }
     return pluginNames;
 }

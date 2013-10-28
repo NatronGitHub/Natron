@@ -56,7 +56,6 @@ VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 , _abortRequested(0)
 , _mustQuitMutex()
 , _mustQuit(false)
-, _treeVersion(0)
 , _treeVersionValid(false)
 , _loopModeMutex()
 , _loopMode(true)
@@ -112,6 +111,7 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
     
+    
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_mustQuitMutex);
     if (!isRunning() && !_mustQuit) {
@@ -139,7 +139,17 @@ bool VideoEngine::startEngine() {
         abortBeingProcessedLocker.relock();
         assert(!_abortBeingProcessed);
     }
-    
+    /*update the tree hash */
+    bool oldVersionValid = _treeVersionValid;
+    U64 oldVersion = 0;
+    if (oldVersionValid) {
+        oldVersion = _tree.getOutput()->hash().value();
+    }
+    computeTreeVersionAndLockParams();
+    /*If the Tree changed we clear the playback cache.*/
+    if(!oldVersionValid || (_tree.getOutput()->hash().value() != oldVersion)){
+        appPTR->clearPlaybackCache();
+    }
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
     
     _currentRunArgs = _lastRequestedRunArgs;
@@ -174,19 +184,6 @@ bool VideoEngine::startEngine() {
     firstFrame = _tree.firstFrame();
     lastFrame = _tree.lastFrame();
 
-    /*update the tree hash */
-    bool oldVersionValid = _treeVersionValid;
-    U64 oldVersion = 0;
-    if (oldVersionValid) {
-        oldVersion = getCurrentTreeVersion();
-    }
-    updateTreeVersion();
-    /*If the Tree changed we clear the playback cache.*/
-    if(!oldVersionValid || (_treeVersion != oldVersion)){
-         // FIXME: the playback cache seems to be global to the application, why should we clear it here?
-        //because the Tree changed, so the frame stored in memory are now useless for the playback.
-        appPTR->clearPlaybackCache();
-    }
     {
         QMutexLocker workingLocker(&_workingMutex);
         _working = true;
@@ -222,13 +219,16 @@ void VideoEngine::stopEngine() {
         }
         _abortBeingProcessed = false;
     }
+    
+    unlockAllParams();
+    
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
         while(_startCount <= 0) {
             _startCondition.wait(&_startMutex);
         }
-        _startCount = 0; // are we sure we don't want to do --_startCount ?
+        _startCount = 0; 
     }
    
     
@@ -490,18 +490,18 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 
 
 
-void VideoEngine::updateTreeVersion(){
-    
-    if(!_tree.getOutput()){
-        return;
-    }
+void VideoEngine::computeTreeVersionAndLockParams(){
     OutputNode* output = _tree.getOutput();
     std::vector<std::string> v;
-    output->computeTreeHash(v);
-    _treeVersion = output->hash().value();
+    output->computeTreeHashAndLockParams(v);
     _treeVersionValid = true;
 }
 
+void VideoEngine::unlockAllParams()  {
+    for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+        (*it)->unLockAllParams();
+    }
+}
 
 
 

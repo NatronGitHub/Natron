@@ -128,7 +128,6 @@ public:
 private:
     OfxNode* _nodeInstance;
     Powiter::OfxImageEffectInstance* _effect;
-    QMutex _lock; //<protects _outputImage
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image
@@ -154,91 +153,19 @@ class OfxImage : public OFX::Host::ImageEffect::Image
     
     explicit OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip);
     
-    
     virtual ~OfxImage(){}
     
     BitDepthEnum bitDepth() const {return _bitDepth;}
-    
     
     OfxRGBAColourF* pixelF(int x, int y) const;
    
     boost::shared_ptr<Powiter::Image> getInternalImageF() const {return _floatImage;}
 
-
 private :
     
     BitDepthEnum _bitDepth;
-    
     boost::shared_ptr<Powiter::Image> _floatImage;
 
-
 };
-
-inline void rowPlaneToOfxPackedBuffer(Powiter::Channel channel,
-                               const float* plane,
-                               int w,
-                               OfxRGBAColourF* dst
-                               ){
-    assert(dst);
-    if(plane){
-        if(channel == Powiter::Channel_red)
-            for (int i = 0; i < w; ++i) {
-                dst[i].r = plane[i];
-            }
-        else if(channel == Powiter::Channel_green)
-            for (int i = 0; i < w; ++i) {
-                dst[i].g = plane[i];
-            }
-        else if(channel == Powiter::Channel_blue)
-            for (int i = 0; i < w; ++i) {
-                dst[i].b = plane[i];
-            }
-        else if(channel == Powiter::Channel_alpha)
-            for (int i = 0; i < w; ++i) {
-                dst[i].a = plane[i];
-            }
-    }else{
-        if(channel == Powiter::Channel_red)
-            for (int i = 0; i < w; ++i) {
-                dst[i].r = 0.f;
-            }
-        else if(channel == Powiter::Channel_green)
-            for (int i = 0; i < w; ++i) {
-                dst[i].g = 0.f;
-            }
-        else if(channel == Powiter::Channel_blue)
-            for (int i = 0; i < w; ++i) {
-                dst[i].b = 0.f;
-            }
-        else if(channel == Powiter::Channel_alpha)
-            for (int i = 0; i < w; ++i) {
-                dst[i].a = 1.f;
-            }
-    }
-    
-}
-template<typename RGBA_PIX_DEPTH>
-void ofxPackedBufferToRowPlane(Powiter::Channel channel,
-                               const RGBA_PIX_DEPTH* src,
-                               int w,
-                               float* plane){
-    if(channel == Powiter::Channel_red)
-    for (int i = 0; i < w; ++i) {
-        plane[i] =  src[i].r ;
-    }
-    else if(channel == Powiter::Channel_green)
-        for (int i = 0; i < w; ++i) {
-            plane[i] =  src[i].g ;
-        }
-    else if(channel == Powiter::Channel_blue)
-        for (int i = 0; i < w; ++i) {
-            plane[i] =  src[i].b ;
-        }
-    else if(channel == Powiter::Channel_alpha)
-        for (int i = 0; i < w; ++i) {
-            plane[i] =  src[i].a ;
-        }
-    
-}
 
 #endif // POWITER_ENGINE_OFXCLIPINSTANCE_H_

@@ -289,7 +289,7 @@ bool AppInstance::isSaveUpToDate() const{
 void AppInstance::resetCurrentProject(){
     _currentProject->setAutoSetProjectFormat(true);
     _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName("Untitled."POWITER_PROJECT_FILE_EXTENION);
+    _currentProject->setProjectName("Untitled." POWITER_PROJECT_FILE_EXTENION);
     _currentProject->setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -355,7 +355,7 @@ bool AppInstance::findAutoSave() {
                     _currentProject->setProjectPath(path);
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName("Untitled."POWITER_PROJECT_FILE_EXTENION);
+                    _currentProject->setProjectName("Untitled." POWITER_PROJECT_FILE_EXTENION);
                     _currentProject->setProjectPath("");
                 }
            
@@ -582,7 +582,7 @@ AppManager::AppManager()
 , _readPluginsLoaded()
 , _writePluginsLoaded()
 , _formats()
-, _nodeNames()
+, _plugins()
 , ofxHost(new Powiter::OfxHost())
 , _toolButtons()
 , _knobFactory(new KnobFactory())
@@ -613,7 +613,10 @@ AppManager::~AppManager(){
     for(WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
-    _nodeNames.clear();
+    for(std::map<QString,QMutex*>::iterator it = _plugins.begin();it!=_plugins.end();++it){
+        if(it->second)
+            delete it->second;
+    }
     foreach(Format* f,_formats){
         delete f;
     }
@@ -626,7 +629,7 @@ void AppManager::quit(){
 }
 
 void AppManager::loadAllPlugins() {
-    assert(_nodeNames.empty());
+    assert(_plugins.empty());
     assert(_formats.empty());
     assert(_toolButtons.empty());
     
@@ -642,8 +645,10 @@ void AppManager::loadAllPlugins() {
     loadWritePlugins();
     
     /*loading ofx plugins*/
-    QStringList ofxPluginNames = ofxHost->loadOFXPlugins();
-    _nodeNames.append(ofxPluginNames);
+    std::map<QString,QMutex*> ofxPluginNames = ofxHost->loadOFXPlugins();
+    for(std::map<QString,QMutex*>::iterator it = ofxPluginNames.begin();it!=ofxPluginNames.end();++it){
+        _plugins.insert(*it);
+    }
     
 }
 
@@ -730,9 +735,9 @@ void AppManager::loadBuiltinReads(){
 }
 void AppManager::loadBuiltinNodePlugins(){
     // these  are built-in nodes
-    _nodeNames.append("Reader");
-    _nodeNames.append("Viewer");
-    _nodeNames.append("Writer");
+    _plugins.insert(std::make_pair("Reader",(QMutex*)NULL));
+    _plugins.insert(std::make_pair("Viewer",(QMutex*)NULL));
+    _plugins.insert(std::make_pair("Writer",(QMutex*)NULL));
     QStringList grouping;
     grouping.push_back("IO");
     addPluginToolButtons(grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
@@ -956,4 +961,20 @@ const Format& AppInstance::getProjectFormat() const  {return _currentProject->ge
 
 void AppManager::clearExceedingEntriesFromNodeCache(){
     _nodeCache->clearExceedingEntries();
+}
+
+QStringList AppManager::getNodeNameList() const{
+    QStringList ret;
+    for(std::map<QString,QMutex*>::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
+        ret.append(it->first);
+    }
+    return ret;
+}
+
+QMutex* AppManager::getMutexForPlugin(const QString& pluginName) const {
+    std::map<QString,QMutex*>::const_iterator it = _plugins.find(pluginName);
+    if(it != _plugins.end()){
+        return it->second;
+    }
+    return NULL;
 }

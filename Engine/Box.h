@@ -234,6 +234,13 @@ public:
         return *this;
     }
     
+    bool contains(const Box2D& other) const {
+        return other._l >= _l &&
+        other._b >= _b &&
+        other._r <= _r &&
+        other._t <= _t;
+    }
+    
     void debug() const{
         std::cout << "Box2D is..." << std::endl;
         std::cout << "left = " << _l << std::endl;

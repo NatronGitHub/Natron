@@ -18,6 +18,7 @@
 #include <cfloat>
 #include <boost/shared_ptr.hpp>
 #include <QtGui/QVector4D>
+#include <QtCore/QMutex>
 #include <QtCore/QVariant>
 #include <QtCore/QStringList>
 
@@ -33,31 +34,6 @@ class DockablePanel;
 
 /******************************VARIANT**************************************/
 
-/*Variant type used by knob storage type.
- 
- <<Do not use explicit in front of the constructors to
- allow type conversion!. This API should be
- transparant for the plug-in programmer.>>
- 
- NO!
- 
- from C++ Coding Standards: 101 Rules, Guidelines, and Best Practices:
- 40. Avoid providing implicit conversions.
- Not all change is progress: Implicit conversions can often do more damage than good.
- Think twice before providing implicit conversions to and from the types you define,
- and prefer to rely on explicit conversions (explicit constructors and named conversion functions).
- 
- setValue() is an explicit conversion function and works great.
- Don't pessimize prematurely (one line of code should run a cascade of implicit conversions)
- The code is not more difficult to read, and implicit conversions are avoided.
- Read the book above for more details on why implicit conversions are evil.
- */
-//
-// Inheritance is private here to avoid exposing implicitely all methods of QVariant,
-// but public inheritance should work as well.
-// Is there a reason for non-public inheritance?
-// Note [FD]: in the previous version, the QVariant was stored as a pointer, and was
-// never deleted.
 class Variant : public QVariant {
 public:
     
@@ -229,8 +205,6 @@ public:
     
     const Variant& getValueAsVariant() const { return _value; }
     
-    
-    
     /*You can call this when you want to remove this Knob
      at anytime.*/
     void deleteKnob();
@@ -261,15 +235,14 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
     
+    void lockValue() const { _lock.lock();}
+    
+    void unlockValue() ;
+    
     public slots:
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI*/
-    void onValueChanged(const Variant& variant){
-        _value = variant;
-        fillHashVector();
-        emit valueChangedByUser();
-        tryStartRendering();
-    }
+    void onValueChanged(const Variant& variant);
     
 signals:
     /*Emitted whenever the slot onValueChanged is called.
@@ -326,9 +299,10 @@ private:
     bool _enabled;
     bool _canUndo;
     std::string _tooltipHint;
-};
+    mutable QMutex _lock;
+    Variant _valuePostedWhileLocked;
 
-//std::vector<Knob::Knob_Flags> Knob_Mask_to_Knobs_Flags(const Knob_Mask& m);
+};
 
 /******************************FILE_KNOB**************************************/
 

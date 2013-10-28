@@ -52,7 +52,7 @@ static QString generateStringFromFormat(const Format& f){
 }
 
 Project::Project(AppInstance* appInstance):
-_projectName("Untitled."POWITER_PROJECT_FILE_EXTENION),
+_projectName("Untitled." POWITER_PROJECT_FILE_EXTENION),
 _hasProjectBeenSavedByUser(false),
 _ageSinceLastSave(QDateTime::currentDateTime()),
 _timeline(new TimeLine())

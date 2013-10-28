@@ -311,8 +311,8 @@ void ViewerGL::resizeGL(int width, int height){
     ViewerNode* viewer = _viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _viewerTab->abortRendering();
         _viewerTab->getInternalNode()->refreshAndContinueRender(true);
+        updateGL();
     }
 }
 void ViewerGL::paintGL()
@@ -1035,9 +1035,10 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         _zoomCtx._oldClick = newClick;
         if(_displayingImage){
             _viewerTab->getInternalNode()->refreshAndContinueRender();
-        } else {
-            updateGL();
         }
+        //else {
+            updateGL();
+        // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
         _viewerTab->getInternalNode()->notifyOverlaysPenMotion(event->posF(),pos);
@@ -1090,9 +1091,10 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
     if(_displayingImage){
         appPTR->clearPlaybackCache();
         _viewerTab->getInternalNode()->refreshAndContinueRender();
-    } else {
-        updateGL();
     }
+    //else {
+        updateGL();
+    //}
     
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
     int zoomValue = (int)(100*_zoomCtx._zoomFactor);

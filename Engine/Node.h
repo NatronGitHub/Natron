@@ -223,6 +223,12 @@ public:
     
     Knob* getKnobByDescription(const std::string& desc) const;
     
+    const Hash64& hash() const { return _hashValue; }
+    
+    void computeTreeHashAndLockParams(std::vector<std::string> &alreadyComputedHash);
+
+    void unLockAllParams();
+    
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
     bool aborted() const { return _renderAborted; }
@@ -291,10 +297,6 @@ public:
      **/
     void makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf);
     
-    const Hash64& hash() const { return _hashValue; }
-    
-    void computeTreeHash(std::vector<std::string> &alreadyComputedHash);
-
     void setMarkedByTopologicalSort(bool marked) {_markedByTopologicalSort = marked;}
     
     bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}

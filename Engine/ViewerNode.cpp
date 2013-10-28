@@ -248,7 +248,7 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
     if(!viewer->isClippingToDisplayWindow()){
         dispW.set(rod);
     }
-    
+
     /*computing the RoI*/
     std::vector<int> rows;
     std::vector<int> columns;
@@ -265,7 +265,7 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
     }
     _interThreadInfos._textureRect = textureRect;
     FrameKey key(time,
-                 getVideoEngine()->getCurrentTreeVersion(),
+                 _hashValue.value(),
                  zoomFactor,
                  viewer->getExposure(),
                  viewer->lutType(),
@@ -338,16 +338,26 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
         U32 k = 0;
         while (k < rows.size()) {
             std::vector<std::pair<int,int> > rowsForThread;
+            bool shouldBreak = false;
             for (int i = 0; i < rowsPerThread; ++i) {
+                if(k >= rows.size()){
+                    shouldBreak = true;
+                    break;
+                }
                 rowsForThread.push_back(make_pair(rows[k],k));
+                ++k;
             }
-            ++k;
+           
             splitRows.push_back(rowsForThread);
+            if(shouldBreak){
+                break;
+            }
         }
         
         
-        QtConcurrent::blockingMap(splitRows,
+        QFuture<void> future = QtConcurrent::map(splitRows,
                                   boost::bind(&ViewerNode::renderFunctor,this,inputImage,_1,columns));
+        future.waitForFinished();
     }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
@@ -439,7 +449,7 @@ void ViewerNode::cachedEngine(){
     }
     /*allocating pbo*/
     void* output = _uiContext->viewer->allocateAndMapPBO(dataSize, _uiContext->viewer->getPBOId(_pboIndex));
-    assert(output); // FIXME: crashes here when using two viewers, each connected to a different reader
+    assert(output); 
     _pboIndex = (_pboIndex+1)%2;
     _uiContext->viewer->fillPBO((const char*)_interThreadInfos._cachedEntry->data(), output, dataSize);
 

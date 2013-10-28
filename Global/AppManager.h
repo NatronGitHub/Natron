@@ -239,7 +239,9 @@ public:
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
 
     /*Return a list of the name of all nodes available currently in the software*/
-    const QStringList& getNodeNameList() const WARN_UNUSED_RETURN {return _nodeNames;}
+    QStringList getNodeNameList() const WARN_UNUSED_RETURN;
+
+    QMutex* getMutexForPlugin(const QString& pluginName) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
@@ -325,7 +327,7 @@ private:
 
     std::vector<Format*> _formats;
 
-    QStringList _nodeNames;
+    std::map<QString, QMutex*> _plugins; /*!< map of all plug-ins loaded + a global mutex for each plug-in*/
 
     boost::scoped_ptr<Powiter::OfxHost> ofxHost;
 

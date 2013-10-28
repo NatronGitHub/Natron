@@ -228,7 +228,9 @@ _itemSpacing(0),
 _parentKnob(NULL),
 _visible(true),
 _enabled(true),
-_canUndo(true)
+_canUndo(true),
+_lock(),
+_valuePostedWhileLocked()
 {
 
 }
@@ -279,6 +281,27 @@ int Knob::determineHierarchySize() const{
         current = current->getParentKnob();
     }
     return ret;
+}
+void Knob::unlockValue() {
+    assert(!_lock.tryLock());
+    if(!_valuePostedWhileLocked.isNull()){
+        _value = _valuePostedWhileLocked;
+        fillHashVector();
+    }
+    _lock.unlock();
+}
+
+void Knob::onValueChanged(const Variant& variant){
+    if(_lock.tryLock()){
+        _value = variant;
+        _lock.unlock();
+    }else{
+        _valuePostedWhileLocked = variant;
+    }
+    fillHashVector();
+    emit valueChangedByUser();
+    tryStartRendering();
+
 }
 /***********************************FILE_KNOB*****************************************/
 std::string File_Knob::serialize() const{

@@ -20,6 +20,7 @@
 
 class OfxNode;
 class AppInstance;
+class QMutex;
 namespace Powiter {
 
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
@@ -65,7 +66,7 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/
-    QStringList loadOFXPlugins();
+    std::map<QString,QMutex*> loadOFXPlugins();
 
 signals:
     void toolButtonAdded(QStringList,QString,QString,QString);

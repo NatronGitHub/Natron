@@ -1020,8 +1020,8 @@ void Gui::saveProjectAs(){
         outFile = dialog.filesToSave();
     }
     if (outFile.size() > 0) {
-        if (outFile.indexOf("."POWITER_PROJECT_FILE_EXTENION) == -1) {
-            outFile.append("."POWITER_PROJECT_FILE_EXTENION);
+        if (outFile.indexOf("." POWITER_PROJECT_FILE_EXTENION) == -1) {
+            outFile.append("." POWITER_PROJECT_FILE_EXTENION);
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
@@ -1274,7 +1274,8 @@ AddFormatDialog::AddFormatDialog(QWidget* parent):QDialog(parent)
     _secondLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
     _widthSpinBox->setMaximum(99999);
-    _widthSpinBox->setMinimum(0);
+    _widthSpinBox->setMinimum(1);
+    _widthSpinBox->setValue(1);
     _secondLineLayout->addWidget(_widthSpinBox);
     
     
@@ -1282,7 +1283,8 @@ AddFormatDialog::AddFormatDialog(QWidget* parent):QDialog(parent)
     _secondLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::INT_SPINBOX);
     _heightSpinBox->setMaximum(99999);
-    _heightSpinBox->setMinimum(0);
+    _heightSpinBox->setMinimum(1);
+    _heightSpinBox->setValue(1);
     _secondLineLayout->addWidget(_heightSpinBox);
     
     

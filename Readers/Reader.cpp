@@ -142,9 +142,9 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
         return boost::shared_ptr<Decoder>();
     }
     getApp()->getProject()->lock();
-    if(getApp()->getProject()->shouldAutoSetProjectFormat()){
-        getApp()->getProject()->setAutoSetProjectFormat(false);
-        getApp()->getProject()->setProjectDefaultFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+    if(getApp()->shouldAutoSetProjectFormat()){
+        getApp()->setAutoSetProjectFormat(false);
+        getApp()->setProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }else{
         getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }

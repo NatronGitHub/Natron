@@ -223,9 +223,9 @@ OFX::Host::ImageEffect::Image(clip)
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
-    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(0, 0));
-    // bounds and rod
     const Box2D& rod = internalImage->getRoD();
+    setPointerProperty(kOfxImagePropData,internalImage->pixelAt(rod.left(), rod.bottom()));
+    // bounds and rod
     setIntProperty(kOfxImagePropBounds, rod.left(), 0);
     setIntProperty(kOfxImagePropBounds, rod.bottom(), 1);
     setIntProperty(kOfxImagePropBounds, rod.right(), 2);
@@ -235,14 +235,14 @@ OFX::Host::ImageEffect::Image(clip)
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.right(), 2);
     setIntProperty(kOfxImagePropRegionOfDefinition, rod.top(), 3);
     // row bytes
-    setIntProperty(kOfxImagePropRowBytes, rod.width()*16);
+    setIntProperty(kOfxImagePropRowBytes, rod.width()*4*sizeof(float));
     setStringProperty(kOfxImageEffectPropComponents, kOfxImageComponentRGBA);
 }
 
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     assert(_bitDepth == eBitDepthFloat);
     const Box2D& bounds = _floatImage->getRoD();
-    if ((x >= bounds.left()) && ( x< bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
+    if ((x >= bounds.left()) && ( x < bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
     {
         return reinterpret_cast<OfxRGBAColourF*>(_floatImage->pixelAt(x, y));
     }

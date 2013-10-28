@@ -41,7 +41,7 @@ using boost::shared_ptr;
 
 namespace {
     void Hash64_appendKnob(Hash64* hash, const Knob& knob){
-        const std::vector<U64>& values= knob.getHashVector();
+        const std::vector<U64>& values = knob.getHashVector();
         for(U32 i=0;i<values.size();++i) {
             hash->append(values[i]);
         }
@@ -318,7 +318,13 @@ boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderS
     return entry;
 }
 
-void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
+void Node::unLockAllParams()  {
+    for(U32 i = 0 ; i< _knobs.size();++i) {
+        _knobs[i]->unlockValue();
+    }
+}
+
+void Node::computeTreeHashAndLockParams(std::vector<std::string> &alreadyComputedHash){
     /*If we already computed its hash,return*/
     for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
         if(alreadyComputedHash[i] == getName())
@@ -328,6 +334,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
     _hashValue.reset();
     /*append all values stored in knobs*/
     for(U32 i = 0 ; i< _knobs.size();++i) {
+        _knobs[i]->lockValue();
         Hash64_appendKnob(&_hashValue,*(_knobs[i]));
     }
     /*append the node name*/
@@ -343,7 +350,7 @@ void Node::computeTreeHash(std::vector<std::string> &alreadyComputedHash){
                 if(it->first != v->activeInput())
                     continue;
             }
-            it->second->computeTreeHash(alreadyComputedHash);
+            it->second->computeTreeHashAndLockParams(alreadyComputedHash);
             _hashValue.append(it->second->hash().value());
         }
     }
@@ -400,7 +407,7 @@ void Node::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 std::vector<Box2D> Node::splitRectIntoSmallerRect(const Box2D& rect,int splitsCount){
     std::vector<Box2D> ret;
-    int averagePixelsPerSplit = std::ceil(double(rect.width() * rect.height()) / (double)splitsCount);
+    int averagePixelsPerSplit = std::ceil(double(rect.area()) / (double)splitsCount);
     /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
     if(averagePixelsPerSplit < rect.width()){
         for (int i = rect.bottom(); i < rect.top(); ++i) {
@@ -427,16 +434,14 @@ void Node::tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D
 }
 boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow){
 
-    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,Box2D() );
-    boost::shared_ptr<Image> image;
+    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,Box2D());
     
     /*look-up the cache for any existing image already rendered*/
-    image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
-    
+    boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
     /*if not cached, we store the freshly allocated image in this member*/
     boost::shared_ptr<CachedValue<Image> > cachedImage;
     if(!image){
-        /*before allocating it we must fill the RoD of the image we want to render*/
+        /*before allocating     it we must fill the RoD of the image we want to render*/
         getRegionOfDefinition(time, &key._rod);
         int cost = 0;
         /*should data be stored on a physical device ?*/
@@ -469,19 +474,22 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
              amount of threads*/
             Node::RenderSafety safety = renderThreadSafety();
             if(safety == UNSAFE){
+                QMutex* pluginLock = appPTR->getMutexForPlugin(className().c_str());
+                assert(pluginLock);
+                pluginLock->lock();
+                render(time, scale, *it, image);
+                pluginLock->unlock();
+                image->markForRendered(*it);
+            }else if(safety == INSTANCE_SAFE){
                 _nodeInstanceLock.lock();
                 render(time, scale, *it, image);
-                image->markForRendered(*it);
                 _nodeInstanceLock.unlock();
-            }else if(safety == INSTANCE_SAFE){
-                render(time, scale, *it, image);
                 image->markForRendered(*it);
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<Box2D> splitRects = splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QtConcurrent::blockingMap(splitRects,
                         boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,image));
             }
-            
         }
     }
     /*now that we rendered the image, remove it from the images being rendered*/

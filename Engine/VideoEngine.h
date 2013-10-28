@@ -240,8 +240,7 @@ private:
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
     
-    U64 _treeVersion;/*!< the hash key associated to the current graph*/
-    bool _treeVersionValid;/*!< was _treeVersion initialized? */
+    bool _treeVersionValid;/*!< was _lastRequestedRunArgs._treeVersion ever initialized? */
     
     mutable QMutex _loopModeMutex;///protects _loopMode
     bool _loopMode; /*!< on if the player will loop*/
@@ -411,11 +410,6 @@ public:
      **/
 	bool isWorking() const;
     
-    /**
-     *@returns Returns the 64-bits key associated to the output node of the current graph. This key
-     *represents the version of the graph.
-     **/
-    U64 getCurrentTreeVersion() { assert(_treeVersionValid); return _treeVersion;}
     
     bool hasBeenAborted() const {return _abortRequested;}
     
@@ -427,7 +421,9 @@ private:
      *@brief Resets and computes the hash key for all the nodes in the graph. The tree version is the hash key of the output node
      *of the graph.
      **/
-    void updateTreeVersion();
+    void computeTreeVersionAndLockParams();
+    
+    void unlockAllParams();
     
     /**
      *@brief displays progress if the time to compute the current frame exeeded

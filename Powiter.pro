@@ -168,6 +168,7 @@ HEADERS += \
     Engine/Box.h \
     Engine/ChannelSet.h \
     Engine/Format.h \
+    Engine/FrameEntry.h \
     Engine/Hash64.h \
     Engine/ImageFetcher.h \
     Engine/ImageInfo.h \
@@ -190,7 +191,6 @@ HEADERS += \
     Engine/TimeLine.h \
     Engine/Timer.h \
     Engine/VideoEngine.h \
-    Engine/FrameEntry.h \
     Engine/ViewerNode.h \
     Global/AppManager.h \
     Global/Enums.h \
