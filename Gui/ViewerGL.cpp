@@ -657,7 +657,7 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	return 0;
 }
 void ViewerGL::initAndCheckGlExtensions(){
-	if(!QGLShaderProgram::hasOpenGLShaderPrograms()){
+	if(!QGLShaderProgram::hasOpenGLShaderPrograms(context())){
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
