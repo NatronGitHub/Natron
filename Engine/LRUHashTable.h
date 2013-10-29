@@ -91,11 +91,11 @@
 
 
 template <typename K,typename V,template<typename...> class MAP>
-class StlLRUCache
+class StlLRUHashTable
 {
 public:
     typedef K key_type;
-    typedef V value_type;
+    typedef std::list<V> value_type;
     // Key access history, most recent at back
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
@@ -103,12 +103,12 @@ public:
     
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUCache(){}
+    StlLRUHashTable(){}
     
     // Obtain value of the cached function for k
     typename key_to_value_type::iterator operator()(const key_type& k) {
         // Attempt to find existing record
-        typename key_to_value_type::iterator it =_key_to_value.find(k);
+        typename key_to_value_type::iterator it = _key_to_value.find(k);
         if (it!=_key_to_value.end()) {
             // We do have it:
             // Update access record by moving
@@ -124,15 +124,17 @@ public:
 
     // Record a fresh key-value pair in the cache
     void insert(const key_type& k,const value_type& v) {
-        // Make space if necessary
-        // Record k as most-recently-used key
-        typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-        
-        // Create the key-value entry,
-        // linked to the usage record.
-        _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
-
-        return ret;
+        typename key_to_value_type::iterator found =  _key_to_value.find(k);
+        if(found != _key_to_value.end()){
+            found->second.first.push_back(v);
+        }else{
+            value_type list;
+            list.push_back(v);
+            // Create the key-value entry,
+            // linked to the usage record.
+             typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
+             _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+        }
     }
     
     void clear() {
@@ -141,23 +143,23 @@ public:
     }
     
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,value_type> evict() {
+    std::pair<key_type,V> evict() {
         // Assert method is never called when cache is empty
         assert(!_key_tracker.empty());
         // Identify least recently used key
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
-        while(it->second.first.use_count() > 1 && it!= _key_to_value.end()){
-            ++it;
+        for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
+            if((*it2).use_count() == 1){
+               std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+               if(it->second.first.size() == 1){
+                   // Erase both elements to completely purge record
+                   _key_to_value.erase(it);
+                   _key_tracker.pop_front();
+               }
+               return ret;
+            }
         }
-        if(it != _key_to_value.end()){
-            std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
-            // Erase both elements to completely purge record
-            _key_to_value.erase(it);
-            _key_tracker.pop_front();
-            return ret;
-        }else{
-            return std::make_pair(key_type(),value_type());
-        }
+        return std::make_pair(key_type(),V());
     }
     
     unsigned int size() { return _container.size(); }
@@ -179,14 +181,14 @@ private:
 // SET is expected to be one of boost::bimaps::set_of
 // or boost::bimaps::unordered_set_of
 template <typename K,typename V,template <typename...> class SET>
-class BoostLRUCacheContainer
+class BoostLRUHashTable
 {
 public:
     typedef K key_type;
     typedef V value_type;
     typedef boost::bimaps::bimap<SET<key_type>,boost::bimaps::list_of<value_type> > container_type;
     
-    BoostLRUCacheContainer(){}
+    BoostLRUHashTable(){}
     
     // Obtain value of the cached function for k
     typename container_type::left_iterator operator()(const key_type& k) {
@@ -210,31 +212,41 @@ public:
         return _container.left.begin();
     }
     
-    void insert(const key_type& k,const value_type& v) {
+    void insert(const key_type& k,const V& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        _container.insert(typename container_type::value_type(k,v));
+        typename container_type::left_iterator found = this->operator ()(k);
+        if(found != _container.left.end()){
+            found->second.push_back(v);
+        }else{
+            value_type list;
+            list.push_back(v);
+            _container.insert(typename container_type::value_type(k,list));
+        }
     }
-    
-    
+
+
     void clear() {
         _container.clear();
     }
-    
-    std::pair<key_type,value_type> evict() {
+
+    std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it->first.use_count() > 1 && it != _container.right.end()){
+        while(it != _container.right.end()){
+            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
+                if((*it2).use_count() == 1){
+                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    if(it->first.size() == 1){
+                        _container.right.erase(it);
+                    }
+                    return ret;
+                }
+            }
             ++it;
         }
-        if(it != _container.right.end()){
-            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-            _container.right.erase(it);
-            return ret;
-        }else{
-            return std::make_pair(key_type(),value_type());
-        }
-        
+        return std::make_pair(key_type(),V());
+
     }
 
     unsigned int size(){return _container.size();}
@@ -251,7 +263,7 @@ private:
 
 #  ifndef POWITER_CACHE_USE_BOOST
 template <typename K,typename V>
-class StlLRUTreeCache{
+class StlLRUHashTable{
 public:
     typedef K key_type;
     typedef V value_type;
@@ -262,7 +274,7 @@ public:
     
     // Constuctor specifies the cached function and
     // the maximum number of records to be stored
-    StlLRUTreeCache(){}
+    StlLRUHashTable(){}
     
     // Obtain value of the cached function for k
     typename key_to_value_type::iterator operator()(const key_type& k) {
@@ -279,43 +291,51 @@ public:
 
     
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
+
+
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
+
+
     // Record a fresh key-value pair in the cache
     void insert(const key_type& k,const value_type& v) {
-        // Record k as most-recently-used key
-        typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-        
-        // Create the key-value entry,
-        // linked to the usage record.
-        _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
-
+        typename key_to_value_type::iterator found =  _key_to_value.find(k);
+        if(found != _key_to_value.end()){
+            found->second.first.push_back(v);
+        }else{
+            value_type list;
+            list.push_back(v);
+            // Create the key-value entry,
+            // linked to the usage record.
+             typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
+             _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+        }
     }
-   
-    
+
     void clear() {
         _key_to_value.clear();
         _key_tracker.clear();
     }
-    
+
     // Purge the least-recently-used element in the cache
-    std::pair<key_type,value_type> evict() {
+    std::pair<key_type,V> evict() {
         // Assert method is never called when cache is empty
         assert(!_key_tracker.empty());
         // Identify least recently used key
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
-        while(it->second.first.use_count() > 1 && it!= _key_to_value.end()){
-            ++it;
+        for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
+            if((*it2).use_count() == 1){
+               std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+               if(it->second.first.size() == 1){
+                   // Erase both elements to completely purge record
+                   _key_to_value.erase(it);
+                   _key_tracker.pop_front();
+               }
+               return ret;
+            }
         }
-        if(it != _key_to_value.end()){
-            std::pair<key_type,value_type> ret = std::make_pair(it->first,it->second.first);
-            // Erase both elements to completely purge record
-            _key_to_value.erase(it);
-            _key_tracker.pop_front();
-            return ret;
-        }else{
-            return std::make_pair(key_type(),value_type());
-        }
+        return std::make_pair(key_type(),V());
     }
+
     unsigned int size() { return _key_to_value.size(); }
   
     
@@ -331,13 +351,13 @@ private:
 
 #    ifdef POWITER_CACHE_USE_HASH
 template <typename K,typename V>
-class BoostLRUHashCache{
+class BoostLRUHashTable{
 public:
     typedef K key_type;
-    typedef V value_type;
+    typedef std::list<V> value_type;
     typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
     
-    BoostLRUHashCache(){}
+    BoostLRUHashTable(){}
     
     typename container_type::left_iterator operator()(const key_type& k) {
         // Attempt to find existing record
@@ -360,12 +380,18 @@ public:
         return _container.left.begin();
     }
     
-    // Return value is the value evicted from cache space was necessary.
-    void insert(const key_type& k,const value_type& v) {
+    void insert(const key_type& k,const V& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        _container.insert(typename container_type::value_type(k,v));
+        typename container_type::left_iterator found = this->operator ()(k);
+        if(found != _container.left.end()){
+            found->second.push_back(v);
+        }else{
+            value_type list;
+            list.push_back(v);
+            _container.insert(typename container_type::value_type(k,list));
+        }
     }
   
     
@@ -373,19 +399,22 @@ public:
         _container.clear();
     }
     
-    std::pair<key_type,value_type> evict() {
+    std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it->first.use_count() > 1 && it != _container.right.end()){
+        while(it != _container.right.end()){
+            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
+                if((*it2).use_count() == 1){
+                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    if(it->first.size() == 1){
+                        _container.right.erase(it);
+                    }
+                    return ret;
+                }
+            }
             ++it;
-        }
-        if(it != _container.right.end()){
-            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-            _container.right.erase(it);
-            return ret;
-        }else{
-            return std::make_pair(key_type(),value_type());
-        }
-        
+        }   
+        return std::make_pair(key_type(),V());
+
     }
     
     unsigned int size() { return _container.size(); }
@@ -397,13 +426,13 @@ private:
 #    else // !POWITER_CACHE_USE_HASH
 
 template <typename K,typename V>
-class BoostLRUTreeCache{
+class BoostLRUHashTable{
 public:
     typedef K key_type;
     typedef V value_type;
     typedef boost::bimaps::bimap<boost::bimaps::set_of<key_type>,boost::bimaps::list_of<value_type> > container_type;
     
-    BoostLRUTreeCache(){}
+    BoostLRUHashTable(){}
     
     typename container_type::left_iterator operator()(const key_type& k) {
         // Attempt to find existing record
@@ -424,33 +453,42 @@ public:
     typename container_type::left_iterator begin() {
         return _container.left.begin();
     }
-    // Return value is the value evicted from cache space was necessary.
-    void insert(const key_type& k,const value_type& v) {
+    void insert(const key_type& k,const V& v) {
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        _container.insert(typename container_type::value_type(k,v));
+        typename container_type::left_iterator found = this->operator ()(k);
+        if(found != _container.left.end()){
+            found->second.push_back(v);
+        }else{
+            value_type list;
+            list.push_back(v);
+            _container.insert(typename container_type::value_type(k,list));
+        }
     }
-    
+
+
     void clear() {
         _container.clear();
     }
-    
-    std::pair<key_type,value_type> evict() {
+
+    std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
-        while(it->first.use_count() > 1 && it != _container.right.end()){
+        while(it != _container.right.end()){
+            for(typename std::list<V>::iterator it2 = it->first.begin();it2 != it->first.end();++it2){
+                if((*it2).use_count() == 1){
+                    std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
+                    if(it->first.size() == 1){
+                        _container.right.erase(it);
+                    }
+                    return ret;
+                }
+            }
             ++it;
         }
-        if(it != _container.right.end()){
-            std::pair<key_type,value_type> ret = std::make_pair(it->second,it->first);
-            _container.right.erase(it);
-            return ret;
-        }else{
-            return std::make_pair(key_type(),value_type());
-        }
-        
+        return std::make_pair(key_type(),V());
+
     }
-    
     unsigned int size() { return _container.size(); }
   
 private:

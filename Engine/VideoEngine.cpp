@@ -286,6 +286,10 @@ void VideoEngine::run(){
             }
         }
         
+        if (!_currentRunArgs._sameFrame) {
+            appPTR->clearNodeCache();
+        }
+        
         /*get the frame range*/
         int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
         ViewerNode* viewer = _tree.outputAsViewer();

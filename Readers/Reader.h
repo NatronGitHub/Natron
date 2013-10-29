@@ -21,7 +21,7 @@
 
 #include "Global/Macros.h"
 #include "Engine/Node.h"
-#include "Engine/LRUcache.h"
+#include "Engine/LRUHashTable.h"
 #include "Readers/Decoder.h"
 namespace Powiter{
     class FrameEntry;
@@ -49,51 +49,52 @@ public:
     public:
         
         typedef boost::shared_ptr<Decoder> value_type;
-        typedef std::string key_type;
+        typedef std::string hash_type;
         
 #ifdef USE_VARIADIC_TEMPLATES
-        
+
 #ifdef POWITER_CACHE_USE_BOOST
 #ifdef POWITER_CACHE_USE_HASH
-        typedef BoostLRUCacheContainer<key_type, value_type >, boost::bimaps::unordered_set_of> CacheContainer;
+            typedef BoostLRUHashTable<hash_type, value_type>, boost::bimaps::unordered_set_of> CacheContainer;
 #else
-        typedef BoostLRUCacheContainer<key_type, value_type , boost::bimaps::set_of> CacheContainer;
+            typedef BoostLRUHashTable<hash_type, value_type > , boost::bimaps::set_of> CacheContainer;
 #endif
-        typedef typename CacheContainer::container_type::left_iterator CacheIterator;
-        typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-        static value_type getValueFromIterator(CacheIterator it){return it->second;}
-        
+            typedef typename CacheContainer::container_type::left_iterator CacheIterator;
+            typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+            static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
+
 #else // cache use STL
-        
+
 #ifdef POWITER_CACHE_USE_HASH
-        typedef StlLRUCache<key_type,value_type, std::unordered_map> CacheContainer;
+            typedef StlLRUHashTable<hash_type,value_type >, std::unordered_map> CacheContainer;
 #else
-        typedef StlLRUCache<key_type,value_type, std::map> CacheContainer;
+            typedef StlLRUHashTable<hash_type,value_type >, std::map> CacheContainer;
 #endif
-        typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-        typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-        static value_type  getValueFromIterator(CacheIterator it){return it->second;}
+            typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
+            typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+            static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
 #endif // POWITER_CACHE_USE_BOOST
-        
+
 #else // !USE_VARIADIC_TEMPLATES
-        
+
 #ifdef POWITER_CACHE_USE_BOOST
 #ifdef POWITER_CACHE_USE_HASH
-        typedef BoostLRUHashCache<key_type, value_type > CacheContainer;
+            typedef BoostLRUHashTable<hash_type,value_type> CacheContainer;
 #else
-        typedef BoostLRUTreeCache<key_type, value_type > CacheContainer;
+            typedef BoostLRUHashTable<hash_type, value_type > CacheContainer;
 #endif
-        typedef typename CacheContainer::container_type::left_iterator CacheIterator;
-        typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-        static value_type  getValueFromIterator(CacheIterator it){return it->second;}
-        
+            typedef typename CacheContainer::container_type::left_iterator CacheIterator;
+            typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+            static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
+
 #else // cache use STL and tree (std map)
-        
-        typedef StlLRUTreeCache<key_type, value_type> CacheContainer;
-        typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-        typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-        static value_type  getValueFromIterator(CacheIterator it){return it->second.first;}
+
+            typedef StlLRUHashTable<hash_type, value_type > CacheContainer;
+            typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
+            typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+            static std::list<value_type>&   getValueFromIterator(CacheIterator it){return it->second.first;}
 #endif // POWITER_CACHE_USE_BOOST
+
 #endif // USE_VARIADIC_TEMPLATES
         
         /**
@@ -120,7 +121,7 @@ public:
          * @brief Inserts a new frame into the buffer.
          * @param desc  The frame will be identified by this descriptor.
          */
-        void insert(const key_type& key,value_type value){
+        void insert(const hash_type& key,value_type value){
             if((int)_buffer.size() > _maximumBufferSize){
                 _buffer.evict();
             }
@@ -132,11 +133,11 @@ public:
          * @param filename The name of the frame.
          * @return Returns an iterator pointing to a valid frame in the buffer if it could find it. Otherwise points to end()
          */
-        value_type get(const key_type& key) {
+        value_type get(const hash_type& key) {
             
             CacheIterator ret =  _buffer(key);
             if(ret != _buffer.end()){
-                return getValueFromIterator(ret);
+                return *(getValueFromIterator(ret).begin());
             }else{
                 return value_type();
             }
