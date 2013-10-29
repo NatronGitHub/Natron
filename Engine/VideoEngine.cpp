@@ -287,7 +287,7 @@ void VideoEngine::run(){
             }
         }
         
-        if (!_currentRunArgs._sameFrame) {
+        if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
             appPTR->clearNodeCache();
         }
         

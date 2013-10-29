@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /*
-*Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012. 
-*contact: immarespond at gmail dot com
-*
-*/
+ *Created by Alexandre GAUTHIER-FOICHAT on 6/1/2012.
+ *contact: immarespond at gmail dot com
+ *
+ */
 //
 
 //Copyright (c) 2010-2011, Tim Day <timday@timday.com>
@@ -49,11 +49,11 @@
  *- BOOST with hashing: boost::bimap with boost::unordered_set_of
  *- BOOST with comparison : boost::bimap with boost::set_of
  *
- *Using the appropriate #define , the software can be tuned to use a specific 
+ *Using the appropriate #define , the software can be tuned to use a specific
  *underlying container version for all caches.
  *
  *USE_VARIADIC_TEMPLATES : define this if c++11 features like var args are
- *supported. It will make use of variadic templates to greatly 
+ *supported. It will make use of variadic templates to greatly
  *reduce the line of codes necessary, and it will also make it possible
  *to use STL with hashing (std::unordered_map), as it is defined in c++11
  *
@@ -117,11 +117,11 @@ public:
         }
         return it;
     }
-
+    
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
-
+    
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
-
+    
     // Record a fresh key-value pair in the cache
     void insert(const key_type& k,const value_type& v) {
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
@@ -132,8 +132,8 @@ public:
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-             typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-             _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+            typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
+            _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
         }
     }
     
@@ -150,24 +150,26 @@ public:
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
         for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
             if((*it2).use_count() == 1){
-               std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
-               if(it->second.first.size() == 1){
-                   // Erase both elements to completely purge record
-                   _key_to_value.erase(it);
-                   _key_tracker.pop_front();
-               }
-               return ret;
+                std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+                if(it->second.first.size() == 1){
+                    // Erase both elements to completely purge record
+                    _key_to_value.erase(it);
+                    _key_tracker.pop_front();
+                }else{
+                    it->second.first.erase(it2);
+                }
+                return ret;
             }
         }
         return std::make_pair(key_type(),V());
     }
     
     unsigned int size() { return _container.size(); }
-
-
+    
+    
     
 private:
-        // Key access history
+    // Key access history
     key_tracker_type _key_tracker;
     
     // Key-to-value lookup
@@ -175,11 +177,11 @@ private:
 };
 
 #  else // POWITER_CACHE_USE_BOOST
-// Class providing fixed-size (by number of records)
-// LRU-replacement cache of a function with signature
-// V f(K).
-// SET is expected to be one of boost::bimaps::set_of
-// or boost::bimaps::unordered_set_of
+        // Class providing fixed-size (by number of records)
+        // LRU-replacement cache of a function with signature
+        // V f(K).
+        // SET is expected to be one of boost::bimaps::set_of
+        // or boost::bimaps::unordered_set_of
 template <typename K,typename V,template <typename...> class SET>
 class BoostLRUHashTable
 {
@@ -225,12 +227,12 @@ public:
             _container.insert(typename container_type::value_type(k,list));
         }
     }
-
-
+    
+    
     void clear() {
         _container.clear();
     }
-
+    
     std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
         while(it != _container.right.end()){
@@ -240,20 +242,23 @@ public:
                     if(it->first.size() == 1){
                         _container.right.erase(it);
                     }
+                    else{
+                        it->first.erase(it2);
+                    }
                     return ret;
                 }
             }
             ++it;
         }
         return std::make_pair(key_type(),V());
-
+        
     }
-
+    
     unsigned int size(){return _container.size();}
     
-
+    
 private:
-        container_type _container;
+    container_type _container;
 };
 #  endif // POWITER_CACHE_USE_BOOST
 
@@ -288,14 +293,14 @@ public:
         }
         return it;
     }
-
+    
     
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
-
-
+    
+    
     typename key_to_value_type::iterator begin() { return _key_to_value.begin(); }
-
-
+    
+    
     // Record a fresh key-value pair in the cache
     void insert(const key_type& k,const value_type& v) {
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
@@ -306,16 +311,16 @@ public:
             list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
-             typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
-             _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
+            typename key_tracker_type::iterator it =_key_tracker.insert(_key_tracker.end(),k);
+            _key_to_value.insert(std::make_pair(k,std::make_pair(v,it)));
         }
     }
-
+    
     void clear() {
         _key_to_value.clear();
         _key_tracker.clear();
     }
-
+    
     // Purge the least-recently-used element in the cache
     std::pair<key_type,V> evict() {
         // Assert method is never called when cache is empty
@@ -324,23 +329,25 @@ public:
         const typename key_to_value_type::iterator  it  = _key_to_value.find(_key_tracker.front());
         for(typename std::list<V>::iterator it2 = it->second.first.begin();it2!=it->second.first.end();++it2){
             if((*it2).use_count() == 1){
-               std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
-               if(it->second.first.size() == 1){
-                   // Erase both elements to completely purge record
-                   _key_to_value.erase(it);
-                   _key_tracker.pop_front();
-               }
-               return ret;
+                std::pair<key_type,V> ret = std::make_pair(it->first,*it2);
+                if(it->second.first.size() == 1){
+                    // Erase both elements to completely purge record
+                    _key_to_value.erase(it);
+                    _key_tracker.pop_front();
+                }else{
+                    it->second.first.erase(it2);
+                }
+                return ret;
             }
         }
         return std::make_pair(key_type(),V());
     }
-
+    
     unsigned int size() { return _key_to_value.size(); }
-  
+    
     
 private:
-       // Key access history
+    // Key access history
     key_tracker_type _key_tracker;
     
     // Key-to-value lookup
@@ -393,7 +400,7 @@ public:
             _container.insert(typename container_type::value_type(k,list));
         }
     }
-  
+    
     
     void clear() {
         _container.clear();
@@ -407,18 +414,20 @@ public:
                     std::pair<key_type,V> ret = std::make_pair(it->second,*it2);
                     if(it->first.size() == 1){
                         _container.right.erase(it);
+                    }else{
+                        it->first.erase(it2);
                     }
                     return ret;
                 }
             }
             ++it;
-        }   
+        }
         return std::make_pair(key_type(),V());
-
+        
     }
     
     unsigned int size() { return _container.size(); }
-
+    
 private:
     container_type _container;
 };
@@ -466,12 +475,12 @@ public:
             _container.insert(typename container_type::value_type(k,list));
         }
     }
-
-
+    
+    
     void clear() {
         _container.clear();
     }
-
+    
     std::pair<key_type,V> evict() {
         typename container_type::right_iterator it = _container.right.begin();
         while(it != _container.right.end()){
@@ -481,16 +490,19 @@ public:
                     if(it->first.size() == 1){
                         _container.right.erase(it);
                     }
+                    else{
+                        it->first.erase(it2);
+                    }
                     return ret;
                 }
             }
             ++it;
         }
         return std::make_pair(key_type(),V());
-
+        
     }
     unsigned int size() { return _container.size(); }
-  
+    
 private:
     container_type _container;
 };
