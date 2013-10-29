@@ -769,7 +769,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     for(int c = 0 ; c < _proxy->rowCount(parent) ; ++c) {
         QModelIndex item = _proxy->index(c,0,parent);
         /*We skip directories*/
-        if(_model->isDir(_proxy->mapToSource(item))){
+        if(!item.isValid() || _model->isDir(_proxy->mapToSource(item))){
             continue;
         }
         QString name = item.data(QFileSystemModel::FilePathRole).toString();

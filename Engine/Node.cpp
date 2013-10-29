@@ -448,7 +448,6 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         /*allocate a new image*/
         image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
     }
-    
     /*before rendering we add to the _imagesBeingRendered member the image*/
     {
         QMutexLocker locker(&_nodeInstanceLock);
@@ -495,11 +494,10 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::iterator it = _imagesBeingRendered.find(time);
         assert(it != _imagesBeingRendered.end());
         //if another thread is rendering the same image, leave it
-        if(it->second.use_count() == 1){
+        if(it->second.use_count() == 3){
             _imagesBeingRendered.erase(it);
         }   
     }
-    
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
     return image;

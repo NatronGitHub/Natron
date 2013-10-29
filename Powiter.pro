@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost opengl qt expat #sanitizer
+CONFIG += openexr freetype2 ftgl boost opengl qt expat sanitizer
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -26,9 +26,7 @@ unix {
      CONFIG += link_pkgconfig
      openexr:   PKGCONFIG += OpenEXR
      ftgl:      PKGCONFIG += ftgl
-     ffmpeg:    PKGCONFIG += libavcodec libavformat libavutil libswscale libavdevice libavfilter
      freetype2: PKGCONFIG += freetype2
-     eigen2:    PKGCONFIG += eigen2
      expat:     PKGCONFIG += expat
      !macx {
          LIBS +=  -lGLU -ldl
