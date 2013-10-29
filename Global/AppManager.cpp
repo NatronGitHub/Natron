@@ -103,7 +103,7 @@ _gui(new Gui(this))
                 QString text(QCoreApplication::applicationName() + " - ");
                 text.append(_currentProject->getProjectName());
                 _gui->setWindowTitle(text);
-                (void)createNode("Viewer");
+                createNode("Viewer");
             }else{
                 QString name = SequenceFileDialog::removePath(projectName);
                 QString path = projectName.left(projectName.indexOf(name));
@@ -112,7 +112,7 @@ _gui(new Gui(this))
                 } catch (const std::exception& e) {
                     Powiter::errorDialog("Project loader",e.what());
                     cout << e.what() << endl;
-                    (void)createNode("Viewer");
+                    createNode("Viewer");
                 }
             }
         }
@@ -121,7 +121,7 @@ _gui(new Gui(this))
             QString text(QCoreApplication::applicationName() + " - ");
             text.append(_currentProject->getProjectName());
             _gui->setWindowTitle(text);
-            (void)createNode("Viewer");
+            createNode("Viewer");
         }else{
             QString name = SequenceFileDialog::removePath(projectName);
             QString path = projectName.left(projectName.indexOf(name));
@@ -130,7 +130,7 @@ _gui(new Gui(this))
             } catch (const std::exception& e) {
                 Powiter::errorDialog("Project loader",e.what());
                 cout << e.what() << endl;
-                (void)createNode("Viewer");
+                createNode("Viewer");
             }
 
         }
@@ -219,7 +219,7 @@ void AppInstance::loadProject(const QString& path,const QString& name){
     }catch(const std::exception& e){
         Powiter::errorDialog("Project loader",e.what());
         cout << e.what() << endl;
-        (void)createNode("Viewer");
+        createNode("Viewer");
         return;
     }
     QString text(QCoreApplication::applicationName() + " - ");
@@ -347,7 +347,7 @@ bool AppInstance::findAutoSave() {
                 }catch(const std::exception& e){
                     Powiter::errorDialog("Project loader",e.what());
                     cout << e.what() << endl;
-                    (void)createNode("Viewer");
+                    createNode("Viewer");
                 }
                 if (exists) {
                     _currentProject->setHasProjectBeenSavedByUser(true);

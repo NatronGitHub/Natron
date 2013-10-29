@@ -861,10 +861,10 @@ void ConnectCommand::undo(){
     _edge->setSource(_oldSrc);
     
     if(_oldSrc){
-        (void)_graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->connect(_edge->getInputNumber(), _oldSrc->getNode(), _edge->getDest()->getNode());
     }
     if(_newSrc){
-        (void)_graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
+        _graph->getGui()->getApp()->disconnect(_newSrc->getNode(), _edge->getDest()->getNode());
     }
     
     if(_oldSrc){
@@ -962,7 +962,7 @@ void SmartInputDialog::keyPressEvent(QKeyEvent *e){
     if(e->key() == Qt::Key_Return){
         QString res=textEdit->lineEdit()->text();
         if(appPTR->getNodeNameList().contains(res)){
-            (void)graph->getGui()->getApp()->createNode(res);
+            graph->getGui()->getApp()->createNode(res);
             graph->setSmartNodeCreationEnabled(true);
             graph->setMouseTracking(true);
             //textEdit->releaseKeyboard();

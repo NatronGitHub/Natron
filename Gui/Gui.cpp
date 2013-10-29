@@ -977,7 +977,7 @@ void ToolButton::addTool(const QString& actionName,const QStringList& grouping,c
     _actions.push_back(actionRef);
 }
 void ActionRef::onTriggered(){
-    (void)_app->createNode(_nodeName);
+    _app->createNode(_nodeName);
 }
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);

@@ -657,7 +657,7 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	return 0;
 }
 void ViewerGL::initAndCheckGlExtensions(){
-	if(!QGLShaderProgram::hasOpenGLShaderPrograms()){
+	if(!QGLShaderProgram::hasOpenGLShaderPrograms(context())){
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
@@ -977,6 +977,12 @@ U32 ViewerGL::toBGRA(U32 r,U32 g,U32 b,U32 a){
     
 }
 
+#if QT_VERSION < 0x050000
+#define QMouseEventLocalPos(e) (e->posF())
+#else
+#define QMouseEventLocalPos(e) (e->localPos())
+#endif
+
 void ViewerGL::mousePressEvent(QMouseEvent *event){
     if(event->button() == Qt::RightButton){
         _menu->exec(mapToGlobal(event->pos()));
@@ -987,7 +993,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
     if (event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier) ) {
         _ms = DRAGGING;
     } else if (event->button() == Qt::LeftButton) {
-        _viewerTab->getInternalNode()->notifyOverlaysPenDown(event->posF(),
+        _viewerTab->getInternalNode()->notifyOverlaysPenDown(QMouseEventLocalPos(event),
                                                              toImgCoordinates_fast(event->x(), event->y()));
     }
     QGLWidget::mousePressEvent(event);
@@ -995,7 +1001,7 @@ void ViewerGL::mousePressEvent(QMouseEvent *event){
 
 void ViewerGL::mouseReleaseEvent(QMouseEvent *event){
     _ms = UNDEFINED;
-    _viewerTab->getInternalNode()->notifyOverlaysPenUp(event->posF(),
+    _viewerTab->getInternalNode()->notifyOverlaysPenUp(QMouseEventLocalPos(event),
                                                        toImgCoordinates_fast(event->x(), event->y()));
     QGLWidget::mouseReleaseEvent(event);
 }
@@ -1041,7 +1047,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
-        _viewerTab->getInternalNode()->notifyOverlaysPenMotion(event->posF(),pos);
+        _viewerTab->getInternalNode()->notifyOverlaysPenMotion(QMouseEventLocalPos(event),pos);
     }
 }
 

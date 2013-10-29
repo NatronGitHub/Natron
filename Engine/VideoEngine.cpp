@@ -28,6 +28,7 @@
 #include "Engine/Row.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Timer.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
 
@@ -180,9 +181,9 @@ bool VideoEngine::startEngine() {
     }
     
     
-    SequenceTime firstFrame,lastFrame;
-    firstFrame = _tree.firstFrame();
-    lastFrame = _tree.lastFrame();
+    //SequenceTime firstFrame,lastFrame;
+    //firstFrame = _tree.firstFrame();
+    //lastFrame = _tree.lastFrame();
 
     {
         QMutexLocker workingLocker(&_workingMutex);
