@@ -173,7 +173,14 @@ void KnobFactory::loadBultinKnobs(){
     _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
     delete strKnob;
     
+    Knob* richTxtKnob = RichText_Knob::BuildKnob(NULL,stub,1);
     
+    std::map<std::string,void*> RICHTXTfunctions;
+    RICHTXTfunctions.insert(make_pair("BuildKnob",(void*)&RichText_Knob::BuildKnob));
+    RICHTXTfunctions.insert(make_pair("BuildKnobGui",(void*)&RichText_KnobGui::BuildKnobGui));
+    LibraryBinary *RICHTXTKnobPlugin = new LibraryBinary(RICHTXTfunctions);
+    _loadedKnobs.insert(make_pair(richTxtKnob->name(),RICHTXTKnobPlugin));
+    delete richTxtKnob;
 }
 
 
@@ -746,4 +753,20 @@ void Tab_Knob::addKnob(const std::string& tabName,Knob* k){
         it->second.push_back(k);
     }
 }
+/******************************RichText_Knob**************************************/
 
+void RichText_Knob::fillHashVector(){
+    _hashVector.clear();
+    QString str(_value.toString());
+    for (int i = 0; i < str.size(); ++i) {
+        _hashVector.push_back(str.at(i).unicode());
+    }
+}
+
+std::string RichText_Knob::serialize() const{
+    return _value.toString().toStdString();
+}
+
+void RichText_Knob::_restoreFromString(const std::string& str){
+    _value.setValue(str);
+}

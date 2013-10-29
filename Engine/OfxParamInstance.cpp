@@ -812,6 +812,7 @@ OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor&
 , _fileKnob(0)
 , _outputFileKnob(0)
 , _stringKnob(0)
+, _multiLineKnob(0)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -871,6 +872,22 @@ OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor&
         _stringKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
         _stringKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
         set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
+    }else if(mode == kOfxParamStringIsMultiLine){
+        _multiLineKnob = dynamic_cast<RichText_Knob*>(appPTR->getKnobFactory().createKnob("RichText", node, getParamLabel(this)));
+        QObject::connect(_multiLineKnob, SIGNAL(valueChangedByUser()), this, SLOT(triggerInstanceChanged()));
+        if(layoutHint == 2){
+            _multiLineKnob->turnOffNewLine();
+        }
+        _multiLineKnob->setSpacingBetweenItems(properties.getIntProperty(kOfxParamPropLayoutPadWidth));
+        if (!properties.getIntProperty(kOfxParamPropCanUndo)) {
+            _multiLineKnob->turnOffUndoRedo();
+        }
+        const std::string& hint = properties.getStringProperty(kOfxParamPropHint);
+        _multiLineKnob->setHintToolTip(hint);
+        _multiLineKnob->setEnabled((bool)properties.getIntProperty(kOfxParamPropEnabled));
+        _multiLineKnob->setVisible(!(bool)properties.getIntProperty(kOfxParamPropSecret));
+        set(properties.getStringProperty(kOfxParamPropDefault,1).c_str());
+
     }
     
     
@@ -883,8 +900,10 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         str = fileName.toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
-    }else{
+    }else if(_stringKnob){
         str = _stringKnob->getString();
+    }else if(_multiLineKnob){
+        str = _multiLineKnob->getString();
     }
     return kOfxStatOK;
 }
@@ -894,8 +913,10 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
         str = _fileKnob->getRandomFrameName(time).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
-    }else{
+    }else if(_stringKnob){
         str = _stringKnob->getString();
+    }else if(_multiLineKnob){
+        str = _multiLineKnob->getString();
     }
     return kOfxStatOK;
 }
@@ -909,6 +930,9 @@ OfxStatus OfxStringInstance::set(const char* str) {
     if(_stringKnob){
         _stringKnob->setValue(str);
     }
+    if(_multiLineKnob){
+        _multiLineKnob->setValue(str);
+    }
     return kOfxStatOK;
 }
 OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
@@ -920,6 +944,9 @@ OfxStatus OfxStringInstance::set(OfxTime /*time*/, const char* str) {
     }
     if(_stringKnob){
         _stringKnob->setValue(str);
+    }
+    if(_multiLineKnob){
+        _multiLineKnob->setValue(str);
     }
     return kOfxStatOK;
 }
@@ -950,6 +977,9 @@ Knob* OfxStringInstance::getKnob() const{
     if(_stringKnob){
         return _stringKnob;
     }
+    if(_multiLineKnob){
+        return _multiLineKnob;
+    }
     return NULL;
 }
 // callback which should set enabled state as appropriate
@@ -962,6 +992,9 @@ void OfxStringInstance::setEnabled(){
     }
     if (_stringKnob) {
         _stringKnob->setEnabled(getEnabled());
+    }
+    if(_multiLineKnob){
+        _multiLineKnob->setEnabled(getEnabled());
     }
 }
 
@@ -976,7 +1009,9 @@ void OfxStringInstance::setSecret(){
     if (_stringKnob) {
         _stringKnob->setVisible(!getSecret());
     }
-    
+    if(_multiLineKnob){
+        _multiLineKnob->setVisible(!getSecret());
+    }
 }
 
 void OfxStringInstance::triggerInstanceChanged() {

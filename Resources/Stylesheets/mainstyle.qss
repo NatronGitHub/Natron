@@ -197,7 +197,10 @@ color : %5
 QGraphicsView{
 background-color: %3;
 }
-
+QTextEdit{
+color: %5;
+background-color: %3;
+}
 QScrollArea{
 background-color: %2;
 }

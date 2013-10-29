@@ -1058,4 +1058,37 @@ private:
     std::map<std::string,std::vector<Knob*> > _knobs;
 };
 
+/******************************RichText_Knob**************************************/
+class RichText_Knob:public Knob
+{
+public:
+    
+    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
+        return new RichText_Knob(node,description,dimension);
+    }
+    
+    RichText_Knob(Node*  node, const std::string& description,int dimension):
+    Knob(node,description,dimension){
+        
+    }
+    
+    virtual void fillHashVector();
+    
+    virtual std::string serialize() const;
+    
+    virtual const std::string name(){return "RichText";}
+    
+    std::string getString() const {return _value.toString().toStdString();}
+    
+protected:
+    
+    virtual void tryStartRendering(){
+        startRendering(false);
+    }
+    
+    
+    virtual void _restoreFromString(const std::string& str);
+
+};
+
 #endif // KNOB_H

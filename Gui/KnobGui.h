@@ -43,6 +43,7 @@ class QHBoxLayout;
 class ScaleSlider;
 class QGridLayout;
 class DockablePanel;
+class QTextEdit;
 class KnobGui : public QObject
 {
     Q_OBJECT
@@ -709,6 +710,41 @@ private:
 
 
 /*****************************/
+
+/*****************************/
+class RichText_KnobGui : public KnobGui{
+    Q_OBJECT
+public:
+    static KnobGui* BuildKnobGui(Knob* knob,DockablePanel* container){ return new RichText_KnobGui(knob,container); }
+    
+    
+    RichText_KnobGui(Knob* knob,DockablePanel* container):KnobGui(knob,container) {}
+	
+    virtual ~RichText_KnobGui();
+    
+    virtual void createWidget(QGridLayout* layout,int row);
+    
+    virtual void hide();
+    
+    virtual void show();
+    
+    virtual void setEnabled(bool b);
+    
+    virtual void addToLayout(QHBoxLayout* layout);
+    
+public slots:
+    void onTextChanged();
+    
+protected:
+    
+    virtual void updateGUI(const Variant& variant);
+    
+private:
+	QTextEdit* _textEdit;
+    QLabel* _descriptionLabel;
+    
+};
+
 
 
 #endif // POWITER_GUI_KNOB_H_

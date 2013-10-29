@@ -42,6 +42,7 @@ class Double_Knob;
 class Bool_Knob;
 class ComboBox_Knob;
 class Group_Knob;
+class RichText_Knob;
 class OfxNode;
 class Knob;
 class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
@@ -325,6 +326,7 @@ class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstanc
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
+    RichText_Knob* _multiLineKnob;
     QThreadStorage<std::string> _localString;
 public:
     

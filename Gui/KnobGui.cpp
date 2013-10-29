@@ -21,6 +21,7 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QFileDialog>
+#include <QTextEdit>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
@@ -1216,3 +1217,60 @@ void Group_KnobGui::addToLayout(QHBoxLayout* layout){
     }
     layout->addWidget(mainWidget);
 }
+
+//=============================RICH_TEXT_KNOBGUI===================================
+
+void RichText_KnobGui::createWidget(QGridLayout* layout,int row){
+    _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+    _textEdit = new QTextEdit(layout->parentWidget());
+    _textEdit->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_textEdit,row,1,Qt::AlignLeft);
+    QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+
+}
+
+RichText_KnobGui::~RichText_KnobGui(){
+    delete _descriptionLabel;
+    delete _textEdit;
+
+}
+
+void RichText_KnobGui::hide(){
+    _descriptionLabel->hide();
+    _textEdit->hide();
+}
+
+void RichText_KnobGui::show(){
+    _descriptionLabel->show();
+    _textEdit->show();
+}
+void RichText_KnobGui::setEnabled(bool b){
+    _descriptionLabel->setEnabled(b);
+    _textEdit->setEnabled(b);
+}
+
+void RichText_KnobGui::addToLayout(QHBoxLayout* layout){
+    layout->addWidget(_descriptionLabel);
+    layout->addWidget(_textEdit);
+}
+
+void RichText_KnobGui::onTextChanged(){
+    pushUndoCommand(new KnobUndoCommand(this,_knob->getValueAsVariant(),Variant(_textEdit->toPlainText())));
+}
+
+
+void RichText_KnobGui::updateGUI(const Variant& variant){
+    QObject::disconnect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+    QTextCursor cursor = _textEdit->textCursor();
+    int pos = cursor.position();
+    _textEdit->clear();
+    QString txt = variant.toString();
+    _textEdit->setPlainText(txt);
+    cursor.setPosition(pos);
+    _textEdit->setTextCursor(cursor);
+    QObject::connect(_textEdit, SIGNAL(textChanged()), this, SLOT(onTextChanged()));
+
+}
+

@@ -753,8 +753,12 @@ void linear_from_short(float *to, const U16 *from, int W, int bits, int delta)
 
 void linear_from_float(float *to, const float *from, int W, int delta)
 {
-    for (int i = 0; i < W; i += delta) {
-        to[i] = from[i];
+    if(delta == 1){
+        memcpy(to, from, W*sizeof(float));
+    }else{
+        for (int i = 0; i < W; i += delta) {
+            to[i] = from[i];
+        }
     }
 }
 
