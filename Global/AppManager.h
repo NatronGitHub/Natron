@@ -71,7 +71,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(const QString& name) WARN_UNUSED_RETURN;
+    Node* createNode(const QString& name);
     
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
@@ -121,11 +121,11 @@ public:
     ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where) WARN_UNUSED_RETURN;
 
 
-    bool connect(int inputNumber,const std::string& inputName,Node* output) WARN_UNUSED_RETURN;
+    bool connect(int inputNumber,const std::string& inputName,Node* output);
 
-    bool connect(int inputNumber,Node* input,Node* output) WARN_UNUSED_RETURN;
+    bool connect(int inputNumber,Node* input,Node* output);
 
-    bool disconnect(Node* input,Node* output) WARN_UNUSED_RETURN;
+    bool disconnect(Node* input,Node* output);
 
     void autoConnect(Node* target,Node* created);
 

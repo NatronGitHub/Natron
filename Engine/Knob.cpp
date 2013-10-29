@@ -381,7 +381,7 @@ void File_Knob::getVideoSequenceFromFilesList(){
                     int number = frameIndexStr.toInt();
                     _filesSequence.insert(make_pair(number,unModifiedName));
                 }else{
-                    std::cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << endl;
+                    std::cout << " File_Knob : WARNING !! several frames in sequence but no frame count found in their name " << std::endl;
                 }
             }
         }
