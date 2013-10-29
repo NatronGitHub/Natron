@@ -367,12 +367,16 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
     /*we copy the frame to the cache*/
     if(!_renderAborted){
         assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
-        boost::shared_ptr<Powiter::CachedValue<FrameEntry> > cachedFrame = appPTR->getViewerCache().newEntry(key, _interThreadInfos._pixelsCount, 1);
         size_t bytesToCopy = _interThreadInfos._pixelsCount;
+        boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
+        if(!cachedFrame){
+            std::cout << "Failed to cache the frame rendered by the viewer." << std::endl;
+            return StatOK;
+        }
         if(viewer->hasHardware() && !viewer->byteMode()){
             bytesToCopy *= sizeof(float);
         }
-        memcpy(cachedFrame->getObject()->data(),viewer->getFrameData(),bytesToCopy);
+        memcpy((char*)cachedFrame->data(),viewer->getFrameData(),bytesToCopy);
     }
     
     QMutexLocker locker(&_pboUnMappedMutex);

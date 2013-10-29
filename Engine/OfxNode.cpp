@@ -355,7 +355,7 @@ void OfxNode::render(SequenceTime time,RenderScale scale,const Box2D& roi,boost:
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
-    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale);
+    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,0,1);
 }
 
 Node::RenderSafety OfxNode::renderThreadSafety() const{

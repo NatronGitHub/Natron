@@ -56,6 +56,19 @@ OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OF
     return new OfxClipInstance(node(),node()->effectInstance(),index, descriptor);
 }
 
+OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
+                               const char* id,
+                               const char* format,
+                               va_list args){
+    //not doing anything yet: not implemented
+    vmessage(type,id,format,args);
+    return kOfxStatOK;
+}
+
+OfxStatus OfxImageEffectInstance::clearPersistentMessage(){
+    //not yet implemented
+    return kOfxStatOK;
+}
 OfxStatus OfxImageEffectInstance::vmessage(const char* type,
                                            const char* /*id*/,
                                            const char* format,

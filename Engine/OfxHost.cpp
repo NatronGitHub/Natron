@@ -46,7 +46,7 @@ Powiter::OfxHost::OfxHost()
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
-
+    
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
@@ -61,8 +61,8 @@ Powiter::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
-
-
+    
+    
 }
 
 Powiter::OfxHost::~OfxHost()
@@ -71,12 +71,12 @@ Powiter::OfxHost::~OfxHost()
 }
 
 OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
-                                                     OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                     OFX::Host::ImageEffect::Descriptor& desc,
-                                                     const std::string& context)
+                                                                OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                                OFX::Host::ImageEffect::Descriptor& desc,
+                                                                const std::string& context)
 {
     assert(plugin);
-
+    
     
     
     return new Powiter::OfxImageEffectInstance(plugin,desc,context,false);
@@ -92,7 +92,7 @@ OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(OFX::Host::
 
 /// used to construct a context description, rootContext is the main context
 OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
-                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+                                                                     OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(rootContext, plugin);
@@ -101,18 +101,20 @@ OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const OFX::
 
 /// used to construct populate the cache
 OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const std::string &bundlePath,
-                                                          OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
+                                                                     OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(bundlePath, plugin);
     return desc;
 }
 
+
+
 /// message
 OfxStatus Powiter::OfxHost::vmessage(const char* type,
-                          const char* ,
-                          const char* format,
-                          va_list args)
+                                     const char* ,
+                                     const char* format,
+                                     va_list args)
 {
     assert(type);
     assert(format);
@@ -129,13 +131,13 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
         prefix = "Question : ";
         isQuestion = true;
     }
-
+    
     // Just dump our message to stdout, should be done with a proper
     // UI in a full ap, and post a dialogue for yes/no questions.
     fputs(prefix, stdout);
     vprintf(format, args);
     printf("\n");
-
+    
     if(isQuestion) {
         /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
         return kOfxStatReplyYes;
@@ -143,6 +145,19 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
     else {
         return kOfxStatOK;
     }
+}
+
+OfxStatus Powiter::OfxHost::setPersistentMessage(const char* type,
+                                                 const char* id,
+                                                 const char* format,
+                                                 va_list args){
+    vmessage(type,id,format,args);
+    return kOfxStatOK;
+}
+
+/// clearPersistentMessage
+OfxStatus Powiter::OfxHost::clearPersistentMessage(){
+    return kOfxStatOK;
 }
 
 OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* app) {
@@ -157,7 +172,7 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* ap
     }
     const std::set<std::string>& contexts = plugin->getContexts();
     std::string context;
-   
+    
     if (contexts.size() == 1) {
         context = (*contexts.begin());
     }else{
@@ -182,7 +197,7 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* ap
                 }
             }
         }
-
+        
     }
     
     
@@ -214,17 +229,17 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* ap
 
 std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
     std::map<QString,QMutex*> pluginNames;
-
+    
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
     OFX::Host::PluginCache::getPluginCache()->setCacheVersion(POWITER_APPLICATION_NAME "OFXCachev1");
-
+    
     /// make an image effect plugin cache
-
+    
     /// register the image effect cache with the global plugin cache
     _imageEffectPluginCache.registerInCache(*OFX::Host::PluginCache::getPluginCache());
-
-
+    
+    
 #if defined(WINDOWS)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("C:\\Program Files\\Common Files\\OFX\\Nuke");
 #endif
@@ -234,7 +249,7 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
 #if defined(__APPLE__)
     OFX::Host::PluginCache::getPluginCache()->addFileToPath("/Library/OFX/Nuke");
 #endif
-
+    
     /// now read an old cache
     // The cache location depends on the OS.
     // On OSX, it will be ~/Library/Caches/<organization>/<application>/OFXCache.xml
@@ -249,7 +264,7 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
         ifs.close();
     }
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
-
+    
     /*Filling node name list and plugin grouping*/
     const std::vector<OFX::Host::ImageEffect::ImageEffectPlugin *>& plugins = _imageEffectPluginCache.getPlugins();
     for (unsigned int i = 0 ; i < plugins.size(); ++i) {
@@ -261,11 +276,11 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
         if(name.isEmpty()){
             name = p->getDescriptor().getShortLabel().c_str();
         }
-       
+        
         if(name.isEmpty()){
             name = p->getDescriptor().getLongLabel().c_str();
         }
-
+        
         
         QString rawName = name;
         QString id = p->getIdentifier().c_str();
@@ -309,7 +324,7 @@ void Powiter::OfxHost::writeOFXCache(){
     /// and write a new cache, long version with everything in there
 #if QT_VERSION < 0x050000
     QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-
+    
 #else
     QString ofxcachename = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 #endif

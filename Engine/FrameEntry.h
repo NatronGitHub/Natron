@@ -153,7 +153,7 @@ namespace Powiter{
         {
         }
       
-        ~FrameEntry(){}
+        ~FrameEntry(){ }
         
         static FrameKey makeKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
                                 float lut,float byteMode,const Box2D& dataWindow,const Format& displayWindow,const TextureRect& textureRect){

@@ -123,6 +123,24 @@ public:
     /// override this to return the rod on the clip
     virtual OfxRectD getRegionOfDefinition(OfxTime time) const OVERRIDE;
 
+    /// override this to fill in the image at the given time from a specific view
+    /// (using the standard callback gets you the current view being rendered, @see getImage).
+    /// The bounds of the image on the image plane should be
+    /// 'appropriate', typically the value returned in getRegionsOfInterest
+    /// on the effect instance. Outside a render call, the optionalBounds should
+    /// be 'appropriate' for the.
+    /// If bounds is not null, fetch the indicated section of the canonical image plane.
+    virtual  OFX::Host::ImageEffect::Image* getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) OVERRIDE;
+
+
+    /// override this to set the view to be returned by getImage()
+    /// This is called by Instance::renderAction() for each clip, before calling
+    /// kOfxImageEffectActionRender on the Instance.
+    /// The view number has to be stored in the Clip, so this is typically not thread-safe,
+    /// except if thread-local storage is used.
+    virtual void setView(int view) OVERRIDE;
+
+
     Node* getAssociatedNode() const;
 
 private:

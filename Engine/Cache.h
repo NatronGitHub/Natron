@@ -566,15 +566,18 @@ namespace Powiter{
             /* Allocates a new entry by the cache. The storage is then handled by
              * the cache solely.
              */
-            boost::shared_ptr<CachedValue<ValueType> > newEntry(const typename ValueType::key_type& params, size_t count, int cost) const {
+            boost::shared_ptr<ValueType> newEntry(const typename ValueType::key_type& params, size_t count, int cost) const {
+                QMutexLocker locker(&_lock);
                 ValueType* value;
                 try{
                     value = new ValueType(params, count, cost, QString(getCachePath()+QDir::separator()).toStdString());
                 } catch(const std::bad_alloc& e) {
-                    return boost::shared_ptr<CachedValue<ValueType> >();
+                    return boost::shared_ptr<ValueType>();
                 }
-                return boost::shared_ptr<CachedValue<ValueType> >(new CachedValue<ValueType>(value,this));
-
+                boost::shared_ptr<ValueType> cachedValue(value);
+                sealEntry(value_type(cachedValue));
+                return cachedValue;
+                
             }
             
             value_type get(const typename ValueType::key_type& params) const {
@@ -707,31 +710,16 @@ namespace Powiter{
                     _signalEmitter = new CacheSignalEmitter;
                 return _signalEmitter;
             }
-            /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
-             * function. Once sealEntry is called you should not modify the value pointed by entry
-             * anymore. This function is public but should never be called explicitly. 
-             * The correct way of using the cache is to:
-             * 1) Call the newEntry() function and store the return value of type CachedValue
-             * 2) Fill the object's buffer contained in the CachedValue using the getObject() function.
-             * 3) Let the CachedValue be deleted. Upon the destructor this will call the sealEntry function
-             * automatically.
-             * If you don't want to use the newEntry() function, make sure to call sealEntry() to
-             * register the function into the cache
-             **/
-            void sealEntry(const value_type& entry) const {
-                QMutexLocker locker(&_lock);
-                sealEntryInternal(entry);
-            }
+           
         private:
             typedef std::list<std::pair<hash_type,typename ValueType::key_type> > CacheTOC;
 
             
-            
-            /* Seals the entry into the cache: the entry must have been allocated
-             * previously by this cache*/
-            void sealEntryInternal(const value_type& entry) const {
+            /** @brief Inserts into the cache an entry that was previously allocated by the newEntry()
+             * function. This is called directly by newEntry() if the allocation was successful
+             **/
+            void sealEntry(value_type entry) const {
                 assert(!_lock.tryLock()); // must be locked
-                
                 /*If the cache size exceeds the maximum size allowed, try to make some space*/
                 while(_memoryCacheSize+entry->size() >= _maximumInMemorySize){
                     if(!tryEvictEntry()){
@@ -878,7 +866,8 @@ namespace Powiter{
                     boost::archive::binary_iarchive iArchive(ifile);
                     CacheTOC tableOfContents;
                     iArchive >> tableOfContents;
-
+                    
+                    
                     for (typename CacheTOC::const_iterator it =
                          tableOfContents.begin(); it!=tableOfContents.end(); ++it) {
                         if (it->first != it->second.getHash()) {
@@ -891,14 +880,15 @@ namespace Powiter{
                             std::cout << e.what() << std::endl;
                             continue;
                         }
-                        sealEntryInternal(value_type(value));
+                        sealEntry(value_type(value));
                     }
+                    
                     ifile.close();
                     QFile restoreFile(settingsFilePath);
                     restoreFile.remove();
                 } catch (...) {
                     /*re-create cache*/
-
+                    
                     QDir(getCachePath()).mkpath(".");
                     cleanUpDiskAndReset();
                 }

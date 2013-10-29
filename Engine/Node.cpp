@@ -433,13 +433,10 @@ void Node::tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D
     output->markForRendered(roi);
 }
 boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow){
-
     Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,Box2D());
-    
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
     /*if not cached, we store the freshly allocated image in this member*/
-    boost::shared_ptr<CachedValue<Image> > cachedImage;
     if(!image){
         /*before allocating     it we must fill the RoD of the image we want to render*/
         getRegionOfDefinition(time, &key._rod);
@@ -449,9 +446,9 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
             cost = 1;
         }
         /*allocate a new image*/
-        cachedImage = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
-        image = cachedImage->getObject();
+        image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
     }
+    
     /*before rendering we add to the _imagesBeingRendered member the image*/
     {
         QMutexLocker locker(&_nodeInstanceLock);
@@ -500,7 +497,7 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         //if another thread is rendering the same image, leave it
         if(it->second.use_count() == 1){
             _imagesBeingRendered.erase(it);
-        }
+        }   
     }
     
     //we released the input image and force the cache to clear exceeding entries
@@ -555,9 +552,12 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     if(stat == StatFailed)
         return;
     
+    std::vector<std::string> alreadyComputedHashs;
+    computeTreeHashAndLockParams(alreadyComputedHashs);
     RenderScale scale;
     scale.x = scale.y = 1.;
     boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, rod);
+    unLockAllParams();
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
@@ -577,6 +577,7 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         }
     }    
 }
+
 
 OutputNode::OutputNode(AppInstance* app)
 : Node(app)

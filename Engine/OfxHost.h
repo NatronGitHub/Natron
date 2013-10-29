@@ -62,6 +62,14 @@ public:
                                const char* format,
                                va_list args) OVERRIDE;
 
+    /// setPersistentMessage
+    virtual OfxStatus setPersistentMessage(const char* type,
+                                           const char* id,
+                                           const char* format,
+                                           va_list args) OVERRIDE;
+    /// clearPersistentMessage
+    virtual OfxStatus clearPersistentMessage() OVERRIDE;
+
     OfxNode* createOfxNode(const std::string& name,AppInstance* app);
 
     /*Reads OFX plugin cache and scan plugins directories

@@ -37,12 +37,10 @@ class ViewerNode: public OutputNode
     struct InterThreadInfos{
         InterThreadInfos():
         _cachedEntry()
-        , _rows()
         , _textureRect()
         ,_pixelsCount(0){}
         
         boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
-        std::vector<int> _rows;
         TextureRect _textureRect;
         size_t _pixelsCount;
     };

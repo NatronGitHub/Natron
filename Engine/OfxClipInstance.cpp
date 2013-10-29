@@ -264,4 +264,12 @@ Node* OfxClipInstance::getAssociatedNode() const {
         return _nodeInstance->input(inputs.size()-1-index);
     }
 }
-
+OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) {
+    (void)time;
+    (void)view;
+    (void)optionalBounds;
+    return NULL;
+}
+void OfxClipInstance::setView(int view){
+    (void)view;
+}

@@ -118,13 +118,11 @@ namespace Powiter{
         Image(const ImageKey& key, size_t count, int cost, std::string path = std::string()):
         CacheEntryHelper<float,ImageKey>(key,count,cost,path)
         ,_bitmap(key._rod){
-            defaultInitialize();
         }
         
         Image(const ImageKey& key,const std::string& path):
         CacheEntryHelper<float,ImageKey>(key,path)
         ,_bitmap(key._rod){
-            defaultInitialize();
         }
         
         Image(const Box2D& regionOfDefinition,RenderScale scale,SequenceTime time):
@@ -133,7 +131,6 @@ namespace Powiter{
                                             , 0)
         ,_bitmap(regionOfDefinition)
         {
-            defaultInitialize();
         }
         
         virtual ~Image(){}

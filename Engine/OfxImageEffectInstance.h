@@ -56,6 +56,12 @@ public:
                                va_list args) OVERRIDE;
 
     
+    virtual OfxStatus setPersistentMessage(const char* type,
+                                           const char* id,
+                                           const char* format,
+                                           va_list args) OVERRIDE;
+    
+    virtual OfxStatus clearPersistentMessage() OVERRIDE;
     
     //
     // live parameters
