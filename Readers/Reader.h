@@ -59,8 +59,8 @@ public:
 #else
             typedef BoostLRUHashTable<hash_type, value_type > , boost::bimaps::set_of> CacheContainer;
 #endif
-            typedef typename CacheContainer::container_type::left_iterator CacheIterator;
-            typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+            typedef CacheContainer::container_type::left_iterator CacheIterator;
+            typedef CacheContainer::container_type::left_const_iterator ConstCacheIterator;
             static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
 
 #else // cache use STL
@@ -70,8 +70,8 @@ public:
 #else
             typedef StlLRUHashTable<hash_type,value_type >, std::map> CacheContainer;
 #endif
-            typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-            typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+            typedef CacheContainer::key_to_value_type::iterator CacheIterator;
+            typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
             static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
 #endif // POWITER_CACHE_USE_BOOST
 
@@ -83,15 +83,15 @@ public:
 #else
             typedef BoostLRUHashTable<hash_type, value_type > CacheContainer;
 #endif
-            typedef typename CacheContainer::container_type::left_iterator CacheIterator;
-            typedef typename CacheContainer::container_type::left_const_iterator ConstCacheIterator;
+            typedef CacheContainer::container_type::left_iterator CacheIterator;
+            typedef CacheContainer::container_type::left_const_iterator ConstCacheIterator;
             static std::list<value_type>&  getValueFromIterator(CacheIterator it){return it->second;}
 
 #else // cache use STL and tree (std map)
 
             typedef StlLRUHashTable<hash_type, value_type > CacheContainer;
-            typedef typename CacheContainer::key_to_value_type::iterator CacheIterator;
-            typedef typename CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
+            typedef CacheContainer::key_to_value_type::iterator CacheIterator;
+            typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
             static std::list<value_type>&   getValueFromIterator(CacheIterator it){return it->second.first;}
 #endif // POWITER_CACHE_USE_BOOST
 
