@@ -31,33 +31,34 @@ namespace Powiter{
         
     public:
         
-        RowKey():KeyHelper<U64>()
-        ,_nodeHashKey(0)
-        ,_frameNb(0)
-        ,_left(0)
-        ,_y(0)
-        ,_right(0)
-        ,_channels()
+        RowKey()
+		: KeyHelper<U64>()
+        , _nodeHashKey(0)
+        , _frameNb(0)
+        , _left(0)
+        , _y(0)
+        , _right(0)
+        , _channels()
         {}
         
-        RowKey(KeyHelper::hash_type hash):KeyHelper<U64>(hash)
-        ,_nodeHashKey(0)
-        ,_frameNb(0)
-        ,_left(0)
-        ,_y(0)
-        ,_right(0)
-        ,_channels()
+        RowKey(KeyHelper<U64>::hash_type hash)
+		: KeyHelper<U64>(hash)
+        , _nodeHashKey(0)
+        , _frameNb(0)
+        , _left(0)
+        , _y(0)
+        , _right(0)
+        , _channels()
         {}
         
         RowKey(U64 nodeHashKey,int frameNb,int x,int y,int r,ChannelSet channels)
-        :
-        KeyHelper<U64>()
-        ,_nodeHashKey(nodeHashKey)
-        ,_frameNb(frameNb)
-        ,_left(x)
-        ,_y(y)
-        ,_right(r)
-        ,_channels(channels)
+        : KeyHelper<U64>()
+        , _nodeHashKey(nodeHashKey)
+        , _frameNb(frameNb)
+        , _left(x)
+        , _y(y)
+        , _right(r)
+        , _channels(channels)
         {}
         
         U64 _nodeHashKey;

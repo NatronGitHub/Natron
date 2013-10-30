@@ -36,27 +36,30 @@ namespace Powiter{
         Box2D _rod;
         int _view;
 
-        ImageKey():KeyHelper<U64>()
-        ,_nodeHashKey(0)
-        ,_time(0)
-        ,_renderScale()
-        ,_rod()
-        ,_view(0)
+        ImageKey()
+		: KeyHelper<U64>()
+        , _nodeHashKey(0)
+        , _time(0)
+        , _renderScale()
+        , _rod()
+        , _view(0)
         {}
         
-        ImageKey(KeyHelper::hash_type hash):KeyHelper<U64>(hash)
-        ,_nodeHashKey(0)
-        ,_time(0)
-        ,_renderScale()
-        ,_rod()
-        ,_view(0)
+        ImageKey(KeyHelper<U64>::hash_type hash)
+		: KeyHelper<U64>(hash)
+        , _nodeHashKey(0)
+        , _time(0)
+        , _renderScale()
+        , _rod()
+        , _view(0)
         {}
         
-        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition):KeyHelper<U64>()
-        ,_nodeHashKey(nodeHashKey)
-        ,_time(time)
-        ,_rod(regionOfDefinition)
-        ,_view(view)
+        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition)
+		: KeyHelper<U64>()
+        , _nodeHashKey(nodeHashKey)
+        , _time(time)
+        , _rod(regionOfDefinition)
+        , _view(view)
         { _renderScale = scale; }
         
         

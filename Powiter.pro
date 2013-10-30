@@ -100,7 +100,6 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 SOURCES += \
     Engine/ChannelSet.cpp \
     Engine/Hash64.cpp \
-    Engine/ImageFetcher.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
     Engine/Lut.cpp \
@@ -168,7 +167,6 @@ HEADERS += \
     Engine/Format.h \
     Engine/FrameEntry.h \
     Engine/Hash64.h \
-    Engine/ImageFetcher.h \
     Engine/ImageInfo.h \
     Engine/Image.h \
     Engine/Knob.h \
