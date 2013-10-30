@@ -281,6 +281,8 @@ void Gui::retranslateUi(QMainWindow *MainWindow)
     cacheMenu->setTitle(tr("Cache"));
     assert(viewerInputsMenu);
     viewerInputsMenu->setTitle(tr("Connect Current Viewer"));
+    assert(viewersViewMenu);
+    viewersViewMenu->setTitle(tr("Display view number"));
 }
 void Gui::setupUi()
 {
@@ -305,6 +307,7 @@ void Gui::setupUi()
 	menuOptions = new QMenu(menubar);
 	viewersMenu= new QMenu(menuDisplay);
     viewerInputsMenu = new QMenu(viewersMenu);
+    viewersViewMenu = new QMenu(viewersMenu);
 	cacheMenu= new QMenu(menubar);
     
 	setMenuBar(menubar);
@@ -505,6 +508,7 @@ void Gui::setupUi()
 	menuOptions->addAction(actionProject_settings);
 	menuDisplay->addAction(viewersMenu->menuAction());
     viewersMenu->addAction(viewerInputsMenu->menuAction());
+    viewersMenu->addAction(viewersViewMenu->menuAction());
     viewerInputsMenu->addAction(actionConnectInput1);
     viewerInputsMenu->addAction(actionConnectInput2);
     viewerInputsMenu->addAction(actionConnectInput3);
@@ -547,6 +551,124 @@ void Gui::setupUi()
     
     
 } // setupUi
+
+
+QKeySequence Gui::keySequenceForView(int v){
+    switch (v) {
+        case 0:
+            return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
+            break;
+        case 1:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_2);
+            break;
+        case 2:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_3);
+            break;
+        case 3:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_4);
+            break;
+        case 4:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_5);
+            break;
+        case 5:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_6);
+            break;
+        case 6:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_7);
+            break;
+        case 7:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_8);
+            break;
+        case 8:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_9);
+            break;
+        case 9:
+            return QKeySequence(Qt::CTRL + Qt::ALT + Qt::Key_0);
+            break;
+        default:
+            return QKeySequence();
+            
+    }
+}
+
+static const char* slotForView(int view){
+    switch (view){
+        case 0:
+            return SLOT(showView0());
+            break;
+        case 1:
+            return SLOT(showView1());
+            break;
+        case 2:
+            return SLOT(showView2());
+            break;
+        case 3:
+            return SLOT(showView3());
+            break;
+        case 4:
+            return SLOT(showView4());
+            break;
+        case 5:
+            return SLOT(showView5());
+            break;
+        case 6:
+            return SLOT(showView6());
+            break;
+        case 7:
+            return SLOT(showView7());
+            break;
+        case 8:
+            return SLOT(showView7());
+            break;
+        case 9:
+            return SLOT(showView8());
+            break;
+        default:
+            return NULL;
+    }
+}
+
+void Gui::updateViewsActions(int viewsCount){
+    viewersViewMenu->clear();
+    //if viewsCount == 1 we don't add a menu entry
+    viewersMenu->removeAction(viewersViewMenu->menuAction());
+    if(viewsCount == 2){
+        QAction* left = new QAction(this);
+        left->setCheckable(false);
+        left->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_1));
+        viewersViewMenu->addAction(left);
+        left->setText("Display left view");
+        QObject::connect(left,SIGNAL(triggered()),this,SLOT(showView0()));
+        
+        QAction* right = new QAction(this);
+        right->setCheckable(false);
+        right->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_2));
+        viewersViewMenu->addAction(right);
+        right->setText("Display right view");
+        QObject::connect(right,SIGNAL(triggered()),this,SLOT(showView1()));
+        
+        viewersMenu->addAction(viewersViewMenu->menuAction());
+    }else if(viewsCount > 2){
+        for(int i = 0; i < viewsCount;++i){
+            if(i > 9)
+                break;
+            QAction* viewI = new QAction(this);
+            viewI->setCheckable(false);
+            QKeySequence seq = keySequenceForView(i);
+            if(!seq.isEmpty()){
+                viewI->setShortcut(seq);
+            }
+            viewersViewMenu->addAction(viewI);
+            const char* slot = slotForView(i);
+            viewI->setText(QString("Display view ")+QString::number(i+1));
+            if(slot){
+                QObject::connect(viewI,SIGNAL(triggered()),this,slot);
+            }
+        }
+        
+        viewersMenu->addAction(viewersViewMenu->menuAction());
+    }
+}
 
 
 void Gui::putSettingsPanelFirst(DockablePanel* panel){
@@ -1329,4 +1451,36 @@ Format AddFormatDialog::getFormat() const{
     double pa = _pixelAspectSpinBox->value();
     QString name = _nameLineEdit->text();
     return Format(0,0,w,h,name.toStdString(),pa);
+}
+
+
+void Gui::showView0(){
+    _appInstance->setViewersCurrentView(0);
+}
+void Gui::showView1(){
+     _appInstance->setViewersCurrentView(1);
+}
+void Gui::showView2(){
+     _appInstance->setViewersCurrentView(2);
+}
+void Gui::showView3(){
+     _appInstance->setViewersCurrentView(3);
+}
+void Gui::showView4(){
+     _appInstance->setViewersCurrentView(4);
+}
+void Gui::showView5(){
+     _appInstance->setViewersCurrentView(5);
+}
+void Gui::showView6(){
+     _appInstance->setViewersCurrentView(6);
+}
+void Gui::showView7(){
+     _appInstance->setViewersCurrentView(7);
+}
+void Gui::showView8(){
+     _appInstance->setViewersCurrentView(8);
+}
+void Gui::showView9(){
+     _appInstance->setViewersCurrentView(9);
 }

@@ -570,6 +570,8 @@ public slots:
             
             void onProjectFormatChanged(const Format& format);
             
+            void showView(int view);
+            
         signals:
             /**
              *@brief Signal emitted when the mouse position changed on the viewport.

@@ -56,13 +56,13 @@ void copyRowToImage(const Powiter::Row& row,int y,int x,Powiter::Image* output){
     const float* g = row.begin(Powiter::Channel_green);
     const float* b = row.begin(Powiter::Channel_blue);
     const float* a = row.begin(Powiter::Channel_alpha);
-    
+    assert(r && g && b && a);//row must have r g b a allocated and default filled
     for (int i = 0; i < row.width(); ++i) {
         int col = i*4;
-        dst[col] = r ? r[i] : 0.f;
-        dst[col+1] = g ? g[i] : 0.f;
-        dst[col+2] = b ? b[i] : 0.f;
-        dst[col+3] = a ? a[i] : 1.f;
+        dst[col]   = r[i];
+        dst[col+1] = g[i];
+        dst[col+2] = b[i];
+        dst[col+3] = a[i];
     }
     
 }

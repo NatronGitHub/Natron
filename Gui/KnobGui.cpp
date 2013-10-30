@@ -74,10 +74,8 @@ _container(container)
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
     QObject::connect(knob,SIGNAL(deleteWanted()),this,SLOT(deleteKnob()));
-    if(knob->getNode()){
-        QObject::connect(this, SIGNAL(knobUndoneChange()), knob->getNode(), SIGNAL(knobUndoneChange()));
-        QObject::connect(this, SIGNAL(knobRedoneChange()), knob->getNode(), SIGNAL(knobRedoneChange()));
-    }
+    QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SIGNAL(knobUndoneChange()));
+    QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SIGNAL(knobRedoneChange()));
 }
 
 KnobGui::~KnobGui(){

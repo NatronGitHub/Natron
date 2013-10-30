@@ -34,12 +34,14 @@ namespace Powiter{
         SequenceTime _time;
         RenderScale _renderScale;
         Box2D _rod;
+        int _view;
 
         ImageKey():KeyHelper<U64>()
         ,_nodeHashKey(0)
         ,_time(0)
         ,_renderScale()
         ,_rod()
+        ,_view(0)
         {}
         
         ImageKey(KeyHelper::hash_type hash):KeyHelper<U64>(hash)
@@ -47,12 +49,14 @@ namespace Powiter{
         ,_time(0)
         ,_renderScale()
         ,_rod()
+        ,_view(0)
         {}
         
-        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,const Box2D& regionOfDefinition):KeyHelper<U64>()
+        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition):KeyHelper<U64>()
         ,_nodeHashKey(nodeHashKey)
         ,_time(time)
         ,_rod(regionOfDefinition)
+        ,_view(view)
         { _renderScale = scale; }
         
         
@@ -61,13 +65,15 @@ namespace Powiter{
             hash->append(_renderScale.x);
             hash->append(_renderScale.y);
             hash->append(_time);
+            hash->append(_view);
         }
         
         bool operator==(const ImageKey& other) const {
             return _nodeHashKey == other._nodeHashKey &&
             _renderScale.x == other._renderScale.x &&
             _renderScale.y == other._renderScale.y &&
-            _time == other._time;
+            _time == other._time &&
+            _view == other._view;
             
         }
         
@@ -81,7 +87,7 @@ namespace Powiter{
             ar & _renderScale.x;
             ar & _renderScale.y;
             ar & _time;
-            
+            ar & _view;
         }
     };
     
@@ -125,8 +131,11 @@ namespace Powiter{
         ,_bitmap(key._rod){
         }
         
+        /*This constructor can be used to allocate a local Image. The deallocation should
+         then be handled by the user. Note that no view number is passed in parameter
+         as it is not needed.*/
         Image(const Box2D& regionOfDefinition,RenderScale scale,SequenceTime time):
-        CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,regionOfDefinition)
+        CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0,regionOfDefinition)
                                             ,regionOfDefinition.width()*regionOfDefinition.height()*4
                                             , 0)
         ,_bitmap(regionOfDefinition)
@@ -135,8 +144,8 @@ namespace Powiter{
         
         virtual ~Image(){}
         
-        static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,const Box2D& regionOfDefinition){
-            return ImageKey(nodeHashKey,time,scale,regionOfDefinition);
+        static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition){
+            return ImageKey(nodeHashKey,time,scale,view,regionOfDefinition);
         }
         
         const Box2D& getRoD() const {return _bitmap.getRoD();}

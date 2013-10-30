@@ -17,7 +17,8 @@
 #include <map>
 
 #include <QMutex>
-
+#include <QWaitCondition>
+#include <QThreadStorage>
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"
@@ -26,6 +27,7 @@
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Hash64.h"
+#include "Engine/Variant.h"
 namespace Powiter{
     class Row;
     class Image;
@@ -301,10 +303,10 @@ public:
     
     bool isMarkedByTopologicalSort() const {return _markedByTopologicalSort;}
     
-    /** @brief Returns the image computed by this node at the given time and scale.
+    /** @brief Returns the image computed by this node at the given time and scale for the given view
      * The image must have been rendered first otherwise an assertion will be raised.
      */
-    boost::shared_ptr<const Powiter::Image> getImage(SequenceTime time,RenderScale scale);
+    boost::shared_ptr<const Powiter::Image> getImage(SequenceTime time,RenderScale scale,int view);
     
     /**
      * @brief This is the place to initialise any per frame specific data or flag.
@@ -334,7 +336,7 @@ public:
     virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const Box2D& renderWindow);
     
     
-    boost::shared_ptr<const Powiter::Image> renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow);
+    boost::shared_ptr<const Powiter::Image> renderRoI(SequenceTime time,RenderScale scale,int view,const Box2D& renderWindow);
 
     
     static std::vector<Box2D> splitRectIntoSmallerRect(const Box2D& rect,int splitsCount);
@@ -359,7 +361,7 @@ public:
     bool isActivated() const {return _activated;}
 
     
-    boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time) const;
+    boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
     
 public slots:
     
@@ -426,6 +428,7 @@ protected:
      **/
     virtual void initKnobs(){}
     
+    virtual int numberOfViewsToRender() const {return 1;}
     
     
 signals:
@@ -464,8 +467,11 @@ protected:
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
     bool _renderAborted; //< was rendering aborted ?
-    Hash64 _hashValue;
-
+    Hash64 _hashValue;//< 1 value per render thread (i.e: VideoEngine::run() thread) using this node
+    
+    /*we store for each render a copy of all knobs values that can be later on accessed*/
+    //typedef std::map<U64,std::map<Knob*,Variant> > KnobsSnapShot;
+    // KnobsSnapShot _knobsValuesForRender;
 private:
     
     void tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output);
@@ -490,8 +496,31 @@ private:
     bool _markedByTopologicalSort; //< used by the topological sort algorithm
     bool _activated;
     QMutex _nodeInstanceLock;
+    QWaitCondition _imagesBeingRenderedNotEmpty; //to avoid computing preview in parallel of the real rendering
     
-    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> > _imagesBeingRendered; //< a map storing the ongoing render for this node
+    /*A key to identify an image rendered for this node.*/
+    struct ImageBeingRenderedKey{
+        
+        ImageBeingRenderedKey():_time(0),_view(0){}
+        
+        ImageBeingRenderedKey(int time,int view):_time(time),_view(view){}
+        
+        SequenceTime _time;
+        int _view;
+        
+        bool operator==(const ImageBeingRenderedKey& other) const {
+            return _time == other._time &&
+            _view == other._view;
+        }
+        
+        bool operator<(const ImageBeingRenderedKey& other) const {
+            return _time < other._time ||
+            _view < other._view;
+        }
+    };
+    
+    typedef std::map<ImageBeingRenderedKey,boost::shared_ptr<Powiter::Image> > ImagesMap;
+    ImagesMap _imagesBeingRendered; //< a map storing the ongoing render for this node
     
 };
 

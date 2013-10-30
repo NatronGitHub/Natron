@@ -263,6 +263,10 @@ public:
 
     const std::map<QString,ToolButton*>& getToolButtons() const {return _toolGroups;}
     
+    void updateViewsActions(int viewsCount);
+    
+    static QKeySequence keySequenceForView(int v);
+    
 private:
 
     void addNodeGraph();
@@ -294,8 +298,16 @@ public slots:
     void connectInput9();
     void connectInput10();
     
-    
-    
+    void showView0();
+    void showView1();
+    void showView2();
+    void showView3();
+    void showView4();
+    void showView5();
+    void showView6();
+    void showView7();
+    void showView8();
+    void showView9();
     
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
@@ -336,7 +348,8 @@ public:
     QAction* actionConnectInput8;
     QAction* actionConnectInput9;
     QAction* actionConnectInput10;
-        
+    
+    
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout;
     
@@ -386,6 +399,7 @@ public:
     QMenu *menuOptions;
 	QMenu *viewersMenu;
     QMenu *viewerInputsMenu;
+    QMenu *viewersViewMenu;
     QMenu *cacheMenu;
     
     

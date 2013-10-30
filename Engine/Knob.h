@@ -19,7 +19,6 @@
 #include <boost/shared_ptr.hpp>
 #include <QtGui/QVector4D>
 #include <QtCore/QMutex>
-#include <QtCore/QVariant>
 #include <QtCore/QStringList>
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -28,92 +27,12 @@
 #include "Global/GlobalDefines.h"
 #include "Global/AppManager.h"
 
+#include "Engine/Variant.h"
+
 class Knob;
 class Node;
 class DockablePanel;
 
-/******************************VARIANT**************************************/
-
-class Variant : public QVariant {
-public:
-    
-    Variant()
-    : QVariant()
-    {
-    }
-    
-    explicit Variant(const QVariant& qtVariant)
-    : QVariant(qtVariant)
-    {
-    }
-    
-    template<typename T>
-    Variant(T variant[] ,int count)
-    {
-        QList<QVariant> list;
-        for (int i = 0; i < count; ++i) {
-            list << QVariant(variant[i]);
-        }
-        QVariant::setValue(list);
-    }
-    
-    virtual ~Variant()
-    {
-    }
-    
-    template<typename T>
-    T value() const {
-        return QVariant::value<T>();
-    }
-    
-    template<typename T>
-    void setValue(const T &value) {
-        QVariant::setValue(value);
-    }
-    
-    template<typename T>
-    void setValue(T variant[],int count){
-        QList<QVariant> list;
-        for (int i = 0; i < count; ++i) {
-            list << QVariant(variant[i]);
-        }
-        QVariant::setValue(list);
-    }
-        
-    int toInt(bool *ok = 0) const { return QVariant::toInt(ok); }
-    uint toUInt(bool *ok = 0) const { return QVariant::toUInt(ok); }
-    qlonglong toLongLong(bool *ok = 0) const { return QVariant::toLongLong(ok); }
-    qulonglong toULongLong(bool *ok = 0) const { return QVariant::toULongLong(ok); }
-    bool toBool() const { return QVariant::toBool(); }
-    double toDouble(bool *ok = 0) const { return QVariant::toDouble(ok); }
-    float toFloat(bool *ok = 0) const { return QVariant::toFloat(ok); }
-    qreal toReal(bool *ok = 0) const { return QVariant::toReal(ok); }
-    QByteArray toByteArray() const { return QVariant::toByteArray(); }
-    //QBitArray toBitArray() const { return QVariant::toBitArray(); }
-    QString toString() const { return QVariant::toString(); }
-    QStringList toStringList() const { return QVariant::toStringList(); }
-    QChar toChar() const { return QVariant::toChar(); }
-    //QDate toDate() const { return QVariant::toDate(); }
-    //QTime toTime() const { return QVariant::toTime(); }
-    //QDateTime toDateTime() const { return QVariant::toDateTime(); }
-    QList<QVariant> toList() const { return QVariant::toList(); }
-    QMap<QString, QVariant> toMap() const { return QVariant::toMap(); }
-    QHash<QString, QVariant> toHash() const { return QVariant::toHash(); }
-    
-    bool isNull() const{return QVariant::isNull();}
-};
-Q_DECLARE_METATYPE(Variant);
-
-// specializations of setValue() for simple string types (to avoid conversions)
-template<>
-inline void Variant::setValue(const std::string& str){
-    QVariant::setValue(QString(str.c_str()));
-}
-
-template<>
-inline void Variant::setValue(const char* const& str){
-    QVariant::setValue(QString(str));
-}
 
 namespace Powiter {
     class LibraryBinary;
@@ -235,6 +154,11 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
     
+    /**
+     * @brief Lock the value held by the knob until unlockValue() is called.
+     * All calls to setValue() while the knob is locked will store the value in
+     * _valuePostedWhileLocked instead. Typically this is done 
+     **/
     void lockValue() const { _lock.lock();}
     
     void unlockValue() ;
@@ -266,6 +190,10 @@ signals:
     void visible(bool);
     
     void enabled(bool);
+    
+    void knobUndoneChange();
+    
+    void knobRedoneChange();
     
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
@@ -439,7 +367,7 @@ public:
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
-    const std::vector<int> getValues() const;
+    std::vector<int> getValues() const;
     
     void setMinimum(int mini,int index = 0){
         if(_minimums.size() > (U32)index){
@@ -648,7 +576,7 @@ public:
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
-    const std::vector<double> getValues() const ;
+    std::vector<double> getValues() const ;
     
     const std::vector<double>& getMinimums() const {return _minimums;}
     

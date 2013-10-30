@@ -29,6 +29,7 @@ class TimeLine;
 class AppInstance;
 class ComboBox_Knob;
 class Button_Knob;
+class Int_Knob;
 class Knob;
 
 
@@ -46,6 +47,7 @@ class Project : public QObject{
     QDateTime _lastAutoSave;
     ComboBox_Knob* _formatKnob;
     Button_Knob* _addFormatKnob;
+    Int_Knob* _viewsCount;
     boost::shared_ptr<TimeLine> _timeline; // global timeline
     
     std::map<std::string,int> _nodeCounters;
@@ -86,6 +88,8 @@ public:
     void setProjectAgeSinceLastAutosaveSave(const QDateTime& t) {_lastAutoSave = t;}
     
     const Format& getProjectDefaultFormat() const WARN_UNUSED_RETURN ;
+    
+    int getProjectViewsCount() const;
     
     void setProjectDefaultFormat(const Format& f);
     
@@ -129,6 +133,8 @@ public:
     
 public slots:
     
+    void onNumberOfViewsChanged();
+    
     void onProjectFormatChanged();
     
     void createNewFormat();
@@ -137,6 +143,8 @@ signals:
     
     void projectFormatChanged(Format);
 
+    void projectViewsCountChanged(int);
+    
 private:
     
     

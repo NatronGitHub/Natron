@@ -157,6 +157,9 @@ public slots:
     /* The following methods are forwarded to the model */
     void checkViewersConnection();
 
+    void setupViewersForViews(int viewsCount);
+
+    void setViewersCurrentView(int view);
 
     void triggerAutoSave();
 

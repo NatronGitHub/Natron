@@ -1446,3 +1446,7 @@ void ViewerGL::print( int x, int y, const QString &string,QColor color )
 	glPopMatrix();
 	
 }
+
+void ViewerGL::showView(int view){
+    
+}

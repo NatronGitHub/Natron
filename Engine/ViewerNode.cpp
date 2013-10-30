@@ -330,7 +330,8 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
         RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
         //inputsRoi only contains 1 element
         RoIMap::const_iterator it = inputsRoi.begin();
-        boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale, it->second);
+#warning "Rendering only a single view for now, we need to pass the project's views count."
+        boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale,0 ,it->second);
         
         int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
         // group of group of rows where first is image coordinate, second is texture coordinate

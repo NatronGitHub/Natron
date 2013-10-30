@@ -62,6 +62,7 @@ _timeline(new TimeLine())
 ,_availableFormats()
 ,_appInstance(appInstance)
 {
+    QObject::connect(this,SIGNAL(projectViewsCountChanged(int)),_appInstance,SLOT(setupViewersForViews(int)));
     
     _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", NULL, "Output Format"));
     const std::vector<Format*>& appFormats = appPTR->getFormats();
@@ -80,12 +81,22 @@ _timeline(new TimeLine())
     QObject::connect(_formatKnob,SIGNAL(valueChangedByUser()),this,SLOT(onProjectFormatChanged()));
     _projectKnobs.push_back(_formatKnob);
     
+    QObject::connect(_formatKnob, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
+    QObject::connect(_formatKnob, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
     
     
     _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",NULL,"New format..."));
     _projectKnobs.push_back(_addFormatKnob);
     QObject::connect(_addFormatKnob, SIGNAL(valueChangedByUser()), this, SLOT(createNewFormat()));
     
+    
+    _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",NULL,"Number of views"));
+    _viewsCount->setMinimum(1);
+    _viewsCount->setValue(1);
+    QObject::connect(_viewsCount, SIGNAL(valueChangedByUser()),this,SLOT(onNumberOfViewsChanged()));
+    QObject::connect(_viewsCount, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
+    QObject::connect(_viewsCount, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
+    _projectKnobs.push_back(_viewsCount);
 }
 Project::~Project(){
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
@@ -94,7 +105,10 @@ Project::~Project(){
     _currentNodes.clear();
 }
 
-
+void Project::onNumberOfViewsChanged(){
+    int viewsCount = _viewsCount->value<int>();
+    emit projectViewsCountChanged(viewsCount);
+}
 
 void Project::onProjectFormatChanged(){
     const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
@@ -179,7 +193,9 @@ void Project::loadProject(const QString& path,const QString& name){
     iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
     setAutoSetProjectFormat(false);
     _formatKnob->restoreFromString(currentFormat);
-
+    std::string viewsCount;
+    iArchive >> boost::serialization::make_nvp("Project_views_count",viewsCount);
+    _viewsCount->restoreFromString(viewsCount);
     ifile.close();
     
     /*first create all nodes and restore the knobs values*/
@@ -267,6 +283,8 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     oArchive << boost::serialization::make_nvp("Project_formats",_availableFormats);
     std::string currentFormat = _formatKnob->serialize();
     oArchive << boost::serialization::make_nvp("Project_output_format",currentFormat);
+    std::string viewsCount = _viewsCount->serialize();
+    oArchive << boost::serialization::make_nvp("Project_views_count",viewsCount);
     ofile.close();
 }
 
@@ -303,7 +321,7 @@ void Project::setProjectDefaultFormat(const Format& f) {
     int index = tryAddProjectFormat(f);
     _formatKnob->setValue(index);
     emit projectFormatChanged(f);
-
+    _appInstance->triggerAutoSave();
 }
 
  
@@ -312,4 +330,8 @@ void Project::createNewFormat(){
     if(dialog.exec()){
         tryAddProjectFormat(dialog.getFormat());
     }
+}
+
+int Project::getProjectViewsCount() const{
+    return _viewsCount->value<int>();
 }

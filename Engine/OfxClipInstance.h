@@ -16,6 +16,7 @@
 #include <cassert>
 
 #include <QtCore/QMutex>
+#include <QThreadStorage>
 #include <boost/shared_ptr.hpp>
 //ofx
 #include <ofxhImageEffect.h>
@@ -144,8 +145,12 @@ public:
     Node* getAssociatedNode() const;
 
 private:
+    
+    OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
+    
     OfxNode* _nodeInstance;
     Powiter::OfxImageEffectInstance* _effect;
+    QThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };
 
 class OfxImage : public OFX::Host::ImageEffect::Image

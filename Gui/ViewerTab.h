@@ -75,7 +75,7 @@ public:
     ScaleSlider* _gainSlider;
     Button* _refreshButton;
     ComboBox* _viewerColorSpace;
-
+    ComboBox* _viewsComboBox;
 	/*OpenGL viewer*/
 	ViewerGL* viewer;
     /*Infos*/
@@ -113,6 +113,9 @@ public:
     
     virtual QSize minimumSizeHint() const;
     virtual QSize sizeHint() const;
+    
+    void setCurrentView(int view);
+    
 public slots:
     
     void startPause(bool);
@@ -147,6 +150,7 @@ public slots:
     
     void refresh();
     
+    void updateViewsMenu(int count);
     
 protected:
     

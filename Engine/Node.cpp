@@ -62,6 +62,7 @@ Node::Node(AppInstance* app)
 , _markedByTopologicalSort(false)
 , _activated(true)
 ,_nodeInstanceLock()
+,_imagesBeingRenderedNotEmpty()
 ,_imagesBeingRendered()
 {
 }
@@ -306,11 +307,11 @@ Knob* Node::getKnobByDescription(const std::string& desc) const{
 
 
 
-boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderScale scale){
+boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderScale scale,int view){
     const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
-    Powiter::ImageKey params = Powiter::Image::makeKey(_hashValue.value(), time,scale,Box2D());
+    Powiter::ImageKey params = Powiter::Image::makeKey(_hashValue.value(), time,scale,view,Box2D());
     shared_ptr<const Image > entry = cache.get(params);
     //the entry MUST be in the cache since we rendered it before and kept the pointer
     //to avoid it being evicted.
@@ -432,8 +433,8 @@ void Node::tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D
     render(time, scale, roi, output);
     output->markForRendered(roi);
 }
-boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,const Box2D& renderWindow){
-    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,Box2D());
+boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,int view,const Box2D& renderWindow){
+    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,view,Box2D());
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
     /*if not cached, we store the freshly allocated image in this member*/
@@ -449,9 +450,10 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
         image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
     }
     /*before rendering we add to the _imagesBeingRendered member the image*/
+    ImageBeingRenderedKey renderedImageKey(time,view);
     {
         QMutexLocker locker(&_nodeInstanceLock);
-        _imagesBeingRendered.insert(std::make_pair(time, image));
+        _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
     }
     /*now that we have our image, we check what is left to render. If the list contains only
      null Box2Ds then we already rendered it all*/
@@ -464,7 +466,7 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
              in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-                inputImages.push_back(it2->first->renderRoI(time, scale, it2->second));
+                inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second));
             }
             /*depending on the thread-safety of the plug-in we render with a different
              amount of threads*/
@@ -491,25 +493,27 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
     /*now that we rendered the image, remove it from the images being rendered*/
     {
         QMutexLocker locker(&_nodeInstanceLock);
-        std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::iterator it = _imagesBeingRendered.find(time);
+        ImagesMap::iterator it = _imagesBeingRendered.find(renderedImageKey);
         assert(it != _imagesBeingRendered.end());
         //if another thread is rendering the same image, leave it
+        //use count = 3 :
+        // the image local var, the _imagesBeingRendered member and the ptr living in the cache
         if(it->second.use_count() == 3){
             _imagesBeingRendered.erase(it);
-        }   
+        }
+        _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
     }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
     return image;
 }
 
-boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time) const{
-    std::map<SequenceTime,boost::shared_ptr<Powiter::Image> >::const_iterator it = _imagesBeingRendered.find(time);
+boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time,int view) const{
+    ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
     if(it!=_imagesBeingRendered.end()){
         return it->second;
-    }else{
-        return boost::shared_ptr<Powiter::Image>();
     }
+    return boost::shared_ptr<Powiter::Image>();
 }
 
 void OutputNode::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
@@ -549,12 +553,18 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     Powiter::Status stat =  preProcessFrame(time);
     if(stat == StatFailed)
         return;
+    {
+        QMutexLocker locker(&_nodeInstanceLock);
+        while(!_imagesBeingRendered.empty()){
+            _imagesBeingRenderedNotEmpty.wait(&_nodeInstanceLock);
+        }
+    }
     
     std::vector<std::string> alreadyComputedHashs;
     computeTreeHashAndLockParams(alreadyComputedHashs);
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, rod);
+    boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, 0,rod);
     unLockAllParams();
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;

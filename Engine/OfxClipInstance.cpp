@@ -188,11 +188,14 @@ OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 /// on the effect instance. Outside a render call, the optionalBounds should
 /// be 'appropriate' for the.
 /// If bounds is not null, fetch the indicated section of the canonical image plane.
-OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD */*optionalBounds*/)
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD *optionalBounds)
 {
-  
+    return getImageInternal(time,_viewRendered.localData(),optionalBounds);
+}
+
+OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, int view, OfxRectD */*optionalBounds*/){
     if(isOutput()){
-        boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time);
+        boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
         assert(outputImage);
         return new OfxImage(outputImage,*this);
     }else{
@@ -202,7 +205,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
         Node* input = getAssociatedNode();
         if(isOptional() && !input) {
             //make an empty image
-            boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time);
+            boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
             assert(outputImage);
             const Box2D& rod = outputImage->getRoD();
             boost::shared_ptr<Powiter::Image> image(new Powiter::Image(rod,scale,time));
@@ -210,8 +213,9 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
             return  new OfxImage(image,*this);
         }
         assert(input);
-        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(input->getImage(time, scale)),*this);
+        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(input->getImage(time, scale,view)),*this);
     }
+
 }
 
 OfxImage::OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip):
@@ -265,11 +269,8 @@ Node* OfxClipInstance::getAssociatedNode() const {
     }
 }
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) {
-    (void)time;
-    (void)view;
-    (void)optionalBounds;
-    return NULL;
+    return getImageInternal(time,view,optionalBounds);
 }
 void OfxClipInstance::setView(int view){
-    (void)view;
+    _viewRendered.setLocalData(view);
 }

@@ -188,6 +188,7 @@ HEADERS += \
     Engine/Singleton.h \
     Engine/TimeLine.h \
     Engine/Timer.h \
+    Engine/Variant.h \
     Engine/VideoEngine.h \
     Engine/ViewerNode.h \
     Global/AppManager.h \

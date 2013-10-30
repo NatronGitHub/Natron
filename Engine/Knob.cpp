@@ -239,7 +239,10 @@ _canUndo(true),
 _lock(),
 _valuePostedWhileLocked()
 {
-
+    if(_node){
+        QObject::connect(this, SIGNAL(knobUndoneChange()), _node, SIGNAL(knobUndoneChange()));
+        QObject::connect(this, SIGNAL(knobRedoneChange()), _node, SIGNAL(knobRedoneChange()));
+    }
 }
 
 Knob::~Knob(){
@@ -292,8 +295,9 @@ int Knob::determineHierarchySize() const{
 void Knob::unlockValue() {
     assert(!_lock.tryLock());
     if(!_valuePostedWhileLocked.isNull()){
-        _value = _valuePostedWhileLocked;
+        _value.setValue(_valuePostedWhileLocked);
         fillHashVector();
+        emit valueChanged(_value);
     }
     _lock.unlock();
 }
@@ -513,7 +517,7 @@ void Int_Knob::_restoreFromString(const std::string& str){
 }
 
 
-const std::vector<int> Int_Knob::getValues() const {
+std::vector<int> Int_Knob::getValues() const {
     std::vector<int> ret;
     if(_dimension > 1){
     QList<QVariant> list = _value.toList();
@@ -614,8 +618,7 @@ void Double_Knob::_restoreFromString(const std::string& str){
     }
 }
 
-
-const std::vector<double> Double_Knob::getValues() const {
+std::vector<double> Double_Knob::getValues() const {
     std::vector<double> ret;
     if(_dimension > 1){
         QList<QVariant> list = _value.toList();

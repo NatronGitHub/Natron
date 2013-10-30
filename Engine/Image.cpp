@@ -19,7 +19,7 @@ std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
     
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
-    if(_pixelsRenderedCount == _rod.area()){
+    if(_pixelsRenderedCount >= _rod.area()){
         ret.push_back(Box2D());
         return ret;
     }
@@ -27,14 +27,8 @@ std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
     Box2D bbox = roi;
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
-        bool shouldStop = false;
-        for (int j = bbox.left(); j < bbox.right(); ++j) {
-            if(!_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]){
-                shouldStop = true;
-                break;
-            }
-        }
-        if(!shouldStop){
+        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        if(!memchr(buf,0,_rod.width())){
             bbox.set_bottom(bbox.bottom()+1);
             if(bbox.top() <= bbox.bottom()){
                 bbox.clear();
@@ -45,22 +39,17 @@ std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
             break;
         }
     }
-    
+
     //find top
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
-        bool shouldStop = false;
-        for (int j = bbox.left(); j < bbox.right(); ++j) {
-            if(!_map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())]){
-                shouldStop = true;
-                break;
-            }
-        }
-        if(!shouldStop){
+        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        if(!memchr(buf,0,_rod.width())){
             bbox.set_top(bbox.top()-1);
         }else{
             break;
         }
     }
+
     //find left
     for (int j = bbox.left(); j < bbox.right(); ++j) {
         bool shouldStop = false;
@@ -99,13 +88,10 @@ std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
 
 void Powiter::Bitmap::markForRendered(const Box2D& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
-        for (int j = roi.left(); j < roi.right(); ++j) {
-            if(i >= _rod.bottom() && i < _rod.top() && j >= _rod.left() && j < _rod.right()){
-                _map[(i-_rod.bottom())*_rod.width()+(j-_rod.left())] = 1;
-                ++_pixelsRenderedCount;
-            }
-        }
+        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        memset(buf, 1, roi.width());
     }
+    _pixelsRenderedCount += roi.area();
 }
 namespace Powiter{
     void debugImage(Powiter::Image* img){

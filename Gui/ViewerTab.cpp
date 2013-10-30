@@ -164,6 +164,13 @@ _maximized(false)
     _viewerColorSpace->addItem("Rec.709");
     _viewerColorSpace->setCurrentIndex(1);
     
+    _viewsComboBox = new ComboBox(_secondSettingsRow);
+    _viewsComboBox->setToolTip("<p></br><b>Active view: \n</b></p>"
+                               "Tells the viewer what view should be displayed.");
+    _secondRowLayout->addWidget(_viewsComboBox);
+    _viewsComboBox->hide();
+    int viewsCount = _gui->getApp()->getProject()->getProjectViewsCount(); //getProjectViewsCount
+    updateViewsMenu(viewsCount);
     
     _secondRowLayout->addStretch();
     
@@ -353,8 +360,6 @@ _maximized(false)
                        "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
     
-    
-    
     QImage imgFirst(POWITER_IMAGES_PATH"firstFrame.png");
     QImage imgPrevKF(POWITER_IMAGES_PATH"prevKF.png");
     QImage imgRewind(POWITER_IMAGES_PATH"rewind.png");
@@ -485,7 +490,41 @@ _maximized(false)
     QObject::connect(_viewerNode, SIGNAL(mustSwapBuffers()), viewer, SLOT(doSwapBuffers()));
     
     QObject::connect(_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
+    
+    QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),viewer,SLOT(showView(int)));
+
 }
+
+void ViewerTab::updateViewsMenu(int count){
+    int currentIndex = _viewsComboBox->activeIndex();
+    _viewsComboBox->clear();
+    if(count == 1){
+        _viewsComboBox->hide();
+        _viewsComboBox->addItem("Main");
+        
+    }else if(count == 2){
+        _viewsComboBox->show();
+        _viewsComboBox->addItem("Left",QIcon(),QKeySequence(Qt::CTRL + Qt::Key_1));
+        _viewsComboBox->addItem("Right",QIcon(),QKeySequence(Qt::CTRL + Qt::Key_2));
+    }else{
+        _viewsComboBox->show();
+        for(int i = 0 ; i < count;++i){
+            _viewsComboBox->addItem(QString("View ")+QString::number(i+1),QIcon(),Gui::keySequenceForView(i));
+        }
+    }
+    if(currentIndex < _viewsComboBox->count() && currentIndex != -1){
+        _viewsComboBox->setCurrentIndex(currentIndex);
+    }else{
+        _viewsComboBox->setCurrentIndex(0);
+    }
+    _gui->updateViewsActions(count);
+}
+
+void ViewerTab::setCurrentView(int view){
+    _viewsComboBox->setCurrentIndex(view);
+}
+
+
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);
     _viewerNode->getVideoEngine()->toggleLoopMode(b);
@@ -687,3 +726,4 @@ void ViewerTab::leaveEvent(QEvent *event)
 {
     QWidget::leaveEvent(event);
 }
+

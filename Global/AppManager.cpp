@@ -941,7 +941,28 @@ void AppInstance::checkViewersConnection(){
         }
     }
 }
-
+void AppInstance::setupViewersForViews(int viewsCount){
+    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->className() == "Viewer") {
+            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            assert(n);
+            n->getUiContext()->updateViewsMenu(viewsCount);
+        }
+    }
+}
+void AppInstance::setViewersCurrentView(int view){
+    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->className() == "Viewer") {
+            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            assert(n);
+            n->getUiContext()->setCurrentView(view);
+        }
+    }
+}
 const QString& AppInstance::getCurrentProjectName() const  {return _currentProject->getProjectName();}
 
 const QString& AppInstance::getCurrentProjectPath() const  {return _currentProject->getProjectPath();}

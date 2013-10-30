@@ -398,7 +398,8 @@ void VideoEngine::run(){
             OfxNode* output = _tree.outputAsOpenFXNode();
             stat = output->getRegionOfDefinition(currentFrame, &rod);
             if(stat != StatFailed){
-                output->renderRoI(currentFrame, scale, rod);
+    #warning "Rendering only a single view for now, we need to pass the project's views count."
+                output->renderRoI(currentFrame, scale,0 ,rod);
             }
             
         }

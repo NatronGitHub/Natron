@@ -607,13 +607,13 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descri
     
 }
 OfxStatus OfxDouble2DInstance::get(double& x1, double& x2) {
-    const std::vector<double>& _values = _knob->getValues();
+    std::vector<double> _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxDouble2DInstance::get(OfxTime /*time*/, double& x1, double& x2) {
-    const std::vector<double>& _values = _knob->getValues();
+    std::vector<double> _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
@@ -703,13 +703,13 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Desc
     _knob->setValue<int>(def,2);
 }
 OfxStatus OfxInteger2DInstance::get(int& x1, int& x2) {
-    const std::vector<int>& _values = _knob->getValues();
+    std::vector<int> _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
 }
 OfxStatus OfxInteger2DInstance::get(OfxTime /*time*/, int& x1, int& x2) {
-    const std::vector<int>& _values = _knob->getValues();
+    std::vector<int> _values = _knob->getValues();
     x1 = _values[0];
     x2 = _values[1];
     return kOfxStatOK;
