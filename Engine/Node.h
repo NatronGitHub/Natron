@@ -399,6 +399,7 @@ protected:
         Q_UNUSED(time);
         Q_UNUSED(scale);
         Q_UNUSED(roi);
+        Q_UNUSED(view);
         Q_UNUSED(output);
     }
     
@@ -476,6 +477,7 @@ private:
                                RenderScale scale,
                                const Box2D& roi,
                                int view,
+                               Hash64 hashValue,
                                std::map<Knob*,Variant>* knobValues,
                                boost::shared_ptr<Powiter::Image> output);
     

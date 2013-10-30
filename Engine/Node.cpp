@@ -430,10 +430,12 @@ void Node::tiledRenderingFunctor(SequenceTime time,
                                  RenderScale scale,
                                  const Box2D& roi,
                                  int view,
+                                 Hash64 hashValue,
                                  std::map<Knob*,Variant>* knobValues,boost::shared_ptr<Powiter::Image> output){
     for (std::map<Knob*,Variant>::iterator it = knobValues->begin(); it!=knobValues->end(); ++it) {
         it->first->setValueForThread(it->second);
     }
+    _hashValue.setLocalData(hashValue);
     render(time, scale, roi,view, output);
     output->markForRendered(roi);
 }
@@ -491,7 +493,7 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<Box2D> splitRects = splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QtConcurrent::blockingMap(splitRects,
-                                          boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,view,knobValues,image));
+                                          boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,view,hash(),knobValues,image));
             }
         }
         delete knobValues;
