@@ -212,7 +212,7 @@ void ExrEncoder::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,const Box2D& roi){
+void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const Box2D& roi){
     
     try{
         for (int y = roi.bottom(); y < roi.top(); ++y) {

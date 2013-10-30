@@ -82,6 +82,8 @@ public:
 
     const QString& getCurrentProjectPath() const WARN_UNUSED_RETURN ;
 
+    int getCurrentProjectViewsCount() const;
+
     boost::shared_ptr<Powiter::Project> getProject() const { return _currentProject;}
 
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;

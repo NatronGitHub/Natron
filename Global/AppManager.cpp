@@ -971,6 +971,7 @@ boost::shared_ptr<TimeLine> AppInstance::getTimeLine() const  {return _currentPr
 
 void AppInstance::setCurrentProjectName(const QString& name) {_currentProject->setProjectName(name);}
 
+int AppInstance::getCurrentProjectViewsCount() const{ return _currentProject->getProjectViewsCount();}
 
 bool AppInstance::shouldAutoSetProjectFormat() const {return _currentProject->shouldAutoSetProjectFormat();}
 

@@ -171,7 +171,7 @@ public:
     
 protected:
     
-    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
 
     virtual Node::RenderSafety renderThreadSafety() const OVERRIDE;
 public slots:

@@ -131,6 +131,9 @@ public:
     
     void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
     
+    void makeKnobsCopyForCurrentThread();
+    
+    
 public slots:
     
     void onNumberOfViewsChanged();

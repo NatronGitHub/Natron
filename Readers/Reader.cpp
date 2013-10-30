@@ -156,7 +156,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 
-void Reader::render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+void Reader::render(SequenceTime time,RenderScale scale,const Box2D& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
     QString filename = _fileKnob->getRandomFrameName(time);
     boost::shared_ptr<Decoder> found;
     {

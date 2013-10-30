@@ -335,3 +335,9 @@ void Project::createNewFormat(){
 int Project::getProjectViewsCount() const{
     return _viewsCount->value<int>();
 }
+void Project::makeKnobsCopyForCurrentThread() {
+    _formatKnob->makeCopyForCurrentThread();
+    _addFormatKnob->makeCopyForCurrentThread();
+    _viewsCount->makeCopyForCurrentThread();
+}
+

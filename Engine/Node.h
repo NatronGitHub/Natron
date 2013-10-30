@@ -225,11 +225,9 @@ public:
     
     Knob* getKnobByDescription(const std::string& desc) const;
     
-    const Hash64& hash() const { return _hashValue; }
+    const Hash64& hash() const { assert(_hashValue.hasLocalData()); return _hashValue.localData(); }
     
-    void computeTreeHashAndLockParams(std::vector<std::string> &alreadyComputedHash);
-
-    void unLockAllParams();
+    void computeHashAndCopyKnobValues(std::vector<std::string> &alreadyComputedHash);
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
@@ -363,6 +361,9 @@ public:
     
     boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
     
+    
+    std::map<Knob*,Variant>* knobValuesForCurrentRender();
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -394,7 +395,7 @@ protected:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image> output){
         Q_UNUSED(time);
         Q_UNUSED(scale);
         Q_UNUSED(roi);
@@ -467,14 +468,16 @@ protected:
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
     bool _renderAborted; //< was rendering aborted ?
-    Hash64 _hashValue;//< 1 value per render thread (i.e: VideoEngine::run() thread) using this node
-    
-    /*we store for each render a copy of all knobs values that can be later on accessed*/
-    //typedef std::map<U64,std::map<Knob*,Variant> > KnobsSnapShot;
-    // KnobsSnapShot _knobsValuesForRender;
+    mutable QThreadStorage<Hash64> _hashValue;//< 1 value per render thread (i.e: VideoEngine::run() thread) using this node
+ 
 private:
     
-    void tiledRenderingFunctor(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output);
+    void tiledRenderingFunctor(SequenceTime time,
+                               RenderScale scale,
+                               const Box2D& roi,
+                               int view,
+                               std::map<Knob*,Variant>* knobValues,
+                               boost::shared_ptr<Powiter::Image> output);
     
     typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
     typedef OutputConnectionsIterator InputConnectionsIterator;

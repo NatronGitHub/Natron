@@ -244,7 +244,7 @@ protected:
     /**
      * @brief Forwards to the decoder
      */
-    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
     
 
 	virtual void initKnobs() OVERRIDE;

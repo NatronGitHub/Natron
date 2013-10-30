@@ -423,7 +423,6 @@ private:
      **/
     void computeTreeVersionAndLockParams();
     
-    void unlockAllParams();
     
     /**
      *@brief displays progress if the time to compute the current frame exeeded

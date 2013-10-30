@@ -20,6 +20,9 @@
 #include <QtGui/QVector4D>
 #include <QtCore/QMutex>
 #include <QtCore/QStringList>
+#include <QtCore/QThreadStorage>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -91,27 +94,17 @@ public:
     
     virtual std::string serialize() const =0;
     
-    void restoreFromString(const std::string& str){
-        _restoreFromString(str);
-        fillHashVector();
-        emit valueChanged(_value);
-        tryStartRendering();
-    }
+    void restoreFromString(const std::string& str);
     
     template<typename T>
     void setValue(T variant[],int count){
-        _value = Variant(variant,count);
-        fillHashVector();
-        emit valueChanged(_value);
-        tryStartRendering();
+        Variant v(variant,count);
+        setValueInternal(v);
     }
     
     template<typename T>
     void setValue(const T &value) {
-        _value.setValue(value);
-        fillHashVector();
-        emit valueChanged(_value);
-        tryStartRendering();
+        setValueInternal(Variant(value));
     }
     
     /*Used to extract the value held by the knob.
@@ -119,10 +112,31 @@ public:
      way to retrieve results in the expected type.*/
     template<typename T>
     T value(){
+        if(QThread::currentThread() != qApp->thread()){
+            assert(_renderThreadsStorage.hasLocalData());
+            return _renderThreadsStorage.localData().value<T>();
+        }
         return _value.value<T>();
     }
     
-    const Variant& getValueAsVariant() const { return _value; }
+    /*Copies the value stored in _value to the local thread storage.
+     This allows a render thread to make a "snapshot" of the value of the
+     knob.
+     */
+    void makeCopyForCurrentThread();
+    
+    /*Set the value for a specific thread. This function must be called
+     by the thread in question.*/
+    void setValueForThread(const Variant& v);
+    
+    const Variant& getValueAsVariant() const {
+        if(QThread::currentThread() != qApp->thread()){
+            assert(_renderThreadsStorage.hasLocalData());
+            return (const Variant&)_renderThreadsStorage.localData();
+        }else{
+            return _value;
+        }
+    }
     
     /*You can call this when you want to remove this Knob
      at anytime.*/
@@ -154,18 +168,11 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
     
-    /**
-     * @brief Lock the value held by the knob until unlockValue() is called.
-     * All calls to setValue() while the knob is locked will store the value in
-     * _valuePostedWhileLocked instead. Typically this is done 
-     **/
-    void lockValue() const { _lock.lock();}
-    
-    void unlockValue() ;
-    
     public slots:
+    
     /*Set the value of the knob but does NOT emit the valueChanged signal.
-     This is called by the GUI*/
+     This is called by the GUI hence does not change the value of any
+     render thread storage.*/
     void onValueChanged(const Variant& variant);
     
 signals:
@@ -211,11 +218,14 @@ protected:
     
     Node*  _node;
     Variant _value;
+    mutable QThreadStorage<Variant> _renderThreadsStorage; //< each render thread has a snap shot of the _value
     std::vector<U64> _hashVector;
     int _dimension;
     
     
 private:
+    
+    void setValueInternal(const Variant& v);
     
     std::string _description;
     
@@ -227,8 +237,6 @@ private:
     bool _enabled;
     bool _canUndo;
     std::string _tooltipHint;
-    mutable QMutex _lock;
-    Variant _valuePostedWhileLocked;
 
 };
 

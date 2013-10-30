@@ -88,9 +88,10 @@ private:
     
     void renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
                        const Box2D& roi,
+                       int view,
                        boost::shared_ptr<Encoder> encoder);
     
-    boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,const Box2D& rod);
+    boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const Box2D& rod);
     
     Powiter::ChannelSet _requestedChannels;
     bool _premult;

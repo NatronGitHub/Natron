@@ -265,7 +265,7 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
     }
     _interThreadInfos._textureRect = textureRect;
     FrameKey key(time,
-                 _hashValue.value(),
+                 hash().value(),
                  zoomFactor,
                  viewer->getExposure(),
                  viewer->lutType(),
@@ -330,35 +330,36 @@ Powiter::Status ViewerNode::renderViewer(SequenceTime time,bool fitToViewer){
         RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
         //inputsRoi only contains 1 element
         RoIMap::const_iterator it = inputsRoi.begin();
-#warning "Rendering only a single view for now, we need to pass the project's views count."
-        boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale,0 ,it->second);
-        
-        int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
-        // group of group of rows where first is image coordinate, second is texture coordinate
-        std::vector< std::vector<std::pair<int,int> > > splitRows;
-        U32 k = 0;
-        while (k < rows.size()) {
-            std::vector<std::pair<int,int> > rowsForThread;
-            bool shouldBreak = false;
-            for (int i = 0; i < rowsPerThread; ++i) {
-                if(k >= rows.size()){
-                    shouldBreak = true;
+        int viewsCount = getApp()->getCurrentProjectViewsCount();
+        for(int view = 0 ; view < viewsCount ; ++view){
+            boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale,view,it->second);
+            
+            int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
+            // group of group of rows where first is image coordinate, second is texture coordinate
+            std::vector< std::vector<std::pair<int,int> > > splitRows;
+            U32 k = 0;
+            while (k < rows.size()) {
+                std::vector<std::pair<int,int> > rowsForThread;
+                bool shouldBreak = false;
+                for (int i = 0; i < rowsPerThread; ++i) {
+                    if(k >= rows.size()){
+                        shouldBreak = true;
+                        break;
+                    }
+                    rowsForThread.push_back(make_pair(rows[k],k));
+                    ++k;
+                }
+                
+                splitRows.push_back(rowsForThread);
+                if(shouldBreak){
                     break;
                 }
-                rowsForThread.push_back(make_pair(rows[k],k));
-                ++k;
             }
-           
-            splitRows.push_back(rowsForThread);
-            if(shouldBreak){
-                break;
-            }
+#warning "Viewer rendering only a single view for now"
+            QFuture<void> future = QtConcurrent::map(splitRows,
+                                                     boost::bind(&ViewerNode::renderFunctor,this,inputImage,_1,columns));
+            future.waitForFinished();
         }
-        
-        
-        QFuture<void> future = QtConcurrent::map(splitRows,
-                                  boost::bind(&ViewerNode::renderFunctor,this,inputImage,_1,columns));
-        future.waitForFinished();
     }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();

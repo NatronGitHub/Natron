@@ -228,6 +228,8 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
 Knob::Knob(Node*  node,const std::string& description,int dimension):
 _node(node),
 _value(),
+_renderThreadsStorage(),
+_hashVector(),
 _dimension(dimension),
 _description(description),
 _newLine(true),
@@ -235,9 +237,7 @@ _itemSpacing(0),
 _parentKnob(NULL),
 _visible(true),
 _enabled(true),
-_canUndo(true),
-_lock(),
-_valuePostedWhileLocked()
+_canUndo(true)
 {
     if(_node){
         QObject::connect(this, SIGNAL(knobUndoneChange()), _node, SIGNAL(knobUndoneChange()));
@@ -250,9 +250,31 @@ Knob::~Knob(){
         _node->removeKnob(this);
 }
 
+void Knob::restoreFromString(const std::string& str){
+    _restoreFromString(str);
+    fillHashVector();
+    emit valueChanged(_value);
+    tryStartRendering();
+}
 
+void Knob::setValueInternal(const Variant& v){
+    if(QThread::currentThread() != qApp->thread()){
+        //if the thread is not the main thread we set both the _value and the _renderThreadsStorage
+        _renderThreadsStorage.setLocalData(v);
+    }
+    _value = v;
+    
+    fillHashVector();
+    emit valueChanged(_value);
+    tryStartRendering();
 
-
+}
+void Knob::makeCopyForCurrentThread() {
+    _renderThreadsStorage.setLocalData(_value);
+}
+void Knob::setValueForThread(const Variant& v){
+    _renderThreadsStorage.setLocalData(v);
+}
 void Knob::startRendering(bool initViewer){
     if(!_node)
         return;
@@ -292,27 +314,13 @@ int Knob::determineHierarchySize() const{
     }
     return ret;
 }
-void Knob::unlockValue() {
-    assert(!_lock.tryLock());
-    if(!_valuePostedWhileLocked.isNull()){
-        _value.setValue(_valuePostedWhileLocked);
-        fillHashVector();
-        emit valueChanged(_value);
-    }
-    _lock.unlock();
-}
 
 void Knob::onValueChanged(const Variant& variant){
-    if(_lock.tryLock()){
-        _value = variant;
-        _lock.unlock();
-    }else{
-        _valuePostedWhileLocked = variant;
-    }
+    _value = variant;
     fillHashVector();
     emit valueChangedByUser();
     tryStartRendering();
-
+    
 }
 /***********************************FILE_KNOB*****************************************/
 std::string File_Knob::serialize() const{

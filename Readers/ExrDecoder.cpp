@@ -332,7 +332,6 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
             --bottom;
             ++right;
             ++top;
-            //            _readerInfo->setBlackOutside(true);
         }
         rod.set(left, bottom, right+1, top+1);
         

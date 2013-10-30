@@ -73,7 +73,21 @@ bool Writer::validate() const{
     return true;
 }
 
-boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,const Box2D& rod){
+static QString viewToString(int view,int viewsCount){
+    if(viewsCount == 1){
+        return "";
+    }else if(viewsCount == 2){
+        if(view == 0){
+            return "_left";
+        }else{
+            return "_right";
+        }
+    }else{
+        return QString("_view")+QString::number(view);
+    }
+}
+
+boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const Box2D& rod){
     Powiter::LibraryBinary* binary = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     Encoder* encoder = NULL;
     if(!binary){
@@ -94,15 +108,14 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,const Box2D& ro
     
     encoder->premultiplyByAlpha(_premult);
     /*check if the filename already contains the extension, otherwise appending it*/
-    QString extension;
     QString filename(_filename.c_str());
     int i = filename.lastIndexOf(QChar('.'));
     if(i != -1){
-        extension.append(filename.toStdString().substr(i).c_str());
-        filename = filename.replace(i+1, extension.size(), _fileType.c_str());
-    }else{
-        filename.append(extension);
+        filename.truncate(i+1); // truncate the extension
     }
+    filename.append(viewToString(view,totalViews));
+    filename.append('.');
+    filename.append(_fileType.c_str());
     
     i = filename.lastIndexOf(QChar('#'));
     QString n = QString::number(time);
@@ -194,49 +207,49 @@ void Writer::onFrameRangeChoosalChanged(){
 
 Powiter::Status Writer::renderWriter(SequenceTime time){
     const Format& renderFormat = getProjectDefaultFormat();
-
+    int viewsCount = getApp()->getCurrentProjectViewsCount();
     //null RoD for key because the key hash computation doesn't take into account the box
     RenderScale scale;
     scale.x = scale.y = 1.;
     /*now that we have our image, we check what is left to render. If the list contains only
      null Box2Ds then we already rendered it all*/
-    boost::shared_ptr<Encoder> encoder;
-    try{
-        encoder = makeEncoder(time,renderFormat);
-    }catch(const std::exception& e){
-        cout << e.what() << endl;
-        return StatFailed;
-    }
-    if(!encoder){
-        return StatFailed;
-    }
     
     RoIMap inputsRoi = getRegionOfInterest(time, scale, renderFormat);
     //inputsRoi only contains 1 element
     RoIMap::const_iterator roi = inputsRoi.begin();
-    #warning "Rendering only a single view for now, we need to pass the project's views count."
-    boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,0, roi->second);
-    std::vector<Box2D> splitRects = splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
-    QtConcurrent::blockingMap(splitRects,
-                              boost::bind(&Writer::renderFunctor,this,inputImage,_1,encoder));
-    
-    
-    
+    for(int i = 0 ; i < viewsCount ; ++i){
+        boost::shared_ptr<Encoder> encoder;
+        try{
+            encoder = makeEncoder(time,i,viewsCount,renderFormat);
+        }catch(const std::exception& e){
+            cout << e.what() << endl;
+            return StatFailed;
+        }
+        if(!encoder){
+            return StatFailed;
+        }
+        boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
+        std::vector<Box2D> splitRects = splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
+        QtConcurrent::blockingMap(splitRects,
+                                  boost::bind(&Writer::renderFunctor,this,inputImage,_1,i,encoder));
+        if(!_renderAborted){
+            // finalize file if needed
+            encoder->finalizeFile();
+        }else{//remove file!
+            QFile::remove(encoder->filename());
+        }
+
+    }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
-    if(!_renderAborted){
-        // finalize file if needed
-        encoder->finalizeFile();
-    }else{//remove file!
-        QFile::remove(encoder->filename());
-    }
     return StatOK;
 }
 
 void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
                            const Box2D& roi,
+                           int view,
                            boost::shared_ptr<Encoder> encoder){
-    encoder->render(inputImage, roi);
+    encoder->render(inputImage,view,roi);
 }
 
 

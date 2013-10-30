@@ -349,13 +349,14 @@ void OfxNode::openFilesForAllFileParams(){
     }
 
 }
-void OfxNode::render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image>/* output*/){
+void OfxNode::render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
-    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,0,1);
+    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
 }
 
 Node::RenderSafety OfxNode::renderThreadSafety() const{

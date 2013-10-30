@@ -23,6 +23,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Hash64.h"
+#include "Engine/Project.h"
 #include "Engine/Lut.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Row.h"
@@ -31,7 +32,6 @@
 #include "Engine/Timer.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
-
 
 #include "Gui/Gui.h"
 #include "Gui/ViewerTab.h"
@@ -220,9 +220,7 @@ void VideoEngine::stopEngine() {
         }
         _abortBeingProcessed = false;
     }
-    
-    unlockAllParams();
-    
+        
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
@@ -398,8 +396,10 @@ void VideoEngine::run(){
             OfxNode* output = _tree.outputAsOpenFXNode();
             stat = output->getRegionOfDefinition(currentFrame, &rod);
             if(stat != StatFailed){
-    #warning "Rendering only a single view for now, we need to pass the project's views count."
-                output->renderRoI(currentFrame, scale,0 ,rod);
+                int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
+                for(int i = 0; i < viewsCount;++i){
+                    output->renderRoI(currentFrame, scale,i ,rod);
+                }
             }
             
         }
@@ -498,16 +498,13 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 
 void VideoEngine::computeTreeVersionAndLockParams(){
     OutputNode* output = _tree.getOutput();
+    _tree.getOutput()->getApp()->getProject()->makeKnobsCopyForCurrentThread();
     std::vector<std::string> v;
-    output->computeTreeHashAndLockParams(v);
+    output->computeHashAndCopyKnobValues(v);
     _treeVersionValid = true;
 }
 
-void VideoEngine::unlockAllParams()  {
-    for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-        (*it)->unLockAllParams();
-    }
-}
+
 
 
 
