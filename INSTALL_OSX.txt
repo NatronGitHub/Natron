@@ -60,6 +60,30 @@ With macports:
 
 	sudo port install expat	
 
+###GLEW
+
+With macports:
+
+	sudo port install glew
+
+create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
+configuration, for example using the following comands:
+
+sudo -s
+cat > /opt/local/lib/pkgconfig/glu.pc << EOF
+ prefix=/usr
+ exec_prefix=${prefix}
+ libdir=${exec_prefix}/lib
+ includedir=${prefix}/include
+
+
+Name: glu
+ Version: 2.0
+ Description: glu
+ Requires:
+ Libs:
+ Cflags: -I${includedir}
+EOF
 
 ###Add the config.pri file
 

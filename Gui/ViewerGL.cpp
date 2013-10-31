@@ -54,12 +54,6 @@ GCC_DIAG_ON(unused-parameter);
 /*This class is the the core of the viewer : what displays images, overlays, etc...
  Everything related to OpenGL will (almost always) be in this class */
 
-#ifdef __POWITER_OSX__
-#define glGenVertexArrays glGenVertexArraysAPPLE
-#define glDeleteVertexArrays glDeleteVertexArraysAPPLE
-#define glBindVertexArray glBindVertexArrayAPPLE
-#endif
-
 //using namespace Imf;
 //using namespace Imath;
 using namespace Powiter;
@@ -157,6 +151,8 @@ void ViewerGL::drawRenderingVAO(){
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     checkGLErrors();
 }
+
+#if 0
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if( error == GL_FRAMEBUFFER_UNDEFINED)
@@ -187,6 +183,7 @@ void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
 		cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
 	checkGLErrors();
 }
+#endif
 
 void ViewerGL::initConstructor(){
     
@@ -656,22 +653,37 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	}
 	return 0;
 }
-void ViewerGL::initAndCheckGlExtensions(){
-    Powiter::errorDialog("lala","mm");
-	if(!QGLShaderProgram::hasOpenGLShaderPrograms(context())){
-        Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
-        cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
+
+
+void ViewerGL::initAndCheckGlExtensions() {
+	GLenum err = glewInit();
+	if (GLEW_OK != err) {
+		/* Problem: glewInit failed, something is seriously wrong. */
+		Powiter::errorDialog("OpenGL/GLEW error",
+							 (const char*)glewGetErrorString(err));
+	}
+	//fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+
+	// is GL_VERSION_2_0 necessary? note that GL_VERSION_2_0 includes GLSL
+	if (!glewIsSupported("GL_VERSION_1_5 "
+						 "GL_ARB_texture_non_power_of_two " // or GL_IMG_texture_npot, or GL_OES_texture_npot, core since 2.0
+						 "GL_ARB_shader_objects " // GLSL, Uniform*, core since 2.0
+						 "GL_ARB_vertex_buffer_object " // BindBuffer, MapBuffer, etc.
+						 "GL_ARB_pixel_buffer_object " // BindBuffer(PIXEL_UNPACK_BUFFER,...
+						 //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
+						 //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
+						 )) {
+		Powiter::errorDialog("Missing OpenGL requirements",
+							 "The viewer may not be fully functionnal. "
+							 "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
+	}
+	if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
+        // no need to pull out a dialog, it was already presented after the GLEW check above
+		
+		//Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
+        //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
-    
-#ifdef __POWITER_WIN32__
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		cout << "Cannot initialize "
-        "glew: " << glewGetErrorString (err) << endl;
-	}
-#endif
 }
 
 void ViewerGL::activateShaderLC(){

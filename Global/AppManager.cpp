@@ -69,6 +69,7 @@ _gui(new Gui(this))
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
 {
+    appPTR->registerInstance(appID,this);
     appPTR->setAsTopLevelInstance(appID);
     _gui->createGui();
 
@@ -414,10 +415,12 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
 
 AppInstance* AppManager::newAppInstance(const QString& projectName){
     AppInstance* instance = new AppInstance(_availableID,projectName);
-    _appInstances.insert(make_pair(_availableID, instance));
     ++_availableID;
     return instance;
 }
+ void AppManager::registerInstance(int appID,AppInstance* app){
+     _appInstances.insert(make_pair(appID, app));
+ }
 
 AppInstance* AppManager::getAppInstance(int appID) const{
     std::map<int,AppInstance*>::const_iterator it;

@@ -50,6 +50,9 @@ Go under Powiter and type
 
 	sudo apt-get install expat
 
+###GLEW
+
+	sudo apt-get install libglew-dev
 
 We're done here for libraries.
 

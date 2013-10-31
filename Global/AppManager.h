@@ -237,6 +237,8 @@ public:
 
     AppInstance* newAppInstance(const QString& projectName = QString());
 
+    void registerInstance(int appID,AppInstance* app);
+
     AppInstance* getAppInstance(int appID) const;
 
     void removeInstance(int appID);
