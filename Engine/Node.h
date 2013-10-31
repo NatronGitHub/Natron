@@ -227,7 +227,9 @@ public:
     
     const Hash64& hash() const { assert(_hashValue.hasLocalData()); return _hashValue.localData(); }
     
-    void computeHashAndCopyKnobValues(std::vector<std::string> &alreadyComputedHash);
+    void computeHashAndLockKnobs(std::vector<std::string> &alreadyComputedHash);
+    
+    void unlockAllKnobs();
     
     /*@brief The derived class should query this to abort any long process
      in the engine function.*/
@@ -361,8 +363,8 @@ public:
     
     boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
     
+        
     
-    std::map<Knob*,Variant>* knobValuesForCurrentRender();
     
 public slots:
     
@@ -386,6 +388,38 @@ public slots:
         emit frameRangeChanged(f,l);
     }
     
+    /**
+     * @brief Used to bracket a series of call to paramChangedByUser(...) in case many complex changes are done
+     * at once. If not called, paramChangedByUser() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance.
+     **/
+    void onBeginParamChangeByUser(){ _betweenBeginEndParamChanged = true ; beginParamChangedByUser();}
+    
+    /**
+     * @brief Used to bracket a series of call to paramChangedByUser(...) in case many complex changes are done
+     * at once. If not called, paramChangedByUser() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance.
+     **/
+    void onEndParamChangeByUser(){ assert(_betweenBeginEndParamChanged); _betweenBeginEndParamChanged = false ; endParamChangedByUser();}
+    
+    /**
+     * @brief Slot called by the gui whenever a param changes. It calls the virtual
+     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
+     * not done already.
+     **/
+    void onParamChangeByUser(const QString& paramName){
+        bool wasBeginCalled = true;
+        if(!_betweenBeginEndParamChanged){
+            onBeginParamChangeByUser();
+            wasBeginCalled = false;
+        }
+        paramChangedByUser(paramName.toStdString());
+        if(!wasBeginCalled){
+            onEndParamChangeByUser();
+        }
+    }
+
+    
 protected:
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -402,6 +436,28 @@ protected:
         Q_UNUSED(view);
         Q_UNUSED(output);
     }
+    
+    /**
+     * @brief The virtual portion of paramChangedByUser(...) you can overload it to take any needed action on a specific
+     * param value changed. 
+     * @param paramName[in] The name of the param changed. This is guaranteed that if this function was called, the value stored
+     * by the parameter changed.
+     **/
+    virtual void paramChangedByUser(const std::string& paramName){(void)paramName;}
+    
+    /**
+     * @brief Used to bracket a series of call to paramChangedByUser(...) in case many complex changes are done
+     * at once. If not called, paramChangedByUser() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void beginParamChangedByUser(){}
+    
+    /**
+     * @brief Used to bracket a series of call to paramChangedByUser(...) in case many complex changes are done
+     * at once. If not called, paramChangedByUser() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void endParamChangedByUser(){}
     
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
@@ -478,7 +534,6 @@ private:
                                const Box2D& roi,
                                int view,
                                Hash64 hashValue,
-                               std::map<Knob*,Variant>* knobValues,
                                boost::shared_ptr<Powiter::Image> output);
     
     typedef std::map<Node*,std::pair<int,int> >::const_iterator OutputConnectionsIterator;
@@ -526,7 +581,7 @@ private:
     
     typedef std::map<ImageBeingRenderedKey,boost::shared_ptr<Powiter::Image> > ImagesMap;
     ImagesMap _imagesBeingRendered; //< a map storing the ongoing render for this node
-    
+    bool _betweenBeginEndParamChanged;
 };
 
 

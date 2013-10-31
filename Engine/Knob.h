@@ -20,9 +20,6 @@
 #include <QtGui/QVector4D>
 #include <QtCore/QMutex>
 #include <QtCore/QStringList>
-#include <QtCore/QThreadStorage>
-#include <QtCore/QThread>
-#include <QtCore/QCoreApplication>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -112,30 +109,15 @@ public:
      way to retrieve results in the expected type.*/
     template<typename T>
     T value(){
-        if(QThread::currentThread() != qApp->thread()){
-            assert(_renderThreadsStorage.hasLocalData());
-            return _renderThreadsStorage.localData().value<T>();
-        }
         return _value.value<T>();
     }
     
-    /*Copies the value stored in _value to the local thread storage.
-     This allows a render thread to make a "snapshot" of the value of the
-     knob.
-     */
-    void makeCopyForCurrentThread();
+    void lock();
     
-    /*Set the value for a specific thread. This function must be called
-     by the thread in question.*/
-    void setValueForThread(const Variant& v);
+    void unlock();
     
     const Variant& getValueAsVariant() const {
-        if(QThread::currentThread() != qApp->thread()){
-            assert(_renderThreadsStorage.hasLocalData());
-            return (const Variant&)_renderThreadsStorage.localData();
-        }else{
-            return _value;
-        }
+        return _value;
     }
     
     /*You can call this when you want to remove this Knob
@@ -150,6 +132,13 @@ public:
     
     void setVisible(bool b);
     
+    /*Call this to change the knob name. The name is not the text label displayed on 
+     the GUI but what is passed to the valueChangedByUser signal. By default the
+     name is the same as the description(i.e: the text label).*/
+    void setName(const std::string& name){_name = QString(name.c_str());}
+    
+    std::string getName() const {return _name.toStdString();}
+    
     void setParentKnob(Knob* knob){_parentKnob = knob;}
     
     Knob* getParentKnob() const {return _parentKnob;}
@@ -159,6 +148,8 @@ public:
     bool isVisible() const {return _visible;}
     
     bool isEnabled() const {return _enabled;}
+    
+    void setIsInsignificant(bool b){_isInsignificant = b;}
     
     void turnOffUndoRedo() {_canUndo = false;}
     
@@ -181,7 +172,7 @@ signals:
      knob has changed by a user interaction.
      You can connect to this signal to do
      whatever processing you want.*/
-    void valueChangedByUser();
+    void valueChangedByUser(QString);
     
     /*Emitted when the value is changed internally*/
     void valueChanged(const Variant&);
@@ -218,7 +209,6 @@ protected:
     
     Node*  _node;
     Variant _value;
-    mutable QThreadStorage<Variant> _renderThreadsStorage; //< each render thread has a snap shot of the _value
     std::vector<U64> _hashVector;
     int _dimension;
     
@@ -227,8 +217,9 @@ private:
     
     void setValueInternal(const Variant& v);
     
-    std::string _description;
-    
+    std::string _description;//< the text label that will be displayed  on the GUI
+    QString _name;//< the knob can have a name different than the label displayed on GUI.
+                          //By default this is the same as _description but can be set by calling setName().
     bool _newLine;
     int _itemSpacing;
     
@@ -236,8 +227,12 @@ private:
     bool _visible;
     bool _enabled;
     bool _canUndo;
+    bool _isInsignificant; //< if true, a value change will never call tryStartRendering()
     std::string _tooltipHint;
-
+    Variant _valuePostedWhileLocked;
+    QMutex _lock;
+    bool _isLocked;
+    bool _hasPostedValue;
 };
 
 /******************************FILE_KNOB**************************************/
@@ -296,7 +291,6 @@ public:
     virtual std::string serialize() const;
 
 signals:
-    void filesSelected();
     void shouldOpenFile();
     void frameRangeChanged(int,int);
     
@@ -339,8 +333,6 @@ public:
 
     
 signals:
-    
-    void filesSelected();
     
     void shouldOpenFile();
     
@@ -769,9 +761,11 @@ public:
     
     virtual std::string serialize() const{return "";}
 
-    public slots:
-    void connectToSlot(const char* v);
+public slots:
     
+    void emitButtonPressed(const QString& paramName);
+signals:
+    void buttonPressed();
 protected:
     
     virtual void tryStartRendering(){}

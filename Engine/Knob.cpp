@@ -228,20 +228,27 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
 Knob::Knob(Node*  node,const std::string& description,int dimension):
 _node(node),
 _value(),
-_renderThreadsStorage(),
 _hashVector(),
 _dimension(dimension),
 _description(description),
+_name(description.c_str()),
 _newLine(true),
 _itemSpacing(0),
 _parentKnob(NULL),
 _visible(true),
 _enabled(true),
-_canUndo(true)
+_canUndo(true),
+_isInsignificant(false),
+_tooltipHint(),
+_valuePostedWhileLocked(),
+_lock(),
+_isLocked(false),
+_hasPostedValue(false)
 {
     if(_node){
         QObject::connect(this, SIGNAL(knobUndoneChange()), _node, SIGNAL(knobUndoneChange()));
         QObject::connect(this, SIGNAL(knobRedoneChange()), _node, SIGNAL(knobRedoneChange()));
+        QObject::connect(this, SIGNAL(valueChangedByUser(QString)),_node, SLOT(onParamChangeByUser(QString)));
     }
 }
 
@@ -254,27 +261,40 @@ void Knob::restoreFromString(const std::string& str){
     _restoreFromString(str);
     fillHashVector();
     emit valueChanged(_value);
-    tryStartRendering();
 }
 
 void Knob::setValueInternal(const Variant& v){
-    if(QThread::currentThread() != qApp->thread()){
-        //if the thread is not the main thread we set both the _value and the _renderThreadsStorage
-        _renderThreadsStorage.setLocalData(v);
+    if(!_lock.tryLock()){
+        _valuePostedWhileLocked = v;
+        _hasPostedValue = true;
+    }else{
+        _value = v;
+        _lock.unlock();
+        fillHashVector();
     }
-    _value = v;
-    
-    fillHashVector();
-    emit valueChanged(_value);
-    tryStartRendering();
+    emit valueChanged(v);
+    if(!_isInsignificant)
+        tryStartRendering();
 
 }
-void Knob::makeCopyForCurrentThread() {
-    _renderThreadsStorage.setLocalData(_value);
+
+void Knob::lock() { _lock.lock(); _isLocked = true; }
+
+void Knob::unlock() {
+    if(_isLocked){
+        _lock.unlock();
+        _isLocked = false;
+        /*we neither have to update the gui for the knob
+         and start rendering since we did a request already.
+         */
+        if(_hasPostedValue){
+            _value = _valuePostedWhileLocked;
+            _hasPostedValue = false;
+        }
+    }
 }
-void Knob::setValueForThread(const Variant& v){
-    _renderThreadsStorage.setLocalData(v);
-}
+
+
 void Knob::startRendering(bool initViewer){
     if(!_node)
         return;
@@ -316,10 +336,18 @@ int Knob::determineHierarchySize() const{
 }
 
 void Knob::onValueChanged(const Variant& variant){
-    _value = variant;
-    fillHashVector();
-    emit valueChangedByUser();
-    tryStartRendering();
+    if(!_lock.tryLock()){
+        _valuePostedWhileLocked = variant;
+        _hasPostedValue = true;
+    }else{
+        _value = variant;
+        _lock.unlock();
+        fillHashVector();
+    }
+    
+    emit valueChangedByUser(_name);
+    if(!_isInsignificant)
+        tryStartRendering();
     
 }
 /***********************************FILE_KNOB*****************************************/
@@ -346,7 +374,6 @@ void File_Knob::fillHashVector(){
 }
 
 void File_Knob::tryStartRendering(){
-    emit filesSelected();
     if(!_node)
         return;
     if(_filesSequence.size() > 0){
@@ -457,7 +484,6 @@ void OutputFile_Knob::_restoreFromString(const std::string& str){
 }
 
 void OutputFile_Knob::tryStartRendering(){
-    emit filesSelected();
     startRendering(false);
 }
 
@@ -647,12 +673,13 @@ void Double_Knob::tryStartRendering(){
 Button_Knob::Button_Knob(Node*  node, const std::string& description,int dimension):
 Knob(node,description,dimension)
 {
-    //QObject::connect(this,SIGNAL(valueChanged(const Variant&)),this,SLOT(connectToSlot(const Variant&)));
+    QObject::connect(this,SIGNAL(valueChangedByUser(QString)),this,SLOT(emitButtonPressed(QString)));
 }
 
-void Button_Knob::connectToSlot(const char* v){
-    QObject::connect(this,SIGNAL(valueChangedByUser()),this,v);
+void Button_Knob::emitButtonPressed(const QString& /*paramName*/){
+    emit buttonPressed();
 }
+
 
 /***********************************COMBOBOX_KNOB*****************************************/
 void ComboBox_Knob::fillHashVector(){

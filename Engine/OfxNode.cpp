@@ -375,19 +375,6 @@ Node::RenderSafety OfxNode::renderThreadSafety() const{
     
 }
 
-void OfxNode::onInstanceChanged(const std::string& paramName){
-   
-    OfxStatus stat;
-    stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    OfxPointD renderScale;
-    renderScale.x = renderScale.y = 1.0;
-    stat = effectInstance()->paramInstanceChangedAction(paramName, kOfxChangeUserEdited, 1.0,renderScale);
-    // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-    stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-    assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault); 
-}
 
 bool OfxNode::canMakePreviewImage() const { return isInputNode() || Node::isInputAndProcessingNode(); }
 
@@ -520,12 +507,12 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
         OfxStatus stat = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
         // assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            if(_penDown){
-                ViewerNode* v = hasViewerConnected();
-                if(v){
-                    v->refreshAndContinueRender();
-                }
-            }
+//            if(_penDown){
+//                ViewerNode* v = hasViewerConnected();
+//                if(v){
+//                    v->refreshAndContinueRender();
+//                }
+//            }
             return true;
         }
     }
@@ -631,4 +618,23 @@ void OfxNode::onFrameRangeChanged(int first,int last){
     if(isInputNode()){
         notifyFrameRangeChanged(first,last);
     }
+}
+
+void OfxNode::paramChangedByUser(const std::string& paramName) {
+     OfxPointD renderScale;
+     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
+     OfxTime time = effect_->getFrameRecursive();
+     OfxStatus stat = effectInstance()->paramInstanceChangedAction(paramName, kOfxChangeUserEdited,time,renderScale);
+     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
+     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+}
+
+void OfxNode::beginParamChangedByUser() {
+     OfxStatus stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+}
+
+ void OfxNode::endParamChangedByUser() {
+     OfxStatus stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
 }

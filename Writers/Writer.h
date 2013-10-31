@@ -68,7 +68,7 @@ public:
     int lastFrame() const {return _frameRange.second;}
     
 public slots:
-    void onFilesSelected();
+    void onFilesSelected(const QString&);
     void fileTypeChanged();
     void startRendering();
     void onFrameRangeChoosalChanged();
