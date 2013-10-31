@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 #include <boost/shared_ptr.hpp>
-#include <QtCore/QObject>
 #include <QStringList>
 #include <QVector4D>
 #include <QThreadStorage>
@@ -45,8 +44,7 @@ class Group_Knob;
 class RichText_Knob;
 class OfxNode;
 class Knob;
-class OfxPushButtonInstance :public QObject, public OFX::Host::Param::PushbuttonInstance {
-    Q_OBJECT
+class OfxPushButtonInstance :public OFX::Host::Param::PushbuttonInstance {
     
 public:
     
@@ -57,25 +55,21 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-public slots:
-    void triggerInstanceChanged();
+
 
 protected:
     OfxNode* _node;
     Button_Knob *_knob;
-    OFX::Host::Param::Descriptor& _descriptor;
 public:
     OfxPushButtonInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor);
 };
 
 
 
-class OfxIntegerInstance : public QObject,public OFX::Host::Param::IntegerInstance {
-    Q_OBJECT
+class OfxIntegerInstance :public OFX::Host::Param::IntegerInstance {
+    
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Int_Knob* _knob;
 
 public:
@@ -94,18 +88,13 @@ public:
     
     Knob* getKnob() const;
     
-public slots:
-    
-    void triggerInstanceChanged();
-    
     
 };
 
-class OfxDoubleInstance :public QObject, public OFX::Host::Param::DoubleInstance {
-    Q_OBJECT
+class OfxDoubleInstance : public OFX::Host::Param::DoubleInstance {
+    
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Double_Knob* _knob;
 
 public:
@@ -124,18 +113,12 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-public slots:
-    
-    void triggerInstanceChanged();
-    
 };
 
-class OfxBooleanInstance : public QObject,public OFX::Host::Param::BooleanInstance {
-    Q_OBJECT
+class OfxBooleanInstance : public OFX::Host::Param::BooleanInstance {
+    
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Bool_Knob* _knob;
  
 public:
@@ -154,18 +137,14 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-public slots:
-    
-    void triggerInstanceChanged();
+
     
 };
 
-class OfxChoiceInstance :public QObject, public OFX::Host::Param::ChoiceInstance {
-    Q_OBJECT
+class OfxChoiceInstance : public OFX::Host::Param::ChoiceInstance {
+    
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     std::vector<std::string> _entries;
     ComboBox_Knob* _knob;
 
@@ -184,17 +163,13 @@ public:
     
     Knob* getKnob() const;
     
-public slots:
-    
-    void triggerInstanceChanged();
-    
+
 };
 
-class OfxRGBAInstance :public QObject, public OFX::Host::Param::RGBAInstance {
-    Q_OBJECT
+class OfxRGBAInstance :public OFX::Host::Param::RGBAInstance {
+    
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     RGBA_Knob* _knob;
 
 public:
@@ -212,18 +187,13 @@ public:
     
     Knob* getKnob() const;
     
-public slots:
-    
-    void triggerInstanceChanged();
     
 };
 
 
-class OfxRGBInstance :public QObject, public OFX::Host::Param::RGBInstance {
-    Q_OBJECT
+class OfxRGBInstance : public OFX::Host::Param::RGBInstance {
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     RGBA_Knob* _knob;
 
 public:
@@ -241,17 +211,11 @@ public:
     
     Knob* getKnob() const;
     
-public slots:
-    
-    void triggerInstanceChanged();
-    
 };
 
-class OfxDouble2DInstance : public QObject,public OFX::Host::Param::Double2DInstance {
-    Q_OBJECT
+class OfxDouble2DInstance :public OFX::Host::Param::Double2DInstance {
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Double_Knob* _knob;
 
 public:
@@ -268,19 +232,13 @@ public:
     virtual void setSecret();
     
     Knob* getKnob() const;
-    
-    
-public slots:
-    
-    void triggerInstanceChanged();
-    
+
 };
 
-class OfxInteger2DInstance :public QObject, public OFX::Host::Param::Integer2DInstance {
-    Q_OBJECT
+class OfxInteger2DInstance : public OFX::Host::Param::Integer2DInstance {
+
 protected:
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Int_Knob *_knob;
 
 public:
@@ -298,15 +256,9 @@ public:
     
     Knob* getKnob() const;
     
-public slots:
-    
-    void triggerInstanceChanged();
-    
 };
-class OfxGroupInstance : public QObject, public OFX::Host::Param::GroupInstance{
-    Q_OBJECT
+class OfxGroupInstance : public OFX::Host::Param::GroupInstance{
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     Group_Knob* _groupKnob;
 public:
     
@@ -319,10 +271,8 @@ public:
     virtual ~OfxGroupInstance(){}
 };
 
-class OfxStringInstance : public QObject, public OFX::Host::Param::StringInstance{
-    Q_OBJECT
+class OfxStringInstance : public OFX::Host::Param::StringInstance{
     OfxNode* _node;
-    OFX::Host::Param::Descriptor& _descriptor;
     File_Knob* _fileKnob;
     OutputFile_Knob* _outputFileKnob;
     String_Knob* _stringKnob;
@@ -375,9 +325,6 @@ public:
     
     virtual ~OfxStringInstance(){}
     
-public slots:
-    
-    void triggerInstanceChanged();
 
 };
 

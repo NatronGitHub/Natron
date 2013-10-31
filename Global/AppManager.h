@@ -90,7 +90,6 @@ public:
 
     void setCurrentProjectName(const QString& name) ;
 
-
     bool shouldAutoSetProjectFormat() const ;
 
     void setAutoSetProjectFormat(bool b);
@@ -111,6 +110,9 @@ public:
 
     void resetCurrentProject();
 
+    void lockProjectParams();
+
+    void unlockProjectParams();
 
     void clearNodes();
 

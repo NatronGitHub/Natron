@@ -653,6 +653,7 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	}
 	return 0;
 }
+<<<<<<< HEAD
 
 void ViewerGL::initAndCheckGlExtensions() {
 	GLenum err = glewInit();
@@ -678,7 +679,10 @@ void ViewerGL::initAndCheckGlExtensions() {
 							 "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
 	}
 	if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
-        cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
+        // no need to pull out a dialog, it was already presented after the GLEW check above
+		
+		//Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
+        //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
 		_hasHW = false;
 	}
 }

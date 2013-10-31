@@ -65,6 +65,7 @@ Node::Node(AppInstance* app)
 ,_nodeInstanceLock()
 ,_imagesBeingRenderedNotEmpty()
 ,_imagesBeingRendered()
+,_betweenBeginEndParamChanged(false)
 {
 }
 
@@ -320,7 +321,7 @@ boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderS
     return entry;
 }
 
-void Node::computeHashAndCopyKnobValues(std::vector<std::string> &alreadyComputedHash){
+void Node::computeHashAndLockKnobs(std::vector<std::string> &alreadyComputedHash){
     /*If we already computed its hash,return*/
     for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
         if(alreadyComputedHash[i] == getName())
@@ -330,7 +331,7 @@ void Node::computeHashAndCopyKnobValues(std::vector<std::string> &alreadyCompute
     Hash64 hash;
     /*append all values stored in knobs*/
     for(U32 i = 0 ; i< _knobs.size();++i) {
-        _knobs[i]->makeCopyForCurrentThread();
+        _knobs[i]->lock();
         Hash64_appendKnob(&hash,*(_knobs[i]));
     }
     /*append the node name*/
@@ -346,7 +347,7 @@ void Node::computeHashAndCopyKnobValues(std::vector<std::string> &alreadyCompute
                 if(it->first != v->activeInput())
                     continue;
             }
-            it->second->computeHashAndCopyKnobValues(alreadyComputedHash);
+            it->second->computeHashAndLockKnobs(alreadyComputedHash);
             hash.append(it->second->hash().value());
         }
     }
@@ -354,6 +355,11 @@ void Node::computeHashAndCopyKnobValues(std::vector<std::string> &alreadyCompute
     hash.computeHash();
     _hashValue.setLocalData(hash);
 
+}
+void Node::unlockAllKnobs(){
+    for(U32 i = 0 ; i< _knobs.size();++i) {
+        _knobs[i]->unlock();
+    }
 }
 
 Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
@@ -431,10 +437,8 @@ void Node::tiledRenderingFunctor(SequenceTime time,
                                  const Box2D& roi,
                                  int view,
                                  Hash64 hashValue,
-                                 std::map<Knob*,Variant>* knobValues,boost::shared_ptr<Powiter::Image> output){
-    for (std::map<Knob*,Variant>::iterator it = knobValues->begin(); it!=knobValues->end(); ++it) {
-        it->first->setValueForThread(it->second);
-    }
+                                 boost::shared_ptr<Powiter::Image> output){
+
     _hashValue.setLocalData(hashValue);
     render(time, scale, roi,view, output);
     output->markForRendered(roi);
@@ -465,7 +469,6 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
      null Box2Ds then we already rendered it all*/
     std::list<Box2D> rectsToRender = image->getRestToRender(renderWindow);
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
-        std::map<Knob*,Variant>* knobValues = knobValuesForCurrentRender();
         for (std::list<Box2D>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
             std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
@@ -493,10 +496,9 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<Box2D> splitRects = splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QtConcurrent::blockingMap(splitRects,
-                                          boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,view,hash(),knobValues,image));
+                                          boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,view,hash(),image));
             }
         }
-        delete knobValues;
     }
     
     /*now that we rendered the image, remove it from the images being rendered*/
@@ -517,17 +519,6 @@ boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,Render
     return image;
 }
 
-std::map<Knob*,Variant>* Node::knobValuesForCurrentRender(){
-    std::map<Knob*,Variant>* output = new std::map<Knob*, Variant>;
-    for (U32 i = 0; i < _knobs.size(); ++i) {
-        output->insert(std::make_pair(_knobs[i], _knobs[i]->getValueAsVariant()));
-    }
-    const std::vector<Knob*>& projectKnobs = getApp()->getProject()->getProjectKnobs();
-    for (U32 i = 0; i < projectKnobs.size(); ++i) {
-        output->insert(std::make_pair(projectKnobs[i], projectKnobs[i]->getValueAsVariant()));
-    }
-    return output;
-}
 
 boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time,int view) const{
     ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
@@ -582,9 +573,8 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     }
     
     std::vector<std::string> alreadyComputedHashs;
-    computeHashAndCopyKnobValues(alreadyComputedHashs);
-    _app->getProject()->makeKnobsCopyForCurrentThread();
-    
+    computeHashAndLockKnobs(alreadyComputedHashs);
+    getApp()->lockProjectParams();
     RenderScale scale;
     scale.x = scale.y = 1.;
     boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, 0,rod);
@@ -605,7 +595,9 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             dst_pixels[j] = qRgba(r*255, g*255, b*255, a*255);
             
         }
-    }    
+    }
+    unlockAllKnobs();
+    getApp()->unlockProjectParams();
 }
 
 

@@ -138,7 +138,7 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
 void Writer::initKnobs(){
     std::string fileDesc("File");
     _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", this, fileDesc));
-    QObject::connect(_fileKnob,SIGNAL(filesSelected()),this,SLOT(onFilesSelected()));
+    QObject::connect(_fileKnob,SIGNAL(valueChangedByUser(QString)),this,SLOT(onFilesSelected(QString)));
     assert(_fileKnob);
     
     std::string renderDesc("Render");
@@ -360,6 +360,7 @@ void Writer::fileTypeChanged(){
     }
 }
 
-void Writer::onFilesSelected(){
+void Writer::onFilesSelected(const QString& paramName){
+    assert(_fileKnob->getName() == paramName.toStdString());
     _filename = _fileKnob->getValueAsVariant().toString().toStdString();
 }

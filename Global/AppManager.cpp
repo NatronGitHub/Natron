@@ -981,6 +981,14 @@ bool AppInstance::hasProjectBeenSavedByUser() const  {return _currentProject->ha
 
 const Format& AppInstance::getProjectFormat() const  {return _currentProject->getProjectDefaultFormat();}
 
+void AppInstance::lockProjectParams(){
+    _currentProject->lockProjectParams();
+}
+
+void AppInstance::unlockProjectParams(){
+    _currentProject->unlockProjectParams();
+}
+
 void AppManager::clearExceedingEntriesFromNodeCache(){
     _nodeCache->clearExceedingEntries();
 }

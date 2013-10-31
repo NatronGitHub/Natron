@@ -140,17 +140,6 @@ bool VideoEngine::startEngine() {
         abortBeingProcessedLocker.relock();
         assert(!_abortBeingProcessed);
     }
-    /*update the tree hash */
-    bool oldVersionValid = _treeVersionValid;
-    U64 oldVersion = 0;
-    if (oldVersionValid) {
-        oldVersion = _tree.getOutput()->hash().value();
-    }
-    computeTreeVersionAndLockParams();
-    /*If the Tree changed we clear the playback cache.*/
-    if(!oldVersionValid || (_tree.getOutput()->hash().value() != oldVersion)){
-        appPTR->clearPlaybackCache();
-    }
     _restart = false; /*we just called startEngine,we don't want to recall this function for the next frame in the sequence*/
     
     _currentRunArgs = _lastRequestedRunArgs;
@@ -219,7 +208,14 @@ void VideoEngine::stopEngine() {
             _working = false;
         }
         _abortBeingProcessed = false;
+        
+        for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+            (*it)->unlockAllKnobs();
+        }
+        _tree.getOutput()->getApp()->unlockProjectParams();
     }
+    
+    
         
     /*pause the thread if needed*/
     {
@@ -284,6 +280,19 @@ void VideoEngine::run(){
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
         }
+        
+        /*update the tree hash */
+        bool oldVersionValid = _treeVersionValid;
+        U64 oldVersion = 0;
+        if (oldVersionValid) {
+            oldVersion = _tree.getOutput()->hash().value();
+        }
+        computeTreeVersionAndLockKnobs();
+        /*If the Tree changed we clear the playback cache.*/
+        if(!oldVersionValid || (_tree.getOutput()->hash().value() != oldVersion)){
+            appPTR->clearPlaybackCache();
+        }
+
         
         if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
             appPTR->clearNodeCache();
@@ -435,7 +444,11 @@ void VideoEngine::run(){
                 stat = n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
                 assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
             }
+            //unlock knob values for all the graph
+            (*it)->unlockAllKnobs();
         }
+        _tree.getOutput()->getApp()->unlockProjectParams();
+        
         
     } // end for(;;)
     
@@ -496,11 +509,11 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 
 
 
-void VideoEngine::computeTreeVersionAndLockParams(){
+void VideoEngine::computeTreeVersionAndLockKnobs(){
     OutputNode* output = _tree.getOutput();
-    _tree.getOutput()->getApp()->getProject()->makeKnobsCopyForCurrentThread();
     std::vector<std::string> v;
-    output->computeHashAndCopyKnobValues(v);
+    output->computeHashAndLockKnobs(v);
+    _tree.getOutput()->getApp()->lockProjectParams();
     _treeVersionValid = true;
 }
 

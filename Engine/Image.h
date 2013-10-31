@@ -75,6 +75,7 @@ namespace Powiter{
             return _nodeHashKey == other._nodeHashKey &&
             _renderScale.x == other._renderScale.x &&
             _renderScale.y == other._renderScale.y &&
+            // _rod == other._rod &&
             _time == other._time &&
             _view == other._view;
             

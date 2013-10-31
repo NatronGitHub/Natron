@@ -140,6 +140,11 @@ public:
     
     virtual void onOverlayFocusLost() OVERRIDE;
 
+    virtual void paramChangedByUser(const std::string& paramName) OVERRIDE;
+
+    virtual void beginParamChangedByUser() OVERRIDE;
+    
+    virtual void endParamChangedByUser() OVERRIDE;
     
     void swapBuffersOfAttachedViewer();
     
@@ -160,9 +165,7 @@ public:
      This functions extracts the all parts of such a grouping, e.g in this case
      it would return [Toto,Superplugins,blabla].*/
     const QStringList getPluginGrouping() const;
-    
-    void onInstanceChanged(const std::string& paramName);
-    
+        
     const std::string& getShortLabel() const;
 
     int firstFrame() const {return _frameRange.first;}

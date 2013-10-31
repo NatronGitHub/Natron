@@ -20,6 +20,8 @@
 #include "Engine/OfxParamInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Knob.h"
+
 #include "Global/AppManager.h"
 
 using namespace Powiter;
@@ -240,6 +242,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -255,6 +261,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -270,6 +280,11 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
+
         }
         return ret;
 
@@ -285,6 +300,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -300,6 +319,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -315,6 +338,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -330,6 +357,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -345,6 +376,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -360,6 +395,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -375,6 +414,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
 
@@ -392,6 +435,10 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
                 }
             }
             _parentingMap.insert(make_pair(paramName,ret));
+            ret->getKnob()->setName(paramName);
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+                ret->getKnob()->setIsInsignificant(true);
+            }
         }
         return ret;
     }else{

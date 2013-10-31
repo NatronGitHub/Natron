@@ -131,14 +131,15 @@ public:
     
     void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
     
-    void makeKnobsCopyForCurrentThread();
+    void lockProjectParams();
     
+    void unlockProjectParams();
     
 public slots:
     
-    void onNumberOfViewsChanged();
+    void onNumberOfViewsChanged(const QString& paramName);
     
-    void onProjectFormatChanged();
+    void onProjectFormatChanged(const QString& paramName);
     
     void createNewFormat();
     

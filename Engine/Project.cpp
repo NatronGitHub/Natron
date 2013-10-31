@@ -78,7 +78,7 @@ _timeline(new TimeLine())
     }
     
     _formatKnob->populate(entries);
-    QObject::connect(_formatKnob,SIGNAL(valueChangedByUser()),this,SLOT(onProjectFormatChanged()));
+    QObject::connect(_formatKnob,SIGNAL(valueChangedByUser(QString)),this,SLOT(onProjectFormatChanged(QString)));
     _projectKnobs.push_back(_formatKnob);
     
     QObject::connect(_formatKnob, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
@@ -87,13 +87,13 @@ _timeline(new TimeLine())
     
     _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",NULL,"New format..."));
     _projectKnobs.push_back(_addFormatKnob);
-    QObject::connect(_addFormatKnob, SIGNAL(valueChangedByUser()), this, SLOT(createNewFormat()));
+    QObject::connect(_addFormatKnob,SIGNAL(buttonPressed()),this,SLOT(createNewFormat()));
     
     
     _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",NULL,"Number of views"));
     _viewsCount->setMinimum(1);
     _viewsCount->setValue(1);
-    QObject::connect(_viewsCount, SIGNAL(valueChangedByUser()),this,SLOT(onNumberOfViewsChanged()));
+    QObject::connect(_viewsCount, SIGNAL(valueChangedByUser(QString)),this,SLOT(onNumberOfViewsChanged(QString)));
     QObject::connect(_viewsCount, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
     QObject::connect(_viewsCount, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
     _projectKnobs.push_back(_viewsCount);
@@ -105,12 +105,12 @@ Project::~Project(){
     _currentNodes.clear();
 }
 
-void Project::onNumberOfViewsChanged(){
+void Project::onNumberOfViewsChanged(const QString& /*paramName*/){
     int viewsCount = _viewsCount->value<int>();
     emit projectViewsCountChanged(viewsCount);
 }
 
-void Project::onProjectFormatChanged(){
+void Project::onProjectFormatChanged(const QString& /*paramName*/){
     const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
     for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
         if (_currentNodes[i]->className() == "Viewer") {
@@ -213,6 +213,7 @@ void Project::loadProject(const QString& path,const QString& name){
         }
         n->setName(state.getName());
         const std::map<std::string,std::string>& knobsValues = state.getKnobsValues();
+        //begin changes to params
         for (std::map<std::string,std::string>::const_iterator v = knobsValues.begin(); v!=knobsValues.end(); ++v) {
             if(v->second.empty())
                 continue;
@@ -335,9 +336,15 @@ void Project::createNewFormat(){
 int Project::getProjectViewsCount() const{
     return _viewsCount->value<int>();
 }
-void Project::makeKnobsCopyForCurrentThread() {
-    _formatKnob->makeCopyForCurrentThread();
-    _addFormatKnob->makeCopyForCurrentThread();
-    _viewsCount->makeCopyForCurrentThread();
+
+void Project::lockProjectParams(){
+    for(U32 i = 0; i < _projectKnobs.size();++i){
+        _projectKnobs[i]->lock();
+    }
 }
 
+void Project::unlockProjectParams(){
+    for(U32 i = 0; i < _projectKnobs.size();++i){
+        _projectKnobs[i]->unlock();
+    }
+}
