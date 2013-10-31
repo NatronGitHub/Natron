@@ -69,8 +69,9 @@ _gui(new Gui(this))
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
 {
+    appPTR->setAsTopLevelInstance(appID);
     _gui->createGui();
-    
+
     const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
@@ -414,7 +415,6 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
 AppInstance* AppManager::newAppInstance(const QString& projectName){
     AppInstance* instance = new AppInstance(_availableID,projectName);
     _appInstances.insert(make_pair(_availableID, instance));
-    setAsTopLevelInstance(_availableID);
     ++_availableID;
     return instance;
 }

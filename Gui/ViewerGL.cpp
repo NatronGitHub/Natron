@@ -657,6 +657,7 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	return 0;
 }
 void ViewerGL::initAndCheckGlExtensions(){
+    Powiter::errorDialog("lala","mm");
 	if(!QGLShaderProgram::hasOpenGLShaderPrograms(context())){
         Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
         cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
