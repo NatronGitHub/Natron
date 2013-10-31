@@ -653,7 +653,6 @@ int ViewerGL::isExtensionSupported(const char *extension){
 	}
 	return 0;
 }
-<<<<<<< HEAD
 
 void ViewerGL::initAndCheckGlExtensions() {
 	GLenum err = glewInit();
