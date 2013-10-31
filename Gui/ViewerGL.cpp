@@ -668,7 +668,6 @@ void ViewerGL::initAndCheckGlExtensions() {
 	if (!glewIsSupported("GL_VERSION_1_5 "
 						 "GL_ARB_texture_non_power_of_two " // or GL_IMG_texture_npot, or GL_OES_texture_npot, core since 2.0
 						 "GL_ARB_shader_objects " // GLSL, Uniform*, core since 2.0
-						 //"GL_ARB_shading_language_100 " // GLSL, core since 2.0?
 						 "GL_ARB_vertex_buffer_object " // BindBuffer, MapBuffer, etc.
 						 "GL_ARB_pixel_buffer_object " // BindBuffer(PIXEL_UNPACK_BUFFER,...
 						 //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
