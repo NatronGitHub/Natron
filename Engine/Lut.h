@@ -41,7 +41,7 @@
 
 #include <cmath>
 #include <QtGui/QRgb>
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
@@ -118,15 +118,15 @@ public:
      * WARNING: to and from must have exactly the same pixels count.
      **/
     void to_byte_rect(uchar* to, const float* from,
-                      const Box2D& rect,const Box2D& rod,
+                      const RectI& rect,const RectI& rod,
                       bool invertY,bool premult,
                       Lut::PackedPixelsFormat format) const;
     void to_short_rect(U16* to, const float* from,
-                       const Box2D& rect,const Box2D& rod,
+                       const RectI& rect,const RectI& rod,
                        bool invertY ,bool premult,
                        Lut::PackedPixelsFormat format) const;
     void to_float_rect(float* to, const float* from,
-                       const Box2D& rect,const Box2D& rod,
+                       const RectI& rect,const RectI& rod,
                        bool invertY,bool premult,
                        Lut::PackedPixelsFormat format) const;
     
@@ -147,15 +147,15 @@ public:
      **/
 
     void from_byte_rect(float* to, const uchar* from,
-                        const Box2D& rect,const Box2D& rod,
+                        const RectI& rect,const RectI& rod,
                         bool invertY ,bool premult,
                         Lut::PackedPixelsFormat format) const;
     void from_short_rect(float* to, const U16* from,
-                         const Box2D& rect,const Box2D& rod,
+                         const RectI& rect,const RectI& rod,
                          bool invertY ,bool premult,
                          Lut::PackedPixelsFormat format) const;
     void from_float_rect(float* to, const float* from,
-                         const Box2D& rect,const Box2D& rod,
+                         const RectI& rect,const RectI& rod,
                          bool invertY ,bool premult,
                          Lut::PackedPixelsFormat format) const;
     
@@ -279,16 +279,16 @@ void linear_from_float(float* to, const float* from, int W, int delta = 1);
      **/
 
 void linear_from_byte_rect(float* to, const uchar* from,
-                           const Box2D& rect,const Box2D& rod,
+                           const RectI& rect,const RectI& rod,
                            bool invertY,
                            Lut::PackedPixelsFormat format);
 
 void linear_from_short_rect(float* to, const U16* from,
-                            const Box2D& rect,const Box2D& rod,
+                            const RectI& rect,const RectI& rod,
                             bool invertY,
                             Lut::PackedPixelsFormat format);
 void linear_from_float_rect(float* to, const float* from,
-                            const Box2D& rect,const Box2D& rod,
+                            const RectI& rect,const RectI& rod,
                             bool invertY,
                             Lut::PackedPixelsFormat format);
 
@@ -324,15 +324,15 @@ void linear_to_float(float* to, const float* from,const float* alpha, int W, int
      * WARNING: to and from must have exactly the same pixels count.
      **/
 void linear_to_byte_rect(uchar* to, const float* from,
-                         const Box2D& rect,const Box2D& rod,
+                         const RectI& rect,const RectI& rod,
                          bool invertY,bool premult,
                          Lut::PackedPixelsFormat format);
 void linear_to_short_rect(U16* to, const float* from,
-                          const Box2D& rect,const Box2D& rod,
+                          const RectI& rect,const RectI& rod,
                           bool invertY,bool premult,
                           Lut::PackedPixelsFormat format);
 void linear_to_float_rect(float* to, const float* from,
-                          const Box2D& rect,const Box2D& rod,
+                          const RectI& rect,const RectI& rod,
                           bool invertY,bool premult,
                           Lut::PackedPixelsFormat format);
 

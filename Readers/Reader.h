@@ -20,22 +20,22 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "Global/Macros.h"
-#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/LRUHashTable.h"
 #include "Readers/Decoder.h"
 namespace Powiter{
     class FrameEntry;
 }
 class File_Knob;
+class ComboBox_Knob;
 class ViewerGL;
 class ViewerCache;
 
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public Node
+class Reader : public Powiter::EffectInstance
 {
-    Q_OBJECT
     
 public:
         
@@ -148,50 +148,22 @@ public:
         int _maximumBufferSize; /// maximum size of the buffer
     };
     
-    Reader(AppInstance* app);
+    static Powiter::EffectInstance* BuildEffect(Node* n){
+        return new Reader(n);
+    }
+    
+    Reader(Node* node);
 
     virtual ~Reader();
-    
-    /**
-     * @brief hasFrames
-     * @return True if the files list contains at list a file.
-     */
-	bool hasFrames() const;
-    
-    
+  
     /**
      * @brief Reads the head of the file associated to the time.
      * @param filename The file of the frame to decode.
      */
     boost::shared_ptr<Decoder> decodeHeader(const QString& filename);
-    
-    /**
-     * @brief firstFrame
-     * @return Returns the index of the first frame in the sequence held by this Reader.
-     */
-    int firstFrame();
 
-    /**
-     * @brief lastFrame
-     * @return Returns the index of the last frame in the sequence held by this Reader.
-     */
-	int lastFrame();
-    
-    /**
-     * @brief nearestFrame
-     * @return Returns the index of frame clamped to the Range [ firstFrame() - lastFrame( ].
-     * @param f The index of the frame to clamp.
-     */
-    int nearestFrame(int f);
-    
-    /**
-     * @brief getRandomFrameName
-     * @param f The index of the frame.
-     * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
-     */
-    const QString getRandomFrameName(int /*frame*/) const;
 
-    virtual bool canMakePreviewImage() const {return true;}
+    virtual bool makePreviewByDefault() const OVERRIDE {return true;}
 
     /**
      * @brief className
@@ -205,13 +177,10 @@ public:
      */
     virtual std::string description() const OVERRIDE;
 
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,Box2D* rod) OVERRIDE;
+    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
 	
-    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE {
-        *first = _frameRange.first;
-        *last  = _frameRange.second;
-    }
-    
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+
     
     
     /** @brief Set the number of frames that a single reader can store.
@@ -229,35 +198,30 @@ public:
     
     
     virtual int maximumInputs() const OVERRIDE {return 0;}
+    
+    virtual bool isGenerator() const OVERRIDE {return true;}
 
-    virtual int minimumInputs() const OVERRIDE {return 0;}
-    
-    virtual bool isInputNode() const OVERRIDE {return true;}
-        
-public slots:
-    
-    
-    void onFrameRangeChanged(int first,int last);
+    virtual bool isInputOptional(int inputNb) const OVERRIDE;
 
-protected:
+    virtual Powiter::Status preProcessFrame(SequenceTime time) OVERRIDE;
 
-    /**
-     * @brief Forwards to the decoder
-     */
-    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
-    
+    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
 
-	virtual void initKnobs() OVERRIDE;
-    
-    
-    virtual Node::RenderSafety renderThreadSafety() const OVERRIDE {return Node::FULLY_SAFE;}
+    virtual void initializeKnobs() OVERRIDE;
+
+    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Powiter::EffectInstance::FULLY_SAFE;}
+
+    virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
+
+
+
 private:
     
     
     boost::shared_ptr<Decoder> decoderForFileType(const QString& fileName);
-    std::pair<int,int> _frameRange;
     Buffer _buffer;
     File_Knob* _fileKnob;
+    ComboBox_Knob* _missingFrameChoice;
     QMutex _lock;
     boost::scoped_ptr<QFutureWatcher<void> > _previewWatcher;
 };

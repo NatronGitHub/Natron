@@ -35,8 +35,9 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
-#include "Engine/ViewerNode.h"
-#include "Engine/OfxNode.h"
+#include "Engine/ViewerInstance.h"
+#include "Engine/Project.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Writers/Writer.h"
 
 #include "Gui/Texture.h"
@@ -175,8 +176,10 @@ void Gui::createViewerGui(Node* viewer){
     }else{
         _nextViewerTabPlace = NULL; // < reseting anchor to default
     }
-    dynamic_cast<ViewerNode*>(viewer)->initializeViewerTab(where);
-    _lastSelectedViewer = dynamic_cast<ViewerNode*>(viewer)->getUiContext();
+    ViewerInstance* v = dynamic_cast<ViewerInstance*>(viewer->getLiveInstance());
+    assert(v);
+    v->initializeViewerTab(where);
+    _lastSelectedViewer = v->getUiContext();
 }
 
 void Gui::autoConnect(NodeGui* target,NodeGui* created) {
@@ -487,7 +490,13 @@ void Gui::setupUi()
     _mainLayout->addWidget(_leftRightSplitter);
 	
     
-    _projectGui = new ProjectSettingsPanel(_appInstance->getProject(),_layoutPropertiesBin,_propertiesContainer);
+    _projectGui = new DockablePanel(_appInstance->getProject().get(),
+                                    _layoutPropertiesBin,
+                                    true,
+                                    "Project Settings",
+                                    "The settings of the current project.",
+                                    "Rendering",
+                                    _propertiesContainer);
     _projectGui->initializeKnobs();
     setVisibleProjectSettingsPanel();
     
@@ -720,10 +729,10 @@ void Gui::minimize(){
 }
 
 
-ViewerTab* Gui::addNewViewerTab(ViewerNode* node,TabWidget* where){
-    ViewerTab* tab = new ViewerTab(this,node,_viewersPane);
+ViewerTab* Gui::addNewViewerTab(ViewerInstance* viewer,TabWidget* where){
+    ViewerTab* tab = new ViewerTab(this,viewer,_viewersPane);
     _viewerTabs.push_back(tab);
-    where->appendTab(node->getName().c_str(),tab);
+    where->appendTab(viewer->getName().c_str(),tab);
     return tab;
 }
 
@@ -749,7 +758,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
         if (!initiatedFromNode) {
             assert(_nodeGraphTab);
             assert(_nodeGraphTab->_nodeGraphArea);
-            tab->getInternalNode()->deactivate();
+            tab->getInternalNode()->getNode()->deactivate();
         } else {
             
             TabWidget* container = dynamic_cast<TabWidget*>(tab->parentWidget());
@@ -1177,21 +1186,21 @@ int Gui::saveWarning(){
 
 }
 
-void Gui::errorDialog(const QString& title,const QString& text){
-    QMessageBox::critical(this, title, text);
+void Gui::errorDialog(const std::string& title,const std::string& text){
+    QMessageBox::critical(this, title.c_str(), text.c_str());
 }
 
-void Gui::warningDialog(const QString& title,const QString& text){
-    QMessageBox::warning(this, title, text);
+void Gui::warningDialog(const std::string& title,const std::string& text){
+    QMessageBox::warning(this, title.c_str(), text.c_str());
 }
 
-void Gui::informationDialog(const QString& title,const QString& text){
-    QMessageBox::information(this, title, text);
+void Gui::informationDialog(const std::string& title,const std::string& text){
+    QMessageBox::information(this, title.c_str(), text.c_str());
 }
 
-Powiter::StandardButton Gui::questionDialog(const QString& title,const QString& message,Powiter::StandardButtons buttons,
+Powiter::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
                                        Powiter::StandardButton defaultButton) {
-    return (Powiter::StandardButton)QMessageBox::question(this,title,message,
+    return (Powiter::StandardButton)QMessageBox::question(this,title.c_str(),message.c_str(),
                                                           (QMessageBox::StandardButtons)buttons,
                                                           (QMessageBox::StandardButtons)defaultButton);
 }
@@ -1255,7 +1264,7 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
 
 void RenderingProgressDialog::onCancelation(){
     /*Maybe we should ask for user permission with another dialog ? */
-    _writer->getVideoEngine()->abortRendering();
+    _writer->abortRendering();
     hide();
     delete this;
     

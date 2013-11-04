@@ -29,7 +29,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QKeyEvent>
 #include <QtGui/QKeySequence>
 
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
@@ -48,7 +48,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 using namespace Powiter;
 
-ViewerTab::ViewerTab(Gui* gui,ViewerNode* node,QWidget* parent):QWidget(parent),
+ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
 _gui(gui),
 _viewerNode(node),
 _channelsToDraw(Mask_RGBA),
@@ -178,7 +178,6 @@ _maximized(false)
     
 	/*OpenGL viewer*/
 	viewer = new ViewerGL(this);
-    QObject::connect(_gui->getApp()->getProject().get(),SIGNAL(projectFormatChanged(Format)),viewer,SLOT(onProjectFormatChanged(Format)));
     viewer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 	_mainLayout->addWidget(viewer);
 	/*=============================================*/
@@ -691,7 +690,7 @@ void ViewerTab::onViewerChannelsChanged(int i){
 }
 bool ViewerTab::eventFilter(QObject *target, QEvent *event){
     if (event->type() == QEvent::MouseButtonPress) {
-        _gui->selectNode(_gui->getApp()->getNodeGui(_viewerNode));
+        _gui->selectNode(_gui->getApp()->getNodeGui(_viewerNode->getNode()));
         
     }
     return QWidget::eventFilter(target, event);

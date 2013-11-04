@@ -25,7 +25,7 @@
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 
 using namespace Powiter;
@@ -61,7 +61,7 @@ Powiter::OfxHost::OfxHost()
     _properties.setIntProperty(kOfxParamHostPropMaxPages, 0);
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 0 );
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
-    
+    _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 0);
     
 }
 
@@ -160,7 +160,7 @@ OfxStatus Powiter::OfxHost::clearPersistentMessage(){
     return kOfxStatOK;
 }
 
-OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* app) {
+OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Node* node) {
     OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
@@ -210,21 +210,27 @@ OfxNode* Powiter::OfxHost::createOfxNode(const std::string& name,AppInstance* ap
     if(!rval) {
         return NULL;
     }
-    OfxNode* node = new OfxNode(app,plugin,context);
-    assert(node);
-    Powiter::OfxImageEffectInstance* effect = node->effectInstance();
+    OfxEffectInstance* hostSideEffect = new OfxEffectInstance(node);
+    
+    try{
+        hostSideEffect->createOfxImageEffectInstance(plugin, context);
+    }catch(const std::exception& e){
+        delete hostSideEffect;
+        return NULL;
+    }
+    Powiter::OfxImageEffectInstance* effect = hostSideEffect->effectInstance();
     if (effect) {
         stat = effect->createInstanceAction();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     } else {
         std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
-        delete node;
+        delete hostSideEffect;
         return NULL;
     }
     
     /*must be called AFTER createInstanceAction!*/
-    node->tryInitializeOverlayInteracts();
-    return node;
+    hostSideEffect->tryInitializeOverlayInteracts();
+    return hostSideEffect;
 }
 
 std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
@@ -272,31 +278,26 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
         assert(p);
         if(p->getContexts().size() == 0)
             continue;
-        QString name = p->getDescriptor().getLabel().c_str();
-        if(name.isEmpty()){
-            name = p->getDescriptor().getShortLabel().c_str();
-        }
-        
-        if(name.isEmpty()){
-            name = p->getDescriptor().getLongLabel().c_str();
-        }
+       
         
         
-        QString rawName = name;
         QString id = p->getIdentifier().c_str();
-        QString grouping = p->getDescriptor().getPluginGrouping().c_str();
+        std::string grouping = p->getDescriptor().getPluginGrouping().c_str();
         
-        int pluginCount = p->getBinary()->getNPlugins();
-        QString bundlePath;
-        bundlePath = pluginCount > 1 ? p->getBinary()->getBundlePath().c_str() : "";
-        QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
-        if (groups.size() >= 1) {
-            name.append("  [");
-            name.append(groups[0]);
-            name.append("]");
-        }
+        std::string bundlePath = p->getBinary()->getBundlePath();
+        int pluginsCount = p->getBinary()->getNPlugins();
+        std::string name = OfxEffectInstance::generateImageEffectClassName(p->getDescriptor().getShortLabel(),
+                                                                           p->getDescriptor().getLabel(),
+                                                                           p->getDescriptor().getLongLabel(),
+                                                                           pluginsCount,
+                                                                           bundlePath,
+                                                                           grouping);
+        std::string rawName = name;
+
+        QStringList groups = OfxEffectInstance::getPluginGrouping(bundlePath, pluginsCount, grouping);
+        
         assert(p->getBinary());
-        QString iconFilename = QString(p->getBinary()->getBundlePath().c_str()) + "/Contents/Resources/";
+        QString iconFilename = QString(bundlePath.c_str()) + "/Contents/Resources/";
         iconFilename.append(p->getDescriptor().getProps().getStringProperty(kOfxPropIcon,1).c_str());
         iconFilename.append(id);
         iconFilename.append(".png");
@@ -307,13 +308,13 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
             groupIconFilename.append(groups[0]);
             groupIconFilename.append(".png");
         }
-        emit toolButtonAdded(groups, rawName, iconFilename, groupIconFilename);
-        _ofxPlugins.insert(make_pair(name.toStdString(), make_pair(id.toStdString(), grouping.toStdString())));
+        emit toolButtonAdded(groups, rawName.c_str(), iconFilename, groupIconFilename);
+        _ofxPlugins.insert(make_pair(name, make_pair(id.toStdString(), grouping)));
         QMutex* pluginMutex = NULL;
         if(p->getDescriptor().getRenderThreadSafety() == kOfxImageEffectRenderUnsafe){
             pluginMutex = new QMutex;
         }
-        pluginNames.insert(std::make_pair(name,pluginMutex));
+        pluginNames.insert(std::make_pair(name.c_str(),pluginMutex));
     }
     return pluginNames;
 }

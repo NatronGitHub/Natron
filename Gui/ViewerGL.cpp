@@ -46,7 +46,7 @@ GCC_DIAG_ON(unused-parameter);
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/MemoryFile.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
 
@@ -110,7 +110,7 @@ static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
  */
 void ViewerGL::drawRenderingVAO(){
     const TextureRect& r = _displayingImage ? _defaultDisplayTexture->getTextureRect() : _blackTex->getTextureRect();
-    const Box2D& img = _clipToDisplayWindow ? getDisplayWindow() : getRoD();
+    const RectI& img = _clipToDisplayWindow ? getDisplayWindow() : getRoD();
     GLfloat vertices[32] = {
         (GLfloat)img.left() ,(GLfloat)img.top()  , //0
         (GLfloat)r.x       , (GLfloat)img.top()  , //1
@@ -190,7 +190,7 @@ void ViewerGL::initConstructor(){
     _hasHW = true;
     _blankViewerInfos.setChannels(Powiter::Mask_RGBA);
     Format frmt(0, 0, 1920, 1080,"HD",1.0);
-    _blankViewerInfos.setRoD(Box2D(0, 0, 1920, 1080));
+    _blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
     _blankViewerInfos.setDisplayWindow(frmt);
     setRod(_blankViewerInfos.getRoD());
     onProjectFormatChanged(frmt);
@@ -305,10 +305,10 @@ void ViewerGL::resizeGL(int width, int height){
     checkGLErrors();
     _ms = UNDEFINED;
     assert(_viewerTab);
-    ViewerNode* viewer = _viewerTab->getInternalNode();
+    ViewerInstance* viewer = _viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
-        _viewerTab->getInternalNode()->refreshAndContinueRender(true);
+        viewer->refreshAndContinueRender(true);
         updateGL();
     }
 }
@@ -399,7 +399,7 @@ void ViewerGL::drawOverlay(){
     
     ///TODO: use glVertexArrays instead!
     glDisable(GL_TEXTURE_2D);
-    const Box2D& dispW = getDisplayWindow();
+    const RectI& dispW = getDisplayWindow();
     
     if(_clipToDisplayWindow){
         print(dispW.right(),dispW.bottom(), _resolutionOverlay,QColor(233,233,233));
@@ -426,7 +426,7 @@ void ViewerGL::drawOverlay(){
         glEnd();
         checkGLErrors();
     }
-    const Box2D& dataW = getRoD();
+    const RectI& dataW = getRoD();
     if((dispW != dataW && _clipToDisplayWindow) || !_clipToDisplayWindow){
         
         print(dataW.right(), dataW.top(),_topRightBBOXoverlay, QColor(150,150,150));
@@ -1215,7 +1215,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
     return QVector4D(0,0,0,0);
 }
 
-void ViewerGL::fitToFormat(const Box2D& rod){
+void ViewerGL::fitToFormat(const RectI& rod){
     double h = rod.height();
     double w = rod.width();
     assert(h > 0. && w > 0.);
@@ -1298,13 +1298,13 @@ void ViewerGL::disconnectViewer(){
 
 
 /*The dataWindow of the currentFrame(BBOX)*/
-const Box2D& ViewerGL::getRoD() const {return _currentViewerInfos.getRoD();}
+const RectI& ViewerGL::getRoD() const {return _currentViewerInfos.getRoD();}
 
 /*The displayWindow of the currentFrame(Resolution)*/
 const Format& ViewerGL::getDisplayWindow() const {return _currentViewerInfos.getDisplayWindow();}
 
 
-void ViewerGL::setRod(const Box2D& rod){
+void ViewerGL::setRod(const RectI& rod){
 
     _currentViewerInfos.setRoD(rod);
     emit infoDataWindowChanged();
@@ -1334,7 +1334,7 @@ void ViewerGL::onProjectFormatChanged(const Format& format){
 
 void ViewerGL::setClipToDisplayWindow(bool b) {
     _clipToDisplayWindow = b;
-    ViewerNode* viewer = _viewerTab->getInternalNode();
+    ViewerInstance* viewer = _viewerTab->getInternalNode();
     assert(viewer);
     if (viewer->getUiContext()) {
         _viewerTab->abortRendering();

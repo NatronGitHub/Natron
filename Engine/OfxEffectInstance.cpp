@@ -9,7 +9,7 @@
  *
  */
 
-#include "OfxNode.h"
+#include "OfxEffectInstance.h"
 
 #include <locale>
 #include <limits>
@@ -27,7 +27,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Project.h"
@@ -42,41 +42,46 @@ CLANG_DIAG_ON(unused-private-field);
 
 using namespace Powiter;
 using std::cout; using std::endl;
-
+#if 0
 namespace {
-    ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
-        ChannelSet out;
-        if(comp == kOfxImageComponentAlpha){
-            out += Channel_alpha;
-        }else if(comp == kOfxImageComponentRGB){
-            out += Mask_RGB;
-        }else if(comp == kOfxImageComponentRGBA){
-            out += Mask_RGBA;
-        }else if(comp == kOfxImageComponentYUVA){
-            out += Mask_RGBA;
-        }
-        return out;
+ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
+    ChannelSet out;
+    if(comp == kOfxImageComponentAlpha){
+        out += Channel_alpha;
+    }else if(comp == kOfxImageComponentRGB){
+        out += Mask_RGB;
+    }else if(comp == kOfxImageComponentRGBA){
+        out += Mask_RGBA;
+    }else if(comp == kOfxImageComponentYUVA){
+        out += Mask_RGBA;
+    }
+    return out;
+}
+}
+#endif
+
+OfxEffectInstance::OfxEffectInstance(Node* node)
+    :Powiter::EffectInstance(node)
+    , effect_()
+    , _isOutput(false)
+    , _penDown(false)
+    , _overlayInteract()
+    , _tabKnob(0)
+    , _lastKnobLayoutWithNoNewLine(0)
+{
+    if(!node->getLiveInstance()){
+        node->setLiveInstance(this);
     }
 }
 
-OfxNode::OfxNode(AppInstance* app,
-        OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-        const std::string& context)
-:OutputNode(app)
-, _tabKnob(0)
-, _lastKnobLayoutWithNoNewLine(0)
-, _overlayInteract()
-, _penDown(false)
-, effect_()
-, _firstTime(false)
-, _isOutput(false)
-{
+void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
+                                                     const std::string& context){
     /*Replicate of the code in OFX::Host::ImageEffect::ImageEffectPlugin::createInstance.
-     We need to pass more parameters to the constructor of OfxNode. That means we cannot
-     create the OfxNode in the virtual function newInstance. Thus we create before it before
+     We need to pass more parameters to the constructor . That means we cannot
+     create it in the virtual function newInstance. Thus we create it before
      instanciating the OfxImageEffect. The problem is that calling OFX::Host::ImageEffect::ImageEffectPlugin::createInstance
      creates the OfxImageEffect and calls populate(). populate() will actually create all OfxClipInstance and OfxParamInstance.
-     All these subclasses need a valid pointer to an OfxNode. Hence we need to set the pointer to the OfxNode in
+     All these subclasses need a valid pointer to an this. Hence we need to set the pointer to this in
      OfxImageEffect BEFORE calling populate().
      */
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
@@ -92,7 +97,7 @@ OfxNode::OfxNode(AppInstance* app,
         try {
             effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
             assert(effect_);
-            effect_->setOfxNodePointer(this);
+            effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
             assert(stat == kOfxStatOK); // Prop Tester crashes here
         } catch (const std::exception &e) {
@@ -101,13 +106,14 @@ OfxNode::OfxNode(AppInstance* app,
         }
     }
 }
-OfxNode::~OfxNode(){
-    delete effect_;
+
+OfxEffectInstance::~OfxEffectInstance(){
+    // delete effect_;
 }
 
 
 
-std::string OfxNode::description() const {
+std::string OfxEffectInstance::description() const {
     if(effectInstance()){
         return effectInstance()->getProps().getStringProperty(kOfxPropPluginDescription);
     }else{
@@ -115,32 +121,22 @@ std::string OfxNode::description() const {
     }
 }
 
-void OfxNode::tryInitializeOverlayInteracts(){
+void OfxEffectInstance::tryInitializeOverlayInteracts(){
     /*create overlay instance if any*/
-    OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
-    if(overlayEntryPoint){
-        _overlayInteract.reset(new OfxOverlayInteract(*effect_,8,true));
-        _overlayInteract->createInstanceAction();
+    if(isLiveInstance()){
+        OfxPluginEntryPoint *overlayEntryPoint = effect_->getOverlayInteractMainEntry();
+        if(overlayEntryPoint){
+            _overlayInteract.reset(new OfxOverlayInteract(*effect_,8,true));
+            _overlayInteract->createInstanceAction();
+        }
     }
 }
 
-ChannelSet OfxNode::supportedComponents() const {
-    assert(effectInstance());
-    const OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(clip);
-    const std::vector<std::string>& suppComponents = clip->getSupportedComponents();
-    ChannelSet supportedComp;
-    for (std::vector<std::string>::const_iterator it = suppComponents.begin(); it!= suppComponents.end(); ++it) {
-        supportedComp += ofxComponentsToPowiterChannels(*it);
-    }
-    return supportedComp;
-}
-
-bool OfxNode::isOutputNode() const {
+bool OfxEffectInstance::isOutput() const {
     return _isOutput;
 }
 
-bool OfxNode::isInputNode() const {
+bool OfxEffectInstance::isGenerator() const {
     assert(effectInstance());
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
@@ -149,7 +145,7 @@ bool OfxNode::isInputNode() const {
     return false;
 }
 
-bool OfxNode::isInputAndProcessingNode() const {
+bool OfxEffectInstance::isGeneratorAndFilter() const {
     const std::set<std::string>& contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGenerator);
@@ -166,217 +162,6 @@ static std::string getEffectInstanceLabel(const Powiter::OfxImageEffectInstance*
     }
     return label;
 }
-
-std::string OfxNode::className() const { // should be const
-    std::string label = getEffectInstanceLabel(effectInstance());
-    if (label!="Viewer") {
-        return label;
-    }else{
-        const QStringList groups = getPluginGrouping();
-        return groups[0].toStdString() + effectInstance()->getLongLabel();
-    }
-}
-
-std::string OfxNode::setInputLabel(int inputNb) const {
-    
-    MappedInputV copy = inputClipsCopyWithoutOutput();
-    if(inputNb < (int)copy.size()){
-        return copy[copy.size()-1-inputNb]->getShortLabel();
-    }else{
-        return Node::setInputLabel(inputNb);
-    }
-}
-OfxNode::MappedInputV OfxNode::inputClipsCopyWithoutOutput() const {
-    assert(effectInstance());
-    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
-    MappedInputV copy;
-    for (U32 i = 0; i < clips.size(); ++i) {
-        assert(clips[i]);
-        if(clips[i]->getShortLabel() != kOfxImageEffectOutputClipName){
-            copy.push_back(clips[i]);
-            // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
-        }
-    }
-    return copy;
-}
-
-int OfxNode::maximumInputs() const {
-    if(isInputNode() && !isInputAndProcessingNode()){
-        return 0;
-    } else {
-        assert(effectInstance());
-        int totalClips = effectInstance()->getDescriptor().getClips().size();
-        return totalClips-1;
-    }
-    
-}
-
-int OfxNode::minimumInputs() const {
-    assert(effectInstance());
-    typedef std::map<std::string, OFX::Host::ImageEffect::ClipDescriptor*>  ClipsMap;
-    const ClipsMap& clips = effectInstance()->getDescriptor().getClips();
-    int minimalCount = 0;
-    for (ClipsMap::const_iterator it = clips.begin(); it!=clips.end(); ++it) {
-        if(!it->second->isOptional()){
-            ++minimalCount;
-        }
-    }
-    return minimalCount-1;// -1 because we counted the "output" clip
-}
-bool OfxNode::isInputOptional(int inpubNb) const {
-    MappedInputV inputs = inputClipsCopyWithoutOutput();
-    return inputs[inputs.size()-1-inpubNb]->isOptional();
-}
-
-void ofxRectDToBox2D(const OfxRectD& ofxrect,Box2D* box){
-    int xmin = (int)std::floor(ofxrect.x1);
-    int ymin = (int)std::floor(ofxrect.y1);
-    int xmax = (int)std::ceil(ofxrect.x2);
-    int ymax = (int)std::ceil(ofxrect.y2);
-    box->set_left(xmin);
-    box->set_right(xmax);
-    box->set_bottom(ymin);
-    box->set_top(ymax);
-}
-
-Powiter::Status OfxNode::getRegionOfDefinition(SequenceTime time,Box2D* rod){
-    assert(effect_);
-    OfxPointD rS;
-    rS.x = rS.y = 1.0;
-    OfxRectD ofxRod;
-    OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
-    if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
-       (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
-        return StatFailed;
-    ofxRectDToBox2D(ofxRod,rod);
-    if(isInputNode()){
-        getApp()->getProject()->lock();
-        if(getApp()->getProject()->shouldAutoSetProjectFormat()){
-            getApp()->getProject()->setAutoSetProjectFormat(false);
-            Format dispW;
-            dispW.set(*rod);
-            getApp()->getProject()->setProjectDefaultFormat(dispW);
-        }else{
-            Format dispW;
-            dispW.set(*rod);
-
-            getApp()->tryAddProjectFormat(dispW);
-        }
-        getApp()->getProject()->unlock();
-    }
-    return StatOK;
-    
-    // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    //assert(clip);
-    //double pa = clip->getAspectRatio();
-}
-
-OfxRectD box2DToOfxRect2D(const Box2D b){
-    OfxRectD out;
-    out.x1 = b.left();
-    out.x2 = b.right();
-    out.y1 = b.bottom();
-    out.y2 = b.top();
-    return out;
-}
-
-
-Node::RoIMap OfxNode::getRegionOfInterest(SequenceTime time,RenderScale scale,const Box2D& renderWindow) {
-    std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
-    Node::RoIMap ret;
-    OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, box2DToOfxRect2D(renderWindow), inputRois);
-    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault)
-        return ret;
-    for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
-        Node* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
-        if(inputNode){
-            Box2D inputRoi;
-            ofxRectDToBox2D(it->second, &inputRoi);
-            ret.insert(std::make_pair(inputNode,inputRoi));
-        }
-    }
-    return ret;
-}
-
-
-void OfxNode::getFrameRange(SequenceTime *first,SequenceTime *last){
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectSimpleSourceClipName);
-    if(clip){
-        double f,l;
-        clip->getFrameRange(f, l);
-        *first = (SequenceTime)f;
-        *last = (SequenceTime)l;
-    }else{
-        *first = _frameRange.first;
-        *last = _frameRange.second;
-    }
-}
-
-Powiter::Status OfxNode::preProcessFrame(SequenceTime /*time*/){
-    _firstTime = true;
-    if(!isInputNode() && !isInputAndProcessingNode()){
-        /*Checking if all mandatory inputs are connected!*/
-        MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < ofxInputs.size(); ++i) {
-            if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
-                return StatFailed;
-            }
-        }
-    }
-    //iterate over param and find if there's an unvalid param
-    // e.g: an empty filename
-    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
-        if(it->second->getType() == kOfxParamTypeString){
-            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
-            assert(param);
-            if(!param->isValid()){
-                return StatFailed;
-            }
-        }
-    }
-    return StatOK;
-}
-
-void OfxNode::openFilesForAllFileParams(){
-    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
-    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
-        if(it->second->getType() == kOfxParamTypeString){
-            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
-            assert(param);
-            param->ifFileKnobPopDialog();
-        }
-    }
-
-}
-void OfxNode::render(SequenceTime time,RenderScale scale,const Box2D& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
-    OfxRectI ofxRoI;
-    ofxRoI.x1 = roi.left();
-    ofxRoI.x2 = roi.right();
-    ofxRoI.y1 = roi.bottom();
-    ofxRoI.y2 = roi.top();
-    int viewsCount = getApp()->getCurrentProjectViewsCount();
-    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
-}
-
-Node::RenderSafety OfxNode::renderThreadSafety() const{
-    if(!effect_->getHostFrameThreading()){
-        return Node::INSTANCE_SAFE;
-    }
-    
-    const std::string& safety = effect_->getRenderThreadSafety();
-    if (safety == kOfxImageEffectRenderUnsafe) {
-        return Node::UNSAFE;
-    }else if(safety == kOfxImageEffectRenderInstanceSafe){
-        return Node::INSTANCE_SAFE;
-    }else{
-        return Node::FULLY_SAFE;
-    }
-    
-}
-
-
-bool OfxNode::canMakePreviewImage() const { return isInputNode() || Node::isInputAndProcessingNode(); }
 
 
 /*group is a string as such:
@@ -415,47 +200,260 @@ QStringList ofxExtractAllPartsOfGrouping(const QString& str,const QString& bundl
     return out;
 }
 
-const std::string& OfxNode::getShortLabel() const {
+QStringList OfxEffectInstance::getPluginGrouping(const std::string& bundlePath,int pluginsCount,const std::string& grouping){
+    std::string bundlePathToUse;
+    bundlePathToUse = pluginsCount  > 1 ? bundlePath : "";
+    return  ofxExtractAllPartsOfGrouping(grouping.c_str(),bundlePathToUse.c_str());
+}
+
+std::string OfxEffectInstance::generateImageEffectClassName(const std::string& shortLabel,
+                                         const std::string& label,
+                                         const std::string& longLabel,
+                                         int pluginsCount,
+                                         const std::string& bundlePath,
+                                         const std::string& grouping){
+    std::string labelToUse = label;
+    if(labelToUse.empty()){
+        labelToUse = shortLabel;
+    }
+    if(labelToUse.empty()){
+        labelToUse = longLabel;
+    }
+    QStringList groups = getPluginGrouping(bundlePath,pluginsCount,grouping);
+
+    if(labelToUse == "Viewer"){ // we don't want a plugin to have the same name as our viewer
+        labelToUse =  groups[0].toStdString() + longLabel;
+    }
+    if (groups.size() >= 1) {
+        labelToUse.append("  [");
+        labelToUse.append(groups[0].toStdString());
+        labelToUse.append("]");
+    }
+    
+    return labelToUse;
+}
+
+std::string OfxEffectInstance::className() const {
+    return generateImageEffectClassName(effect_->getShortLabel(),
+                                        effect_->getLabel(),
+                                        effect_->getLongLabel(),
+                                        effect_->getPlugin()->getBinary()->getNPlugins(),
+                                        effect_->getPlugin()->getBinary()->getBundlePath(),
+                                        effect_->getPluginGrouping());
+}
+
+std::string OfxEffectInstance::setInputLabel(int inputNb) const {
+    
+    MappedInputV copy = inputClipsCopyWithoutOutput();
+    if(inputNb < (int)copy.size()){
+        return copy[copy.size()-1-inputNb]->getShortLabel();
+    }else{
+        return EffectInstance::setInputLabel(inputNb);
+    }
+}
+OfxEffectInstance::MappedInputV OfxEffectInstance::inputClipsCopyWithoutOutput() const {
+    assert(effectInstance());
+    const std::vector<OFX::Host::ImageEffect::ClipDescriptor*>& clips = effectInstance()->getDescriptor().getClipsByOrder();
+    MappedInputV copy;
+    for (U32 i = 0; i < clips.size(); ++i) {
+        assert(clips[i]);
+        if(clips[i]->getShortLabel() != kOfxImageEffectOutputClipName){
+            copy.push_back(clips[i]);
+            // cout << "Clip[" << i << "] = " << clips[i]->getShortLabel() << endl;
+        }
+    }
+    return copy;
+}
+
+int OfxEffectInstance::maximumInputs() const {
+    if(isGenerator() && !isGeneratorAndFilter()){
+        return 0;
+    } else {
+        assert(effectInstance());
+        int totalClips = effectInstance()->getDescriptor().getClips().size();
+        return totalClips-1;
+    }
+    
+}
+
+bool OfxEffectInstance::isInputOptional(int inpubNb) const {
+    MappedInputV inputs = inputClipsCopyWithoutOutput();
+    return inputs[inputs.size()-1-inpubNb]->isOptional();
+}
+
+void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
+    int xmin = (int)std::floor(ofxrect.x1);
+    int ymin = (int)std::floor(ofxrect.y1);
+    int xmax = (int)std::ceil(ofxrect.x2);
+    int ymax = (int)std::ceil(ofxrect.y2);
+    box->set_left(xmin);
+    box->set_right(xmax);
+    box->set_bottom(ymin);
+    box->set_top(ymax);
+}
+
+Powiter::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+    assert(effect_);
+    OfxPointD rS;
+    rS.x = rS.y = 1.0;
+    OfxRectD ofxRod;
+    OfxStatus stat = effect_->getRegionOfDefinitionAction(time, rS, ofxRod);
+    if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
+            (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
+        return StatFailed;
+    ofxRectDToRectI(ofxRod,rod);
+    if(isGenerator()){
+        getApp()->getProject()->lock();
+        if(getApp()->getProject()->shouldAutoSetProjectFormat()){
+            getApp()->getProject()->setAutoSetProjectFormat(false);
+            Format dispW;
+            dispW.set(*rod);
+            getApp()->getProject()->setProjectDefaultFormat(dispW);
+        }else{
+            Format dispW;
+            dispW.set(*rod);
+
+            getApp()->tryAddProjectFormat(dispW);
+        }
+        getApp()->getProject()->unlock();
+    }
+    return StatOK;
+    
+    // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
+    //assert(clip);
+    //double pa = clip->getAspectRatio();
+}
+
+OfxRectD rectToOfxRect2D(const RectI b){
+    OfxRectD out;
+    out.x1 = b.left();
+    out.x2 = b.right();
+    out.y1 = b.bottom();
+    out.y2 = b.top();
+    return out;
+}
+
+
+EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) {
+    std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD> inputRois;
+    EffectInstance::RoIMap ret;
+    OfxStatus stat = effect_->getRegionOfInterestAction((OfxTime)time, scale, rectToOfxRect2D(renderWindow), inputRois);
+    if(stat != kOfxStatOK && stat != kOfxStatReplyDefault)
+        return ret;
+    for(std::map<OFX::Host::ImageEffect::ClipInstance*,OfxRectD>::iterator it = inputRois.begin();it!= inputRois.end();++it){
+        EffectInstance* inputNode = dynamic_cast<OfxClipInstance*>(it->first)->getAssociatedNode();
+        if(inputNode){
+            RectI inputRoi;
+            ofxRectDToRectI(it->second, &inputRoi);
+            ret.insert(std::make_pair(inputNode,inputRoi));
+        }
+    }
+    return ret;
+}
+
+
+void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
+    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectSimpleSourceClipName);
+    if(clip){
+        double f,l;
+        clip->getFrameRange(f, l);
+        *first = (SequenceTime)f;
+        *last = (SequenceTime)l;
+    }else{
+        //*first = _frameRange.first;
+        //*last = _frameRange.second;
+    }
+}
+
+Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
+    if(!isGenerator() && !isGeneratorAndFilter()){
+        /*Checking if all mandatory inputs are connected!*/
+        MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
+        for (U32 i = 0; i < ofxInputs.size(); ++i) {
+            if (!ofxInputs[i]->isOptional() && !input(ofxInputs.size()-1-i)) {
+                return StatFailed;
+            }
+        }
+    }
+    //iterate over param and find if there's an unvalid param
+    // e.g: an empty filename
+    const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();
+    for (std::map<std::string,OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it!=params.end(); ++it) {
+        if(it->second->getType() == kOfxParamTypeString){
+            OfxStringInstance* param = dynamic_cast<OfxStringInstance*>(it->second);
+            assert(param);
+            if(!param->isValid()){
+                return StatFailed;
+            }
+        }
+    }
+    return StatOK;
+}
+
+void OfxEffectInstance::render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
+    OfxRectI ofxRoI;
+    ofxRoI.x1 = roi.left();
+    ofxRoI.x2 = roi.right();
+    ofxRoI.y1 = roi.bottom();
+    ofxRoI.y2 = roi.top();
+    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
+}
+
+EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{
+    if(!effect_->getHostFrameThreading()){
+        return EffectInstance::INSTANCE_SAFE;
+    }
+    
+    const std::string& safety = effect_->getRenderThreadSafety();
+    if (safety == kOfxImageEffectRenderUnsafe) {
+        return EffectInstance::UNSAFE;
+    }else if(safety == kOfxImageEffectRenderInstanceSafe){
+        return EffectInstance::INSTANCE_SAFE;
+    }else{
+        return EffectInstance::FULLY_SAFE;
+    }
+    
+}
+
+bool OfxEffectInstance::makePreviewByDefault() const { return isGenerator() || isGeneratorAndFilter(); }
+
+
+
+const std::string& OfxEffectInstance::getShortLabel() const {
     return effectInstance()->getShortLabel();
 }
 
-const QStringList OfxNode::getPluginGrouping() const {
-    int pluginCount = effectInstance()->getPlugin()->getBinary()->getNPlugins();
-    QString bundlePath;
-    bundlePath = pluginCount  > 1 ? effectInstance()->getPlugin()->getBinary()->getBundlePath().c_str() : "";
-    QString grouping = effectInstance()->getDescriptor().getPluginGrouping().c_str();
-    QStringList groups = ofxExtractAllPartsOfGrouping(grouping,bundlePath);
-    return groups;
-}
-void OfxNode::swapBuffersOfAttachedViewer(){
-    ViewerNode* n = hasViewerConnected();
+
+void OfxEffectInstance::swapBuffersOfAttachedViewer(){
+    ViewerInstance* n = getNode()->hasViewerConnected();
     if(n){
         n->swapBuffers();
     }
 }
 
-void OfxNode::redrawInteractOnAttachedViewer(){
-    ViewerNode* n = hasViewerConnected();
+void OfxEffectInstance::redrawInteractOnAttachedViewer(){
+    ViewerInstance* n = getNode()->hasViewerConnected();
     if(n){
         n->redrawViewer();
     }
 }
 
-void OfxNode::pixelScaleOfAttachedViewer(double &x,double &y){
-    ViewerNode* n = hasViewerConnected();
+void OfxEffectInstance::pixelScaleOfAttachedViewer(double &x,double &y){
+    ViewerInstance* n = getNode()->hasViewerConnected();
     if(n){
         n->pixelScale(x, y);
     }
 }
 
-void OfxNode::viewportSizeOfAttachedViewer(double &w,double &h){
-    ViewerNode* n = hasViewerConnected();
+void OfxEffectInstance::viewportSizeOfAttachedViewer(double &w,double &h){
+    ViewerInstance* n = getNode()->hasViewerConnected();
     if(n){
         n->viewportSize(w, h);
     }
 }
-void OfxNode::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
-    ViewerNode* n = hasViewerConnected();
+void OfxEffectInstance::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
+    ViewerInstance* n = getNode()->hasViewerConnected();
     if(n){
         n->backgroundColor(r, g, b);
     }
@@ -463,7 +461,7 @@ void OfxNode::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
 
 
 
-void OfxNode::drawOverlay(){
+void OfxEffectInstance::drawOverlay(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -472,7 +470,7 @@ void OfxNode::drawOverlay(){
 }
 
 
-bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -484,7 +482,6 @@ bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penDownAction(1.0, rs, penPos, penPosViewport, 1.);
-        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             _penDown = true;
             return true;
@@ -493,7 +490,7 @@ bool OfxNode::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
     return false;
 }
 
-bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -505,14 +502,7 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penMotionAction(1.0, rs, penPos, penPosViewport, 1.);
-        // assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-//            if(_penDown){
-//                ViewerNode* v = hasViewerConnected();
-//                if(v){
-//                    v->refreshAndContinueRender();
-//                }
-//            }
             return true;
         }
     }
@@ -520,7 +510,7 @@ bool OfxNode::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
 }
 
 
-bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+bool OfxEffectInstance::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
@@ -532,7 +522,6 @@ bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
         penPosViewport.y = viewportPos.y();
         
         OfxStatus stat = _overlayInteract->penUpAction(1.0, rs, penPos, penPosViewport, 1.);
-        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             _penDown = false;
             return true;
@@ -541,100 +530,87 @@ bool OfxNode::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
     return false;
 }
 
-void OfxNode::onOverlayKeyDown(QKeyEvent* e){
+void OfxEffectInstance::onOverlayKeyDown(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
-        ViewerNode* v = hasViewerConnected();
-        if(v){
-            v->refreshAndContinueRender();
-
+        OfxStatus stat = _overlayInteract->keyDownAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        if (stat == kOfxStatOK) {
+            //requestRender();
         }
     }
     
 }
 
-void OfxNode::onOverlayKeyUp(QKeyEvent* e){
+void OfxEffectInstance::onOverlayKeyUp(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxStatus stat = _overlayInteract->keyUpAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            ViewerNode* v = hasViewerConnected();
-            if (v) {
-                v->refreshAndContinueRender();
-            }
-        }
+            //requestRender();
+        };
     }
 }
 
-void OfxNode::onOverlayKeyRepeat(QKeyEvent* e){
+void OfxEffectInstance::onOverlayKeyRepeat(QKeyEvent* e){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
-        _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
-        ViewerNode* v = hasViewerConnected();
-        if(v){
-            v->refreshAndContinueRender();
-
+        OfxStatus stat = _overlayInteract->keyRepeatAction(1., rs, e->nativeVirtualKey(), e->text().toLatin1().data());
+        if (stat == kOfxStatOK) {
+            //requestRender();
         }
     }
 }
 
-void OfxNode::onOverlayFocusGained(){
+void OfxEffectInstance::onOverlayFocusGained(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxStatus stat = _overlayInteract->gainFocusAction(1., rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            ViewerNode* v = hasViewerConnected();
-            if (v) {
-                v->refreshAndContinueRender();
-            }
+            //requestRender();
         }
     }
 }
 
-void OfxNode::onOverlayFocusLost(){
+void OfxEffectInstance::onOverlayFocusLost(){
     if(_overlayInteract){
         OfxPointD rs;
         rs.x = rs.y = 1.;
         OfxStatus stat = _overlayInteract->loseFocusAction(1., rs);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
-            ViewerNode* v = hasViewerConnected();
-            if (v) {
-                v->refreshAndContinueRender();
-            }
+            //requestRender();
         }
     }
 }
-void OfxNode::onFrameRangeChanged(int first,int last){
-    _frameRange.first = first;
-    _frameRange.second = last;
-    if(isInputNode()){
-        notifyFrameRangeChanged(first,last);
+
+
+void OfxEffectInstance::onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason){
+    if(reason == Knob::USER_EDITED){
+        OfxPointD renderScale;
+        effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
+        OfxTime time = effect_->getFrameRecursive();
+        OfxStatus stat = effectInstance()->paramInstanceChangedAction(k->getName(), kOfxChangeUserEdited,time,renderScale);
+        // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     }
 }
 
-void OfxNode::paramChangedByUser(const std::string& paramName) {
-     OfxPointD renderScale;
-     effect_->getRenderScaleRecursive(renderScale.x, renderScale.y);
-     OfxTime time = effect_->getFrameRecursive();
-     OfxStatus stat = effectInstance()->paramInstanceChangedAction(paramName, kOfxChangeUserEdited,time,renderScale);
-     // note: DON'T remove the following assert()s, unless you replace them with proper error feedback.
-     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+void OfxEffectInstance::beginKnobsValuesChanged(Knob::ValueChangedReason reason) {
+    if(reason == Knob::USER_EDITED){
+        OfxStatus stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    }
 }
 
-void OfxNode::beginParamChangedByUser() {
-     OfxStatus stat = effectInstance()->beginInstanceChangedAction(kOfxChangeUserEdited);
-     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-}
-
- void OfxNode::endParamChangedByUser() {
-     OfxStatus stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
-     assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+void OfxEffectInstance::endKnobsValuesChanged(Knob::ValueChangedReason reason){
+    if(reason == Knob::USER_EDITED){
+        OfxStatus stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
+        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+    }
 }

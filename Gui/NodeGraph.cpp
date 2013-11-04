@@ -41,8 +41,8 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/TimeLineGui.h"
 
 #include "Engine/VideoEngine.h"
-#include "Engine/OfxNode.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Hash64.h"
 #include "Engine/FrameEntry.h"
 
@@ -310,7 +310,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event){
             
             if(n->isActive() && n->isNearby(evpt) &&
                (n->getNode()->getName()!=_arrowSelected->getDest()->getNode()->getName())){
-                if(n->getNode()->isOutputNode() && _arrowSelected->getDest()->getNode()->isOutputNode()){
+                if(n->getNode()->isOutputNode()){
                     break;
                 }
                 _undoStack->push(new ConnectCommand(this,_arrowSelected,_arrowSelected->getSource(),n));
@@ -378,7 +378,7 @@ void NodeGraph::mouseDoubleClickEvent(QMouseEvent *){
         NodeGui* n=_nodes[i];
         
         QPointF evpt = n->mapFromScene(_lastScenePosClick);
-        if(n->isActive() && n->contains(evpt) && n->getNode()->className() != "Viewer"){
+        if(n->isActive() && n->contains(evpt) && n->getSettingPanel()){
             if(!n->isSettingsPanelVisible()){
                 n->setVisibleSettingsPanel(true);
             }
@@ -420,26 +420,9 @@ bool NodeGraph::event(QEvent* event){
 void NodeGraph::keyPressEvent(QKeyEvent *e){
     
     if(e->key() == Qt::Key_R){
-        Node* reader = _gui->getApp()->createNode("Reader");
-        const std::vector<Knob*>& knobs = reader->getKnobs();
-        foreach(Knob* k,knobs){
-            if(k->name() == "InputFile"){
-                File_Knob* fk = dynamic_cast<File_Knob*>(k);
-                fk->openFile();
-                break;
-            }
-        }
-        
+        _gui->getApp()->createNode("Reader");
     }else if(e->key() == Qt::Key_W){
-        Node* writer = _gui->getApp()->createNode("Writer");
-        const std::vector<Knob*>& knobs = writer->getKnobs();
-        foreach(Knob* k,knobs){
-            if(k->name() == "OutputFile"){
-                OutputFile_Knob* fk = dynamic_cast<OutputFile_Knob*>(k);
-                fk->openFile();
-                break;
-            }
-        }
+        _gui->getApp()->createNode("Writer");
     }else if(e->key() == Qt::Key_Space){
         
         if(!_maximized){
@@ -459,7 +442,7 @@ void NodeGraph::keyPressEvent(QKeyEvent *e){
 }
 void NodeGraph::connectCurrentViewerToSelection(int inputNB){
     
-    ViewerNode* v = _gui->getLastSelectedViewer()->getInternalNode();
+    InspectorNode* v = dynamic_cast<InspectorNode*>(_gui->getLastSelectedViewer()->getInternalNode()->getNode());
     if(!_nodeSelected){
         v->setActiveInputAndRefresh(inputNB);
         return;
@@ -541,14 +524,15 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                  If the node created is an output node we don't connect it's output
                  with the outputs of the selected node since it has no output.*/
                 if(edgeWithSelectedNode){
-                    if(outputNode->className() == "Viewer"){
-                        ViewerNode* v = dynamic_cast<ViewerNode*>(outputNode);
+                    InspectorNode* v = dynamic_cast<InspectorNode*>(outputNode);
+                    if(v){
                         if(selected){
                             selected->getNode()->disconnectOutput(outputNode);
                         }
                         if(v->connectInput(created->getNode(), edgeWithSelectedNode->getInputNumber(),true)){
                             created->getNode()->connectOutput(v);
                         }
+                        
                     }else{
                         _undoStack->push(new ConnectCommand(this,edgeWithSelectedNode,selected,created));
                     }
@@ -556,7 +540,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
                     /*we now try to move the created node in between the selected node and its
                      old output.*/
                     QPointF parentPos = created->mapFromScene(selected->scenePos());
-                    if(selected->getNode()->canMakePreviewImage()){
+                    if(selected->getNode()->makePreviewByDefault()){
                         parentPos.ry() += (NodeGui::NODE_HEIGHT + NodeGui::PREVIEW_HEIGHT);
                     }else{
                         parentPos.ry() += (NodeGui::NODE_HEIGHT);
@@ -637,7 +621,7 @@ void NodeGraph::selectNode(NodeGui* n) {
         _nodes[i]->setSelected(false);
     }
     if(n->getNode()->className() == "Viewer"){
-        _gui->setLastSelectedViewer(dynamic_cast<ViewerNode*>(n->getNode())->getUiContext());
+        _gui->setLastSelectedViewer(dynamic_cast<ViewerInstance*>(n->getNode()->getLiveInstance())->getUiContext());
     }
     n->setSelected(true);
 }
@@ -711,7 +695,7 @@ QImage NodeGraph::getFullSceneScreenShot(){
 bool NodeGraph::isGraphWorthLess() const{
     bool worthLess = true;
     for (U32 i = 0; i < _nodes.size(); ++i) {
-        if (_nodes[i]->getNode()->className() != "Writer" && _nodes[i]->getNode()->className() != "Viewer") {
+        if (!_nodes[i]->getNode()->isOutputNode()) {
             worthLess = false;
             break;
         }
@@ -876,7 +860,7 @@ void ConnectCommand::undo(){
     }
     
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerNode* viewer = _edge->getDest()->getNode()->hasViewerConnected();
+    ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
     if(viewer){
         viewer->updateTreeAndRender();
     }
@@ -884,14 +868,15 @@ void ConnectCommand::undo(){
 void ConnectCommand::redo(){
     QMutexLocker l(_graph->getGui()->getApp()->getAutoSaveMutex());
     NodeGui* dst = _edge->getDest();
-    if (dst->getNode()->className() == "Viewer") {
-        ViewerNode* v = dynamic_cast<ViewerNode*>(dst->getNode());
+    
+    InspectorNode* inspector = dynamic_cast<InspectorNode*>(dst->getNode());
+    if(inspector){
         if(!_newSrc){
-            v->disconnectInput(_edge->getInputNumber());
+            inspector->disconnectInput(_edge->getInputNumber());
         }else{
-            if(v->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
+            if(inspector->connectInput(_newSrc->getNode(), _edge->getInputNumber(),false)){
                 _edge->setSource(_newSrc);
-                _newSrc->getNode()->connectOutput(v);
+                _newSrc->getNode()->connectOutput(inspector);
                 
             }
         }
@@ -920,7 +905,7 @@ void ConnectCommand::redo(){
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerNode* viewer = _edge->getDest()->getNode()->hasViewerConnected();
+    ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
     if(viewer){
         viewer->updateTreeAndRender();
     }

@@ -34,7 +34,7 @@ class AppInstance;
 class SpinBox;
 class ScaleSlider;
 class TimeLineGui;
-class ViewerNode;
+class ViewerInstance;
 class Gui;
 class ViewerTab: public QWidget 
 { 
@@ -42,7 +42,7 @@ class ViewerTab: public QWidget
     
     Gui* _gui;
     
-    ViewerNode* _viewerNode;// < pointer to the internal node
+    ViewerInstance* _viewerNode;// < pointer to the internal node
     
     Powiter::ChannelSet _channelsToDraw;
     
@@ -50,12 +50,12 @@ class ViewerTab: public QWidget
 	bool _maximized;
     
 public:
-    explicit ViewerTab(Gui* gui,ViewerNode* node,QWidget* parent=0);
+    explicit ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent=0);
     
 	virtual ~ViewerTab();
     
     
-    ViewerNode* getInternalNode(){return _viewerNode;}
+    ViewerInstance* getInternalNode(){return _viewerNode;}
     
     QVBoxLayout* _mainLayout;
 

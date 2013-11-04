@@ -18,7 +18,7 @@
 
 #include "Global/Macros.h"
 
-class OfxNode;
+class OfxEffectInstance;
 
 namespace Powiter {
 
@@ -32,7 +32,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxNodePointer(OfxNode *node){_node = node;}
+    void setOfxEffectInstancePointer(OfxEffectInstance *node){_node = node;}
 
     ////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
@@ -170,12 +170,12 @@ public:
     //
 
     
-    OfxNode* node() const { return _node; }
+    OfxEffectInstance* node() const { return _node; }
     
     const std::map<std::string,OFX::Host::Param::Instance*>& getParams() const {return _parentingMap;}
     
 private:
-    OfxNode* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    OfxEffectInstance* _node; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                      Not easy since every Knob need a valid pointer to a node when 
                      KnobFactory::createKnob() is called. That's why we need to pass a pointer
                      to an OfxParamInstance. Without this pointer we would be unable

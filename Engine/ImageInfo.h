@@ -34,8 +34,8 @@ public:
     void setDisplayWindow(const Format& format) { _displayWindow = format; }
     const Format& getDisplayWindow() const { return _displayWindow; }
     
-    void setRoD(const Box2D& win) { _rod = win; }
-    const Box2D& getRoD() const { return _rod; }
+    void setRoD(const RectI& win) { _rod = win; }
+    const RectI& getRoD() const { return _rod; }
     
     void setChannels(const Powiter::ChannelSet& mask) { _channels = mask; }
     const Powiter::ChannelSet& getChannels() const { return _channels; }
@@ -53,7 +53,7 @@ public:
     
 private:
     
-    Box2D _rod;
+    RectI _rod;
     Format _displayWindow; // display window of the data
     Powiter::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 };

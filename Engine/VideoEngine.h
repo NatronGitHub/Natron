@@ -34,16 +34,16 @@
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 
-class ViewerGL;
 class Node;
 namespace Powiter{
 class Row;
+class EffectInstance;
+class OutputEffectInstance;
 }
 class Reader;
-class ViewerNode;
+class ViewerInstance;
 class Writer;
 class OfxNode;
-class OutputNode;
 class TimeLine;
 
 
@@ -60,12 +60,10 @@ class TimeLine;
  *A Tree is represented by 1 output node, connected to its input, and so on recursively.
  *
  **/
-class Tree : public QObject{
-    
-    Q_OBJECT
-    
+class RenderTree : public QObject{
+        
 public:
-    typedef std::list<Node* > TreeContainer;
+    typedef std::vector<std::pair<Node*,Powiter::EffectInstance*> > TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -76,7 +74,7 @@ public:
      *Once filled up, you can access the nodes in topological order with the iterators.
      *The reverse iterator will give you the opposite of the topological order.
      */
-    Tree(OutputNode* output);
+    RenderTree(Powiter::OutputEffectInstance* output);
     
     /**
      *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
@@ -117,14 +115,14 @@ public:
     /**
      *@brief Returns a pointer to the output node of the graph.
      */
-    OutputNode* getOutput() const {return _output;}
+    Powiter::OutputEffectInstance* getOutput() const {return _output;}
     
     
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
      *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
      */
-    ViewerNode* outputAsViewer() const;
+    ViewerInstance* outputAsViewer() const;
     
     /**
      *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
@@ -132,11 +130,6 @@ public:
      */
     Writer* outputAsWriter() const;
     
-    /**
-     *@brief Convenience function. Returns NULL in case the output node is not of the requested type.
-     *WARNING : It will return NULL if Tree::resetAndSort(OutputNode*,bool) has never been called.
-     */
-    OfxNode* outputAsOpenFXNode() const;
     
     /**
      *@brief Returns true if the output node is a viewer.
@@ -150,12 +143,6 @@ public:
     bool isOutputAnOpenFXNode() const {return _isOutputOpenFXNode;}
     
     /**
-     *@brief Accesses the input nodes of the graph.
-     *@returns A reference to a vector filled with all input nodes of the graph.
-     */
-    const TreeContainer& getInputs() const {return _inputs;}
-    
-    /**
      *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
      */
     Powiter::Status preProcessFrame(SequenceTime time);
@@ -164,13 +151,14 @@ public:
     
     SequenceTime lastFrame() const {return _lastFrame;}
     
-    void debug();
-public slots:
-    void onInputFrameRangeChanged(int first,int last);
+    void debug() const;
     
-signals:
+    void refreshKnobsAndHash();
     
-    void inputFrameRangeChanged(int first,int last);
+    const Format& getRenderFormat() const {return _renderOutputFormat;}
+    
+    int renderViewsCount() const {return _projectViewsCount;}
+    
     
 private:
     /*called by resetAndSort(...) to fill the structure
@@ -179,13 +167,18 @@ private:
     /*clears out the structure*/
     void clearGraph();
     
-    OutputNode* _output; /*!<the output of the Tree*/
+    U64 cloneKnobsAndcomputeTreeHash(Powiter::EffectInstance* effect);
+    
+    
+    Powiter::OutputEffectInstance* _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
-    TreeContainer _inputs; /*!<all the inputs of the dag*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
     mutable QMutex _treeMutex; /*!< protects the dag*/
     SequenceTime _firstFrame,_lastFrame;/*!< first frame and last frame of the union range of all inputs*/
+    bool _treeVersionValid;
+    Format _renderOutputFormat;
+    int _projectViewsCount;
 };
 
 /**
@@ -213,7 +206,9 @@ private:
         _forward(true),
         _refreshTree(false),
         _frameRequestsCount(0),
-        _frameRequestIndex(0)
+        _frameRequestIndex(0),
+        _firstFrame(0),
+        _lastFrame(0)
         {}
         
         float _zoomFactor;
@@ -225,9 +220,11 @@ private:
         int _frameRequestsCount;/*!< The index of the last frame +1 if the engine
                                  is forward (-1 otherwise). This value is -1 if we're looping.*/
         int _frameRequestIndex;/*!< counter of the frames computed:used to refresh the fps only every 24 frames*/
+        int _firstFrame;
+        int _lastFrame;
     };
         
-    Tree _tree; /*!< The internal Tree instance.*/
+    RenderTree _tree; /*!< The internal Tree instance.*/
     
 
     mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
@@ -340,7 +337,7 @@ signals:
 public:
    
     
-    VideoEngine(OutputNode* owner, QObject* parent = NULL);
+    VideoEngine(Powiter::OutputEffectInstance* owner, QObject* parent = NULL);
     
     virtual ~VideoEngine();
     
@@ -398,7 +395,7 @@ public:
      *You should bracket dag.lock() and dag.unlock() before any operation on 
      *the dag.
      **/
-    const Tree& getTree() const { return _tree; }
+    const RenderTree& getTree() const { return _tree; }
     
     
     void refreshTree(){

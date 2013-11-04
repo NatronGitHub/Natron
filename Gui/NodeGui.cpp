@@ -24,8 +24,8 @@
 
 #include "Readers/Reader.h"
 
-#include "Engine/OfxNode.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/ChannelSet.h"
@@ -78,7 +78,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     setPos(x,y);
     QPointF itemPos = mapFromScene(QPointF(x,y));
 	
-	if(node->canMakePreviewImage()){ 
+	if(node->makePreviewByDefault()){ 
 		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)),this);
 	}else{
 		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)),this);
@@ -95,7 +95,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     channels->setY(itemPos.y()+1);
 	
     name = new QGraphicsSimpleTextItem(node->getName().c_str(),this);
-    if(node->canMakePreviewImage()){
+    if(node->makePreviewByDefault()){
         name->setX(itemPos.x()+35);
 		name->setY(itemPos.y()+1);
         QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
@@ -117,7 +117,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 		settings=new NodeSettingsPanel(this,dockContainer->parentWidget());
 		dockContainer->addWidget(settings);
         if(node->isOpenFXNode()){
-            OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
 	}
@@ -141,8 +141,6 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
-    if(!node->isOpenFXNode())
-        delete node;
 }
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
@@ -187,7 +185,7 @@ void NodeGui::updateChannelsTooltip(const Powiter::ChannelSet& chan){
 }
 
 void NodeGui::updatePreviewImage(int time){
-    if(node->canMakePreviewImage()){
+    if(node->makePreviewByDefault()){
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -336,13 +334,10 @@ Edge* NodeGui::firstAvailableEdge(){
     for (U32 i = 0 ; i < inputs.size(); ++i) {
         Edge* a = inputs[i];
         if (!a->hasSource()) {
-            if(node->isOpenFXNode()){
-                OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
-                if(ofxNode->isInputOptional(i))
-                    continue;
-            }
-            return a;
+            if(node->getLiveInstance()->isInputOptional(i))
+                continue;
         }
+        return a;
     }
     return NULL;
 }
@@ -416,12 +411,12 @@ void NodeGui::activate(){
             setVisibleSettingsPanel(false);
         }
     }else{
-        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
         _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
     if(node->isOpenFXNode()){
-        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
     
@@ -443,13 +438,13 @@ void NodeGui::deactivate(){
         }
         
     }else{
-        ViewerNode* viewer = dynamic_cast<ViewerNode*>(node);
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
         _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
     if(node->isOpenFXNode()){
-        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
-        ofxNode->effectInstance()->beginInstanceEditAction();
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
+        ofxNode->effectInstance()->endInstanceEditAction();
     }
     
 }
@@ -488,20 +483,8 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
     _name = _node->getNode()->getName();
     
-    if(!n->getNode()->isOpenFXNode()){
-        _className = _node->getNode()->className();
-    }else{
-        OfxNode* ofxNode = dynamic_cast<OfxNode*>(n->getNode());
-        QString name = ofxNode->className().c_str();
-        QStringList groups = ofxNode->getPluginGrouping();
-        if (groups.size() >= 1) {
-            name.append("  [");
-            name.append(groups[0]);
-            name.append("]");
-        }
-        _className = name.toStdString();
-    }
-    
+    _className = _node->getNode()->className();
+   
     const Node::InputMap& inputs = _node->getNode()->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){

@@ -71,7 +71,7 @@ void QtEncoder::initializeColorSpace(){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const Box2D& rod){
+Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
     _rod = rod;
     size_t dataSize = 4 * rod.area();
     _buf = (uchar*)malloc(dataSize);
@@ -107,7 +107,7 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const Box2D& roi){
+void QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
     to_byte_rect(_buf, inputImage->pixelAt(0, 0), roi,inputImage->getRoD(),Powiter::Color::Lut::BGRA,true);
 }
 

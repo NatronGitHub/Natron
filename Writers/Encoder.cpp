@@ -64,7 +64,7 @@ void Encoder::to_float(Channel z, float* to, const float* from, const float* alp
 }
 
 void Encoder::to_byte_rect(uchar* to, const float* from,
-                           const Box2D& rect,const Box2D& rod,
+                           const RectI& rect,const RectI& rod,
                            Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_byte_rect(to, from, rect,rod,invertY,_premult,outputPacking);
@@ -73,7 +73,7 @@ void Encoder::to_byte_rect(uchar* to, const float* from,
     
 }
 void Encoder::to_short_rect(U16* to, const float* from,
-                            const Box2D& rect,const Box2D& rod,
+                            const RectI& rect,const RectI& rod,
                             Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_short_rect(to, from, rect,rod,invertY,_premult,outputPacking);
@@ -82,7 +82,7 @@ void Encoder::to_short_rect(U16* to, const float* from,
 
 }
 void Encoder::to_float_rect(float* to, const float* from,
-                            const Box2D& rect,const Box2D& rod,
+                            const RectI& rect,const RectI& rod,
                             Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_float_rect(to, from, rect,rod,invertY,_premult,outputPacking);

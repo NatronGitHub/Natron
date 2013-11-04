@@ -13,77 +13,121 @@
 
 #include <boost/bind.hpp>
 
-#include <QtConcurrentMap>
 #include <QtGui/QRgb>
 
 #include "Engine/Hash64.h"
 #include "Engine/ChannelSet.h"
 #include "Engine/Format.h"
 #include "Engine/VideoEngine.h"
-#include "Engine/ViewerNode.h"
-#include "Engine/OfxNode.h"
+#include "Engine/ViewerInstance.h"
+#include "Engine/OfxHost.h"
 #include "Engine/Row.h"
 #include "Engine/Knob.h"
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
 #include "Engine/Project.h"
+#include "Engine/EffectInstance.h"
 
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
 
 #include "Global/AppManager.h"
+#include "Global/LibraryBinary.h"
 
 using namespace Powiter;
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
-namespace {
-    void Hash64_appendKnob(Hash64* hash, const Knob& knob){
-        const std::vector<U64>& values = knob.getHashVector();
-        for(U32 i=0;i<values.size();++i) {
-            hash->append(values[i]);
-        }
-    }
-}
 
-Node::Node(AppInstance* app)
+Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
 : QObject()
 , _app(app)
 , _outputs()
 , _inputs()
-, _renderAborted(false)
-, _hashValue()
+, _liveInstance(NULL)
 , _inputLabelsMap()
 , _name()
 , _knobs()
 , _deactivatedState()
 , _markedByTopologicalSort(false)
 , _activated(true)
-,_nodeInstanceLock()
-,_imagesBeingRenderedNotEmpty()
-,_imagesBeingRendered()
-,_betweenBeginEndParamChanged(false)
+, _nodeInstanceLock()
+, _imagesBeingRenderedNotEmpty()
+, _imagesBeingRendered()
+, _plugin(plugin)
+, _renderInstances()
 {
+    
+    try{
+        std::pair<bool,EffectBuilder> func = plugin->findFunction<EffectBuilder>("BuildEffect");
+        if(func.first){
+            _liveInstance = func.second(this);
+        }else{ //ofx plugin
+            _liveInstance = appPTR->getOfxHost()->createOfxEffect(name,this);
+        }
+    }catch(const std::exception& e){
+        throw e;
+    }
+    assert(_liveInstance);
 }
+
 
 Node::~Node(){
-    for (U32 i = 0; i < _knobs.size(); ++i) {
-        _knobs[i]->deleteKnob();
+    for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
+        delete it->second;
     }
-}
-
-void Node::deleteNode(){
+    delete _liveInstance;
     emit deleteWanted();
 }
 
 
 void Node::initializeKnobs(){
-    initKnobs();
+    _liveInstance->initializeKnobs();
     emit knobsInitialized();
 }
+
+Powiter::EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree){
+    EffectInstance* ret = 0;
+    if(isOutputNode() && !isOpenFXNode()){
+        ret = _liveInstance;
+    }else{
+        std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
+        if(it != _renderInstances.end()){
+            ret =  it->second;
+        }else{
+            if(!isOpenFXNode()){
+                std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
+                assert(func.first);
+                ret =  func.second(this);
+            }else{
+                ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
+                
+            }
+            assert(ret);
+            ret->initializeKnobs();
+            ret->setAsRenderClone();
+            _renderInstances.insert(std::make_pair(tree, ret));
+        }
+        ret->clone(); // copy all knobs values
+    }
+    assert(ret);
+    ret->updateInputs(tree);
+    ret->invalidateHash();
+    return ret;
+
+}
+Powiter::EffectInstance* Node::findExistingEffect(RenderTree* tree) const{
+    std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
+    if(it!=_renderInstances.end()){
+        return it->second;
+    }else{
+        return NULL;
+    }
+}
+
 void Node::createKnobDynamically(){
     emit knobsInitialized();
 }
@@ -105,12 +149,12 @@ static void _hasViewerConnected(Node* node,bool* ok,Node*& out){
     }
 }
 
-ViewerNode* Node::hasViewerConnected()  {
+ViewerInstance* Node::hasViewerConnected() {
     Node* out = 0;
-    bool ok=false;
+    bool ok = false;
     _hasViewerConnected(this,&ok,out);
     if (ok) {
-        return dynamic_cast<ViewerNode*>(out);
+        return dynamic_cast<ViewerInstance*>(out->getLiveInstance());
     }else{
         return NULL;
     }
@@ -121,11 +165,11 @@ void Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
         if(_inputs.find(i) == _inputs.end()){
-            _inputLabelsMap.insert(make_pair(i,setInputLabel(i)));
+            _inputLabelsMap.insert(make_pair(i,_liveInstance->setInputLabel(i)));
             _inputs.insert(make_pair(i,(Node*)NULL));
         }
     }
-    
+    _liveInstance->updateInputs(NULL);
     emit inputsInitialized();
 }
 
@@ -138,12 +182,8 @@ Node* Node::input(int index) const{
     }
 }
 
-std::string Node::setInputLabel(int inputNb) const {
-    std::string out;
-    out.append(1,(char)(inputNb+65));
-    return out;
-}
-const std::string Node::getInputLabel(int inputNb) const{
+
+std::string Node::getInputLabel(int inputNb) const{
     std::map<int,std::string>::const_iterator it = _inputLabelsMap.find(inputNb);
     if(it == _inputLabelsMap.end()){
         return "";
@@ -176,6 +216,7 @@ bool Node::connectInput(Node* input,int inputNumber) {
         if (it->second == NULL) {
             _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber,input));
+            _liveInstance->updateInputs(NULL);
             emit inputChanged(inputNumber);
             return true;
         }else{
@@ -187,6 +228,7 @@ bool Node::connectInput(Node* input,int inputNumber) {
 void Node::connectOutput(Node* output,int outputNumber ){
     assert(output);
     _outputs.insert(make_pair(outputNumber,output));
+    _liveInstance->updateInputs(NULL);
 }
 
 int Node::disconnectInput(int inputNumber) {
@@ -197,6 +239,7 @@ int Node::disconnectInput(int inputNumber) {
         _inputs.erase(it);
         _inputs.insert(make_pair(inputNumber, (Node*)NULL));
         emit inputChanged(inputNumber);
+        _liveInstance->updateInputs(NULL);
         return inputNumber;
     }
 }
@@ -211,6 +254,7 @@ int Node::disconnectInput(Node* input) {
             _inputs.erase(it);
             _inputs.insert(make_pair(inputNumber, (Node*)NULL));
             emit inputChanged(inputNumber);
+            _liveInstance->updateInputs(NULL);
             return inputNumber;
         }
     }
@@ -223,6 +267,7 @@ int Node::disconnectOutput(Node* output) {
         if (it->second == output) {
             int outputNumber = it->first;;
             _outputs.erase(it);
+            _liveInstance->updateInputs(NULL);
             return outputNumber;
         }
     }
@@ -285,18 +330,34 @@ void Node::activate(){
 
 
 
-
-const Format& Node::getProjectDefaultFormat() const{
-    return getApp()->getProjectFormat();
-}
-void Node::removeKnob(Knob* knob){
-    for(U32 i = 0; i < _knobs.size() ; ++i){
-        if (_knobs[i] == knob) {
-            _knobs.erase(_knobs.begin()+i);
-            break;
+const Format& Node::getRenderFormatForEffect(const Powiter::EffectInstance* effect) const{
+    if(effect == _liveInstance){
+        return getApp()->getProjectFormat();
+    }else{
+        for(std::map<RenderTree*,Powiter::EffectInstance*>::const_iterator it = _renderInstances.begin();
+            it!=_renderInstances.end();++it){
+            if(it->second == effect){
+                return it->first->getRenderFormat();
+            }
         }
     }
+    return getApp()->getProjectFormat();
 }
+
+int Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) const{
+    if(effect == _liveInstance){
+        return getApp()->getCurrentProjectViewsCount();
+    }else{
+        for(std::map<RenderTree*,Powiter::EffectInstance*>::const_iterator it = _renderInstances.begin();
+            it!=_renderInstances.end();++it){
+            if(it->second == effect){
+                return it->first->renderViewsCount();
+            }
+        }
+    }
+    return getApp()->getCurrentProjectViewsCount();
+}
+
 
 Knob* Node::getKnobByDescription(const std::string& desc) const{
     for(U32 i = 0; i < _knobs.size() ; ++i){
@@ -308,218 +369,6 @@ Knob* Node::getKnobByDescription(const std::string& desc) const{
 }
 
 
-
-boost::shared_ptr<const Powiter::Image> Node::getImage(SequenceTime time,RenderScale scale,int view){
-    const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
-    //making key with a null RoD since the hash key doesn't take the RoD into account
-    //we'll get our image back without the RoD in the key
-    Powiter::ImageKey params = Powiter::Image::makeKey(hash().value(), time,scale,view,Box2D());
-    shared_ptr<const Image > entry = cache.get(params);
-    //the entry MUST be in the cache since we rendered it before and kept the pointer
-    //to avoid it being evicted.
-    assert(entry);
-    return entry;
-}
-
-void Node::computeHashAndLockKnobs(std::vector<std::string> &alreadyComputedHash){
-    /*If we already computed its hash,return*/
-    for(U32 i =0 ; i < alreadyComputedHash.size();++i) {
-        if(alreadyComputedHash[i] == getName())
-            return;
-    }
-    /*Clear the values left to compute the hash key*/
-    Hash64 hash;
-    /*append all values stored in knobs*/
-    for(U32 i = 0 ; i< _knobs.size();++i) {
-        _knobs[i]->lock();
-        Hash64_appendKnob(&hash,*(_knobs[i]));
-    }
-    /*append the node name*/
-    Hash64_appendQString(&hash, QString(className().c_str()));
-    /*mark this node as already been computed*/
-    alreadyComputedHash.push_back(getName());
-    
-    /*Recursive call to parents and add their hash key*/
-    for (Node::InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
-        if(it->second){
-            if(className() == "Viewer"){
-                ViewerNode* v = dynamic_cast<ViewerNode*>(this);
-                if(it->first != v->activeInput())
-                    continue;
-            }
-            it->second->computeHashAndLockKnobs(alreadyComputedHash);
-            hash.append(it->second->hash().value());
-        }
-    }
-    /*Compute the hash key*/
-    hash.computeHash();
-    _hashValue.setLocalData(hash);
-
-}
-void Node::unlockAllKnobs(){
-    for(U32 i = 0 ; i< _knobs.size();++i) {
-        _knobs[i]->unlock();
-    }
-}
-
-Powiter::Status Node::getRegionOfDefinition(SequenceTime time,Box2D* rod) {
-    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
-        if (it->second) {
-            Box2D inputRod;
-            Status st = it->second->getRegionOfDefinition(time, &inputRod);
-            if(st == StatFailed)
-                return st;
-            if(it == _inputs.begin()){
-                *rod = inputRod;
-            }else{
-                rod->merge(inputRod);
-            }
-        }
-    }
-    return StatReplyDefault;
-}
-
-Node::RoIMap Node::getRegionOfInterest(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& renderWindow){
-    RoIMap ret;
-    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
-        if (it->second) {
-            ret.insert(std::make_pair(it->second, renderWindow));
-        }
-    }
-    return ret;
-}
-
-void Node::getFrameRange(SequenceTime *first,SequenceTime *last){
-    for(InputMap::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
-        if (it->second) {
-            SequenceTime inpFirst,inpLast;
-            it->second->getFrameRange(&inpFirst, &inpLast);
-            if(it == _inputs.begin()){
-                *first = inpFirst;
-                *last = inpLast;
-            }else{
-                if (inpFirst < *first) {
-                    *first = inpFirst;
-                }
-                if (inpLast > *last) {
-                    *last = inpLast;
-                }
-            }
-        }
-    }
-}
-
-std::vector<Box2D> Node::splitRectIntoSmallerRect(const Box2D& rect,int splitsCount){
-    std::vector<Box2D> ret;
-    int averagePixelsPerSplit = std::ceil(double(rect.area()) / (double)splitsCount);
-    /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
-    if(averagePixelsPerSplit < rect.width()){
-        for (int i = rect.bottom(); i < rect.top(); ++i) {
-            ret.push_back(Box2D(rect.left(),i,rect.right(),i+1));
-        }
-    }else{
-        //we round to the ceil
-        int scanLinesCount = std::ceil((double)averagePixelsPerSplit/(double)rect.width());
-        int startBox = rect.bottom();
-        while((startBox + scanLinesCount) < rect.top()){
-            ret.push_back(Box2D(rect.left(),startBox,rect.right(),startBox+scanLinesCount));
-            startBox += scanLinesCount;
-        }
-        if(startBox < rect.top()){
-            ret.push_back(Box2D(rect.left(),startBox,rect.right(),rect.top()));
-        }
-    }
-    return ret;
-}
-
-void Node::tiledRenderingFunctor(SequenceTime time,
-                                 RenderScale scale,
-                                 const Box2D& roi,
-                                 int view,
-                                 Hash64 hashValue,
-                                 boost::shared_ptr<Powiter::Image> output){
-
-    _hashValue.setLocalData(hashValue);
-    render(time, scale, roi,view, output);
-    output->markForRendered(roi);
-}
-boost::shared_ptr<const Powiter::Image> Node::renderRoI(SequenceTime time,RenderScale scale,int view,const Box2D& renderWindow){
-    Powiter::ImageKey key = Powiter::Image::makeKey(hash().value(), time, scale,view,Box2D());
-    /*look-up the cache for any existing image already rendered*/
-    boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
-    /*if not cached, we store the freshly allocated image in this member*/
-    if(!image){
-        /*before allocating     it we must fill the RoD of the image we want to render*/
-        getRegionOfDefinition(time, &key._rod);
-        int cost = 0;
-        /*should data be stored on a physical device ?*/
-        if(shouldRenderedDataBePersistent()){
-            cost = 1;
-        }
-        /*allocate a new image*/
-        image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
-    }
-    /*before rendering we add to the _imagesBeingRendered member the image*/
-    ImageBeingRenderedKey renderedImageKey(time,view);
-    {
-        QMutexLocker locker(&_nodeInstanceLock);
-        _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
-    }
-    /*now that we have our image, we check what is left to render. If the list contains only
-     null Box2Ds then we already rendered it all*/
-    std::list<Box2D> rectsToRender = image->getRestToRender(renderWindow);
-    if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
-        for (std::list<Box2D>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
-            RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
-            std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
-            /*we render each input first and store away their image in the inputImages list
-             in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
-             to remove them.*/
-            for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-                inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second));
-            }
-            /*depending on the thread-safety of the plug-in we render with a different
-             amount of threads*/
-            Node::RenderSafety safety = renderThreadSafety();
-            if(safety == UNSAFE){
-                QMutex* pluginLock = appPTR->getMutexForPlugin(className().c_str());
-                assert(pluginLock);
-                pluginLock->lock();
-                render(time, scale, *it,view, image);
-                pluginLock->unlock();
-                image->markForRendered(*it);
-            }else if(safety == INSTANCE_SAFE){
-                _nodeInstanceLock.lock();
-                render(time, scale, *it,view, image);
-                _nodeInstanceLock.unlock();
-                image->markForRendered(*it);
-            }else{ // fully_safe, we do multi-threaded rendering on small tiles
-                std::vector<Box2D> splitRects = splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
-                QtConcurrent::blockingMap(splitRects,
-                                          boost::bind(&Node::tiledRenderingFunctor,this,time,scale,_1,view,hash(),image));
-            }
-        }
-    }
-    
-    /*now that we rendered the image, remove it from the images being rendered*/
-    {
-        QMutexLocker locker(&_nodeInstanceLock);
-        ImagesMap::iterator it = _imagesBeingRendered.find(renderedImageKey);
-        assert(it != _imagesBeingRendered.end());
-        //if another thread is rendering the same image, leave it
-        //use count = 3 :
-        // the image local var, the _imagesBeingRendered member and the ptr living in the cache
-        if(it->second.use_count() == 3){
-            _imagesBeingRendered.erase(it);
-        }
-        _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
-    }
-    //we released the input image and force the cache to clear exceeding entries
-    appPTR->clearExceedingEntriesFromNodeCache();
-    return image;
-}
-
-
 boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time,int view) const{
     ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
     if(it!=_imagesBeingRendered.end()){
@@ -528,23 +377,6 @@ boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time,
     return boost::shared_ptr<Powiter::Image>();
 }
 
-void OutputNode::ifInfiniteclipBox2DToProjectDefault(Box2D* rod) const{
-    /*If the rod is infinite clip it to the project's default*/
-    const Format& projectDefault = getProjectDefaultFormat();
-    if(rod->left() == kOfxFlagInfiniteMin || rod->left() == -std::numeric_limits<double>::infinity()){
-        rod->set_left(projectDefault.left());
-    }
-    if(rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == -std::numeric_limits<double>::infinity()){
-        rod->set_bottom(projectDefault.bottom());
-    }
-    if(rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<double>::infinity()){
-        rod->set_right(projectDefault.right());
-    }
-    if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()){
-        rod->set_top(projectDefault.top());
-    }
-    
-}
 
 
 static float clamp(float v, float min = 0.f, float max= 1.f){
@@ -553,16 +385,34 @@ static float clamp(float v, float min = 0.f, float max= 1.f){
     return v;
 }
 
+void Node::addImageBeingRendered(boost::shared_ptr<Powiter::Image> image,SequenceTime time,int view ){
+    /*before rendering we add to the _imagesBeingRendered member the image*/
+    ImageBeingRenderedKey renderedImageKey(time,view);
+    QMutexLocker locker(&_nodeInstanceLock);
+    _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
+}
+
+void Node::removeImageBeingRendered(SequenceTime time,int view ){
+    /*now that we rendered the image, remove it from the images being rendered*/
+    
+    QMutexLocker locker(&_nodeInstanceLock);
+    ImageBeingRenderedKey renderedImageKey(time,view);
+    std::pair<ImagesMap::iterator,ImagesMap::iterator> it = _imagesBeingRendered.equal_range(renderedImageKey);
+    assert(it.first != it.second);
+    _imagesBeingRendered.erase(it.first);
+
+    _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
+}
 
 void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
-    Box2D rod;
-    getRegionOfDefinition(time, &rod);
+    RectI rod;
+    _liveInstance->getRegionOfDefinition(time, &rod);
     int h,w;
     rod.height() < height ? h = rod.height() : h = height;
     rod.width() < width ? w = rod.width() : w = width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
-    Powiter::Status stat =  preProcessFrame(time);
+    Powiter::Status stat =  _liveInstance->preProcessFrame(time);
     if(stat == StatFailed)
         return;
     {
@@ -572,12 +422,10 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
         }
     }
     
-    std::vector<std::string> alreadyComputedHashs;
-    computeHashAndLockKnobs(alreadyComputedHashs);
-    getApp()->lockProjectParams();
+    _liveInstance->computeHash(std::vector<U64>());
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Powiter::Image> img = renderRoI(time, scale, 0,rod);
+    boost::shared_ptr<const Powiter::Image> img = _liveInstance->renderRoI(time, scale, 0,rod);
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
@@ -596,22 +444,222 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
             
         }
     }
-    unlockAllKnobs();
-    getApp()->unlockProjectParams();
+}
+
+void Node::openFilesForAllFileKnobs(){
+    _liveInstance->openFilesForAllFileKnobs();
+}
+
+void Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
+    for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
+        if(it->second == effect){
+            dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
+        }
+    }
 }
 
 
-OutputNode::OutputNode(AppInstance* app)
-: Node(app)
-, _videoEngine()
-{
+bool Node::isInputNode() const{
+    return _liveInstance->isGenerator();
+}
+
+
+bool Node::isOutputNode() const{
+    return _liveInstance->isOutput();
+}
+
+
+bool Node::isInputAndProcessingNode() const{
+    return _liveInstance->isGeneratorAndFilter();
+}
+
+
+bool Node::isOpenFXNode() const{
+    return _liveInstance->isOpenFX();
+}
+
+const std::vector<Knob*>& Node::getKnobs() const{
+    return _liveInstance->getKnobs();
+}
+
+std::string Node::className() const{
+    return _liveInstance->className();
+}
+
+
+std::string Node::description() const{
+    return _liveInstance->description();
+}
+
+int Node::maximumInputs() const {
+    return _liveInstance->maximumInputs();
+}
+
+bool Node::makePreviewByDefault() const{
+    return _liveInstance->makePreviewByDefault();
+}
+
+bool Node::aborted() const { return _liveInstance->aborted(); }
+
+void Node::setAborted(bool b){ _liveInstance->setAborted(b); }
+
+void Node::drawOverlay(){ _liveInstance->drawOverlay(); }
+
+bool Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+    return _liveInstance->onOverlayPenDown(viewportPos, pos);
+}
+
+bool Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+    return _liveInstance->onOverlayPenMotion(viewportPos, pos);
+}
+
+bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+    return _liveInstance->onOverlayPenUp(viewportPos, pos);
+}
+
+void Node::onOverlayKeyDown(QKeyEvent* e){
+    return _liveInstance->onOverlayKeyDown(e);
+}
+
+void Node::onOverlayKeyUp(QKeyEvent* e){
+    return _liveInstance->onOverlayKeyUp(e);
+}
+
+void Node::onOverlayKeyRepeat(QKeyEvent* e){
+    return _liveInstance->onOverlayKeyRepeat(e);
+}
+
+void Node::onOverlayFocusGained(){
+    return _liveInstance->onOverlayFocusGained();
+}
+
+void Node::onOverlayFocusLost(){
+    return _liveInstance->onOverlayFocusLost();
+}
+
+
+
+InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
+: Node(app,plugin,name)
+, _inputsCount(1)
+, _activeInput(0)
+{}
+
+
+InspectorNode::~InspectorNode(){
     
-    _videoEngine.reset(new VideoEngine(this));
 }
 
-void OutputNode::updateTreeAndRender(bool initViewer){
-    _videoEngine->updateTreeAndContinueRender(initViewer);
+bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
+    assert(input);
+    InputMap::iterator found = _inputs.find(inputNumber);
+//    if(/*input->className() == "Viewer" && */found!=_inputs.end() && !found->second){
+//        return false;
+//    }
+    /*Adding all empty edges so it creates at least the inputNB'th one.*/
+    while(_inputsCount <= inputNumber){
+        tryAddEmptyInput();
+    }
+    //#1: first case, If the inputNB of the viewer is already connected & this is not
+    // an autoConnection, just refresh it*/
+    InputMap::iterator inputAlreadyConnected = _inputs.end();
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if (it->second == input) {
+            inputAlreadyConnected = it;
+            break;
+        }
+    }
+    
+    if(found!=_inputs.end() && found->second && !autoConnection &&
+       ((inputAlreadyConnected!=_inputs.end()) || (inputAlreadyConnected==_inputs.end()/* && input->className() == "Viewer"*/))){
+        setActiveInputAndRefresh(found->first);
+        return false;
+    }
+    /*#2:second case: Before connecting the appropriate edge we search for any other edge connected with the
+     selected node, in which case we just refresh the already connected edge.*/
+    for (InputMap::const_iterator i = _inputs.begin(); i!=_inputs.end(); ++i) {
+        if(i->second && i->second == input){
+            setActiveInputAndRefresh(i->first);
+            return false;
+        }
+    }
+    if (found != _inputs.end()) {
+        _inputs.erase(found);
+        _inputs.insert(make_pair(inputNumber,input));
+        emit inputChanged(inputNumber);
+        tryAddEmptyInput();
+        _liveInstance->updateInputs(NULL);
+        return true;
+    }
+    return false;
 }
-void OutputNode::refreshAndContinueRender(bool initViewer){
-    _videoEngine->refreshAndContinueRender(initViewer);
+bool InspectorNode::tryAddEmptyInput(){
+    if(_inputs.size() <= 10){
+        if(_inputs.size() > 0){
+            InputMap::const_iterator it = _inputs.end();
+            --it;
+            if(it->second != NULL){
+                addEmptyInput();
+                return true;
+            }
+        }else{
+            addEmptyInput();
+            return true;
+        }
+    }
+    return false;
 }
+void InspectorNode::addEmptyInput(){
+    _activeInput = _inputsCount-1;
+    ++_inputsCount;
+    initializeInputs();
+}
+
+void InspectorNode::removeEmptyInputs(){
+    /*While there're NULL inputs at the tail of the map,remove them.
+     Stops at the first non-NULL input.*/
+    while (_inputs.size() > 1) {
+        InputMap::iterator it = _inputs.end();
+        --it;
+        if(it->second == NULL){
+            InputMap::iterator it2 = it;
+            --it2;
+            if(it2->second!=NULL)
+                break;
+            //int inputNb = it->first;
+            _inputs.erase(it);
+            --_inputsCount;
+            _liveInstance->updateInputs(NULL);
+            emit inputsInitialized();
+        }else{
+            break;
+        }
+    }
+}
+int InspectorNode::disconnectInput(int inputNumber){
+    int ret = Node::disconnectInput(inputNumber);
+    if(ret!=-1){
+        removeEmptyInputs();
+        _activeInput = _inputs.size()-1;
+        initializeInputs();
+    }
+    return ret;
+}
+
+int InspectorNode::disconnectInput(Node* input){
+    for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
+        if(it->second == input){
+            return disconnectInput(it->first);
+        }
+    }
+    return -1;
+}
+
+void InspectorNode::setActiveInputAndRefresh(int inputNb){
+    InputMap::iterator it = _inputs.find(inputNb);
+    if(it!=_inputs.end() && it->second!=NULL){
+        _activeInput = inputNb;
+        _liveInstance->requestRender();
+    }
+}
+

@@ -12,7 +12,7 @@
 
 
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 
 using namespace Powiter;
 

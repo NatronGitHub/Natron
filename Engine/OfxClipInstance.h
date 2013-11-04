@@ -28,9 +28,10 @@
 #include "Engine/Image.h"
 
 class OfxImage;
-class OfxNode;
+class OfxEffectInstance;
 class Node;
 namespace Powiter {
+    class EffectInstance;
     class OfxImageEffectInstance;
     class Image;
 }
@@ -38,7 +39,7 @@ namespace Powiter {
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(OfxNode* node
+    OfxClipInstance(OfxEffectInstance* node
                     ,Powiter::OfxImageEffectInstance* effect
                     ,int index
                     , OFX::Host::ImageEffect::ClipDescriptor* desc);
@@ -142,13 +143,13 @@ public:
     virtual void setView(int view) OVERRIDE;
 
 
-    Node* getAssociatedNode() const;
+    Powiter::EffectInstance* getAssociatedNode() const;
 
 private:
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
     
-    OfxNode* _nodeInstance;
+    OfxEffectInstance* _nodeInstance;
     Powiter::OfxImageEffectInstance* _effect;
     QThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };

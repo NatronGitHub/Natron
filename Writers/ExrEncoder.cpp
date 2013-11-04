@@ -195,9 +195,9 @@ void ExrEncoderKnobs::initKnobs(const std::string& fileType) {
     EncoderKnobs::initKnobs(fileType);
 }
 void ExrEncoderKnobs::cleanUpKnobs(){
-    sepKnob->deleteKnob();
-    compressionCBKnob->deleteKnob();
-    depthCBKnob->deleteKnob();
+    delete sepKnob;
+    delete compressionCBKnob;
+    delete depthCBKnob;
 }
 
 bool ExrEncoderKnobs::allValid(){
@@ -212,7 +212,7 @@ void ExrEncoder::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const Box2D& roi){
+void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
     
     try{
         for (int y = roi.bottom(); y < roi.top(); ++y) {
@@ -272,7 +272,7 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-Powiter::Status ExrEncoder::setupFile(const QString& filename, const Box2D& rod) {
+Powiter::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) {
     try{
         ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
         Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));

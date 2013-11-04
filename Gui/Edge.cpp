@@ -16,7 +16,7 @@
 
 #include "Gui/NodeGui.h"
 #include "Engine/Node.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 const qreal pi= 3.14159265358979323846264338327950288419717;
 static const qreal UNATTACHED_ARROW_LENGTH=60.;
@@ -68,7 +68,7 @@ Edge::~Edge(){
 void Edge::initLine(){
     int h = NodeGui::NODE_HEIGHT;
     int w = NodeGui::NODE_LENGTH;
-    if(dest->getNode()->canMakePreviewImage()){
+    if(dest->getNode()->makePreviewByDefault()){
         h += NodeGui::PREVIEW_HEIGHT;
         w += NodeGui::PREVIEW_LENGTH;
     }
@@ -79,7 +79,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
 
-        if(source->getNode()->canMakePreviewImage()){
+        if(source->getNode()->makePreviewByDefault()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }
@@ -95,7 +95,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
-        if(dest->getNode()->canMakePreviewImage()){
+        if(dest->getNode()->makePreviewByDefault()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }
@@ -131,7 +131,7 @@ void Edge::initLine(){
         h = NodeGui::NODE_HEIGHT;
         w = NodeGui::NODE_LENGTH;
         
-        if(dest->getNode()->canMakePreviewImage()){
+        if(dest->getNode()->makePreviewByDefault()){
             h += NodeGui::PREVIEW_HEIGHT;
             w += NodeGui::PREVIEW_LENGTH;
         }
@@ -229,21 +229,19 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem * options,
      (void)parent;
      (void)options;
      QPen myPen = pen();
-
+     
      myPen.setColor(Qt::black);
-     if(dest->getNode()->className() == "Viewer"){
-         ViewerNode* v = dynamic_cast<ViewerNode*>(dest->getNode());
-         if(v->activeInput() != inputNb){
-             QVector<qreal> dashStyle;
-             qreal space = 4;
-             dashStyle << 3 << space;
-             myPen.setDashPattern(dashStyle);
-         }else{
-             myPen.setStyle(Qt::SolidLine);
-         }
+     if(dest->getNode()->getLiveInstance()->isInputOptional(inputNb)){
+         QVector<qreal> dashStyle;
+         qreal space = 4;
+         dashStyle << 3 << space;
+         myPen.setDashPattern(dashStyle);
+     }else{
+         myPen.setStyle(Qt::SolidLine);
      }
+     
      painter->setPen(myPen);
-     painter->setBrush(Qt::black);   
+     painter->setBrush(Qt::black);
      painter->drawLine(line());
      painter->drawPolygon(arrowHead);
 

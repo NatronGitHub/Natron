@@ -100,6 +100,7 @@ DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS
 
 SOURCES += \
     Engine/ChannelSet.cpp \
+    Engine/EffectInstance.cpp \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
@@ -109,7 +110,7 @@ SOURCES += \
     Engine/OfxClipInstance.cpp \
     Engine/OfxHost.cpp \
     Engine/OfxImageEffectInstance.cpp \
-    Engine/OfxNode.cpp \
+    Engine/OfxEffectInstance.cpp \
     Engine/OfxOverlayInteract.cpp \
     Engine/OfxParamInstance.cpp \
     Engine/Project.cpp \
@@ -118,7 +119,7 @@ SOURCES += \
     Engine/TimeLine.cpp \
     Engine/Timer.cpp \
     Engine/VideoEngine.cpp \
-    Engine/ViewerNode.cpp \
+    Engine/ViewerInstance.cpp \
     Global/AppManager.cpp \
     Global/LibraryBinary.cpp \
     Global/main.cpp \
@@ -163,8 +164,9 @@ SOURCES += \
 
 HEADERS += \
     Engine/Cache.h \
-    Engine/Box.h \
+    Engine/RectI.h \
     Engine/ChannelSet.h \
+    Engine/EffectInstance.h \
     Engine/Format.h \
     Engine/FrameEntry.h \
     Engine/Hash64.h \
@@ -178,7 +180,7 @@ HEADERS += \
     Engine/OfxClipInstance.h \
     Engine/OfxHost.h \
     Engine/OfxImageEffectInstance.h \
-    Engine/OfxNode.h \
+    Engine/OfxEffectInstance.h \
     Engine/OfxOverlayInteract.h \
     Engine/OfxParamInstance.h \
     Engine/Project.h \
@@ -189,7 +191,7 @@ HEADERS += \
     Engine/Timer.h \
     Engine/Variant.h \
     Engine/VideoEngine.h \
-    Engine/ViewerNode.h \
+    Engine/ViewerInstance.h \
     Global/AppManager.h \
     Global/Enums.h \
     Global/GLIncludes.h \

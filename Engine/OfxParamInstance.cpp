@@ -17,11 +17,11 @@
 #include <nuke/fnPublicOfxExtensions.h>
 
 #include "Engine/Knob.h"
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/VideoEngine.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 using namespace Powiter;
 
@@ -39,7 +39,7 @@ static std::string getParamLabel(OFX::Host::Param::Instance* param){
     return label;
 }
 
-OfxPushButtonInstance::OfxPushButtonInstance(OfxNode* node,
+OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::PushbuttonInstance(descriptor, node->effectInstance())
 , _node(node)
@@ -82,7 +82,7 @@ Knob* OfxPushButtonInstance::getKnob() const {
 
 
 
-OfxIntegerInstance::OfxIntegerInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::IntegerInstance(descriptor, node->effectInstance())
 , _node(node)
 {
@@ -149,7 +149,7 @@ Knob* OfxIntegerInstance::getKnob() const{
     return _knob;
 }
 
-OfxDoubleInstance::OfxDoubleInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
+OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::DoubleInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -225,7 +225,7 @@ Knob* OfxDoubleInstance::getKnob() const{
     return _knob;
 }
 
-OfxBooleanInstance::OfxBooleanInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
+OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::BooleanInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -283,7 +283,7 @@ Knob* OfxBooleanInstance::getKnob() const{
 }
 
 
-OfxChoiceInstance::OfxChoiceInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
+OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::ChoiceInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -355,7 +355,7 @@ Knob* OfxChoiceInstance::getKnob() const{
 
 
 
-OfxRGBAInstance::OfxRGBAInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBAInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -436,7 +436,7 @@ Knob* OfxRGBAInstance::getKnob() const{
 }
 
 
-OfxRGBInstance::OfxRGBInstance(OfxNode* node,  OFX::Host::Param::Descriptor& descriptor)
+OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,  OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::RGBInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -512,7 +512,7 @@ Knob* OfxRGBInstance::getKnob() const{
 }
 
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxNode* node, OFX::Host::Param::Descriptor& descriptor)
+OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Double2DInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -606,7 +606,7 @@ Knob* OfxDouble2DInstance::getKnob() const{
 }
 
 
-OfxInteger2DInstance::OfxInteger2DInstance(OfxNode *node, OFX::Host::Param::Descriptor& descriptor)
+OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance *node, OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::Integer2DInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -697,7 +697,7 @@ Knob* OfxInteger2DInstance::getKnob() const{
 
 
 /***********/
-OfxGroupInstance::OfxGroupInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::GroupInstance(descriptor,node->effectInstance())
 , _node(node)
 {
@@ -753,7 +753,7 @@ Knob* OfxGroupInstance::getKnob() const{
 }
 
 
-OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor& descriptor)
+OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,OFX::Host::Param::Descriptor& descriptor)
 : OFX::Host::Param::StringInstance(descriptor,node->effectInstance())
 , _node(node)
 , _fileKnob(0)
@@ -768,9 +768,9 @@ OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor&
         appPTR->getKnobFactory().createKnob("Separator", node, getParamLabel(this));
     }
     if(mode == kOfxParamStringIsFilePath){
-        if(_node->isInputNode()){
+        if(_node->isGenerator()){
             _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", node, getParamLabel(this)));
-            QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), _node, SLOT(onFrameRangeChanged(int,int)));
+            QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
             if(layoutHint == 2){
                 _fileKnob->turnOffNewLine();
             }
@@ -835,11 +835,16 @@ OfxStringInstance::OfxStringInstance(OfxNode* node,OFX::Host::Param::Descriptor&
     
     
 }
+
+ void OfxStringInstance::onFrameRangeChanged(int f,int l){
+     _node->notifyFrameRangeChanged(f,l);
+ }
+
 OfxStatus OfxStringInstance::get(std::string &str) {
     assert(_node->effectInstance());
     if(_fileKnob){
         int currentFrame = (int)_node->effectInstance()->timeLineGetTime();
-        QString fileName =  _fileKnob->getRandomFrameName(currentFrame);
+        QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
@@ -853,7 +858,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
 OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     assert(_node->effectInstance());
     if(_fileKnob){
-        str = _fileKnob->getRandomFrameName(time).toStdString();
+        str = _fileKnob->getRandomFrameName(time,true).toStdString();
     }else if(_outputFileKnob){
         str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
     }else if(_stringKnob){
@@ -959,7 +964,7 @@ void OfxStringInstance::setSecret(){
 
 
 const QString OfxStringInstance::getRandomFrameName(int f) const{
-    return _fileKnob ? _fileKnob->getRandomFrameName(f) : "";
+    return _fileKnob ? _fileKnob->getRandomFrameName(f,true) : "";
 }
 bool OfxStringInstance::isValid() const{
     if(_fileKnob){

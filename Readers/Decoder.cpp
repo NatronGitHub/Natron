@@ -77,7 +77,7 @@ void Decoder::from_float(Channel z, float* to, const float* from, const float* a
 }
 
 void Decoder::from_byte_rect(float* to,const uchar* from,
-                             const Box2D& rect,const Box2D& rod,
+                             const RectI& rect,const RectI& rod,
                              Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_byte_rect(to,from,rect,rod,invertY,_premult,inputPacking);
@@ -87,7 +87,7 @@ void Decoder::from_byte_rect(float* to,const uchar* from,
 }
 
 void Decoder::from_short_rect(float* to,const U16* from,
-                              const Box2D& rect,const Box2D& rod,
+                              const RectI& rect,const RectI& rod,
                               Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_short_rect(to,from,rect,rod,invertY,_premult,inputPacking);
@@ -96,7 +96,7 @@ void Decoder::from_short_rect(float* to,const U16* from,
     }
 }
 void Decoder::from_float_rect(float* to,const float* from,
-                              const Box2D& rect,const Box2D& rod,
+                              const RectI& rect,const RectI& rod,
                               Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_float_rect(to,from,rect,rod,invertY,_premult,inputPacking);
@@ -110,7 +110,7 @@ void Decoder::createKnobDynamically(){
 }
 
 void Decoder::setReaderInfo(Format dispW,
-	const Box2D& dataW,
+	const RectI& dataW,
     Powiter::ChannelSet channels) {
     _readerInfo->setDisplayWindow(dispW);
     _readerInfo->setRoD(dataW);

@@ -24,6 +24,7 @@ class LineEdit;
 class Node;
 class Knob;
 class KnobGui;
+class KnobHolder;
 class NodeGui;
 class QVBoxLayout;
 class QGridLayout;
@@ -71,13 +72,15 @@ class DockablePanel : public QFrame{
     
     /*a map storing for each knob a pointer to their GUI.*/
     std::map<Knob*,KnobGui*> _knobs;
+    KnobHolder* _holder;
     
     /* map<tab name, pair<tab , row count> >*/
     std::map<QString,std::pair<QWidget*,int> > _tabs;
     
 public:
     
-    explicit DockablePanel(QVBoxLayout* container
+    explicit DockablePanel(KnobHolder* holder
+                  ,QVBoxLayout* container
                   ,bool readOnlyName
                   ,const QString& initialName
                   ,const QString& helpToolTip
@@ -135,9 +138,6 @@ protected:
         QFrame::mousePressEvent(e);
     }
     
-    /*Must return a vector of knobs*/
-    virtual const std::vector<Knob*>&  getKnobs() const = 0;
-    
 signals:
     
     /*emitted when the panel is clicked*/
@@ -189,25 +189,7 @@ public:
     void setSelected(bool s);
     
     bool isSelected() const {return _selected;}
-    
-protected:
-   
-    /*Must return a vector of knobs*/
-    virtual const std::vector<Knob*>&  getKnobs() const OVERRIDE;
-};
-
-class ProjectSettingsPanel : public DockablePanel{
-    
-    boost::shared_ptr<Powiter::Project> _project;
-public:
-    explicit ProjectSettingsPanel(boost::shared_ptr<Powiter::Project> project,QVBoxLayout* container,QWidget *parent = 0);
-    
-    virtual  ~ProjectSettingsPanel(){}
-    
-protected:
-
-    /*Must return a vector of knobs*/
-    virtual const std::vector<Knob*>&  getKnobs() const OVERRIDE ;
+  
 };
 
 #endif // POWITER_GUI_SETTINGSPANEL_H_

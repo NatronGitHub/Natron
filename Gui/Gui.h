@@ -47,12 +47,12 @@ class AppInstance;
 class NodeGraph;
 class ViewerTab;
 class Node;
-class ViewerNode;
+class InspectorNode;
 class QToolBar;
 class QGraphicsScene;
-class AppInstance;
 class NodeGui;
 class QProgressBar;
+class ViewerInstance;
 class Button;
 class QLabel;
 class Writer;
@@ -60,7 +60,6 @@ class Gui;
 class SpinBox;
 class LineEdit;
 class DockablePanel;
-class ProjectSettingsPanel;
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
@@ -197,7 +196,7 @@ public:
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
-    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where);
+    ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where);
     
     void addViewerTab(ViewerTab* tab,TabWidget* where);
     
@@ -245,13 +244,13 @@ public:
     /**
      * @brief An error dialog with title and text customizable
      **/
-    void errorDialog(const QString& title,const QString& text);
+    void errorDialog(const std::string& title,const std::string& text);
     
-    void warningDialog(const QString& title,const QString& text);
+    void warningDialog(const std::string& title,const std::string& text);
     
-    void informationDialog(const QString& title,const QString& text);
+    void informationDialog(const std::string& title,const std::string& text);
     
-    Powiter::StandardButton questionDialog(const QString& title,const QString& message,Powiter::StandardButtons buttons =
+    Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
                                            Powiter::StandardButtons(Powiter::Yes | Powiter::No),
                                            Powiter::StandardButton defaultButton = Powiter::NoButton);
     
@@ -409,7 +408,7 @@ public:
     /*Registered tabs: for drag&drop purpose*/
     std::map<std::string,QWidget*> _registeredTabs;
     
-    ProjectSettingsPanel* _projectGui;
+    DockablePanel* _projectGui;
     
     void setupUi();
    
