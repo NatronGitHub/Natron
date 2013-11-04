@@ -38,14 +38,13 @@ class EffectInstance : public KnobHolder
 {
 public:
     typedef std::vector<EffectInstance*> Inputs;
-    
 private:
     
     Node* _node; //< the node holding this effect
 
     bool _renderAborted; //< was rendering aborted ?
     Hash64 _hashValue;//< The hash value of this effect
-    bool _isHashValid;
+    int _hashAge;//< to check if the hash has the same age than another hash
     bool _isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
     //or a render instance (i.e a snapshot of the live instance at a given time)
     
@@ -82,10 +81,12 @@ public:
     U64 computeHash(const std::vector<U64>& inputsHashs);
     
     const Hash64& hash() const { return _hashValue; }
+        
+    virtual void invalidateHash() OVERRIDE;
     
-    bool isHashValid() const { return _isHashValid; }
+    bool isHashValid() const;
     
-    void invalidateHash() { _isHashValid = false; }
+    int hashAge() const;
     
     const Inputs& getInputs() const { return _inputs; }
     

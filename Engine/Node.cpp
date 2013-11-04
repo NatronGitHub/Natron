@@ -111,11 +111,10 @@ Powiter::EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree){
             ret->setAsRenderClone();
             _renderInstances.insert(std::make_pair(tree, ret));
         }
-        ret->clone(); // copy all knobs values
     }
     assert(ret);
+    ret->clone();
     ret->updateInputs(tree);
-    ret->invalidateHash();
     return ret;
 
 }
@@ -538,6 +537,13 @@ void Node::onOverlayFocusLost(){
 }
 
 
+void Node::invalidateDownStreamHash(){
+    for(OutputMap::const_iterator it = _outputs.begin();it!=_outputs.end();++it){
+        if(it->second){
+            it->second->getLiveInstance()->invalidateHash();
+        }
+    }
+}
 
 InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
 : Node(app,plugin,name)
@@ -659,7 +665,10 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
-        _liveInstance->requestRender();
+//        ViewerInstance* viewer = hasViewerConnected();
+//        if(viewer){
+//            viewer->updateTreeAndRender();
+//        }
     }
 }
 

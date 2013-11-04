@@ -43,6 +43,8 @@ public:
     
     void reset();
     
+    bool valid() const {return hash != 0;}
+    
     void append(U64 hashValue) {
         node_values.push_back(hashValue);
     }

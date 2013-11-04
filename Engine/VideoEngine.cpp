@@ -542,6 +542,7 @@ void RenderTree::fillGraph(Node* n){
     }
     if(!n->isMarkedByTopologicalSort()){
         n->setMarkedByTopologicalSort(true);
+        n->getLiveInstance()->invalidateHash();
         _sorted.push_back(std::make_pair(n,(EffectInstance*)NULL));
     }
 }
@@ -549,9 +550,16 @@ void RenderTree::fillGraph(Node* n){
 U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect){
     const EffectInstance::Inputs& inputs = effect->getInputs();
     std::vector<U64> inputsHashs;
+    InspectorNode* insp = dynamic_cast<InspectorNode*>(effect->getNode());
     for(U32 i = 0 ; i < inputs.size();++i){
-        if (inputs[i]) {
-            inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
+        if(insp){
+            if (inputs[i] && (int)i == insp->activeInput()) {
+                inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
+            }
+        }else{
+            if (inputs[i]) {
+                inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
+            }
         }
     }
     U64 ret = effect->hash().value();
@@ -570,7 +578,6 @@ void RenderTree::refreshKnobsAndHash(){
     if (oldVersionValid) {
         oldVersion = _output->hash().value();
     }
-
     U64 hash = cloneKnobsAndcomputeTreeHash(_output);
     _treeVersionValid = true;
     

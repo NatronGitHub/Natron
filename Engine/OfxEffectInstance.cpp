@@ -152,17 +152,6 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
     return foundGenerator!=contexts.end() && foundGeneral!=contexts.end();
 }
 
-static std::string getEffectInstanceLabel(const Powiter::OfxImageEffectInstance* effect){
-    std::string label = effect->getLabel();
-    if(label.empty()){
-        label = effect->getShortLabel();
-    }
-    if(label.empty()){
-        label = effect->getLongLabel();
-    }
-    return label;
-}
-
 
 /*group is a string as such:
  Toto/Superplugins/blabla

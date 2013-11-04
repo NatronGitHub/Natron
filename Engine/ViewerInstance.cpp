@@ -164,6 +164,7 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         return StatFailed;
     }
     _interThreadInfos._textureRect = textureRect;
+        
     FrameKey key(time,
                  hash().value(),
                  zoomFactor,

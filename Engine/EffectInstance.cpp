@@ -17,6 +17,8 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
+#define HASH_AGE_MAX_VALUE 99999
+
 using namespace Powiter;
 
 EffectInstance::EffectInstance(Node* node):
@@ -24,7 +26,7 @@ KnobHolder(node ? node->getApp() : NULL)
 , _node(node)
 , _renderAborted(false)
 , _hashValue()
-, _isHashValid(false)
+, _hashAge(0)
 , _isRenderClone(false)
 , _inputs()
 {
@@ -35,7 +37,6 @@ void EffectInstance::clone(){
     if(!_isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
-    _isHashValid = false;
 }
 
 
@@ -48,9 +49,30 @@ namespace {
     }
 }
 
+bool EffectInstance::isHashValid() const {
+    if(_hashAge == 0)
+        return false;
+    if(_isRenderClone)
+        return _hashAge == _node->getLiveInstance()->hashAge() && _hashValue.valid();
+    else
+        return false;
+}
+int EffectInstance::hashAge() const{
+    return _hashAge;
+}
+
+void EffectInstance::invalidateHash(){
+    if(_hashAge < HASH_AGE_MAX_VALUE)
+        ++_hashAge;
+    else
+        _hashAge = 0;
+    _node->invalidateDownStreamHash();
+}
 
 U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
-    _isHashValid = true;
+    
+    _hashAge = _node->getLiveInstance()->hashAge();
+    
     _hashValue.reset();
     const std::vector<Knob*>& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -155,7 +177,6 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
-    
     Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
@@ -269,8 +290,18 @@ void EffectInstance::updateInputs(RenderTree* tree){
     _inputs.clear();
     const Node::InputMap& inputs = _node->getInputs();
     _inputs.reserve(inputs.size());
+    
+    
     for (Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
         if (it->second) {
+            InspectorNode* insp = dynamic_cast<InspectorNode*>(_node);
+            if(insp){
+                Node* activeInput = insp->input(insp->activeInput());
+                if(it->second != activeInput){
+                    _inputs.push_back((EffectInstance*)NULL);
+                    continue;
+                }
+            }
             EffectInstance* inputEffect = 0;
             if(tree){
                 inputEffect = it->second->findExistingEffect(tree);
@@ -283,6 +314,7 @@ void EffectInstance::updateInputs(RenderTree* tree){
             _inputs.push_back((EffectInstance*)NULL);
         }
     }
+    
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node):

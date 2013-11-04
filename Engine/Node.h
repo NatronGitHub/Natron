@@ -288,6 +288,8 @@ public:
 
     Powiter::EffectInstance* findExistingEffect(RenderTree* tree) const;
 
+    void invalidateDownStreamHash();
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
