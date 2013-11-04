@@ -366,7 +366,6 @@ private:
     
     std::map<int, std::string> _inputLabelsMap; // inputs name
     std::string _name; //node name set by the user
-    std::vector<Knob*> _knobs;
     
     DeactivatedState _deactivatedState;
     

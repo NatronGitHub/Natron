@@ -72,7 +72,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(const QString& name);
+    Node* createNode(const QString& name,bool requestedByLoad = false);
     
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}

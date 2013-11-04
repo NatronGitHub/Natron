@@ -90,6 +90,8 @@ public:
     
     const Inputs& getInputs() const { return _inputs; }
     
+    Knob* getKnobByDescription(const std::string& desc) const;
+    
     /**
      * @brief Forwarded to the node's name
      **/

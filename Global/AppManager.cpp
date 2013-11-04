@@ -145,7 +145,7 @@ AppInstance::~AppInstance(){
 }
 
 
-Node* AppInstance::createNode(const QString& name) {
+Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     Node* node = 0;
     LibraryBinary* pluginBinary = appPTR->getPluginBinary(name);
     if(!pluginBinary){
@@ -179,20 +179,20 @@ Node* AppInstance::createNode(const QString& name) {
     _nodeMapping.insert(make_pair(node,nodegui));
     node->initializeKnobs();
     node->initializeInputs();
-    Node* selected  =  0;
-    if(_gui->getSelectedNode()){
-        selected = _gui->getSelectedNode()->getNode();
-    }
+   
     _currentProject->initNodeCountersAndSetName(node);
     if(node->className() == "Viewer"){
         _gui->createViewerGui(node);
     }
-    node->openFilesForAllFileKnobs();
+    if(!requestedByLoad)
+        node->openFilesForAllFileKnobs();
     if(node->makePreviewByDefault())
         node->refreshPreviewImage(0);
     
-    autoConnect(selected, node);
-    
+    if(_gui->getSelectedNode()){
+        Node* selected = _gui->getSelectedNode()->getNode();
+        autoConnect(selected, node);
+    }
     return node;
 }
 

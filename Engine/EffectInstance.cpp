@@ -317,6 +317,19 @@ void EffectInstance::updateInputs(RenderTree* tree){
     
 }
 
+
+Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
+
+    const std::vector<Knob*>& knobs = getKnobs();
+    for(U32 i = 0; i < knobs.size() ; ++i){
+        if (knobs[i]->getDescription() == desc) {
+            return knobs[i];
+        }
+    }
+    return NULL;
+}
+
+
 OutputEffectInstance::OutputEffectInstance(Node* node):
 Powiter::EffectInstance(node)
 , _videoEngine()
@@ -350,3 +363,4 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     }
     
 }
+

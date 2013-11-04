@@ -196,7 +196,7 @@ void Project::loadProject(const QString& path,const QString& name){
     /*first create all nodes and restore the knobs values*/
     for (std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it) {
         const NodeGui::SerializedState& state = *it;
-        Node* n = getApp()->createNode(state.getClassName().c_str());
+        Node* n = getApp()->createNode(state.getClassName().c_str(),true);
         if(!n){
             clearNodes();
             QString text("Failed to restore the graph! \n The node ");
@@ -216,7 +216,11 @@ void Project::loadProject(const QString& path,const QString& name){
                 cout << "Couldn't restore knob value ( " << v->first << " )." << endl;
             }else{
                 knob->restoreFromString(v->second);
+                if(knob->typeName() == "InputFile" && n->makePreviewByDefault()){
+                    n->refreshPreviewImage(0);
+                }
             }
+        
         }
         NodeGui* nGui = getApp()->getNodeGui(n);
         nGui->setPos(state.getX(),state.getY());

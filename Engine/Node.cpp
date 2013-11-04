@@ -50,7 +50,6 @@ Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& na
 , _liveInstance(NULL)
 , _inputLabelsMap()
 , _name()
-, _knobs()
 , _deactivatedState()
 , _markedByTopologicalSort(false)
 , _activated(true)
@@ -91,27 +90,24 @@ void Node::initializeKnobs(){
 
 Powiter::EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree){
     EffectInstance* ret = 0;
-    if(isOutputNode() && !isOpenFXNode()){
-        ret = _liveInstance;
+    std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
+    if(it != _renderInstances.end()){
+        ret =  it->second;
     }else{
-        std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
-        if(it != _renderInstances.end()){
-            ret =  it->second;
+        if(!isOpenFXNode()){
+            std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
+            assert(func.first);
+            ret =  func.second(this);
         }else{
-            if(!isOpenFXNode()){
-                std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
-                assert(func.first);
-                ret =  func.second(this);
-            }else{
-                ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
-                
-            }
-            assert(ret);
-            ret->initializeKnobs();
-            ret->setAsRenderClone();
-            _renderInstances.insert(std::make_pair(tree, ret));
+            ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
+            
         }
+        assert(ret);
+        ret->initializeKnobs();
+        ret->setAsRenderClone();
+        _renderInstances.insert(std::make_pair(tree, ret));
     }
+    
     assert(ret);
     ret->clone();
     ret->updateInputs(tree);
@@ -359,12 +355,7 @@ int Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) c
 
 
 Knob* Node::getKnobByDescription(const std::string& desc) const{
-    for(U32 i = 0; i < _knobs.size() ; ++i){
-        if (_knobs[i]->getDescription() == desc) {
-            return _knobs[i];
-        }
-    }
-    return NULL;
+    return _liveInstance->getKnobByDescription(desc);
 }
 
 
