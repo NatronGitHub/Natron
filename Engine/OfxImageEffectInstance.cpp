@@ -15,7 +15,7 @@
 #include <map>
 #include <locale>
 
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
 #include "Engine/VideoEngine.h"
@@ -55,7 +55,7 @@ OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OF
                                                                               OFX::Host::ImageEffect::ClipDescriptor* descriptor,
                                                                               int index) {
     (void)plugin;
-    return new OfxClipInstance(node(),node()->effectInstance(),index, descriptor);
+    return new OfxClipInstance(node(),this,index, descriptor);
 }
 
 OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
@@ -112,27 +112,27 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
 // project may be a PAL SD project, but only be a letter-box within that. The project size is
 // the size of this sub window.
 void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const {
-    assert(_node);
-    Box2D rod;
-    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-        if (it->second) {
-            Box2D inputRod;
-#warning "this is a Hack and shouldn't be the way to get the current time"
-            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-            if(st == StatFailed)
-                break;
-            rod.merge(inputRod);
-        }
-    }
-    if(!rod.isNull()){
-        xSize = rod.width();
-        ySize = rod.height();
-    }else{
-        
-        const Format& f = _node->getProjectDefaultFormat();
+//    assert(_node);
+//    RectI rod;
+//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+//        if (*it) {
+//            RectI inputRod;
+//#warning "this is a Hack and shouldn't be the way to get the current time"
+//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
+//            if(st == StatFailed)
+//                break;
+//            rod.merge(inputRod);
+//        }
+//    }
+//    if(!rod.isNull()){
+//        xSize = rod.width();
+//        ySize = rod.height();
+//    }else{
+    
+        const Format& f = _node->getRenderFormat();
         xSize = f.width();
         ySize = f.height();
-    }
+    // }
 }
 
 // The offset of the current project in canonical coordinates.
@@ -141,27 +141,27 @@ void OfxImageEffectInstance::getProjectSize(double& xSize, double& ySize) const 
 // project offset is the offset to the bottom left hand corner of the letter box. The project
 // offset is in canonical coordinates.
 void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) const {
-    assert(_node);
-    Box2D rod;
-    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-        if (it->second) {
-            Box2D inputRod;
-#warning "this is a Hack and shouldn't be the way to get the current time"
-            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-            if(st == StatFailed)
-                break;
-            rod.merge(inputRod);
-        }
-    }
-    if(!rod.isNull()){
-        xOffset = rod.left();
-        yOffset = rod.bottom();
-    }else{
-        
-        const Format& f = _node->getProjectDefaultFormat();
+//    assert(_node);
+//    RectI rod;
+//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+//        if (*it) {
+//            RectI inputRod;
+//#warning "this is a Hack and shouldn't be the way to get the current time"
+//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
+//            if(st == StatFailed)
+//                break;
+//            rod.merge(inputRod);
+//        }
+//    }
+//    if(!rod.isNull()){
+//        xOffset = rod.left();
+//        yOffset = rod.bottom();
+//    }else{
+    
+        const Format& f = _node->getRenderFormat();
         xOffset = f.left();
         yOffset = f.bottom();
-    }
+    //  }
 }
 
 // The extent of the current project in canonical coordinates.
@@ -170,33 +170,33 @@ void OfxImageEffectInstance::getProjectOffset(double& xOffset, double& yOffset) 
 // returns the top right position, as the extent is always rooted at 0,0. For example a PAL SD
 // project would have an extent of 768, 576.
 void OfxImageEffectInstance::getProjectExtent(double& xSize, double& ySize) const {
-    assert(_node);
-    Box2D rod;
-    for(Node::InputMap::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
-        if (it->second) {
-            Box2D inputRod;
-#warning "this is a Hack and shouldn't be the way to get the current time"
-            Status st = it->second->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
-            if(st == StatFailed)
-                break;
-            rod.merge(inputRod);
-        }
-    }
-    if(!rod.isNull()){
-        xSize = rod.right();
-        ySize = rod.top();
-    }else{
-        
-        const Format& f = _node->getProjectDefaultFormat();
+//    assert(_node);
+//    RectI rod;
+//    for(EffectInstance::Inputs::const_iterator it = _node->getInputs().begin() ; it != _node->getInputs().end() ; ++it){
+//        if (*it) {
+//            RectI inputRod;
+//#warning "this is a Hack and shouldn't be the way to get the current time"
+//            Status st = (*it)->getRegionOfDefinition(_node->getApp()->getTimeLine()->currentFrame(), &inputRod);
+//            if(st == StatFailed)
+//                break;
+//            rod.merge(inputRod);
+//        }
+//    }
+//    if(!rod.isNull()){
+//        xSize = rod.right();
+//        ySize = rod.top();
+//    }else{
+    
+        const Format& f = _node->getRenderFormat();
         xSize = f.right();
         ySize = f.top();
-    }
+    // }
 }
 
 // The pixel aspect ratio of the current project
 double OfxImageEffectInstance::getProjectPixelAspectRatio() const {
     assert(_node);
-    return _node->getProjectDefaultFormat().getPixelAspect();
+    return _node->getRenderFormat().getPixelAspect();
 }
 
 // The duration of the effect

@@ -33,7 +33,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/Gui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 TabWidget::TabWidget(Gui* gui,TabWidget::Decorations decorations,QWidget* parent):
 QFrame(parent),

@@ -336,7 +336,7 @@ void getOffsetsForPacking(Lut::PackedPixelsFormat format, int *r, int *g, int *b
 }
 
 void Lut::from_byte_rect(float *to, const uchar *from,
-                         const Box2D &rect, const Box2D &rod,
+                         const RectI &rect, const RectI &rod,
                          bool invertY , bool premult,
                          Lut::PackedPixelsFormat format) const
 {
@@ -383,7 +383,7 @@ void Lut::from_byte_rect(float *to, const uchar *from,
 }
 
 void Lut::from_short_rect(float *to, const U16 *from,
-                          const Box2D &rect, const Box2D &rod,
+                          const RectI &rect, const RectI &rod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format) const
 {
@@ -398,7 +398,7 @@ void Lut::from_short_rect(float *to, const U16 *from,
 }
 
 void Lut::from_float_rect(float *to, const float *from,
-                          const Box2D &rect, const Box2D &rod,
+                          const RectI &rect, const RectI &rod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format) const
 {
@@ -547,7 +547,7 @@ void Lut::to_float(float *to, const float *from, const float *alpha, int W, int 
 }
 
 void Lut::to_byte_rect(uchar *to, const float *from,
-                       const Box2D &rect, const Box2D &rod,
+                       const RectI &rect, const RectI &rod,
                        bool invertY , bool premult,
                        Lut::PackedPixelsFormat format) const
 {
@@ -635,7 +635,7 @@ void Lut::to_byte_rect(uchar *to, const float *from,
 }
 
 void Lut::to_short_rect(U16 *to, const float *from,
-                        const Box2D &rect, const Box2D &rod,
+                        const RectI &rect, const RectI &rod,
                         bool invertY , bool premult,
                         Lut::PackedPixelsFormat format) const
 {
@@ -650,7 +650,7 @@ void Lut::to_short_rect(U16 *to, const float *from,
 }
 
 void Lut::to_float_rect(float *to, const float *from,
-                        const Box2D &rect, const Box2D &rod,
+                        const RectI &rect, const RectI &rod,
                         bool invertY , bool premult,
                         Lut::PackedPixelsFormat format) const
 {
@@ -763,7 +763,7 @@ void linear_from_float(float *to, const float *from, int W, int delta)
 }
 
 void linear_from_byte_rect(float *to, const uchar *from,
-                           const Box2D &rect, const Box2D &rod,
+                           const RectI &rect, const RectI &rod,
                            bool invertY ,
                            Lut::PackedPixelsFormat format)
 {
@@ -788,7 +788,7 @@ void linear_from_byte_rect(float *to, const uchar *from,
 }
 
 void linear_from_short_rect(float *to, const U16 *from,
-                            const Box2D &rect, const Box2D &rod,
+                            const RectI &rect, const RectI &rod,
                             bool invertY ,
                             Lut::PackedPixelsFormat format)
 {
@@ -802,7 +802,7 @@ void linear_from_short_rect(float *to, const U16 *from,
 }
 
 void linear_from_float_rect(float *to, const float *from,
-                            const Box2D &rect, const Box2D &rod,
+                            const RectI &rect, const RectI &rod,
                             bool invertY ,
                             Lut::PackedPixelsFormat format)
 {
@@ -950,7 +950,7 @@ void linear_to_float(float *to, const float *from, const float *alpha, int W, in
 }
 
 void linear_to_byte_rect(uchar *to, const float *from,
-                         const Box2D &rect, const Box2D &rod,
+                         const RectI &rect, const RectI &rod,
                          bool invertY , bool premult,
                          Lut::PackedPixelsFormat format)
 {
@@ -1035,7 +1035,7 @@ void linear_to_byte_rect(uchar *to, const float *from,
 }
 
 void linear_to_short_rect(U16 *to, const float *from,
-                          const Box2D &rect, const Box2D &rod,
+                          const RectI &rect, const RectI &rod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format)
 {
@@ -1050,7 +1050,7 @@ void linear_to_short_rect(U16 *to, const float *from,
 }
 
 void linear_to_float_rect(float *to, const float *from,
-                          const Box2D &rect, const Box2D &rod,
+                          const RectI &rect, const RectI &rod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format)
 {

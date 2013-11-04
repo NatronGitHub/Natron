@@ -14,11 +14,16 @@
 
 #include <cassert>
 #include <iostream>
+#include <vector>
+#include <utility>
+
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
-// the y coordinate is towards the top
-// the x coordinate is towards the right
-class Box2D{
+
+/**
+* @brief A rectangle where _l < _r and _b < _t such as width() == (_r - _l) && height() == (_t - _b)
+**/
+class RectI{
 private:
 	int _l; // left
 	int _b; // bottom
@@ -38,63 +43,13 @@ private:
     }
 public:
     
+    RectI() : _l(0), _b(0), _r(0), _t(0) {}
     
-    /*iterator : bottom-top, left-right */
-    class  iterator {
-    public:
-		// current position
-        int y;
-        int x;
-        
-        iterator(int y_, int x_, int l_, int r_) : y(y_), x(x_), l(l_), r(r_) { }
-        
-        void operator++() {
-            ++x;
-            if (x == r) {
-                x = l;
-                ++y;
-            }
-        }
-        
-        void operator++(int) {
-            ++x;
-            if (x == r) {
-                x = l;
-                ++y;
-            }
-        }
-        
-        bool operator!=(const iterator& other) const
-        {
-            return y != other.y || x != other.x;
-        }
-        
-        
-    private:
-        int l;
-        int r;
-    };
+    RectI(int l, int b, int r, int t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
     
-    typedef iterator const_iterator;
+    RectI(const RectI &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
     
-    iterator begin() const
-    {
-        return iterator(_b, _l, _l, _r);
-    }
-    
-    iterator end() const
-    {
-        return iterator(_t, _l, _l, _r);
-    }
-    
-    // default cionstructor: empty box
-    Box2D() : _l(0), _b(0), _r(0), _t(0) {}
-    
-    Box2D(int l, int b, int r, int t) : _l(l), _b(b), _r(r), _t(t) { assert((_r>= _l) && (_t>=_b)); }
-    
-    Box2D(const Box2D &b):_l(b._l),_b(b._b),_r(b._r),_t(b._t) { assert((_r>= _l) && (_t>=_b)); }
-    
-    virtual ~Box2D(){}
+    virtual ~RectI(){}
     
     int left() const { return _l; }
     void set_left(int v) { _l = v; }
@@ -126,15 +81,15 @@ public:
     }
     
     
-    void set(const Box2D& b) { *this = b; }
+    void set(const RectI& b) { *this = b; }
     
     
     bool isNull() const { return (_r <= _l) || (_t <= _b); }
     
     operator bool() const { return !isNull(); }
     
-    Box2D operator&(const Box2D& other) const{
-        Box2D inter;
+    RectI operator&(const RectI& other) const{
+        RectI inter;
         intersect(other,&inter);
         return inter;
     }
@@ -146,36 +101,10 @@ public:
         _t = 0;
     }
     
-    void move(int dx, int dy) {
-        _l += dx;
-        _r += dx;
-        _b += dy;
-        _t += dy;
-    }
-    
-    /*Pad the edges of the box.*/
-    void pad(int dl, int db, int dr, int dt)
-    {
-        if (_r + dr >= _l + dl) {
-            _l += dl;
-            _r += dr;
-        }
-        if (_t + dt >= _b + db) {
-            _b += db;
-            _t += dt;
-        }
-    }
-    
-    /*clamp x to the region [_l,_r-1] */
-    int clampx(int x) const { return x <= _l ? _l : x >= _r ? _r - 1 : x; }
-    
-    
-    int clampy(int y) const { return y <= _b ? _b : y >= _t ? _t - 1 : y; }
-    
 	/*merge the current box with another integerBox.
 	 *The current box is the smallest box enclosing the two boxes
      (not the union, which is not a box).*/
-    void merge(const Box2D& box) {
+    void merge(const RectI& box) {
         merge(box.left(), box.bottom(), box.right(), box.top());
     }
     
@@ -194,14 +123,13 @@ public:
         }
     }
     
-    
 	/*intersection of two boxes*/
-    bool intersect(const Box2D& box,Box2D* intersection) const {
+    bool intersect(const RectI& box,RectI* intersection) const {
         return intersect(box.left(), box.bottom(), box.right(), box.top(),intersection);
     }
     
     
-    bool intersect(int l, int b, int r, int t,Box2D* intersection) const {
+    bool intersect(int l, int b, int r, int t,RectI* intersection) const {
         if(r < _l || l > _r || b > _t || t < _b)
             return false;
         intersection->set_left(std::max(_l, l));
@@ -212,21 +140,21 @@ public:
     }
     
     
-    /// returns true if the Box2D passed as parameter is fully contained in this one
-    bool intersects(const Box2D& b) const {
+    /// returns true if the rect passed as parameter is fully contained in this one
+    bool intersects(const RectI& b) const {
         return b.isNull() || ((b.left() >= left()) && (b.bottom() > bottom()) &&
                                (b.right() <= right()) && (b.top() <= top()));
     }
     
     bool intersects(int l,int b,int r,int t) const {
-        return intersects(Box2D(l,b,r,t));
+        return intersects(RectI(l,b,r,t));
     }
     
 	/*the area : w*h*/
     int area() const {
         return width() * height();
     }
-    Box2D& operator=(const Box2D& other){
+    RectI& operator=(const RectI& other){
         _l = other.left();
         _b = other.bottom();
         _r = other.right();
@@ -234,7 +162,7 @@ public:
         return *this;
     }
     
-    bool contains(const Box2D& other) const {
+    bool contains(const RectI& other) const {
         return other._l >= _l &&
         other._b >= _b &&
         other._r <= _r &&
@@ -242,16 +170,40 @@ public:
     }
     
     void debug() const{
-        std::cout << "Box2D is..." << std::endl;
+        std::cout << "RectI is..." << std::endl;
         std::cout << "left = " << _l << std::endl;
         std::cout << "bottom = " << _b << std::endl;
         std::cout << "right = " << _r << std::endl;
         std::cout << "top = " << _t << std::endl;
     }
+    
+    static std::vector<RectI> splitRectIntoSmallerRect(const RectI& rect,int splitsCount){
+        std::vector<RectI> ret;
+        int averagePixelsPerSplit = std::ceil(double(rect.area()) / (double)splitsCount);
+        /*if the splits happen to have less pixels than 1 scan-line contains, just do scan-line rendering*/
+        if(averagePixelsPerSplit < rect.width()){
+            for (int i = rect.bottom(); i < rect.top(); ++i) {
+                ret.push_back(RectI(rect.left(),i,rect.right(),i+1));
+            }
+        }else{
+            //we round to the ceil
+            int scanLinesCount = std::ceil((double)averagePixelsPerSplit/(double)rect.width());
+            int startBox = rect.bottom();
+            while((startBox + scanLinesCount) < rect.top()){
+                ret.push_back(RectI(rect.left(),startBox,rect.right(),startBox+scanLinesCount));
+                startBox += scanLinesCount;
+            }
+            if(startBox < rect.top()){
+                ret.push_back(RectI(rect.left(),startBox,rect.right(),rect.top()));
+            }
+        }
+        return ret;
+    }
+
 };
 
 /// equality of boxes
-inline bool operator==(const Box2D& b1, const Box2D& b2)
+inline bool operator==(const RectI& b1, const RectI& b2)
 {
 	return b1.left() == b2.left() &&
     b1.bottom() == b2.bottom() &&
@@ -260,14 +212,14 @@ inline bool operator==(const Box2D& b1, const Box2D& b2)
 }
 
 /// inequality of boxes
-inline bool operator!=(const Box2D& b1, const Box2D& b2)
+inline bool operator!=(const RectI& b1, const RectI& b2)
 {
 	return b1.left() != b2.left() ||
     b1.bottom() != b2.bottom() ||
     b1.right() != b2.right() ||
     b1.top() != b2.top();
 }
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(Box2D);
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectI);
 
 
 

@@ -18,9 +18,10 @@
 
 #include "Global/Macros.h"
 
-class OfxNode;
+class OfxEffectInstance;
 class AppInstance;
 class QMutex;
+class Node;
 namespace Powiter {
 
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
@@ -70,7 +71,7 @@ public:
     /// clearPersistentMessage
     virtual OfxStatus clearPersistentMessage() OVERRIDE;
 
-    OfxNode* createOfxNode(const std::string& name,AppInstance* app);
+    OfxEffectInstance* createOfxEffect(const std::string& name,Node* node);
 
     /*Reads OFX plugin cache and scan plugins directories
      to load them all.*/

@@ -20,7 +20,7 @@
 #include <QtCore/QMutex>
 
 #include "Engine/Cache.h"
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 
 namespace Powiter{
     
@@ -33,7 +33,7 @@ namespace Powiter{
         U64 _nodeHashKey;
         SequenceTime _time;
         RenderScale _renderScale;
-        Box2D _rod;
+        RectI _rod;
         int _view;
 
         ImageKey()
@@ -54,7 +54,7 @@ namespace Powiter{
         , _view(0)
         {}
         
-        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition)
+        ImageKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition)
 		: KeyHelper<U64>()
         , _nodeHashKey(nodeHashKey)
         , _time(time)
@@ -98,21 +98,21 @@ namespace Powiter{
     class Bitmap{
         
         char* _map;
-        Box2D _rod;
+        RectI _rod;
         int _pixelsRenderedCount;
     public:
         
-        Bitmap(const Box2D& rod):_rod(rod),_pixelsRenderedCount(0){
+        Bitmap(const RectI& rod):_rod(rod),_pixelsRenderedCount(0){
             _map = (char*)calloc(rod.area(),sizeof(char));
         }
         
         ~Bitmap(){ free(_map); }
         
-        const Box2D& getRoD() const {return _rod;}
+        const RectI& getRoD() const {return _rod;}
         
-        std::list<Box2D> minimalNonMarkedRects(const Box2D& roi) const;
+        std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
-        void markForRendered(const Box2D& roi);
+        void markForRendered(const RectI& roi);
     };
     
 
@@ -138,7 +138,7 @@ namespace Powiter{
         /*This constructor can be used to allocate a local Image. The deallocation should
          then be handled by the user. Note that no view number is passed in parameter
          as it is not needed.*/
-        Image(const Box2D& regionOfDefinition,RenderScale scale,SequenceTime time):
+        Image(const RectI& regionOfDefinition,RenderScale scale,SequenceTime time):
         CacheEntryHelper<float,ImageKey>(makeKey(0,time,scale,0,regionOfDefinition)
                                             ,regionOfDefinition.width()*regionOfDefinition.height()*4
                                             , 0)
@@ -148,23 +148,23 @@ namespace Powiter{
         
         virtual ~Image(){}
         
-        static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const Box2D& regionOfDefinition){
+        static ImageKey makeKey(U64 nodeHashKey,SequenceTime time,RenderScale scale,int view,const RectI& regionOfDefinition){
             return ImageKey(nodeHashKey,time,scale,view,regionOfDefinition);
         }
         
-        const Box2D& getRoD() const {return _bitmap.getRoD();}
+        const RectI& getRoD() const {return _bitmap.getRoD();}
         
         RenderScale getRenderScale() const {return this->_params._renderScale;}
         
         SequenceTime getTime() const {return this->_params._time;}
         
         float* pixelAt(int x,int y){
-            const Box2D& rod = _bitmap.getRoD();
+            const RectI& rod = _bitmap.getRoD();
             return this->_data.writable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
         }
         
         const float* pixelAt(int x,int y) const{
-            const Box2D& rod = _bitmap.getRoD();
+            const RectI& rod = _bitmap.getRoD();
             return this->_data.readable() + (y-rod.bottom())*4*rod.width() + (x-rod.left())*4;
         }
         /**
@@ -174,17 +174,17 @@ namespace Powiter{
          * area to render. Since this problem is quite hard to solve,the different portions
          * of image returned may contain already rendered pixels.
          **/
-        std::list<Box2D> getRestToRender(const Box2D& regionOfInterest) const{
+        std::list<RectI> getRestToRender(const RectI& regionOfInterest) const{
             QMutexLocker locker(&_lock);
             return _bitmap.minimalNonMarkedRects(regionOfInterest);
         }
         
-        void markForRendered(const Box2D& roi){
+        void markForRendered(const RectI& roi){
             QMutexLocker locker(&_lock);
             _bitmap.markForRendered(roi);
         }
         
-        void fill(const Box2D& rect,float colorValue = 0.f,float alphaValue = 1.f){
+        void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f){
             for(int i = rect.bottom(); i < rect.top();++i){
                 float* dst = pixelAt(rect.left(),i);
                 for(int j = 0; j < rect.width();++j){

@@ -13,7 +13,7 @@
 
 #include <ofxhImageEffect.h>
 
-class OfxNode;
+class OfxEffectInstance;
 namespace Powiter {
    
     
@@ -21,7 +21,7 @@ class OfxImageEffectInstance;
 class OfxOverlayInteract :  public OFX::Host::ImageEffect::OverlayInteract
 {
     
-    OfxNode* _node;
+    OfxEffectInstance* _node;
     
 public:
     

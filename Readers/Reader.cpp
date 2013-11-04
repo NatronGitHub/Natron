@@ -26,10 +26,10 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageInfo.h"
 #include "Engine/Project.h"
@@ -43,8 +43,8 @@
 using namespace Powiter;
 using std::cout; using std::endl;
 
-Reader::Reader(AppInstance* app)
-: Node(app)
+Reader::Reader(Node* node)
+: Powiter::EffectInstance(node)
 , _buffer()
 , _fileKnob(0)
 {
@@ -62,18 +62,40 @@ std::string Reader::description() const {
     return "The reader node can read image files sequences.";
 }
 
-void Reader::initKnobs(){
-    std::string desc("File");
-    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", this, desc));
-    QObject::connect(_fileKnob, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onFrameRangeChanged(int,int)));
-    assert(_fileKnob);
+bool Reader::isInputOptional(int /*inputNb*/) const{
+    return false;
+}
+Powiter::Status Reader::preProcessFrame(SequenceTime time){
+    int missingFrameChoice = _missingFrameChoice->value<int>();
+    QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
+    if(filename.isEmpty() && (missingFrameChoice == 1 || missingFrameChoice == 0)){
+        std::cout << getName() << " couldn't find a file for frame " << time << std::endl;
+        return StatFailed;
+    }else{
+        return StatOK;
+    }
 }
 
-void Reader::onFrameRangeChanged(int first,int last){
-    _frameRange.first = first;
-    _frameRange.second = last;
-    notifyFrameRangeChanged(first,last);
+void Reader::initializeKnobs(){
+    _fileKnob = dynamic_cast<File_Knob*>(appPTR->getKnobFactory().createKnob("InputFile", this, "File"));
+    assert(_fileKnob);
+
+    _missingFrameChoice = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "On missing frame"));
+    std::vector<std::string> missingFrameChoices;
+    missingFrameChoices.push_back("Load nearest");
+    missingFrameChoices.push_back("Error");
+    missingFrameChoices.push_back("Black image");
+    _missingFrameChoice->populate(missingFrameChoices);
+    _missingFrameChoice->setValue(0);
 }
+
+void Reader::onKnobValueChanged(Knob* /*k*/,Knob::ValueChangedReason /*reason*/){}
+
+void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
+    *first = _fileKnob->firstFrame();
+    *last = _fileKnob->lastFrame();
+}
+
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString extension;
     for (int i = fileName.size() - 1; i >= 0; --i) {
@@ -103,8 +125,8 @@ boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     return boost::shared_ptr<Decoder>();
 }
 
-Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,Box2D* rod){
-    QString filename = _fileKnob->getRandomFrameName(time);
+Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,RectI* rod){
+    QString filename = _fileKnob->getRandomFrameName(time,true);
     
     /*Locking any other thread: we want only 1 thread to create the descriptor*/
     QMutexLocker lock(&_lock);
@@ -141,14 +163,14 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
     if(st == StatFailed){
         return boost::shared_ptr<Decoder>();
     }
-    getApp()->getProject()->lock();
-    if(getApp()->shouldAutoSetProjectFormat()){
-        getApp()->setAutoSetProjectFormat(false);
-        getApp()->setProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+    getNode()->getApp()->getProject()->lock();
+    if(getNode()->getApp()->shouldAutoSetProjectFormat()){
+        getNode()->getApp()->setAutoSetProjectFormat(false);
+        getNode()->getApp()->setProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }else{
-        getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
+        getNode()->getApp()->tryAddProjectFormat(decoderReadHandle->readerInfo().getDisplayWindow());
     }
-    getApp()->getProject()->unlock();
+    getNode()->getApp()->getProject()->unlock();
     decoderReadHandle->initializeColorSpace();
     _buffer.insert(filename.toStdString(),decoderReadHandle);
     return decoderReadHandle;
@@ -156,8 +178,16 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 
-void Reader::render(SequenceTime time,RenderScale scale,const Box2D& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
-    QString filename = _fileKnob->getRandomFrameName(time);
+void Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
+    int missingFrameChoice = _missingFrameChoice->value<int>();
+    QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
+    if(filename.isEmpty() && missingFrameChoice == 2){
+        output->fill(roi,0.,0.); // render black
+        return;
+    }else if(filename.isEmpty()){
+        std::cout << "Error should have been caught earlier in preProcessFrame." << std::endl;
+        return;
+    }
     boost::shared_ptr<Decoder> found;
     {
         /*This section is critical: if we don't find it in the buffer we want only 1 thread to re-create the descriptor.
@@ -178,25 +208,5 @@ void Reader::render(SequenceTime time,RenderScale scale,const Box2D& roi,int /*v
         }
     }
     found->render(time,scale,roi,output);
-}
-
-
-int Reader::firstFrame(){
-    return _fileKnob->firstFrame();
-}
-int Reader::lastFrame(){
-    return _fileKnob->lastFrame();
-}
-int Reader::nearestFrame(int f){
-    return _fileKnob->nearestFrame(f);
-}
-
-const QString Reader::getRandomFrameName(int f) const{
-    return _fileKnob->getRandomFrameName(f);
-}
-
-
-bool Reader::hasFrames() const{
-    return _fileKnob->frameCount() > 0;
 }
 

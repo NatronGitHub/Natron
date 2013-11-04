@@ -13,7 +13,7 @@
 #include <cfloat>
 #include <limits>
 
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/ImageFetcher.h"
@@ -25,7 +25,7 @@
 
 using namespace Powiter;
 
-OfxClipInstance::OfxClipInstance(OfxNode* nodeInstance
+OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
                                  ,Powiter::OfxImageEffectInstance* effect
                                  ,int /*index*/
                                  , OFX::Host::ImageEffect::ClipDescriptor* desc)
@@ -97,18 +97,11 @@ double OfxClipInstance::getFrameRate() const
 void OfxClipInstance::getFrameRange(double &startFrame, double &endFrame) const
 {
     SequenceTime first = 0,last = 0;
-    Node* n = getAssociatedNode();
+    EffectInstance* n = getAssociatedNode();
     if(n)
         n->getFrameRange(&first, &last);
     startFrame = first;
     endFrame = last;
-//    if (_effect->getContext() == kOfxImageEffectContextGenerator) {
-//        startFrame = 0;
-//        endFrame = 0;
-//    }else{
-//        startFrame = _nodeInstance->info().getFirstFrame();
-//        endFrame = _nodeInstance->info().getLastFrame();
-//    }
 }
 
 /// Field Order - Which spatial field occurs temporally first in a frame.
@@ -126,7 +119,7 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    if(!_nodeInstance->isOutputNode())
+    if(!_nodeInstance->isOutput())
         return _nodeInstance->hasOutputConnected();
     else
         return true;
@@ -165,8 +158,8 @@ bool OfxClipInstance::getContinuousSamples() const
 OfxRectD OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
-    Box2D rod;
-    Node* n = getAssociatedNode();
+    RectI rod;
+    EffectInstance* n = getAssociatedNode();
     if(n){
         n->getRegionOfDefinition(time,&rod);
         ret.x1 = rod.left();
@@ -202,12 +195,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
         RenderScale scale;
         scale.x = scale.y = 1.;
         // input has been rendered just find it in the cache
-        Node* input = getAssociatedNode();
+        EffectInstance* input = getAssociatedNode();
         if(isOptional() && !input) {
             //make an empty image
             boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
             assert(outputImage);
-            const Box2D& rod = outputImage->getRoD();
+            const RectI& rod = outputImage->getRoD();
             boost::shared_ptr<Powiter::Image> image(new Powiter::Image(rod,scale,time));
             image->defaultInitialize();
             return  new OfxImage(image,*this);
@@ -227,7 +220,7 @@ OFX::Host::ImageEffect::Image(clip)
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     // data ptr
-    const Box2D& rod = internalImage->getRoD();
+    const RectI& rod = internalImage->getRoD();
     setPointerProperty(kOfxImagePropData,internalImage->pixelAt(rod.left(), rod.bottom()));
     // bounds and rod
     setIntProperty(kOfxImagePropBounds, rod.left(), 0);
@@ -245,7 +238,7 @@ OFX::Host::ImageEffect::Image(clip)
 
 OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     assert(_bitDepth == eBitDepthFloat);
-    const Box2D& bounds = _floatImage->getRoD();
+    const RectI& bounds = _floatImage->getRoD();
     if ((x >= bounds.left()) && ( x < bounds.right()) && ( y >= bounds.bottom()) && ( y < bounds.top()) )
     {
         return reinterpret_cast<OfxRGBAColourF*>(_floatImage->pixelAt(x, y));
@@ -253,12 +246,12 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     return 0;
 }
 
-Node* OfxClipInstance::getAssociatedNode() const {
+Powiter::EffectInstance* OfxClipInstance::getAssociatedNode() const {
     if(_isOutput)
         return _nodeInstance;
     else{
         int index = 0;
-        OfxNode::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
+        OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
         for (U32 i = 0; i < inputs.size(); ++i) {
             if (inputs[i]->getName() == getName()) {
                 index = i;

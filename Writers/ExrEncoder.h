@@ -73,12 +73,12 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const Box2D& roi) OVERRIDE;
+	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual Powiter::Status setupFile(const QString& filename,const Box2D& rod) OVERRIDE;
+    virtual Powiter::Status setupFile(const QString& filename,const RectI& rod) OVERRIDE;
 
     
     /*Doesn't throw any exception since OpenEXR can write all channels*/

@@ -30,9 +30,9 @@
 #include "Engine/Variant.h"
 
 class Knob;
-class Node;
+class holder;
 class DockablePanel;
-
+class AppInstance;
 
 namespace Powiter {
     class LibraryBinary;
@@ -41,6 +41,7 @@ namespace Powiter {
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
 class KnobGui;
+class KnobHolder;
 class KnobFactory{
     
     std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
@@ -52,7 +53,7 @@ public:
     
     const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs() const {return _loadedKnobs;}
     
-    Knob* createKnob(const std::string& name, Node* node, const std::string& description,int dimension = 1) const;
+    Knob* createKnob(const std::string& id, KnobHolder* holder, const std::string& description,int dimension = 1) const;
     
     KnobGui* createGuiForKnob(Knob* knob,DockablePanel* container) const;
     
@@ -66,14 +67,16 @@ private:
 
 
 /******************************KNOB_BASE**************************************/
-
 class Knob : public QObject
 {
     Q_OBJECT
     
-public:    
+public:
     
-    Knob(Node*  node,const std::string& description,int dimension = 1);
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1};
+
+    
+    Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);
     
     virtual ~Knob();
     
@@ -81,13 +84,13 @@ public:
     
     const std::vector<U64>& getHashVector() const { return _hashVector; }
     
-    Node*  getNode() const { return _node; }
+    KnobHolder*  getHolder() const { return _holder; }
     
     int getDimension() const {return _dimension;}
     
-    /*Must return the name of the knob. This name will be used by the KnobFactory
+    /*Must return the type name of the knob. This name will be used by the KnobFactory
      to create an instance of this knob.*/
-    virtual const std::string name()=0;
+    virtual const std::string typeName()=0;
     
     virtual std::string serialize() const =0;
     
@@ -112,17 +115,12 @@ public:
         return _value.value<T>();
     }
     
-    void lock();
-    
-    void unlock();
-    
     const Variant& getValueAsVariant() const {
         return _value;
     }
     
-    /*You can call this when you want to remove this Knob
-     at anytime.*/
-    void deleteKnob();
+    /*other must have exactly the same name*/
+    void cloneValue(const Knob& other);
     
     void turnOffNewLine();
     
@@ -159,55 +157,50 @@ public:
     
     const std::string& getHintToolTip() const {return _tooltipHint;}
     
-    public slots:
+public slots:
     
     /*Set the value of the knob but does NOT emit the valueChanged signal.
      This is called by the GUI hence does not change the value of any
      render thread storage.*/
     void onValueChanged(const Variant& variant);
     
+    void onKnobUndoneChange();
+    
+    void onKnobRedoneChange();
+    
 signals:
-    /*Emitted whenever the slot onValueChanged is called.
-     This notifies listeners that the value held by the
-     knob has changed by a user interaction.
-     You can connect to this signal to do
-     whatever processing you want.*/
-    void valueChangedByUser(QString);
     
-    /*Emitted when the value is changed internally*/
+    void deleted();
+    
+    /*Emitted when the value is changed internally by a call to setValue*/
     void valueChanged(const Variant&);
-    
-    /*emitted by deleteKnob().
-     WARNING: To properly delete the gui
-     associated, NodeGui::initializeKnobs must
-     have been called. That means you should
-     never call this function right away after
-     KnobFactory::createKnob().*/
-    void deleteWanted();
-    
+
     void visible(bool);
     
     void enabled(bool);
     
-    void knobUndoneChange();
-    
-    void knobRedoneChange();
     
 protected:
     virtual void fillHashVector()=0; // function to add the specific values of the knob to the values vector.
     
     virtual void _restoreFromString(const std::string& str) =0;
     
-    /*Should implement this to start rendering by calling startRendering.
-     This is called by the onValueChanged() slot. If you don't want to
-     start rendering, overload this function and make it do nothing.*/
-    virtual void tryStartRendering() = 0;
+    /*This function can be implemented if you want to clone more data than just the value
+     of the knob. Cloning happens when a render request is made: all knobs values of the GUI
+     are cloned into small copies in order to be sure they will not be modified further on.
+     This function is useful if you need to copy for example an extra bit of information.
+     e.g: the File_Knob has to copy not only the QStringList containing the file names, but 
+     also the sequence it has parsed.*/
+    virtual void cloneExtraData(const Knob& other){(void)other;}
     
-    //Called to tell the engine to start processing
-    //This is can be called in the implementation of tryStartRendering
-    void startRendering(bool initViewer);
+    /*This function is called right after that the _value has changed
+     but before any signal notifying that it has changed. It can be useful
+     to do some processing to create new informations.
+     e.g: The File_Knob parses the files list to create a mapping of 
+     <time,file> .*/
+    virtual void processNewValue(){}
     
-    Node*  _node;
+    KnobHolder*  _holder;
     Variant _value;
     std::vector<U64> _hashVector;
     int _dimension;
@@ -227,12 +220,104 @@ private:
     bool _visible;
     bool _enabled;
     bool _canUndo;
-    bool _isInsignificant; //< if true, a value change will never call tryStartRendering()
+    bool _isInsignificant; //< if true, a value change will never trigger an evaluation
     std::string _tooltipHint;
     Variant _valuePostedWhileLocked;
     QMutex _lock;
     bool _isLocked;
     bool _hasPostedValue;
+};
+
+/**
+ * @brief A Knob holder is a class that stores Knobs and interact with them in some way. 
+ * It serves 2 purpose: 
+ * 1) It automatically deletes the knobs, you don't have to manually call delete
+ * 2) It calls a set of begin/end valueChanged whenever a knob value changed. It also
+ * calls evaluate() which should then trigger an evaluation of the freshly changed value
+ * (i.e force a new render).
+ **/
+class KnobHolder {
+    
+    AppInstance* _app;
+    std::vector<Knob*> _knobs;
+    bool _betweenBeginEndParamChanged;
+
+public:
+    friend class Knob;
+    
+    KnobHolder(AppInstance* appInstance):_app(appInstance),_knobs(){}
+    
+    virtual ~KnobHolder(){
+        for (unsigned int i = 0; i < _knobs.size(); ++i) {
+            delete _knobs[i];
+        }
+    }
+    
+    /**
+     * @brief Clone each knob of "other" into this KnobHolder.
+     * WARNING: other must have exactly the same number of knobs.
+     **/
+    void cloneKnobs(const KnobHolder& other);
+    
+    AppInstance* getApp() const {return _app;}
+    
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() = 0;
+    
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render). 
+     * @param knob[in] The knob whose value changed.
+     **/
+    virtual void evaluate(Knob* knob) = 0;
+    
+    const std::vector<Knob*>& getKnobs() const { return _knobs; }
+    
+    void beginValuesChanged(Knob::ValueChangedReason reason);
+    
+    void endValuesChanged(Knob::ValueChangedReason reason);
+    
+    void onValueChanged(Knob* k,Knob::ValueChangedReason reason);
+    
+protected:
+    
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void beginKnobsValuesChanged(Knob::ValueChangedReason reason){(void)reason;}
+    
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
+     * but this can lead to worse performance. You can overload this to make all changes to params at once.
+     **/
+    virtual void endKnobsValuesChanged(Knob::ValueChangedReason reason){(void)reason;}
+    
+    /**
+     * @brief Called whenever a param changes. It calls the virtual
+     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
+     * not done already.
+     **/
+    virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason){(void)k;(void)reason;}
+
+    
+private:
+    
+    void triggerAutoSave();
+    
+    /*Add a knob to the vector. This is called by the
+     Knob class.*/
+    void addKnob(Knob* k){ _knobs.push_back(k); }
+    
+    /*Removes a knob to the vector. This is called by the
+     Knob class.*/
+    void removeKnob(Knob* k);
+
 };
 
 /******************************FILE_KNOB**************************************/
@@ -241,20 +326,21 @@ class File_Knob:public Knob
 {
     Q_OBJECT
     
+    mutable QMutex _fileSequenceLock;
     std::map<int,QString> _filesSequence;///mapping <frameNumber,fileName>
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new File_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder*  holder, const std::string& description,int dimension){
+        return new File_Knob(holder,description,dimension);
     }
     
-    File_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    File_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "InputFile";}
+    virtual const std::string typeName(){return "InputFile";}
     
     void openFile(){
         emit shouldOpenFile();
@@ -286,24 +372,21 @@ public:
      * @param f The index of the frame.
      * @return The file name associated to the frame index. Returns an empty string if it couldn't find it.
      */
-    QString getRandomFrameName(int f) const;
+    QString getRandomFrameName(int f,bool loadNearestIfNotFound) const;
     
     virtual std::string serialize() const;
 
+    virtual void cloneExtraData(const Knob& other);
+    
+    virtual void processNewValue();
+    
 signals:
     void shouldOpenFile();
-    void frameRangeChanged(int,int);
     
 protected:
     
-    virtual void tryStartRendering();
-    
     virtual void _restoreFromString(const std::string& str);
-    
-private:
-    
-    void getVideoSequenceFromFilesList();
-    
+        
 };
 
 /******************************OUTPUT_FILE_KNOB**************************************/
@@ -313,17 +396,17 @@ class OutputFile_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new OutputFile_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new OutputFile_Knob(holder,description,dimension);
     }
     
-    OutputFile_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    OutputFile_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
                                 
-    virtual const std::string name(){return "OutputFile";}
+    virtual const std::string typeName(){return "OutputFile";}
     
     void openFile(){
         emit shouldOpenFile();
@@ -338,8 +421,6 @@ signals:
     
 protected:
     
-    virtual void tryStartRendering();
-    
     virtual void _restoreFromString(const std::string& str);
     
 };
@@ -353,17 +434,17 @@ class Int_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Int_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Int_Knob(holder,description,dimension);
     }
     
-    Int_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    Int_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "Int";}
+    virtual const std::string typeName(){return "Int";}
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
@@ -503,8 +584,6 @@ public:
     
 protected:
     
-    virtual void tryStartRendering();
-    
     virtual void _restoreFromString(const std::string& str);
     
 signals:
@@ -526,25 +605,23 @@ class Bool_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Bool_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Bool_Knob(holder,description,dimension);
     }
     
-    Bool_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    Bool_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "Bool";}
+    virtual const std::string typeName(){return "Bool";}
     
     bool getValue() const { return _value.toBool(); }
     
     virtual std::string serialize() const;
 
 protected:
-    
-    virtual void tryStartRendering();
     
     
     virtual void _restoreFromString(const std::string& str);
@@ -559,12 +636,12 @@ class Double_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Double_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Double_Knob(holder,description,dimension);
     }
     
-    Double_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    Double_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {}
     
     virtual void fillHashVector();
@@ -572,7 +649,7 @@ public:
     virtual std::string serialize() const;
 
     
-    virtual const std::string name(){return "Double";}
+    virtual const std::string typeName(){return "Double";}
     
     /*Returns a vector of values. The vector
      contains _dimension elements.*/
@@ -723,8 +800,6 @@ public:
     }
 protected:
     
-    virtual void tryStartRendering();
-    
     virtual void _restoreFromString(const std::string& str);
 signals:
     void minMaxChanged(double mini,double maxi,int index = 0);
@@ -745,31 +820,23 @@ private:
 
 class Button_Knob:public Knob
 {
-    Q_OBJECT
     
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Button_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Button_Knob(holder,description,dimension);
     }
     
-    Button_Knob(Node*  node, const std::string& description,int dimension);
+    Button_Knob(KnobHolder*  holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension){}
     
     virtual void fillHashVector(){}
     
-    virtual const std::string name(){return "Button";}
+    virtual const std::string typeName(){return "Button";}
     
     virtual std::string serialize() const{return "";}
 
-public slots:
-    
-    void emitButtonPressed(const QString& paramName);
-signals:
-    void buttonPressed();
 protected:
-    
-    virtual void tryStartRendering(){}
-    
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
 };
@@ -781,19 +848,19 @@ class ComboBox_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new ComboBox_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new ComboBox_Knob(holder,description,dimension);
     }
     
-    ComboBox_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    ComboBox_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {
         
     }
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "ComboBox";}
+    virtual const std::string typeName(){return "ComboBox";}
     
     /*Must be called right away after the constructor.*/
     void populate(const std::vector<std::string>& entries){
@@ -807,8 +874,6 @@ public:
     
     virtual std::string serialize() const;
 protected:
-    
-    virtual void tryStartRendering();
     
     virtual void _restoreFromString(const std::string& str);
 signals:
@@ -825,23 +890,21 @@ class Separator_Knob:public Knob
     
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Separator_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Separator_Knob(holder,description,dimension);
     }
     
-    Separator_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension){
+    Separator_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension){
         
     }
     
     virtual void fillHashVector(){}
     
-    virtual const std::string name(){return "Separator";}
+    virtual const std::string typeName(){return "Separator";}
     
     virtual std::string serialize() const{return "";}
 protected:
-    
-    virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
 };
@@ -850,19 +913,19 @@ class RGBA_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new RGBA_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new RGBA_Knob(holder,description,dimension);
     }
     
-    RGBA_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension),_alphaEnabled(true)
+    RGBA_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension),_alphaEnabled(true)
     {
         
     }
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "RGBA";}
+    virtual const std::string typeName(){return "RGBA";}
     
     QVector4D getValues() const {return _value.value<QVector4D>();}
     
@@ -872,10 +935,6 @@ public:
     
     virtual std::string serialize() const;
 protected:
-    
-    virtual void tryStartRendering(){
-        startRendering(false);
-    }
     
     virtual void _restoreFromString(const std::string& str);
     
@@ -890,27 +949,23 @@ class String_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new String_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new String_Knob(holder,description,dimension);
     }
     
-    String_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension){
+    String_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension){
         
     }
     
     virtual void fillHashVector();
     
-    virtual const std::string name(){return "String";}
+    virtual const std::string typeName(){return "String";}
     
     std::string getString() const {return _value.toString().toStdString();}
     
     virtual std::string serialize() const;
 protected:
-    
-    virtual void tryStartRendering(){
-        startRendering(true);
-    }
     
     
     virtual void _restoreFromString(const std::string& str);
@@ -925,19 +980,19 @@ class Group_Knob:public Knob
     std::vector<Knob*> _children;
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Group_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Group_Knob(holder,description,dimension);
     }
     
-    Group_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension)
+    Group_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension)
     {
         
     }
     
     virtual void fillHashVector(){}
     
-    virtual const std::string name(){return "Group";}
+    virtual const std::string typeName(){return "Group";}
     
     void addKnob(Knob* k);
     
@@ -945,8 +1000,6 @@ public:
     
     virtual std::string serialize() const{return "";}
 protected:
-    
-    virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
 };
@@ -957,20 +1010,20 @@ class Tab_Knob:public Knob
     Q_OBJECT
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new Tab_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new Tab_Knob(holder,description,dimension);
     }
     
-    Tab_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension){
+    Tab_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension){
         
     }
     
     virtual void fillHashVector(){}
     
-    virtual const std::string name(){return "Tab";}
+    virtual const std::string typeName(){return "Tab";}
     
-    void addTab(const std::string& name);
+    void addTab(const std::string& typeName);
     
     void addKnob(const std::string& tabName,Knob* k);
     
@@ -979,8 +1032,6 @@ public:
     virtual std::string serialize() const{return "";}
     
 protected:
-    
-    virtual void tryStartRendering(){}
     
     virtual void _restoreFromString(const std::string& str){(void)str;}
     
@@ -993,12 +1044,12 @@ class RichText_Knob:public Knob
 {
 public:
     
-    static Knob* BuildKnob(Node*  node, const std::string& description,int dimension){
-        return new RichText_Knob(node,description,dimension);
+    static Knob* BuildKnob(KnobHolder* holder, const std::string& description,int dimension){
+        return new RichText_Knob(holder,description,dimension);
     }
     
-    RichText_Knob(Node*  node, const std::string& description,int dimension):
-    Knob(node,description,dimension){
+    RichText_Knob(KnobHolder* holder, const std::string& description,int dimension):
+    Knob(holder,description,dimension){
         
     }
     
@@ -1006,16 +1057,11 @@ public:
     
     virtual std::string serialize() const;
     
-    virtual const std::string name(){return "RichText";}
+    virtual const std::string typeName(){return "RichText";}
     
     std::string getString() const {return _value.toString().toStdString();}
     
 protected:
-    
-    virtual void tryStartRendering(){
-        startRendering(false);
-    }
-    
     
     virtual void _restoreFromString(const std::string& str);
 

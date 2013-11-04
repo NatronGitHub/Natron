@@ -49,7 +49,7 @@ std::vector<std::string> QtDecoder::fileTypesDecoded() const {
 };
 
 
-void QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+void QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
     switch(_img->format()) {
         case QImage::Format_Invalid:
         {
@@ -127,7 +127,7 @@ Powiter::Status QtDecoder::readHeader(const QString& filename)
     }
     
     Format imageFormat(0,0,width,height,"",aspect);
-    Box2D bbox(0,0,width,height);
+    RectI bbox(0,0,width,height);
     setReaderInfo(imageFormat, bbox, mask);
     return StatOK;
 }

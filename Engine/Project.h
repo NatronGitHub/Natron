@@ -22,24 +22,18 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/Knob.h"
 #include "Engine/Format.h"
 
 class Node;
 class TimeLine;
 class AppInstance;
-class ComboBox_Knob;
-class Button_Knob;
-class Int_Knob;
-class Knob;
-
-
 
 namespace Powiter{
 
-class Project : public QObject{
+class Project :  public KnobHolder {
     
-    Q_OBJECT
-        
+    
     QString _projectName;
     QString _projectPath;
     bool _hasProjectBeenSavedByUser;
@@ -57,13 +51,24 @@ class Project : public QObject{
     
     std::vector<Format> _availableFormats;
     
-    std::vector<Knob*> _projectKnobs;
-    AppInstance* _appInstance;//ptr to the appInstance
 public:
     
     Project(AppInstance* appInstance);
     
-    ~Project();
+    virtual ~Project();
+    
+    /**
+     * @brief Must be implemented to initialize any knob using the
+     * KnobFactory.
+     **/
+    virtual void initializeKnobs() OVERRIDE;
+    
+    /**
+     * @brief Must be implemented to evaluate a value change
+     * made to a knob(e.g: force a new render).
+     * @param knob[in] The knob whose value changed.
+     **/
+    virtual void evaluate(Knob* knob) OVERRIDE;
     
     const std::vector<Node*>& getCurrentNodes() const{return _currentNodes;}
     
@@ -100,8 +105,6 @@ public:
     
     void setAutoSetProjectFormat(bool b){_autoSetProjectFormat = b;}
     
-    const std::vector<Knob*>& getProjectKnobs() const;
-    
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN {return _timeline;}
     
     // TimeLine operations (to avoid duplicating the shared_ptr when possible)
@@ -130,29 +133,13 @@ public:
     void lock() const {_projectDataLock.lock();}
     
     void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
-    
-    void lockProjectParams();
-    
-    void unlockProjectParams();
-    
-public slots:
-    
-    void onNumberOfViewsChanged(const QString& paramName);
-    
-    void onProjectFormatChanged(const QString& paramName);
-    
-    void createNewFormat();
-    
-signals:
-    
-    void projectFormatChanged(Format);
 
-    void projectViewsCountChanged(int);
+    void createNewFormat();
+
     
-private:
     
-    
-   };
-}
+};
+
+} // Powiter
 
 #endif // PROJECT_H

@@ -40,7 +40,7 @@
 class KnobFactory;
 class NodeGui;
 class Node;
-class ViewerNode;
+class ViewerInstance;
 class Writer;
 class ViewerTab;
 class TabWidget;
@@ -51,6 +51,7 @@ class OutputNodeInstance;
 class TimeLine;
 namespace Powiter {
 class LibraryBinary;
+class EffectInstance;
 class OfxHost;
 class Project;
 }
@@ -110,9 +111,6 @@ public:
 
     void resetCurrentProject();
 
-    void lockProjectParams();
-
-    void unlockProjectParams();
 
     void clearNodes();
 
@@ -122,7 +120,7 @@ public:
 
     static QString autoSavesDir() WARN_UNUSED_RETURN;
 
-    ViewerTab* addNewViewerTab(ViewerNode* node,TabWidget* where) WARN_UNUSED_RETURN;
+    ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
 
 
     bool connect(int inputNumber,const std::string& inputName,Node* output);
@@ -162,6 +160,8 @@ public slots:
     void checkViewersConnection();
 
     void setupViewersForViews(int viewsCount);
+
+    void notifyViewersProjectFormatChanged(const Format& format);
 
     void setViewersCurrentView(int view);
 
@@ -237,6 +237,8 @@ public:
 
     AppInstance* newAppInstance(const QString& projectName = QString());
 
+    void registerAppInstance(AppInstance* app){ _appInstances.insert(std::make_pair(app->getAppID(),app));}
+
     AppInstance* getAppInstance(int appID) const;
 
     void removeInstance(int appID);
@@ -249,6 +251,8 @@ public:
     QStringList getNodeNameList() const WARN_UNUSED_RETURN;
 
     QMutex* getMutexForPlugin(const QString& pluginName) const;
+
+    Powiter::LibraryBinary* getPluginBinary(const QString& pluginName) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
@@ -295,9 +299,9 @@ private:
 
     //////////////////////////////
     //// NODE PLUGINS
-    /* Viewer,Reader,Writer...etc.
- No function to load external plugins
- yet since the SDK isn't released.*/
+    void loadNodePlugins();
+
+    /* Viewer,Reader,Writer...etc.*/
     void loadBuiltinNodePlugins();
     //////////////////////////////
 
@@ -320,6 +324,8 @@ private:
     void loadBuiltinFormats();
 
 
+    void printPluginsLoaded();
+
     std::map<int,AppInstance*> _appInstances;
 
     int _availableID;
@@ -334,7 +340,8 @@ private:
 
     std::vector<Format*> _formats;
 
-    std::map<QString, QMutex*> _plugins; /*!< map of all plug-ins loaded + a global mutex for each plug-in*/
+    typedef std::map<QString,std::pair<Powiter::LibraryBinary*, QMutex*> > PluginsMap;
+    PluginsMap _plugins; /*!< map of all plug-ins loaded + a global mutex for each plug-in*/
 
     boost::scoped_ptr<Powiter::OfxHost> ofxHost;
 

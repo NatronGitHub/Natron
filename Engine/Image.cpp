@@ -13,18 +13,18 @@
 #include "Writers/Encoder.h"
 #include "Engine/Lut.h"
 
-std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
+std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     /*for now a simple version that computes the bbox*/
-    std::list<Box2D> ret;
+    std::list<RectI> ret;
     
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
     if(_pixelsRenderedCount >= _rod.area()){
-        ret.push_back(Box2D());
+        ret.push_back(RectI());
         return ret;
     }
     
-    Box2D bbox = roi;
+    RectI bbox = roi;
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
         char* buf = _map + (i-_rod.bottom())*_rod.width();
@@ -86,7 +86,7 @@ std::list<Box2D> Powiter::Bitmap::minimalNonMarkedRects(const Box2D& roi) const{
     return ret;
 }
 
-void Powiter::Bitmap::markForRendered(const Box2D& roi){
+void Powiter::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
         char* buf = _map + (i-_rod.bottom())*_rod.width();
         memset(buf, 1, roi.width());
@@ -95,7 +95,7 @@ void Powiter::Bitmap::markForRendered(const Box2D& roi){
 }
 namespace Powiter{
     void debugImage(Powiter::Image* img){
-        const Box2D& rod = img->getRoD();
+        const RectI& rod = img->getRoD();
         QImage output(rod.width(),rod.height(),QImage::Format_ARGB32_Premultiplied);
         const Powiter::Color::Lut* lut = Powiter::Color::getLut(Powiter::Color::LUT_DEFAULT_INT8);
         lut->to_byte_rect(output.bits(), img->pixelAt(0, 0), rod, rod,true,true, Powiter::Color::Lut::BGRA);

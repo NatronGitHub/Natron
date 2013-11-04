@@ -320,7 +320,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         formatwin.max.y = dispwin.max.y - dispwin.min.y;
         double aspect = _imp->_inputfile->header().pixelAspectRatio();
         Format imageFormat(0,0,formatwin.max.x + 1 ,formatwin.max.y + 1,"",aspect);
-        Box2D rod;
+        RectI rod;
         
         int left = datawin.min.x + _imp->_dataOffset;
         int bottom = dispwin.max.y - datawin.max.y;
@@ -376,7 +376,7 @@ ExrDecoder::~ExrDecoder(){
     delete _imp->_inputfile;
 }
 
-void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const Box2D& roi,boost::shared_ptr<Powiter::Image> output){
+void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
     for (int y = roi.bottom(); y < roi.top(); ++y) {
         Powiter::ChannelSet channels(Powiter::Mask_RGBA);
         Powiter::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);

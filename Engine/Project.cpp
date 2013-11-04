@@ -25,9 +25,9 @@
 
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Knob.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/ViewerTab.h"
@@ -52,25 +52,33 @@ static QString generateStringFromFormat(const Format& f){
 }
 
 Project::Project(AppInstance* appInstance):
-_projectName("Untitled." POWITER_PROJECT_FILE_EXTENION),
-_hasProjectBeenSavedByUser(false),
-_ageSinceLastSave(QDateTime::currentDateTime()),
-_timeline(new TimeLine())
-,_autoSetProjectFormat(true)
-,_projectDataLock()
-,_currentNodes()
-,_availableFormats()
-,_appInstance(appInstance)
+KnobHolder(appInstance)
+, _projectName("Untitled." POWITER_PROJECT_FILE_EXTENION)
+, _hasProjectBeenSavedByUser(false)
+, _ageSinceLastSave(QDateTime::currentDateTime())
+, _timeline(new TimeLine())
+, _autoSetProjectFormat(true)
+, _projectDataLock()
+, _currentNodes()
+, _availableFormats()
 {
-    QObject::connect(this,SIGNAL(projectViewsCountChanged(int)),_appInstance,SLOT(setupViewersForViews(int)));
-    
-    _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", NULL, "Output Format"));
+}
+
+Project::~Project(){
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        delete _currentNodes[i];
+    }
+    _currentNodes.clear();
+}
+
+void Project::initializeKnobs(){
+    _formatKnob = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Output Format"));
     const std::vector<Format*>& appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
         Format* f = appFormats[i];
         QString formatStr = generateStringFromFormat(*f);
-                if(f->width() == 1920 && f->height() == 1080){
+        if(f->width() == 1920 && f->height() == 1080){
             _formatKnob->setValue(i);
         }
         entries.push_back(formatStr.toStdString());
@@ -78,48 +86,35 @@ _timeline(new TimeLine())
     }
     
     _formatKnob->populate(entries);
-    QObject::connect(_formatKnob,SIGNAL(valueChangedByUser(QString)),this,SLOT(onProjectFormatChanged(QString)));
-    _projectKnobs.push_back(_formatKnob);
     
-    QObject::connect(_formatKnob, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
-    QObject::connect(_formatKnob, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
+    _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",this,"New format..."));
     
     
-    _addFormatKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button",NULL,"New format..."));
-    _projectKnobs.push_back(_addFormatKnob);
-    QObject::connect(_addFormatKnob,SIGNAL(buttonPressed()),this,SLOT(createNewFormat()));
-    
-    
-    _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",NULL,"Number of views"));
+    _viewsCount = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int",this,"Number of views"));
     _viewsCount->setMinimum(1);
     _viewsCount->setValue(1);
-    QObject::connect(_viewsCount, SIGNAL(valueChangedByUser(QString)),this,SLOT(onNumberOfViewsChanged(QString)));
-    QObject::connect(_viewsCount, SIGNAL(knobUndoneChange()), _appInstance, SLOT(triggerAutoSave()));
-    QObject::connect(_viewsCount, SIGNAL(knobRedoneChange()), _appInstance, SLOT(triggerAutoSave()));
-    _projectKnobs.push_back(_viewsCount);
-}
-Project::~Project(){
-    for (U32 i = 0; i < _currentNodes.size(); ++i) {
-        _currentNodes[i]->deleteNode();
-    }
-    _currentNodes.clear();
 }
 
-void Project::onNumberOfViewsChanged(const QString& /*paramName*/){
-    int viewsCount = _viewsCount->value<int>();
-    emit projectViewsCountChanged(viewsCount);
-}
 
-void Project::onProjectFormatChanged(const QString& /*paramName*/){
-    const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
-    for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
-        if (_currentNodes[i]->className() == "Viewer") {
-            ViewerNode* n = dynamic_cast<ViewerNode*>(_currentNodes[i]);
-            n->getUiContext()->viewer->onProjectFormatChanged(f);
-            n->refreshAndContinueRender();
+void Project::evaluate(Knob* knob){
+    if(knob == _viewsCount){
+        int viewsCount = _viewsCount->value<int>();
+        getApp()->setupViewersForViews(viewsCount);
+    }else if(knob == _formatKnob){
+        const Format& f = _availableFormats[_formatKnob->getActiveEntry()];
+        for(U32 i = 0 ; i < _currentNodes.size() ; ++i){
+            if (_currentNodes[i]->className() == "Viewer") {
+                ViewerInstance* n = dynamic_cast<ViewerInstance*>(_currentNodes[i]->getLiveInstance());
+                assert(n);
+                n->getUiContext()->viewer->onProjectFormatChanged(f);
+                n->refreshAndContinueRender();
+            }
         }
+    }else if(knob == _addFormatKnob){
+        createNewFormat();
     }
 }
+
 
 const Format& Project::getProjectDefaultFormat() const{
     int index = _formatKnob->getActiveEntry();
@@ -141,7 +136,7 @@ void Project::initNodeCountersAndSetName(Node* n){
 
 void Project::clearNodes(){
     foreach(Node* n,_currentNodes){
-        n->deleteNode();
+        delete n;
     }
     _currentNodes.clear();
 }
@@ -201,14 +196,13 @@ void Project::loadProject(const QString& path,const QString& name){
     /*first create all nodes and restore the knobs values*/
     for (std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it) {
         const NodeGui::SerializedState& state = *it;
-        Node* n = _appInstance->createNode(state.getClassName().c_str());
+        Node* n = getApp()->createNode(state.getClassName().c_str());
         if(!n){
             clearNodes();
             QString text("Failed to restore the graph! \n The node ");
             text.append(state.getClassName().c_str());
             text.append(" was found in the auto-save script but doesn't seem \n"
                         "to exist in the currently loaded plug-ins.");
-            _appInstance->clearNodes();
             throw std::invalid_argument(text.toStdString());
         }
         n->setName(state.getName());
@@ -224,9 +218,9 @@ void Project::loadProject(const QString& path,const QString& name){
                 knob->restoreFromString(v->second);
             }
         }
-        NodeGui* nGui = _appInstance->getNodeGui(n);
+        NodeGui* nGui = getApp()->getNodeGui(n);
         nGui->setPos(state.getX(),state.getY());
-        _appInstance->deselectAllNodes();
+        getApp()->deselectAllNodes();
     }
     
     /*now that we have all nodes, just connect them*/
@@ -242,7 +236,7 @@ void Project::loadProject(const QString& path,const QString& name){
         for (std::map<int, std::string>::const_iterator input = inputs.begin(); input!=inputs.end(); ++input) {
             if(input->second.empty())
                 continue;
-            if(!_appInstance->connect(input->first, input->second,thisNode)){
+            if(!getApp()->connect(input->first, input->second,thisNode)){
                 cout << "Failed to connect " << (*it).getName() << " to " << input->second << endl;
             }
         }
@@ -258,8 +252,8 @@ void Project::loadProject(const QString& path,const QString& name){
     setProjectAgeSinceLastAutosaveSave(time);
     
     /*Refresh all viewers as it was*/
-    emit projectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
-    _appInstance->checkViewersConnection();
+    getApp()->notifyViewersProjectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
+    getApp()->checkViewersConnection();
 }
 void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
     QString filePath;
@@ -275,7 +269,7 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
         return;
     }
     std::list<NodeGui::SerializedState> nodeStates;
-    const std::vector<NodeGui*>& activeNodes = _appInstance->getAllActiveNodes();
+    const std::vector<NodeGui*>& activeNodes = getApp()->getAllActiveNodes();
     for (U32 i = 0; i < activeNodes.size(); ++i) {
         NodeGui::SerializedState state = activeNodes[i]->serialize();
         nodeStates.push_back(state);
@@ -289,11 +283,7 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     ofile.close();
 }
 
- 
-const std::vector<Knob*>& Project::getProjectKnobs() const{
-    
-    return _projectKnobs;
-}
+
 
 int Project::tryAddProjectFormat(const Format& f){
     for (U32 i = 0; i < _availableFormats.size(); ++i) {
@@ -321,13 +311,13 @@ void Project::setProjectDefaultFormat(const Format& f) {
     
     int index = tryAddProjectFormat(f);
     _formatKnob->setValue(index);
-    emit projectFormatChanged(f);
-    _appInstance->triggerAutoSave();
+    getApp()->notifyViewersProjectFormatChanged(f);
+    getApp()->triggerAutoSave();
 }
 
  
 void Project::createNewFormat(){
-    AddFormatDialog dialog(_appInstance->getGui());
+    AddFormatDialog dialog(getApp()->getGui());
     if(dialog.exec()){
         tryAddProjectFormat(dialog.getFormat());
     }
@@ -335,16 +325,4 @@ void Project::createNewFormat(){
 
 int Project::getProjectViewsCount() const{
     return _viewsCount->value<int>();
-}
-
-void Project::lockProjectParams(){
-    for(U32 i = 0; i < _projectKnobs.size();++i){
-        _projectKnobs[i]->lock();
-    }
-}
-
-void Project::unlockProjectParams(){
-    for(U32 i = 0; i < _projectKnobs.size();++i){
-        _projectKnobs[i]->unlock();
-    }
 }

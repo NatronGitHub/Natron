@@ -18,8 +18,8 @@
 #include <QtConcurrentMap>
 #include <QtConcurrentRun>
 
-#include "Engine/ViewerNode.h"
-#include "Engine/OfxNode.h"
+#include "Engine/ViewerInstance.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Hash64.h"
@@ -30,6 +30,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/EffectInstance.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
 
@@ -47,7 +48,7 @@ using namespace Powiter;
 using std::make_pair;
 using std::cout; using std::endl;
 
-VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
+VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
 : QThread(parent)
 , _tree(owner)
 , _abortBeingProcessedMutex()
@@ -69,10 +70,9 @@ VideoEngine::VideoEngine(OutputNode* owner,QObject* parent)
 , _lastRequestedRunArgs()
 , _currentRunArgs()
 , _startRenderFrameTime()
-, _timeline(owner->getApp()->getTimeLine())
+, _timeline(owner->getNode()->getApp()->getTimeLine())
 {
     setTerminationEnabled();
-    
 }
 
 VideoEngine::~VideoEngine() {
@@ -102,6 +102,10 @@ void VideoEngine::render(int frameCount,
     if(!_tree.getOutput() && !refreshTree) refreshTree = true;
     
     
+    int firstFrame,lastFrame;
+    getFrameRange(&firstFrame, &lastFrame);
+    _timeline->setFrameRange(firstFrame, lastFrame);
+    
     
     /*setting the run args that are used by the run function*/
     _lastRequestedRunArgs._sameFrame = sameFrame;
@@ -111,6 +115,8 @@ void VideoEngine::render(int frameCount,
     _lastRequestedRunArgs._refreshTree = refreshTree;
     _lastRequestedRunArgs._frameRequestsCount = frameCount;
     _lastRequestedRunArgs._frameRequestIndex = 0;
+    _lastRequestedRunArgs._firstFrame = firstFrame;
+    _lastRequestedRunArgs._lastFrame = lastFrame;
     
     
     /*Starting or waking-up the thread*/
@@ -148,32 +154,40 @@ bool VideoEngine::startEngine() {
         _tree.refreshTree();/*refresh the tree*/
     
     
-    ViewerNode* viewer = dynamic_cast<ViewerNode*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
-    const Tree::TreeContainer& inputs = _tree.getInputs();
-    bool hasFrames = false;
-    bool hasInputDifferentThanReader = false;
-    for (Tree::TreeIterator it = inputs.begin() ; it != inputs.end() ; ++it) {
-        Reader* r = dynamic_cast<Reader*>(*it);
-        if (r) {
-            if (r->hasFrames()) {
-                hasFrames = true;
-            }
-        }else{
-            hasInputDifferentThanReader = true;
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_tree.getOutput()); /*viewer might be NULL if the output is smthing else*/
+    
+    bool hasInput = false;
+    for (RenderTree::TreeIterator it = _tree.begin() ; it != _tree.end() ; ++it) {
+        if(it->first->isInputNode()){
+            hasInput = true;
+            break;
         }
     }
-    /*if there's no inputs or there's no input with frames to provide, disconnect the viewer associated*/
-    if(!hasInputDifferentThanReader && !hasFrames){
+    
+    if(!hasInput){
         if(viewer)
             viewer->disconnectViewer();
         return false;
     }
     
     
-    //SequenceTime firstFrame,lastFrame;
-    //firstFrame = _tree.firstFrame();
-    //lastFrame = _tree.lastFrame();
 
+    /*beginRenderAction for all openFX nodes*/
+    for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+        OfxEffectInstance* n = dynamic_cast<OfxEffectInstance*>(it->second);
+        if(n) {
+            OfxPointD renderScale;
+            renderScale.x = renderScale.y = 1.0;
+            assert(n->effectInstance());
+            OfxStatus stat;
+            stat = n->effectInstance()->beginRenderAction(_currentRunArgs._firstFrame,_currentRunArgs._lastFrame, //frame range
+                                                          1, // frame step
+                                                          true, //is interactive
+                                                          renderScale); //scale
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+    }
+    
     {
         QMutexLocker workingLocker(&_workingMutex);
         _working = true;
@@ -193,8 +207,8 @@ void VideoEngine::stopEngine() {
             QMutexLocker l(&_abortedRequestedMutex);
             _abortRequested = 0;
             _tree.lock();
-            for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-                (*it)->setAborted(false);
+            for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+                it->second->setAborted(false);
             }
             _tree.unlock();
             _abortedRequestedCondition.wakeOne();
@@ -209,14 +223,22 @@ void VideoEngine::stopEngine() {
         }
         _abortBeingProcessed = false;
         
-        for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-            (*it)->unlockAllKnobs();
-        }
-        _tree.getOutput()->getApp()->unlockProjectParams();
     }
     
+    /*endRenderAction for all openFX nodes*/
+    for (RenderTree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
+        OfxEffectInstance* n = dynamic_cast<OfxEffectInstance*>(it->second);
+        if(n){
+            OfxPointD renderScale;
+            renderScale.x = renderScale.y = 1.0;
+            assert(n->effectInstance());
+            OfxStatus stat;
+            stat = n->effectInstance()->endRenderAction(_currentRunArgs._firstFrame, _currentRunArgs._lastFrame, 1, true, renderScale);
+            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        }
+    }
+
     
-        
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
@@ -229,21 +251,22 @@ void VideoEngine::stopEngine() {
     
 }
 void VideoEngine::getFrameRange(int *firstFrame,int *lastFrame) const {
-    if(_tree.isOutputAViewer()){
+    if(_tree.getOutput()){
+        _tree.getOutput()->getFrameRange(firstFrame, lastFrame);
+        if(*firstFrame == INT_MIN){
+            *firstFrame = _timeline->firstFrame();
+        }
+        if(*lastFrame == INT_MAX){
+            *lastFrame = _timeline->lastFrame();
+        }
+    }else{
         *firstFrame = _timeline->firstFrame();
         *lastFrame = _timeline->lastFrame();
-    }else{
-        if(_tree.isOutputAnOpenFXNode()){
-            OfxNode* ofxn = _tree.outputAsOpenFXNode();
-            *firstFrame = ofxn->firstFrame();
-            *lastFrame = ofxn->lastFrame();
-        }else{
-            Writer* w = _tree.outputAsWriter();
-            *firstFrame = w->firstFrame();
-            *lastFrame = w->lastFrame();
-        }
     }
-
+    Writer* writer = _tree.outputAsWriter();
+    if(writer){
+        writer->getFirstFrameAndLastFrame(firstFrame, lastFrame);
+    }
 }
 
 void VideoEngine::run(){
@@ -267,43 +290,19 @@ void VideoEngine::run(){
                 continue;
             }
         }
-
-        /*beginRenderAction for all openFX nodes*/
-        for (Tree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
-            OfxNode* n = dynamic_cast<OfxNode*>(*it);
-            if(n) {
-                OfxPointD renderScale;
-                renderScale.x = renderScale.y = 1.0;
-                assert(n->effectInstance());
-                OfxStatus stat;
-                stat = n->effectInstance()->beginRenderAction(0, 25, 1, true,renderScale);
-                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-            }
-        }
         
         /*update the tree hash */
-        bool oldVersionValid = _treeVersionValid;
-        U64 oldVersion = 0;
-        if (oldVersionValid) {
-            oldVersion = _tree.getOutput()->hash().value();
-        }
-        computeTreeVersionAndLockKnobs();
-        /*If the Tree changed we clear the playback cache.*/
-        if(!oldVersionValid || (_tree.getOutput()->hash().value() != oldVersion)){
-            appPTR->clearPlaybackCache();
-        }
-
-        
+        _tree.refreshKnobsAndHash();
+                
         if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
             appPTR->clearNodeCache();
         }
         
-        /*get the frame range*/
-        int firstFrame = INT_MAX,lastFrame = INT_MIN, currentFrame = 0;
-        ViewerNode* viewer = _tree.outputAsViewer();
-        /*Get the frame range*/
-        getFrameRange(&firstFrame, &lastFrame);
-        _timeline->setFrameRange(firstFrame, lastFrame);
+        ViewerInstance* viewer = _tree.outputAsViewer();
+        
+        int firstFrame = _currentRunArgs._firstFrame;
+        int lastFrame = _currentRunArgs._lastFrame;
+        int currentFrame = 0;
 
         if (!_currentRunArgs._recursiveCall) {
             
@@ -401,13 +400,12 @@ void VideoEngine::run(){
         }else{
             RenderScale scale;
             scale.x = scale.y = 1.;
-            Box2D rod;
-            OfxNode* output = _tree.outputAsOpenFXNode();
-            stat = output->getRegionOfDefinition(currentFrame, &rod);
+            RectI rod;
+            stat = _tree.getOutput()->getRegionOfDefinition(currentFrame, &rod);
             if(stat != StatFailed){
                 int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
                 for(int i = 0; i < viewsCount;++i){
-                    output->renderRoI(currentFrame, scale,i ,rod);
+                    _tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
                 }
             }
             
@@ -432,24 +430,6 @@ void VideoEngine::run(){
         
         _currentRunArgs._fitToViewer = false;
         _currentRunArgs._recursiveCall = true;
-        
-        /*endRenderAction for all openFX nodes*/
-        for (Tree::TreeIterator it = _tree.begin(); it!=_tree.end(); ++it) {
-            OfxNode* n = dynamic_cast<OfxNode*>(*it);
-            if(n){
-                OfxPointD renderScale;
-                renderScale.x = renderScale.y = 1.0;
-                assert(n->effectInstance());
-                OfxStatus stat;
-                stat = n->effectInstance()->endRenderAction(0, 25, 1, true, renderScale);
-                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-            }
-            //unlock knob values for all the graph
-            (*it)->unlockAllKnobs();
-        }
-        _tree.getOutput()->getApp()->unlockProjectParams();
-        
-        
     } // end for(;;)
     
 }
@@ -473,8 +453,8 @@ void VideoEngine::abortRendering(){
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
         _tree.lock();
-        for (Tree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
-            (*it)->setAborted(true);
+        for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+            it->second->setAborted(true);
         }
         _tree.unlock();
         // _abortedCondition.wakeOne();
@@ -508,20 +488,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 }
 
 
-
-void VideoEngine::computeTreeVersionAndLockKnobs(){
-    OutputNode* output = _tree.getOutput();
-    std::vector<std::string> v;
-    output->computeHashAndLockKnobs(v);
-    _tree.getOutput()->getApp()->lockProjectParams();
-    _treeVersionValid = true;
-}
-
-
-
-
-
-Tree::Tree(OutputNode* output):
+RenderTree::RenderTree(Powiter::OutputEffectInstance* output):
 _output(output)
 ,_isViewer(false)
 ,_isOutputOpenFXNode(false)
@@ -534,107 +501,123 @@ _output(output)
 }
 
 
-void Tree::clearGraph(){
+void RenderTree::clearGraph(){
     for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it)->setMarkedByTopologicalSort(false);
-        QObject::disconnect((*it), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onInputFrameRangeChanged(int,int)));
+        (*it).first->setMarkedByTopologicalSort(false);
     }
-    _output->setMarkedByTopologicalSort(false);
     _sorted.clear();
-    _inputs.clear();
-    
 }
 
-void Tree::refreshTree(){
+void RenderTree::refreshTree(){
     QMutexLocker dagLocker(&_treeMutex);
-    _isViewer = dynamic_cast<ViewerNode*>(_output) != NULL;
-    _isOutputOpenFXNode = _output->isOpenFXNode();
+    _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
+    _isOutputOpenFXNode = _output->isOpenFX();
     
     
     /*unmark all nodes already present in the graph*/
     clearGraph();
-    fillGraph(_output);
-    
-    /*clear the marked flags for the sort*/
-    for(TreeContainer::const_iterator it = _sorted.begin();it!=_sorted.end();++it) {
-        (*it)->setMarkedByTopologicalSort(false);
+    fillGraph(_output->getNode());
+
+    for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
+        (*it).first->setMarkedByTopologicalSort(false);
+        (*it).second = (*it).first->findOrCreateLiveInstanceClone(this);
     }
-    _output->setMarkedByTopologicalSort(false);
-    
-    /*update frame range*/
-    onInputFrameRangeChanged(0, 0); //non signifiant args
+   
 }
-void Tree::fillGraph(Node* n){
+
+
+void RenderTree::fillGraph(Node* n){
     
     /*call fillGraph recursivly on all the node's inputs*/
     const Node::InputMap& inputs = n->getInputs();
     for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
-            /*if the node is a viewer, we're only interested in the active input*/
-            if(n->className() == "Viewer"){
-                ViewerNode* v = dynamic_cast<ViewerNode*>(n);
-                if (it->first!=v->activeInput()) {
-                    continue;
-                }
+            /*if the node is an inspector*/
+            const InspectorNode* insp = dynamic_cast<const InspectorNode*>(n);
+            if (insp && it->first != insp->activeInput()) {
+                continue;
             }
             fillGraph(it->second);
         }
     }
     if(!n->isMarkedByTopologicalSort()){
         n->setMarkedByTopologicalSort(true);
-        _sorted.push_back(n);
-        if(n->isInputNode()){
-            _inputs.push_back(n);
-            QObject::connect(n, SIGNAL(frameRangeChanged(int,int)), this, SLOT(onInputFrameRangeChanged(int,int)));
-        }
+        _sorted.push_back(std::make_pair(n,(EffectInstance*)NULL));
     }
 }
 
+U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect){
+    const EffectInstance::Inputs& inputs = effect->getInputs();
+    std::vector<U64> inputsHashs;
+    for(U32 i = 0 ; i < inputs.size();++i){
+        if (inputs[i]) {
+            inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
+        }
+    }
+    U64 ret = effect->hash().value();
+    if(!effect->isHashValid()){
+        effect->clone();
+        ret = effect->computeHash(inputsHashs);
+    }
+    return ret;
+}
+void RenderTree::refreshKnobsAndHash(){
+    _renderOutputFormat = _output->getApp()->getProjectFormat();
+    _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
+    
+    bool oldVersionValid = _treeVersionValid;
+    U64 oldVersion = 0;
+    if (oldVersionValid) {
+        oldVersion = _output->hash().value();
+    }
 
-ViewerNode* Tree::outputAsViewer() const {
+    U64 hash = cloneKnobsAndcomputeTreeHash(_output);
+    _treeVersionValid = true;
+    
+    /*If the hash changed we clear the playback cache.*/
+    if(!oldVersionValid || (hash != oldVersion)){
+        appPTR->clearPlaybackCache();
+    }
+    
+
+}
+
+ViewerInstance* RenderTree::outputAsViewer() const {
     if(_output && _isViewer)
-        return dynamic_cast<ViewerNode*>(_output);
+        return dynamic_cast<ViewerInstance*>(_output);
     else
         return NULL;
 }
 
-Writer* Tree::outputAsWriter() const {
+Writer* RenderTree::outputAsWriter() const {
     if(_output && !_isViewer)
         return dynamic_cast<Writer*>(_output);
     else
         return NULL;
 }
-OfxNode* Tree::outputAsOpenFXNode() const{
-    if(_output && _isOutputOpenFXNode){
-        return dynamic_cast<OfxNode*>(_output);
-    }else{
-        return NULL;
-    }
-}
 
 
-void Tree::debug(){
+void RenderTree::debug() const{
     cout << "Topological ordering of the Tree is..." << endl;
-    for(Tree::TreeIterator it = begin(); it != end() ;++it) {
-        cout << (*it)->getName() << endl;
+    for(RenderTree::TreeIterator it = begin(); it != end() ;++it) {
+        cout << it->first->getName() << endl;
     }
 }
 
-/*sets infos accordingly across all the Tree*/
-Powiter::Status Tree::preProcessFrame(SequenceTime time){
+Powiter::Status RenderTree::preProcessFrame(SequenceTime time){
     /*Validating the Tree in topological order*/
     for (TreeIterator it = begin(); it != end(); ++it) {
-        Powiter::Status st = (*it)->preProcessFrame(time);
+        for (int i = 0; i < it->second->maximumInputs(); ++i) {
+            if (!it->second->input(i) && !it->second->isInputOptional(i)) {
+                return StatFailed;
+            }
+        }
+        Powiter::Status st = it->second->preProcessFrame(time);
         if(st == Powiter::StatFailed){
             return st;
         }
     }
     return Powiter::StatOK;
-}
-void Tree::onInputFrameRangeChanged(int,int){
-    _output->getFrameRange(&_firstFrame,&_lastFrame);
-    _output->getApp()->getTimeLine()->setFrameRange(_firstFrame ,_lastFrame);
-    
 }
 
 

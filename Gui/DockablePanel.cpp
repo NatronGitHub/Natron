@@ -23,6 +23,8 @@
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/Knob.h"
+#include "Engine/EffectInstance.h"
 
 #include "Gui/NodeGui.h"
 #include "Gui/KnobGui.h"
@@ -32,7 +34,8 @@
 
 using std::make_pair;
 
-DockablePanel::DockablePanel(QVBoxLayout* container
+DockablePanel::DockablePanel(KnobHolder* holder
+                             ,QVBoxLayout* container
                              ,bool readOnlyName
                              ,const QString& initialName
                              ,const QString& helpToolTip
@@ -54,6 +57,7 @@ DockablePanel::DockablePanel(QVBoxLayout* container
 ,_minimized(false)
 ,_undoStack(new QUndoStack)
 ,_knobs()
+,_holder(holder)
 ,_tabs()
 {
     _mainLayout = new QVBoxLayout(this);
@@ -170,9 +174,9 @@ DockablePanel::~DockablePanel(){
 
 void DockablePanel::initializeKnobs(){
     /*We now have all knobs in a vector, just add them to the layout.*/
-    const std::vector<Knob*>& knobs = getKnobs();
+    const std::vector<Knob*>& knobs = _holder->getKnobs();
     for(U32 i = 0 ; i < knobs.size(); ++i){
-         if(knobs[i]->name() == "Tab"){
+         if(knobs[i]->typeName() == "Tab"){
              bool found = false;
              QString tabName(knobs[i]->getDescription().c_str());
              for(int j = 0 ; j < _tabWidget->count(); ++j){
@@ -193,7 +197,7 @@ void DockablePanel::initializeKnobs(){
                  int offsetColumn = knobs[i]->determineHierarchySize();
                  std::map<QString,std::pair<QWidget*,int> >::iterator parentTab = _tabs.begin();
                  Knob* parentKnob = knobs[i]->getParentKnob();
-                 if(parentKnob && parentKnob->name() == "Tab"){
+                 if(parentKnob && parentKnob->typeName() == "Tab"){
                      std::map<QString,std::pair<QWidget*,int> >::iterator it = _tabs.find(parentKnob->getDescription().c_str());
                      if(it!=_tabs.end()){
                          parentTab = it;
@@ -204,7 +208,7 @@ void DockablePanel::initializeKnobs(){
                  gui->setParent(parentTab->second.first);
                  if(!gui->triggerNewLine() && i!=0) --parentTab->second.second;
                  gui->createGUI(dynamic_cast<QGridLayout*>(parentTab->second.first->layout()),parentTab->second.second);
-                 if(parentKnob && parentKnob->name() == "Group"){
+                 if(parentKnob && parentKnob->typeName() == "Group"){
                      Group_KnobGui* parentGui = dynamic_cast<Group_KnobGui*>(findKnobGuiOrCreate(parentKnob));
                      parentGui->addKnob(gui,parentTab->second.second,offsetColumn);
                      if (parentGui->isChecked()) {
@@ -354,7 +358,8 @@ void DockablePanel::onKnobDeletion(KnobGui* k){
 
 
 NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QWidget *parent)
-:DockablePanel(NodeUi->getDockContainer(),
+:DockablePanel(NodeUi->getNode()->getLiveInstance(),
+               NodeUi->getDockContainer(),
                false,
                NodeUi->getNode()->getName().c_str(),
                NodeUi->getNode()->description().c_str(),
@@ -371,23 +376,4 @@ void NodeSettingsPanel::setSelected(bool s){
     style()->polish(this);
 }
 
-const std::vector<Knob*>&  NodeSettingsPanel::getKnobs() const{
-    return _nodeGUI->getNode()->getKnobs();
-}
 
-
-ProjectSettingsPanel::ProjectSettingsPanel(boost::shared_ptr<Powiter::Project> project,QVBoxLayout* container,QWidget *parent)
-:DockablePanel(container,
-               true,
-               "Project Settings",
-               "The settings of the current project.",
-               "Rendering",
-               parent)
-,_project(project)
-{
-    
-}
-
-const std::vector<Knob*>&  ProjectSettingsPanel::getKnobs() const{
-    return _project->getProjectKnobs();
-}

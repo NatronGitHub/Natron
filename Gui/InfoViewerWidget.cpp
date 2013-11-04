@@ -16,7 +16,7 @@
 #include <QLabel>
 
 #include "Gui/ViewerGL.h"
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 
 using std::cout; using std::endl;
 

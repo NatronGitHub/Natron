@@ -40,7 +40,7 @@ namespace Powiter {
 }
 class InfoViewerWidget;
 class AppInstance;
-class ViewerNode;
+class ViewerInstance;
 class ViewerTab;
 
 #ifndef POWITER_DEBUG
@@ -287,14 +287,14 @@ class ViewerTab;
             /**
              *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX)
              **/
-            const Box2D& getRoD() const ;
+            const RectI& getRoD() const ;
             
             /**
              *@returns Returns a const reference to the displayWindow of the currentFrame(Resolution)
              **/
             const Format& getDisplayWindow() const;
             
-            void setRod(const Box2D& rod);
+            void setRod(const RectI& rod);
             
             
             void setClipToDisplayWindow(bool b) ;
@@ -434,7 +434,7 @@ class ViewerTab;
              *@brief Handy function that zoom automatically the viewer so it fit
              *the displayWindow  entirely in the viewer
              **/
-            void fitToFormat(const Box2D& rod);
+            void fitToFormat(const RectI& rod);
             
             /**
              *@returns Returns a pointer to the current viewer infos.

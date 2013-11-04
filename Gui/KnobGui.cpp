@@ -40,7 +40,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Engine/Node.h"
 #include "Engine/VideoEngine.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
 
@@ -73,15 +73,14 @@ _container(container)
     QObject::connect(this,SIGNAL(valueChanged(const Variant&)),knob,SLOT(onValueChanged(const Variant&)));
     QObject::connect(knob,SIGNAL(visible(bool)),this,SLOT(setVisible(bool)));
     QObject::connect(knob,SIGNAL(enabled(bool)),this,SLOT(setEnabled(bool)));
-    QObject::connect(knob,SIGNAL(deleteWanted()),this,SLOT(deleteKnob()));
-    QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SIGNAL(knobUndoneChange()));
-    QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SIGNAL(knobRedoneChange()));
+    QObject::connect(knob,SIGNAL(deleted()),this,SLOT(deleteKnob()));
+    QObject::connect(this, SIGNAL(knobUndoneChange()), knob, SLOT(onKnobUndoneChange()));
+    QObject::connect(this, SIGNAL(knobRedoneChange()), knob, SLOT(onKnobRedoneChange()));
 }
 
 KnobGui::~KnobGui(){
     
     emit deleted(this);
-    delete _knob;
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){

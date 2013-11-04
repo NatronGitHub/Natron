@@ -25,6 +25,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Knob.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Node.h"
 
 #include "Writers/Encoder.h"
 
@@ -32,8 +33,8 @@ using namespace Powiter;
 using std::cout; using std::endl;
 using std::make_pair;
 
-Writer::Writer(AppInstance* app):
-OutputNode(app),
+Writer::Writer(Node* node):
+Powiter::OutputEffectInstance(node),
 _requestedChannels(Mask_RGBA), // temporary
 _premult(false),
 _writeOptions(0),
@@ -41,16 +42,18 @@ _frameRangeChoosal(0),
 _firstFrameKnob(0),
 _lastFrameKnob(0)
 {
-    
-    QObject::connect(getApp()->getTimeLine().get(),
-                     SIGNAL(frameRangeChanged(int,int)),
-                     this,
-                     SLOT(onTimelineFrameRangeChanged(int, int)));
+    if(node){
+        QObject::connect(getNode()->getApp()->getTimeLine().get(),
+                         SIGNAL(frameRangeChanged(int,int)),
+                         this,
+                         SLOT(onTimelineFrameRangeChanged(int, int)));
+        QObject::connect(this,SIGNAL(renderingOnDiskStarted(Writer*,QString,int,int)),getNode()->getApp(),
+                         SLOT(onRenderingOnDiskStarted(Writer*, QString, int, int)));
+    }
 }
 
 Writer::~Writer(){
     if(_writeOptions){
-        //    _writeOptions->cleanUpKnobs();
         delete _writeOptions;
     }
 }
@@ -87,7 +90,7 @@ static QString viewToString(int view,int viewsCount){
     }
 }
 
-boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const Box2D& rod){
+boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
     Powiter::LibraryBinary* binary = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     Encoder* encoder = NULL;
     if(!binary){
@@ -135,24 +138,21 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
     return boost::shared_ptr<Encoder>(encoder);
 }
 
-void Writer::initKnobs(){
+void Writer::initializeKnobs(){
     std::string fileDesc("File");
     _fileKnob = dynamic_cast<OutputFile_Knob*>(appPTR->getKnobFactory().createKnob("OutputFile", this, fileDesc));
-    QObject::connect(_fileKnob,SIGNAL(valueChangedByUser(QString)),this,SLOT(onFilesSelected(QString)));
     assert(_fileKnob);
     
     std::string renderDesc("Render");
-    Button_Knob* renderButton = static_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button", this, renderDesc));
-    assert(renderButton);
-    QObject::connect(renderButton, SIGNAL(valueChangedByUser()), this, SLOT(startRendering()));
+    _renderKnob = dynamic_cast<Button_Knob*>(appPTR->getKnobFactory().createKnob("Button", this, renderDesc));
+    assert(_renderKnob);
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = static_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
+    Bool_Knob* premult = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
     premult->setValue(_premult);
     
     std::string filetypeStr("File type");
     _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
-    QObject::connect(_filetypeCombo, SIGNAL(valueChangedByUser()), this, SLOT(fileTypeChanged()));
     const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
     std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
@@ -162,57 +162,21 @@ void Writer::initKnobs(){
     
     
     _frameRangeChoosal = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Frame range"));
-    QObject::connect(_frameRangeChoosal, SIGNAL(valueChangedByUser()), this, SLOT(onFrameRangeChoosalChanged()));
     std::vector<std::string> frameRangeChoosalEntries;
     frameRangeChoosalEntries.push_back("Inputs union");
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
     
 }
-void Writer::onFrameRangeChoosalChanged(){
-    int index = _frameRangeChoosal->value<int>();
-    if(index == 0){
-        if(_firstFrameKnob){
-            _firstFrameKnob->deleteKnob();
-            _firstFrameKnob = 0;
-        }
-        if(_lastFrameKnob){
-            _lastFrameKnob->deleteKnob();
-            _lastFrameKnob = 0;
-        }
-    }else if(index == 1){
-        _frameRange.first = getApp()->getTimeLine()->firstFrame();
-        _frameRange.second = getApp()->getTimeLine()->lastFrame();
-        if(!_firstFrameKnob){
-            _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
-            _firstFrameKnob->setValue(_frameRange.first);
-            _firstFrameKnob->setDisplayMinimum(_frameRange.first);
-            _firstFrameKnob->setDisplayMaximum(_frameRange.second);
-            _firstFrameKnob->setMinimum(_frameRange.first);
-            _firstFrameKnob->setMaximum(_frameRange.second);
-
-        }
-        if(!_lastFrameKnob){
-            _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
-            _lastFrameKnob->setValue(_frameRange.second);
-            _lastFrameKnob->setDisplayMinimum(_frameRange.first);
-            _lastFrameKnob->setDisplayMaximum(_frameRange.second);
-            _lastFrameKnob->setMinimum(_frameRange.first);
-            _lastFrameKnob->setMaximum(_frameRange.second);
-
-        }
-        createKnobDynamically();
-    }
-}
 
 Powiter::Status Writer::renderWriter(SequenceTime time){
-    const Format& renderFormat = getProjectDefaultFormat();
-    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    const Format& renderFormat = getRenderFormat();
+    int viewsCount = getRenderViewsCount();
     //null RoD for key because the key hash computation doesn't take into account the box
     RenderScale scale;
     scale.x = scale.y = 1.;
     /*now that we have our image, we check what is left to render. If the list contains only
-     null Box2Ds then we already rendered it all*/
+     null rect then we already rendered it all*/
     
     RoIMap inputsRoi = getRegionOfInterest(time, scale, renderFormat);
     //inputsRoi only contains 1 element
@@ -229,10 +193,10 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
             return StatFailed;
         }
         boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
-        std::vector<Box2D> splitRects = splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
+        std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
         QtConcurrent::blockingMap(splitRects,
                                   boost::bind(&Writer::renderFunctor,this,inputImage,_1,i,encoder));
-        if(!_renderAborted){
+        if(!aborted()){
             // finalize file if needed
             encoder->finalizeFile();
         }else{//remove file!
@@ -246,7 +210,7 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
 }
 
 void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
-                           const Box2D& roi,
+                           const RectI& roi,
                            int view,
                            boost::shared_ptr<Encoder> encoder){
     encoder->render(inputImage,view,roi);
@@ -272,9 +236,6 @@ bool Writer::validInfosForRendering(){
     }
     delete write;
     
-    /*check if frame range makes sense*/
-    if(_frameRange.first > _frameRange.second) return false;
-    
     /*check if write specific knobs have valid values*/
     if (_writeOptions) {
         if (!_writeOptions->allValid()) {
@@ -291,23 +252,101 @@ bool Writer::validInfosForRendering(){
     return true;
 }
 
+void Writer::getFirstFrameAndLastFrame(int* firstFrame,int *lastFrame){
+    int index = _frameRangeChoosal->value<int>();
+    if(index == 0){
+        getFrameRange(firstFrame, lastFrame);
+    }else{
+        *firstFrame = _firstFrameKnob->value<int>();
+        *lastFrame = _lastFrameKnob->value<int>();
+    }
+
+}
 void Writer::startRendering(){
     
     _fileType = _allFileTypes[_filetypeCombo->value<int>()];
     _filename = _fileKnob->value<QString>().toStdString();
-    int index = _frameRangeChoosal->value<int>();
-    if(index == 0){
-        getFrameRange(&_frameRange.first, &_frameRange.second);
-    }else{
-        _frameRange.first = _firstFrameKnob->value<int>();
-        _frameRange.second = _lastFrameKnob->value<int>();
-    }
+    int firstFrame,lastFrame;
+    getFirstFrameAndLastFrame(&firstFrame, &lastFrame);
+    if(firstFrame > lastFrame)
+        return;
     
     if(validInfosForRendering()){
         getVideoEngine()->refreshTree();
         getVideoEngine()->render(-1,true,false,true,false);
-        emit renderingOnDiskStarted(this,_filename.c_str(),_frameRange.first,_frameRange.second);
+        emit renderingOnDiskStarted(this,_filename.c_str(),firstFrame,lastFrame);
+    }
+}
+
+void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
+    if(k == _filetypeCombo){
+        int index = _filetypeCombo->value<int>();
+        assert(index < (int)_allFileTypes.size());
+        _fileType = _allFileTypes[index];
+        if(_writeOptions){
+            _writeOptions->cleanUpKnobs();
+            delete _writeOptions;
+            _writeOptions = 0;
+        }
+        Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+        if(!isValid) return;
         
+        QString file(_filename.c_str());
+        int pos = file.lastIndexOf(QChar('.'));
+        ++pos;
+        file.replace(pos, file.size() - pos, _fileType.c_str());
+        _fileKnob->setValue(file);
+        
+        /*checking if channels are supported*/
+        std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
+        if(func.first){
+            Encoder* write = func.second(this);
+            _writeOptions = write->initSpecificKnobs();
+            if(_writeOptions)
+                _writeOptions->initKnobs(_fileType);
+            delete write;
+        }
+
+    }else if(k == _fileKnob){
+        _filename = _fileKnob->getValueAsVariant().toString().toStdString();
+
+    }else if(k == _frameRangeChoosal){
+        int index = _frameRangeChoosal->value<int>();
+        if(index == 0){
+            if(_firstFrameKnob){
+                delete _firstFrameKnob;
+                _firstFrameKnob = 0;
+            }
+            if(_lastFrameKnob){
+                delete _lastFrameKnob;
+                _lastFrameKnob = 0;
+            }
+        }else if(index == 1){
+            int first = getApp()->getTimeLine()->firstFrame();
+            int last = getApp()->getTimeLine()->lastFrame();
+            if(!_firstFrameKnob){
+                _firstFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "First frame"));
+                _firstFrameKnob->setValue(first);
+                _firstFrameKnob->setDisplayMinimum(first);
+                _firstFrameKnob->setDisplayMaximum(last);
+                _firstFrameKnob->setMinimum(first);
+                _firstFrameKnob->setMaximum(last);
+                
+            }
+            if(!_lastFrameKnob){
+                _lastFrameKnob = dynamic_cast<Int_Knob*>(appPTR->getKnobFactory().createKnob("Int", this, "Last frame"));
+                _lastFrameKnob->setValue(last);
+                _lastFrameKnob->setDisplayMinimum(first);
+                _lastFrameKnob->setDisplayMaximum(last);
+                _lastFrameKnob->setMinimum(first);
+                _lastFrameKnob->setMaximum(last);
+                
+            }
+            createKnobDynamically();
+        }
+
+    }else if(k == _renderKnob){
+        startRendering();
     }
 }
 
@@ -331,36 +370,4 @@ void Writer::onTimelineFrameRangeChanged(int f,int l){
     }
 
 }
-void Writer::fileTypeChanged(){
-    int index = _filetypeCombo->value<int>();
-    assert(index < (int)_allFileTypes.size());
-    _fileType = _allFileTypes[index];
-    if(_writeOptions){
-        _writeOptions->cleanUpKnobs();
-        delete _writeOptions;
-        _writeOptions = 0;
-    }
-    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
-    if(!isValid) return;
-    
-    QString file(_filename.c_str());
-    int pos = file.lastIndexOf(QChar('.'));
-    ++pos;
-    file.replace(pos, file.size() - pos, _fileType.c_str());
-    _fileKnob->setValue(file);
-    
-    /*checking if channels are supported*/
-    std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
-    if(func.first){
-        Encoder* write = func.second(this);
-        _writeOptions = write->initSpecificKnobs();
-        if(_writeOptions)
-            _writeOptions->initKnobs(_fileType);
-        delete write;
-    }
-}
 
-void Writer::onFilesSelected(const QString& paramName){
-    assert(_fileKnob->getName() == paramName.toStdString());
-    _filename = _fileKnob->getValueAsVariant().toString().toStdString();
-}

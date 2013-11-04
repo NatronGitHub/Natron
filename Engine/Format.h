@@ -14,25 +14,25 @@
 
 #include <string>
 #include <QtCore/QMetaType>
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/export.hpp>
 /*This class is used to hold the format of a frame (its resolution).
  *Some formats have a name , e.g : 1920*1080 is full HD, etc...
  *It also holds a pixel aspect ratio so the viewer can display the
  *frame accordingly*/
-class Format : public Box2D {
+class Format : public RectI {
 	
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version)
     {
         (void)version;
-        boost::serialization::void_cast_register<Format,Box2D>(
+        boost::serialization::void_cast_register<Format,RectI>(
                                                                 static_cast<Format *>(NULL),
-                                                                static_cast<Box2D *>(NULL)
+                                                                static_cast<RectI *>(NULL)
                                                                );
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Box2D);
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
         ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_pixel_aspect);
         ar & boost::serialization::make_nvp("Name",_name);
         
@@ -40,19 +40,19 @@ class Format : public Box2D {
 	
 public:
     Format(int l, int b, int r, int t, const std::string& name, double pa)
-    : Box2D(l,b,r,t)
+    : RectI(l,b,r,t)
     , _pixel_aspect(pa)
     , _name(name)
     {}
     
     Format(const Format& other)
-    :Box2D(other.left(),other.bottom(),other.right(),other.top())
+    :RectI(other.left(),other.bottom(),other.right(),other.top())
     ,_pixel_aspect(other.getPixelAspect())
     ,_name(other.getName())
     {}
     
     Format()
-    : Box2D()
+    : RectI()
     , _pixel_aspect(1.0)
     , _name()
     {

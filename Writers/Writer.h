@@ -18,7 +18,7 @@
 #include <QtCore/QStringList>
 
 #include "Global/Macros.h"
-#include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 
 class Encoder;
 namespace Powiter{
@@ -27,17 +27,23 @@ namespace Powiter{
 class OutputFile_Knob;
 class ComboBox_Knob;
 class EncoderKnobs;
+class Button_Knob;
 class Int_Knob;
-class Writer: public OutputNode{
+class Writer: public QObject,public Powiter::OutputEffectInstance {
     
     Q_OBJECT
     
 public:
   
-      
-    Writer(AppInstance* app);
+    static Powiter::EffectInstance* BuildEffect(Node* n){
+        return new Writer(n);
+    }
+    
+    Writer(Node* node);
         
     virtual ~Writer();
+    
+    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE {return false;}
     
     virtual std::string className() const OVERRIDE;
     
@@ -59,20 +65,16 @@ public:
     const Powiter::ChannelSet& requestedChannels() const {return _requestedChannels;}
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
-    
-    virtual int minimumInputs() const OVERRIDE {return 1;}
-    
-    
-    int firstFrame() const {return _frameRange.first;}
-    
-    int lastFrame() const {return _frameRange.second;}
-    
-public slots:
-    void onFilesSelected(const QString&);
-    void fileTypeChanged();
+
+    void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
+
     void startRendering();
-    void onFrameRangeChoosalChanged();
+
+    void getFirstFrameAndLastFrame(int* first,int *last);
+
+public slots:
     void onTimelineFrameRangeChanged(int,int);
+
 signals:
     
     void renderingOnDiskStarted(Writer*,QString,int,int);
@@ -80,18 +82,18 @@ signals:
 protected:
     
     
-	virtual void initKnobs() OVERRIDE;
+	virtual void initializeKnobs() OVERRIDE;
     
-    virtual Node::RenderSafety renderThreadSafety() const OVERRIDE {return Node::FULLY_SAFE;}
+    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Powiter::EffectInstance::FULLY_SAFE;}
     
 private:
     
     void renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
-                       const Box2D& roi,
+                       const RectI& roi,
                        int view,
                        boost::shared_ptr<Encoder> encoder);
     
-    boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const Box2D& rod);
+    boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod);
     
     Powiter::ChannelSet _requestedChannels;
     bool _premult;
@@ -99,15 +101,13 @@ private:
     std::string _filename;
     std::string _fileType;
     std::vector<std::string> _allFileTypes;
-    
-    std::pair<int,int> _frameRange;
-    
+        
     OutputFile_Knob* _fileKnob;
     ComboBox_Knob* _filetypeCombo;
     ComboBox_Knob* _frameRangeChoosal;
     Int_Knob* _firstFrameKnob;
     Int_Knob* _lastFrameKnob;
-    
+    Button_Knob* _renderKnob;
 };
 Q_DECLARE_METATYPE(Writer*);
 #endif /* defined(POWITER_WRITERS_WRITER_H_) */

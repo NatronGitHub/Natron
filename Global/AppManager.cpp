@@ -41,12 +41,13 @@
 
 #include "Engine/VideoEngine.h"
 #include "Engine/Settings.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxImageEffectInstance.h"
-#include "Engine/OfxNode.h"
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/TimeLine.h"
+#include "Engine/EffectInstance.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Decoder.h"
@@ -69,6 +70,10 @@ _gui(new Gui(this))
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
 {
+    
+    appPTR->registerAppInstance(this);
+    appPTR->setAsTopLevelInstance(appID);
+    _currentProject->initializeKnobs();
     _gui->createGui();
     
     const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
@@ -132,7 +137,7 @@ _gui(new Gui(this))
                 cout << e.what() << endl;
                 createNode("Viewer");
             }
-
+            
         }
     }
     
@@ -149,31 +154,37 @@ AppInstance::~AppInstance(){
 
 Node* AppInstance::createNode(const QString& name) {
     Node* node = 0;
-    if(name == "Reader"){
-		node = new Reader(this);
-	}else if(name =="Viewer"){
-        node = new ViewerNode(this);
-	}else if(name == "Writer"){
-		node = new Writer(this);
-        QObject::connect(node,SIGNAL(renderingOnDiskStarted(Writer*,QString,int,int)),this,
-                         SLOT(onRenderingOnDiskStarted(Writer*, QString, int, int)));
-    } else {
-        node = appPTR->getOfxHost()->createOfxNode(name.toStdString(),this);
-    }
-    if(!node){
-        cout << "(Controler::createNode): Couldn't create Node " << name.toStdString() << endl;
+    LibraryBinary* pluginBinary = appPTR->getPluginBinary(name);
+    if(!pluginBinary){
+        QString err("Reason:\n The plugin binary for ");
+        err.append(name);
+        err.append(" couldn't be located");
+        Powiter::errorDialog("Failed to create node",err.toStdString());
         return NULL;
     }
+    try{
+        if(name != "Viewer"){ // for now only the viewer can be an inspector.
+            node = new Node(this,pluginBinary,name.toStdString());
+        }else{
+            node = new InspectorNode(this,pluginBinary,name.toStdString());
+        }
+    }catch(const std::exception& e){
+        std::cout << e.what() << std::endl;
+        delete node;
+        return NULL;
+    }
+    
+
     QObject::connect(node,SIGNAL(deactivated()),this,SLOT(checkViewersConnection()));
     QObject::connect(node, SIGNAL(deactivated()), this, SLOT(triggerAutoSave()));
     QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
-    QObject::connect(node, SIGNAL(knobUndoneChange()), this, SLOT(triggerAutoSave()));
-    QObject::connect(node, SIGNAL(knobRedoneChange()), this, SLOT(triggerAutoSave()));
+
     
     NodeGui* nodegui = 0;
     nodegui = _gui->createNodeGUI(node);
     _nodeMapping.insert(make_pair(node,nodegui));
+    node->initializeKnobs();
     node->initializeInputs();
     Node* selected  =  0;
     if(_gui->getSelectedNode()){
@@ -183,18 +194,10 @@ Node* AppInstance::createNode(const QString& name) {
     if(node->className() == "Viewer"){
         _gui->createViewerGui(node);
     }
-    node->initializeKnobs();
-    if(node->isOpenFXNode()){
-        OfxNode* ofxNode = dynamic_cast<OfxNode*>(node);
-        ofxNode->openFilesForAllFileParams();
-        bool ok = ofxNode->effectInstance()->getClipPreferences();
-        if(!ok){
-            node->deleteNode();
-            return NULL;
-        }
-        if(node->canMakePreviewImage())
-            node->refreshPreviewImage(0);
-    }
+    node->openFilesForAllFileKnobs();
+    if(node->makePreviewByDefault())
+        node->refreshPreviewImage(0);
+    
     autoConnect(selected, node);
     
     return node;
@@ -358,7 +361,7 @@ bool AppInstance::findAutoSave() {
                     _currentProject->setProjectName("Untitled." POWITER_PROJECT_FILE_EXTENION);
                     _currentProject->setProjectPath("");
                 }
-           
+                
                 QString title(QCoreApplication::applicationName() + " - ");
                 title.append(_currentProject->getProjectName());
                 title.append(" (*)");
@@ -387,34 +390,31 @@ void AppInstance::deselectAllNodes() const{
 }
 
 void AppInstance::errorDialog(const std::string& title,const std::string& message) const{
-    _gui->errorDialog(title.c_str(), message.c_str());
-    
+    _gui->errorDialog(title, message);
 }
 
 void AppInstance::warningDialog(const std::string& title,const std::string& message) const{
-    _gui->warningDialog(title.c_str(), message.c_str());
+    _gui->warningDialog(title, message);
     
 }
 
 void AppInstance::informationDialog(const std::string& title,const std::string& message) const{
-    _gui->informationDialog(title.c_str(), message.c_str());
+    _gui->informationDialog(title, message);
     
 }
 
 Powiter::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
                                                     Powiter::StandardButton defaultButton) const{
-    return _gui->questionDialog(title.c_str(), message.c_str(),buttons,defaultButton);
+    return _gui->questionDialog(title, message,buttons,defaultButton);
 }
 
 
-ViewerTab* AppInstance::addNewViewerTab(ViewerNode* node,TabWidget* where){
+ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
     return  _gui->addNewViewerTab(node, where);
 }
 
 AppInstance* AppManager::newAppInstance(const QString& projectName){
     AppInstance* instance = new AppInstance(_availableID,projectName);
-    _appInstances.insert(make_pair(_availableID, instance));
-    setAsTopLevelInstance(_availableID);
     ++_availableID;
     return instance;
 }
@@ -486,7 +486,7 @@ void AppInstance::connectViewersToViewerCache(){
     foreach(Node* n,_currentProject->getCurrentNodes()){
         assert(n);
         if(n->className() == "Viewer"){
-            dynamic_cast<ViewerNode*>(n)->connectSlotsToViewerCache();
+            dynamic_cast<ViewerInstance*>(n->getLiveInstance())->connectSlotsToViewerCache();
         }
     }
 }
@@ -495,7 +495,7 @@ void AppInstance::disconnectViewersFromViewerCache(){
     foreach(Node* n,_currentProject->getCurrentNodes()){
         assert(n);
         if(n->className() == "Viewer"){
-            dynamic_cast<ViewerNode*>(n)->disconnectSlotsToViewerCache();
+            dynamic_cast<ViewerInstance*>(n->getLiveInstance())->disconnectSlotsToViewerCache();
         }
     }
 }
@@ -587,9 +587,9 @@ AppManager::AppManager()
 , _toolButtons()
 , _knobFactory(new KnobFactory())
 ,_nodeCache(new Cache<Image>("NodeCache",0x1, (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent -
-                                             Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
+                                               Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
 ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache
-                                    ,Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent))
+,Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent))
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -613,9 +613,11 @@ AppManager::~AppManager(){
     for(WritePluginsIterator it = _writePluginsLoaded.begin(); it!=_writePluginsLoaded.end(); ++it) {
         delete it->second.second;
     }
-    for(std::map<QString,QMutex*>::iterator it = _plugins.begin();it!=_plugins.end();++it){
-        if(it->second)
-            delete it->second;
+    for(PluginsMap::iterator it = _plugins.begin();it!=_plugins.end();++it){
+        if(it->second.second)
+            delete it->second.second;
+        if(it->second.first)
+            delete it->second.first;
     }
     foreach(Format* f,_formats){
         delete f;
@@ -634,7 +636,7 @@ void AppManager::loadAllPlugins() {
     assert(_toolButtons.empty());
     
     /*loading node plugins*/
-    loadBuiltinNodePlugins();
+    loadNodePlugins();
     
     assert(_readPluginsLoaded.empty());
     /*loading read plugins*/
@@ -646,10 +648,12 @@ void AppManager::loadAllPlugins() {
     
     /*loading ofx plugins*/
     std::map<QString,QMutex*> ofxPluginNames = ofxHost->loadOFXPlugins();
-    for(std::map<QString,QMutex*>::iterator it = ofxPluginNames.begin();it!=ofxPluginNames.end();++it){
-        _plugins.insert(*it);
-    }
     
+    for(std::map<QString,QMutex*>::iterator it = ofxPluginNames.begin();it!=ofxPluginNames.end();++it){
+        std::map<std::string,void*> functions;
+        LibraryBinary *plugin = new Powiter::LibraryBinary(Powiter::LibraryBinary::BUILTIN);
+        _plugins.insert(std::make_pair(it->first, std::make_pair(plugin, it->second)));
+    }
 }
 
 void AppManager::loadReadPlugins(){
@@ -715,34 +719,66 @@ void AppManager::loadBuiltinReads(){
         }
         delete readQt;
     }
-#if 0 // deprecated
-    {
-        Read* readFfmpeg = ReadFFMPEG::BuildRead(NULL);
-        assert(readFfmpeg);
-        std::vector<std::string> extensions = readFfmpeg->fileTypesDecoded();
-        std::string decoderName = readFfmpeg->decoderName();
-        
-        std::map<std::string,void*> FFfunctions;
-        FFfunctions.insert(make_pair("ReadBuilder", (void*)&ReadFFMPEG::BuildRead));
-        LibraryBinary *FFMPEGplugin = new LibraryBinary(FFfunctions);
-        assert(FFMPEGplugin);
-        for (U32 i = 0 ; i < extensions.size(); ++i) {
-            _readPluginsLoaded.insert(make_pair(decoderName,make_pair(extensions,FFMPEGplugin)));
-        }
-        delete readFfmpeg;
-    }
-#endif // deprecated
+
 }
+void AppManager::loadNodePlugins(){
+    std::vector<std::string> functions;
+    functions.push_back("BuildEffect");
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_NODES_PLUGINS_PATH, functions);
+    for (U32 i = 0 ; i < plugins.size(); ++i) {
+        std::pair<bool,EffectBuilder> func = plugins[i]->findFunction<EffectBuilder>("BuildEffect");
+        if(func.first){
+            EffectInstance* effect = func.second(NULL);
+            assert(effect);
+            QMutex* pluginMutex = NULL;
+            if(effect->renderThreadSafety() == Powiter::EffectInstance::UNSAFE){
+                pluginMutex = new QMutex;
+            }
+            _plugins.insert(make_pair(effect->className().c_str(),make_pair(plugins[i],pluginMutex)));
+            delete effect;
+        }
+    }
+    
+    loadBuiltinNodePlugins();
+}
+
 void AppManager::loadBuiltinNodePlugins(){
     // these  are built-in nodes
-    _plugins.insert(std::make_pair("Reader",(QMutex*)NULL));
-    _plugins.insert(std::make_pair("Viewer",(QMutex*)NULL));
-    _plugins.insert(std::make_pair("Writer",(QMutex*)NULL));
     QStringList grouping;
     grouping.push_back("IO");
-    addPluginToolButtons(grouping, "Reader", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
-    addPluginToolButtons(grouping, "Viewer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
-    addPluginToolButtons(grouping, "Writer", "", POWITER_IMAGES_PATH"ioGroupingIcon.png");
+    {
+        EffectInstance* reader = Reader::BuildEffect(NULL);
+        assert(reader);
+        std::map<std::string,void*> readerFunctions;
+        readerFunctions.insert(make_pair("BuildEffect", (void*)&Reader::BuildEffect));
+        LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
+        assert(readerPlugin);
+        _plugins.insert(std::make_pair(reader->className().c_str(),std::make_pair(readerPlugin,(QMutex*)NULL)));
+        addPluginToolButtons(grouping,reader->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        delete reader;
+    }
+    {
+        EffectInstance* viewer = ViewerInstance::BuildEffect(NULL);
+        assert(viewer);
+        std::map<std::string,void*> viewerFunctions;
+        viewerFunctions.insert(make_pair("BuildEffect", (void*)&ViewerInstance::BuildEffect));
+        LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
+        assert(viewerPlugin);
+        _plugins.insert(std::make_pair(viewer->className().c_str(),std::make_pair(viewerPlugin,(QMutex*)NULL)));
+        addPluginToolButtons(grouping,viewer->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        delete viewer;
+    }
+    {
+        EffectInstance* writer = Writer::BuildEffect(NULL);
+        assert(writer);
+        std::map<std::string,void*> writerFunctions;
+        writerFunctions.insert(make_pair("BuildEffect", (void*)&Writer::BuildEffect));
+        LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
+        assert(writerPlugin);
+        _plugins.insert(std::make_pair(writer->className().c_str(),std::make_pair(writerPlugin,(QMutex*)NULL)));
+        addPluginToolButtons(grouping,writer->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        delete writer;
+    }
 }
 
 /*loads extra writer plug-ins*/
@@ -877,14 +913,14 @@ void AppManager::loadBuiltinFormats(){
 
 Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const {
     
-	for(U32 i =0;i< _formats.size();++i) {
-		Format* frmt = _formats[i];
+    for(U32 i =0;i< _formats.size();++i) {
+        Format* frmt = _formats[i];
         assert(frmt);
-		if(frmt->width() == w && frmt->height() == h && frmt->getPixelAspect() == pixel_aspect){
-			return frmt;
-		}
-	}
-	return NULL;
+        if(frmt->width() == w && frmt->height() == h && frmt->getPixelAspect() == pixel_aspect){
+            return frmt;
+        }
+    }
+    return NULL;
 }
 
 void AppManager::addPluginToolButtons(const QStringList& groups,
@@ -935,7 +971,7 @@ void AppInstance::checkViewersConnection(){
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->className() == "Viewer") {
-            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->updateTreeAndRender();
         }
@@ -946,9 +982,21 @@ void AppInstance::setupViewersForViews(int viewsCount){
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->className() == "Viewer") {
-            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->getUiContext()->updateViewsMenu(viewsCount);
+        }
+    }
+}
+
+void AppInstance::notifyViewersProjectFormatChanged(const Format& format){
+    const std::vector<Node*>& nodes = _currentProject->getCurrentNodes();
+    for (U32 i = 0; i < nodes.size(); ++i) {
+        assert(nodes[i]);
+        if (nodes[i]->className() == "Viewer") {
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
+            assert(n);
+            n->getUiContext()->viewer->onProjectFormatChanged(format);
         }
     }
 }
@@ -957,7 +1005,7 @@ void AppInstance::setViewersCurrentView(int view){
     for (U32 i = 0; i < nodes.size(); ++i) {
         assert(nodes[i]);
         if (nodes[i]->className() == "Viewer") {
-            ViewerNode* n = dynamic_cast<ViewerNode*>(nodes[i]);
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>(nodes[i]->getLiveInstance());
             assert(n);
             n->getUiContext()->setCurrentView(view);
         }
@@ -981,13 +1029,6 @@ bool AppInstance::hasProjectBeenSavedByUser() const  {return _currentProject->ha
 
 const Format& AppInstance::getProjectFormat() const  {return _currentProject->getProjectDefaultFormat();}
 
-void AppInstance::lockProjectParams(){
-    _currentProject->lockProjectParams();
-}
-
-void AppInstance::unlockProjectParams(){
-    _currentProject->unlockProjectParams();
-}
 
 void AppManager::clearExceedingEntriesFromNodeCache(){
     _nodeCache->clearExceedingEntries();
@@ -995,16 +1036,30 @@ void AppManager::clearExceedingEntriesFromNodeCache(){
 
 QStringList AppManager::getNodeNameList() const{
     QStringList ret;
-    for(std::map<QString,QMutex*>::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
+    for(PluginsMap::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
         ret.append(it->first);
     }
     return ret;
 }
 
 QMutex* AppManager::getMutexForPlugin(const QString& pluginName) const {
-    std::map<QString,QMutex*>::const_iterator it = _plugins.find(pluginName);
+    PluginsMap::const_iterator it = _plugins.find(pluginName);
     if(it != _plugins.end()){
-        return it->second;
+        return it->second.second;
     }
     return NULL;
+}
+void AppManager::printPluginsLoaded(){
+    for(PluginsMap::const_iterator it = _plugins.begin();it!=_plugins.end();++it){
+        std::cout << it->first.toStdString() << std::endl;
+    }
+}
+
+Powiter::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) const{
+    PluginsMap::const_iterator it = _plugins.find(pluginName);
+    if(it != _plugins.end()){
+        return it->second.first;
+    }
+    return NULL;
+
 }

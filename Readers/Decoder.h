@@ -54,7 +54,7 @@ public:
     
     /*must be implemented to decode the data for the given roi, and store it in the output image
      at the given scale.*/
-    virtual void render(SequenceTime time,RenderScale scale,const Box2D& roi,boost::shared_ptr<Powiter::Image> output) = 0;
+    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) = 0;
     
     
     Powiter::Status _readHeader(const QString& filename){
@@ -88,7 +88,7 @@ public:
     /*This function should be call at the end of open(...)
      It set all the reader infos necessary for the read frame.*/
 	void setReaderInfo(Format dispW,
-                       const Box2D& dataW,
+                       const RectI& dataW,
                        Powiter::ChannelSet channels);
     
     /*Returns all the infos necessary for the current frame*/
@@ -110,14 +110,14 @@ protected:
     
     
     void from_byte_rect(float* to,const uchar* from,
-                        const Box2D& rect,const Box2D& rod,
+                        const RectI& rect,const RectI& rod,
                         Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
  
     void from_short_rect(float* to,const U16* from,
-                         const Box2D& rect,const Box2D& rod,
+                         const RectI& rect,const RectI& rod,
                          Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
     void from_float_rect(float* to,const float* from,
-                         const Box2D& rect,const Box2D& rod,
+                         const RectI& rect,const RectI& rod,
                          Powiter::Color::Lut::PackedPixelsFormat inputPacking = Powiter::Color::Lut::RGBA,bool invertY = false);
    
     bool _premult; //if the file contains a premultiplied 4 channel image, this must be turned-on

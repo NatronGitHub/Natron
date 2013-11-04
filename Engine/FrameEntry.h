@@ -35,7 +35,7 @@ namespace Powiter{
         float _exposure;
         float _lut;
         float _byteMode;
-        Box2D _dataWindow;//RoD
+        RectI _dataWindow;//RoD
         Format _displayWindow;
         TextureRect _textureRect; // texture rectangle definition (bounds in the original image + width and height)
         
@@ -67,7 +67,7 @@ namespace Powiter{
         {}
         
         FrameKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                 float lut,float byteMode,const Box2D& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
+                 float lut,float byteMode,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect):
         KeyHelper<U64>()
         ,_frameNb(frameNb)
         ,_treeVersion(treeVersion)
@@ -158,7 +158,7 @@ namespace Powiter{
         ~FrameEntry(){ }
         
         static FrameKey makeKey(int frameNb,U64 treeVersion,float zoomFactor,float exposure,
-                                float lut,float byteMode,const Box2D& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
+                                float lut,float byteMode,const RectI& dataWindow,const Format& displayWindow,const TextureRect& textureRect){
             return FrameKey(frameNb,treeVersion,zoomFactor,exposure,lut,byteMode,dataWindow,displayWindow,textureRect);
         }
         

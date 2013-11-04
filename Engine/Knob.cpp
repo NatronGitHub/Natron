@@ -15,7 +15,7 @@
 #include <QtCore/QByteArray>
 
 #include "Engine/Node.h"
-#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
@@ -34,7 +34,7 @@ using std::make_pair; using std::pair;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
  This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef Knob* (*KnobBuilder)(Node*  node,const std::string& description,int dimension);
+typedef Knob* (*KnobBuilder)(KnobHolder*  holder,const std::string& description,int dimension);
 
 typedef KnobGui* (*KnobGuiBuilder)(Knob* knob,DockablePanel*);
 
@@ -60,7 +60,7 @@ void KnobFactory::loadKnobPlugins(){
             std::pair<bool,KnobBuilder> builder = plugins[i]->findFunction<KnobBuilder>("BuildKnob");
             if(builder.first){
                 Knob* knob = builder.second(NULL,"",1);
-                _loadedKnobs.insert(make_pair(knob->name(), plugins[i]));
+                _loadedKnobs.insert(make_pair(knob->typeName(), plugins[i]));
                 delete knob;
             }
         }else{
@@ -78,7 +78,7 @@ void KnobFactory::loadBultinKnobs(){
     FILEfunctions.insert(make_pair("BuildKnob",(void*)&File_Knob::BuildKnob));
     FILEfunctions.insert(make_pair("BuildKnobGui",(void*)&File_KnobGui::BuildKnobGui));
     LibraryBinary *FILEKnobPlugin = new LibraryBinary(FILEfunctions);
-    _loadedKnobs.insert(make_pair(fileKnob->name(),FILEKnobPlugin));
+    _loadedKnobs.insert(make_pair(fileKnob->typeName(),FILEKnobPlugin));
     delete fileKnob;
     
     Knob* intKnob = Int_Knob::BuildKnob(NULL,stub,1);
@@ -87,7 +87,7 @@ void KnobFactory::loadBultinKnobs(){
     INTfunctions.insert(make_pair("BuildKnob",(void*)&Int_Knob::BuildKnob));
     INTfunctions.insert(make_pair("BuildKnobGui",(void*)&Int_KnobGui::BuildKnobGui));
     LibraryBinary *INTKnobPlugin = new LibraryBinary(INTfunctions);
-    _loadedKnobs.insert(make_pair(intKnob->name(),INTKnobPlugin));
+    _loadedKnobs.insert(make_pair(intKnob->typeName(),INTKnobPlugin));
     delete intKnob;
     
     
@@ -97,7 +97,7 @@ void KnobFactory::loadBultinKnobs(){
     DOUBLEfunctions.insert(make_pair("BuildKnob",(void*)&Double_Knob::BuildKnob));
     DOUBLEfunctions.insert(make_pair("BuildKnobGui",(void*)&Double_KnobGui::BuildKnobGui));
     LibraryBinary *DOUBLEKnobPlugin = new LibraryBinary(DOUBLEfunctions);
-    _loadedKnobs.insert(make_pair(doubleKnob->name(),DOUBLEKnobPlugin));
+    _loadedKnobs.insert(make_pair(doubleKnob->typeName(),DOUBLEKnobPlugin));
     delete doubleKnob;
     
     Knob* boolKnob = Bool_Knob::BuildKnob(NULL,stub,1);
@@ -106,7 +106,7 @@ void KnobFactory::loadBultinKnobs(){
     BOOLfunctions.insert(make_pair("BuildKnob",(void*)&Bool_Knob::BuildKnob));
     BOOLfunctions.insert(make_pair("BuildKnobGui",(void*)&Bool_KnobGui::BuildKnobGui));
     LibraryBinary *BOOLKnobPlugin = new LibraryBinary(BOOLfunctions);
-    _loadedKnobs.insert(make_pair(boolKnob->name(),BOOLKnobPlugin));
+    _loadedKnobs.insert(make_pair(boolKnob->typeName(),BOOLKnobPlugin));
     delete boolKnob;
     
     Knob* buttonKnob = Button_Knob::BuildKnob(NULL,stub,1);
@@ -115,7 +115,7 @@ void KnobFactory::loadBultinKnobs(){
     BUTTONfunctions.insert(make_pair("BuildKnob",(void*)&Button_Knob::BuildKnob));
     BUTTONfunctions.insert(make_pair("BuildKnobGui",(void*)&Button_KnobGui::BuildKnobGui));
     LibraryBinary *BUTTONKnobPlugin = new LibraryBinary(BUTTONfunctions);
-    _loadedKnobs.insert(make_pair(buttonKnob->name(),BUTTONKnobPlugin));
+    _loadedKnobs.insert(make_pair(buttonKnob->typeName(),BUTTONKnobPlugin));
     delete buttonKnob;
     
     Knob* outputFileKnob = OutputFile_Knob::BuildKnob(NULL,stub,1);
@@ -124,7 +124,7 @@ void KnobFactory::loadBultinKnobs(){
     OFfunctions.insert(make_pair("BuildKnob",(void*)&OutputFile_Knob::BuildKnob));
     OFfunctions.insert(make_pair("BuildKnobGui",(void*)&OutputFile_KnobGui::BuildKnobGui));
     LibraryBinary *OUTPUTFILEKnobPlugin = new LibraryBinary(OFfunctions);
-    _loadedKnobs.insert(make_pair(outputFileKnob->name(),OUTPUTFILEKnobPlugin));
+    _loadedKnobs.insert(make_pair(outputFileKnob->typeName(),OUTPUTFILEKnobPlugin));
     delete outputFileKnob;
     
     Knob* comboBoxKnob = ComboBox_Knob::BuildKnob(NULL,stub,1);
@@ -133,7 +133,7 @@ void KnobFactory::loadBultinKnobs(){
     CBBfunctions.insert(make_pair("BuildKnob",(void*)&ComboBox_Knob::BuildKnob));
     CBBfunctions.insert(make_pair("BuildKnobGui",(void*)&ComboBox_KnobGui::BuildKnobGui));
     LibraryBinary *ComboBoxKnobPlugin = new LibraryBinary(CBBfunctions);
-    _loadedKnobs.insert(make_pair(comboBoxKnob->name(),ComboBoxKnobPlugin));
+    _loadedKnobs.insert(make_pair(comboBoxKnob->typeName(),ComboBoxKnobPlugin));
     delete comboBoxKnob;
     
     
@@ -143,7 +143,7 @@ void KnobFactory::loadBultinKnobs(){
     Sepfunctions.insert(make_pair("BuildKnob",(void*)&Separator_Knob::BuildKnob));
     Sepfunctions.insert(make_pair("BuildKnobGui",(void*)&Separator_KnobGui::BuildKnobGui));
     LibraryBinary *SeparatorKnobPlugin = new LibraryBinary(Sepfunctions);
-    _loadedKnobs.insert(make_pair(separatorKnob->name(),SeparatorKnobPlugin));
+    _loadedKnobs.insert(make_pair(separatorKnob->typeName(),SeparatorKnobPlugin));
     delete separatorKnob;
     
     Knob* groupKnob = Group_Knob::BuildKnob(NULL,stub,1);
@@ -152,7 +152,7 @@ void KnobFactory::loadBultinKnobs(){
     Grpfunctions.insert(make_pair("BuildKnob",(void*)&Group_Knob::BuildKnob));
     Grpfunctions.insert(make_pair("BuildKnobGui",(void*)&Group_KnobGui::BuildKnobGui));
     LibraryBinary *GroupKnobPlugin = new LibraryBinary(Grpfunctions);
-    _loadedKnobs.insert(make_pair(groupKnob->name(),GroupKnobPlugin));
+    _loadedKnobs.insert(make_pair(groupKnob->typeName(),GroupKnobPlugin));
     delete groupKnob;
     
     Knob* rgbaKnob = RGBA_Knob::BuildKnob(NULL,stub,1);
@@ -161,7 +161,7 @@ void KnobFactory::loadBultinKnobs(){
     RGBAfunctions.insert(make_pair("BuildKnob",(void*)&RGBA_Knob::BuildKnob));
     RGBAfunctions.insert(make_pair("BuildKnobGui",(void*)&RGBA_KnobGui::BuildKnobGui));
     LibraryBinary *RGBAKnobPlugin = new LibraryBinary(RGBAfunctions);
-    _loadedKnobs.insert(make_pair(rgbaKnob->name(),RGBAKnobPlugin));
+    _loadedKnobs.insert(make_pair(rgbaKnob->typeName(),RGBAKnobPlugin));
     delete rgbaKnob;
     
     Knob* strKnob = String_Knob::BuildKnob(NULL,stub,1);
@@ -170,7 +170,7 @@ void KnobFactory::loadBultinKnobs(){
     STRfunctions.insert(make_pair("BuildKnob",(void*)&String_Knob::BuildKnob));
     STRfunctions.insert(make_pair("BuildKnobGui",(void*)&String_KnobGui::BuildKnobGui));
     LibraryBinary *STRKnobPlugin = new LibraryBinary(STRfunctions);
-    _loadedKnobs.insert(make_pair(strKnob->name(),STRKnobPlugin));
+    _loadedKnobs.insert(make_pair(strKnob->typeName(),STRKnobPlugin));
     delete strKnob;
     
     Knob* richTxtKnob = RichText_Knob::BuildKnob(NULL,stub,1);
@@ -179,17 +179,17 @@ void KnobFactory::loadBultinKnobs(){
     RICHTXTfunctions.insert(make_pair("BuildKnob",(void*)&RichText_Knob::BuildKnob));
     RICHTXTfunctions.insert(make_pair("BuildKnobGui",(void*)&RichText_KnobGui::BuildKnobGui));
     LibraryBinary *RICHTXTKnobPlugin = new LibraryBinary(RICHTXTfunctions);
-    _loadedKnobs.insert(make_pair(richTxtKnob->name(),RICHTXTKnobPlugin));
+    _loadedKnobs.insert(make_pair(richTxtKnob->typeName(),RICHTXTKnobPlugin));
     delete richTxtKnob;
 }
 
 
-Knob* KnobFactory::createKnob(const std::string& name,
-                              Node*  node,
+Knob* KnobFactory::createKnob(const std::string& id,
+                              KnobHolder*  holder,
                               const std::string& description,int dimension) const{
     
     
-    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(name);
+    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(id);
     if(it == _loadedKnobs.end()){
         return NULL;
     }else{
@@ -198,17 +198,15 @@ Knob* KnobFactory::createKnob(const std::string& name,
             return NULL;
         }
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        Knob* knob = builder(node,description,dimension);
+        Knob* knob = builder(holder,description,dimension);
         if(!knob){
             return NULL;
         }
-        if(node)
-            node->addKnob(knob);
         return knob;
     }
 }
 KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) const {
-    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(knob->name());
+    std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(knob->typeName());
     if(it == _loadedKnobs.end()){
         return NULL;
     }else{
@@ -225,8 +223,8 @@ KnobGui* KnobFactory::createGuiForKnob(Knob* knob,DockablePanel* container) cons
 /***********************************KNOB BASE******************************************/
 
 
-Knob::Knob(Node*  node,const std::string& description,int dimension):
-_node(node),
+Knob::Knob(KnobHolder* holder,const std::string& description,int dimension):
+_holder(holder),
 _value(),
 _hashVector(),
 _dimension(dimension),
@@ -240,74 +238,92 @@ _enabled(true),
 _canUndo(true),
 _isInsignificant(false),
 _tooltipHint(),
-_valuePostedWhileLocked(),
-_lock(),
-_isLocked(false),
 _hasPostedValue(false)
 {
-    if(_node){
-        QObject::connect(this, SIGNAL(knobUndoneChange()), _node, SIGNAL(knobUndoneChange()));
-        QObject::connect(this, SIGNAL(knobRedoneChange()), _node, SIGNAL(knobRedoneChange()));
-        QObject::connect(this, SIGNAL(valueChangedByUser(QString)),_node, SLOT(onParamChangeByUser(QString)));
+    
+    if(_holder){
+        _holder->addKnob(this);
     }
 }
 
 Knob::~Knob(){
-    if(_node)
-        _node->removeKnob(this);
+    if(_holder)
+        _holder->removeKnob(this);
+    emit deleted();
 }
+
+void Knob::onKnobUndoneChange(){
+    _holder->triggerAutoSave();
+}
+
+void Knob::onKnobRedoneChange(){
+    _holder->triggerAutoSave();
+}
+
 
 void Knob::restoreFromString(const std::string& str){
     _restoreFromString(str);
     fillHashVector();
+    processNewValue();
     emit valueChanged(_value);
 }
 
 void Knob::setValueInternal(const Variant& v){
-    if(!_lock.tryLock()){
-        _valuePostedWhileLocked = v;
-        _hasPostedValue = true;
-    }else{
-        _value = v;
-        _lock.unlock();
-        fillHashVector();
-    }
+    _value = v;
+    fillHashVector();
+    processNewValue();
     emit valueChanged(v);
+    _holder->onValueChanged(this,Knob::PLUGIN_EDITED);
     if(!_isInsignificant)
-        tryStartRendering();
+        _holder->evaluate(this);
 
 }
 
-void Knob::lock() { _lock.lock(); _isLocked = true; }
+void Knob::onValueChanged(const Variant& variant){
+    
+    _value = variant;
+    fillHashVector();
+    processNewValue();
+    _holder->onValueChanged(this,Knob::USER_EDITED);
+    if(!_isInsignificant)
+        _holder->evaluate(this);
+    
+}
 
-void Knob::unlock() {
-    if(_isLocked){
-        _lock.unlock();
-        _isLocked = false;
-        /*we neither have to update the gui for the knob
-         and start rendering since we did a request already.
-         */
-        if(_hasPostedValue){
-            _value = _valuePostedWhileLocked;
-            _hasPostedValue = false;
-        }
+void KnobHolder::beginValuesChanged(Knob::ValueChangedReason reason){
+     _betweenBeginEndParamChanged = true ;
+    beginKnobsValuesChanged(reason);
+}
+
+void KnobHolder::endValuesChanged(Knob::ValueChangedReason reason){
+    assert(_betweenBeginEndParamChanged);
+    _betweenBeginEndParamChanged = false ;
+    endKnobsValuesChanged(reason);
+}
+
+void KnobHolder::onValueChanged(Knob* k,Knob::ValueChangedReason reason){
+    bool wasBeginCalled = true;
+    if(!_betweenBeginEndParamChanged){
+        beginValuesChanged(reason);
+        wasBeginCalled = false;
+    }
+    onKnobValueChanged(k,reason);
+    if(!wasBeginCalled){
+        endValuesChanged(reason);
+    }
+}
+void KnobHolder::cloneKnobs(const KnobHolder& other){
+    assert(_knobs.size() == other._knobs.size());
+    for(U32 i = 0 ; i < other._knobs.size();++i){
+        _knobs[i]->cloneValue(*(other._knobs[i]));
     }
 }
 
-
-void Knob::startRendering(bool initViewer){
-    if(!_node)
-        return;
-    ViewerNode* viewer = _node->hasViewerConnected();
-    if(viewer){
-        viewer->refreshAndContinueRender(initViewer);
-    }
+void Knob::cloneValue(const Knob& other){
+    assert(_name == other._name);
+    _value = other._value;
+    cloneExtraData(other);
 }
-
-void Knob::deleteKnob(){
-    emit deleteWanted();
-}
-
 void Knob::turnOffNewLine(){
     _newLine = false;
 }
@@ -335,20 +351,18 @@ int Knob::determineHierarchySize() const{
     return ret;
 }
 
-void Knob::onValueChanged(const Variant& variant){
-    if(!_lock.tryLock()){
-        _valuePostedWhileLocked = variant;
-        _hasPostedValue = true;
-    }else{
-        _value = variant;
-        _lock.unlock();
-        fillHashVector();
+
+void KnobHolder::removeKnob(Knob* knob){
+    for(U32 i = 0; i < _knobs.size() ; ++i){
+        if (_knobs[i] == knob) {
+            _knobs.erase(_knobs.begin()+i);
+            break;
+        }
     }
-    
-    emit valueChangedByUser(_name);
-    if(!_isInsignificant)
-        tryStartRendering();
-    
+}
+
+void KnobHolder::triggerAutoSave(){
+    _app->triggerAutoSave();
 }
 /***********************************FILE_KNOB*****************************************/
 std::string File_Knob::serialize() const{
@@ -360,9 +374,6 @@ void File_Knob::_restoreFromString(const std::string& str){
     _value.setValue(filesList);
 }
 void File_Knob::fillHashVector(){
-    //this has nothing to do with the hash key but we need to do this call before the signal
-    // valueChangedByuser is emitted
-    getVideoSequenceFromFilesList();
     _hashVector.clear();
     QStringList files = _value.toStringList();
     for (int i = 0; i < files.size(); ++i) {
@@ -373,16 +384,8 @@ void File_Knob::fillHashVector(){
     }
 }
 
-void File_Knob::tryStartRendering(){
-    if(!_node)
-        return;
-    if(_filesSequence.size() > 0){
-        _node->refreshPreviewImage(_filesSequence.begin()->first);
-        startRendering(true);
-    }
-}
-
-void File_Knob::getVideoSequenceFromFilesList(){
+void File_Knob::processNewValue(){
+    QMutexLocker locker(&_fileSequenceLock);
     _filesSequence.clear();
     QStringList fileNameList = _value.toStringList();
     bool first_time = true;
@@ -432,9 +435,16 @@ void File_Knob::getVideoSequenceFromFilesList(){
             }
         }
     }
-    emit frameRangeChanged(firstFrame(), lastFrame());
+
 }
+
+void File_Knob::cloneExtraData(const Knob& other){
+    _filesSequence = dynamic_cast<const File_Knob&>(other)._filesSequence;
+}
+
+
 int File_Knob::firstFrame() const{
+    QMutexLocker locker(&_fileSequenceLock);
     std::map<int,QString>::const_iterator it = _filesSequence.begin();
     if (it == _filesSequence.end()) {
         return INT_MIN;
@@ -442,6 +452,7 @@ int File_Knob::firstFrame() const{
     return it->first;
 }
 int File_Knob::lastFrame() const {
+    QMutexLocker locker(&_fileSequenceLock);
     std::map<int,QString>::const_iterator it = _filesSequence.end();
     if(it == _filesSequence.begin()) {
         return INT_MAX;
@@ -456,6 +467,7 @@ int File_Knob::nearestFrame(int f) const{
     if(f > last) return last;
     
     std::map<int,int> distanceMap;
+    QMutexLocker locker(&_fileSequenceLock);
     for (std::map<int,QString>::const_iterator it = _filesSequence.begin(); it!=_filesSequence.end(); ++it) {
         distanceMap.insert(make_pair(std::abs(f - it->first), it->first));
     }
@@ -464,8 +476,10 @@ int File_Knob::nearestFrame(int f) const{
     else
         return 0;
 }
-QString File_Knob::getRandomFrameName(int f) const{
-    f = nearestFrame(f);
+QString File_Knob::getRandomFrameName(int f,bool loadNearestIfNotFound) const{
+    if(loadNearestIfNotFound)
+        f = nearestFrame(f);
+    QMutexLocker locker(&_fileSequenceLock);
     std::map<int, QString>::const_iterator it = _filesSequence.find(f);
     if(it!=_filesSequence.end()){
         return it->second;
@@ -483,9 +497,6 @@ void OutputFile_Knob::_restoreFromString(const std::string& str){
     _value.setValue(str);
 }
 
-void OutputFile_Knob::tryStartRendering(){
-    startRendering(false);
-}
 
 void OutputFile_Knob::fillHashVector(){
     _hashVector.clear();
@@ -564,9 +575,7 @@ std::vector<int> Int_Knob::getValues() const {
     return ret;
 }
 
-void Int_Knob::tryStartRendering(){
-    startRendering(false);
-}
+
 
 /***********************************BOOL_KNOB*****************************************/
 void Bool_Knob::fillHashVector(){
@@ -587,10 +596,6 @@ void Bool_Knob::_restoreFromString(const std::string& str){
     
 }
 
-
-void Bool_Knob::tryStartRendering(){
-    startRendering(false);
-}
 
 /***********************************DOUBLE_KNOB*****************************************/
 void Double_Knob::fillHashVector(){
@@ -665,20 +670,9 @@ std::vector<double> Double_Knob::getValues() const {
     return ret;
 }
 
-void Double_Knob::tryStartRendering(){
-    startRendering(false);
-}
-/***********************************BUTTON_KNOB*****************************************/
 
-Button_Knob::Button_Knob(Node*  node, const std::string& description,int dimension):
-Knob(node,description,dimension)
-{
-    QObject::connect(this,SIGNAL(valueChangedByUser(QString)),this,SLOT(emitButtonPressed(QString)));
-}
 
-void Button_Knob::emitButtonPressed(const QString& /*paramName*/){
-    emit buttonPressed();
-}
+
 
 
 /***********************************COMBOBOX_KNOB*****************************************/
@@ -696,9 +690,6 @@ void ComboBox_Knob::_restoreFromString(const std::string& str){
 }
 
 
-void ComboBox_Knob::tryStartRendering(){
-    startRendering(false);
-}
 /***********************************RGBA_KNOB*****************************************/
 void RGBA_Knob::fillHashVector(){
     QVector4D values = _value.value<QVector4D>();

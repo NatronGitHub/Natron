@@ -18,7 +18,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Engine/ChannelSet.h"
-#include "Engine/Box.h"
+#include "Engine/RectI.h"
 #include "Engine/Lut.h"
 
 class Writer;
@@ -131,7 +131,7 @@ public:
     
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
     **/
-	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const Box2D& roi) = 0;
+	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) = 0;
     
     /*@brief can be overloaded to finalize the file. This is called after the last call to render() was made for the frame*/
     virtual void finalizeFile(){}
@@ -142,7 +142,7 @@ public:
     **/
     virtual void initializeColorSpace() = 0;
     
-    Powiter::Status _setupFile(const QString& filename,const Box2D& rod){
+    Powiter::Status _setupFile(const QString& filename,const RectI& rod){
         _filename = filename;
         return setupFile(filename,rod);
     }
@@ -184,22 +184,22 @@ public:
      * @brief to_byte converts a RGBA packed-buffer of float to a RGBA packed-buffer of bytes to the output color-space.
      */
     void to_byte_rect(uchar* to, const float* from,
-                      const Box2D& rect,const Box2D& rod,
+                      const RectI& rect,const RectI& rod,
                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to shorts output buffer.**/
     void to_short_rect(U16* to, const float* from,
-                       const Box2D& rect,const Box2D& rod,
+                       const RectI& rect,const RectI& rod,
                        Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to float output buffer**/
     void to_float_rect(float* to, const float* from,
-                       const Box2D& rect,const Box2D& rod,
+                       const RectI& rect,const RectI& rod,
                        Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
     
 protected:
     
-    virtual Powiter::Status setupFile(const QString& filename,const Box2D& rod) = 0;
+    virtual Powiter::Status setupFile(const QString& filename,const RectI& rod) = 0;
 };
 
 /** @typedef Classes deriving Write should implement a function named BuildWrite with the following signature:
