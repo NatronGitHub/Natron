@@ -74,8 +74,9 @@ _gui(new Gui(this))
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
     _currentProject->initializeKnobs();
+
     _gui->createGui();
-    
+
     const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
