@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost glew opengl qt expat debug sanitizer
+CONFIG += openexr freetype2 ftgl boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -68,23 +68,7 @@ sanitizer{
   QMAKE_CXXFLAGS += -std=c++11
 }
 
-CONFIG(release, debug|release){
-    release:DESTDIR = "build_$$TARGET/release"
-}
-CONFIG(debug, debug|release){
-    debug:  DESTDIR = "build_$$TARGET/debug"
-}
 
-OBJECTS_DIR = "$$DESTDIR/.obj"
-
-#Removed these as the Xcode project would mess-up and it is not important anyway.
-MOC_DIR = "$$OBJECTS_DIR"
-RCC_DIR = "$$OBJECTS_DIR"
-UI_DIR = "$$OBJECTS_DIR"
-
-unix:macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7
-unix:macx:QMAKE_LFLAGS += -mmacosx-version-min=10.7
-unix:macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 include(config.pri)
 
 
