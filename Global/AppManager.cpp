@@ -81,14 +81,6 @@ _gui(new Gui(this))
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
         QString name = _toolButtons[i]->_pluginName;
-        if (_toolButtons[i]->_groups.size() >= 1 &&
-            name != "Reader" &&
-            name != "Viewer" &&
-            name != "Writer") {
-            name.append("  [");
-            name.append(_toolButtons[i]->_groups[0]);
-            name.append("]");
-        }
         _gui->addPluginToolButton(name,
                                   _toolButtons[i]->_groups,
                                   _toolButtons[i]->_pluginName,
