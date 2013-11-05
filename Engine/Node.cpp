@@ -566,7 +566,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     
     if(found!=_inputs.end() && found->second && !autoConnection &&
-       ((inputAlreadyConnected!=_inputs.end()) || (inputAlreadyConnected==_inputs.end()/* && input->className() == "Viewer"*/))){
+       ((inputAlreadyConnected!=_inputs.end()) )){
         setActiveInputAndRefresh(found->first);
         return false;
     }
