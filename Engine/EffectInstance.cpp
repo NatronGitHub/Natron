@@ -12,6 +12,7 @@
 #include "EffectInstance.h"
 
 #include <QtConcurrentMap>
+#include <QCoreApplication>
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
@@ -29,7 +30,11 @@ KnobHolder(node ? node->getApp() : NULL)
 , _inputs()
 , _renderArgs()
 {
-    
+    //create the renderArgs only if the current thread is different than the main thread.
+    // otherwise it would create mem leaks and an error message.
+    if(QThread::currentThread() != qApp->thread()){
+        _renderArgs.reset(new QThreadStorage<RenderArgs>);
+    }
 }
 
 void EffectInstance::clone(){
@@ -117,8 +122,8 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
     if(!entry){
         //if not found in cache render it using the last args passed to render by this thread
         RectI roi;
-        if(_renderArgs.hasLocalData()){
-            roi = _renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
+        if(_renderArgs && _renderArgs->hasLocalData()){
+            roi = _renderArgs->localData()._roi;//if the thread was spawned by us we take the last render args
         }else{
             n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
         }
@@ -205,7 +210,10 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
             args._time = time;
             args._view = view;
             args._scale = scale;
-            _renderArgs.setLocalData(args);
+            if(_renderArgs){ // if this function is called on the _liveInstance object (i.e: preview)
+                             // it has no _renderArgs.
+                _renderArgs->setLocalData(args);
+            }
 
             
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
@@ -252,6 +260,9 @@ void EffectInstance::tiledRenderingFunctor(RenderArgs args,
                                  boost::shared_ptr<Powiter::Image> output){
     
     render(args._time, args._scale, roi,args._view, output);
+    if(_renderArgs){
+        _renderArgs->setLocalData(args);
+    }
     output->markForRendered(roi);
 }
 

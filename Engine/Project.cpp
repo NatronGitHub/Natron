@@ -71,6 +71,8 @@ Project::~Project(){
         if(_currentNodes[i]->isOutputNode()){
             dynamic_cast<OutputEffectInstance*>(_currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
         }
+    }
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
         delete _currentNodes[i];
     }
     _currentNodes.clear();

@@ -13,7 +13,6 @@
 #define EFFECTINSTANCE_H
 
 #include <boost/shared_ptr.hpp>
-
 #include <QThreadStorage>
 
 #include "Global/GlobalDefines.h"
@@ -63,7 +62,7 @@ private:
     //or a render instance (i.e a snapshot of the live instance at a given time)
     
     Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
-    QThreadStorage<RenderArgs> _renderArgs;
+    boost::shared_ptr<QThreadStorage<RenderArgs> > _renderArgs;
     
 public:
     
