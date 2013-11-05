@@ -70,7 +70,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob) OVERRIDE;
+    virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     const std::vector<Node*>& getCurrentNodes() const{return _currentNodes;}
     

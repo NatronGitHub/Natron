@@ -899,15 +899,16 @@ void ConnectCommand::redo(){
     if(_newSrc){
         setText(QObject::tr("Connect %1 to %2")
                 .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
+        ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
+        if(viewer){
+            viewer->updateTreeAndRender();
+        }
     }else{
         setText(QObject::tr("Disconnect %1")
                 .arg(_edge->getDest()->getNode()->getName().c_str()));
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
-    if(viewer){
-        viewer->updateTreeAndRender();
-    }
+    
     
     
 }

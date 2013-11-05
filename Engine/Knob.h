@@ -274,7 +274,7 @@ public:
      * made to a knob(e.g: force a new render). 
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob) = 0;
+    virtual void evaluate(Knob* knob,bool isSignificant) = 0;
     
     /**
      * @brief Should be implemented by any deriving class that maintains

@@ -353,7 +353,7 @@ public:
      * call this yourself as this is called automatically on a knob value changed,
      * but this is provided as a way to force things.
      **/
-    void requestRender() { evaluate(NULL); }
+    void requestRender() { evaluate(NULL,true); }
     
     /**
      * @brief Abort any ongoing rendering that uses this effect.
@@ -397,7 +397,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(Knob* knob) OVERRIDE;
+    void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     
     void tiledRenderingFunctor(SequenceTime time,

@@ -116,7 +116,12 @@ void VideoEngine::render(int frameCount,
     int firstFrame,lastFrame;
     getFrameRange(&firstFrame, &lastFrame);
     _timeline->setFrameRange(firstFrame, lastFrame);
-    
+    int current = _timeline->currentFrame();
+    if(current < firstFrame){
+        _timeline->seekFrame(firstFrame);
+    }else if(current > lastFrame){
+        _timeline->seekFrame(lastFrame);
+    }
     
     /*setting the run args that are used by the run function*/
     _lastRequestedRunArgs._sameFrame = sameFrame;

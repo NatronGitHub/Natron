@@ -242,11 +242,17 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(Knob* /*knob*/){
+void EffectInstance::evaluate(Knob* /*knob*/,bool isSignificant){
     assert(_node);
+    
     ViewerInstance* n = _node->hasViewerConnected();
     if(n){
-        n->refreshAndContinueRender();
+        if(isSignificant){
+            n->refreshAndContinueRender();
+        }else{
+            n->redrawViewer();
+        }
+        
     }
 }
 

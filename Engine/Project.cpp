@@ -101,7 +101,7 @@ void Project::initializeKnobs(){
 }
 
 
-void Project::evaluate(Knob* knob){
+void Project::evaluate(Knob* knob,bool /*isSignificant*/){
     if(knob == _viewsCount){
         int viewsCount = _viewsCount->value<int>();
         getApp()->setupViewersForViews(viewsCount);

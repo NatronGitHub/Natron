@@ -504,16 +504,19 @@ void AppInstance::clearNodes(){
 
 void AppManager::clearPlaybackCache(){
     _viewerCache->clearInMemoryPortion();
+
 }
 
 
 void AppManager::clearDiskCache(){
     _viewerCache->clear();
+    
 }
 
 
 void  AppManager::clearNodeCache(){
     _nodeCache->clear();
+ 
 }
 
 

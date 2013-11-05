@@ -280,8 +280,7 @@ void Knob::setValueInternal(const Variant& v){
     processNewValue();
     emit valueChanged(v);
     _holder->onValueChanged(this,Knob::PLUGIN_EDITED);
-    if(!_isInsignificant)
-        _holder->evaluate(this);
+    _holder->evaluate(this,!_isInsignificant);
 
 }
 
@@ -292,8 +291,7 @@ void Knob::onValueChanged(const Variant& variant){
         updateHash();
     processNewValue();
     _holder->onValueChanged(this,Knob::USER_EDITED);
-    if(!_isInsignificant)
-        _holder->evaluate(this);
+    _holder->evaluate(this,!_isInsignificant);
     
 }
 
