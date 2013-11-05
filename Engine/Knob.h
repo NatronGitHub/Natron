@@ -280,7 +280,9 @@ public:
      * @brief Should be implemented by any deriving class that maintains
      * a hash value based on the knobs.
      **/
-    virtual void invalidateHash(){}
+    void invalidateHash();
+    
+    int getAppAge() const;
     
     const std::vector<Knob*>& getKnobs() const { return _knobs; }
     

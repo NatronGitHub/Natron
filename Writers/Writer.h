@@ -35,11 +35,11 @@ class Writer: public QObject,public Powiter::OutputEffectInstance {
     
 public:
   
-    static Powiter::EffectInstance* BuildEffect(Node* n){
+    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n){
         return new Writer(n);
     }
     
-    Writer(Node* node);
+    Writer(Powiter::Node* node);
         
     virtual ~Writer();
     

@@ -37,11 +37,14 @@ class QKeyEvent;
 class Gui;
 class NodeSettingsPanel;
 class NodeGui;
-class Node;
 class AppInstance;
 class Edge;
 class QMenu;
 class SmartInputDialog;
+
+namespace Powiter{
+    class Node;
+}
 
 class NodeGraph: public QGraphicsView , public boost::noncopyable{
     
@@ -70,7 +73,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Node *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Powiter::Node *node);
     
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     
@@ -225,8 +228,8 @@ public:
     virtual void redo();
     
 private:
-    std::multimap<int,Node*> _outputs;
-    std::map<int,Node*> _inputs;
+    std::multimap<int,Powiter::Node*> _outputs;
+    std::map<int,Powiter::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -240,8 +243,8 @@ public:
     virtual void redo();
     
 private:
-    std::multimap<int,Node*> _outputs;
-    std::map<int,Node*> _inputs;
+    std::multimap<int,Powiter::Node*> _outputs;
+    std::map<int,Powiter::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };

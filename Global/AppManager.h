@@ -39,7 +39,6 @@
 
 class KnobFactory;
 class NodeGui;
-class Node;
 class ViewerInstance;
 class Writer;
 class ViewerTab;
@@ -53,6 +52,7 @@ namespace Powiter {
 class LibraryBinary;
 class EffectInstance;
 class OfxHost;
+class Node;
 class Project;
 }
 
@@ -72,7 +72,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Node* createNode(const QString& name,bool requestedByLoad = false);
+    Powiter::Node* createNode(const QString& name,bool requestedByLoad = false);
     
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
@@ -111,6 +111,9 @@ public:
 
     void resetCurrentProject();
 
+    int getKnobsAge() const;
+
+    void incrementKnobsAge();
 
     void clearNodes();
 
@@ -123,17 +126,17 @@ public:
     ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
 
 
-    bool connect(int inputNumber,const std::string& inputName,Node* output);
+    bool connect(int inputNumber,const std::string& inputName,Powiter::Node* output);
 
-    bool connect(int inputNumber,Node* input,Node* output);
+    bool connect(int inputNumber,Powiter::Node* input,Powiter::Node* output);
 
-    bool disconnect(Node* input,Node* output);
+    bool disconnect(Powiter::Node* input,Powiter::Node* output);
 
-    void autoConnect(Node* target,Node* created);
+    void autoConnect(Powiter::Node* target,Powiter::Node* created);
 
-    NodeGui* getNodeGui(Node* n) const WARN_UNUSED_RETURN;
+    NodeGui* getNodeGui(Powiter::Node* n) const WARN_UNUSED_RETURN;
 
-    Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
+    Powiter::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
 
 
     void connectViewersToViewerCache();
@@ -192,7 +195,7 @@ private:
 
     int _appID;
 
-    std::map<Node*,NodeGui*> _nodeMapping;
+    std::map<Powiter::Node*,NodeGui*> _nodeMapping;
 
     QMutex* _autoSaveMutex;
 

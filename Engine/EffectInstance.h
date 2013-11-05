@@ -20,12 +20,12 @@
 #include "Engine/RectI.h"
 #include "Engine/Knob.h"
 
-class Node;
 class RenderTree;
 class VideoEngine;
 class RenderTree;
 namespace Powiter{
 
+class Node;
 class Image;
 
 
@@ -40,11 +40,11 @@ public:
     typedef std::vector<EffectInstance*> Inputs;
 private:
     
-    Node* _node; //< the node holding this effect
+    Powiter::Node* _node; //< the node holding this effect
 
     bool _renderAborted; //< was rendering aborted ?
     Hash64 _hashValue;//< The hash value of this effect
-    int _hashAge;//< to check if the hash has the same age than another hash
+    int _hashAge;//< to check if the hash has the same age than the project's age
     bool _isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
     //or a render instance (i.e a snapshot of the live instance at a given time)
     
@@ -56,6 +56,7 @@ public:
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
      * You shouldn't do any heavy processing here nor lengthy initialization as the constructor is often
      * called just to be able to call a few virtuals fonctions.
+     * The constructor is always called by the main thread of the application.
      **/
     explicit EffectInstance(Node* node);
     
@@ -81,9 +82,7 @@ public:
     U64 computeHash(const std::vector<U64>& inputsHashs);
     
     const Hash64& hash() const { return _hashValue; }
-        
-    virtual void invalidateHash() OVERRIDE;
-    
+            
     bool isHashValid() const;
     
     int hashAge() const;
@@ -382,6 +381,15 @@ public:
      **/
     void updateInputs(RenderTree* tree);
     
+    
+protected:
+    
+    /**
+     * @brief This function is provided for means to copy more data than just the knobs from the live instance
+     * to the render clones.
+     **/
+    virtual void cloneExtras(){}
+    
 private:
     
     /**
@@ -403,7 +411,7 @@ private:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Powiter::EffectInstance* (*EffectBuilder)(Node*);
+typedef Powiter::EffectInstance* (*EffectBuilder)(Powiter::Node*);
 
 
 class OutputEffectInstance : public Powiter::EffectInstance {

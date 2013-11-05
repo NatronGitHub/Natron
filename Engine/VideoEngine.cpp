@@ -56,6 +56,7 @@ VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
 , _abortedRequestedCondition()
 , _abortedRequestedMutex()
 , _abortRequested(0)
+, _mustQuitCondition()
 , _mustQuitMutex()
 , _mustQuit(false)
 , _treeVersionValid(false)
@@ -75,21 +76,31 @@ VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
     setTerminationEnabled();
 }
 
-VideoEngine::~VideoEngine() {
+VideoEngine::~VideoEngine() {   
+    
+}
+
+void VideoEngine::quitEngineThread(){
     abortRendering();
-    quitEngineThread();
     {
-        QMutexLocker startLocker(&_startMutex);
-        _startCount = 1;
+        QMutexLocker locker(&_mustQuitMutex);
+        _mustQuit = true;
+    }
+    {
+        QMutexLocker locker(&_startMutex);
+        ++_startCount;
         _startCondition.wakeAll();
     }
-    if(isRunning()){
-        while(!isFinished()){
+    if(_tree.isOutputAViewer())
+        _tree.outputAsViewer()->wakeUpAnySleepingThread();
+    {
+        QMutexLocker locker(&_mustQuitMutex);
+        while(_mustQuit){
+            _mustQuitCondition.wait(&_mustQuitMutex);
         }
     }
     
 }
-
 
 void VideoEngine::render(int frameCount,
                          bool refreshTree,
@@ -197,7 +208,7 @@ bool VideoEngine::startEngine() {
     return true;
 
 }
-void VideoEngine::stopEngine() {
+bool VideoEngine::stopEngine() {
     /*reset the abort flag and wake up any thread waiting*/
     {
         // make sure startEngine is not running by locking _abortBeingProcessedMutex
@@ -206,11 +217,11 @@ void VideoEngine::stopEngine() {
         {
             QMutexLocker l(&_abortedRequestedMutex);
             _abortRequested = 0;
-            _tree.lock();
+            
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
                 it->second->setAborted(false);
             }
-            _tree.unlock();
+            
             _abortedRequestedCondition.wakeOne();
         }
 
@@ -239,15 +250,24 @@ void VideoEngine::stopEngine() {
     }
 
     
+    {
+        QMutexLocker locker(&_mustQuitMutex);
+        if (_mustQuit) {
+            _mustQuit = false;
+            _mustQuitCondition.wakeAll();
+            return true;
+        }
+    }
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
         while(_startCount <= 0) {
             _startCondition.wait(&_startMutex);
         }
-        _startCount = 0; 
+        _startCount = 0;
     }
-   
+    return false;
+    
     
 }
 void VideoEngine::getFrameRange(int *firstFrame,int *lastFrame) const {
@@ -277,7 +297,8 @@ void VideoEngine::run(){
              in which case we must quit the engine.*/
             QMutexLocker locker(&_mustQuitMutex);
             if(_mustQuit) {
-    
+                _mustQuit = false;
+                _mustQuitCondition.wakeAll();
                 return;
             }
         }
@@ -286,7 +307,8 @@ void VideoEngine::run(){
          rendered of a sequence.*/
         if(_restart){
             if(!startEngine()){
-                stopEngine();
+                if(stopEngine())
+                    return;
                 continue;
             }
         }
@@ -328,7 +350,8 @@ void VideoEngine::run(){
                             _timeline->seekFrame(currentFrame);
                         }else{
                             loopModeLocker.unlock();
-                            stopEngine();
+                            if(stopEngine())
+                                return;
                             continue;
                         }
                     }
@@ -346,7 +369,8 @@ void VideoEngine::run(){
                             _timeline->seekFrame(currentFrame);
                         }else{
                             loopModeLocker.unlock();
-                            stopEngine();
+                            if(stopEngine())
+                                return;
                             continue;
                         }
                     }
@@ -355,7 +379,8 @@ void VideoEngine::run(){
                 ++_writerCurrentFrame;
                 currentFrame = _writerCurrentFrame;
                 if(currentFrame > lastFrame){
-                    stopEngine();
+                    if(stopEngine())
+                        return;
                     continue;
                 }
             }
@@ -376,7 +401,8 @@ void VideoEngine::run(){
                || _currentRunArgs._frameRequestsCount == 0) // #3 the sequence ended and it was not an infinite run
             {
                 locker.unlock();
-                stopEngine();
+                if(stopEngine())
+                    return;
                 continue;
             }
         }
@@ -385,7 +411,8 @@ void VideoEngine::run(){
         
         Status stat = _tree.preProcessFrame(currentFrame);
         if(stat == StatFailed){
-            stopEngine();
+            if(stopEngine())
+                return;
             continue;
         }
         /*get the time at which we started rendering the frame*/
@@ -412,7 +439,8 @@ void VideoEngine::run(){
         }
 
         if(stat == StatFailed){
-            stopEngine();
+            if(stopEngine())
+                return;
             continue;
         }
         
@@ -452,11 +480,11 @@ void VideoEngine::abortRendering(){
     {
         QMutexLocker locker(&_abortedRequestedMutex);
         ++_abortRequested;
-        _tree.lock();
+        
         for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
             it->second->setAborted(true);
         }
-        _tree.unlock();
+        
         // _abortedCondition.wakeOne();
     }
 }
@@ -497,7 +525,6 @@ _output(output)
 ,_lastFrame(0)
 {
     assert(output);
-    
 }
 
 
@@ -509,7 +536,6 @@ void RenderTree::clearGraph(){
 }
 
 void RenderTree::refreshTree(){
-    QMutexLocker dagLocker(&_treeMutex);
     _isViewer = dynamic_cast<ViewerInstance*>(_output) != NULL;
     _isOutputOpenFXNode = _output->isOpenFX();
     
@@ -518,11 +544,18 @@ void RenderTree::refreshTree(){
     clearGraph();
     fillGraph(_output->getNode());
 
+    std::vector<U64> inputsHash;
     for(TreeContainer::iterator it = _sorted.begin();it!=_sorted.end();++it) {
         (*it).first->setMarkedByTopologicalSort(false);
         (*it).second = (*it).first->findOrCreateLiveInstanceClone(this);
+        
+        U64 ret = it->second->hash().value();
+        it->second->clone();
+        ret = it->second->computeHash(inputsHash);
+        inputsHash.push_back(ret);
     }
-   
+    
+
 }
 
 
@@ -542,30 +575,16 @@ void RenderTree::fillGraph(Node* n){
     }
     if(!n->isMarkedByTopologicalSort()){
         n->setMarkedByTopologicalSort(true);
-        n->getLiveInstance()->invalidateHash();
         _sorted.push_back(std::make_pair(n,(EffectInstance*)NULL));
     }
 }
 
-U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect){
-    const EffectInstance::Inputs& inputs = effect->getInputs();
-    std::vector<U64> inputsHashs;
-    InspectorNode* insp = dynamic_cast<InspectorNode*>(effect->getNode());
-    for(U32 i = 0 ; i < inputs.size();++i){
-        if(insp){
-            if (inputs[i] && (int)i == insp->activeInput()) {
-                inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
-            }
-        }else{
-            if (inputs[i]) {
-                inputsHashs.push_back(cloneKnobsAndcomputeTreeHash(inputs[i]));
-            }
-        }
-    }
+U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::vector<U64>& inputsHashs){
     U64 ret = effect->hash().value();
     if(!effect->isHashValid()){
         effect->clone();
         ret = effect->computeHash(inputsHashs);
+        std::cout << effect->getName() << ": " << ret << std::endl;
     }
     return ret;
 }
@@ -578,11 +597,18 @@ void RenderTree::refreshKnobsAndHash(){
     if (oldVersionValid) {
         oldVersion = _output->hash().value();
     }
-    U64 hash = cloneKnobsAndcomputeTreeHash(_output);
+    
+    /*Computing the hash of the tree in topological ordering.
+     For each effect in the tree, the hash of its inputs is guaranteed to have
+     been computed.*/
+    std::vector<U64> inputsHash;
+    for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
+        inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash));
+    }
     _treeVersionValid = true;
     
     /*If the hash changed we clear the playback cache.*/
-    if(!oldVersionValid || (hash != oldVersion)){
+    if(!oldVersionValid || (inputsHash.back() != oldVersion)){
         appPTR->clearPlaybackCache();
     }
     
@@ -590,17 +616,19 @@ void RenderTree::refreshKnobsAndHash(){
 }
 
 ViewerInstance* RenderTree::outputAsViewer() const {
-    if(_output && _isViewer)
+    if(_output && _isViewer){
         return dynamic_cast<ViewerInstance*>(_output);
-    else
+    }else{
         return NULL;
+    }
 }
 
 Writer* RenderTree::outputAsWriter() const {
-    if(_output && !_isViewer)
+    if(_output && !_isViewer){
         return dynamic_cast<Writer*>(_output);
-    else
+    }else{
         return NULL;
+    }
 }
 
 
@@ -645,17 +673,6 @@ bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
 //    }
     return false;
 }
-void VideoEngine::quitEngineThread(){
-    {
-        QMutexLocker locker(&_mustQuitMutex);
-        _mustQuit = true;
-    }
-    {
-        QMutexLocker locker(&_startMutex);
-        ++_startCount;
-        _startCondition.wakeAll();
-    }
-}
 
 void VideoEngine::toggleLoopMode(bool b){
     _loopMode = b;
@@ -667,4 +684,7 @@ bool VideoEngine::isWorking() const {
     return _working;
 }
 
-
+bool VideoEngine::mustQuit() const{
+    QMutexLocker locker(&_mustQuitMutex);
+    return _mustQuit;
+}

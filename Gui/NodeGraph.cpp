@@ -215,7 +215,7 @@ QRectF NodeGraph::visibleRect() {
     return mapToScene(viewport()->rect()).boundingRect();
 }
 
-NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
+NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Powiter::Node *node){
     QPointF selectedPos;
     QRectF viewPos = visibleRect();
     double x,y;
@@ -241,7 +241,6 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Node *node){
     }
     
     NodeGui* node_ui = new NodeGui(this,dockContainer,node,x,y,_root);
-    // scene()->addItem(node_ui);
     _nodes.push_back(node_ui);
     _undoStack->push(new AddCommand(this,node_ui));
     _evtState = DEFAULT;
@@ -506,7 +505,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         /*check first if the node selected has outputs and connect the outputs to the new node*/
         if(!created->getNode()->isOutputNode()){
             while(selected->getNode()->hasOutputConnected()){
-                Node* outputNode = selected->getNode()->getOutputs().begin()->second;
+                Powiter::Node* outputNode = selected->getNode()->getOutputs().begin()->second;
                 assert(outputNode);
                 
                 /*Find which edge is connected to the selected node */

@@ -29,7 +29,6 @@
 #include "Engine/Knob.h"
 
 class QCheckBox;
-class Node;
 class LineEdit;
 class Button;
 class SpinBox;
@@ -44,6 +43,11 @@ class ScaleSlider;
 class QGridLayout;
 class DockablePanel;
 class QTextEdit;
+
+namespace Powiter{
+    class Node;
+}
+
 class KnobGui : public QObject
 {
     Q_OBJECT

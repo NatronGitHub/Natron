@@ -38,9 +38,9 @@ class NodeGraph;
 class QAction;
 class KnobGui;
 class Knob;
-class Node;
 namespace Powiter {
 class ChannelSet;
+class Node;
 }
 
 class NodeGui : public QObject,public QGraphicsItem
@@ -103,7 +103,7 @@ public:
     
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
-            Node *node,
+            Powiter::Node *node,
             qreal x,qreal y ,
             QGraphicsItem *parent=0);
 
@@ -111,7 +111,7 @@ public:
     
     NodeGui::SerializedState serialize() const;
     
-    Node* getNode() const {return node;}
+    Powiter::Node* getNode() const {return node;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _dag;}
@@ -232,7 +232,7 @@ private:
     NodeGraph* _dag;
     
     /*pointer to the internal node*/
-    Node* node;
+    Powiter::Node* node;
     
     /*true if the node is selected by the user*/
     bool _selected;

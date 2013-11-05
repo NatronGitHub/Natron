@@ -21,9 +21,9 @@
 class OfxEffectInstance;
 class AppInstance;
 class QMutex;
-class Node;
 namespace Powiter {
-
+class Node;
+    
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
     
     Q_OBJECT

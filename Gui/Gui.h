@@ -46,7 +46,6 @@ class QTreeView;
 class AppInstance;
 class NodeGraph;
 class ViewerTab;
-class Node;
 class InspectorNode;
 class QToolBar;
 class QGraphicsScene;
@@ -60,6 +59,11 @@ class Gui;
 class SpinBox;
 class LineEdit;
 class DockablePanel;
+
+namespace Powiter{
+    class Node;
+}
+
 /*Holds just a reference to an action*/
 class ActionRef : public QObject{
     Q_OBJECT
@@ -180,7 +184,7 @@ public:
     
     void createGui();
     
-    NodeGui* createNodeGUI(Node *node);
+    NodeGui* createNodeGUI(Powiter::Node *node);
     
     void autoConnect(NodeGui* target,NodeGui* created);
     
@@ -192,7 +196,7 @@ public:
     
     bool eventFilter(QObject *target, QEvent *event);
 
-    void createViewerGui(Node* viewer);
+    void createViewerGui(Powiter::Node* viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/

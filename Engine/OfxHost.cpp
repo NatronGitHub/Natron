@@ -160,7 +160,7 @@ OfxStatus Powiter::OfxHost::clearPersistentMessage(){
     return kOfxStatOK;
 }
 
-OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Node* node) {
+OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Powiter::Node* node) {
     OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {

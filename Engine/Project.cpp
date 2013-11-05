@@ -61,11 +61,16 @@ KnobHolder(appInstance)
 , _projectDataLock()
 , _currentNodes()
 , _availableFormats()
+, _knobsAge(0)
 {
 }
 
 Project::~Project(){
+    QMutexLocker locker(&_projectDataLock);
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        if(_currentNodes[i]->isOutputNode()){
+            dynamic_cast<OutputEffectInstance*>(_currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+        }
         delete _currentNodes[i];
     }
     _currentNodes.clear();

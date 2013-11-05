@@ -17,8 +17,6 @@
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
-#define HASH_AGE_MAX_VALUE 99999
-
 using namespace Powiter;
 
 EffectInstance::EffectInstance(Node* node):
@@ -37,6 +35,7 @@ void EffectInstance::clone(){
     if(!_isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
+    cloneExtras();
 }
 
 
@@ -50,28 +49,17 @@ namespace {
 }
 
 bool EffectInstance::isHashValid() const {
-    if(_hashAge == 0)
-        return false;
-    if(_isRenderClone)
-        return _hashAge == _node->getLiveInstance()->hashAge() && _hashValue.valid();
-    else
-        return false;
+    //The hash is valid only if the age is the same than the project's age and the hash has been computed at least once.
+    return _hashAge == getAppAge() && _hashValue.valid();
 }
 int EffectInstance::hashAge() const{
     return _hashAge;
 }
 
-void EffectInstance::invalidateHash(){
-    if(_hashAge < HASH_AGE_MAX_VALUE)
-        ++_hashAge;
-    else
-        _hashAge = 0;
-    _node->invalidateDownStreamHash();
-}
 
 U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
     
-    _hashAge = _node->getLiveInstance()->hashAge();
+    _hashAge = getAppAge();
     
     _hashValue.reset();
     const std::vector<Knob*>& knobs = getKnobs();

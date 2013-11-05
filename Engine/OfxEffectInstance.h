@@ -32,6 +32,7 @@ class QImage;
 class OfxClipInstance;
 class QKeyEvent;
 namespace Powiter {
+class Node;
 class OfxImageEffectInstance;
 class OfxOverlayInteract;
 }
@@ -51,7 +52,7 @@ class OfxEffectInstance : public Powiter::EffectInstance {
 public:
     
     
-    OfxEffectInstance(Node* node);
+    OfxEffectInstance(Powiter::Node* node);
     
     virtual ~OfxEffectInstance();
     

@@ -60,7 +60,7 @@ ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
 }
 #endif
 
-OfxEffectInstance::OfxEffectInstance(Node* node)
+OfxEffectInstance::OfxEffectInstance(Powiter::Node* node)
     :Powiter::EffectInstance(node)
     , effect_()
     , _isOutput(false)

@@ -193,6 +193,8 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
         Node* selected = _gui->getSelectedNode()->getNode();
         autoConnect(selected, node);
     }
+    _gui->selectNode(nodegui);
+
     return node;
 }
 
@@ -1055,4 +1057,10 @@ Powiter::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) c
     }
     return NULL;
 
+}
+int AppInstance::getKnobsAge() const{
+    return _currentProject->getKnobsAge();
+}
+void AppInstance::incrementKnobsAge(){
+    _currentProject->incrementKnobsAge();
 }
