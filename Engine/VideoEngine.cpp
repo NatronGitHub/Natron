@@ -73,6 +73,7 @@ VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
 , _startRenderFrameTime()
 , _timeline(owner->getNode()->getApp()->getTimeLine())
 {
+    QThreadPool::globalInstance()->setMaxThreadCount(1);
     setTerminationEnabled();
 }
 
@@ -81,25 +82,26 @@ VideoEngine::~VideoEngine() {
 }
 
 void VideoEngine::quitEngineThread(){
-    abortRendering();
-    {
-        QMutexLocker locker(&_mustQuitMutex);
-        _mustQuit = true;
-    }
-    {
-        QMutexLocker locker(&_startMutex);
-        ++_startCount;
-        _startCondition.wakeAll();
-    }
-    if(_tree.isOutputAViewer())
-        _tree.outputAsViewer()->wakeUpAnySleepingThread();
-    {
-        QMutexLocker locker(&_mustQuitMutex);
-        while(_mustQuit){
-            _mustQuitCondition.wait(&_mustQuitMutex);
+    if(isRunning()){
+        abortRendering();
+        {
+            QMutexLocker locker(&_mustQuitMutex);
+            _mustQuit = true;
+        }
+        {
+            QMutexLocker locker(&_startMutex);
+            ++_startCount;
+            _startCondition.wakeAll();
+        }
+        if(_tree.isOutputAViewer())
+            _tree.outputAsViewer()->wakeUpAnySleepingThread();
+        {
+            QMutexLocker locker(&_mustQuitMutex);
+            while(_mustQuit){
+                _mustQuitCondition.wait(&_mustQuitMutex);
+            }
         }
     }
-    
 }
 
 void VideoEngine::render(int frameCount,

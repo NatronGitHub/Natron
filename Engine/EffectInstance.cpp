@@ -263,6 +263,8 @@ void EffectInstance::openFilesForAllFileKnobs(){
         Knob* k = knobs[i];
         if(k->typeName() == "InputFile"){
             dynamic_cast<File_Knob*>(k)->openFile();
+        }else if(k->typeName() == "OutputFile"){
+            dynamic_cast<OutputFile_Knob*>(k)->openFile();
         }
     }
 }
