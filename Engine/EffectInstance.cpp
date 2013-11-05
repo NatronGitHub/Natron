@@ -127,7 +127,7 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
         }else{
             n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
         }
-        entry = renderRoI(time, scale, view,roi); 
+        entry = n->renderRoI(time, scale, view,roi);
     }
     
     return entry;
