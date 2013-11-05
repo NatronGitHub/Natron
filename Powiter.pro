@@ -11,6 +11,7 @@ CONFIG += openexr freetype2 ftgl boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
+PRECOMPILED_HEADER = pch.h
 
 win32{
 #ofx needs WINDOWS def
@@ -60,7 +61,7 @@ warning("Compiling in DEBUG mode.")
 }
 *clang* {
 sanitizer{
-    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+    QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
 }
   QMAKE_CXXFLAGS_RELEASE += -O3

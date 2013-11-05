@@ -140,6 +140,9 @@ File_KnobGui::~File_KnobGui(){
 void File_KnobGui::createWidget(QGridLayout* layout,int row){
     
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel, row, 0,Qt::AlignRight);
+
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText("File path...");
     _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -163,7 +166,6 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    layout->addWidget(_descriptionLabel, row, 0,Qt::AlignRight);
     layout->addWidget(container,row,1);
 }
 
@@ -233,6 +235,9 @@ OutputFile_KnobGui::~OutputFile_KnobGui(){
 }
 void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setPlaceholderText(QString("File path..."));
     _lineEdit->setToolTip(_knob->getHintToolTip().c_str());
@@ -255,7 +260,6 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     layout->addWidget(container,row,1);
 }
 
@@ -325,7 +329,7 @@ Int_KnobGui::~Int_KnobGui(){
 }
 void Int_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
     int dim = _knob->getDimension();
@@ -378,6 +382,7 @@ void Int_KnobGui::createWidget(QGridLayout *layout, int row){
             _slider = new ScaleSlider(min,max,
                                       100,
                                       _knob->value<int>());
+            _slider->setToolTip(_knob->getHintToolTip().c_str());
             QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
             boxContainerLayout->addWidget(_slider);
             
@@ -486,11 +491,13 @@ void Int_KnobGui::addToLayout(QHBoxLayout* layout){
 
 void Bool_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new ClickableLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _checkBox = new QCheckBox(layout->parentWidget());
     _checkBox->setToolTip(_knob->getHintToolTip().c_str());
     QObject::connect(_checkBox,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
     QObject::connect(_descriptionLabel,SIGNAL(clicked(bool)),this,SLOT(onCheckBoxStateChanged(bool)));
-    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     layout->addWidget(_checkBox,row,1,Qt::AlignLeft);
 }
 Bool_KnobGui::~Bool_KnobGui(){
@@ -546,6 +553,7 @@ Double_KnobGui::~Double_KnobGui(){
 
 void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     
     QWidget* container = new QWidget(layout->parentWidget());
@@ -605,6 +613,7 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
             _slider = new ScaleSlider(min,max,
                                       100,
                                       _knob->value<double>());
+            _slider->setToolTip(_knob->getHintToolTip().c_str());
             QObject::connect(_slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)));
             boxContainerLayout->addWidget(_slider);
         }
@@ -754,7 +763,11 @@ ComboBox_KnobGui::~ComboBox_KnobGui(){
     delete _comboBox;
     delete _descriptionLabel;
 }
-void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
+void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row) {
+    _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _comboBox = new ComboBox(layout->parentWidget());
     
     for (U32 i = 0; i < _entries.size(); ++i) {
@@ -763,9 +776,7 @@ void ComboBox_KnobGui::createWidget(QGridLayout *layout, int row){
     if(_entries.size() > 0)
         _comboBox->setCurrentText(_entries[0].c_str());
     _comboBox->setToolTip(_knob->getHintToolTip().c_str());
-    _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     QObject::connect(_comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)));
-    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
     layout->addWidget(_comboBox,row,1,Qt::AlignLeft);
 }
 void ComboBox_KnobGui::onCurrentIndexChanged(int i){
@@ -810,7 +821,9 @@ void ComboBox_KnobGui::addToLayout(QHBoxLayout* layout){
 //=============================SEPARATOR_KNOB_GUI===================================
 void Separator_KnobGui::createWidget(QGridLayout* layout,int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _line = new QFrame(layout->parentWidget());
     _line->setFrameShape(QFrame::HLine);
     _line->setFrameShadow(QFrame::Sunken);
@@ -844,8 +857,11 @@ RGBA_KnobGui::~RGBA_KnobGui(){
     delete mainContainer;
 }
 
-void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
-    
+void RGBA_KnobGui::createWidget(QGridLayout* layout,int row) {
+    _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
+    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     mainContainer = new QWidget(layout->parentWidget());
     mainLayout = new QHBoxLayout(mainContainer);
     mainContainer->setLayout(mainLayout);
@@ -871,33 +887,33 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     _rBox->setMaximum(1.);
     _rBox->setMinimum(0.);
     _rBox->setIncrement(0.1);
-    
+
     _gBox->setMaximum(1.);
     _gBox->setMinimum(0.);
     _gBox->setIncrement(0.1);
-    
+
     _bBox->setMaximum(1.);
     _bBox->setMinimum(0.);
     _bBox->setIncrement(0.1);
-    
+
     _aBox->setMaximum(1.);
     _aBox->setMinimum(0.);
     _aBox->setIncrement(0.1);
-    
-    
+
     _rBox->setToolTip(_knob->getHintToolTip().c_str());
     _gBox->setToolTip(_knob->getHintToolTip().c_str());
     _bBox->setToolTip(_knob->getHintToolTip().c_str());
     _aBox->setToolTip(_knob->getHintToolTip().c_str());
     
     _rLabel = new QLabel("r:",boxContainers);
+    _rLabel->setToolTip(_knob->getHintToolTip().c_str());
     _gLabel = new QLabel("g:",boxContainers);
+    _gLabel->setToolTip(_knob->getHintToolTip().c_str());
     _bLabel = new QLabel("b:",boxContainers);
+    _bLabel->setToolTip(_knob->getHintToolTip().c_str());
     _aLabel = new QLabel("a:",boxContainers);
-    
-    _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
-    
+    _aLabel->setToolTip(_knob->getHintToolTip().c_str());
+
     boxLayout->addWidget(_rLabel);
     boxLayout->addWidget(_rBox);
     boxLayout->addWidget(_gLabel);
@@ -914,6 +930,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row){
     colorLayout->setSpacing(0);
     
     _colorLabel = new QLabel(colorContainer);
+    _colorLabel->setToolTip(_knob->getHintToolTip().c_str());
     colorLayout->addWidget(_colorLabel);
     
     QImage buttonImg(POWITER_IMAGES_PATH"colorwheel.png");
@@ -1064,10 +1081,11 @@ void RGBA_KnobGui::addToLayout(QHBoxLayout* layout){
 
 
 //=============================STRING_KNOB_GUI===================================
-void String_KnobGui::createWidget(QGridLayout *layout, int row){
+void String_KnobGui::createWidget(QGridLayout *layout, int row) {
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _lineEdit = new LineEdit(layout->parentWidget());
     _lineEdit->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_lineEdit,row,1,Qt::AlignLeft);
@@ -1148,7 +1166,7 @@ void Group_KnobGui::createWidget(QGridLayout* layout,int row){
     headerLay->addWidget(_button);
     headerLay->setSpacing(1);
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     headerLay->addWidget(_descriptionLabel);
     
     layout->addWidget(header,row,0,1,2,Qt::AlignLeft);
@@ -1219,8 +1237,9 @@ void Group_KnobGui::addToLayout(QHBoxLayout* layout){
 
 void RichText_KnobGui::createWidget(QGridLayout* layout,int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
-    
+    _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_descriptionLabel,row,0,Qt::AlignRight);
+
     _textEdit = new QTextEdit(layout->parentWidget());
     _textEdit->setToolTip(_knob->getHintToolTip().c_str());
     layout->addWidget(_textEdit,row,1,Qt::AlignLeft);
