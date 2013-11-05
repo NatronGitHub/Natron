@@ -13,7 +13,7 @@
 
 #include <QtConcurrentMap>
 
-
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
@@ -27,6 +27,7 @@ KnobHolder(node ? node->getApp() : NULL)
 , _hashAge(0)
 , _isRenderClone(false)
 , _inputs()
+, _renderArgs()
 {
     
 }
@@ -104,15 +105,26 @@ std::string EffectInstance::setInputLabel(int inputNb) const {
     return out;
 }
 
-boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(SequenceTime time,RenderScale scale,int view){
+boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
     const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
-    Powiter::ImageKey params = Powiter::Image::makeKey(_hashValue.value(), time,scale,view,RectI());
+    EffectInstance* n  = input(inputNb);
+    assert(n);
+    Powiter::ImageKey params = Powiter::Image::makeKey(n->hash().value(), time,scale,view,RectI());
     boost::shared_ptr<const Image > entry = cache.get(params);
-    //the entry MUST be in the cache since we rendered it before and kept the pointer
-    //to avoid it being evicted.
-    assert(entry);
+    
+    if(!entry){
+        //if not found in cache render it using the last args passed to render by this thread
+        RectI roi;
+        if(_renderArgs.hasLocalData()){
+            roi = _renderArgs.localData()._roi;//if the thread was spawned by us we take the last render args
+        }else{
+            n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
+        }
+        entry = renderRoI(time, scale, view,roi); 
+    }
+    
     return entry;
 }
 
@@ -186,6 +198,16 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
     std::list<RectI> rectsToRender = image->getRestToRender(renderWindow);
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+            
+            /*we can set the render args*/
+            RenderArgs args;
+            args._roi = *it;
+            args._time = time;
+            args._view = view;
+            args._scale = scale;
+            _renderArgs.setLocalData(args);
+
+            
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
             std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
             /*we render each input first and store away their image in the inputImages list
@@ -210,7 +232,7 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QtConcurrent::blockingMap(splitRects,
-                                          boost::bind(&EffectInstance::tiledRenderingFunctor,this,time,scale,_1,view,image));
+                                          boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
             }
         }
     }
@@ -225,13 +247,11 @@ boost::shared_ptr<Powiter::Image> EffectInstance::getImageBeingRendered(Sequence
     return _node->getImageBeingRendered(time, view);
 }
 
-void EffectInstance::tiledRenderingFunctor(SequenceTime time,
-                                 RenderScale scale,
+void EffectInstance::tiledRenderingFunctor(RenderArgs args,
                                  const RectI& roi,
-                                 int view,
                                  boost::shared_ptr<Powiter::Image> output){
     
-    render(time, scale, roi,view, output);
+    render(args._time, args._scale, roi,args._view, output);
     output->markForRendered(roi);
 }
 
@@ -300,7 +320,7 @@ void EffectInstance::updateInputs(RenderTree* tree){
             }
             EffectInstance* inputEffect = 0;
             if(tree){
-                inputEffect = it->second->findExistingEffect(tree);
+                inputEffect = tree->getEffectForNode(it->second);
             }else{
                 inputEffect = it->second->getLiveInstance();
             }

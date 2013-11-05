@@ -160,7 +160,8 @@ public:
     
     int renderViewsCount() const {return _projectViewsCount;}
     
-    void computeTreeHash();
+    Powiter::EffectInstance* getEffectForNode(Powiter::Node* node) const;
+    
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/

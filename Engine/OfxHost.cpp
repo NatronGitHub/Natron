@@ -35,20 +35,24 @@ Powiter::OfxHost::OfxHost()
 {
     _properties.setStringProperty(kOfxPropName, POWITER_APPLICATION_NAME "Host");
     _properties.setStringProperty(kOfxPropLabel, POWITER_APPLICATION_NAME);
+    _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
+    _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
+    _properties.setIntProperty(kOfxPropVersion, 1 , 0); //Software version v1.0
+    _properties.setIntProperty(kOfxPropVersion, 0 , 1);
+    _properties.setStringProperty(kOfxPropVersionLabel, "1.0");
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsTiles, 1);
     _properties.setIntProperty(kOfxImageEffectPropTemporalClipAccess, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentRGBA, 0);
-    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kOfxImageComponentAlpha, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGenerator, 0 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextFilter, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextGeneral, 2 );
     _properties.setStringProperty(kOfxImageEffectPropSupportedContexts, kOfxImageEffectContextTransition, 3 );
     
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths,kOfxBitDepthFloat,0);
-    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0);
+    _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipDepths, 0); 
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultipleClipPARs, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFrameRate, 0);
     _properties.setIntProperty(kOfxImageEffectPropSetableFielding, 0);

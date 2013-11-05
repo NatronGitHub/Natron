@@ -621,6 +621,15 @@ void RenderTree::refreshKnobsAndHash(){
 
 }
 
+Powiter::EffectInstance* RenderTree::getEffectForNode(Powiter::Node* node) const{
+    for(TreeIterator it = _sorted.begin();it!=_sorted.end();++it){
+        if (it->first == node) {
+            return it->second;
+        }
+    }
+    return NULL;
+}
+
 ViewerInstance* RenderTree::outputAsViewer() const {
     if(_output && _isViewer){
         return dynamic_cast<ViewerInstance*>(_output);

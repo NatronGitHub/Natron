@@ -14,6 +14,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <QThreadStorage>
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Hash64.h"
@@ -38,7 +40,19 @@ class EffectInstance : public KnobHolder
 {
 public:
     typedef std::vector<EffectInstance*> Inputs;
+    
+    typedef std::map<EffectInstance*,RectI> RoIMap;
+    
+    struct RenderArgs{
+        RectI _roi;
+        SequenceTime _time;
+        RenderScale _scale;
+        int _view;
+    };
+    
 private:
+    
+    
     
     Powiter::Node* _node; //< the node holding this effect
 
@@ -49,6 +63,8 @@ private:
     //or a render instance (i.e a snapshot of the live instance at a given time)
     
     Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
+    QThreadStorage<RenderArgs> _renderArgs;
+    
 public:
     
     
@@ -222,10 +238,9 @@ public:
      **/
     void setAborted(bool b) { _renderAborted = b; }
     
-    /** @brief Returns the image computed by this node at the given time and scale for the given view
-     * The image must have been rendered first otherwise an assertion will be raised.
+    /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<const Powiter::Image> getImage(SequenceTime time,RenderScale scale,int view);
+    boost::shared_ptr<const Powiter::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view);
     
     
     /**
@@ -246,7 +261,6 @@ public:
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod);
     
     
-    typedef std::map<EffectInstance*,RectI> RoIMap;
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
      * of the node at time 'time' and render scale 'scale' given a render window.
@@ -383,7 +397,6 @@ public:
     
     
 protected:
-    
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance
      * to the render clones.
@@ -400,10 +413,8 @@ private:
     void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     
-    void tiledRenderingFunctor(SequenceTime time,
-                               RenderScale scale,
+    void tiledRenderingFunctor(RenderArgs args,
                                const RectI& roi,
-                               int view,
                                boost::shared_ptr<Powiter::Image> output);
 };
 
