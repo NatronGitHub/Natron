@@ -57,7 +57,7 @@ Powiter::OutputEffectInstance(node)
 ,_timerMutex()
 ,_timer(new Timer)
 {
-       connectSlotsToViewerCache();
+    connectSlotsToViewerCache();
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
@@ -87,9 +87,14 @@ void ViewerInstance::disconnectSlotsToViewerCache(){
     QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
 }
 void ViewerInstance::initializeViewerTab(TabWidget* where){
-    _uiContext = getNode()->getApp()->addNewViewerTab(this,where);
+    if(isLiveInstance()){
+        _uiContext = getNode()->getApp()->addNewViewerTab(this,where);
+    }
 }
 
+void ViewerInstance::cloneExtras(){
+    _uiContext = dynamic_cast<ViewerInstance*>(getNode()->getLiveInstance())->getUiContext();
+}
 
 int ViewerInstance::activeInput() const{
     return dynamic_cast<InspectorNode*>(getNode())->activeInput();
@@ -164,6 +169,7 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         return StatFailed;
     }
     _interThreadInfos._textureRect = textureRect;
+        
     FrameKey key(time,
                  hash().value(),
                  zoomFactor,
@@ -192,6 +198,9 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         _interThreadInfos._cachedEntry = iscached;
         _interThreadInfos._textureRect = iscached->getKey()._textureRect;
         {
+            if(getVideoEngine()->mustQuit()){
+                return StatFailed;
+            }
             QMutexLocker locker(&_pboUnMappedMutex);
             emit doCachedEngine();
             while(_pboUnMappedCount <= 0) {
@@ -200,6 +209,9 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             --_pboUnMappedCount;
         }
         {
+            if(getVideoEngine()->mustQuit()){
+                return StatFailed;
+            }
             QMutexLocker locker(&_pboUnMappedMutex);
             emit doUpdateViewer();
             while(_pboUnMappedCount <= 0) {
@@ -212,6 +224,10 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     
     /*We didn't find it in the viewer cache, hence we allocate
      the frame storage*/
+    
+    if(getVideoEngine()->mustQuit()){
+        return StatFailed;
+    }
     {
         QMutexLocker locker(&_pboUnMappedMutex);
         emit doFrameStorageAllocation();
@@ -281,6 +297,9 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         memcpy((char*)cachedFrame->data(),viewer->getFrameData(),bytesToCopy);
     }
     
+    if(getVideoEngine()->mustQuit()){
+        return StatFailed;
+    }
     QMutexLocker locker(&_pboUnMappedMutex);
     emit doUpdateViewer();
     while(_pboUnMappedCount <= 0) {
@@ -293,11 +312,18 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
 void ViewerInstance::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
                                const std::vector<std::pair<int,int> >& rows,
                                const std::vector<int>& columns){
+    if(aborted()){
+        return;
+    }
     for(U32 i = 0; i < rows.size();++i){
         _uiContext->viewer->drawRow(inputImage->pixelAt(0, rows[i].first), columns, rows[i].second);
     }
 }
 
+void ViewerInstance::wakeUpAnySleepingThread(){
+    ++_pboUnMappedCount;
+    _pboUnMappedCondition.wakeAll();
+}
 
 void ViewerInstance::updateViewer(){
     QMutexLocker locker(&_pboUnMappedMutex);
@@ -419,110 +445,92 @@ void ViewerInstance::viewportSize(double &w,double &h) {
 
 void ViewerInstance::drawOverlays() const{
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock(); /*it might be locked already if a node forced a re-render*/
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->drawOverlay();
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysPenDown(const QPointF& viewportPos,const QPointF& pos){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayPenDown(viewportPos, pos);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysPenMotion(const QPointF& viewportPos,const QPointF& pos){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayPenMotion(viewportPos, pos);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysPenUp(const QPointF& viewportPos,const QPointF& pos){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayPenUp(viewportPos, pos);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysKeyDown(QKeyEvent* e){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayKeyDown(e);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysKeyUp(QKeyEvent* e){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayKeyUp(e);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysKeyRepeat(QKeyEvent* e){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayKeyRepeat(e);
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysFocusGained(){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayFocusGained();
         }
     }
-    _dag.unlock();
 }
 
 void ViewerInstance::notifyOverlaysFocusLost(){
     const RenderTree& _dag = getVideoEngine()->getTree();
-    _dag.lock();
     if(_dag.getOutput()){
         for (RenderTree::TreeIterator it = _dag.begin(); it!=_dag.end(); ++it) {
             assert(it->first);
             it->first->getLiveInstance()->onOverlayFocusLost();
         }
     }
-    _dag.unlock();
 }
 
 bool ViewerInstance::isInputOptional(int n) const{

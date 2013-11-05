@@ -42,6 +42,8 @@ class ViewerInstance;
 class QKeyEvent;
 class RenderTree;
 
+namespace Powiter{
+
 class Node : public QObject
 {
     Q_OBJECT
@@ -287,7 +289,7 @@ public:
     void abortRenderingForEffect(Powiter::EffectInstance* effect);
 
     Powiter::EffectInstance* findExistingEffect(RenderTree* tree) const;
-
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -364,7 +366,6 @@ private:
     
     std::map<int, std::string> _inputLabelsMap; // inputs name
     std::string _name; //node name set by the user
-    std::vector<Knob*> _knobs;
     
     DeactivatedState _deactivatedState;
     
@@ -400,7 +401,7 @@ private:
     std::map<RenderTree*,Powiter::EffectInstance*> _renderInstances;
 };
 
-
+} //namespace Powiter
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
  * Only 1 input is considered to be the "active" input of the InspectorNode, but several inputs
@@ -408,7 +409,7 @@ private:
  * This is used for example by the Viewer, to be able to switch quickly from several inputs
  * while still having 1 input active.
  **/
-class InspectorNode: public Node
+class InspectorNode: public Powiter::Node
 {
     int _inputsCount;
     int _activeInput;

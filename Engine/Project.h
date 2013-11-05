@@ -25,11 +25,11 @@
 #include "Engine/Knob.h"
 #include "Engine/Format.h"
 
-class Node;
 class TimeLine;
 class AppInstance;
 
 namespace Powiter{
+class Node;
 
 class Project :  public KnobHolder {
     
@@ -51,6 +51,8 @@ class Project :  public KnobHolder {
     
     std::vector<Format> _availableFormats;
     
+    int _knobsAge; //< the age of the knobs in the app. This is updated on each value changed.
+    
 public:
     
     Project(AppInstance* appInstance);
@@ -68,7 +70,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob) OVERRIDE;
+    virtual void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     const std::vector<Node*>& getCurrentNodes() const{return _currentNodes;}
     
@@ -135,8 +137,15 @@ public:
     void unlock() const { assert(!_projectDataLock.tryLock());_projectDataLock.unlock();}
 
     void createNewFormat();
-
     
+    void incrementKnobsAge() {
+        if(_knobsAge < 99999)
+            ++_knobsAge;
+        else
+            _knobsAge = 0;
+    }
+    
+    int getKnobsAge() const {return _knobsAge;}
     
 };
 

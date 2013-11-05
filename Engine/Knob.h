@@ -208,6 +208,8 @@ protected:
     
 private:
     
+    void updateHash();
+    
     void setValueInternal(const Variant& v);
     
     std::string _description;//< the text label that will be displayed  on the GUI
@@ -272,7 +274,15 @@ public:
      * made to a knob(e.g: force a new render). 
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(Knob* knob) = 0;
+    virtual void evaluate(Knob* knob,bool isSignificant) = 0;
+    
+    /**
+     * @brief Should be implemented by any deriving class that maintains
+     * a hash value based on the knobs.
+     **/
+    void invalidateHash();
+    
+    int getAppAge() const;
     
     const std::vector<Knob*>& getKnobs() const { return _knobs; }
     

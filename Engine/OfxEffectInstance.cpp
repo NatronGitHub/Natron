@@ -60,7 +60,7 @@ ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
 }
 #endif
 
-OfxEffectInstance::OfxEffectInstance(Node* node)
+OfxEffectInstance::OfxEffectInstance(Powiter::Node* node)
     :Powiter::EffectInstance(node)
     , effect_()
     , _isOutput(false)
@@ -150,17 +150,6 @@ bool OfxEffectInstance::isGeneratorAndFilter() const {
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGenerator);
     return foundGenerator!=contexts.end() && foundGeneral!=contexts.end();
-}
-
-static std::string getEffectInstanceLabel(const Powiter::OfxImageEffectInstance* effect){
-    std::string label = effect->getLabel();
-    if(label.empty()){
-        label = effect->getShortLabel();
-    }
-    if(label.empty()){
-        label = effect->getLongLabel();
-    }
-    return label;
 }
 
 

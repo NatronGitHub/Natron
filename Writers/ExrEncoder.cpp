@@ -216,7 +216,14 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
     
     try{
         for (int y = roi.bottom(); y < roi.top(); ++y) {
-            const float* src_pixels = inputImage->pixelAt(roi.left(), y);
+            if(_writer->aborted()){
+                return;
+            }
+            /*First we create a row that will serve as the output buffer.
+             We copy the scan-line (with y inverted) in the inputImage to the row.*/
+            int exrY = roi.top() - y - 1;
+
+            const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
             Powiter::Row row(roi.left(),y,roi.right(),Powiter::Mask_RGBA);
             foreachChannels(z, _imp->_channels){
                 float* to = row.begin(z);
@@ -230,6 +237,8 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
             if(_writer->aborted()){
                 return;
             }
+            
+            /*we create the frame buffer*/
             Imf_::FrameBuffer fbuf;
             Imf_::Array2D<half>* halfwriterow = 0 ;
             if ( _imp->_depth == 32) {
@@ -243,18 +252,18 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
             } else {
                 halfwriterow = new Imf_::Array2D<half>(_imp->_channels.size() ,roi.width());
                 
-                int cur = 0;
+                int channelCount = 0;
                 foreachChannels(z, _imp->_channels){
                     std::string channame = EXR::toExrChannel(z);
                     fbuf.insert(channame.c_str(),
                                 Imf_::Slice(Imf_::HALF,
-                                            (char*)(&(*halfwriterow)[cur][0] - _imp->_exrDataW.min.x),
-                                            sizeof((*halfwriterow)[cur][0]), 0));
+                                            (char*)(&(*halfwriterow)[channelCount][0] - _imp->_exrDataW.min.x),
+                                            sizeof((*halfwriterow)[channelCount][0]), 0));
                     const float* from = row.begin(z);
                     for (int i = _imp->_exrDataW.min.x; i < _imp->_exrDataW.max.x ; ++i) {
-                        (*halfwriterow)[cur][i - _imp->_exrDataW.min.x] = from[i];
+                        (*halfwriterow)[channelCount][i - _imp->_exrDataW.min.x] = from[i];
                     }
-                    ++cur;
+                    ++channelCount;
                 }
                 delete halfwriterow;
             }

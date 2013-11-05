@@ -218,6 +218,7 @@ _maximized(false)
     
     
     previousKeyFrame_Button=new Button(_playerButtonsContainer);
+    previousKeyFrame_Button->hide();
     QKeySequence previousKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Left);
     previousKeyFrame_Button->setShortcut(previousKeyFrameKey);
     tooltip = "Previous keyframe";
@@ -286,6 +287,7 @@ _maximized(false)
 	
     
     nextKeyFrame_Button = new Button(_playerButtonsContainer);
+    nextKeyFrame_Button->hide();
     QKeySequence nextKeyFrameKey(Qt::CTRL + Qt::SHIFT +  Qt::Key_Right);
     nextKeyFrame_Button->setShortcut(nextKeyFrameKey);
     tooltip = "Next keyframe";

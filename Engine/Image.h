@@ -99,10 +99,9 @@ namespace Powiter{
         
         char* _map;
         RectI _rod;
-        int _pixelsRenderedCount;
     public:
         
-        Bitmap(const RectI& rod):_rod(rod),_pixelsRenderedCount(0){
+        Bitmap(const RectI& rod):_rod(rod){
             _map = (char*)calloc(rod.area(),sizeof(char));
         }
         

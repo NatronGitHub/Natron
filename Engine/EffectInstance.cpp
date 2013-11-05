@@ -12,8 +12,9 @@
 #include "EffectInstance.h"
 
 #include <QtConcurrentMap>
+#include <QCoreApplication>
 
-
+#include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
 
@@ -24,18 +25,23 @@ KnobHolder(node ? node->getApp() : NULL)
 , _node(node)
 , _renderAborted(false)
 , _hashValue()
-, _isHashValid(false)
+, _hashAge(0)
 , _isRenderClone(false)
 , _inputs()
+, _renderArgs()
 {
-    
+    //create the renderArgs only if the current thread is different than the main thread.
+    // otherwise it would create mem leaks and an error message.
+    if(QThread::currentThread() != qApp->thread()){
+        _renderArgs.reset(new QThreadStorage<RenderArgs>);
+    }
 }
 
 void EffectInstance::clone(){
     if(!_isRenderClone)
         return;
     cloneKnobs(*(_node->getLiveInstance()));
-    _isHashValid = false;
+    cloneExtras();
 }
 
 
@@ -48,9 +54,19 @@ namespace {
     }
 }
 
+bool EffectInstance::isHashValid() const {
+    //The hash is valid only if the age is the same than the project's age and the hash has been computed at least once.
+    return _hashAge == getAppAge() && _hashValue.valid();
+}
+int EffectInstance::hashAge() const{
+    return _hashAge;
+}
+
 
 U64 EffectInstance::computeHash(const std::vector<U64>& inputsHashs){
-    _isHashValid = true;
+    
+    _hashAge = getAppAge();
+    
     _hashValue.reset();
     const std::vector<Knob*>& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -94,15 +110,26 @@ std::string EffectInstance::setInputLabel(int inputNb) const {
     return out;
 }
 
-boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(SequenceTime time,RenderScale scale,int view){
+boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
     const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
-    Powiter::ImageKey params = Powiter::Image::makeKey(_hashValue.value(), time,scale,view,RectI());
+    EffectInstance* n  = input(inputNb);
+    assert(n);
+    Powiter::ImageKey params = Powiter::Image::makeKey(n->hash().value(), time,scale,view,RectI());
     boost::shared_ptr<const Image > entry = cache.get(params);
-    //the entry MUST be in the cache since we rendered it before and kept the pointer
-    //to avoid it being evicted.
-    assert(entry);
+    
+    if(!entry){
+        //if not found in cache render it using the last args passed to render by this thread
+        RectI roi;
+        if(_renderArgs && _renderArgs->hasLocalData()){
+            roi = _renderArgs->localData()._roi;//if the thread was spawned by us we take the last render args
+        }else{
+            n->getRegionOfDefinition(time, &roi);//we have no choice but compute the full region of definition
+        }
+        entry = renderRoI(time, scale, view,roi); 
+    }
+    
     return entry;
 }
 
@@ -155,7 +182,6 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
-    
     Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
@@ -177,6 +203,19 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
     std::list<RectI> rectsToRender = image->getRestToRender(renderWindow);
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+            
+            /*we can set the render args*/
+            RenderArgs args;
+            args._roi = *it;
+            args._time = time;
+            args._view = view;
+            args._scale = scale;
+            if(_renderArgs){ // if this function is called on the _liveInstance object (i.e: preview)
+                             // it has no _renderArgs.
+                _renderArgs->setLocalData(args);
+            }
+
+            
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
             std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
             /*we render each input first and store away their image in the inputImages list
@@ -201,7 +240,7 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
                 QtConcurrent::blockingMap(splitRects,
-                                          boost::bind(&EffectInstance::tiledRenderingFunctor,this,time,scale,_1,view,image));
+                                          boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
             }
         }
     }
@@ -216,13 +255,14 @@ boost::shared_ptr<Powiter::Image> EffectInstance::getImageBeingRendered(Sequence
     return _node->getImageBeingRendered(time, view);
 }
 
-void EffectInstance::tiledRenderingFunctor(SequenceTime time,
-                                 RenderScale scale,
+void EffectInstance::tiledRenderingFunctor(RenderArgs args,
                                  const RectI& roi,
-                                 int view,
                                  boost::shared_ptr<Powiter::Image> output){
     
-    render(time, scale, roi,view, output);
+    render(args._time, args._scale, roi,args._view, output);
+    if(_renderArgs){
+        _renderArgs->setLocalData(args);
+    }
     output->markForRendered(roi);
 }
 
@@ -233,11 +273,17 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(Knob* /*knob*/){
+void EffectInstance::evaluate(Knob* /*knob*/,bool isSignificant){
     assert(_node);
+    
     ViewerInstance* n = _node->hasViewerConnected();
     if(n){
-        n->refreshAndContinueRender();
+        if(isSignificant){
+            n->refreshAndContinueRender();
+        }else{
+            n->redrawViewer();
+        }
+        
     }
 }
 
@@ -248,6 +294,8 @@ void EffectInstance::openFilesForAllFileKnobs(){
         Knob* k = knobs[i];
         if(k->typeName() == "InputFile"){
             dynamic_cast<File_Knob*>(k)->openFile();
+        }else if(k->typeName() == "OutputFile"){
+            dynamic_cast<OutputFile_Knob*>(k)->openFile();
         }
     }
 }
@@ -269,11 +317,21 @@ void EffectInstance::updateInputs(RenderTree* tree){
     _inputs.clear();
     const Node::InputMap& inputs = _node->getInputs();
     _inputs.reserve(inputs.size());
+    
+    
     for (Node::InputMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
         if (it->second) {
+            InspectorNode* insp = dynamic_cast<InspectorNode*>(_node);
+            if(insp){
+                Node* activeInput = insp->input(insp->activeInput());
+                if(it->second != activeInput){
+                    _inputs.push_back((EffectInstance*)NULL);
+                    continue;
+                }
+            }
             EffectInstance* inputEffect = 0;
             if(tree){
-                inputEffect = it->second->findExistingEffect(tree);
+                inputEffect = tree->getEffectForNode(it->second);
             }else{
                 inputEffect = it->second->getLiveInstance();
             }
@@ -283,7 +341,21 @@ void EffectInstance::updateInputs(RenderTree* tree){
             _inputs.push_back((EffectInstance*)NULL);
         }
     }
+    
 }
+
+
+Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
+
+    const std::vector<Knob*>& knobs = getKnobs();
+    for(U32 i = 0; i < knobs.size() ; ++i){
+        if (knobs[i]->getDescription() == desc) {
+            return knobs[i];
+        }
+    }
+    return NULL;
+}
+
 
 OutputEffectInstance::OutputEffectInstance(Node* node):
 Powiter::EffectInstance(node)
@@ -318,3 +390,4 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     }
     
 }
+

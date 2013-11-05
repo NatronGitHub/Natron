@@ -148,11 +148,11 @@ public:
         int _maximumBufferSize; /// maximum size of the buffer
     };
     
-    static Powiter::EffectInstance* BuildEffect(Node* n){
+    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n){
         return new Reader(n);
     }
     
-    Reader(Node* node);
+    Reader(Powiter::Node* node);
 
     virtual ~Reader();
   

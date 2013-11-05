@@ -61,10 +61,17 @@ KnobHolder(appInstance)
 , _projectDataLock()
 , _currentNodes()
 , _availableFormats()
+, _knobsAge(0)
 {
 }
 
 Project::~Project(){
+    QMutexLocker locker(&_projectDataLock);
+    for (U32 i = 0; i < _currentNodes.size(); ++i) {
+        if(_currentNodes[i]->isOutputNode()){
+            dynamic_cast<OutputEffectInstance*>(_currentNodes[i]->getLiveInstance())->getVideoEngine()->quitEngineThread();
+        }
+    }
     for (U32 i = 0; i < _currentNodes.size(); ++i) {
         delete _currentNodes[i];
     }
@@ -96,7 +103,7 @@ void Project::initializeKnobs(){
 }
 
 
-void Project::evaluate(Knob* knob){
+void Project::evaluate(Knob* knob,bool /*isSignificant*/){
     if(knob == _viewsCount){
         int viewsCount = _viewsCount->value<int>();
         getApp()->setupViewersForViews(viewsCount);
@@ -196,7 +203,7 @@ void Project::loadProject(const QString& path,const QString& name){
     /*first create all nodes and restore the knobs values*/
     for (std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it) {
         const NodeGui::SerializedState& state = *it;
-        Node* n = getApp()->createNode(state.getClassName().c_str());
+        Node* n = getApp()->createNode(state.getClassName().c_str(),true);
         if(!n){
             clearNodes();
             QString text("Failed to restore the graph! \n The node ");
@@ -216,7 +223,11 @@ void Project::loadProject(const QString& path,const QString& name){
                 cout << "Couldn't restore knob value ( " << v->first << " )." << endl;
             }else{
                 knob->restoreFromString(v->second);
+                if(knob->typeName() == "InputFile" && n->makePreviewByDefault()){
+                    n->refreshPreviewImage(0);
+                }
             }
+        
         }
         NodeGui* nGui = getApp()->getNodeGui(n);
         nGui->setPos(state.getX(),state.getY());

@@ -260,33 +260,38 @@ void Knob::onKnobRedoneChange(){
     _holder->triggerAutoSave();
 }
 
+void Knob::updateHash(){
+    fillHashVector();
+    _holder->invalidateHash();
+}
 
 void Knob::restoreFromString(const std::string& str){
     _restoreFromString(str);
-    fillHashVector();
+    if(!_isInsignificant)
+        updateHash();
     processNewValue();
     emit valueChanged(_value);
 }
 
 void Knob::setValueInternal(const Variant& v){
     _value = v;
-    fillHashVector();
+    if(!_isInsignificant)
+        updateHash();
     processNewValue();
     emit valueChanged(v);
     _holder->onValueChanged(this,Knob::PLUGIN_EDITED);
-    if(!_isInsignificant)
-        _holder->evaluate(this);
+    _holder->evaluate(this,!_isInsignificant);
 
 }
 
 void Knob::onValueChanged(const Variant& variant){
     
     _value = variant;
-    fillHashVector();
+    if(!_isInsignificant)
+        updateHash();
     processNewValue();
     _holder->onValueChanged(this,Knob::USER_EDITED);
-    if(!_isInsignificant)
-        _holder->evaluate(this);
+    _holder->evaluate(this,!_isInsignificant);
     
 }
 
@@ -319,11 +324,23 @@ void KnobHolder::cloneKnobs(const KnobHolder& other){
     }
 }
 
+
 void Knob::cloneValue(const Knob& other){
     assert(_name == other._name);
+    bool newValueDiffThanOldValue = _value != other._value;
     _value = other._value;
+    if(newValueDiffThanOldValue)
+        updateHash();
     cloneExtraData(other);
 }
+
+void KnobHolder::invalidateHash(){
+    _app->incrementKnobsAge();
+}
+int KnobHolder::getAppAge() const{
+    return _app->getKnobsAge();
+}
+
 void Knob::turnOffNewLine(){
     _newLine = false;
 }

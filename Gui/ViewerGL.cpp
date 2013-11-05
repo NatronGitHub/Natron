@@ -1462,5 +1462,5 @@ void ViewerGL::print( int x, int y, const QString &string,QColor color )
 }
 
 void ViewerGL::showView(int view){
-    
+    std::cout << "showView not implemented yet." << std::endl;
 }

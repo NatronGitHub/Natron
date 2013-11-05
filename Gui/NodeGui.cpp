@@ -38,7 +38,7 @@ static const double pi=3.14159265358979323846264338327950288419717;
 
 NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer_,
-                 Node *node_,
+                 Powiter::Node *node_,
                  qreal x, qreal y,
                  QGraphicsItem *parent)
 : QObject()
@@ -145,7 +145,7 @@ NodeGui::~NodeGui(){
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
     refreshEdges();
-    for (Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+    for (Powiter::Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
@@ -153,8 +153,8 @@ void NodeGui::refreshPosition(double x,double y){
 }
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
-        const Node::InputMap& nodeInputs = node->getInputs();
-        Node::InputMap::const_iterator it = nodeInputs.find(i->first);
+        const Powiter::Node::InputMap& nodeInputs = node->getInputs();
+        Powiter::Node::InputMap::const_iterator it = nodeInputs.find(i->first);
         assert(it!=nodeInputs.end());
         NodeGui *nodeInputGui = _dag->getGui()->getApp()->getNodeGui(it->second);
         i->second->setSource(nodeInputGui);
@@ -365,7 +365,7 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
 }
 
 bool NodeGui::connectEdge(int edgeNumber){
-    Node::InputMap::const_iterator it = node->getInputs().find(edgeNumber);
+    Powiter::Node::InputMap::const_iterator it = node->getInputs().find(edgeNumber);
     if(it == node->getInputs().end()){
         return false;
     }
@@ -401,7 +401,7 @@ void NodeGui::activate(){
         it->second->setActive(true);
     }
     refreshEdges();
-    for (Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+    for (Powiter::Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
@@ -485,8 +485,8 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
     _className = _node->getNode()->className();
    
-    const Node::InputMap& inputs = _node->getNode()->getInputs();
-    for(Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+    const Powiter::Node::InputMap& inputs = _node->getNode()->getInputs();
+    for(Powiter::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
             _inputs.insert(std::make_pair(it->first, it->second->getName()));
         }else{

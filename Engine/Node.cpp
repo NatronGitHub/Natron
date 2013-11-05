@@ -42,7 +42,7 @@ using std::cout; using std::endl;
 using boost::shared_ptr;
 
 
-Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
+Powiter::Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
 : QObject()
 , _app(app)
 , _outputs()
@@ -50,7 +50,6 @@ Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& na
 , _liveInstance(NULL)
 , _inputLabelsMap()
 , _name()
-, _knobs()
 , _deactivatedState()
 , _markedByTopologicalSort(false)
 , _activated(true)
@@ -75,7 +74,7 @@ Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& na
 }
 
 
-Node::~Node(){
+Powiter::Node::~Node(){
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
         delete it->second;
     }
@@ -84,42 +83,44 @@ Node::~Node(){
 }
 
 
-void Node::initializeKnobs(){
+void Powiter::Node::initializeKnobs(){
     _liveInstance->initializeKnobs();
     emit knobsInitialized();
 }
 
-Powiter::EffectInstance* Node::findOrCreateLiveInstanceClone(RenderTree* tree){
-    EffectInstance* ret = 0;
-    if(isOutputNode() && !isOpenFXNode()){
-        ret = _liveInstance;
-    }else{
-        std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
-        if(it != _renderInstances.end()){
-            ret =  it->second;
-        }else{
-            if(!isOpenFXNode()){
-                std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
-                assert(func.first);
-                ret =  func.second(this);
-            }else{
-                ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
-                
-            }
-            assert(ret);
-            ret->initializeKnobs();
-            ret->setAsRenderClone();
-            _renderInstances.insert(std::make_pair(tree, ret));
-        }
-        ret->clone(); // copy all knobs values
+Powiter::EffectInstance* Powiter::Node::findOrCreateLiveInstanceClone(RenderTree* tree){
+    if(isOutputNode()){
+        _liveInstance->updateInputs(tree);
+        return _liveInstance;
     }
+    EffectInstance* ret = 0;
+    std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
+    if(it != _renderInstances.end()){
+        ret =  it->second;
+    }else{
+        if(!isOpenFXNode()){
+            std::pair<bool,EffectBuilder> func = _plugin->findFunction<EffectBuilder>("BuildEffect");
+            assert(func.first);
+            ret =  func.second(this);
+        }else{
+            ret = appPTR->getOfxHost()->createOfxEffect(_liveInstance->className(),this);
+            
+        }
+        assert(ret);
+        ret->initializeKnobs();
+        ret->setAsRenderClone();
+        _renderInstances.insert(std::make_pair(tree, ret));
+    }
+    
     assert(ret);
+    ret->clone();
     ret->updateInputs(tree);
-    ret->invalidateHash();
     return ret;
 
 }
-Powiter::EffectInstance* Node::findExistingEffect(RenderTree* tree) const{
+Powiter::EffectInstance* Powiter::Node::findExistingEffect(RenderTree* tree) const{
+    if(isOutputNode())
+        return _liveInstance;
     std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
     if(it!=_renderInstances.end()){
         return it->second;
@@ -128,12 +129,12 @@ Powiter::EffectInstance* Node::findExistingEffect(RenderTree* tree) const{
     }
 }
 
-void Node::createKnobDynamically(){
+void Powiter::Node::createKnobDynamically(){
     emit knobsInitialized();
 }
 
 /*called by hasViewerConnected(Node*) */
-static void _hasViewerConnected(Node* node,bool* ok,Node*& out){
+static void _hasViewerConnected(Powiter::Node* node,bool* ok,Powiter::Node*& out){
     if (*ok == true) {
         return;
     }
@@ -141,15 +142,15 @@ static void _hasViewerConnected(Node* node,bool* ok,Node*& out){
         out = node;
         *ok = true;
     }else{
-        const Node::OutputMap& outputs = node->getOutputs();
-        for (Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        const Powiter::Node::OutputMap& outputs = node->getOutputs();
+        for (Powiter::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
             if(it->second)
                 _hasViewerConnected(it->second,ok,out);
         }
     }
 }
 
-ViewerInstance* Node::hasViewerConnected() {
+ViewerInstance* Powiter::Node::hasViewerConnected() {
     Node* out = 0;
     bool ok = false;
     _hasViewerConnected(this,&ok,out);
@@ -161,19 +162,19 @@ ViewerInstance* Node::hasViewerConnected() {
     
 }
 
-void Node::initializeInputs(){
+void Powiter::Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
         if(_inputs.find(i) == _inputs.end()){
             _inputLabelsMap.insert(make_pair(i,_liveInstance->setInputLabel(i)));
-            _inputs.insert(make_pair(i,(Node*)NULL));
+            _inputs.insert(make_pair(i,(Powiter::Node*)NULL));
         }
     }
     _liveInstance->updateInputs(NULL);
     emit inputsInitialized();
 }
 
-Node* Node::input(int index) const{
+Powiter::Node* Powiter::Node::input(int index) const{
     InputMap::const_iterator it = _inputs.find(index);
     if(it == _inputs.end()){
         return NULL;
@@ -183,7 +184,7 @@ Node* Node::input(int index) const{
 }
 
 
-std::string Node::getInputLabel(int inputNb) const{
+std::string Powiter::Node::getInputLabel(int inputNb) const{
     std::map<int,std::string>::const_iterator it = _inputLabelsMap.find(inputNb);
     if(it == _inputLabelsMap.end()){
         return "";
@@ -193,7 +194,7 @@ std::string Node::getInputLabel(int inputNb) const{
 }
 
 
-bool Node::isInputConnected(int inputNb) const{
+bool Powiter::Node::isInputConnected(int inputNb) const{
     InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
@@ -203,11 +204,11 @@ bool Node::isInputConnected(int inputNb) const{
     
 }
 
-bool Node::hasOutputConnected() const{
+bool Powiter::Node::hasOutputConnected() const{
     return _outputs.size() > 0;
 }
 
-bool Node::connectInput(Node* input,int inputNumber) {
+bool Powiter::Node::connectInput(Powiter::Node* input,int inputNumber) {
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
@@ -225,26 +226,26 @@ bool Node::connectInput(Node* input,int inputNumber) {
     }
 }
 
-void Node::connectOutput(Node* output,int outputNumber ){
+void Powiter::Node::connectOutput(Powiter::Node* output,int outputNumber ){
     assert(output);
     _outputs.insert(make_pair(outputNumber,output));
     _liveInstance->updateInputs(NULL);
 }
 
-int Node::disconnectInput(int inputNumber) {
+int Powiter::Node::disconnectInput(int inputNumber) {
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
     } else {
         _inputs.erase(it);
-        _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+        _inputs.insert(make_pair(inputNumber, (Powiter::Node*)NULL));
         emit inputChanged(inputNumber);
         _liveInstance->updateInputs(NULL);
         return inputNumber;
     }
 }
 
-int Node::disconnectInput(Node* input) {
+int Powiter::Node::disconnectInput(Powiter::Node* input) {
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
@@ -252,7 +253,7 @@ int Node::disconnectInput(Node* input) {
         } else {
             int inputNumber = it->first;
             _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber, (Node*)NULL));
+            _inputs.insert(make_pair(inputNumber, (Powiter::Node*)NULL));
             emit inputChanged(inputNumber);
             _liveInstance->updateInputs(NULL);
             return inputNumber;
@@ -261,7 +262,7 @@ int Node::disconnectInput(Node* input) {
     return -1;
 }
 
-int Node::disconnectOutput(Node* output) {
+int Powiter::Node::disconnectOutput(Powiter::Node* output) {
     assert(output);
     for (OutputMap::iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
         if (it->second == output) {
@@ -277,7 +278,7 @@ int Node::disconnectOutput(Node* output) {
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Node::deactivate(){
+void Powiter::Node::deactivate(){
     /*Removing this node from the output of all inputs*/
     _deactivatedState._inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
@@ -299,7 +300,7 @@ void Node::deactivate(){
     
 }
 
-void Node::activate(){
+void Powiter::Node::activate(){
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if(!it->second)
             continue;
@@ -330,7 +331,7 @@ void Node::activate(){
 
 
 
-const Format& Node::getRenderFormatForEffect(const Powiter::EffectInstance* effect) const{
+const Format& Powiter::Node::getRenderFormatForEffect(const Powiter::EffectInstance* effect) const{
     if(effect == _liveInstance){
         return getApp()->getProjectFormat();
     }else{
@@ -344,7 +345,7 @@ const Format& Node::getRenderFormatForEffect(const Powiter::EffectInstance* effe
     return getApp()->getProjectFormat();
 }
 
-int Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) const{
+int Powiter::Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) const{
     if(effect == _liveInstance){
         return getApp()->getCurrentProjectViewsCount();
     }else{
@@ -359,17 +360,12 @@ int Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) c
 }
 
 
-Knob* Node::getKnobByDescription(const std::string& desc) const{
-    for(U32 i = 0; i < _knobs.size() ; ++i){
-        if (_knobs[i]->getDescription() == desc) {
-            return _knobs[i];
-        }
-    }
-    return NULL;
+Knob* Powiter::Node::getKnobByDescription(const std::string& desc) const{
+    return _liveInstance->getKnobByDescription(desc);
 }
 
 
-boost::shared_ptr<Powiter::Image> Node::getImageBeingRendered(SequenceTime time,int view) const{
+boost::shared_ptr<Powiter::Image> Powiter::Node::getImageBeingRendered(SequenceTime time,int view) const{
     ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
     if(it!=_imagesBeingRendered.end()){
         return it->second;
@@ -385,14 +381,14 @@ static float clamp(float v, float min = 0.f, float max= 1.f){
     return v;
 }
 
-void Node::addImageBeingRendered(boost::shared_ptr<Powiter::Image> image,SequenceTime time,int view ){
+void Powiter::Node::addImageBeingRendered(boost::shared_ptr<Powiter::Image> image,SequenceTime time,int view ){
     /*before rendering we add to the _imagesBeingRendered member the image*/
     ImageBeingRenderedKey renderedImageKey(time,view);
     QMutexLocker locker(&_nodeInstanceLock);
     _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
 }
 
-void Node::removeImageBeingRendered(SequenceTime time,int view ){
+void Powiter::Node::removeImageBeingRendered(SequenceTime time,int view ){
     /*now that we rendered the image, remove it from the images being rendered*/
     
     QMutexLocker locker(&_nodeInstanceLock);
@@ -404,7 +400,7 @@ void Node::removeImageBeingRendered(SequenceTime time,int view ){
     _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
 }
 
-void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
+void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
     RectI rod;
     _liveInstance->getRegionOfDefinition(time, &rod);
     int h,w;
@@ -446,11 +442,11 @@ void Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int*
     }
 }
 
-void Node::openFilesForAllFileKnobs(){
+void Powiter::Node::openFilesForAllFileKnobs(){
     _liveInstance->openFilesForAllFileKnobs();
 }
 
-void Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
+void Powiter::Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
         if(it->second == effect){
             dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
@@ -459,84 +455,83 @@ void Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
 }
 
 
-bool Node::isInputNode() const{
+bool Powiter::Node::isInputNode() const{
     return _liveInstance->isGenerator();
 }
 
 
-bool Node::isOutputNode() const{
+bool Powiter::Node::isOutputNode() const{
     return _liveInstance->isOutput();
 }
 
 
-bool Node::isInputAndProcessingNode() const{
+bool Powiter::Node::isInputAndProcessingNode() const{
     return _liveInstance->isGeneratorAndFilter();
 }
 
 
-bool Node::isOpenFXNode() const{
+bool Powiter::Node::isOpenFXNode() const{
     return _liveInstance->isOpenFX();
 }
 
-const std::vector<Knob*>& Node::getKnobs() const{
+const std::vector<Knob*>& Powiter::Node::getKnobs() const{
     return _liveInstance->getKnobs();
 }
 
-std::string Node::className() const{
+std::string Powiter::Node::className() const{
     return _liveInstance->className();
 }
 
 
-std::string Node::description() const{
+std::string Powiter::Node::description() const{
     return _liveInstance->description();
 }
 
-int Node::maximumInputs() const {
+int Powiter::Node::maximumInputs() const {
     return _liveInstance->maximumInputs();
 }
 
-bool Node::makePreviewByDefault() const{
+bool Powiter::Node::makePreviewByDefault() const{
     return _liveInstance->makePreviewByDefault();
 }
 
-bool Node::aborted() const { return _liveInstance->aborted(); }
+bool Powiter::Node::aborted() const { return _liveInstance->aborted(); }
 
-void Node::setAborted(bool b){ _liveInstance->setAborted(b); }
+void Powiter::Node::setAborted(bool b){ _liveInstance->setAborted(b); }
 
-void Node::drawOverlay(){ _liveInstance->drawOverlay(); }
+void Powiter::Node::drawOverlay(){ _liveInstance->drawOverlay(); }
 
-bool Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool Powiter::Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenDown(viewportPos, pos);
 }
 
-bool Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool Powiter::Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenMotion(viewportPos, pos);
 }
 
-bool Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+bool Powiter::Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-void Node::onOverlayKeyDown(QKeyEvent* e){
+void Powiter::Node::onOverlayKeyDown(QKeyEvent* e){
     return _liveInstance->onOverlayKeyDown(e);
 }
 
-void Node::onOverlayKeyUp(QKeyEvent* e){
+void Powiter::Node::onOverlayKeyUp(QKeyEvent* e){
     return _liveInstance->onOverlayKeyUp(e);
 }
 
-void Node::onOverlayKeyRepeat(QKeyEvent* e){
+void Powiter::Node::onOverlayKeyRepeat(QKeyEvent* e){
     return _liveInstance->onOverlayKeyRepeat(e);
 }
 
-void Node::onOverlayFocusGained(){
+void Powiter::Node::onOverlayFocusGained(){
     return _liveInstance->onOverlayFocusGained();
 }
 
-void Node::onOverlayFocusLost(){
+void Powiter::Node::onOverlayFocusLost(){
     return _liveInstance->onOverlayFocusLost();
 }
-
 
 
 InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
@@ -571,7 +566,7 @@ bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection
     }
     
     if(found!=_inputs.end() && found->second && !autoConnection &&
-       ((inputAlreadyConnected!=_inputs.end()) || (inputAlreadyConnected==_inputs.end()/* && input->className() == "Viewer"*/))){
+       ((inputAlreadyConnected!=_inputs.end()) )){
         setActiveInputAndRefresh(found->first);
         return false;
     }
@@ -659,7 +654,10 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
-        _liveInstance->requestRender();
+//        ViewerInstance* viewer = hasViewerConnected();
+//        if(viewer){
+//            viewer->updateTreeAndRender();
+//        }
     }
 }
 

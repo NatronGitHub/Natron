@@ -13,6 +13,7 @@
 #define EFFECTINSTANCE_H
 
 #include <boost/shared_ptr.hpp>
+#include <QThreadStorage>
 
 #include "Global/GlobalDefines.h"
 
@@ -20,12 +21,12 @@
 #include "Engine/RectI.h"
 #include "Engine/Knob.h"
 
-class Node;
 class RenderTree;
 class VideoEngine;
 class RenderTree;
 namespace Powiter{
 
+class Node;
 class Image;
 
 
@@ -39,17 +40,30 @@ class EffectInstance : public KnobHolder
 public:
     typedef std::vector<EffectInstance*> Inputs;
     
+    typedef std::map<EffectInstance*,RectI> RoIMap;
+    
+    struct RenderArgs{
+        RectI _roi;
+        SequenceTime _time;
+        RenderScale _scale;
+        int _view;
+    };
+    
 private:
     
-    Node* _node; //< the node holding this effect
+    
+    
+    Powiter::Node* _node; //< the node holding this effect
 
     bool _renderAborted; //< was rendering aborted ?
     Hash64 _hashValue;//< The hash value of this effect
-    bool _isHashValid;
+    int _hashAge;//< to check if the hash has the same age than the project's age
     bool _isRenderClone;//< is this instance a live instance (i.e interacting with GUI)
     //or a render instance (i.e a snapshot of the live instance at a given time)
     
     Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
+    boost::shared_ptr<QThreadStorage<RenderArgs> > _renderArgs;
+    
 public:
     
     
@@ -57,6 +71,7 @@ public:
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
      * You shouldn't do any heavy processing here nor lengthy initialization as the constructor is often
      * called just to be able to call a few virtuals fonctions.
+     * The constructor is always called by the main thread of the application.
      **/
     explicit EffectInstance(Node* node);
     
@@ -82,12 +97,14 @@ public:
     U64 computeHash(const std::vector<U64>& inputsHashs);
     
     const Hash64& hash() const { return _hashValue; }
+            
+    bool isHashValid() const;
     
-    bool isHashValid() const { return _isHashValid; }
-    
-    void invalidateHash() { _isHashValid = false; }
+    int hashAge() const;
     
     const Inputs& getInputs() const { return _inputs; }
+    
+    Knob* getKnobByDescription(const std::string& desc) const;
     
     /**
      * @brief Forwarded to the node's name
@@ -220,10 +237,9 @@ public:
      **/
     void setAborted(bool b) { _renderAborted = b; }
     
-    /** @brief Returns the image computed by this node at the given time and scale for the given view
-     * The image must have been rendered first otherwise an assertion will be raised.
+    /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<const Powiter::Image> getImage(SequenceTime time,RenderScale scale,int view);
+    boost::shared_ptr<const Powiter::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view);
     
     
     /**
@@ -244,7 +260,6 @@ public:
     virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod);
     
     
-    typedef std::map<EffectInstance*,RectI> RoIMap;
     /**
      * @brief Can be derived to indicate for each input node what is the region of interest
      * of the node at time 'time' and render scale 'scale' given a render window.
@@ -351,7 +366,7 @@ public:
      * call this yourself as this is called automatically on a knob value changed,
      * but this is provided as a way to force things.
      **/
-    void requestRender() { evaluate(NULL); }
+    void requestRender() { evaluate(NULL,true); }
     
     /**
      * @brief Abort any ongoing rendering that uses this effect.
@@ -379,6 +394,14 @@ public:
      **/
     void updateInputs(RenderTree* tree);
     
+    
+protected:
+    /**
+     * @brief This function is provided for means to copy more data than just the knobs from the live instance
+     * to the render clones.
+     **/
+    virtual void cloneExtras(){}
+    
 private:
     
     /**
@@ -386,13 +409,11 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(Knob* knob) OVERRIDE;
+    void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     
-    void tiledRenderingFunctor(SequenceTime time,
-                               RenderScale scale,
+    void tiledRenderingFunctor(RenderArgs args,
                                const RectI& roi,
-                               int view,
                                boost::shared_ptr<Powiter::Image> output);
 };
 
@@ -400,7 +421,7 @@ private:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Powiter::EffectInstance* (*EffectBuilder)(Node*);
+typedef Powiter::EffectInstance* (*EffectBuilder)(Powiter::Node*);
 
 
 class OutputEffectInstance : public Powiter::EffectInstance {

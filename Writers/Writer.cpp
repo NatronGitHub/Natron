@@ -193,9 +193,7 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
             return StatFailed;
         }
         boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
-        std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(renderFormat, QThread::idealThreadCount());
-        QtConcurrent::blockingMap(splitRects,
-                                  boost::bind(&Writer::renderFunctor,this,inputImage,_1,i,encoder));
+        encoder->render(inputImage, i, renderFormat);
         if(!aborted()){
             // finalize file if needed
             encoder->finalizeFile();

@@ -206,7 +206,15 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
             return  new OfxImage(image,*this);
         }
         assert(input);
-        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(input->getImage(time, scale,view)),*this);
+        int inputIndex = 0;
+        for (int i = 0; i < _nodeInstance->maximumInputs(); ++i) {
+            EffectInstance* n = _nodeInstance->input(i);
+            if (n == input) {
+                inputIndex = i;
+                break;
+            }
+        }
+        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(_nodeInstance->getImage(inputIndex,time, scale,view)),*this);
     }
 
 }

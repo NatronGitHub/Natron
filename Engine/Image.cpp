@@ -19,7 +19,7 @@ std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
-    if(_pixelsRenderedCount >= _rod.area()){
+    if(!memchr(_map,0,_rod.area())){
         ret.push_back(RectI());
         return ret;
     }
@@ -91,7 +91,6 @@ void Powiter::Bitmap::markForRendered(const RectI& roi){
         char* buf = _map + (i-_rod.bottom())*_rod.width();
         memset(buf, 1, roi.width());
     }
-    _pixelsRenderedCount += roi.area();
 }
 namespace Powiter{
     void debugImage(Powiter::Image* img){

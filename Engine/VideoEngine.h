@@ -34,9 +34,9 @@
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 
-class Node;
 namespace Powiter{
 class Row;
+class Node;
 class EffectInstance;
 class OutputEffectInstance;
 }
@@ -60,10 +60,11 @@ class TimeLine;
  *A Tree is represented by 1 output node, connected to its input, and so on recursively.
  *
  **/
-class RenderTree : public QObject{
-        
+class RenderTree {
+    
+    
 public:
-    typedef std::vector<std::pair<Node*,Powiter::EffectInstance*> > TreeContainer;
+    typedef std::vector<std::pair<Powiter::Node*,Powiter::EffectInstance*> > TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -159,15 +160,18 @@ public:
     
     int renderViewsCount() const {return _projectViewsCount;}
     
+    Powiter::EffectInstance* getEffectForNode(Powiter::Node* node) const;
     
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Node* n);
+    void fillGraph(Powiter::Node* n);
     /*clears out the structure*/
     void clearGraph();
     
-    U64 cloneKnobsAndcomputeTreeHash(Powiter::EffectInstance* effect);
+    
+    
+    U64 cloneKnobsAndcomputeTreeHash(Powiter::EffectInstance* effect,const std::vector<U64>& inputsHashs);
     
     
     Powiter::OutputEffectInstance* _output; /*!<the output of the Tree*/
@@ -179,6 +183,7 @@ private:
     bool _treeVersionValid;
     Format _renderOutputFormat;
     int _projectViewsCount;
+    
 };
 
 /**
@@ -234,6 +239,7 @@ private:
     mutable QMutex _abortedRequestedMutex; //!< protects _abortRequested
     int _abortRequested ;/*!< true when the user wants to stop the engine, e.g: the user disconnected the viewer*/
     
+    QWaitCondition _mustQuitCondition;
     mutable QMutex _mustQuitMutex; //!< protects _mustQuit
     bool _mustQuit;/*!< true when we quit the engine (i.e: we delete the OutputNode associated to this engine)*/
     
@@ -407,6 +413,7 @@ public:
      **/
 	bool isWorking() const;
     
+    bool mustQuit() const;
     
     bool hasBeenAborted() const {return _abortRequested;}
     
@@ -431,7 +438,7 @@ private:
      *@brief Resets the video engine state and ensures that all worker threads are stopped. It is called
      *internally by the run function.
      **/
-    void stopEngine();
+    bool stopEngine();
     
     /**
      *@brief Set up the video engine state, e.g: build Tree from the output node and activate some flags.

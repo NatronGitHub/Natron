@@ -29,11 +29,12 @@
 
 class OfxImage;
 class OfxEffectInstance;
-class Node;
 namespace Powiter {
     class EffectInstance;
     class OfxImageEffectInstance;
     class Image;
+    class Node;
+
 }
 
 class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance

@@ -21,7 +21,6 @@
 #include "Global/GlobalDefines.h"
 
 class LineEdit;
-class Node;
 class Knob;
 class KnobGui;
 class KnobHolder;
@@ -37,6 +36,7 @@ class QUndoCommand;
 
 namespace Powiter{
     class Project;
+    class Node;
 };
 
 /**

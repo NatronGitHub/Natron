@@ -70,9 +70,9 @@ public:
     
     
     
-    static Powiter::EffectInstance* BuildEffect(Node* n) { return new ViewerInstance(n); }
+    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n) { return new ViewerInstance(n); }
     
-    ViewerInstance(Node* node);
+    ViewerInstance(Powiter::Node* node);
     
     virtual ~ViewerInstance();
     
@@ -160,6 +160,7 @@ public:
         emit viewerDisconnected();
     }
 
+    void wakeUpAnySleepingThread();
 
     void redrawViewer();
 
@@ -173,7 +174,9 @@ public:
 
     int activeInput() const;
 
+protected:
 
+    virtual void cloneExtras() OVERRIDE;
 public slots:
 
     void onCachedFrameAdded();
@@ -242,6 +245,8 @@ signals:
  *should be allocated .
  **/
     void doFrameStorageAllocation();
+
+
 
 private:
 

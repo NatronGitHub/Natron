@@ -19,10 +19,11 @@
 
 
 
-class Node;
 class QString;
 
-
+namespace Powiter{
+    class Node;
+}
 /*The hash of a Node is the checksum of the vector of data containing:
     - the values of the current knob for this node + the name of the node
     - the hash values for the  tree upstream
@@ -42,6 +43,8 @@ public:
     void computeHash();
     
     void reset();
+    
+    bool valid() const {return hash != 0;}
     
     void append(U64 hashValue) {
         node_values.push_back(hashValue);

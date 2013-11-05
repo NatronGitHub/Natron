@@ -81,14 +81,6 @@ _gui(new Gui(this))
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         assert(_toolButtons[i]);
         QString name = _toolButtons[i]->_pluginName;
-        if (_toolButtons[i]->_groups.size() >= 1 &&
-            name != "Reader" &&
-            name != "Viewer" &&
-            name != "Writer") {
-            name.append("  [");
-            name.append(_toolButtons[i]->_groups[0]);
-            name.append("]");
-        }
         _gui->addPluginToolButton(name,
                                   _toolButtons[i]->_groups,
                                   _toolButtons[i]->_pluginName,
@@ -153,7 +145,7 @@ AppInstance::~AppInstance(){
 }
 
 
-Node* AppInstance::createNode(const QString& name) {
+Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     Node* node = 0;
     LibraryBinary* pluginBinary = appPTR->getPluginBinary(name);
     if(!pluginBinary){
@@ -187,20 +179,22 @@ Node* AppInstance::createNode(const QString& name) {
     _nodeMapping.insert(make_pair(node,nodegui));
     node->initializeKnobs();
     node->initializeInputs();
-    Node* selected  =  0;
-    if(_gui->getSelectedNode()){
-        selected = _gui->getSelectedNode()->getNode();
-    }
+   
     _currentProject->initNodeCountersAndSetName(node);
     if(node->className() == "Viewer"){
         _gui->createViewerGui(node);
     }
-    node->openFilesForAllFileKnobs();
+    if(!requestedByLoad)
+        node->openFilesForAllFileKnobs();
     if(node->makePreviewByDefault())
         node->refreshPreviewImage(0);
     
-    autoConnect(selected, node);
-    
+    if(_gui->getSelectedNode()){
+        Node* selected = _gui->getSelectedNode()->getNode();
+        autoConnect(selected, node);
+    }
+    _gui->selectNode(nodegui);
+
     return node;
 }
 
@@ -510,16 +504,19 @@ void AppInstance::clearNodes(){
 
 void AppManager::clearPlaybackCache(){
     _viewerCache->clearInMemoryPortion();
+
 }
 
 
 void AppManager::clearDiskCache(){
     _viewerCache->clear();
+    
 }
 
 
 void  AppManager::clearNodeCache(){
     _nodeCache->clear();
+ 
 }
 
 
@@ -1063,4 +1060,10 @@ Powiter::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) c
     }
     return NULL;
 
+}
+int AppInstance::getKnobsAge() const{
+    return _currentProject->getKnobsAge();
+}
+void AppInstance::incrementKnobsAge(){
+    _currentProject->incrementKnobsAge();
 }
