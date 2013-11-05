@@ -205,11 +205,14 @@ OfxStatus OfxDoubleInstance::set(OfxTime /*time*/, double v){
     _knob->setValue(v);
     return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& /*v*/){
-    return kOfxStatErrMissingHostFeature;
+
+OfxStatus OfxDoubleInstance::derive(OfxTime /*time*/, double& v) {
+    v = 0;
+    return kOfxStatOK;
 }
-OfxStatus OfxDoubleInstance::integrate(OfxTime /*time1*/, OfxTime /*time2*/, double& /*v*/){
-    return kOfxStatErrMissingHostFeature;
+OfxStatus OfxDoubleInstance::integrate(OfxTime time1, OfxTime time2, double& v) {
+    v = _knob->getValues()[0] * (time2 - time1);
+    return kOfxStatOK;
 }
 
 // callback which should set enabled state as appropriate
