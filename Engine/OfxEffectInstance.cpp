@@ -342,17 +342,36 @@ EffectInstance::RoIMap OfxEffectInstance::getRegionOfInterest(SequenceTime time,
 
 
 void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectSimpleSourceClipName);
-    if(clip){
-        double f,l;
-        clip->getFrameRange(f, l);
-        *first = (SequenceTime)f;
-        *last = (SequenceTime)l;
-    }else{
-        //*first = _frameRange.first;
-        //*last = _frameRange.second;
+    OfxRangeD range;
+    OfxStatus st = effect_->getTimeDomainAction(range);
+    if(st == kOfxStatOK){
+        *first = (SequenceTime)range.min;
+        *last = (SequenceTime)range.max;
+    }else if(st == kOfxStatReplyDefault){
+        //The default is...
+        int nthClip = effect_->getNClips();
+        if(nthClip == 0){
+            //infinite if there are no non optional input clips.
+            *first = INT_MIN;
+            *last = INT_MAX;
+        }else{
+            //the union of all the frame ranges of the non optional input clips.
+            for (int i = 0; i < nthClip ; ++i) {
+                OFX::Host::ImageEffect::ClipInstance* clip = effect_->getNthClip(i);
+                assert(clip);
+                if (!clip->isOptional()) {
+                    double f,l;
+                    clip->getFrameRange(f, l);
+                    if(f < *first)
+                        *first = f;
+                    if(l > *last)
+                        *last = l;
+                }
+            }
+        }
     }
 }
+    
 
 Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
     if(!isGenerator() && !isGeneratorAndFilter()){
