@@ -63,32 +63,38 @@ using namespace Powiter;
 using std::cout; using std::endl;
 using std::make_pair;
 
-AppInstance::AppInstance(int appID,const QString& projectName):
-_gui(new Gui(this))
+AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName):
+_gui(NULL)
 , _currentProject(new Powiter::Project(this))
 , _appID(appID)
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
+, _isBackground(backgroundMode)
 {
     
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
-    _currentProject->initializeKnobs();
 
-    _gui->createGui();
-
-    const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
-    for (U32 i = 0; i < _toolButtons.size(); ++i) {
-        assert(_toolButtons[i]);
-        QString name = _toolButtons[i]->_pluginName;
-        _gui->addPluginToolButton(name,
-                                  _toolButtons[i]->_groups,
-                                  _toolButtons[i]->_pluginName,
-                                  _toolButtons[i]->_pluginIconPath,
-                                  _toolButtons[i]->_groupIconPath);
+    if(!_isBackground){
+        _gui = new Gui(this);
     }
-    emit pluginsPopulated();
-    _gui->show();
+    _currentProject->initializeKnobs();
+    
+    if(!_isBackground){
+        _gui->createGui();
+        const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
+        for (U32 i = 0; i < _toolButtons.size(); ++i) {
+            assert(_toolButtons[i]);
+            QString name = _toolButtons[i]->_pluginName;
+            _gui->addPluginToolButton(name,
+                                      _toolButtons[i]->_groups,
+                                      _toolButtons[i]->_pluginName,
+                                      _toolButtons[i]->_pluginIconPath,
+                                      _toolButtons[i]->_groupIconPath);
+        }
+        emit pluginsPopulated();
+        _gui->show();
+    }
     
     /* Create auto-save dir if it does not exists*/
     QDir dir = autoSavesDir();
@@ -408,8 +414,8 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
     return  _gui->addNewViewerTab(node, where);
 }
 
-AppInstance* AppManager::newAppInstance(const QString& projectName){
-    AppInstance* instance = new AppInstance(_availableID,projectName);
+AppInstance* AppManager::newAppInstance(bool background,const QString& projectName){
+    AppInstance* instance = new AppInstance(background,_availableID,projectName);
     ++_availableID;
     return instance;
 }

@@ -75,36 +75,39 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
                                            const char* /*id*/,
                                            const char* format,
                                            va_list args) {
-    // FIXME: this is really GUI stuff, and should be handled by signal/slot
     assert(type);
     assert(format);
-    bool isQuestion = false;
-    const char *prefix = "Message : ";
+    char buf[10000];
+    sprintf(buf, format,args);
+    std::string message(buf);
+    
     if (strcmp(type, kOfxMessageLog) == 0) {
-        prefix = "Log : ";
-    }
-    else if(strcmp(type, kOfxMessageFatal) == 0 ||
+        
+        std::cout << message << std::endl;
+        
+    }else if(strcmp(type, kOfxMessageFatal) == 0 ||
             strcmp(type, kOfxMessageError) == 0) {
-        prefix = "Error : ";
+        
+        _node->message(Powiter::ERROR_MESSAGE, message);
+        
+    }else if(strcmp(type, kOfxMessageWarning)){
+        
+        _node->message(Powiter::WARNING_MESSAGE, message);
+        
+    }else if(strcmp(type, kOfxMessageMessage)){
+        
+        _node->message(Powiter::INFO_MESSAGE, message);
+        
+    }else if(strcmp(type, kOfxMessageQuestion) == 0) {
+        
+        if(_node->message(Powiter::QUESTION_MESSAGE, message)){
+            return kOfxStatReplyYes;
+        }else{
+            return kOfxStatReplyNo;
+        }
+        
     }
-    else if(strcmp(type, kOfxMessageQuestion) == 0) {
-        prefix = "Question : ";
-        isQuestion = true;
-    }
-
-    // Just dump our message to stdout, should be done with a proper
-    // UI in a full ap, and post a dialogue for yes/no questions.
-    fputs(prefix, stdout);
-    vprintf(format, args);
-    printf("\n");
-
-    if(isQuestion) {
-        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
-        return kOfxStatReplyYes;
-    }
-    else {
-        return kOfxStatOK;
-    }
+    return kOfxStatReplyDefault;
 }
 
 // The size of the current project in canonical coordinates.

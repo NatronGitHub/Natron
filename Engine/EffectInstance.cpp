@@ -345,6 +345,7 @@ void EffectInstance::updateInputs(RenderTree* tree){
 }
 
 
+
 Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
 
     const std::vector<Knob*>& knobs = getKnobs();
@@ -354,6 +355,10 @@ Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
         }
     }
     return NULL;
+}
+
+bool EffectInstance::message(Powiter::MessageType type,const std::string& content) const{
+    return _node->message(type,content);
 }
 
 
@@ -390,4 +395,5 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     }
     
 }
+
 

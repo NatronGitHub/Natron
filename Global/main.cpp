@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    manager->newAppInstance(projectFile);
+    manager->newAppInstance(false,projectFile);
 	    
     splashScreen->hide();
     delete splashScreen;

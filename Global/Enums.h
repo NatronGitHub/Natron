@@ -89,6 +89,9 @@ namespace Powiter{
         RestoreDefaults    = 0x08000000
     };
     
+    enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+
+    
     typedef QFlags<QMessageBox::StandardButton> StandardButtons;
 }
 

@@ -290,6 +290,8 @@ public:
 
     Powiter::EffectInstance* findExistingEffect(RenderTree* tree) const;
     
+    bool message(Powiter::MessageType type,const std::string& content) const;
+
 public slots:
     
     void onGUINameChanged(const QString& str){

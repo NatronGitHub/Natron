@@ -394,6 +394,18 @@ public:
      **/
     void updateInputs(RenderTree* tree);
     
+    /**
+     * @brief Use this function to post a transient message to the user. It will be displayed using
+     * a dialog. The message can be of 4 types...
+     * INFORMATION_MESSAGE : you just want to inform the user about something.
+     * WARNING_MESSAGE : you want to inform the user that something important happened.
+     * ERROR_MESSAGE : you want to inform the user an error occured.
+     * QUESTION_MESSAGE : you want to ask the user about something. 
+     * The function will return true always except for a message of type QUESTION_MESSAGE, in which
+     * case the function may return false if the user pressed the 'No' button.
+     * @param content The message you want to pass.
+     **/
+    bool message(Powiter::MessageType type,const std::string& content) const;
     
 protected:
     /**

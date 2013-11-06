@@ -62,11 +62,13 @@ class AppInstance : public QObject,public boost::noncopyable
 {
     Q_OBJECT
 public:
-    AppInstance(int appID,const QString& projectName = QString());
+    AppInstance(bool backgroundMode,int appID,const QString& projectName = QString());
     
     ~AppInstance();
     
     int getAppID() const {return _appID;}
+    
+    bool isBackground() const {return _isBackground;}
     
     /*Create a new node  in the node graph.
      The name passed in parameter must match a valid node name,
@@ -199,6 +201,7 @@ private:
 
     QMutex* _autoSaveMutex;
 
+    bool _isBackground;
 
 };
 
@@ -238,7 +241,7 @@ public:
     
     const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
-    AppInstance* newAppInstance(const QString& projectName = QString());
+    AppInstance* newAppInstance(bool background,const QString& projectName = QString());
 
     void registerAppInstance(AppInstance* app){ _appInstances.insert(std::make_pair(app->getAppID(),app));}
 
@@ -361,21 +364,51 @@ private:
 namespace Powiter{
 
 inline void errorDialog(const std::string& title,const std::string& message){
-    appPTR->getTopLevelInstance()->errorDialog(title,message);
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->errorDialog(title,message);
+    }else{
+        std::cout << title << std::endl;
+        std::cout << message << std::endl;
+    }
+    
 }
 
 inline void warningDialog(const std::string& title,const std::string& message){
-    appPTR->getTopLevelInstance()->warningDialog(title,message);
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->warningDialog(title,message);
+    }else{
+        std::cout << title << std::endl;
+        std::cout << message << std::endl;
+    }
 }
 
 inline void informationDialog(const std::string& title,const std::string& message){
-    appPTR->getTopLevelInstance()->informationDialog(title,message);
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->informationDialog(title,message);
+    }else{
+        std::cout << title << std::endl;
+        std::cout << message << std::endl;
+    }
 }
 
 inline Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
         Powiter::StandardButtons(Powiter::Yes | Powiter::No),
                                               Powiter::StandardButton defaultButton = Powiter::NoButton){
-    return appPTR->getTopLevelInstance()->questionDialog(title,message,buttons,defaultButton);
+    
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
+    }else{
+        std::cout << title << std::endl;
+        std::cout << message << std::endl;
+    }
 }
 }
 

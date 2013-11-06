@@ -534,6 +534,23 @@ void Powiter::Node::onOverlayFocusLost(){
 }
 
 
+bool Powiter::Node::message(Powiter::MessageType type,const std::string& content) const{
+    if (type == Powiter::INFO_MESSAGE) {
+        Powiter::informationDialog(getName(), content);
+        return true;
+    }else if(type == Powiter::WARNING_MESSAGE){
+        Powiter::warningDialog(getName(), content);
+        return true;
+    }else if(type == Powiter::ERROR_MESSAGE){
+        Powiter::errorDialog(getName(), content);
+        return true;
+    }else if(type == Powiter::QUESTION_MESSAGE){
+        return Powiter::questionDialog(getName(), content) == Powiter::Yes;
+    }
+    return false;
+}
+
+
 InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
 : Node(app,plugin,name)
 , _inputsCount(1)
