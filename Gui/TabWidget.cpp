@@ -404,6 +404,8 @@ void TabWidget::dragEnterEvent(QDragEnterEvent* event){
         event->acceptProposedAction();
         _drawDropRect = true;
         setFrameShape(QFrame::Box);
+    }else{
+       
     }
     repaint();
 }

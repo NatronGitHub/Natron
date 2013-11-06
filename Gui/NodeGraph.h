@@ -41,6 +41,8 @@ class AppInstance;
 class Edge;
 class QMenu;
 class SmartInputDialog;
+class QDropEvent;
+class QDragEnterEvent;
 
 namespace Powiter{
     class Node;
@@ -146,6 +148,14 @@ protected:
     void paintEvent(QPaintEvent* event);
 
     void wheelEvent(QWheelEvent *event);
+
+    void dropEvent(QDropEvent* event);
+    
+    void dragEnterEvent(QDragEnterEvent *ev);
+    
+    void dragMoveEvent(QDragMoveEvent* e);
+    
+    void dragLeaveEvent(QDragLeaveEvent* e);
 
 private:
     

@@ -13,6 +13,11 @@
 #define POWITER_GUI_LINEEDIT_H_
 
 #include <QLineEdit>
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QUrl>
 
 class QPaintEvent;
 class LineEdit : public QLineEdit {
@@ -27,6 +32,35 @@ public:
         p.setColor( QPalette::HighlightedText, c );
         this->setPalette( p );
         QLineEdit::paintEvent(e);
+    }
+    
+    void dropEvent(QDropEvent* event){
+        if(!event->mimeData()->hasUrls())
+            return;
+        
+        QStringList filesList;
+        QList<QUrl> urls = event->mimeData()->urls();
+        QString path;
+        if(urls.size() > 0){
+            path = urls.at(0).path();
+        }
+        if(!path.isEmpty()){
+            setText(path);
+            
+        }
+
+    }
+    
+    void dragEnterEvent(QDragEnterEvent *ev){
+        ev->accept();
+    }
+    
+    void dragMoveEvent(QDragMoveEvent* e){
+        e->accept();
+    }
+    
+    void dragLeaveEvent(QDragLeaveEvent* e){
+        e->accept();
     }
 };
 

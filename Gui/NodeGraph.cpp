@@ -27,6 +27,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QGraphicsLineItem>
 #include <QUndoStack>
 #include <QMenu>
+#include <QDropEvent>
 
 #include "Gui/TabWidget.h"
 #include "Gui/Edge.h"
@@ -39,12 +40,14 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/NodeGui.h"
 #include "Gui/Gui.h"
 #include "Gui/TimeLineGui.h"
+#include "Gui/SequenceFileDialog.h"
 
 #include "Engine/VideoEngine.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Hash64.h"
 #include "Engine/FrameEntry.h"
+#include "Engine/Settings.h"
 
 #include "Readers/Reader.h"
 
@@ -65,6 +68,8 @@ _maximized(false),
 _propertyBin(0),
 _refreshOverlays(true)
 {
+    setAcceptDrops(true);
+    
     QObject::connect(_gui->getApp(), SIGNAL(pluginsPopulated()), this, SLOT(populateMenu()));
     
     setObjectName("DAG_GUI");
@@ -222,19 +227,22 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Powiter::Node *nod
     
     if(_nodeSelected){
         selectedPos = _nodeSelected->scenePos();
-        x = selectedPos.x();
         int yOffset = 0;
-        if(node->isInputNode() && !_nodeSelected->getNode()->isInputNode()){
-            x -= NodeGui::PREVIEW_LENGTH/2;
+        int xOffset = 0;
+        if(node->makePreviewByDefault() && !_nodeSelected->getNode()->makePreviewByDefault()){
+            xOffset -= NodeGui::PREVIEW_LENGTH/2;
             yOffset -= NodeGui::PREVIEW_HEIGHT;
         }
-        
-        if(!node->isOutputNode()){
-            yOffset -= (NodeGui::NODE_HEIGHT + 50);
-        }else {
-            yOffset += (NodeGui::NODE_HEIGHT + 50);
+        if(node->isInputNode() || _nodeSelected->getNode()->isOutputNode()){
+            yOffset -=  (NodeGui::NODE_HEIGHT + 20);
+        }else{
+            yOffset +=  (NodeGui::NODE_HEIGHT + 20);
         }
-        y =  selectedPos.y() + yOffset;
+        if(_nodeSelected->getNode()->isInputNode() && node->isInputNode())
+            xOffset -= (NodeGui::NODE_LENGTH + 20);
+        
+        y = selectedPos.y() + yOffset;
+        x = selectedPos.x() + xOffset;
     }else{
         x = (viewPos.bottomRight().x()+viewPos.topLeft().x())/2.;
         y = (viewPos.topLeft().y()+viewPos.bottomRight().y())/2.;
@@ -1043,4 +1051,63 @@ void NodeGraph::populateMenu(){
 
 void NodeGraph::showMenu(const QPoint& pos){
     _menu->exec(pos);
+}
+
+
+
+void NodeGraph::dropEvent(QDropEvent* event){
+    if(!event->mimeData()->hasUrls())
+        return;
+    
+    QStringList filesList;
+    QList<QUrl> urls = event->mimeData()->urls();
+    for(int i = 0; i < urls.size() ; ++i){
+        const QUrl& rl = urls.at(i);
+        QString path = rl.path();
+        QDir dir(path);
+        
+        //if the path dropped is not a directory append it
+        if(!dir.exists()){
+            filesList << path;
+        }else{
+            //otherwise append everything inside the dir recursively
+            SequenceFileDialog::appendFilesFromDirRecursively(&dir,&filesList);
+        }
+    
+    }
+    
+    QStringList supportedExtensions;
+    std::vector<std::string> supportedFileTypes = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    for(U32 i = 0 ; i < supportedFileTypes.size();++i){
+        supportedExtensions.append(QString(supportedFileTypes[i].c_str()));
+    }
+    
+    std::vector<QStringList> files = SequenceFileDialog::fileSequencesFromFilesList(filesList,supportedExtensions);
+    
+    for(U32 i = 0 ; i < files.size();++i){
+        
+        QStringList list = files[i];
+        Powiter::Node* reader = _gui->getApp()->createNode("Reader",true);
+        const std::vector<Knob*>& knobs = reader->getKnobs();
+        for(U32 j = 0 ; j < knobs.size();++j){
+            if(knobs[j]->typeName() == "InputFile"){
+                File_Knob* fileKnob = dynamic_cast<File_Knob*>(knobs[j]);
+                assert(fileKnob);
+                fileKnob->setValue(files[i]);
+                reader->refreshPreviewImage(fileKnob->firstFrame());
+                break;
+            }
+        }
+    }
+    
+}
+
+void NodeGraph::dragEnterEvent(QDragEnterEvent *ev){
+    ev->accept();
+}
+void NodeGraph::dragLeaveEvent(QDragLeaveEvent* e){
+    e->accept();
+}
+void NodeGraph::dragMoveEvent(QDragMoveEvent* e){
+    e->accept();
 }

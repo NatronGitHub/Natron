@@ -20,6 +20,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QtGui/QCloseEvent>
 #include <QApplication>
 #include <QMenu>
+#include <QUrl>
 #include <QLayout>
 #include <QDesktopWidget>
 #include <QSplitter>
@@ -30,6 +31,7 @@ CLANG_DIAG_ON(unused-private-field);
 #include <QProgressBar>
 #include <QSettings>
 #include <QScrollBar>
+#include <QDropEvent>
 
 #include "Global/AppManager.h"
 
@@ -1493,3 +1495,4 @@ void Gui::showView8(){
 void Gui::showView9(){
      _appInstance->setViewersCurrentView(9);
 }
+

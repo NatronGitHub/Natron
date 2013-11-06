@@ -60,6 +60,7 @@ class SpinBox;
 class LineEdit;
 class DockablePanel;
 
+
 namespace Powiter{
     class Node;
 }
@@ -269,6 +270,7 @@ public:
     void updateViewsActions(int viewsCount);
     
     static QKeySequence keySequenceForView(int v);
+        
     
 private:
 

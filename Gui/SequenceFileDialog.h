@@ -181,9 +181,9 @@ private:
  * @brief The SequenceDialogView class is the view of the filesystem within the dialog.
  */
 class SequenceDialogView: public QTreeView{
-    
+    SequenceFileDialog* _fd;
 public:
-    explicit SequenceDialogView(QWidget* parent);
+    explicit SequenceDialogView(SequenceFileDialog* fd);
     
     void updateNameMapping(const std::vector<std::pair<QString,std::pair<qint64,QString> > >& nameMapping);
 
@@ -191,6 +191,15 @@ public:
         int size = width() - columnWidth(1) - columnWidth(2) - columnWidth(3);
         setColumnWidth(0,size);
     }
+    
+    void dropEvent(QDropEvent* event);
+    
+    void dragEnterEvent(QDragEnterEvent *ev);
+    
+    void dragMoveEvent(QDragMoveEvent* e);
+    
+    void dragLeaveEvent(QDragLeaveEvent* e);
+
 };
 
 class FileSequence{
@@ -267,11 +276,11 @@ public:
     inline void setFilter(QString filter){ _filter = filter;}
 
     /**@brief Returns in path the name of the file with the extension truncated and
-     *and the frame number truncated.
-     *It returns in framenumber the number of the frame
+     *the frame number truncated.
+     *It returns in framenumber the number of the frame, or -1 if it had no frame number
      *and in extension the name of file type
      **/
-    void parseFilename(QString &path, int* frameNumber, QString &extension) const;
+    static void parseFilename(QString &path, int* frameNumber, QString &extension);
 
     
 protected:
@@ -402,6 +411,13 @@ public:
      *returns the extension as a string.*/
     static QString removeFileExtension(QString& filename);
     
+    /**
+     * @brief Tries to remove the digits prepending the file extension if the file is part of
+     * a sequence. The digits MUST absolutely be placed before the last '.' of the file name.
+     * If no such digits could be found, this function returns false.
+     **/
+    static bool removeSequenceDigits(QString& file,int* frameNumber);
+    
     static QString removePath(const QString& str);
     
     static bool checkIfContiguous(const std::vector<int>& v);
@@ -473,6 +489,16 @@ public:
     
     FileDialogMode getDialogMode() const {return _dialogMode;}
     
+    /**
+     * @brief Returns a vector of the different image file sequences found in the files given in parameter. 
+     * Any file which has an extension not contained in the supportedFileType will be ignored.
+     **/
+    static std::vector<QStringList> fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes);
+    
+    /**
+     * @brief Append all files in the current directory and all its sub-directories recursively.
+     **/
+    static void appendFilesFromDirRecursively(QDir* currentDir,QStringList* files);
 public slots:
 
     void enterDirectory(const QModelIndex& index);

@@ -796,7 +796,7 @@ void ComboBox_KnobGui::onEntriesPopulated(){
 
 void ComboBox_KnobGui::updateGUI(const Variant& variant){
     int i = variant.toInt();
-    assert(i <= (int)_entries.size());
+    assert(i < (int)_entries.size());
     _comboBox->setCurrentText(_entries[i].c_str());
 }
 void ComboBox_KnobGui::hide(){

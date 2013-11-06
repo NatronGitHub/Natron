@@ -754,6 +754,21 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     return true;
 }
 
+bool SequenceFileDialog::removeSequenceDigits(QString& file,int* frameNumber){
+    int i = file.size() - 1;
+    QString fnumberStr;
+    while(i >= 0 && file.at(i).isDigit()) {
+        fnumberStr.prepend(file.at(i));
+        --i;
+    }
+    //if the whole file name is composed of digits or the file name doesn't contain any digit, return false.
+    if(i == 0 || i == file.size()-1){
+        return false;
+    }
+    file = file.left(i+1);
+    *frameNumber = fnumberStr.toInt();
+    return true;
+}
 void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
     if(!sequenceModeEnabled()){
         return;
@@ -775,17 +790,9 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         QString name = item.data(QFileSystemModel::FilePathRole).toString();
         QString originalName = name;
         QString extension = SequenceFileDialog::removeFileExtension(name);
-        {
-            int i = name.size() - 1;
-            QString fNumber ;
-            while(i>=0 && name.at(i).isDigit()) {
-                fNumber.prepend(name.at(i));
-                --i;
-            }
-            if(i == 0 || i == name.size()-1){
-                continue;
-            }
-            name = name.left(i+1);
+        int frameNumber;
+        if(!removeSequenceDigits(name,&frameNumber)){
+            continue;
         }
         const FileSequence frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
         /*we don't display sequences with no frame contiguous like 10-13-15.
@@ -870,33 +877,16 @@ const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string&
 }
 
 
-void SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QString &extension) const{
-    
+void SequenceDialogProxyModel::parseFilename(QString& path,int* frameNumber,QString &extension){
     /*removing the file extension if any*/
-    
     extension = SequenceFileDialog::removeFileExtension(path);
-    //  if(!_fd->isASupportedFileExtension(extension.toStdString())){
-    //  return false;
-    //}
     /*removing the frame number if any*/
-    int i = path.size() - 1;
-    QString fNumber ;
-    int digitCount = 0;
-    while(i>=0 && path.at(i).isDigit()) {
-        fNumber.prepend(path.at(i));
-        --i;
-        ++digitCount;
-    }
-    path = path.left(i+1);
-    if((i == 0 && path.size() > 1)|| !digitCount){
+    if (!SequenceFileDialog::removeSequenceDigits(path, frameNumber)) {
         *frameNumber = -1;
-        path = "";
-    }else{
-        *frameNumber = fNumber.toInt();
     }
 }
 
-SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
+SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd(fd){
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);
     setItemsExpandable(false);
@@ -908,7 +898,36 @@ SequenceDialogView::SequenceDialogView(QWidget* parent):QTreeView(parent){
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragDropMode(QAbstractItemView::InternalMove);
     //setAttribute(Qt::WA_MacShowFocusRect,0);
+    setAcceptDrops(true);
 }
+
+void SequenceDialogView::dropEvent(QDropEvent* event){
+    if(!event->mimeData()->hasUrls())
+        return;
+    
+    QStringList filesList;
+    QList<QUrl> urls = event->mimeData()->urls();
+    QString path;
+    if(urls.size() > 0){
+        path = urls.at(0).path();
+    }
+    if(!path.isEmpty()){
+        _fd->setDirectory(path);
+    }
+}
+
+void SequenceDialogView::dragEnterEvent(QDragEnterEvent *ev){
+    ev->accept();
+}
+
+void SequenceDialogView::dragMoveEvent(QDragMoveEvent* e){
+    e->accept();
+}
+
+void SequenceDialogView::dragLeaveEvent(QDragLeaveEvent* e){
+    e->accept();
+}
+
 void SequenceDialogView::updateNameMapping(const std::vector<std::pair<QString, std::pair<qint64, QString> > >& nameMapping){
     dynamic_cast<SequenceItemDelegate*>(itemDelegate())->setNameMapping(nameMapping);
 }
@@ -1560,6 +1579,10 @@ QStringList SequenceFileDialog::selectedFiles(){
             }
             
         }
+    }else{
+        //if nothing is selected, pick whatever the line edit tells us
+        QString lineEditTxt = _selectionLineEdit->text();
+        out.append(lineEditTxt);
     }
     return out;
 }
@@ -2275,4 +2298,90 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
     }
     return false;
     
+}
+
+std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
+    std::vector<QStringList> ret;
+    typedef std::map<QString,std::map<QString,QStringList> >  Sequences; //<common name, <extention,files list> >
+    Sequences sequences;
+    for (int i = 0; i < files.size(); ++i) {
+        QString file = files.at(i);
+        QString rawFile = file;
+        QString extension;
+        int frameNumber;
+        SequenceDialogProxyModel::parseFilename(file, &frameNumber, extension);
+        
+        //if the extension is not supported, ignore the file
+        bool foundMatch = false;
+        for(int i = 0 ; i < supportedFileTypes.size() ; ++i) {
+            if(nocase_equal_string(extension.toStdString(), supportedFileTypes[i].toStdString())){
+                foundMatch = true;
+                break;
+            }
+        }
+        if(!foundMatch){
+            continue;
+        }
+        
+        
+        //try to find an existing sequence with the same common name
+        Sequences::iterator it = sequences.find(file);
+        if(it != sequences.end()){
+            // try to find an existing sequence with this extension
+            std::map<QString,QStringList>::iterator it2 = it->second.find(extension);
+            if(it2 != it->second.end()){
+                it2->second.append(rawFile);
+            }else{
+                //make a new sequence for this other extension
+                QStringList list;
+                list << rawFile;
+                it->second.insert(std::make_pair(extension, list));
+            }
+            
+        }else{
+            //insert a new sequence
+            QStringList list;
+            list << rawFile;
+            std::map<QString,QStringList> newMap;
+            newMap.insert(std::make_pair(extension, list));
+            sequences.insert(std::make_pair(file, newMap));
+        }
+    }
+    
+    //run through all the sequences and insert it into ret
+    for (Sequences::iterator it = sequences.begin(); it!=sequences.end(); ++it) {
+        QStringList list;
+        for (std::map<QString,QStringList>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            for (int i = 0; i < it2->second.size(); ++i) {
+                list << it2->second.at(i);
+            }
+        }
+        ret.push_back(list);
+    }
+    return ret;
+}
+
+void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringList* files){
+    QStringList entries = currentDir->entryList();
+    for (int i = 0; i < entries.size(); ++i) {
+        const QString& e = entries.at(i);
+        
+        //ignore dot and dotdot
+        if(e == "." || e == "..")
+            continue;
+        
+        QString entryWithPath = currentDir->absoluteFilePath(e);
+        
+        //if it is a file, recurse
+        QDir d(entryWithPath);
+        if(d.exists()){
+            appendFilesFromDirRecursively(&d, files);
+            continue;
+        }
+        
+        //else if it is a file, append it
+        if(QFile::exists(entryWithPath)){
+            files->append(entryWithPath);
+        }
+    }
 }
