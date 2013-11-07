@@ -24,8 +24,7 @@ Settings::CachingSettings::CachingSettings(){
 }
 
 Settings::ViewerSettings::ViewerSettings(){
-    byte_mode=1;
-    stereo_mode=false;
+    byte_mode = 1;
 }
 
 Settings::GeneralSettings::GeneralSettings(){

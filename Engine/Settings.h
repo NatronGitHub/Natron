@@ -51,7 +51,6 @@ public:
     class ViewerSettings{
     public:
         float byte_mode;
-        bool stereo_mode;
         
         ViewerSettings();
     };

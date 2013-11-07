@@ -21,6 +21,7 @@
 #include "Global/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/ChannelSet.h"
+#include "Engine/Log.h"
 #include "Gui/KnobGui.h"
 #include "Writers/Writer.h"
 
@@ -47,7 +48,9 @@ int main(int argc, char *argv[])
 
     registerMetaTypes();
     
-    
+#ifdef POWITER_LOG
+    Powiter::Log::instance();
+#endif
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
     filename.append(POWITER_IMAGES_PATH"splashscreen.png");

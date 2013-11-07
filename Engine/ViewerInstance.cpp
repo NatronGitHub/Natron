@@ -286,14 +286,15 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     if(!aborted()){
         assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
         size_t bytesToCopy = _interThreadInfos._pixelsCount;
+        if(viewer->hasHardware() && !viewer->byteMode()){
+            bytesToCopy *= sizeof(float);
+        }
         boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
         if(!cachedFrame){
             std::cout << "Failed to cache the frame rendered by the viewer." << std::endl;
             return StatOK;
         }
-        if(viewer->hasHardware() && !viewer->byteMode()){
-            bytesToCopy *= sizeof(float);
-        }
+       
         memcpy((char*)cachedFrame->data(),viewer->getFrameData(),bytesToCopy);
     }
     

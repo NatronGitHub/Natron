@@ -20,6 +20,10 @@ win32{
     DEFINES -= _UNICODE UNICODE
 }
 
+log{
+    DEFINES += POWITER_LOG
+}
+
 unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
@@ -140,7 +144,8 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
+    Engine/Log.cpp
 
 
 
@@ -241,7 +246,8 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
+    Engine/Log.h
 
 
 

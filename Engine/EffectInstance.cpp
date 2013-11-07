@@ -17,6 +17,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Log.h"
 
 using namespace Powiter;
 
@@ -182,6 +183,17 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
+#ifdef POWITER_LOG
+    Powiter::Log::beginFunction(getName(),"renderRoI");
+    Powiter::Log::print(getName(),"renderRoI",QString("Time "+QString::number(time)+
+                                                      " Scale ("+QString::number(scale.x)+
+                                                      ","+QString::number(scale.y)
+                        +") View " + QString::number(view) + " RoI: xmin= "+ QString::number(renderWindow.left()) +
+                        " ymin= " + QString::number(renderWindow.bottom()) + " xmax= " + QString::number(renderWindow.right())
+                        + " ymax= " + QString::number(renderWindow.top())).toStdString());
+                        
+#endif
+    
     Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
@@ -247,6 +259,10 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
     
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
+    
+#ifdef POWITER_LOG
+    Powiter::Log::endFunction(getName(),"renderRoI");
+#endif
     return image;
 }
 

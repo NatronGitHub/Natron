@@ -1147,7 +1147,7 @@ void ViewerGL::allocateFrameStorage(size_t dataSize){
 void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
     //cout << "    + mapping PBO" << endl;
     if(byteMode() != 1 && _hasHW){
-        dataSize*=sizeof(float);
+        dataSize *= sizeof(float);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
@@ -1294,13 +1294,14 @@ void ViewerGL::convertRowToFitTextureBGRA_fp(const float* data,const std::vector
     float* output = reinterpret_cast<float*>(frameData);
     // offset in the buffer : (y)*(w) where y is the zoomedY of the row and w=nbbytes/sizeof(float)*4 = nbbytes
     yOffset *= columnSpan.size()*sizeof(float);
-    output+=yOffset;
+    output += yOffset;
+    int index = 0;
     for (unsigned int i = 0 ; i < columnSpan.size(); ++i) {
         int col = columnSpan[i]*4;
-        output[i]   = data[col];
-        output[i+1] = data[col+1];
-        output[i+2] = data[col+2];
-        output[i+3] = data[col+3];
+        output[index++] = data[col];
+        output[index++] = data[col+1];
+        output[index++] = data[col+2];
+        output[index++] = data[col+3];
     }
     
 }
