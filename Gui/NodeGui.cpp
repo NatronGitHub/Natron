@@ -14,6 +14,7 @@
 #include <QLayout>
 #include <QAction> 
 #include <QtConcurrentRun>
+#include <QFontMetrics>
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -21,6 +22,7 @@
 #include "Gui/ViewerTab.h"
 #include "Gui/Gui.h"
 #include "Gui/KnobGui.h"
+#include "Gui/ViewerGL.h"
 
 #include "Readers/Reader.h"
 
@@ -31,6 +33,8 @@
 #include "Engine/ChannelSet.h"
 
 #include "Global/AppManager.h"
+
+#define POWITER_STATE_INDICATOR_OFFSET 5
 
 using std::make_pair;
 
@@ -43,85 +47,117 @@ NodeGui::NodeGui(NodeGraph* dag,
                  QGraphicsItem *parent)
 : QObject()
 , QGraphicsItem(parent)
-, _dag(dag)
-, node(node_)
+, _graph(dag)
+, _internalNode(node_)
 , _selected(false)
-, name(NULL)
-, dockContainer(dockContainer_)
-, rectangle(NULL)
-, channels(NULL)
-, prev_pix(NULL)
-, inputs()
-, settingsPanel_displayed(false)
-, settings(0)
+, _nameItem(NULL)
+, _boundingBox(NULL)
+, _channelsPixmap(NULL)
+, _previewPixmap(NULL)
+, _persistentMessage(NULL)
+, _lastPersistentMessageType(0)
+, _stateIndicator(NULL)
+, _inputEdges()
+, _panelDisplayed(false)
+, _settingsPanel(0)
+, _previewOn(false)
+, _selectedGradient(NULL)
+, _defaultGradient(NULL)
 {
-
-    assert(node_);
-    QObject::connect(this, SIGNAL(nameChanged(QString)), node, SLOT(onGUINameChanged(QString)));
-    QObject::connect(this, SIGNAL(nameChanged(QString)), this, SLOT(onLineEditNameChanged(QString)));
-    QObject::connect(node, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
-    QObject::connect(node, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
-    QObject::connect(node, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
-    QObject::connect(node, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
-    QObject::connect(node, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
-    QObject::connect(node, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
-    QObject::connect(node, SIGNAL(deactivated()),this,SLOT(deactivate()));
-    QObject::connect(node, SIGNAL(activated()), this, SLOT(activate()));
-    QObject::connect(node, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
     
+    assert(node_);
+    QObject::connect(this, SIGNAL(nameChanged(QString)), _internalNode, SLOT(onGUINameChanged(QString)));
+    
+    QObject::connect(_internalNode, SIGNAL(nameChanged(QString)), this, SLOT(onInternalNameChanged(QString)));
+    QObject::connect(_internalNode, SIGNAL(deleteWanted()), this, SLOT(deleteNode()));
+    QObject::connect(_internalNode, SIGNAL(refreshEdgesGUI()),this,SLOT(refreshEdges()));
+    QObject::connect(_internalNode, SIGNAL(knobsInitialized()),this,SLOT(initializeKnobs()));
+    QObject::connect(_internalNode, SIGNAL(inputsInitialized()),this,SLOT(initializeInputs()));
+    QObject::connect(_internalNode, SIGNAL(previewImageChanged(int)), this, SLOT(updatePreviewImage(int)));
+    QObject::connect(_internalNode, SIGNAL(deactivated()),this,SLOT(deactivate()));
+    QObject::connect(_internalNode, SIGNAL(activated()), this, SLOT(activate()));
+    QObject::connect(_internalNode, SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)));
+    QObject::connect(_internalNode, SIGNAL(persistentMessageChanged(int,QString)), this, SLOT(onPersistentMessageChanged(int,QString)));
+    QObject::connect(_internalNode, SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
     /*Disabled for now*/
     //QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
-    
-    setPos(x,y);
-    QPointF itemPos = mapFromScene(QPointF(x,y));
-	
-	if(node->makePreviewByDefault()){ 
-		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH+NodeGui::PREVIEW_LENGTH,NodeGui::NODE_HEIGHT+NodeGui::PREVIEW_HEIGHT)),this);
-	}else{
-		rectangle = new QGraphicsRectItem(QRectF(itemPos,QSizeF(NodeGui::NODE_LENGTH,NodeGui::NODE_HEIGHT)),this);
-	}
-	
-    
-    QImage img(POWITER_IMAGES_PATH"RGBAchannels.png");
-    
-    
-    QPixmap pixmap=QPixmap::fromImage(img);
-    pixmap=pixmap.scaled(10,10);
-    channels= new QGraphicsPixmapItem(pixmap,this);
-    channels->setX(itemPos.x()+1);
-    channels->setY(itemPos.y()+1);
-	
-    name = new QGraphicsSimpleTextItem(node->getName().c_str(),this);
-    if(node->makePreviewByDefault()){
-        name->setX(itemPos.x()+35);
-		name->setY(itemPos.y()+1);
-        QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
-        prev.fill(Qt::black);
-        QPixmap prev_pixmap = QPixmap::fromImage(prev);
-        prev_pix = new QGraphicsPixmapItem(prev_pixmap,this);
-        prev_pix->setX(itemPos.x() + POWITER_PREVIEW_WIDTH/2);
-        prev_pix->setY(itemPos.y() + POWITER_PREVIEW_HEIGHT/2);
-	}else{
-		name->setX(itemPos.x()+10);
-		name->setY(itemPos.y()+channels->boundingRect().height()+5);
-	}
+    setPos(x,y);	
 
+    _boundingBox = new QGraphicsRectItem(this);
+    _boundingBox->setZValue(-1);
+	
+    QImage img(POWITER_IMAGES_PATH"RGBAchannels.png");
+    QPixmap pixmap = QPixmap::fromImage(img);
+    pixmap = pixmap.scaled(10,10);
+    _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
+	
+    _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
     
+    _persistentMessage = new QGraphicsTextItem("",this);
+    _persistentMessage->setZValue(1);
+    QFont f = _persistentMessage->font();
+    f.setPixelSize(25);
+    _persistentMessage->setFont(f);
+    _persistentMessage->hide();
+    
+    _stateIndicator = new QGraphicsRectItem(this);
+    _stateIndicator->setZValue(-5);
+    _stateIndicator->hide();
+
     /*building settings panel*/
-	if(node->className() != "Viewer"){
-		settingsPanel_displayed=true;
-		assert(dockContainer);
-		settings=new NodeSettingsPanel(this,dockContainer->parentWidget());
-		dockContainer->addWidget(settings);
-        if(node->isOpenFXNode()){
-            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
+    if(_internalNode->className() != "Viewer"){
+        _panelDisplayed=true;
+        assert(dockContainer_);
+        _settingsPanel = new NodeSettingsPanel(this,dockContainer_,dockContainer_->parentWidget());
+        QObject::connect(_settingsPanel,SIGNAL(nameChanged(QString)),this,SLOT(setName(QString)));
+        dockContainer_->addWidget(_settingsPanel);
+        if(_internalNode->isOpenFXNode()){
+            OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
 	}
+
+    if(_internalNode->makePreviewByDefault()){
+        togglePreview();
+    }
     
+    if(!_internalNode->makePreviewByDefault()){
+        updateShape(NODE_LENGTH,NODE_HEIGHT);
+    }
+    
+    QRectF rect = _boundingBox->rect();
+    
+    _selectedGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _selectedGradient->setColorAt(0, QColor(249,187,81));
+    _selectedGradient->setColorAt(1, QColor(150,187,81));
+    
+    _defaultGradient = new QLinearGradient(rect.topLeft(), rect.bottomRight());
+    _defaultGradient->setColorAt(0, QColor(224,224,224));
+    _defaultGradient->setColorAt(1, QColor(142,142,142));
+    
+    _boundingBox->setBrush(*_defaultGradient);
+    
+}
+
+void NodeGui::togglePreview(){
+    _previewOn = ! _previewOn;
+
+    if(_previewOn){
+        if(!_previewPixmap){
+            QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+            prev.fill(Qt::black);
+            QPixmap prev_pixmap = QPixmap::fromImage(prev);
+            _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
+        }
+        updateShape(NODE_LENGTH+PREVIEW_LENGTH,NODE_HEIGHT+PREVIEW_HEIGHT);
+        _previewPixmap->show();
+    }else{
+        _previewPixmap->hide();
+        updateShape(NODE_LENGTH,NODE_HEIGHT);
+    }
 }
 
 void NodeGui::deleteNode(){
@@ -129,8 +165,8 @@ void NodeGui::deleteNode(){
 }
 
 NodeGui::~NodeGui(){
-    _dag->removeNode(this);
-    for(InputEdgesMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+    _graph->removeNode(this);
+    for(InputEdgesMap::const_iterator it = _inputEdges.begin();it!=_inputEdges.end();++it){
         Edge* e = it->second;
         if(e){
             QGraphicsScene* scene = e->scene();
@@ -142,21 +178,46 @@ NodeGui::~NodeGui(){
         }
     }
 }
+
+void NodeGui::updateShape(int width,int height){
+    QPointF topLeft = mapFromParent(pos());
+    _boundingBox->setRect(topLeft.x(),topLeft.y(),width,height);
+    _channelsPixmap->setPos(topLeft.x()+1,topLeft.y()+1);
+    
+    QFont f("Times",12);
+    QFontMetrics metrics(f);
+    int nameWidth = metrics.width(_nameItem->toPlainText());
+    _nameItem->setX(topLeft.x()+(_boundingBox->rect().width()/2)-(nameWidth/2));
+    _nameItem->setY(topLeft.y()+10 - metrics.height()/2);
+    
+    QString persistentMessage = _persistentMessage->toPlainText();
+    f.setPixelSize(25);
+    metrics = QFontMetrics(f);
+    int pMWidth = metrics.width(persistentMessage);
+    
+    _persistentMessage->setPos(topLeft.x() + (width/2) - (pMWidth/2), topLeft.y() + height/2 - metrics.height()/2);
+    _stateIndicator->setRect(topLeft.x()-POWITER_STATE_INDICATOR_OFFSET,topLeft.y()-POWITER_STATE_INDICATOR_OFFSET,
+                             width+POWITER_STATE_INDICATOR_OFFSET*2,height+POWITER_STATE_INDICATOR_OFFSET*2);
+    if(_previewPixmap)
+        _previewPixmap->setPos(topLeft.x() + POWITER_PREVIEW_WIDTH/2,topLeft.y() + POWITER_PREVIEW_HEIGHT/2);
+
+}
+
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
     refreshEdges();
-    for (Powiter::Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+    for (Powiter::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
     }
 }
 void NodeGui::refreshEdges(){
-    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
-        const Powiter::Node::InputMap& nodeInputs = node->getInputs();
+    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
+        const Powiter::Node::InputMap& nodeInputs = _internalNode->getInputs();
         Powiter::Node::InputMap::const_iterator it = nodeInputs.find(i->first);
         assert(it!=nodeInputs.end());
-        NodeGui *nodeInputGui = _dag->getGui()->getApp()->getNodeGui(it->second);
+        NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(it->second);
         i->second->setSource(nodeInputGui);
         i->second->initLine();
     }
@@ -164,9 +225,9 @@ void NodeGui::refreshEdges(){
 
 
 void NodeGui::markInputNull(Edge* e){
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i] == e) {
-            inputs[i] = 0;
+    for (U32 i = 0; i < _inputEdges.size(); ++i) {
+        if (_inputEdges[i] == e) {
+            _inputEdges[i] = 0;
         }
     }
 }
@@ -181,11 +242,11 @@ void NodeGui::updateChannelsTooltip(const Powiter::ChannelSet& chan){
         tooltip.append(Powiter::getChannelName(z).c_str());
         
     }
-    channels->setToolTip(tooltip);
+    _channelsPixmap->setToolTip(tooltip);
 }
 
 void NodeGui::updatePreviewImage(int time){
-    if(node->makePreviewByDefault()){
+    if(_internalNode->makePreviewByDefault()){
         QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
     }
 }
@@ -196,37 +257,37 @@ void NodeGui::computePreviewImage(int time){
     size_t dataSize = 4*w*h;
     U32* buf = (U32*)malloc(dataSize);
     for(int i = 0; i < w*h ; ++i ){ buf[i] = qRgba(0, 0, 0, 255); }
-    node->makePreviewImage(time, w, h, buf);
+    _internalNode->makePreviewImage(time, w, h, buf);
     {
         QImage img((const uchar*)buf,w,h,QImage::Format_ARGB32_Premultiplied);
         QPixmap prev_pixmap = QPixmap::fromImage(img);
-        prev_pix->setPixmap(prev_pixmap);
+        _previewPixmap->setPixmap(prev_pixmap);
     }
     free(buf);
 }
 void NodeGui::initializeInputs(){
-    int inputnb = node->maximumInputs();
-    while ((int)inputs.size() > inputnb) {
-        InputEdgesMap::iterator it = inputs.end();
+    int inputnb = _internalNode->maximumInputs();
+    while ((int)_inputEdges.size() > inputnb) {
+        InputEdgesMap::iterator it = _inputEdges.end();
         --it;
         delete it->second;
-        inputs.erase(it);
+        _inputEdges.erase(it);
     }
     for(int i = 0; i < inputnb;++i){
-        if(inputs.find(i) == inputs.end()){
+        if(_inputEdges.find(i) == _inputEdges.end()){
             Edge* edge = new Edge(i,0.,this,parentItem());
-            inputs.insert(make_pair(i,edge));
+            _inputEdges.insert(make_pair(i,edge));
         }
     }
     int emptyInputsCount = 0;
-    for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+    for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         if(!it->second->hasSource()){
             ++emptyInputsCount;
         }
     }
     /*if only 1 empty input, display it aside*/
-    if(emptyInputsCount == 1 && node->maximumInputs() > 1){
-        for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+    if(emptyInputsCount == 1 && _internalNode->maximumInputs() > 1){
+        for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
             if(!it->second->hasSource()){
                 it->second->setAngle(pi);
                 it->second->initLine();
@@ -238,7 +299,7 @@ void NodeGui::initializeInputs(){
     
     double piDividedbyX = (double)(pi/(double)(emptyInputsCount+1));
     double angle = pi-piDividedbyX;
-    for (InputEdgesMap::iterator it = inputs.begin(); it!=inputs.end(); ++it) {
+    for (InputEdgesMap::iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
         if(!it->second->hasSource()){
             it->second->setAngle(angle);
             angle -= piDividedbyX;
@@ -248,22 +309,22 @@ void NodeGui::initializeInputs(){
     
 }
 bool NodeGui::contains(const QPointF &point) const{
-    return rectangle->contains(point);
+    return _boundingBox->contains(point);
 }
 
 QPainterPath NodeGui::shape() const
 {
-    return rectangle->shape();
+    return _boundingBox->shape();
     
 }
 
 QRectF NodeGui::boundingRect() const{
-    return rectangle->boundingRect();
+    return _boundingBox->boundingRect();
 }
 QRectF NodeGui::boundingRectWithEdges() const{
     QRectF ret;
-    ret = ret.united(mapToScene(rectangle->boundingRect()).boundingRect());
-    for (InputEdgesMap::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    ret = ret.united(mapToScene(_boundingBox->boundingRect()).boundingRect());
+    for (InputEdgesMap::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         ret = ret.united(it->second->mapToScene(it->second->boundingRect()).boundingRect());
     }
     ret.setTopLeft(ret.topLeft() - QPointF(50,50));
@@ -271,47 +332,8 @@ QRectF NodeGui::boundingRectWithEdges() const{
     return ret;
 }
 
-void NodeGui::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *parent){
-    
-    (void)parent;
-    (void)options;
-    // Shadow
-    QRectF rect=boundingRect();
-    QRectF sceneRect =boundingRect();//this->sceneRect();
-    QRectF rightShadow(sceneRect.right(), sceneRect.top() + 5, 5, sceneRect.height());
-    QRectF bottomShadow(sceneRect.left() + 5, sceneRect.bottom(), sceneRect.width(), 5);
-    if (rightShadow.intersects(rect) || rightShadow.contains(rect))
-        painter->fillRect(rightShadow, Qt::darkGray);
-    if (bottomShadow.intersects(rect) || bottomShadow.contains(rect))
-        painter->fillRect(bottomShadow, Qt::darkGray);
-    
-    // Fill
-    if(_selected){
-        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
-        gradient.setColorAt(0, QColor(249,187,81));
-        gradient.setColorAt(1, QColor(150,187,81));
-        painter->fillRect(rect.intersected(sceneRect), gradient);
-    }else{
-        QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
-        gradient.setColorAt(0, QColor(224,224,224));
-        gradient.setColorAt(1, QColor(142,142,142));
-        painter->fillRect(rect.intersected(sceneRect), gradient);
-        
-    }
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(sceneRect);
-    // Text
-    QRectF textRect(sceneRect.left() + 4, sceneRect.top() + 4,
-                    sceneRect.width() - 4, sceneRect.height() - 4);
-    
-    
-    QFont font = painter->font();
-    font.setBold(true);
-    font.setPointSize(14);
-    painter->setFont(font);
-}
 bool NodeGui::isNearby(QPointF &point){
-    QRectF r(rectangle->rect().x()-10,rectangle->rect().y()-10,rectangle->rect().width()+10,rectangle->rect().height()+10);
+    QRectF r(_boundingBox->rect().x()-10,_boundingBox->rect().y()-10,_boundingBox->rect().width()+10,_boundingBox->rect().height()+10);
     return r.contains(point);
 }
 
@@ -319,22 +341,22 @@ void NodeGui::setName(const QString& name_){
     onInternalNameChanged(name_);
     emit nameChanged(name_);
 }
-void NodeGui::onLineEditNameChanged(const QString& s){
-    name->setText(s);
-    scene()->update();
-}
+
 void NodeGui::onInternalNameChanged(const QString& s){
-    name->setText(s);
-    if(settings)
-        settings->onNameChanged(s);
+    _nameItem->setPlainText(s);
+    QRectF rect = _boundingBox->boundingRect();
+    updateShape(rect.width(), rect.height());
+    if(_settingsPanel)
+        _settingsPanel->onNameChanged(s);
     scene()->update();
 }
 
+
 Edge* NodeGui::firstAvailableEdge(){
-    for (U32 i = 0 ; i < inputs.size(); ++i) {
-        Edge* a = inputs[i];
+    for (U32 i = 0 ; i < _inputEdges.size(); ++i) {
+        Edge* a = _inputEdges[i];
         if (!a->hasSource()) {
-            if(node->getLiveInstance()->isInputOptional(i))
+            if(_internalNode->getLiveInstance()->isInputOptional(i))
                 continue;
         }
         return a;
@@ -346,16 +368,35 @@ Edge* NodeGui::firstAvailableEdge(){
 
 void NodeGui::setSelected(bool b){
     _selected = b;
+    if(b){
+        _boundingBox->setBrush(*_selectedGradient);
+    }else{
+        _boundingBox->setBrush(*_defaultGradient);
+    }
     update();
-    if(settings){
-        settings->setSelected(b);
-        settings->update();
+    if(_settingsPanel){
+        _settingsPanel->setSelected(b);
+        _settingsPanel->update();
+    }
+}
+
+void NodeGui::setSelectedGradient(const QLinearGradient& gradient){
+    *_selectedGradient = gradient;
+    if(_selected){
+        _boundingBox->setBrush(*_selectedGradient);
+    }
+}
+
+void NodeGui::setDefaultGradient(const QLinearGradient& gradient){
+    *_defaultGradient = gradient;
+    if(!_selected){
+        _boundingBox->setBrush(*_defaultGradient);
     }
 }
 
 Edge* NodeGui::findConnectedEdge(NodeGui* parent){
-    for (U32 i =0 ; i < inputs.size(); ++i) {
-        Edge* e = inputs[i];
+    for (U32 i =0 ; i < _inputEdges.size(); ++i) {
+        Edge* e = _inputEdges[i];
         
         if (e && e->getSource() == parent) {
             return e;
@@ -365,13 +406,13 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
 }
 
 bool NodeGui::connectEdge(int edgeNumber){
-    Powiter::Node::InputMap::const_iterator it = node->getInputs().find(edgeNumber);
-    if(it == node->getInputs().end()){
+    Powiter::Node::InputMap::const_iterator it = _internalNode->getInputs().find(edgeNumber);
+    if(it == _internalNode->getInputs().end()){
         return false;
     }
-    NodeGui* src = _dag->getGui()->getApp()->getNodeGui(it->second);
-    InputEdgesMap::const_iterator it2 = inputs.find(edgeNumber);
-    if(it2 == inputs.end()){
+    NodeGui* src = _graph->getGui()->getApp()->getNodeGui(it->second);
+    InputEdgesMap::const_iterator it2 = _inputEdges.find(edgeNumber);
+    if(it2 == _inputEdges.end()){
         return false;
     }else{
         it2->second->setSource(src);
@@ -383,7 +424,7 @@ bool NodeGui::connectEdge(int edgeNumber){
 
 
 Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
-    for (NodeGui::InputEdgesMap::const_iterator i = inputs.begin(); i!= inputs.end(); ++i){
+    for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
         if(i->second->contains(i->second->mapFromScene(pt))){
             return i->second;
         }
@@ -394,29 +435,29 @@ Edge* NodeGui::hasEdgeNearbyPoint(const QPointF& pt){
 void NodeGui::activate(){
     show();
     setActive(true);
-    _dag->restoreFromTrash(this);
-    for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
-        _dag->scene()->addItem(it->second);
+    _graph->restoreFromTrash(this);
+    for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        _graph->scene()->addItem(it->second);
         it->second->setParentItem(this);
         it->second->setActive(true);
     }
     refreshEdges();
-    for (Powiter::Node::OutputMap::const_iterator it = node->getOutputs().begin(); it!=node->getOutputs().end(); ++it) {
+    for (Powiter::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
     }
-    if(node->className() != "Viewer"){
+    if(_internalNode->className() != "Viewer"){
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
         }
     }else{
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-        _dag->getGui()->addViewerTab(viewer->getUiContext(), _dag->getGui()->_viewersPane);
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+        _graph->getGui()->addViewerTab(viewer->getUiContext(), _graph->getGui()->_viewersPane);
         viewer->getUiContext()->show();
     }
-    if(node->isOpenFXNode()){
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
+    if(_internalNode->isOpenFXNode()){
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->beginInstanceEditAction();
     }
     
@@ -425,47 +466,47 @@ void NodeGui::activate(){
 void NodeGui::deactivate(){
     hide();
     setActive(false);
-    _dag->moveToTrash(this);
-    for (NodeGui::InputEdgesMap::const_iterator it = inputs.begin(); it!=inputs.end(); ++it) {
-        _dag->scene()->removeItem(it->second);
+    _graph->moveToTrash(this);
+    for (NodeGui::InputEdgesMap::const_iterator it = _inputEdges.begin(); it!=_inputEdges.end(); ++it) {
+        _graph->scene()->removeItem(it->second);
         it->second->setActive(false);
         it->second->setSource(NULL);
     }
    
-    if(node->className() != "Viewer"){
+    if(_internalNode->className() != "Viewer"){
         if(isSettingsPanelVisible()){
             setVisibleSettingsPanel(false);
         }
         
     }else{
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
-        _dag->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
+        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_internalNode->getLiveInstance());
+        _graph->getGui()->removeViewerTab(viewer->getUiContext(), false,false);
         viewer->getUiContext()->hide();
     }
-    if(node->isOpenFXNode()){
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(node->getLiveInstance());
+    if(_internalNode->isOpenFXNode()){
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>(_internalNode->getLiveInstance());
         ofxNode->effectInstance()->endInstanceEditAction();
     }
     
 }
 
 void NodeGui::initializeKnobs(){
-    if(settings){
-        settings->initializeKnobs();
+    if(_settingsPanel){
+        _settingsPanel->initializeKnobs();
     }
 }
 
 
 
 void NodeGui::setVisibleSettingsPanel(bool b){
-    if(settings){
-        settings->setVisible(b);
+    if(_settingsPanel){
+        _settingsPanel->setVisible(b);
     }
 }
 
 bool NodeGui::isSettingsPanelVisible() const{
-    if(settings){
-        return settings->isVisible();
+    if(_settingsPanel){
+        return _settingsPanel->isVisible();
     }else{
         return false;
     }
@@ -501,4 +542,52 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
 
 NodeGui::SerializedState NodeGui::serialize() const{
     return NodeGui::SerializedState(this);
+}
+
+void NodeGui::onPersistentMessageChanged(int type,const QString& message){
+    //keep type in synch with this enum:
+    //enum MessageType{INFO_MESSAGE = 0,ERROR_MESSAGE = 1,WARNING_MESSAGE = 2,QUESTION_MESSAGE = 3};
+    _persistentMessage->show();
+    _stateIndicator->show();
+    if(type == 1){
+        _persistentMessage->setPlainText("ERROR");
+        QColor errColor(128,0,0,255);
+        _persistentMessage->setDefaultTextColor(errColor);
+        _stateIndicator->setBrush(errColor);
+        _lastPersistentMessageType = 1;
+    }else if(type == 2){
+        _persistentMessage->setPlainText("WARNING");
+        QColor warColor(180,180,0,255);
+        _persistentMessage->setDefaultTextColor(warColor);
+        _stateIndicator->setBrush(warColor);
+        _lastPersistentMessageType = 2;
+    }else{
+        return;
+    }
+    std::list<ViewerInstance*> viewers;
+    _internalNode->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->getUiContext()->viewer->setPersistentMessage(type,message);
+    }
+    QRectF rect = _boundingBox->rect();
+    updateShape(rect.width(), rect.height());
+}
+
+void NodeGui::onPersistentMessageCleared(){
+    _persistentMessage->hide();
+    _stateIndicator->hide();
+    
+    std::list<ViewerInstance*> viewers;
+    _internalNode->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->getUiContext()->viewer->clearPersistentMessage();
+    }
+}
+
+QVBoxLayout* NodeGui::getDockContainer() const {
+    return _settingsPanel->getContainer();
+}
+
+void NodeGui::paint(QPainter* /*painter*/,const QStyleOptionGraphicsItem* /*options*/,QWidget* /*parent*/){
+    //nothing special
 }

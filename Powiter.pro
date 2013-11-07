@@ -7,7 +7,7 @@ TARGET = Powiter
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
-CONFIG += openexr freetype2 ftgl boost glew opengl qt expat
+CONFIG += openexr boost glew opengl qt expat
 QT += gui core opengl
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
@@ -16,7 +16,7 @@ PRECOMPILED_HEADER = pch.h
 win32{
 #ofx needs WINDOWS def
 #microsoft compiler needs _MBCS to compile with the multi-byte character set.
-    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC OPENEXR_DLL FTGL_LIBRARY_STATIC NOMINMAX
+    DEFINES += WINDOWS _MBCS COMPILED_FROM_DSP XML_STATIC OPENEXR_DLL  NOMINMAX
     DEFINES -= _UNICODE UNICODE
 }
 
@@ -26,8 +26,6 @@ unix {
      CONFIG += link_pkgconfig
      openexr:   PKGCONFIG += OpenEXR
      glew:      PKGCONFIG += glew
-     ftgl:      PKGCONFIG += ftgl
-     freetype2: PKGCONFIG += freetype2
      expat:     PKGCONFIG += expat
      !macx {
          LIBS +=  -lGLU -ldl

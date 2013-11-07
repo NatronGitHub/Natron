@@ -133,33 +133,21 @@ void Powiter::Node::createKnobDynamically(){
     emit knobsInitialized();
 }
 
-/*called by hasViewerConnected(Node*) */
-static void _hasViewerConnected(Powiter::Node* node,bool* ok,Powiter::Node*& out){
-    if (*ok == true) {
-        return;
-    }
-    if(node->className() == "Viewer"){
-        out = node;
-        *ok = true;
+
+void Powiter::Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const {
+    if(className() == "Viewer"){
+        ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_liveInstance);
+        assert(thisViewer);
+        std::list<ViewerInstance*>::const_iterator alreadyExists = std::find(viewers->begin(), viewers->end(), thisViewer);
+        if(alreadyExists == viewers->end()){
+            viewers->push_back(thisViewer);
+        }
     }else{
-        const Powiter::Node::OutputMap& outputs = node->getOutputs();
-        for (Powiter::Node::OutputMap::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        for (Powiter::Node::OutputMap::const_iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
             if(it->second)
-                _hasViewerConnected(it->second,ok,out);
+                it->second->hasViewersConnected(viewers);
         }
     }
-}
-
-ViewerInstance* Powiter::Node::hasViewerConnected() {
-    Node* out = 0;
-    bool ok = false;
-    _hasViewerConnected(this,&ok,out);
-    if (ok) {
-        return dynamic_cast<ViewerInstance*>(out->getLiveInstance());
-    }else{
-        return NULL;
-    }
-    
 }
 
 void Powiter::Node::initializeInputs(){
@@ -279,6 +267,10 @@ int Powiter::Node::disconnectOutput(Powiter::Node* output) {
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
 void Powiter::Node::deactivate(){
+
+    //first tell the gui to clear any persistent message link to this node
+    clearPersistentMessage();
+
     /*Removing this node from the output of all inputs*/
     _deactivatedState._inputConnections.clear();
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
@@ -550,6 +542,33 @@ bool Powiter::Node::message(Powiter::MessageType type,const std::string& content
     return false;
 }
 
+void Powiter::Node::setPersistentMessage(Powiter::MessageType type,const std::string& content){
+    if(!getApp()->isBackground()){
+        //if the message is just an information, display a popup instead.
+        if(type == Powiter::INFO_MESSAGE){
+            message(type,content);
+            return;
+        }
+        QString message;
+        message.append(getName().c_str());
+        if(type == Powiter::ERROR_MESSAGE){
+            message.append(" error: ");
+        }else if(type == Powiter::WARNING_MESSAGE){
+            message.append(" warning: ");
+        }
+        message.append(content.c_str());
+        emit persistentMessageChanged((int)type,message);
+    }else{
+        std::cout << "Persistent message" << std::endl;
+        std::cout << content << std::endl;
+    }
+}
+
+void Powiter::Node::clearPersistentMessage(){
+    if(!getApp()->isBackground()){
+        emit persistentMessageCleared();
+    }
+}
 
 InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
 : Node(app,plugin,name)
@@ -671,10 +690,6 @@ void InspectorNode::setActiveInputAndRefresh(int inputNb){
     InputMap::iterator it = _inputs.find(inputNb);
     if(it!=_inputs.end() && it->second!=NULL){
         _activeInput = inputNb;
-//        ViewerInstance* viewer = hasViewerConnected();
-//        if(viewer){
-//            viewer->updateTreeAndRender();
-//        }
     }
 }
 

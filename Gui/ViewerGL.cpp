@@ -20,6 +20,7 @@
 #include <QDockWidget>
 #include <QtOpenGL/QGLShaderProgram>
 #include <QtCore/QEvent>
+#include <QtGui/QPainter>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);
 #include <QtGui/qmime.h>
@@ -27,8 +28,6 @@ CLANG_DIAG_ON(unused-private-field);
 #endif
 #include <QtGui/QKeyEvent>
 #include <QtCore/QFile>
-
-#include <FTGL/ftgl.h>
 
 #include "Global/Macros.h"
 GCC_DIAG_OFF(unused-parameter);
@@ -83,11 +82,11 @@ static GLfloat renderingTextureCoordinates[32] = {
 
 /*see http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/ */
 static GLubyte triangleStrip[28] = {0,4,1,5,2,6,3,7,
-    7,4,
-    4,8,5,9,6,10,7,11,
-    11,8,
-    8,12,9,13,10,14,11,15
-};
+                                    7,4,
+                                    4,8,5,9,6,10,7,11,
+                                    11,8,
+                                    8,12,9,13,10,14,11,15
+                                   };
 
 /*
  ASCII art of the vertices used to render.
@@ -154,36 +153,290 @@ void ViewerGL::drawRenderingVAO(){
 
 #if 0
 void ViewerGL::checkFrameBufferCompleteness(const char where[],bool silent){
-	GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if( error == GL_FRAMEBUFFER_UNDEFINED)
-		cout << where << ": Framebuffer undefined" << endl;
-	else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-		cout << where << ": Framebuffer incomplete attachment " << endl;
-	else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-		cout << where << ": Framebuffer incomplete missing attachment" << endl;
-	else if( error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER)
-		cout << where << ": Framebuffer incomplete draw buffer" << endl;
-	else if( error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER)
-		cout << where << ": Framebuffer incomplete read buffer" << endl;
-	else if( error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
-		cout << where << ": Framebuffer incomplete read buffer" << endl;
-	else if( error== GL_FRAMEBUFFER_UNSUPPORTED)
-		cout << where << ": Framebuffer unsupported" << endl;
-	else if( error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)
-		cout << where << ": Framebuffer incomplete multisample" << endl;
-	else if( error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT)
-		cout << where << ": Framebuffer incomplete layer targets" << endl;
-	else if(error == GL_FRAMEBUFFER_COMPLETE ){
-		if(!silent)
-			cout << where << ": Framebuffer complete" << endl;
-	}
-	else if ( error == 0)
-		cout << where << ": an error occured determining the status of the framebuffer" << endl;
-	else
-		cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
-	checkGLErrors();
+    GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if( error == GL_FRAMEBUFFER_UNDEFINED)
+        cout << where << ": Framebuffer undefined" << endl;
+    else if(error == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+        cout << where << ": Framebuffer incomplete attachment " << endl;
+    else if(error == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+        cout << where << ": Framebuffer incomplete missing attachment" << endl;
+    else if( error == GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER)
+        cout << where << ": Framebuffer incomplete draw buffer" << endl;
+    else if( error == GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER)
+        cout << where << ": Framebuffer incomplete read buffer" << endl;
+    else if( error == GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE)
+        cout << where << ": Framebuffer incomplete read buffer" << endl;
+    else if( error== GL_FRAMEBUFFER_UNSUPPORTED)
+        cout << where << ": Framebuffer unsupported" << endl;
+    else if( error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE)
+        cout << where << ": Framebuffer incomplete multisample" << endl;
+    else if( error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT)
+        cout << where << ": Framebuffer incomplete layer targets" << endl;
+    else if(error == GL_FRAMEBUFFER_COMPLETE ){
+        if(!silent)
+            cout << where << ": Framebuffer complete" << endl;
+    }
+    else if ( error == 0)
+        cout << where << ": an error occured determining the status of the framebuffer" << endl;
+    else
+        cout << where << ": UNDEFINED FRAMEBUFFER STATUS" << endl;
+    checkGLErrors();
 }
 #endif
+
+namespace
+{
+    const int TEXTURE_SIZE = 256;
+    
+    struct CharBitmap
+    {
+        GLuint _texID;
+        uint _w;
+        uint _h;
+        GLfloat _xTexCoords[2];
+        GLfloat _yTexCoords[2];
+    };
+    
+}
+
+namespace Powiter{
+    
+    
+    struct TextRendererPrivate;
+    class TextRenderer : public Singleton<TextRenderer> {
+        
+    public:
+        
+        TextRenderer();
+        
+        virtual ~TextRenderer();
+        
+        void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
+        
+    private:
+        typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
+        FontRenderers _renderers;
+    };
+    
+    struct TextRendererPrivate
+    {
+        TextRendererPrivate(const QFont& font);
+        
+        ~TextRendererPrivate();
+        
+        void newTransparantTexture();
+        
+        CharBitmap* createCharacter(QChar c, const QColor &color);
+        
+        void clearCache();
+        
+        QFont _font;
+        
+        QFontMetrics _fontMetrics;
+        
+        QHash<ushort, std::vector<std::pair<QColor,CharBitmap> > > _bitmapsCache;
+        
+        std::list<GLuint> _usedTextures;
+        
+        GLint _xOffset;
+        
+        GLint _yOffset;
+    };
+    
+    TextRendererPrivate::TextRendererPrivate(const QFont& font)
+    : _font(font)
+    , _fontMetrics(font)
+    , _xOffset(0)
+    , _yOffset(0)
+    {
+    }
+    
+    TextRendererPrivate::~TextRendererPrivate()
+    {
+        clearCache();
+    }
+    
+    void TextRendererPrivate::clearCache(){
+        foreach (GLuint texture, _usedTextures){
+            glDeleteTextures(1, &texture);
+        }
+    }
+    void TextRendererPrivate::newTransparantTexture()
+    {
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        
+        QImage image(TEXTURE_SIZE, TEXTURE_SIZE, QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+        image = QGLWidget::convertToGLFormat(image);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_SIZE, TEXTURE_SIZE,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+        
+        _usedTextures.push_back(texture);
+    }
+    
+    CharBitmap* TextRendererPrivate::createCharacter(QChar c,const QColor& color)
+    {
+        ushort unic = c.unicode();
+        
+        //c is already in the cache
+        QHash<ushort, std::vector<std::pair<QColor,CharBitmap> > >::iterator it = _bitmapsCache.find(unic);
+        std::vector<std::pair<QColor,CharBitmap> >::iterator it2;
+        if (it != _bitmapsCache.end()){
+            for(it2 = it.value().begin();it2 != it.value().end();++it2){
+                const QColor& found = (*it2).first;
+                if(found.redF() == color.redF() &&
+                   found.greenF() == color.greenF() &&
+                   found.blueF() == color.blueF() &&
+                   found.alphaF() == color.alphaF()){
+                    break;
+                }
+            }
+            if(it2 != it.value().end()){
+                return &(*it2).second;
+            }
+        }
+        
+        GLint currentBoundPBO;
+        //if a pbo is already mapped, return, this would make the glTex** calls fail
+        glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+        if (currentBoundPBO != 0) {
+            return NULL;
+        }
+        
+        if (_usedTextures.empty())
+            newTransparantTexture();
+        
+        GLuint texture = _usedTextures.back();
+        
+        GLsizei width = _fontMetrics.width(c);
+        GLsizei height = _fontMetrics.height();
+        
+        //render into a new transparant pixmap using QPainter
+        QImage image(width, height,QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::transparent);
+        QPainter painter;
+        painter.begin(&image);
+        painter.setRenderHints(QPainter::HighQualityAntialiasing
+                               | QPainter::TextAntialiasing);
+        painter.setFont(_font);
+        painter.setPen(color);
+        
+        painter.drawText(0, _fontMetrics.ascent(), c);
+        painter.end();
+        
+        
+        //fill the texture with the QImage
+        image = QGLWidget::convertToGLFormat(image);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, _xOffset, _yOffset, width, height, GL_RGBA,
+                        GL_UNSIGNED_BYTE, image.bits());
+        
+        
+        if(it == _bitmapsCache.end()){
+            std::vector<std::pair<QColor,CharBitmap> > newHash;
+            it = _bitmapsCache.insert(unic,newHash);
+        }
+        CharBitmap character;
+        character._texID = texture;
+        
+        character._w = width;
+        character._h = height;
+        
+        character._xTexCoords[0] = (GLfloat)_xOffset / TEXTURE_SIZE;
+        character._xTexCoords[1] = (GLfloat)(_xOffset + width) / TEXTURE_SIZE;
+        
+        character._yTexCoords[0] = (GLfloat)_yOffset / TEXTURE_SIZE;
+        character._yTexCoords[1] = (GLfloat)(_yOffset + height) / TEXTURE_SIZE;
+        
+        it.value().push_back(std::make_pair(color,character)); // insert a new charactr
+        
+        _xOffset += width;
+        if (_xOffset + _fontMetrics.maxWidth() >= TEXTURE_SIZE)
+        {
+            _xOffset = 1;
+            _yOffset += height;
+        }
+        if (_yOffset + _fontMetrics.height() >= TEXTURE_SIZE)
+        {
+            newTransparantTexture();
+            _yOffset = 1;
+        }
+        return &(it.value().back().second);
+    }
+    
+    
+    TextRenderer::TextRenderer() :
+    Singleton<TextRenderer>()
+    , _renderers()
+    {
+    }
+    
+    TextRenderer::~TextRenderer()
+    {
+        for(FontRenderers::iterator it = _renderers.begin();it!= _renderers.end();++it){
+            delete (*it).second;
+        }
+    }
+    
+    
+    void TextRenderer::renderText(float x, float y, const QString &text,const QColor& color,const QFont& font)
+    {
+        
+        TextRendererPrivate* _imp = NULL;
+        FontRenderers::iterator it;
+        for(it = _renderers.begin() ;it!=_renderers.end();++it){
+            if((*it).first == font){
+                break;
+            }
+        }
+        if(it != _renderers.end()){
+            _imp  = (*it).second;
+        }else{
+            _imp = new TextRendererPrivate(font);
+            _renderers.push_back(std::make_pair(font,_imp));
+        }
+        glColor4f(1., 1., 1., 1.);
+        glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_TEXTURE_BIT);
+        glPushMatrix();
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GLuint texture = 0;
+        glTranslatef(x, y, 0);
+        for (int i = 0; i < text.length(); ++i)
+        {
+            CharBitmap *c = _imp->createCharacter(text[i],color);
+            if(!c)
+                continue;
+            if (texture != c->_texID)
+            {
+                texture = c->_texID;
+                glBindTexture(GL_TEXTURE_2D, texture);
+            }
+            
+            glBegin(GL_QUADS);
+            glTexCoord2f(c->_xTexCoords[0], c->_yTexCoords[0]);glVertex2f(0, 0);
+            glTexCoord2f(c->_xTexCoords[1], c->_yTexCoords[0]);glVertex2f(c->_w, 0);
+            glTexCoord2f(c->_xTexCoords[1], c->_yTexCoords[1]);glVertex2f(c->_w, c->_h);
+            glTexCoord2f(c->_xTexCoords[0], c->_yTexCoords[1]);glVertex2f(0, c->_h);
+            glEnd();
+            
+            glTranslatef(c->_w, 0, 0);
+        }
+        glPopMatrix();
+        glPopAttrib();
+        checkGLErrors();
+        glColor4f(1., 1., 1., 1.);
+
+        
+    }
+    
+} //namespace Powiter
+
 
 void ViewerGL::initConstructor(){
     
@@ -194,12 +447,12 @@ void ViewerGL::initConstructor(){
     _blankViewerInfos.setDisplayWindow(frmt);
     setRod(_blankViewerInfos.getRoD());
     onProjectFormatChanged(frmt);
-	_displayingImage = false;
-	exposure = 1;
-	setMouseTracking(true);
-	_ms = UNDEFINED;
-	shaderLC = NULL;
-	shaderRGB = NULL;
+    _displayingImage = false;
+    exposure = 1;
+    setMouseTracking(true);
+    _ms = UNDEFINED;
+    shaderLC = NULL;
+    shaderRGB = NULL;
     shaderBlack = NULL;
     _overlay = true;
     frameData = NULL;
@@ -212,54 +465,59 @@ void ViewerGL::initConstructor(){
     _drawProgressBar = false;
     _updatingTexture = false;
     populateMenu();
-    initTextFont();
+    // initTextFont();
     _clipToDisplayWindow = true;
+    _displayPersistentMessage = false;
+    _textRenderingColor.setRgba(qRgba(200,200,200,255));
+    _displayWindowOverlayColor.setRgba(qRgba(125,125,125,255));
+    _rodOverlayColor.setRgba(qRgba(100,100,100,255));
+    _textFont = new QFont("Helvetica",15);
 }
 
-void ViewerGL::initTextFont(){
-    QFile font(":/Resources/fonts/DejaVuSans.ttf");
-    uchar* buf = font.map(0,font.size());
-    _font = new FTTextureFont(buf,font.size());
-    if(_font->Error())
-        cout << "Failed to load the OpenGL text renderer font. " << endl;
-    else
-        _font->FaceSize(14);
-}
+//void ViewerGL::initTextFont(){
+//    QFile font(":/Resources/fonts/DejaVuSans.ttf");
+//    uchar* buf = font.map(0,font.size());
+//    _font = new FTTextureFont(buf,font.size());
+//    if(_font->Error())
+//        cout << "Failed to load the OpenGL text renderer font. " << endl;
+//    else
+//        _font->FaceSize(14);
+//}
 ViewerGL::ViewerGL(QGLContext* context,ViewerTab* parent,const QGLWidget* shareWidget)
-: QGLWidget(context,parent,shareWidget)
-, _shaderLoaded(false)
-, _lut(1)
-, _viewerTab(parent)
-, _displayingImage(false)
-, _must_initBlackTex(true)
-, _clearColor(0,0,0,255)
-, _menu(new QMenu(this))
+    : QGLWidget(context,parent,shareWidget)
+    , _shaderLoaded(false)
+    , _lut(1)
+    , _viewerTab(parent)
+    , _displayingImage(false)
+    , _must_initBlackTex(true)
+    , _clearColor(0,0,0,255)
+    , _menu(new QMenu(this))
 {
     initConstructor();
 }
 
 ViewerGL::ViewerGL(const QGLFormat& format,ViewerTab* parent ,const QGLWidget* shareWidget)
-: QGLWidget(format,parent,shareWidget)
-, _shaderLoaded(false)
-, _lut(1)
-, _viewerTab(parent)
-, _displayingImage(false)
-, _must_initBlackTex(true)
-, _clearColor(0,0,0,255)
-, _menu(new QMenu(this))
+    : QGLWidget(format,parent,shareWidget)
+    , _shaderLoaded(false)
+    , _lut(1)
+    , _viewerTab(parent)
+    , _displayingImage(false)
+    , _must_initBlackTex(true)
+    , _clearColor(0,0,0,255)
+    , _menu(new QMenu(this))
 {
     initConstructor();
 }
 
 ViewerGL::ViewerGL(ViewerTab* parent,const QGLWidget* shareWidget)
-: QGLWidget(parent,shareWidget)
-, _shaderLoaded(false)
-, _lut(1)
-, _viewerTab(parent)
-, _displayingImage(false)
-, _must_initBlackTex(true)
-, _clearColor(0,0,0,255)
-, _menu(new QMenu(this))
+    : QGLWidget(parent,shareWidget)
+    , _shaderLoaded(false)
+    , _lut(1)
+    , _viewerTab(parent)
+    , _displayingImage(false)
+    , _must_initBlackTex(true)
+    , _clearColor(0,0,0,255)
+    , _menu(new QMenu(this))
 {
     initConstructor();
 }
@@ -287,7 +545,7 @@ ViewerGL::~ViewerGL(){
     glDeleteBuffers(1, &_vboTexturesId);
     glDeleteBuffers(1, &_iboTriangleStripId);
     checkGLErrors();
-    delete _font;
+    delete _textFont;
 }
 
 QSize ViewerGL::sizeHint() const{
@@ -332,8 +590,10 @@ void ViewerGL::paintGL()
         clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
         return;
     }
-    assert(left != right);
-    assert(top != bottom);
+    _zoomCtx._lastOrthoLeft = left;
+    _zoomCtx._lastOrthoRight = right;
+    _zoomCtx._lastOrthoBottom = bottom;
+    _zoomCtx._lastOrthoTop = top;
     glOrtho(left, right, bottom, top, -1, 1);
     checkGLErrors();
     
@@ -371,7 +631,6 @@ void ViewerGL::paintGL()
         if(_hasHW){
             shaderRGB->release();
         }
-        
     }else{
         if(_hasHW)
             shaderBlack->release();
@@ -381,6 +640,9 @@ void ViewerGL::paintGL()
     }
     if(_drawProgressBar){
         drawProgressBar();
+    }
+    if(_displayPersistentMessage){
+        drawPersistentMessage();
     }
     assert_checkGLErrors();
 }
@@ -402,7 +664,7 @@ void ViewerGL::drawOverlay(){
     const RectI& dispW = getDisplayWindow();
     
     if(_clipToDisplayWindow){
-        print(dispW.right(),dispW.bottom(), _resolutionOverlay,QColor(233,233,233));
+        renderText(dispW.right(),dispW.bottom(), _resolutionOverlay,_textRenderingColor,*_textFont);
         
         QPoint topRight(dispW.right(),dispW.top());
         QPoint topLeft(dispW.left(),dispW.top());
@@ -410,7 +672,11 @@ void ViewerGL::drawOverlay(){
         QPoint btmRight(dispW.right(),dispW.bottom() );
         
         glBegin(GL_LINES);
-        glColor4f(0.5, 0.5, 0.5,1.0);
+
+        glColor4f( _displayWindowOverlayColor.redF(),
+                   _displayWindowOverlayColor.greenF(),
+                   _displayWindowOverlayColor.blueF(),
+                   _displayWindowOverlayColor.alphaF() );
         glVertex3f(btmRight.x(),btmRight.y(),1);
         glVertex3f(btmLeft.x(),btmLeft.y(),1);
         
@@ -429,8 +695,8 @@ void ViewerGL::drawOverlay(){
     const RectI& dataW = getRoD();
     if((dispW != dataW && _clipToDisplayWindow) || !_clipToDisplayWindow){
         
-        print(dataW.right(), dataW.top(),_topRightBBOXoverlay, QColor(150,150,150));
-        print(dataW.left(), dataW.bottom(), _btmLeftBBOXoverlay, QColor(150,150,150));
+        renderText(dataW.right(), dataW.top(), _topRightBBOXoverlay, _rodOverlayColor,*_textFont);
+        renderText(dataW.left(), dataW.bottom(), _btmLeftBBOXoverlay, _rodOverlayColor,*_textFont);
         
         
         QPoint topRight2(dataW.right(), dataW.top());
@@ -441,7 +707,10 @@ void ViewerGL::drawOverlay(){
         glLineStipple(2, 0xAAAA);
         glEnable(GL_LINE_STIPPLE);
         glBegin(GL_LINES);
-        glColor3f(0.3, 0.3, 0.3);
+        glColor4f( _rodOverlayColor.redF(),
+                  _rodOverlayColor.greenF(),
+                  _rodOverlayColor.blueF(),
+                  _rodOverlayColor.alphaF() );
         glVertex3f(btmRight2.x(),btmRight2.y(),1);
         glVertex3f(btmLeft2.x(),btmLeft2.y(),1);
         
@@ -478,9 +747,65 @@ void ViewerGL::drawProgressBar(){
     checkGLErrors();
 }
 
+void ViewerGL::drawPersistentMessage(){
+    QFontMetrics metrics(font());
+    int numberOfLines = std::ceil((double)metrics.width(_persistentMessage)/(double)(width()-20));
+    int averageCharsPerLine = numberOfLines != 0 ? _persistentMessage.size() / numberOfLines : _persistentMessage.size();
+    QStringList lines;
+   
+    int i = 0;
+    while(i < _persistentMessage.size()) {
+        QString str;
+        while(i < _persistentMessage.size()){
+            if(i%averageCharsPerLine == 0 && i!=0){
+                break;
+            }
+            str.append(_persistentMessage.at(i));
+            ++i;
+        }
+        /*Find closest word end and insert a new line*/
+        while(i < _persistentMessage.size() && _persistentMessage.at(i)!=QChar(' ')){
+            str.append(_persistentMessage.at(i));
+            ++i;
+        }
+        lines.append(str);
+    }
+    
+    
+    QPointF topLeft = toImgCoordinates_fast(0,0);
+    QPointF bottomRight = toImgCoordinates_fast(width(),numberOfLines*(metrics.height()*2));
+    
+    if(_persistentMessageType == 1){ // error
+        glColor4f(0.5,0.,0.,1.);
+    }else{ // warning
+        glColor4f(0.65,0.65,0.,1.);
+    }
+    glBegin(GL_POLYGON);
+    glVertex2f(topLeft.x(),topLeft.y()); //top left
+    glVertex2f(topLeft.x(),bottomRight.y()); //bottom left
+    glVertex2f(bottomRight.x(),bottomRight.y());//bottom right
+    glVertex2f(bottomRight.x(),topLeft.y()); //top right
+    glEnd();
+    
+    
+    //reseting color for next pass
+    glColor4f(1., 1., 1., 1.);
+    
+    int offset = metrics.height()+10;
+    for(int j = 0 ; j < lines.size();++j){
+        QPointF pos = toImgCoordinates_fast(20, offset);
+        renderText(pos.x(),pos.y(), lines.at(j),_textRenderingColor,*_textFont);
+        offset += metrics.height()*2;
+    }
+    //reseting color for next pass
+    glColor4f(1., 1., 1., 1.);
+    checkGLErrors();
+}
+
+
 
 void ViewerGL::initializeGL(){
-	initAndCheckGlExtensions();
+    initAndCheckGlExtensions();
     _blackTex = new Texture;
     _defaultDisplayTexture = new Texture;
     glGenBuffersARB(2, &_pboIds[0]);
@@ -527,19 +852,19 @@ void ViewerGL::initializeGL(){
 
 /*Little improvment to the Qt version of makeCurrent to make it faster*/
 void ViewerGL::makeCurrent(){
-	const QGLContext* ctx=context();
-	QGLFormat viewerFormat=ctx->format();
-	const QGLContext* currentCtx=QGLContext::currentContext();
-	if(currentCtx){
-		QGLFormat currentFormat=currentCtx->format();
-		if(currentFormat == viewerFormat){
-			return;
-		}else{
-			QGLWidget::makeCurrent();
-		}
-	}else{
-		QGLWidget::makeCurrent();
-	}
+    const QGLContext* ctx=context();
+    QGLFormat viewerFormat=ctx->format();
+    const QGLContext* currentCtx=QGLContext::currentContext();
+    if(currentCtx){
+        QGLFormat currentFormat=currentCtx->format();
+        if(currentFormat == viewerFormat){
+            return;
+        }else{
+            QGLWidget::makeCurrent();
+        }
+    }else{
+        QGLWidget::makeCurrent();
+    }
 }
 
 std::pair<int,int> ViewerGL::computeRowSpan(int bottom,int top, std::vector<int>* rows) {
@@ -633,66 +958,66 @@ std::pair<int,int> ViewerGL::computeColumnSpan(int left,int right, std::vector<i
 }
 
 int ViewerGL::isExtensionSupported(const char *extension){
-	const GLubyte *extensions = NULL;
-	const GLubyte *start;
-	GLubyte *where, *terminator;
-	where = (GLubyte *) strchr(extension, ' ');
-	if (where || *extension == '\0')
-		return 0;
-	extensions = glGetString(GL_EXTENSIONS);
-	start = extensions;
-	for (;;) {
-		where = (GLubyte *) strstr((const char *) start, extension);
-		if (!where)
-			break;
-		terminator = where + strlen(extension);
-		if (where == start || *(where - 1) == ' ')
-			if (*terminator == ' ' || *terminator == '\0')
-				return 1;
-		start = terminator;
-	}
-	return 0;
+    const GLubyte *extensions = NULL;
+    const GLubyte *start;
+    GLubyte *where, *terminator;
+    where = (GLubyte *) strchr(extension, ' ');
+    if (where || *extension == '\0')
+        return 0;
+    extensions = glGetString(GL_EXTENSIONS);
+    start = extensions;
+    for (;;) {
+        where = (GLubyte *) strstr((const char *) start, extension);
+        if (!where)
+            break;
+        terminator = where + strlen(extension);
+        if (where == start || *(where - 1) == ' ')
+            if (*terminator == ' ' || *terminator == '\0')
+                return 1;
+        start = terminator;
+    }
+    return 0;
 }
 
 
 void ViewerGL::initAndCheckGlExtensions() {
-	GLenum err = glewInit();
-	if (GLEW_OK != err) {
-		/* Problem: glewInit failed, something is seriously wrong. */
-		Powiter::errorDialog("OpenGL/GLEW error",
-							 (const char*)glewGetErrorString(err));
-	}
-	//fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+    GLenum err = glewInit();
+    if (GLEW_OK != err) {
+        /* Problem: glewInit failed, something is seriously wrong. */
+        Powiter::errorDialog("OpenGL/GLEW error",
+                             (const char*)glewGetErrorString(err));
+    }
+    //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
-	// is GL_VERSION_2_0 necessary? note that GL_VERSION_2_0 includes GLSL
-	if (!glewIsSupported("GL_VERSION_1_5 "
-						 "GL_ARB_texture_non_power_of_two " // or GL_IMG_texture_npot, or GL_OES_texture_npot, core since 2.0
-						 "GL_ARB_shader_objects " // GLSL, Uniform*, core since 2.0
-						 "GL_ARB_vertex_buffer_object " // BindBuffer, MapBuffer, etc.
-						 "GL_ARB_pixel_buffer_object " // BindBuffer(PIXEL_UNPACK_BUFFER,...
-						 //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-						 //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
-						 )) {
-		Powiter::errorDialog("Missing OpenGL requirements",
-							 "The viewer may not be fully functionnal. "
-							 "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
-	}
-	if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
+    // is GL_VERSION_2_0 necessary? note that GL_VERSION_2_0 includes GLSL
+    if (!glewIsSupported("GL_VERSION_1_5 "
+                         "GL_ARB_texture_non_power_of_two " // or GL_IMG_texture_npot, or GL_OES_texture_npot, core since 2.0
+                         "GL_ARB_shader_objects " // GLSL, Uniform*, core since 2.0
+                         "GL_ARB_vertex_buffer_object " // BindBuffer, MapBuffer, etc.
+                         "GL_ARB_pixel_buffer_object " // BindBuffer(PIXEL_UNPACK_BUFFER,...
+                         //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
+                         //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
+                         )) {
+        Powiter::errorDialog("Missing OpenGL requirements",
+                             "The viewer may not be fully functionnal. "
+                             "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
+    }
+    if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
-		
-		//Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
+
+        //Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
-		_hasHW = false;
-	}
+        _hasHW = false;
+    }
 }
 
 void ViewerGL::activateShaderLC(){
     if(!_hasHW) return;
-	if(!shaderLC->bind()){
-		cout << qPrintable(shaderLC->log()) << endl;
-	}
-	shaderLC->setUniformValue("Tex", 0);
-	shaderLC->setUniformValue("yw",1.0,1.0,1.0);
+    if(!shaderLC->bind()){
+        cout << qPrintable(shaderLC->log()) << endl;
+    }
+    shaderLC->setUniformValue("Tex", 0);
+    shaderLC->setUniformValue("yw",1.0,1.0,1.0);
     shaderLC->setUniformValue("expMult",  (GLfloat)exposure);
     // FIXME: why a float to really represent an enum????
     shaderLC->setUniformValue("lut", (GLfloat)_lut);
@@ -702,14 +1027,14 @@ void ViewerGL::activateShaderLC(){
 }
 void ViewerGL::activateShaderRGB(){
     if(!_hasHW) return;
-	if(!shaderRGB->bind()){
-		cout << qPrintable(shaderRGB->log()) << endl;
-	}
+    if(!shaderRGB->bind()){
+        cout << qPrintable(shaderRGB->log()) << endl;
+    }
     
     shaderRGB->setUniformValue("Tex", 0);
     // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("byteMode", (GLfloat)byteMode());
-	shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
+    shaderRGB->setUniformValue("expMult",  (GLfloat)exposure);
     // FIXME-seeabove: why a float to really represent an enum????
     shaderRGB->setUniformValue("lut", (GLfloat)_lut);
     // FIXME-seeabove: why a float to really represent an enum????
@@ -744,20 +1069,20 @@ void ViewerGL::initShaderGLSL(){
 
 void ViewerGL::saveGLState()
 {
-	glPushAttrib(GL_ALL_ATTRIB_BITS);
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
 }
 
 void ViewerGL::restoreGLState()
 {
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	glPopAttrib();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glPopAttrib();
 }
 
 void ViewerGL::initBlackTex(){
@@ -780,7 +1105,7 @@ void ViewerGL::initBlackTex(){
     for(int i = 0 ; i < texSize.w*texSize.h ; ++i) {
         output[i] = toBGRA(0, 0, 0, 255);
     }
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     frameData = NULL;
     _pBOmapped = false;
     checkGLErrors();
@@ -824,7 +1149,7 @@ void* ViewerGL::allocateAndMapPBO(size_t dataSize,GLuint pboID) {
     if(byteMode() != 1 && _hasHW){
         dataSize*=sizeof(float);
     }
-	glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB,pboID);
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, NULL, GL_DYNAMIC_DRAW_ARB);
     assert(!_pBOmapped);
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
@@ -1024,11 +1349,11 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
     const Format& dispW = getDisplayWindow();
     // if the mouse is inside the image, update the color picker
     if (pos.x() >= dispW.left() &&
-        pos.x() <= dispW.width() &&
-        pos.y() >= dispW.bottom() &&
-        pos.y() <= dispW.height() &&
-        event->x() >= 0 && event->x() < width() &&
-        event->y() >= 0 && event->y() < height()) {
+            pos.x() <= dispW.width() &&
+            pos.y() >= dispW.bottom() &&
+            pos.y() <= dispW.height() &&
+            event->x() >= 0 && event->x() < width() &&
+            event->y() >= 0 && event->y() < height()) {
         if (!_infoViewer->colorAndMouseVisible()) {
             _infoViewer->showColorAndMouseInfo();
         }
@@ -1057,7 +1382,7 @@ void ViewerGL::mouseMoveEvent(QMouseEvent *event) {
             _viewerTab->getInternalNode()->refreshAndContinueRender();
         }
         //else {
-            updateGL();
+        updateGL();
         // }
         // no need to update the color picker or mouse posn: they should be unchanged
     } else {
@@ -1113,7 +1438,7 @@ void ViewerGL::wheelEvent(QWheelEvent *event) {
         _viewerTab->getInternalNode()->refreshAndContinueRender();
     }
     //else {
-        updateGL();
+    updateGL();
     //}
     
     assert(0 < _zoomCtx._zoomFactor && _zoomCtx._zoomFactor <= 1024);
@@ -1438,29 +1763,42 @@ void ViewerGL::populateMenu(){
     _menu->addAction(displayOverlaysAction);
 }
 
-void ViewerGL::print( int x, int y, const QString &string,QColor color )
+void ViewerGL::renderText( int x, int y, const QString &string,const QColor& color,const QFont& font)
 {
-	if(string.isEmpty())
+    
+    if(string.isEmpty())
         return;
-	glPushMatrix();
+    
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    double h = (double)height();
+    double w = (double)width();
+    /*we put the ortho proj to the widget coords, draw the elements and revert back to the old orthographic proj.*/
+    glOrtho(0,w,0,h,-1,1);
+    glMatrixMode(GL_MODELVIEW);
+    QPointF pos = toWidgetCoordinates(x, y);
+    TextRenderer* t = TextRenderer::instance();
+    t->renderText(pos.x(),h-pos.y(),string,color,font);
     checkGLErrors();
-    float zoomFactor = getZoomFactor();
-    glTranslatef( x, y , 0 );
-    glScalef(1.f/zoomFactor,1.f/zoomFactor, 1);
-    double pa = getDisplayWindow().getPixelAspect();
-    if(pa >1){
-        glScalef(1/pa, 1, 1);
-    }else if(pa < 1){
-        glScalef(1, pa, 1);
-    }
-    QByteArray ba = string.toLocal8Bit();
-    glColor4f(color.redF(),color.greenF(),color.blueF(),color.alphaF());
-    _font->Render(ba.data());
-    checkGLErrors();
-	glPopMatrix();
-	
+    glMatrixMode (GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
+    glMatrixMode(GL_MODELVIEW);
 }
 
 void ViewerGL::showView(int view){
     std::cout << "showView not implemented yet." << std::endl;
 }
+
+void ViewerGL::setPersistentMessage(int type,const QString& message){
+    _persistentMessageType = type;
+    _persistentMessage = message;
+    _displayPersistentMessage = true;
+    updateGL();
+}
+
+void ViewerGL::clearPersistentMessage(){
+    _displayPersistentMessage = false;
+    updateGL();
+}
+

@@ -408,9 +408,10 @@ inline Powiter::StandardButton questionDialog(const std::string& title,const std
     }else{
         std::cout << title << std::endl;
         std::cout << message << std::endl;
+        return Powiter::Yes;
     }
 }
-}
+} // namespace Powiter
 
 
 #endif // POWITER_GLOBAL_CONTROLER_H_

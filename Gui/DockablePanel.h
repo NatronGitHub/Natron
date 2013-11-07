@@ -101,6 +101,8 @@ public:
      to the DockablePanel.*/
     Button* insertHeaderButton(int headerPosition);
     
+    QVBoxLayout* getContainer() const {return _container;}
+    
     void pushUndoCommand(QUndoCommand* cmd);
     
 public slots:
@@ -182,7 +184,7 @@ class NodeSettingsPanel : public DockablePanel
 
 public:
 
-    explicit NodeSettingsPanel(NodeGui* NodeUi, QWidget *parent = 0);
+    explicit NodeSettingsPanel(NodeGui* NodeUi,QVBoxLayout* container, QWidget *parent = 0);
     
     virtual ~NodeSettingsPanel(){}
     

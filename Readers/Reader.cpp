@@ -208,5 +208,6 @@ void Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*v
         }
     }
     found->render(time,scale,roi,output);
+    
 }
 

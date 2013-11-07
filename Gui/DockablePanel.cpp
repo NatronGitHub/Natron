@@ -357,9 +357,9 @@ void DockablePanel::onKnobDeletion(KnobGui* k){
 
 
 
-NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QWidget *parent)
+NodeSettingsPanel::NodeSettingsPanel(NodeGui* NodeUi ,QVBoxLayout* container,QWidget *parent)
 :DockablePanel(NodeUi->getNode()->getLiveInstance(),
-               NodeUi->getDockContainer(),
+               container,
                false,
                NodeUi->getNode()->getName().c_str(),
                NodeUi->getNode()->description().c_str(),

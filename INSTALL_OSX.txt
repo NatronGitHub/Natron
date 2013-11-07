@@ -26,18 +26,6 @@ Download OpenEXR from http://www.openexr.com/downloads.html and install it.
 2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
 
 
-###freetype2
-
-You can either use macports:
-	sudo port install freetype
-or compile it by yourself from (Freetype download)[http://download.savannah.gnu.org/releases/freetype/] (make sure to download freetype 2.x)
-
-###ftgl
-
-Again with macports:
-	sudo port install ftgl
-Or download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]
-
 ###boost
 
 You can download boost from 

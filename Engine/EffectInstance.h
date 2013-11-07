@@ -407,6 +407,21 @@ public:
      **/
     bool message(Powiter::MessageType type,const std::string& content) const;
     
+    /**
+     * @brief Use this function to post a persistent message to the user. It will be displayed on the
+     * node's graphical interface and on any connected viewer. The message can be of 3 types...
+     * INFORMATION_MESSAGE : you just want to inform the user about something.
+     * WARNING_MESSAGE : you want to inform the user that something important happened.
+     * ERROR_MESSAGE : you want to inform the user an error occured.
+     * @param content The message you want to pass.
+     **/
+    void setPersistentMessage(Powiter::MessageType type,const std::string& content);
+    
+    /**
+     * @brief Clears any message posted previously by setPersistentMessage.
+     **/
+    void clearPersistentMessage();
+    
 protected:
     /**
      * @brief This function is provided for means to copy more data than just the knobs from the live instance

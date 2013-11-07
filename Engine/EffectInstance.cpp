@@ -275,15 +275,14 @@ void EffectInstance::createKnobDynamically(){
 
 void EffectInstance::evaluate(Knob* /*knob*/,bool isSignificant){
     assert(_node);
-    
-    ViewerInstance* n = _node->hasViewerConnected();
-    if(n){
+    std::list<ViewerInstance*> viewers;
+    _node->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         if(isSignificant){
-            n->refreshAndContinueRender();
+            (*it)->refreshAndContinueRender();
         }else{
-            n->redrawViewer();
+            (*it)->redrawViewer();
         }
-        
     }
 }
 
@@ -361,6 +360,13 @@ bool EffectInstance::message(Powiter::MessageType type,const std::string& conten
     return _node->message(type,content);
 }
 
+void EffectInstance::setPersistentMessage(Powiter::MessageType type,const std::string& content){
+    _node->setPersistentMessage(type, content);
+}
+
+void EffectInstance::clearPersistentMessage() {
+    _node->clearPersistentMessage();
+}
 
 OutputEffectInstance::OutputEffectInstance(Node* node):
 Powiter::EffectInstance(node)

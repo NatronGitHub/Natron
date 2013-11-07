@@ -79,9 +79,8 @@ public:
      **/
     const std::vector<Knob*>& getKnobs() const;
 
-    /*Returns a pointer to the Viewer node ptr if this node has a viewer connected,
-     otherwise returns NULL.*/
-    ViewerInstance* hasViewerConnected();
+    /*Returns in viewers the list of all the viewers connected to this node*/
+    void hasViewersConnected(std::list<ViewerInstance*>* viewers) const;
     
     
     /**
@@ -290,8 +289,36 @@ public:
 
     Powiter::EffectInstance* findExistingEffect(RenderTree* tree) const;
     
+    /**
+     * @brief Use this function to post a transient message to the user. It will be displayed using
+     * a dialog. The message can be of 4 types...
+     * INFORMATION_MESSAGE : you just want to inform the user about something.
+     * WARNING_MESSAGE : you want to inform the user that something important happened.
+     * ERROR_MESSAGE : you want to inform the user an error occured.
+     * QUESTION_MESSAGE : you want to ask the user about something.
+     * The function will return true always except for a message of type QUESTION_MESSAGE, in which
+     * case the function may return false if the user pressed the 'No' button.
+     * @param content The message you want to pass.
+     **/
     bool message(Powiter::MessageType type,const std::string& content) const;
 
+    /**
+     * @brief Use this function to post a persistent message to the user. It will be displayed on the
+     * node's graphical interface and on any connected viewer. The message can be of 3 types...
+     * INFORMATION_MESSAGE : you just want to inform the user about something.
+     * WARNING_MESSAGE : you want to inform the user that something important happened.
+     * ERROR_MESSAGE : you want to inform the user an error occured.
+     * @param content The message you want to pass.
+     **/
+    void setPersistentMessage(Powiter::MessageType type,const std::string& content);
+    
+    /**
+     * @brief Clears any message posted previously by setPersistentMessage.
+     **/
+    void clearPersistentMessage();
+
+    
+    
 public slots:
     
     void onGUINameChanged(const QString& str){
@@ -314,7 +341,12 @@ public slots:
         emit frameRangeChanged(f,l);
     }
     
+    
 signals:
+    
+    void persistentMessageChanged(int,QString);
+    
+    void persistentMessageCleared();
     
     void inputsInitialized();
     

@@ -20,17 +20,6 @@ You'll need to install Qt libraries from [Qt download](http://qt-project.org/dow
 Download OpenEXR from http://www.openexr.com/downloads.html and install it.
 2.0 features are not supported for now and a pre 2.0 version is enough to make it work.
 
-###freetype2
-
-You can get it from the packet manager:
-	sudo apt-get install freetype2
-
-
-###ftgl
-
-Again, you can get it from apt-get:
-	sudo apt-get install ftgl
-
 
 ###boost
 

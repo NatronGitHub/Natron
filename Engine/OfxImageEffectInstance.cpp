@@ -59,16 +59,33 @@ OFX::Host::ImageEffect::ClipInstance* OfxImageEffectInstance::newClipInstance(OF
 }
 
 OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
-                               const char* id,
+                               const char* /*id*/,
                                const char* format,
                                va_list args){
-    //not doing anything yet: not implemented
-    vmessage(type,id,format,args);
+    assert(type);
+    assert(format);
+    char buf[10000];
+    sprintf(buf, format,args);
+    std::string message(buf);
+    
+    if(strcmp(type, kOfxMessageError) == 0) {
+        
+        _node->setPersistentMessage(Powiter::ERROR_MESSAGE, message);
+        
+    }else if(strcmp(type, kOfxMessageWarning)){
+        
+        _node->setPersistentMessage(Powiter::WARNING_MESSAGE, message);
+        
+    }else if(strcmp(type, kOfxMessageMessage)){
+        
+        _node->setPersistentMessage(Powiter::INFO_MESSAGE, message);
+        
+    }
     return kOfxStatOK;
 }
 
 OfxStatus OfxImageEffectInstance::clearPersistentMessage(){
-    //not yet implemented
+    _node->clearPersistentMessage();
     return kOfxStatOK;
 }
 OfxStatus OfxImageEffectInstance::vmessage(const char* type,

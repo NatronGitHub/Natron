@@ -31,14 +31,6 @@ http://michael-stengel.com/blog/?p=51
 
 http://www.fixstars.com/en/lucille/docs/dev/index.php/How_to_build_OpenEXR_libs_for_Win_64bit
 
-###freetype2
-
-
-Compile it by yourself from (Freetype download)[http://download.savannah.gnu.org/releases/freetype/] (make sure to download freetype 2.x). It should be pretty much straight forward. Powiter does a static link with freetype, make sure to build it as a static library.
-
-###ftgl
-
-Download it and compile it yourself from (FTGL download)[http://sourceforge.net/projects/ftgl/]. It should be pretty much straight forward. You can build it as a dll.
 ###boost
 
 You can download boost from 

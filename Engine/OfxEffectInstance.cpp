@@ -434,37 +434,44 @@ const std::string& OfxEffectInstance::getShortLabel() const {
 
 
 void OfxEffectInstance::swapBuffersOfAttachedViewer(){
-    ViewerInstance* n = getNode()->hasViewerConnected();
-    if(n){
-        n->swapBuffers();
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->swapBuffers();
     }
 }
 
 void OfxEffectInstance::redrawInteractOnAttachedViewer(){
-    ViewerInstance* n = getNode()->hasViewerConnected();
-    if(n){
-        n->redrawViewer();
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->redrawViewer();
     }
+
 }
 
 void OfxEffectInstance::pixelScaleOfAttachedViewer(double &x,double &y){
-    ViewerInstance* n = getNode()->hasViewerConnected();
-    if(n){
-        n->pixelScale(x, y);
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->pixelScale(x, y);
     }
 }
 
 void OfxEffectInstance::viewportSizeOfAttachedViewer(double &w,double &h){
-    ViewerInstance* n = getNode()->hasViewerConnected();
-    if(n){
-        n->viewportSize(w, h);
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->viewportSize(w, h);
     }
 }
 void OfxEffectInstance::backgroundColorOfAttachedViewer(double &r,double &g,double &b){
-    ViewerInstance* n = getNode()->hasViewerConnected();
-    if(n){
-        n->backgroundColor(r, g, b);
+    std::list<ViewerInstance*> viewers;
+    getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->backgroundColor(r, g, b);
     }
+    
 }
 
 

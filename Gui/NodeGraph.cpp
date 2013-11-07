@@ -867,9 +867,10 @@ void ConnectCommand::undo(){
     }
     
     _graph->getGui()->getApp()->triggerAutoSave();
-    ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
-    if(viewer){
-        viewer->updateTreeAndRender();
+    std::list<ViewerInstance*> viewers;
+    _edge->getDest()->getNode()->hasViewersConnected(&viewers);
+    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+        (*it)->updateTreeAndRender();
     }
 }
 void ConnectCommand::redo(){
@@ -907,9 +908,10 @@ void ConnectCommand::redo(){
     if(_newSrc){
         setText(QObject::tr("Connect %1 to %2")
                 .arg(_edge->getDest()->getNode()->getName().c_str()).arg(_newSrc->getNode()->getName().c_str()));
-        ViewerInstance* viewer = _edge->getDest()->getNode()->hasViewerConnected();
-        if(viewer){
-            viewer->updateTreeAndRender();
+        std::list<ViewerInstance*> viewers;
+        _edge->getDest()->getNode()->hasViewersConnected(&viewers);
+        for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+            (*it)->updateTreeAndRender();
         }
     }else{
         setText(QObject::tr("Disconnect %1")

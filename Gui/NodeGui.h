@@ -103,7 +103,7 @@ public:
     
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
-            Powiter::Node *node,
+            Powiter::Node *_internalNode,
             qreal x,qreal y ,
             QGraphicsItem *parent=0);
 
@@ -111,10 +111,10 @@ public:
     
     NodeGui::SerializedState serialize() const;
     
-    Powiter::Node* getNode() const {return node;}
+    Powiter::Node* getNode() const {return _internalNode;}
     
     /*Returns a pointer to the dag gui*/
-    NodeGraph* getDagGui(){return _dag;}
+    NodeGraph* getDagGui(){return _graph;}
     
     
   
@@ -140,20 +140,18 @@ public:
     
     /*Returns a ref to the vector of all the input arrows. This can be used
      to query the src and dst of a specific arrow.*/
-    const std::map<int,Edge*>& getInputsArrows() const {return inputs;}
+    const std::map<int,Edge*>& getInputsArrows() const {return _inputEdges;}
     
    
     
     /*Returns true if the point is included in the rectangle +10px on all edges.*/
     bool isNearby(QPointF &point);
     
-    QVBoxLayout* getSettingsLayout(){return dockContainer;}
-    
     /*Returns a pointer to the settings panel of this node.*/
-    NodeSettingsPanel* getSettingPanel(){return settings;}
+    NodeSettingsPanel* getSettingPanel() const {return _settingsPanel;}
     
     /*Returns a pointer to the layout containing settings panels.*/
-    QVBoxLayout* getDockContainer(){return dockContainer;}
+    QVBoxLayout* getDockContainer() const ;
     
         
        
@@ -184,24 +182,38 @@ public:
      point pt. pt is in scene coord.*/
     Edge* hasEdgeNearbyPoint(const QPointF& pt);
     
-    void setName(const QString& name);
     
     void refreshPosition(double x,double y);
     
     bool isSettingsPanelVisible() const;
+    
+    void setSelectedGradient(const QLinearGradient& gradient);
+    
+    void setDefaultGradient(const QLinearGradient& gradient);
 public slots:
   
+    void togglePreview();
+
+    /**
+     * @brief Updates the position of the items contained by the node to fit into
+     * the new width and height.
+     **/
+    void updateShape(int width,int height);
     
     /*Updates the preview image.*/
 	void updatePreviewImage(int time);
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip(const Powiter::ChannelSet& channels);
+    void updateChannelsTooltip(const Powiter::ChannelSet& _channelsPixmap);
     
-    void onLineEditNameChanged(const QString&);
+    void setName(const QString& _nameItem);
     
     void onInternalNameChanged(const QString&);
+    
+    void onPersistentMessageChanged(int type,const QString& message);
+    
+    void onPersistentMessageCleared();
     
     void deleteNode();
         
@@ -229,34 +241,39 @@ private:
     void computePreviewImage(int time);
     
     /*pointer to the dag*/
-    NodeGraph* _dag;
+    NodeGraph* _graph;
     
     /*pointer to the internal node*/
-    Powiter::Node* node;
+    Powiter::Node* _internalNode;
     
     /*true if the node is selected by the user*/
     bool _selected;
 
     /*A pointer to the graphical text displaying the name.*/
-    QGraphicsSimpleTextItem *name;
-    
-    /*A pointer to the layout containing setting panels*/
-    QVBoxLayout* dockContainer;
+    QGraphicsTextItem *_nameItem;
         
     /*A pointer to the rectangle of the node.*/
-    QGraphicsRectItem* rectangle;
+    QGraphicsRectItem* _boundingBox;
     
     /*A pointer to the channels pixmap displayed*/
-    QGraphicsPixmapItem* channels;
+    QGraphicsPixmapItem* _channelsPixmap;
     
     /*A pointer to the preview pixmap displayed for readers/*/
-	QGraphicsPixmapItem* prev_pix;
+    QGraphicsPixmapItem* _previewPixmap;
+    
+    QGraphicsTextItem* _persistentMessage;
+    int _lastPersistentMessageType;
+    QGraphicsRectItem* _stateIndicator;
     
     /*the graphical input arrows*/
-    std::map<int,Edge*> inputs;
+    std::map<int,Edge*> _inputEdges;
        /*settings panel related*/
-    bool settingsPanel_displayed;
-    NodeSettingsPanel* settings;
+    bool _panelDisplayed;
+    NodeSettingsPanel* _settingsPanel;
+    bool _previewOn;
+    
+    QGradient* _selectedGradient;
+    QGradient* _defaultGradient;
     
   
 };
