@@ -139,7 +139,7 @@ _maximized(false)
     _secondRowLayout->addWidget(_gainBox);
     
     
-    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,5,_secondSettingsRow);
+    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,_secondSettingsRow);
     _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
                             "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);

@@ -214,7 +214,6 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
                              // it has no _renderArgs.
                 _renderArgs->setLocalData(args);
             }
-
             
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
             std::list<boost::shared_ptr<const Powiter::Image> > inputImages;

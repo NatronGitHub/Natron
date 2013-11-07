@@ -551,6 +551,10 @@ Double_KnobGui::~Double_KnobGui(){
     }
 }
 
+bool compareDoubles(double a,double b){
+    return fabs(a-b) < 0.001;//std::numeric_limits<double>::epsilon();
+}
+
 void Double_KnobGui::createWidget(QGridLayout *layout, int row){
     _descriptionLabel = new QLabel(QString(QString(_knob->getDescription().c_str())+":"),layout->parentWidget());
     _descriptionLabel->setToolTip(_knob->getHintToolTip().c_str());
@@ -601,15 +605,14 @@ void Double_KnobGui::createWidget(QGridLayout *layout, int row){
         boxContainerLayout->addWidget(box);
         if(_knob->getDimension() == 1){
             double min=0.,max=99.;
-            if(displayMins.size() >(U32)i && displayMins[i] != DBL_MIN)
+            if(displayMins.size() >(U32)i)
                 min = displayMins[i];
             else if(minimums.size() > (U32)i)
                 min = minimums[i];
-            if(displayMaxs.size() >(U32)i && displayMaxs[i] != DBL_MAX)
+            if(displayMaxs.size() >(U32)i)
                 max = displayMaxs[i];
             else if(maximums.size() > (U32)i)
                 max = maximums[i];
-            
             _slider = new ScaleSlider(min,max,
                                       100,
                                       _knob->value<double>());
