@@ -90,6 +90,7 @@ SOURCES += \
     Engine/Hash64.cpp \
     Engine/Image.cpp \
     Engine/Knob.cpp \
+    Engine/Log.cpp \
     Engine/Lut.cpp \
     Engine/MemoryFile.cpp \
     Engine/Node.cpp \
@@ -144,8 +145,7 @@ SOURCES += \
     libs/OpenFX/HostSupport/src/ofxhPluginAPICache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPluginCache.cpp \
     libs/OpenFX/HostSupport/src/ofxhPropertySuite.cpp \
-    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp \
-    Engine/Log.cpp
+    libs/OpenFX/HostSupport/src/ofxhUtilities.cpp
 
 
 
@@ -160,6 +160,7 @@ HEADERS += \
     Engine/ImageInfo.h \
     Engine/Image.h \
     Engine/Knob.h \
+    Engine/Log.h \
     Engine/LRUHashTable.h \
     Engine/Lut.h \
     Engine/MemoryFile.h \
@@ -246,8 +247,7 @@ HEADERS += \
     libs/OpenFX_extensions//tuttle/ofxMetadata.h \
     libs/OpenFX_extensions//tuttle/ofxParam.h \
     libs/OpenFX_extensions//tuttle/ofxParamAPI.h \
-    libs/OpenFX_extensions//tuttle/ofxReadWrite.h \
-    Engine/Log.h
+    libs/OpenFX_extensions//tuttle/ofxReadWrite.h
 
 
 

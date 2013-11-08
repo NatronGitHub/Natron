@@ -57,9 +57,9 @@ class ViewerInstance : public QObject, public Powiter::OutputEffectInstance {
     bool _forceRender;/*!< true when we want to by-pass the cache*/
     
     
-    QWaitCondition _pboUnMappedCondition;
-    mutable QMutex _pboUnMappedMutex; //!< protects _pboUnMappedCount
-    int _pboUnMappedCount;
+    QWaitCondition _usingOpenGLCond;
+    mutable QMutex _usingOpenGLMutex; //!< protects _usingOpenGL
+    bool _usingOpenGL;
     
     InterThreadInfos _interThreadInfos;
     
@@ -211,6 +211,8 @@ public slots:
  */
     void allocateFrameStorage();
 
+    void unMapPBO();
+
 signals:
 
     void viewerDisconnected();
@@ -246,6 +248,7 @@ signals:
  **/
     void doFrameStorageAllocation();
 
+    void doUnmapPBO();
 
 
 private:

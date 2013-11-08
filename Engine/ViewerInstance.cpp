@@ -51,9 +51,9 @@ Powiter::OutputEffectInstance(node)
 ,_frameCount(1)
 ,_forceRenderMutex()
 ,_forceRender(false)
-,_pboUnMappedCondition()
-,_pboUnMappedMutex()
-,_pboUnMappedCount(0)
+,_usingOpenGLCond()
+,_usingOpenGLMutex()
+,_usingOpenGL(false)
 ,_interThreadInfos()
 ,_timerMutex()
 ,_timer(new Timer)
@@ -62,7 +62,7 @@ Powiter::OutputEffectInstance(node)
     connect(this,SIGNAL(doUpdateViewer()),this,SLOT(updateViewer()));
     connect(this,SIGNAL(doCachedEngine()),this,SLOT(cachedEngine()));
     connect(this,SIGNAL(doFrameStorageAllocation()),this,SLOT(allocateFrameStorage()));
-    
+    connect(this,SIGNAL(doUnmapPBO()),this,SLOT(unMapPBO()));
     _timer->playState = RUNNING; /*activating the timer*/
     
 }
@@ -226,23 +226,23 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             if(getVideoEngine()->mustQuit()){
                 return StatFailed;
             }
-            QMutexLocker locker(&_pboUnMappedMutex);
+            QMutexLocker locker(&_usingOpenGLMutex);
+            _usingOpenGL = true;
             emit doCachedEngine();
-            while(_pboUnMappedCount <= 0) {
-                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+            while(_usingOpenGL) {
+                _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
-            --_pboUnMappedCount;
         }
         {
             if(getVideoEngine()->mustQuit()){
                 return StatFailed;
             }
-            QMutexLocker locker(&_pboUnMappedMutex);
+            QMutexLocker locker(&_usingOpenGLMutex);
+            _usingOpenGL = true;
             emit doUpdateViewer();
-            while(_pboUnMappedCount <= 0) {
-                _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+            while(_usingOpenGL) {
+                _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
-            --_pboUnMappedCount;
         }
 #ifdef POWITER_LOG
         Powiter::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
@@ -259,12 +259,12 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         return StatFailed;
     }
     {
-        QMutexLocker locker(&_pboUnMappedMutex);
+        QMutexLocker locker(&_usingOpenGLMutex);
+        _usingOpenGL = true;
         emit doFrameStorageAllocation();
-        while(_pboUnMappedCount <= 0) {
-            _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+        while(_usingOpenGL) {
+            _usingOpenGLCond.wait(&_usingOpenGLMutex);
         }
-        --_pboUnMappedCount;
     }
     
 
@@ -283,6 +283,12 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 inputImage = it->first->renderRoI(time, scale,view,it->second);
             }catch(...){
                 //plugin should have posted a message
+                QMutexLocker locker(&_usingOpenGLMutex);
+                _usingOpenGL = true;
+                emit doUnmapPBO();
+                while(_usingOpenGL){
+                    _usingOpenGLCond.wait(&_usingOpenGLMutex);
+                }
                 return StatFailed;
             }
             
@@ -328,21 +334,40 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
         if(!cachedFrame){
             setPersistentMessage(Powiter::WARNING_MESSAGE, "Failed to cache the frame rendered by the viewer.");
+            QMutexLocker locker(&_usingOpenGLMutex);
+            _usingOpenGL = true;
+            emit doUnmapPBO();
+            while(_usingOpenGL){
+                _usingOpenGLCond.wait(&_usingOpenGLMutex);
+            }
             return StatOK;
         }
        
         memcpy((char*)cachedFrame->data(),viewer->getFrameData(),bytesToCopy);
+    }else{
+        QMutexLocker locker(&_usingOpenGLMutex);
+        _usingOpenGL = true;
+        emit doUnmapPBO();
+        while(_usingOpenGL){
+            _usingOpenGLCond.wait(&_usingOpenGLMutex);
+        }
     }
     
     if(getVideoEngine()->mustQuit()){
+        QMutexLocker locker(&_usingOpenGLMutex);
+        _usingOpenGL = true;
+        emit doUnmapPBO();
+        while(_usingOpenGL){
+            _usingOpenGLCond.wait(&_usingOpenGLMutex);
+        }
         return StatFailed;
     }
-    QMutexLocker locker(&_pboUnMappedMutex);
+    QMutexLocker locker(&_usingOpenGLMutex);
+    _usingOpenGL = true;
     emit doUpdateViewer();
-    while(_pboUnMappedCount <= 0) {
-        _pboUnMappedCondition.wait(&_pboUnMappedMutex);
+    while(_usingOpenGL) {
+        _usingOpenGLCond.wait(&_usingOpenGLMutex);
     }
-    --_pboUnMappedCount;
     return StatOK;
 }
 
@@ -358,12 +383,12 @@ void ViewerInstance::renderFunctor(boost::shared_ptr<const Powiter::Image> input
 }
 
 void ViewerInstance::wakeUpAnySleepingThread(){
-    ++_pboUnMappedCount;
-    _pboUnMappedCondition.wakeAll();
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeAll();
 }
 
 void ViewerInstance::updateViewer(){
-    QMutexLocker locker(&_pboUnMappedMutex);
+    QMutexLocker locker(&_usingOpenGLMutex);
     
     ViewerGL* viewer = _uiContext->viewer;
     
@@ -397,12 +422,19 @@ void ViewerInstance::updateViewer(){
     viewer->updateGL();
     
     
-    ++_pboUnMappedCount;
-    _pboUnMappedCondition.wakeOne();
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
+}
+
+void ViewerInstance::unMapPBO(){
+     QMutexLocker locker(&_usingOpenGLMutex);
+    _uiContext->viewer->unMapPBO();
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
 }
 
 void ViewerInstance::cachedEngine(){
-    QMutexLocker locker(&_pboUnMappedMutex);
+    QMutexLocker locker(&_usingOpenGLMutex);
     
     assert(_interThreadInfos._cachedEntry);
     size_t dataSize = 0;
@@ -422,16 +454,16 @@ void ViewerInstance::cachedEngine(){
     _pboIndex = (_pboIndex+1)%2;
     _uiContext->viewer->fillPBO((const char*)_interThreadInfos._cachedEntry->data(), output, dataSize);
 
-    ++_pboUnMappedCount;
-    _pboUnMappedCondition.wakeOne();
+     _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
 }
 
 void ViewerInstance::allocateFrameStorage(){
-    QMutexLocker locker(&_pboUnMappedMutex);
+    QMutexLocker locker(&_usingOpenGLMutex);
     _interThreadInfos._pixelsCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
     _uiContext->viewer->allocateFrameStorage(_interThreadInfos._pixelsCount);
-    ++_pboUnMappedCount;
-    _pboUnMappedCondition.wakeOne();
+     _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
     
 }
 

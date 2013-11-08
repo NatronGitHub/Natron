@@ -113,6 +113,10 @@ If you want to build in DEBUG mode change the qmake call to this line:
 
 qmake CONFIG+=debug <srcPath>/Powiter.pro
 
+*You can also enable logging by adding CONFIG+=log
+*You can also enable clang sanitizer by adding CONFIG+=sanitizer
+
+
 You'll need to edit the file /etc/launchd.conf and add this line
 
 setenv PATH /opt/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
