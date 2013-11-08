@@ -10,6 +10,7 @@
 
 #include "ScaleSlider.h"
 
+#include <cassert>
 #include <qlayout.h>
 #if QT_VERSION < 0x050000
 CLANG_DIAG_OFF(unused-private-field);

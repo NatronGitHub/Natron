@@ -231,6 +231,7 @@ private:
         
     RenderTree _tree; /*!< The internal Tree instance.*/
     
+    bool _threadStarted;
 
     mutable QMutex _abortBeingProcessedMutex; /*!< protecting _abortBeingProcessed (in startEngine and stopEngine, when we process abort)*/
     bool _abortBeingProcessed; /*true when someone is processing abort*/

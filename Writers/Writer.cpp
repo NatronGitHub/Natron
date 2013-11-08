@@ -34,13 +34,14 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 Writer::Writer(Node* node):
-Powiter::OutputEffectInstance(node),
-_requestedChannels(Mask_RGBA), // temporary
-_premult(false),
-_writeOptions(0),
-_frameRangeChoosal(0),
-_firstFrameKnob(0),
-_lastFrameKnob(0)
+Powiter::OutputEffectInstance(node)
+, _requestedChannels(Mask_RGBA) // temporary
+, _premult(false)
+, _writeOptions(0)
+, _frameRangeChoosal(0)
+, _firstFrameKnob(0)
+, _lastFrameKnob(0)
+, _continueOnError(0)
 {
     if(node){
         QObject::connect(getNode()->getApp()->getTimeLine().get(),
@@ -167,6 +168,14 @@ void Writer::initializeKnobs(){
     frameRangeChoosalEntries.push_back("Manual");
     _frameRangeChoosal->populate(frameRangeChoosalEntries);
     
+    _continueOnError = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, "Continue on error"));
+    _continueOnError->setHintToolTip("If true, when an error arises for a frame,it will skip that frame and resume rendering.");
+    _continueOnError->setIsInsignificant(true);
+    _continueOnError->setValue(false);
+    
+}
+bool Writer::continueOnError() const{
+    return _continueOnError->getValue();
 }
 
 Powiter::Status Writer::renderWriter(SequenceTime time){

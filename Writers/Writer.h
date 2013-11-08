@@ -27,6 +27,7 @@ namespace Powiter{
 class OutputFile_Knob;
 class ComboBox_Knob;
 class EncoderKnobs;
+class Bool_Knob;
 class Button_Knob;
 class Int_Knob;
 class Writer: public QObject,public Powiter::OutputEffectInstance {
@@ -72,6 +73,8 @@ public:
 
     void getFirstFrameAndLastFrame(int* first,int *last);
 
+    bool continueOnError() const;
+
 public slots:
     void onTimelineFrameRangeChanged(int,int);
 
@@ -108,6 +111,7 @@ private:
     Int_Knob* _firstFrameKnob;
     Int_Knob* _lastFrameKnob;
     Button_Knob* _renderKnob;
+    Bool_Knob* _continueOnError;
 };
 Q_DECLARE_METATYPE(Writer*);
 #endif /* defined(POWITER_WRITERS_WRITER_H_) */

@@ -155,6 +155,6 @@ void Log::endFunction(const std::string& callerName,const std::string& function)
     Log::instance()->_imp->endFunction(callerName,function);
 }
 
-#endif
 
 }//namespace Powiter
+#endif

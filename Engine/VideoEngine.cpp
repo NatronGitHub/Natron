@@ -51,6 +51,7 @@ using std::cout; using std::endl;
 VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
 : QThread(parent)
 , _tree(owner)
+, _threadStarted(false)
 , _abortBeingProcessedMutex()
 , _abortBeingProcessed(false)
 , _abortedRequestedCondition()
@@ -81,7 +82,7 @@ VideoEngine::~VideoEngine() {
 }
 
 void VideoEngine::quitEngineThread(){
-    if(isRunning()){
+    if(_threadStarted){
         abortRendering();
         {
             QMutexLocker locker(&_mustQuitMutex);
@@ -138,8 +139,9 @@ void VideoEngine::render(int frameCount,
     
     /*Starting or waking-up the thread*/
     QMutexLocker quitLocker(&_mustQuitMutex);
-    if (!isRunning() && !_mustQuit) {
+    if (!_threadStarted && !_mustQuit) {
         start(HighestPriority);
+        _threadStarted = true;
     } else {
         QMutexLocker locker(&_startMutex);
         ++_startCount;
@@ -416,7 +418,15 @@ void VideoEngine::run(){
         /*pre process frame*/
         
         Status stat = _tree.preProcessFrame(currentFrame);
+        bool continueOnError = false;
+        Writer* writer = _tree.outputAsWriter();
+        if(writer && writer->continueOnError()){
+            continueOnError = true;
+        }
         if(stat == StatFailed){
+            if(continueOnError){
+                goto endLoop;
+            }
             if(viewer){
                 viewer->disconnectViewer();
             }
@@ -433,6 +443,9 @@ void VideoEngine::run(){
             }
         }else if(!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()){
            stat = _tree.outputAsWriter()->renderWriter(currentFrame);
+            if(continueOnError){
+                goto endLoop;
+            }
         }else{
             RenderScale scale;
             scale.x = scale.y = 1.;
@@ -456,6 +469,8 @@ void VideoEngine::run(){
                 return;
             continue;
         }
+        
+        endLoop:
         
         /*The frame has been rendered , we call engineLoop() which will reset all the flags,
          update viewers
