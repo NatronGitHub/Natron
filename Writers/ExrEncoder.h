@@ -73,7 +73,7 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
+	virtual Powiter::Status render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,

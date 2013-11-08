@@ -212,12 +212,12 @@ void ExrEncoder::initializeColorSpace(){
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
+Powiter::Status ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
     
     try{
         for (int y = roi.bottom(); y < roi.top(); ++y) {
             if(_writer->aborted()){
-                return;
+                return Powiter::StatFailed;
             }
             /*First we create a row that will serve as the output buffer.
              We copy the scan-line (with y inverted) in the inputImage to the row.*/
@@ -235,7 +235,7 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
             }
             
             if(_writer->aborted()){
-                return;
+                return Powiter::StatFailed;
             }
             
             /*we create the frame buffer*/
@@ -272,9 +272,10 @@ void ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /
             _imp->_outputFile->writePixels(1);
         }
     }catch(const std::exception& e){
-        cout << e.what() << endl;
+        _writer->setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
+        return Powiter::StatFailed;
     }
-    
+    return Powiter::StatOK;
 
 }
 

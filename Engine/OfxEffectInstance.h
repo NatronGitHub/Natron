@@ -132,7 +132,8 @@ public:
 
     virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
 
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,
+                                   const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
 
     virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE;
 

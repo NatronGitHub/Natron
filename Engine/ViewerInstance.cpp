@@ -31,6 +31,7 @@
 #include "Engine/ImageInfo.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Cache.h"
+#include "Engine/Log.h"
 #include "Engine/Timer.h"
 
 #include "Readers/Reader.h"
@@ -130,6 +131,10 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 
 
 Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
+#ifdef POWITER_LOG
+    Powiter::Log::beginFunction(getName(),"renderViewer");
+    Powiter::Log::print(QString("Time "+QString::number(time)).toStdString());
+#endif
     
     ViewerGL *viewer = _uiContext->viewer;
     assert(viewer);
@@ -138,6 +143,10 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     RectI rod;
     Status stat = getRegionOfDefinition(time, &rod);
     if(stat == StatFailed){
+#ifdef POWITER_LOG
+        Powiter::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+        Powiter::Log::endFunction(getName(),"renderViewer");
+#endif
         return stat;
     }
     ifInfiniteclipRectToProjectDefault(&rod);
@@ -165,7 +174,23 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     std::pair<int,int> columnSpan = viewer->computeColumnSpan(left,right, &columns);
     
     TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
+#ifdef POWITER_LOG
+    Powiter::Log::print(QString("Image rect is..."
+                                                         " xmin= "+QString::number(left)+
+                                                         " ymin= "+QString::number(bottom)+
+                                                         " xmax= "+QString::number(right)+
+                                                         " ymax= "+QString::number(top)+
+                                                         " Viewer RoI is...."+
+                                                         " xmin= "+QString::number(textureRect.x)+
+                                                         " ymin= "+QString::number(textureRect.y)+
+                                                         " xmax= "+QString::number(textureRect.r+1)+
+                                                         " ymax= "+QString::number(textureRect.t+1)).toStdString());
+#endif
     if(textureRect.w == 0 || textureRect.h == 0){
+#ifdef POWITER_LOG
+        Powiter::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+        Powiter::Log::endFunction(getName(),"renderViewer");
+#endif
         return StatFailed;
     }
     _interThreadInfos._textureRect = textureRect;
@@ -219,6 +244,11 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
             }
             --_pboUnMappedCount;
         }
+#ifdef POWITER_LOG
+        Powiter::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
+                                                             QString::number(key.getHash())).toStdString());
+        Powiter::Log::endFunction(getName(),"renderViewer");
+#endif
         return StatOK;
     }
     
@@ -248,7 +278,13 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
         int viewsCount = getApp()->getCurrentProjectViewsCount();
         for(int view = 0 ; view < viewsCount ; ++view){
-            boost::shared_ptr<const Powiter::Image> inputImage = it->first->renderRoI(time, scale,view,it->second);
+            boost::shared_ptr<const Powiter::Image> inputImage;
+            try{
+                inputImage = it->first->renderRoI(time, scale,view,it->second);
+            }catch(...){
+                //plugin should have posted a message
+                return StatFailed;
+            }
             
             int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
             // group of group of rows where first is image coordinate, second is texture coordinate
@@ -291,7 +327,7 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         }
         boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
         if(!cachedFrame){
-            std::cout << "Failed to cache the frame rendered by the viewer." << std::endl;
+            setPersistentMessage(Powiter::WARNING_MESSAGE, "Failed to cache the frame rendered by the viewer.");
             return StatOK;
         }
        

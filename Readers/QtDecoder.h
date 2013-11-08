@@ -37,7 +37,7 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
     
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
     
     virtual bool supports_stereo() const OVERRIDE {return false;}
     

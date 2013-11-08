@@ -49,11 +49,13 @@ std::vector<std::string> QtDecoder::fileTypesDecoded() const {
 };
 
 
-void QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
+Powiter::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
     switch(_img->format()) {
         case QImage::Format_Invalid:
         {
             output->fill(roi,0.f,1.f);
+            _reader->setPersistentMessage(Powiter::ERROR_MESSAGE, "Invalid image format.");
+            return StatFailed;
         }
             break;
         case QImage::Format_RGB32: // The image is stored using a 32-bit RGB format (0xffRRGGBB).
@@ -82,7 +84,7 @@ void QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& 
             break;
         }
     }
-    
+    return StatOK;
 }
 
 Powiter::Status QtDecoder::readHeader(const QString& filename)

@@ -320,7 +320,7 @@ void VideoEngine::run(){
         }
         
         /*update the tree hash */
-        _tree.refreshKnobsAndHash();
+        _tree.refreshKnobsAndHashAndClearPersistentMessage();
                 
         if (!_currentRunArgs._sameFrame && _currentRunArgs._frameRequestsCount == -1) {
             appPTR->clearNodeCache();
@@ -417,6 +417,9 @@ void VideoEngine::run(){
         
         Status stat = _tree.preProcessFrame(currentFrame);
         if(stat == StatFailed){
+            if(viewer){
+                viewer->disconnectViewer();
+            }
             if(stopEngine())
                 return;
             continue;
@@ -429,7 +432,7 @@ void VideoEngine::run(){
                 viewer->disconnectViewer();
             }
         }else if(!_tree.isOutputAViewer() && !_tree.isOutputAnOpenFXNode()){
-           stat =  _tree.outputAsWriter()->renderWriter(currentFrame);
+           stat = _tree.outputAsWriter()->renderWriter(currentFrame);
         }else{
             RenderScale scale;
             scale.x = scale.y = 1.;
@@ -438,7 +441,11 @@ void VideoEngine::run(){
             if(stat != StatFailed){
                 int viewsCount = _tree.getOutput()->getApp()->getCurrentProjectViewsCount();
                 for(int i = 0; i < viewsCount;++i){
-                    _tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
+                    try{
+                        _tree.getOutput()->renderRoI(currentFrame, scale,i ,rod);
+                    }catch(...){
+                        stat = StatFailed;
+                    }
                 }
             }
             
@@ -594,7 +601,7 @@ U64 RenderTree::cloneKnobsAndcomputeTreeHash(EffectInstance* effect,const std::v
     }
     return ret;
 }
-void RenderTree::refreshKnobsAndHash(){
+void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     _renderOutputFormat = _output->getApp()->getProjectFormat();
     _projectViewsCount = _output->getApp()->getCurrentProjectViewsCount();
     
@@ -610,6 +617,7 @@ void RenderTree::refreshKnobsAndHash(){
     std::vector<U64> inputsHash;
     for (TreeIterator it = _sorted.begin(); it!=_sorted.end(); ++it) {
         inputsHash.push_back(cloneKnobsAndcomputeTreeHash(it->second,inputsHash));
+        (*it).second->clearPersistentMessage();
     }
     _treeVersionValid = true;
     

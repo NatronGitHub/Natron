@@ -69,7 +69,7 @@ Powiter::Status Reader::preProcessFrame(SequenceTime time){
     int missingFrameChoice = _missingFrameChoice->value<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && (missingFrameChoice == 1 || missingFrameChoice == 0)){
-        std::cout << getName() << " couldn't find a file for frame " << time << std::endl;
+        setPersistentMessage(Powiter::ERROR_MESSAGE,QString(" couldn't find a file for frame "+QString::number(time)).toStdString());
         return StatFailed;
     }else{
         return StatOK;
@@ -178,15 +178,15 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 
-void Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
+Powiter::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
     int missingFrameChoice = _missingFrameChoice->value<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && missingFrameChoice == 2){
         output->fill(roi,0.,0.); // render black
-        return;
+        return StatOK;
     }else if(filename.isEmpty()){
         std::cout << "Error should have been caught earlier in preProcessFrame." << std::endl;
-        return;
+        return StatFailed;
     }
     boost::shared_ptr<Decoder> found;
     {
@@ -203,11 +203,11 @@ void Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*v
             try{
                 found = decodeHeader(filename);
             }catch(const std::invalid_argument& e){
-                cout << e.what() << endl;
+                setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
+                return StatFailed;
             }
         }
     }
-    found->render(time,scale,roi,output);
-    
+    return found->render(time,scale,roi,output);
 }
 

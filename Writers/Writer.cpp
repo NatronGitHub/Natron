@@ -94,7 +94,7 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
     Powiter::LibraryBinary* binary = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
     Encoder* encoder = NULL;
     if(!binary){
-        std::string exc("ERROR: Couldn't find an appropriate encoder for filetype: ");
+        std::string exc("Couldn't find an appropriate encoder for filetype: ");
         exc.append(_fileType);
         exc.append(" (");
         exc.append(getName());
@@ -186,14 +186,18 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
         try{
             encoder = makeEncoder(time,i,viewsCount,renderFormat);
         }catch(const std::exception& e){
-            cout << e.what() << endl;
+            setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
             return StatFailed;
         }
         if(!encoder){
             return StatFailed;
         }
         boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
-        encoder->render(inputImage, i, renderFormat);
+        Powiter::Status st = encoder->render(inputImage, i, renderFormat);
+        if(st != StatOK){
+            QFile::remove(encoder->filename());
+            return st;
+        }
         if(!aborted()){
             // finalize file if needed
             encoder->finalizeFile();

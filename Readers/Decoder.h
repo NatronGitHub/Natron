@@ -54,7 +54,7 @@ public:
     
     /*must be implemented to decode the data for the given roi, and store it in the output image
      at the given scale.*/
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) = 0;
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) = 0;
     
     
     Powiter::Status _readHeader(const QString& filename){

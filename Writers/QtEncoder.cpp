@@ -107,8 +107,9 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-void QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
+Powiter::Status QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
     to_byte_rect(_buf, inputImage->pixelAt(0, 0), roi,inputImage->getRoD(),Powiter::Color::Lut::BGRA,true);
+    return StatOK;
 }
 
 

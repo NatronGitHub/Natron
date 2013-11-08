@@ -376,7 +376,7 @@ ExrDecoder::~ExrDecoder(){
     delete _imp->_inputfile;
 }
 
-void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
+Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
     for (int y = roi.bottom(); y < roi.top(); ++y) {
         Powiter::ChannelSet channels(Powiter::Mask_RGBA);
         Powiter::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);
@@ -392,7 +392,7 @@ void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI&
         // if we're below or above the data window
         if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
             row.eraseAll();
-            return;
+            return Powiter::StatOK;
         }
         
         Imf_::FrameBuffer fbuf;
@@ -426,8 +426,8 @@ void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI&
                 _imp->_inputfile->setFrameBuffer(fbuf);
                 _imp->_inputfile->readPixels(exrY);
             } catch (const std::exception& exc) {
-                cout << exc.what() <<  endl;
-                return;
+                _reader->setPersistentMessage(Powiter::ERROR_MESSAGE, exc.what());
+                return Powiter::StatFailed;
             }
         }
         
@@ -442,4 +442,5 @@ void ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI&
         }
         Powiter::copyRowToImage(row, y, row.left(), output.get());
     }
+    return Powiter::StatOK;
 }

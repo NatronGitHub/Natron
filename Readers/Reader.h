@@ -205,7 +205,8 @@ public:
 
     virtual Powiter::Status preProcessFrame(SequenceTime time) OVERRIDE;
 
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,
+                                   const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 

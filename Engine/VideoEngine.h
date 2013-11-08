@@ -154,7 +154,7 @@ public:
     
     void debug() const;
     
-    void refreshKnobsAndHash();
+    void refreshKnobsAndHashAndClearPersistentMessage();
     
     const Format& getRenderFormat() const {return _renderOutputFormat;}
     

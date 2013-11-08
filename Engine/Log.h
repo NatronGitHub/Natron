@@ -41,14 +41,16 @@ public:
 
     /**
     * @brief Prints the content of 'log' into the log's file. If beginFunction was
-    * not called then it will be called with functionName.
+    * not called then it will be called with functionName. Do not insert line-breaks
+    * the log will do it for you and format the content to 80 columns.
     **/
-    static void print(const std::string& callerName,const std::string& functionName,const std::string& log);
+    static void print(const std::string& log);
 
     /**
-    * @brief Same as print but using printf-like formating.
-    **/
-    static void print(const std::string& callerName,const std::string& functionName,const char *format, ...);
+     * @brief Same as print but using printf-like formating. Do not insert line-breaks
+     * the log will do it for you and format the content to 80 columns.
+     **/
+    static void print(const char *format, ...);
 
     /**
     * @brief Ends a function in the log. It will print a new delimiter

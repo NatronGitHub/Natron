@@ -47,7 +47,7 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "OpenEXR";}
     
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
     
     virtual Powiter::Status readHeader(const QString& filename) OVERRIDE;
     

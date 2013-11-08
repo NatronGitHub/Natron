@@ -131,7 +131,7 @@ public:
     
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
     **/
-	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) = 0;
+	virtual Powiter::Status render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) = 0;
     
     /*@brief can be overloaded to finalize the file. This is called after the last call to render() was made for the frame*/
     virtual void finalizeFile(){}

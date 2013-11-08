@@ -398,14 +398,20 @@ Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
     return StatOK;
 }
 
-void OfxEffectInstance::render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
+Powiter::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
+                                          const RectI& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();
     ofxRoI.y1 = roi.bottom();
     ofxRoI.y2 = roi.top();
     int viewsCount = getApp()->getCurrentProjectViewsCount();
-    effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
+    OfxStatus st = effect_->renderAction((OfxTime)time,kOfxImageFieldNone,ofxRoI,scale,view,viewsCount);
+    if(st != kOfxStatOK){
+        return StatFailed;
+    }else{
+        return StatOK;
+    }
 }
 
 EffectInstance::RenderSafety OfxEffectInstance::renderThreadSafety() const{

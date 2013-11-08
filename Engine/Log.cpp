@@ -20,6 +20,7 @@
 
 #include <QFile>
 #include <QTextStream>
+#include <QMutex>
 
 #include "Global/GlobalDefines.h"
 
@@ -30,14 +31,16 @@ class LogPrivate{
     
 public:
     
+    QMutex _lock;
     QFile* _file;
     QTextStream* _stream;
-    bool _isBetweenBeginAndEnd;
+    int _beginsCount;
 
     LogPrivate():
-        _file(NULL)
-      , _stream(NULL)
-      , _isBetweenBeginAndEnd(false)
+    _lock()
+    , _file(NULL)
+    , _stream(NULL)
+    , _beginsCount(0)
     {}
 
     ~LogPrivate(){
@@ -52,6 +55,7 @@ public:
     }
 
     void open(const std::string& fileName){
+        QMutexLocker locker(&_lock);
         if(_file)
             return;
         _file = new QFile(fileName.c_str());
@@ -64,40 +68,59 @@ public:
             QString filename(POWITER_APPLICATION_NAME "_log.txt");
             open(filename.toStdString());
         }
-        _isBetweenBeginAndEnd = true;
-        _stream->operator <<("************************************************************************\n");
+        QMutexLocker locker(&_lock);
+        _stream->operator <<("********************************************************************************\n");
+        for(int i = 0 ; i < _beginsCount;++i){
+            _stream->operator <<("    ");
+        }
         _stream->operator <<("START ");
         _stream->operator <<(callerName.c_str());
         _stream->operator <<("    ");
         _stream->operator <<(function.c_str());
         _stream->operator <<('\n');
         _stream->flush();
+        ++_beginsCount;
     }
 
-    void print(const std::string& callerName,const std::string& functionName,const std::string& log){
-        bool wasBeginCalled = true;
-        if(!_isBetweenBeginAndEnd){
-            beginFunction(callerName,functionName);
-            wasBeginCalled = false;
+    void print(const std::string& log){
+        QMutexLocker locker(&_lock);
+        assert(_file);
+        for(int i = 0 ; i < _beginsCount;++i){
+            _stream->operator <<("    ");
         }
-        _stream->operator <<("    ");
+        QString str(log.c_str());
+        for (int i = 0; i < str.size();++i) {
+            _stream->operator <<(str.at(i).toAscii());
+            if (i%80 == 0 && i!=0) { // format to 80 columns
+                /*Find closest word end and insert a new line*/
+                while(i < str.size() && str.at(i)!=QChar(' ')){
+                    ++i;
+                    _stream->operator <<(str.at(i).toAscii());
+                }
+                _stream->operator <<('\n');
+                for(int i = 0 ; i < _beginsCount;++i){
+                    _stream->operator <<("    ");
+                }
+            }
+        }
         _stream->operator <<(log.c_str());
         _stream->operator <<('\n');
         _stream->flush();
-        if(!wasBeginCalled){
-            endFunction(callerName,functionName);
-        }
-
     }
 
     void endFunction(const std::string& callerName,const std::string& function){
-        _isBetweenBeginAndEnd = false;
+        QMutexLocker locker(&_lock);
+        --_beginsCount;
+        for(int i = 0 ; i < _beginsCount;++i){
+            _stream->operator <<("    ");
+        }
         _stream->operator <<("STOP ");
         _stream->operator <<(callerName.c_str());
         _stream->operator <<("    ");
         _stream->operator <<(function.c_str());
         _stream->operator <<('\n');
         _stream->flush();
+        
     }
 };
 
@@ -113,18 +136,18 @@ void Log::beginFunction(const std::string& callerName,const std::string& functio
     Log::instance()->_imp->beginFunction(callerName,function);
 }
 
-void Log::print(const std::string& callerName,const std::string& functionName,const std::string& log){
-    Log::instance()->_imp->print(callerName,functionName,log);
+void Log::print(const std::string& log){
+    Log::instance()->_imp->print(log);
 }
 
-void Log::print(const std::string& callerName,const std::string& functionName,const char *format, ...){
+void Log::print(const char *format, ...){
     va_list args;
     va_start(args, format);
     char buf[10000];
     sprintf(buf, format, args);
     va_end(args);
     std::string str(buf);
-    Log::print(callerName,functionName,str);
+    Log::print(str);
 }
 
 

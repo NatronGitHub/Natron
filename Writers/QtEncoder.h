@@ -46,7 +46,7 @@ public:
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual void render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
+	virtual Powiter::Status render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
     
     virtual void finalizeFile() OVERRIDE;
     

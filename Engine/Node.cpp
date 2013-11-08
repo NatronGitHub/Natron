@@ -29,6 +29,7 @@
 #include "Engine/Image.h"
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Log.h"
 
 #include "Readers/Reader.h"
 #include "Writers/Writer.h"
@@ -400,16 +401,27 @@ void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsi
     rod.width() < width ? w = rod.width() : w = width;
     double yZoomFactor = (double)h/(double)rod.height();
     double xZoomFactor = (double)w/(double)rod.width();
-    Powiter::Status stat =  _liveInstance->preProcessFrame(time);
-    if(stat == StatFailed)
-        return;
     {
         QMutexLocker locker(&_nodeInstanceLock);
         while(!_imagesBeingRendered.empty()){
             _imagesBeingRenderedNotEmpty.wait(&_nodeInstanceLock);
         }
     }
-    
+
+#ifdef POWITER_LOG
+    Powiter::Log::beginFunction(getName(),"makePreviewImage");
+    Powiter::Log::print(QString("Time "+QString::number(time)).toStdString());
+#endif
+
+    Powiter::Status stat =  _liveInstance->preProcessFrame(time);
+    if(stat == StatFailed){
+#ifdef POWITER_LOG
+        Powiter::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
+        Powiter::Log::endFunction(getName(),"makePreviewImage");
+#endif
+        return;
+    }
+
     _liveInstance->computeHash(std::vector<U64>());
     RenderScale scale;
     scale.x = scale.y = 1.;
@@ -432,6 +444,9 @@ void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsi
             
         }
     }
+#ifdef POWITER_LOG
+    Powiter::Log::endFunction(getName(),"makePreviewImage");
+#endif
 }
 
 void Powiter::Node::openFilesForAllFileKnobs(){

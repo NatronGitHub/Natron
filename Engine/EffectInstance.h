@@ -202,12 +202,13 @@ public:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual void render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output){
+    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output){
         (void)time;
         (void)scale;
         (void)roi;
         (void)view;
         (void)output;
+        return Powiter::StatOK;
     }
     
     
@@ -439,7 +440,7 @@ private:
     void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     
-    void tiledRenderingFunctor(RenderArgs args,
+    Powiter::Status tiledRenderingFunctor(RenderArgs args,
                                const RectI& roi,
                                boost::shared_ptr<Powiter::Image> output);
 };

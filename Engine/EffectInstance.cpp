@@ -112,6 +112,16 @@ std::string EffectInstance::setInputLabel(int inputNb) const {
 }
 
 boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
+#ifdef POWITER_LOG
+    Powiter::Log::beginFunction(getName(),"getImage");
+    Powiter::Log::print(QString("Input "+QString::number(inputNb)+
+                                                      " Scale ("+QString::number(scale.x)+
+                                                      ","+QString::number(scale.y)+
+                                                     ") Time " + QString::number(time)
+                                                      +" View " + QString::number(view)).toStdString());
+    
+#endif
+    
     const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
@@ -120,6 +130,11 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
     Powiter::ImageKey params = Powiter::Image::makeKey(n->hash().value(), time,scale,view,RectI());
     boost::shared_ptr<const Image > entry = cache.get(params);
     
+
+#ifdef POWITER_LOG
+    Powiter::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
+                                                         QString::number(params.getHash())).toStdString());
+#endif
     if(!entry){
         //if not found in cache render it using the last args passed to render by this thread
         RectI roi;
@@ -130,7 +145,9 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
         }
         entry = n->renderRoI(time, scale, view,roi);
     }
-    
+#ifdef POWITER_LOG
+    Powiter::Log::endFunction(getName(),"getImage");
+#endif
     return entry;
 }
 
@@ -185,7 +202,7 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
 #ifdef POWITER_LOG
     Powiter::Log::beginFunction(getName(),"renderRoI");
-    Powiter::Log::print(getName(),"renderRoI",QString("Time "+QString::number(time)+
+    Powiter::Log::print(QString("Time "+QString::number(time)+
                                                       " Scale ("+QString::number(scale.x)+
                                                       ","+QString::number(scale.y)
                         +") View " + QString::number(view) + " RoI: xmin= "+ QString::number(renderWindow.left()) +
@@ -209,12 +226,26 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
         /*allocate a new image*/
         image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
     }
+#ifdef POWITER_LOG
+    else{
+        Powiter::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
+                                                     QString::number(key.getHash())).toStdString());
+    }
+#endif
     _node->addImageBeingRendered(image, time, view);
     /*now that we have our image, we check what is left to render. If the list contains only
      null rects then we already rendered it all*/
     std::list<RectI> rectsToRender = image->getRestToRender(renderWindow);
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
+            
+#ifdef POWITER_LOG
+        Powiter::Log::print(QString("Rect left to render in the image... xmin= "+
+                                                          QString::number((*it).left())+" ymin= "+
+                                                          QString::number((*it).bottom())+ " xmax= "+
+                                                          QString::number((*it).right())+ " ymax= "+
+                                                          QString::number((*it).top())).toStdString());
+#endif
             
             /*we can set the render args*/
             RenderArgs args;
@@ -233,7 +264,11 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
              in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
-                inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second));
+                try{
+                    inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second));
+                }catch(const std::exception& e){
+                    throw e;
+                }
             }
             /*depending on the thread-safety of the plug-in we render with a different
              amount of threads*/
@@ -242,19 +277,36 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
                 QMutex* pluginLock = appPTR->getMutexForPlugin(className().c_str());
                 assert(pluginLock);
                 pluginLock->lock();
-                render(time, scale, *it,view, image);
+                Powiter::Status st = render(time, scale, *it,view, image);
                 pluginLock->unlock();
+                if(st != Powiter::StatOK){
+                    throw std::runtime_error("");
+                }
                 image->markForRendered(*it);
             }else if(safety == INSTANCE_SAFE){
-                render(time, scale, *it,view, image);
+                Powiter::Status st = render(time, scale, *it,view, image);
+                if(st != Powiter::StatOK){
+                    throw std::runtime_error("");
+                }
                 image->markForRendered(*it);
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
-                QtConcurrent::blockingMap(splitRects,
+                QFuture<Powiter::Status> ret = QtConcurrent::mapped(splitRects,
                                           boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
+                ret.waitForFinished();
+                for (QFuture<Powiter::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
+                    if ((*it) == Powiter::StatFailed) {
+                        throw std::runtime_error("");
+                    }
+                }
             }
         }
     }
+#ifdef POWITER_LOG
+    else{
+        Powiter::Log::print(QString("Everything is already rendered in this image.").toStdString());
+    }
+#endif
     _node->removeImageBeingRendered(time, view);
     
     //we released the input images and force the cache to clear exceeding entries
@@ -270,15 +322,19 @@ boost::shared_ptr<Powiter::Image> EffectInstance::getImageBeingRendered(Sequence
     return _node->getImageBeingRendered(time, view);
 }
 
-void EffectInstance::tiledRenderingFunctor(RenderArgs args,
+Powiter::Status EffectInstance::tiledRenderingFunctor(RenderArgs args,
                                  const RectI& roi,
                                  boost::shared_ptr<Powiter::Image> output){
     
-    render(args._time, args._scale, roi,args._view, output);
     if(_renderArgs){
         _renderArgs->setLocalData(args);
     }
+    Powiter::Status st = render(args._time, args._scale, roi,args._view, output);
+    if(st != StatOK){
+        return st;
+    }
     output->markForRendered(roi);
+    return StatOK;
 }
 
 
