@@ -74,7 +74,7 @@ void QtEncoder::initializeColorSpace(){
 Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
     _rod = rod;
     size_t dataSize = 4 * rod.area();
-    _buf = (uchar*)malloc(dataSize);
+    _buf = (uchar*)calloc(dataSize,sizeof(char));
     const ChannelSet& channels = _writer->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -108,7 +108,7 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
 }
 
 Powiter::Status QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
-    to_byte_rect(_buf, inputImage->pixelAt(0, 0), roi,inputImage->getRoD(),Powiter::Color::Lut::BGRA,true);
+    to_byte_rect(_buf, inputImage->pixelAt(0, 0), inputImage->getRoD(),inputImage->getRoD(),roi,Powiter::Color::Lut::BGRA,true);
     return StatOK;
 }
 

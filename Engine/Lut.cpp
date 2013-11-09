@@ -547,7 +547,7 @@ void Lut::to_float(float *to, const float *from, const float *alpha, int W, int 
 }
 
 void Lut::to_byte_rect(uchar *to, const float *from,
-                       const RectI &rect, const RectI &rod,
+                       const RectI &rect, const RectI& srcRod,const RectI& dstRod,
                        bool invertY , bool premult,
                        Lut::PackedPixelsFormat format) const
 {
@@ -562,10 +562,10 @@ void Lut::to_byte_rect(uchar *to, const float *from,
             error_r = error_g = error_b = 0x80;
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            uchar *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            uchar *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -599,10 +599,10 @@ void Lut::to_byte_rect(uchar *to, const float *from,
             error_r = error_g = error_b = 0x80;
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            uchar *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            uchar *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -635,14 +635,15 @@ void Lut::to_byte_rect(uchar *to, const float *from,
 }
 
 void Lut::to_short_rect(U16 *to, const float *from,
-                        const RectI &rect, const RectI &rod,
+                        const RectI &rect, const RectI& srcRod,const RectI& dstRod,
                         bool invertY , bool premult,
                         Lut::PackedPixelsFormat format) const
 {
     (void)to;
     (void)from;
     (void)rect;
-    (void)rod;
+    (void)srcRod;
+    (void)dstRod;
     (void)invertY;
     (void)premult;
     (void)format;
@@ -650,7 +651,7 @@ void Lut::to_short_rect(U16 *to, const float *from,
 }
 
 void Lut::to_float_rect(float *to, const float *from,
-                        const RectI &rect, const RectI &rod,
+                        const RectI &rect,const RectI& srcRod,const RectI& dstRod,
                         bool invertY , bool premult,
                         Lut::PackedPixelsFormat format) const
 {
@@ -662,10 +663,10 @@ void Lut::to_float_rect(float *to, const float *from,
         for (int y = rect.bottom(); y < rect.top(); ++y) {
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            float *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
@@ -679,10 +680,10 @@ void Lut::to_float_rect(float *to, const float *from,
         for (int y = rect.bottom(); y < rect.top(); ++y) {
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            float *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
@@ -950,7 +951,7 @@ void linear_to_float(float *to, const float *from, const float *alpha, int W, in
 }
 
 void linear_to_byte_rect(uchar *to, const float *from,
-                         const RectI &rect, const RectI &rod,
+                         const RectI &rect, const RectI& srcRod,const RectI& dstRod,
                          bool invertY , bool premult,
                          Lut::PackedPixelsFormat format)
 {
@@ -963,10 +964,10 @@ void linear_to_byte_rect(uchar *to, const float *from,
             error_r = error_g = error_b = 0x80;
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            uchar *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            uchar *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -1000,10 +1001,10 @@ void linear_to_byte_rect(uchar *to, const float *from,
             error_r = error_g = error_b = 0x80;
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            uchar *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            uchar *dst_pixels = to + (y * dstRod.width() * 4);
             /* go fowards from starting point to end of line: */
             for (int x = start; x < rect.right(); ++x) {
                 int col = x * 4;
@@ -1035,14 +1036,15 @@ void linear_to_byte_rect(uchar *to, const float *from,
 }
 
 void linear_to_short_rect(U16 *to, const float *from,
-                          const RectI &rect, const RectI &rod,
+                          const RectI &rect, const RectI& srcRod,const RectI& dstRod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format)
 {
     (void)to;
     (void)from;
     (void)rect;
-    (void)rod;
+    (void)srcRod;
+    (void)dstRod;
     (void)invertY;
     (void)premult;
     (void)format;
@@ -1050,7 +1052,7 @@ void linear_to_short_rect(U16 *to, const float *from,
 }
 
 void linear_to_float_rect(float *to, const float *from,
-                          const RectI &rect, const RectI &rod,
+                          const RectI &rect,const RectI& srcRod,const RectI& dstRod,
                           bool invertY , bool premult,
                           Lut::PackedPixelsFormat format)
 {
@@ -1058,10 +1060,10 @@ void linear_to_float_rect(float *to, const float *from,
         for (int y = rect.bottom(); y < rect.top(); ++y) {
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            float *dst_pixels = to + (y * dstRod.width() * 4);
             if (format == Lut::RGBA) {
                 memcpy(dst_pixels, src_pixels, rect.width()*sizeof(float));
             } else {
@@ -1082,10 +1084,10 @@ void linear_to_float_rect(float *to, const float *from,
         for (int y = rect.bottom(); y < rect.top(); ++y) {
             int srcY = y;
             if (invertY) {
-                srcY = rod.top() - y - 1;
+                srcY = srcRod.top() - y - 1;
             }
-            const float *src_pixels = from + (srcY * rod.width() * 4);
-            float *dst_pixels = to + (y * rod.width() * 4);
+            const float *src_pixels = from + (srcY * srcRod.width() * 4);
+            float *dst_pixels = to + (y * dstRod.width() * 4);
             for (int x = rect.left(); x < rect.right(); ++x) {
                 int col = x * 4;
                 float a = src_pixels[col + 3];

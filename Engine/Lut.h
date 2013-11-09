@@ -110,7 +110,8 @@ public:
      * @param to[out] The buffer to write to. It must point to (rod.left(),rod.bottom()).
      * @param from[in] The buffer to read from. It must point to (rod.left(),rod.bottom()).
      * @param rect[in] The rectangle portion to copy over. It must be clipped to the rod.
-     * @param rod[in] The region of definition of the input and output buffers.
+     * @param srcRod[in] The region of definition of the input buffer.
+     * @param dstRod[in] The region of definition of the output buffer.
      * @param invertY[in] If true, then it will use for the output scan-line y the input scan-line srcY = rod.top() - y - 1
      * @param premult[in] Should the output pixels be pre-multiplied by alpha ?
      * @param format[in] Specifies the pixel packing format of the OUTPUT buffer. This function assumes the 'from' buffer
@@ -118,15 +119,15 @@ public:
      * WARNING: to and from must have exactly the same pixels count.
      **/
     void to_byte_rect(uchar* to, const float* from,
-                      const RectI& rect,const RectI& rod,
+                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                       bool invertY,bool premult,
                       Lut::PackedPixelsFormat format) const;
     void to_short_rect(U16* to, const float* from,
-                       const RectI& rect,const RectI& rod,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                        bool invertY ,bool premult,
                        Lut::PackedPixelsFormat format) const;
     void to_float_rect(float* to, const float* from,
-                       const RectI& rect,const RectI& rod,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                        bool invertY,bool premult,
                        Lut::PackedPixelsFormat format) const;
     
@@ -324,15 +325,15 @@ void linear_to_float(float* to, const float* from,const float* alpha, int W, int
      * WARNING: to and from must have exactly the same pixels count.
      **/
 void linear_to_byte_rect(uchar* to, const float* from,
-                         const RectI& rect,const RectI& rod,
+                         const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                          bool invertY,bool premult,
                          Lut::PackedPixelsFormat format);
 void linear_to_short_rect(U16* to, const float* from,
-                          const RectI& rect,const RectI& rod,
+                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                           bool invertY,bool premult,
                           Lut::PackedPixelsFormat format);
 void linear_to_float_rect(float* to, const float* from,
-                          const RectI& rect,const RectI& rod,
+                          const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                           bool invertY,bool premult,
                           Lut::PackedPixelsFormat format);
 

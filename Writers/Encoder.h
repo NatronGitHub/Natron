@@ -184,17 +184,17 @@ public:
      * @brief to_byte converts a RGBA packed-buffer of float to a RGBA packed-buffer of bytes to the output color-space.
      */
     void to_byte_rect(uchar* to, const float* from,
-                      const RectI& rect,const RectI& rod,
+                      const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to shorts output buffer.**/
     void to_short_rect(U16* to, const float* from,
-                       const RectI& rect,const RectI& rod,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                        Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to float output buffer**/
     void to_float_rect(float* to, const float* from,
-                       const RectI& rect,const RectI& rod,
+                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
                        Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
     
 protected:
