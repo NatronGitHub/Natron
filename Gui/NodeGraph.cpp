@@ -1048,7 +1048,16 @@ void NodeGraph::populateMenu(){
     displayCacheInfoAction->setChecked(true);
     QObject::connect(displayCacheInfoAction,SIGNAL(triggered()),this,SLOT(toggleCacheInfos()));
     _menu->addAction(displayCacheInfoAction);
-    //  const std::map<QString,ToolButton*>& toolButtons = _gui->getToolButtons();
+    
+    const std::vector<ToolButton*>& toolButtons = _gui->getToolButtons();
+    for(U32 i = 0; i < toolButtons.size();++i){
+        //if the toolbutton is a root (no parent), add it in the toolbox
+        if(toolButtons[i]->_menu && !toolButtons[i]->_pluginToolButton->_parent){
+            toolButtons[i]->_menu->setIcon(toolButtons[i]->_icon);
+            _menu->addAction(toolButtons[i]->_menu->menuAction());
+        }
+
+    }
 }
 
 void NodeGraph::showMenu(const QPoint& pos){

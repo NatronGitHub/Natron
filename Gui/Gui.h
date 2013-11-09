@@ -236,6 +236,8 @@ public:
     
     ToolButton* findOrCreateToolButton(PluginToolButton* plugin);
     
+    const std::vector<ToolButton*>& getToolButtons() const {return _toolButtons;}
+    
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     
