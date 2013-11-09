@@ -8,9 +8,6 @@
 *
 */
 
-#ifdef _WIN32
-//#include <vld.h> //< visual studio memory leaks finder header
-#endif
 #include <iostream>
 #include <QApplication>
 #include <QtCore/QObject>
@@ -35,12 +32,19 @@ void registerMetaTypes(){
 
 }
 
+void printBackGroundWelcomeMessage(){
+    std::cout << "================================================================================" << std::endl;
+    std::cout << POWITER_APPLICATION_NAME << "    " << " version: " << POWITER_VERSION_STRING << std::endl;
+    std::cout << ">>>Running in background mode (off-screen rendering only).<<<" << std::endl;
+    std::cout << "Please note that the background mode is in early stage and accepts only project files "
+    "that would produce a valid output from the graphical version of "POWITER_APPLICATION_NAME
+    ". If the background mode doesn't output any result, please adjust your project via the application interface "
+    "and then re-try using the background mode." << std::endl;
+}
+
 int main(int argc, char *argv[])
 {	
-#ifdef _WIN32
-	//VLDEnable();
-	//VLDReportLeaks();
-#endif
+
     QApplication app(argc, argv);
     app.setOrganizationName(POWITER_ORGANIZATION_NAME);
     app.setOrganizationDomain(POWITER_ORGANIZATION_DOMAIN);
@@ -49,8 +53,9 @@ int main(int argc, char *argv[])
     registerMetaTypes();
     
 #ifdef POWITER_LOG
-    Powiter::Log::instance();
+    Powiter::Log::instance();//< enable logging
 #endif
+    
     /*Display a splashscreen while we wait for the engine to load*/
     QString filename("");
     filename.append(POWITER_IMAGES_PATH"splashscreen.png");
@@ -64,18 +69,32 @@ int main(int argc, char *argv[])
 #endif
     QCoreApplication::processEvents();
     
-    AppManager* manager = AppManager::instance();
     
+    
+    AppManager* manager = AppManager::instance(); //< load the AppManager singleton
+    
+    /*Parse args to find a valid project file name. This is not fool-proof: 
+     any file with a matching extension will pass through...
+     @TODO : use some magic number to identify uniquely the project file type.*/
     QString projectFile;
+    bool isBackGround = false;
     QStringList args = QCoreApplication::arguments();
     for (int i = 0 ; i < args.size(); ++i) {
         if(args.at(i).contains("." POWITER_PROJECT_FILE_EXTENION)){
             projectFile = args.at(i);
+        }else if(args.at(i) == "--background"){
+            isBackGround = true;
         }
     }
-
-    manager->newAppInstance(false,projectFile);
-	    
+    
+    if(isBackGround){
+        printBackGroundWelcomeMessage();
+    }
+    
+    if(!manager->newAppInstance(isBackGround,projectFile)){
+        return 1;
+    }
+	   
     splashScreen->hide();
     delete splashScreen;
     

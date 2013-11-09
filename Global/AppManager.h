@@ -48,6 +48,7 @@ class VideoEngine;
 class QMutex;
 class OutputNodeInstance;
 class TimeLine;
+
 namespace Powiter {
 class LibraryBinary;
 class EffectInstance;
@@ -205,6 +206,28 @@ private:
 
 };
 
+class PluginToolButton{
+    
+public:
+    PluginToolButton(const QString& name,
+                     const QString& iconPath)
+    :
+     _name(name)
+    , _iconPath(iconPath)
+    , _children()
+    , _parent(NULL)
+    {
+        
+    }
+    
+    void tryAddChild(PluginToolButton* plugin);
+    
+    QString _name;
+    QString _iconPath;
+    std::vector<PluginToolButton*> _children;
+    PluginToolButton* _parent;
+};
+
 class AppManager : public QObject, public Singleton<AppManager>
 {
     
@@ -212,25 +235,6 @@ class AppManager : public QObject, public Singleton<AppManager>
     
 public:
     
-    class PluginToolButton{
-    public:
-        PluginToolButton(const QStringList& groups,
-                         const QString& pluginName,
-                         const QString& pluginIconPath,
-                         const QString& groupIconPath):
-            _groups(groups),
-            _pluginName(pluginName),
-            _pluginIconPath(pluginIconPath),
-            _groupIconPath(groupIconPath)
-        {
-            
-        }
-        QStringList _groups;
-        QString _pluginName;
-        QString _pluginIconPath;
-        QString _groupIconPath;
-        
-    };
     
     typedef std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> >::iterator ReadPluginsIterator;
     typedef ReadPluginsIterator WritePluginsIterator;
@@ -281,6 +285,7 @@ public:
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
+    PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
 
 public slots:
 
@@ -329,8 +334,8 @@ private:
 
     void loadBuiltinFormats();
 
-
     void printPluginsLoaded();
+
 
     std::map<int,AppInstance*> _appInstances;
 
@@ -369,8 +374,7 @@ inline void errorDialog(const std::string& title,const std::string& message){
     if(!topLvlInstance->isBackground()){
         topLvlInstance->errorDialog(title,message);
     }else{
-        std::cout << title << std::endl;
-        std::cout << message << std::endl;
+        std::cout << "ERROR: " << message << std::endl;
     }
     
 }
@@ -381,8 +385,7 @@ inline void warningDialog(const std::string& title,const std::string& message){
     if(!topLvlInstance->isBackground()){
         topLvlInstance->warningDialog(title,message);
     }else{
-        std::cout << title << std::endl;
-        std::cout << message << std::endl;
+        std::cout << "WARNING: "<< message << std::endl;
     }
 }
 
@@ -392,8 +395,7 @@ inline void informationDialog(const std::string& title,const std::string& messag
     if(!topLvlInstance->isBackground()){
         topLvlInstance->informationDialog(title,message);
     }else{
-        std::cout << title << std::endl;
-        std::cout << message << std::endl;
+        std::cout << "INFO: "<< message << std::endl;
     }
 }
 
@@ -406,8 +408,8 @@ inline Powiter::StandardButton questionDialog(const std::string& title,const std
     if(!topLvlInstance->isBackground()){
         return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
     }else{
-        std::cout << title << std::endl;
-        std::cout << message << std::endl;
+        std::cout << "QUESTION ASKED: " << message << std::endl;
+        std::cout << POWITER_APPLICATION_NAME " answered yes." << std::endl;
         return Powiter::Yes;
     }
 }

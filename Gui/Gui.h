@@ -61,55 +61,49 @@ class Gui;
 class SpinBox;
 class LineEdit;
 class DockablePanel;
-
+class PluginToolButton;
 
 namespace Powiter{
     class Node;
 }
 
-/*Holds just a reference to an action*/
-class ActionRef : public QObject{
+
+class ToolButton : public QObject {
     Q_OBJECT
     
+    
     AppInstance* _app;
-public:
-    
-    ActionRef(AppInstance* app,QAction* action,const QString& nodeName):_app(app),_action(action),_nodeName(nodeName){
-        QObject::connect(action, SIGNAL(triggered()), this, SLOT(onTriggered()));
-    }
-    virtual ~ActionRef(){QObject::disconnect(_action, SIGNAL(triggered()), this, SLOT(onTriggered()));}
-    
-    QAction* _action;
-    QString _nodeName;
-    
-    public slots:
-    void onTriggered();
-
-};
-
-class ToolButton : public QToolButton{
-    AppInstance* _app;
-    QMenu* _menu;
-    std::vector<QMenu*> _subMenus;
-    std::vector<ActionRef*> _actions;
 public:
     
     ToolButton(AppInstance* app,
-               const QString& actionName,
-               const QStringList& firstElement,
-               const QString& pluginName,
-               QIcon pluginIcon = QIcon(),
-               QIcon groupIcon = QIcon(),
-               QWidget* parent = 0);
+               PluginToolButton* pluginToolButton,
+               const QString& name,
+               QIcon icon = QIcon()):
+     _app(app)
+    , _pluginToolButton(pluginToolButton)
+    , _name(name)
+    ,_icon(icon)
+    ,_menu(NULL)
+    ,_children()
+    ,_action(NULL)
+    {
+        
+    }
     
-    void addTool(const QString& actionName,
-                 const QStringList& grouping,
-                 const QString& pluginName,
-                 QIcon pluginIcon = QIcon());
+    void tryAddChild(ToolButton* child);
     
-    virtual ~ToolButton();
+    virtual ~ToolButton(){}
 
+    QString _name;
+    QIcon _icon;
+    QMenu* _menu;
+    std::vector<ToolButton*> _children;
+    QAction* _action;
+    PluginToolButton* _pluginToolButton;
     
+public slots:
+    void onTriggered();
+
 };
 
 /*This class represents a floating pane that embeds a widget*/
@@ -238,11 +232,10 @@ public:
     
     void loadStyleSheet();
     
-    void addPluginToolButton(const QString& actionName,
-                             const QStringList& groups,
-                             const QString& pluginName,
-                             const QString& pluginIconPath,
-                             const QString& groupIconPath);
+    ToolButton* findExistingToolButton(const QString& name) const;
+    
+    ToolButton* findOrCreateToolButton(PluginToolButton* plugin);
+    
     void addUndoRedoActions(QAction* undoAction,QAction* redoAction);
 
     
@@ -266,14 +259,12 @@ public:
     AppInstance* getApp() { return _appInstance; }
     
     void showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
-
-    const std::map<QString,ToolButton*>& getToolButtons() const {return _toolGroups;}
     
     void updateViewsActions(int viewsCount);
     
     static QKeySequence keySequenceForView(int v);
         
-    
+
 private:
 
     void addNodeGraph();
@@ -281,6 +272,7 @@ private:
     void restoreGuiGeometry();
     
     void saveGuiGeometry();
+    
 
 signals:
     
@@ -333,6 +325,8 @@ public slots:
     
     void putSettingsPanelFirst(DockablePanel* panel);
     
+    void addToolButttonsToToolBar();
+
 private:
     
     AppInstance* _appInstance;
@@ -398,7 +392,7 @@ public:
     
     /*TOOLBOX*/
     QToolBar* _toolBox;
-    std::map<QString,ToolButton*> _toolGroups;
+    std::vector<ToolButton*> _toolButtons;
     
     /*PROPERTIES*/
     //======================

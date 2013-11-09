@@ -122,7 +122,7 @@ _projectGui(0)
 {
     QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)),this,
                      SLOT(onDoDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)));
-    
+    QObject::connect(app,SIGNAL(pluginsPopulated()),this,SLOT(addToolButttonsToToolBar()));
 }
 
 Gui::~Gui()
@@ -1010,115 +1010,100 @@ QWidget* Gui::findExistingTab(const std::string& name) const{
         return NULL;
     }
 }
-
-void Gui::addPluginToolButton(const QString& actionName,
-                              const QStringList& groups,
-                              const QString& pluginName,
-                              const QString& pluginIconPath,
-                              const QString& groupIconPath){
-    
-    QIcon pluginIcon,groupIcon;
-    if(!pluginIconPath.isEmpty() && QFile::exists(pluginIconPath)){
-        pluginIcon.addFile(pluginIconPath);
-    }
-    if(!groupIconPath.isEmpty() && QFile::exists(groupIconPath)){
-        groupIcon.addFile(groupIconPath);
-    }else{
-        groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
-    }
-    QString mainGroup;
-    if(groups.size()){
-        mainGroup = groups[0];
-    }else{
-        mainGroup = PLUGIN_GROUP_DEFAULT;
-        groupIcon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
-    }
-    
-    std::map<QString,ToolButton*>::iterator found =  _toolGroups.find(mainGroup);
-    if(found != _toolGroups.end()){
-        found->second->addTool(actionName,groups,pluginName,pluginIcon);
-    }else{
-        ToolButton* tb = new ToolButton(_appInstance,actionName,groups,pluginName,pluginIcon,groupIcon,_toolBox);
-        _toolBox->addWidget(tb);
-        tb->setToolTip(mainGroup);
-        _toolGroups.insert(make_pair(mainGroup,tb));
-    }
-    
-}
-ToolButton::ToolButton(AppInstance* app,
-                       const QString& actionName,
-                       const QStringList& firstElement,
-                       const QString& pluginName,
-                       QIcon pluginIcon , QIcon groupIcon ,
-                       QWidget* parent)
-: QToolButton(parent)
-, _app(app)
-, _menu(0)
-, _subMenus()
-, _actions()
-{
-    setPopupMode(QToolButton::InstantPopup);
-    _menu = new QMenu(this);
-    if(!groupIcon.isNull())
-        setIcon(groupIcon);
-    setMenu(_menu);
-    setMaximumSize(35,35);
-    
-    QMenu* _lastMenu = _menu;
-    for (int i = 1; i < firstElement.size(); ++i) {
-        _lastMenu = _lastMenu->addMenu(firstElement[i]);
-        _subMenus.push_back(_lastMenu);
-    }
-    QAction* action = 0;
-    if(pluginIcon.isNull()){
-        action = _lastMenu->addAction(pluginName);
-    }else{
-        action = _lastMenu->addAction(pluginIcon, pluginName);
-    }
-    ActionRef* actionRef = new ActionRef(_app,action,actionName);
-    _actions.push_back(actionRef);
-    
-}
-ToolButton::~ToolButton(){
-    for(U32 i = 0; i < _actions.size() ; ++i) {
-        delete _actions[i];
-    }
-}
-
-void ToolButton::addTool(const QString& actionName,const QStringList& grouping,const QString& pluginName,QIcon pluginIcon){
-    std::vector<std::string> subMenuToAdd;
-    int index = 1;
-    QMenu* lastMenu = _menu;
-    while(index < (int)grouping.size()){
-        bool found = false;
-        for (U32 i =  0; i < _subMenus.size(); ++i) {
-            if (_subMenus[i]->title() == QString(grouping[index])) {
-                lastMenu = _subMenus[i];
-                found = true;
-                break;
-            }
+ToolButton* Gui::findExistingToolButton(const QString& name) const{
+    for(U32 i = 0; i < _toolButtons.size();++i){
+        if(_toolButtons[i]->_name == name){
+            return _toolButtons[i];
         }
-        if(!found)
-            break;
-        ++index;
     }
-    for(int i = index; i < (int)grouping.size() ; ++i) {
-        QMenu* menu = lastMenu->addMenu(grouping[index]);
-        _subMenus.push_back(menu);
-        lastMenu = menu;
+    return NULL;
+}
+
+ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
+    for(U32 i = 0; i < _toolButtons.size();++i){
+        if(_toolButtons[i]->_name == plugin->_name){
+            return _toolButtons[i];
+        }
     }
-    QAction* action = 0;
-    if(pluginIcon.isNull()){
-        action = lastMenu->addAction(pluginName);
+    
+    //first-off create the tool-button's parent, if any
+    ToolButton* parentToolButton = NULL;
+    if(plugin->_parent)
+        parentToolButton = findOrCreateToolButton(plugin->_parent);
+    
+    QIcon icon;
+    if(!plugin->_iconPath.isEmpty() && QFile::exists(plugin->_iconPath)){
+        icon.addFile(plugin->_iconPath);
     }else{
-        action = lastMenu->addAction(pluginIcon, pluginName);
+        icon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
     }
-    ActionRef* actionRef = new ActionRef(_app,action,actionName);
-    _actions.push_back(actionRef);
+    //if the tool-button has no children, this is a leaf, we must create an action
+    bool isLeaf = false;
+    if(plugin->_children.empty()){
+        isLeaf = true;
+        //if the plugin has no children and no parent, put it in the "others" group
+        if(!plugin->_parent){
+            ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
+            PluginToolButton* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH);
+            othersToolButton->tryAddChild(plugin);
+            
+            //if the othersGroup doesn't exist, create it
+            if(!othersGroup){
+                othersGroup = findOrCreateToolButton(othersToolButton);
+            }
+            parentToolButton = othersGroup;
+        }
+    }
+    ToolButton* pluginsToolButton = new ToolButton(_appInstance,plugin,plugin->_name,icon);
+    if(isLeaf){
+        assert(parentToolButton);
+        pluginsToolButton->_action = new QAction(this);
+        pluginsToolButton->_action->setText(pluginsToolButton->_name);
+        pluginsToolButton->_action->setIcon(pluginsToolButton->_icon);
+        QObject::connect(pluginsToolButton->_action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
+    }else{
+        pluginsToolButton->_menu = new QMenu(this);
+        pluginsToolButton->_menu->setTitle(pluginsToolButton->_name);
+        pluginsToolButton->_action = pluginsToolButton->_menu->menuAction();
+    }
+    //if it has a parent, add the new tool button as a child
+    if(parentToolButton){
+        parentToolButton->tryAddChild(pluginsToolButton);
+    }
+    _toolButtons.push_back(pluginsToolButton);
+    return pluginsToolButton;
 }
-void ActionRef::onTriggered(){
-    _app->createNode(_nodeName);
+
+void ToolButton::tryAddChild(ToolButton* child){
+    assert(_menu);
+    for(unsigned int i = 0; i < _children.size();++i){
+        if(_children[i] == child){
+            return;
+        }
+    }
+    _children.push_back(child);
+    _menu->addAction(child->_action);
 }
+
+
+void ToolButton::onTriggered(){
+    _app->createNode(_name);
+}
+void Gui::addToolButttonsToToolBar(){
+    for (U32 i = 0; i < _toolButtons.size(); ++i) {
+        
+        //if the toolbutton is a root (no parent), add it in the toolbox
+        if(_toolButtons[i]->_menu && !_toolButtons[i]->_pluginToolButton->_parent){
+            QToolButton* button = new QToolButton(_toolBox);
+            button->setIcon(_toolButtons[i]->_icon);
+            button->setMenu(_toolButtons[i]->_menu);
+            button->setPopupMode(QToolButton::InstantPopup);
+            button->setToolTip(_toolButtons[i]->_name);
+            _toolBox->addWidget(button);
+        }
+    }
+}
+
 void Gui::addUndoRedoActions(QAction* undoAction,QAction* redoAction){
     menuEdit->addAction(undoAction);
 	menuEdit->addAction(redoAction);

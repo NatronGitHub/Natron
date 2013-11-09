@@ -37,9 +37,9 @@ Powiter::OfxHost::OfxHost()
     _properties.setStringProperty(kOfxPropLabel, POWITER_APPLICATION_NAME);
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
-    _properties.setIntProperty(kOfxPropVersion, 1 , 0); //Software version v1.0
-    _properties.setIntProperty(kOfxPropVersion, 0 , 1);
-    _properties.setStringProperty(kOfxPropVersionLabel, "1.0");
+    _properties.setIntProperty(kOfxPropVersion, POWITER_VERSION_MAJOR , 0); //Software version v1.0
+    _properties.setIntProperty(kOfxPropVersion, POWITER_VERSION_MINOR , 1);
+    _properties.setStringProperty(kOfxPropVersionLabel, POWITER_VERSION_STRING);
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);

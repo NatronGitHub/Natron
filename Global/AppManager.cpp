@@ -63,6 +63,12 @@ using namespace Powiter;
 using std::cout; using std::endl;
 using std::make_pair;
 
+
+static void printUsage(){
+    
+}
+
+
 AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName):
 _gui(NULL)
 , _currentProject(new Powiter::Project(this))
@@ -77,20 +83,18 @@ _gui(NULL)
 
     if(!_isBackground){
         _gui = new Gui(this);
+    }else{
+        // cannot start a background process without a file
+        throw std::invalid_argument("Project file name empty");
     }
     _currentProject->initializeKnobs();
     
     if(!_isBackground){
         _gui->createGui();
-        const std::vector<AppManager::PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
+        const std::vector<PluginToolButton*>& _toolButtons = appPTR->getPluginsToolButtons();
         for (U32 i = 0; i < _toolButtons.size(); ++i) {
             assert(_toolButtons[i]);
-            QString name = _toolButtons[i]->_pluginName;
-            _gui->addPluginToolButton(name,
-                                      _toolButtons[i]->_groups,
-                                      _toolButtons[i]->_pluginName,
-                                      _toolButtons[i]->_pluginIconPath,
-                                      _toolButtons[i]->_groupIconPath);
+            _gui->findOrCreateToolButton(_toolButtons[i]);
         }
         emit pluginsPopulated();
         _gui->show();
@@ -415,7 +419,14 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
 }
 
 AppInstance* AppManager::newAppInstance(bool background,const QString& projectName){
-    AppInstance* instance = new AppInstance(background,_availableID,projectName);
+    AppInstance* instance = 0;
+    try{
+        instance = new AppInstance(background,_availableID,projectName);
+    }catch(const std::exception& e){
+        Powiter::errorDialog(POWITER_APPLICATION_NAME, e.what());
+        printUsage();
+        return NULL;
+    }
     ++_availableID;
     return instance;
 }
@@ -927,11 +938,45 @@ Format* AppManager::findExistingFormat(int w, int h, double pixel_aspect) const 
     return NULL;
 }
 
+void PluginToolButton::tryAddChild(PluginToolButton* plugin){
+    for(unsigned int i = 0; i < _children.size() ; ++i){
+        if(_children[i] == plugin)
+            return;
+    }
+    _children.push_back(plugin);
+}
+
 void AppManager::addPluginToolButtons(const QStringList& groups,
                                       const QString& pluginName,
                                       const QString& pluginIconPath,
                                       const QString& groupIconPath){
-    _toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
+    PluginToolButton* parent = NULL;
+    for(int i = 0; i < groups.size();++i){
+        
+        PluginToolButton* child = findPluginToolButtonOrCreate(groups.at(i),groupIconPath);
+        if(parent){
+            parent->tryAddChild(child);
+            child->_parent = parent;
+        }
+        parent = child;
+        
+    }
+    PluginToolButton* lastChild = findPluginToolButtonOrCreate(pluginName,pluginIconPath);
+    if(parent){
+        parent->tryAddChild(lastChild);
+        lastChild->_parent = parent;
+    }
+
+    //_toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
+}
+PluginToolButton* AppManager::findPluginToolButtonOrCreate(const QString& name,const QString& iconPath){
+    for(U32 i = 0 ; i < _toolButtons.size();++i){
+        if(_toolButtons[i]->_name == name)
+            return _toolButtons[i];
+    }
+    PluginToolButton* ret = new PluginToolButton(name,iconPath);
+    _toolButtons.push_back(ret);
+    return ret;
 }
 
 void AppManager::setAsTopLevelInstance(int appID){
