@@ -115,7 +115,7 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
     QString filename(_filename.c_str());
     int i = filename.lastIndexOf(QChar('.'));
     if(i != -1){
-        filename.truncate(i+1); // truncate the extension
+        filename.truncate(i); // truncate the extension
     }
     filename.append(viewToString(view,totalViews));
     filename.append('.');
