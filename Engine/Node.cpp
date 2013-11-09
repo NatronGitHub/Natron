@@ -598,6 +598,10 @@ InspectorNode::~InspectorNode(){
 
 bool InspectorNode::connectInput(Node* input,int inputNumber,bool autoConnection) {
     assert(input);
+    if(input == this){
+        return false;
+    }
+    
     InputMap::iterator found = _inputs.find(inputNumber);
 //    if(/*input->className() == "Viewer" && */found!=_inputs.end() && !found->second){
 //        return false;

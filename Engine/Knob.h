@@ -153,6 +153,8 @@ public:
     
     bool canBeUndone() const {return _canUndo;}
     
+    bool isInsignificant() const {return _isInsignificant;}
+    
     void setHintToolTip(const std::string& hint){_tooltipHint = hint;}
     
     const std::string& getHintToolTip() const {return _tooltipHint;}

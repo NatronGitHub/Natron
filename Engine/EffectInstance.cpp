@@ -463,16 +463,20 @@ void OutputEffectInstance::refreshAndContinueRender(bool initViewer){
 void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     /*If the rod is infinite clip it to the project's default*/
     const Format& projectDefault = getRenderFormat();
-    if(rod->left() == kOfxFlagInfiniteMin || rod->left() == -std::numeric_limits<double>::infinity()){
+    if(rod->left() == kOfxFlagInfiniteMin || rod->left() == -std::numeric_limits<double>::infinity()
+       || rod->left() == -std::numeric_limits<int>::infinity()){
         rod->set_left(projectDefault.left());
     }
-    if(rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == -std::numeric_limits<double>::infinity()){
+    if(rod->bottom() == kOfxFlagInfiniteMin || rod->bottom() == -std::numeric_limits<double>::infinity()
+       || rod->bottom() == -std::numeric_limits<int>::infinity()){
         rod->set_bottom(projectDefault.bottom());
     }
-    if(rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<double>::infinity()){
+    if(rod->right() == kOfxFlagInfiniteMax || rod->right() == std::numeric_limits<double>::infinity()
+        || rod->right() == std::numeric_limits<int>::infinity()){
         rod->set_right(projectDefault.right());
     }
-    if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()){
+    if(rod->top() == kOfxFlagInfiniteMax || rod->top()  == std::numeric_limits<double>::infinity()
+       || rod->top() == std::numeric_limits<int>::infinity()){
         rod->set_top(projectDefault.top());
     }
     

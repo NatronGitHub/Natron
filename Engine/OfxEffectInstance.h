@@ -38,7 +38,7 @@ class OfxOverlayInteract;
 }
 
 
-class OfxEffectInstance : public Powiter::EffectInstance {
+class OfxEffectInstance : public Powiter::OutputEffectInstance {
     
     Powiter::OfxImageEffectInstance* effect_;
     bool _isOutput;//if the OfxNode can output a file somehow
@@ -78,6 +78,8 @@ public:
     
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const;
+    
+    void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
     
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual bool isGenerator() const OVERRIDE;

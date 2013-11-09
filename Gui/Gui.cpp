@@ -56,7 +56,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #define PLUGIN_GROUP_DEFAULT "Other"
 #define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
- 
+
 using namespace Powiter;
 using std::make_pair;
 
@@ -544,7 +544,7 @@ void Gui::setupUi()
 	cacheMenu->addAction(actionClearPlayBackCache);
 	cacheMenu->addAction(actionClearNodeCache);
 	retranslateUi(this);
-
+    
     QObject::connect(actionFullScreen, SIGNAL(triggered()),this,SLOT(toggleFullScreen()));
     QObject::connect(actionClearDiskCache, SIGNAL(triggered()),appPTR,SLOT(clearDiskCache()));
     QObject::connect(actionClearPlayBackCache, SIGNAL(triggered()),appPTR,SLOT(clearPlaybackCache()));
@@ -762,7 +762,7 @@ void Gui::removeViewerTab(ViewerTab* tab,bool initiatedFromNode,bool deleteData)
     if (it != _viewerTabs.end()) {
         _viewerTabs.erase(it);
     }
-
+    
     if(deleteData){
         if (!initiatedFromNode) {
             assert(_nodeGraphTab);
@@ -787,7 +787,7 @@ void Gui::addNodeGraph() {
     _nodeGraphTab = new NodeGraphTab(this,_workshopPane);
     assert(_workshopPane);
     _workshopPane->appendTab("Node graph",_nodeGraphTab->_nodeGraphArea);
-   
+    
 }
 
 void Gui::moveTab(QWidget* what,TabWidget *where){
@@ -822,7 +822,7 @@ void Gui::moveTab(QWidget* what,TabWidget *where){
             name = "Properties";
         else return;
         
-    }    
+    }
     from->removeTab(what);
     where->appendTab(name, what);
 }
@@ -836,7 +836,7 @@ NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
     _graphScene = new QGraphicsScene;
 	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
-
+    
 }
 
 void Gui::splitPaneHorizontally(TabWidget* what){
@@ -926,7 +926,7 @@ void Gui::closePane(TabWidget* what) {
         _panes.erase(it);
     }
     
-   
+    
     
     /*Only sub-panes are closable. That means the splitter owning them must also
      have a splitter as parent*/
@@ -1181,8 +1181,8 @@ int Gui::saveWarning(){
     
     if(!isGraphWorthless() && !_appInstance->isSaveUpToDate()){
         QMessageBox::StandardButton ret =  QMessageBox::question(this, "",
-                                     QString("Save changes to " + _appInstance->getCurrentProjectName() + " ?"),
-                                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
+                                                                 QString("Save changes to " + _appInstance->getCurrentProjectName() + " ?"),
+                                                                 QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,QMessageBox::Save);
         if(ret == QMessageBox::Escape || ret == QMessageBox::Cancel){
             return 2;
         }else if(ret == QMessageBox::Discard){
@@ -1192,40 +1192,55 @@ int Gui::saveWarning(){
         }
     }
     return -1;
-
+    
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
-    QMutexLocker locker(&_uiUsingMainThreadMutex);
-    _uiUsingMainThread = true;
     Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
-    emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
-    while(_uiUsingMainThread){
-        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    if(QThread::currentThread() != qApp->thread()){
+        QMutexLocker locker(&_uiUsingMainThreadMutex);
+        _uiUsingMainThread = true;
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        while(_uiUsingMainThread){
+            _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+        }
+    }else{
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
     }
 }
 
 void Gui::warningDialog(const std::string& title,const std::string& text){
-    QMutexLocker locker(&_uiUsingMainThreadMutex);
-    _uiUsingMainThread = true;
     Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
-    emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
-    while(_uiUsingMainThread){
-        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    if(QThread::currentThread() != qApp->thread()){
+        QMutexLocker locker(&_uiUsingMainThreadMutex);
+        _uiUsingMainThread = true;
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        while(_uiUsingMainThread){
+            _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+        }
+    }else{
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
     }
 }
 
 void Gui::informationDialog(const std::string& title,const std::string& text){
-    QMutexLocker locker(&_uiUsingMainThreadMutex);
-    _uiUsingMainThread = true;
     Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
-    emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
-    while(_uiUsingMainThread){
-        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    if(QThread::currentThread() != qApp->thread()){
+        QMutexLocker locker(&_uiUsingMainThreadMutex);
+        _uiUsingMainThread = true;
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        while(_uiUsingMainThread){
+            _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+        }
+    }else{
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
     }
 }
 void Gui::onDoDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB){
-    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    
+    if(QThread::currentThread() != qApp->thread()){
+        _uiUsingMainThreadMutex.lock();
+    }
     if(type == 0){
         QMessageBox::critical(this, title, content);
     }else if(type == 1){
@@ -1237,20 +1252,28 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Powite
                                                                                    (QMessageBox::StandardButtons)buttons,
                                                                                    (QMessageBox::StandardButtons)defaultB);
     }
-    _uiUsingMainThread = false;
-    _uiUsingMainThreadCond.wakeOne();
+    if(QThread::currentThread() != qApp->thread()){
+        _uiUsingMainThread = false;
+        _uiUsingMainThreadCond.wakeOne();
+        _uiUsingMainThreadMutex.unlock();
+    }
 }
 
 Powiter::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
-                                       Powiter::StandardButton defaultButton) {
-    QMutexLocker locker(&_uiUsingMainThreadMutex);
-    _uiUsingMainThread = true;
-    emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
-    while(_uiUsingMainThread){
-        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+                                            Powiter::StandardButton defaultButton) {
+    if(QThread::currentThread() != qApp->thread()){
+        QMutexLocker locker(&_uiUsingMainThreadMutex);
+        _uiUsingMainThread = true;
+        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
+        while(_uiUsingMainThread){
+            _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+        }
+    }else{
+        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
     }
     return _lastQuestionDialogAnswer;
 }
+
 
 void Gui::selectNode(NodeGui* node){
     _nodeGraphTab->_nodeGraphArea->selectNode(node);
@@ -1432,7 +1455,7 @@ void Gui::saveGuiGeometry(){
     settings.setValue("splitters", splittersData);
     
     settings.endGroup();
-
+    
 }
 
 
@@ -1472,13 +1495,13 @@ AddFormatDialog::AddFormatDialog(QWidget* parent):QDialog(parent)
     _pixelAspectSpinBox->setMinimum(0.);
     _pixelAspectSpinBox->setValue(1.);
     _secondLineLayout->addWidget(_pixelAspectSpinBox);
-
+    
     
     _thirdLine = new QWidget(this);
     _thirdLineLayout = new QHBoxLayout(_thirdLine);
     _thirdLine->setLayout(_thirdLineLayout);
     _mainLayout->addWidget(_thirdLine);
-
+    
     
     _nameLabel = new QLabel("Name:",_thirdLine);
     _thirdLineLayout->addWidget(_nameLabel);
@@ -1514,30 +1537,30 @@ void Gui::showView0(){
     _appInstance->setViewersCurrentView(0);
 }
 void Gui::showView1(){
-     _appInstance->setViewersCurrentView(1);
+    _appInstance->setViewersCurrentView(1);
 }
 void Gui::showView2(){
-     _appInstance->setViewersCurrentView(2);
+    _appInstance->setViewersCurrentView(2);
 }
 void Gui::showView3(){
-     _appInstance->setViewersCurrentView(3);
+    _appInstance->setViewersCurrentView(3);
 }
 void Gui::showView4(){
-     _appInstance->setViewersCurrentView(4);
+    _appInstance->setViewersCurrentView(4);
 }
 void Gui::showView5(){
-     _appInstance->setViewersCurrentView(5);
+    _appInstance->setViewersCurrentView(5);
 }
 void Gui::showView6(){
-     _appInstance->setViewersCurrentView(6);
+    _appInstance->setViewersCurrentView(6);
 }
 void Gui::showView7(){
-     _appInstance->setViewersCurrentView(7);
+    _appInstance->setViewersCurrentView(7);
 }
 void Gui::showView8(){
-     _appInstance->setViewersCurrentView(8);
+    _appInstance->setViewersCurrentView(8);
 }
 void Gui::showView9(){
-     _appInstance->setViewersCurrentView(9);
+    _appInstance->setViewersCurrentView(9);
 }
 

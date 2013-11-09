@@ -61,7 +61,7 @@ ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
 #endif
 
 OfxEffectInstance::OfxEffectInstance(Powiter::Node* node)
-    :Powiter::EffectInstance(node)
+    :Powiter::OutputEffectInstance(node)
     , effect_()
     , _isOutput(false)
     , _penDown(false)
@@ -90,8 +90,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     try {
         desc = plugin->getContext(context);
     } catch (const std::exception &e) {
-        cout << "Error: Caught exception while creating OfxNode: " << e.what() << std::endl;
-        throw;
+        throw e;
     }
     if (desc) {
         try {
@@ -99,7 +98,9 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
-            assert(stat == kOfxStatOK); // Prop Tester crashes here
+            if(! stat == kOfxStatOK){
+                throw std::runtime_error("Error while populating the Ofx image effect");
+            }
         } catch (const std::exception &e) {
             cout << "Error: Caught exception while creating OfxImageEffectInstance: " << e.what() << std::endl;
             throw;
@@ -281,6 +282,28 @@ void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
     box->set_top(ymax);
 }
 
+void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
+    /*If the rod is infinite clip it to the project's default*/
+    const Format& projectDefault = getRenderFormat();
+    if(rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()
+       || rod->x1 == -std::numeric_limits<int>::infinity()){
+        rod->x1 = projectDefault.left();
+    }
+    if(rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity()
+       || rod->y1 == -std::numeric_limits<int>::infinity()){
+        rod->y1 = projectDefault.bottom();
+    }
+    if(rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()
+       || rod->x2 == std::numeric_limits<int>::infinity()){
+       rod->x2 = projectDefault.right();
+    }
+    if(rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()
+       || rod->y2 == std::numeric_limits<int>::infinity()){
+        rod->y2 = projectDefault.top();
+    }
+    
+}
+
 Powiter::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
     assert(effect_);
     OfxPointD rS;
@@ -290,6 +313,7 @@ Powiter::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI
     if((stat!= kOfxStatOK && stat != kOfxStatReplyDefault) ||
             (ofxRod.x1 ==  0. && ofxRod.x2 == 0. && ofxRod.y1 == 0. && ofxRod.y2 == 0.))
         return StatFailed;
+    ifInfiniteclipRectToProjectDefault(&ofxRod);
     ofxRectDToRectI(ofxRod,rod);
     if(isGenerator()){
         getApp()->getProject()->lock();
@@ -374,7 +398,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     
 
 Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
-    if(!isGenerator() && !isGeneratorAndFilter()){
+    //if(!isGenerator() && !isGeneratorAndFilter()){
         /*Checking if all mandatory inputs are connected!*/
         MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
         for (U32 i = 0; i < ofxInputs.size(); ++i) {
@@ -382,7 +406,7 @@ Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
                 return StatFailed;
             }
         }
-    }
+    //  }
     //iterate over param and find if there's an unvalid param
     // e.g: an empty filename
     const std::map<std::string,OFX::Host::Param::Instance*>& params = effectInstance()->getParams();

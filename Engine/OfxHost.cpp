@@ -209,7 +209,8 @@ OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Pow
     try{
         rval = plugin->getPluginHandle();
     } catch (const std::exception &e) {
-        std::cout << "Error: Could not get plugin handle for plugin \"" << name << "\":" << e.what() << std::endl;
+        throw std::runtime_error("Error: Could not get plugin handle for plugin");
+        return NULL;
     }
     if(!rval) {
         return NULL;
@@ -219,15 +220,20 @@ OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Pow
     try{
         hostSideEffect->createOfxImageEffectInstance(plugin, context);
     }catch(const std::exception& e){
+        throw e;
         delete hostSideEffect;
         return NULL;
     }
     Powiter::OfxImageEffectInstance* effect = hostSideEffect->effectInstance();
     if (effect) {
         stat = effect->createInstanceAction();
-        assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
+        if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
+            throw std::runtime_error("Could not create effect instance for plugin");
+            delete hostSideEffect;
+            return NULL;
+        }
     } else {
-        std::cout << "Error: Could not create effect instance for plugin \"" << name << "\"" << std::endl;
+        throw std::runtime_error("Could not create effect instance for plugin");
         delete hostSideEffect;
         return NULL;
     }

@@ -263,7 +263,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -282,7 +283,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -301,7 +303,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
 
@@ -321,7 +324,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -340,7 +344,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -359,7 +364,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -378,7 +384,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -397,7 +404,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -416,7 +424,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -435,7 +444,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }
@@ -456,7 +466,8 @@ OFX::Host::Param::Instance* OfxImageEffectInstance::newParam(const std::string& 
             }
             _parentingMap.insert(make_pair(paramName,ret));
             ret->getKnob()->setName(paramName);
-            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0){
+            if(descriptor.getProperties().getIntProperty(kOfxParamPropEvaluateOnChange) == 0 ||
+               descriptor.getProperties().getIntProperty(kOfxParamPropPersistant) == 0){
                 ret->getKnob()->setIsInsignificant(true);
             }
         }

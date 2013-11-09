@@ -84,7 +84,7 @@ KnobGui::~KnobGui(){
 }
 
 void KnobGui::pushUndoCommand(QUndoCommand* cmd){
-    if(_knob->canBeUndone()){
+    if(_knob->canBeUndone() && !_knob->isInsignificant()){
         _container->pushUndoCommand(cmd);
     }else{
         cmd->redo();
