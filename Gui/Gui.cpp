@@ -71,6 +71,10 @@ static QIcon get_icon(const QString &name)
 Gui::Gui(AppInstance* app,QWidget* parent):QMainWindow(parent),
 _lastSelectedViewer(NULL),
 _appInstance(app),
+_uiUsingMainThreadCond(),
+_uiUsingMainThread(false),
+_uiUsingMainThreadMutex(),
+_lastQuestionDialogAnswer(Powiter::No),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
@@ -116,6 +120,9 @@ viewerInputsMenu(0),
 cacheMenu(0),
 _projectGui(0)
 {
+    QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)),this,
+                     SLOT(onDoDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)));
+    
 }
 
 Gui::~Gui()
@@ -1189,22 +1196,60 @@ int Gui::saveWarning(){
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
-    QMessageBox::critical(this, title.c_str(), text.c_str());
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    _uiUsingMainThread = true;
+    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+    while(_uiUsingMainThread){
+        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    }
 }
 
 void Gui::warningDialog(const std::string& title,const std::string& text){
-    QMessageBox::warning(this, title.c_str(), text.c_str());
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    _uiUsingMainThread = true;
+    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+    while(_uiUsingMainThread){
+        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    }
 }
 
 void Gui::informationDialog(const std::string& title,const std::string& text){
-    QMessageBox::information(this, title.c_str(), text.c_str());
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    _uiUsingMainThread = true;
+    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+    while(_uiUsingMainThread){
+        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    }
+}
+void Gui::onDoDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB){
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    if(type == 0){
+        QMessageBox::critical(this, title, content);
+    }else if(type == 1){
+        QMessageBox::warning(this, title, content);
+    }else if(type == 2){
+        QMessageBox::information(this, title,content);
+    }else{
+        _lastQuestionDialogAnswer = (Powiter::StandardButton)QMessageBox::question(this,title,content,
+                                                                                   (QMessageBox::StandardButtons)buttons,
+                                                                                   (QMessageBox::StandardButtons)defaultB);
+    }
+    _uiUsingMainThread = false;
+    _uiUsingMainThreadCond.wakeOne();
 }
 
 Powiter::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
                                        Powiter::StandardButton defaultButton) {
-    return (Powiter::StandardButton)QMessageBox::question(this,title.c_str(),message.c_str(),
-                                                          (QMessageBox::StandardButtons)buttons,
-                                                          (QMessageBox::StandardButtons)defaultButton);
+    QMutexLocker locker(&_uiUsingMainThreadMutex);
+    _uiUsingMainThread = true;
+    emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
+    while(_uiUsingMainThread){
+        _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
+    }
+    return _lastQuestionDialogAnswer;
 }
 
 void Gui::selectNode(NodeGui* node){

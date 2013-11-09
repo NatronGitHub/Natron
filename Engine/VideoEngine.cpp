@@ -74,7 +74,6 @@ VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
 , _startRenderFrameTime()
 , _timeline(owner->getNode()->getApp()->getTimeLine())
 {
-    setTerminationEnabled();
 }
 
 VideoEngine::~VideoEngine() {   

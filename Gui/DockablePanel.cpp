@@ -81,7 +81,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
     
     QString tooltip = helpToolTip;
     for (int i = 0; i < tooltip.size();++i) {
-        if (i%100 == 0) {
+        if (i%100 == 0 && i!=0) {
             /*Find closest word end and insert a new line*/
             while(i < tooltip.size() && tooltip.at(i)!=QChar(' ')) ++i;
             tooltip.insert(i, QChar('\n'));

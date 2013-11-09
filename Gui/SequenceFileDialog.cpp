@@ -789,9 +789,10 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         }
         QString name = item.data(QFileSystemModel::FilePathRole).toString();
         QString originalName = name;
-        QString extension = SequenceFileDialog::removeFileExtension(name);
+        QString extension;
         int frameNumber;
-        if(!removeSequenceDigits(name,&frameNumber)){
+        SequenceDialogProxyModel::parseFilename(name, &frameNumber, extension);
+        if(frameNumber == -1){
             continue;
         }
         const FileSequence frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
@@ -800,23 +801,29 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
          */
         if(!frameRanges._frameIndexes.isEmpty()){
             std::vector< std::pair<int,int> > chunks;
-            int k = frameRanges._frameIndexes.firstFrame();
-            
-            while (k <= frameRanges._frameIndexes.lastFrame()) {
-                chunks.push_back(make_pair(k,-1));
-                int j = k+1;
-                int prev = k;
+            int first = frameRanges._frameIndexes.firstFrame();
+            while(first <= frameRanges._frameIndexes.lastFrame()){
+                
+                while (!(frameRanges._frameIndexes.isInSequence(first))) {
+                    ++first;
+                }
+                
+                chunks.push_back(std::make_pair(first, frameRanges._frameIndexes.lastFrame()));
+                int next = first + 1;
+                int prev = first;
                 int count = 1;
-                while ((j <= frameRanges._frameIndexes.lastFrame()) && (j == prev+1)) {
-                    prev = j;
-                    ++j;
+                while((next <= frameRanges._frameIndexes.lastFrame())
+                      && frameRanges._frameIndexes.isInSequence(next)
+                      && (next == prev + 1) ){
+                    prev = next;
+                    ++next;
                     ++count;
                 }
-                --j;
-                chunks.back().second = j;
-                k+=count;
+                --next;
+                chunks.back().second = next;
+                first += count;
             }
-            
+
             name.append("#.");
             name.append(extension);
             
@@ -2251,7 +2258,8 @@ void FileDialogComboBox::paintEvent(QPaintEvent *){
 
 
 bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
-    if(_firstFrame == 999999) return false;
+    if(_firstFrame == 999999)
+        return false;
     if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
         return true;
     }
@@ -2259,9 +2267,13 @@ bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
     int offset = frameIndex - _firstFrame - 1;
     int bitsIndex = offset / 64; //accessing the proper variable containing the bit
     int bitsOffset = (offset+1) % (64+1);
-    quint64 frames = _bits[bitsIndex];
-    quint64 base = 1;
-    return frames & ( base << bitsOffset);
+    if(bitsIndex < (int)_bits.size()){
+        quint64 frames = _bits[bitsIndex];
+        quint64 base = 1;
+        return frames & ( base << bitsOffset);
+    }else{
+        return false;
+    }
     
 }
 bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
@@ -2283,10 +2295,12 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         frames = _bits[bitsIndex];
     }
     quint64 base = 1;
-    if(!(frames & ( base << bitsOffset))){
-        frames |= (base << bitsOffset);
+    if(!(frames & ( base << bitsOffset))){ // if the item is not in sequence
+        frames |= (base << bitsOffset); // add it
         if(bitsIndex >= (int)_bits.size()){
             _bits.push_back(frames);
+        }else{
+            _bits[bitsIndex] = frames;
         }
         ++_size;
         _isEmpty = false;

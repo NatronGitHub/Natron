@@ -233,17 +233,6 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
         }
-        {
-            if(getVideoEngine()->mustQuit()){
-                return StatFailed;
-            }
-            QMutexLocker locker(&_usingOpenGLMutex);
-            _usingOpenGL = true;
-            emit doUpdateViewer();
-            while(_usingOpenGL) {
-                _usingOpenGLCond.wait(&_usingOpenGLMutex);
-            }
-        }
 #ifdef POWITER_LOG
         Powiter::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                                              QString::number(key.getHash())).toStdString());
@@ -454,8 +443,8 @@ void ViewerInstance::cachedEngine(){
     _pboIndex = (_pboIndex+1)%2;
     _uiContext->viewer->fillPBO((const char*)_interThreadInfos._cachedEntry->data(), output, dataSize);
 
-     _usingOpenGL = false;
-    _usingOpenGLCond.wakeOne();
+    locker.unlock();
+    updateViewer();
 }
 
 void ViewerInstance::allocateFrameStorage(){

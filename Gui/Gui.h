@@ -23,6 +23,8 @@
 #include <QDialog>
 #include <QAction>
 #include <QMainWindow>
+#include <QWaitCondition>
+#include <QMutex>
 
 #include "Global/GlobalDefines.h"
 
@@ -280,6 +282,9 @@ private:
     
     void saveGuiGeometry();
 
+signals:
+    
+    void doDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB);
 
 public slots:
     
@@ -314,6 +319,8 @@ public slots:
     void showView8();
     void showView9();
     
+    void onDoDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB);
+    
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -327,7 +334,13 @@ public slots:
     void putSettingsPanelFirst(DockablePanel* panel);
     
 private:
+    
     AppInstance* _appInstance;
+    
+    QWaitCondition _uiUsingMainThreadCond;
+    bool _uiUsingMainThread;
+    mutable QMutex _uiUsingMainThreadMutex;
+    Powiter::StandardButton _lastQuestionDialogAnswer;
 public:
     /*TOOL BAR ACTIONS*/
     //======================

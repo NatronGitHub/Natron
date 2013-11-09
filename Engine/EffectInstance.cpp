@@ -439,6 +439,11 @@ void EffectInstance::clearPersistentMessage() {
     _node->clearPersistentMessage();
 }
 
+const EffectInstance::RenderArgs& EffectInstance::getArgsForLastRender() const{
+    assert(_renderArgs->hasLocalData());
+    return _renderArgs->localData();
+}
+
 OutputEffectInstance::OutputEffectInstance(Node* node):
 Powiter::EffectInstance(node)
 , _videoEngine()

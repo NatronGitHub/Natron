@@ -190,6 +190,13 @@ public:
     
     
     /**
+     * @brief Returns the last args that were given to the render(...) function for the caller thread.
+     * WARNING: the calling thread MUST be a thread who called the render(...) function,otherwise an
+     * assertion will be raised.
+     **/
+    const RenderArgs& getArgsForLastRender() const;
+    
+    /**
      * @brief Returns a pointer to the image being rendered currently by renderRoI if any.
      **/
     boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
