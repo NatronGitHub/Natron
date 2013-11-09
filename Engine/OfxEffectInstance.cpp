@@ -386,10 +386,15 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
                 if (!clip->isOptional() && !clip->isOutput()) {
                     double f,l;
                     clip->getFrameRange(f, l);
-                    if(f < *first)
+                    if( i != 0){
+                        if(f < *first)
+                            *first = f;
+                        if(l > *last)
+                            *last = l;
+                    }else{
                         *first = f;
-                    if(l > *last)
                         *last = l;
+                    }
                 }
             }
         }
