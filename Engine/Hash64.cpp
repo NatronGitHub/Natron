@@ -11,11 +11,7 @@
 
 #include "Hash64.h"
 
-#if 0
-#include <cstdlib> // for malloc(), free()
-#else
 #include <algorithm>  // for std::for_each
-#endif
 #ifndef Q_MOC_RUN
 #include <boost/crc.hpp>
 #endif

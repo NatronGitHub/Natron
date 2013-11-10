@@ -19,7 +19,7 @@ std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     
     /*if we rendered everything we just append
      a NULL box to indicate we rendered it all.*/
-    if(!memchr(_map,0,_rod.area())){
+    if(!memchr(_map.get(),0,_rod.area())){
         ret.push_back(RectI());
         return ret;
     }
@@ -27,7 +27,7 @@ std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
     RectI bbox = roi;
     //find bottom
     for (int i = bbox.bottom(); i < bbox.top();++i) {
-        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         if(!memchr(buf,0,_rod.width())){
             bbox.set_bottom(bbox.bottom()+1);
             if(bbox.top() <= bbox.bottom()){
@@ -42,7 +42,7 @@ std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
 
     //find top
     for (int i = bbox.top()-1; i >= bbox.bottom();--i) {
-        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         if(!memchr(buf,0,_rod.width())){
             bbox.set_top(bbox.top()-1);
         }else{
@@ -88,7 +88,7 @@ std::list<RectI> Powiter::Bitmap::minimalNonMarkedRects(const RectI& roi) const{
 
 void Powiter::Bitmap::markForRendered(const RectI& roi){
     for (int i = roi.bottom(); i < roi.top();++i) {
-        char* buf = _map + (i-_rod.bottom())*_rod.width();
+        char* buf = &_map[(i-_rod.bottom())*_rod.width()];
         memset(buf, 1, roi.width());
     }
 }

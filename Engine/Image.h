@@ -16,6 +16,7 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/scoped_array.hpp>
 
 #include <QtCore/QMutex>
 
@@ -96,22 +97,24 @@ namespace Powiter{
     };
     
     class Bitmap{
-        
-        char* _map;
-        RectI _rod;
     public:
-        
-        Bitmap(const RectI& rod):_rod(rod){
-            _map = (char*)calloc(rod.area(),sizeof(char));
+        Bitmap(const RectI& rod)
+        : _rod(rod)
+        , _map(new char[rod.area()])
+        {
+            std::fill(_map.get(), _map.get()+rod.area(), 0); // is it necessary?
         }
         
-        ~Bitmap(){ free(_map); }
+        ~Bitmap() {}
         
         const RectI& getRoD() const {return _rod;}
         
         std::list<RectI> minimalNonMarkedRects(const RectI& roi) const;
         
         void markForRendered(const RectI& roi);
+    private:
+        RectI _rod;
+        boost::scoped_array<char> _map;
     };
     
 
