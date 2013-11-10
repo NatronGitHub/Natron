@@ -225,7 +225,11 @@ bool VideoEngine::stopEngine() {
             QMutexLocker l(&_abortedRequestedMutex);
             _abortRequested = 0;
             
+            /*refresh preview for all nodes that have preview enabled & set the aborted flag to false*/
             for (RenderTree::TreeIterator it = _tree.begin(); it != _tree.end(); ++it) {
+                if(it->second->isPreviewEnabled()){
+                    it->second->getNode()->refreshPreviewImage(_timeline->currentFrame());
+                }
                 it->second->setAborted(false);
             }
             
@@ -235,6 +239,10 @@ bool VideoEngine::stopEngine() {
         emit engineStopped();
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
+        
+        
+        
+        
         {
             QMutexLocker workingLocker(&_workingMutex);
             _working = false;

@@ -270,7 +270,6 @@ private:
        /*settings panel related*/
     bool _panelDisplayed;
     NodeSettingsPanel* _settingsPanel;
-    bool _previewOn;
     
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;

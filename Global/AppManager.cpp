@@ -196,9 +196,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     }
     if(!requestedByLoad && !_isBackground)
         node->openFilesForAllFileKnobs();
-    if(node->makePreviewByDefault() && !_isBackground)
-        node->refreshPreviewImage(0);
-    
+
     if(!_isBackground){
         if(_gui->getSelectedNode()){
             Node* selected = _gui->getSelectedNode()->getNode();

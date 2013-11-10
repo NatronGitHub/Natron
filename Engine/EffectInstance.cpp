@@ -32,6 +32,7 @@ KnobHolder(node ? node->getApp() : NULL)
 , _isRenderClone(false)
 , _inputs()
 , _renderArgs()
+, _previewEnabled(false)
 {
     //create the renderArgs only if the current thread is different than the main thread.
     // otherwise it would create mem leaks and an error message.
@@ -45,6 +46,7 @@ void EffectInstance::clone(){
         return;
     cloneKnobs(*(_node->getLiveInstance()));
     cloneExtras();
+    _previewEnabled = _node->getLiveInstance()->isPreviewEnabled();
 }
 
 
@@ -386,6 +388,9 @@ void EffectInstance::notifyFrameRangeChanged(int first,int last){
     _node->notifyFrameRangeChanged(first, last);
 }
 
+void EffectInstance::togglePreview() {
+    _previewEnabled = ! _previewEnabled;
+}
 
 void EffectInstance::updateInputs(RenderTree* tree){
     _inputs.clear();

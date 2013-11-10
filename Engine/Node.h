@@ -249,6 +249,10 @@ public:
 
     bool makePreviewByDefault() const;
     
+    void togglePreview();
+    
+    bool isPreviewEnabled() const;
+    
     /**
      * @brief Makes a small 8bits preview image of size width x height of format ARGB32.
      * Pre-condition:

@@ -62,7 +62,6 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _inputEdges()
 , _panelDisplayed(false)
 , _settingsPanel(0)
-, _previewOn(false)
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
 {
@@ -82,7 +81,6 @@ NodeGui::NodeGui(NodeGraph* dag,
     QObject::connect(_internalNode, SIGNAL(persistentMessageChanged(int,QString)), this, SLOT(onPersistentMessageChanged(int,QString)));
     QObject::connect(_internalNode, SIGNAL(persistentMessageCleared()), this, SLOT(onPersistentMessageCleared()));
     /*Disabled for now*/
-    //QObject::connect(node,SIGNAL(channelsChanged(ChannelSet)),this,SLOT(updateChannelsTooltip(ChannelSet)));
     
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
@@ -145,9 +143,8 @@ NodeGui::NodeGui(NodeGraph* dag,
 }
 
 void NodeGui::togglePreview(){
-    _previewOn = ! _previewOn;
-
-    if(_previewOn){
+    _internalNode->togglePreview();
+    if(_internalNode->isPreviewEnabled()){
         if(!_previewPixmap){
             QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
             prev.fill(Qt::black);

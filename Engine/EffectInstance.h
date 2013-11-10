@@ -63,6 +63,7 @@ private:
     
     Inputs _inputs;//< all the inputs of the effect. Watch out, some might be NULL if they aren't connected
     boost::shared_ptr<QThreadStorage<RenderArgs> > _renderArgs;
+    bool _previewEnabled;
     
 public:
     
@@ -327,7 +328,13 @@ public:
      **/
     virtual bool makePreviewByDefault() const {return false;}
     
+    bool isPreviewEnabled() const { return _previewEnabled; }
     
+    /**
+     * @brief Called by the GUI when the user wants to activate preview image for this effect.
+     **/
+    void togglePreview();
+
     
     /**
      * @brief

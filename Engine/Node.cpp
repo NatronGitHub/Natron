@@ -501,6 +501,13 @@ int Powiter::Node::maximumInputs() const {
 bool Powiter::Node::makePreviewByDefault() const{
     return _liveInstance->makePreviewByDefault();
 }
+void Powiter::Node::togglePreview(){
+    _liveInstance->togglePreview();
+}
+
+bool Powiter::Node::isPreviewEnabled() const{
+    return _liveInstance->isPreviewEnabled();
+}
 
 bool Powiter::Node::aborted() const { return _liveInstance->aborted(); }
 
