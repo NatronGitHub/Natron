@@ -44,6 +44,7 @@ class SmartInputDialog;
 class QDropEvent;
 class QDragEnterEvent;
 
+
 namespace Powiter{
     class Node;
 }
@@ -123,6 +124,8 @@ public:
     
 public slots:
     
+    void deleteSelectedNode();
+    
     void connectCurrentViewerToSelection(int inputNB);
 
     void updateCacheSizeText();
@@ -161,8 +164,6 @@ private:
     
     QRectF calcNodesBoundingRect();
     
-    void deleteSelectedNode();
-        
     bool smartNodeCreationEnabled;
     
     Gui* _gui;

@@ -38,6 +38,7 @@ class NodeGraph;
 class QAction;
 class KnobGui;
 class Knob;
+class QMenu;
 namespace Powiter {
 class ChannelSet;
 class Node;
@@ -233,12 +234,17 @@ public slots:
     
     void setVisibleSettingsPanel(bool b);
     
+    /*pos is in global coordinates*/
+    void showMenu(const QPoint& pos);
+    
 signals:
     void nameChanged(QString);
     
 private:
     
     void computePreviewImage(int time);
+    
+    void populateMenu();
     
     /*pointer to the dag*/
     NodeGraph* _graph;
@@ -274,6 +280,7 @@ private:
     QGradient* _selectedGradient;
     QGradient* _defaultGradient;
     
+    QMenu* _menu;
   
 };
 BOOST_CLASS_VERSION(NodeGui::SerializedState, 1)

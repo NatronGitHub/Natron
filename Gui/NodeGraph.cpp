@@ -256,10 +256,6 @@ NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Powiter::Node *nod
     
 }
 void NodeGraph::mousePressEvent(QMouseEvent *event) {
-    if(event->button() == Qt::RightButton){
-        showMenu(mapToGlobal(event->pos()));
-        return;
-    }
     
     assert(event);
     if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
@@ -269,32 +265,45 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     }
     
     _lastScenePosClick = mapToScene(event->pos());
-    for(U32 i = 0;i<_nodes.size();++i){
-        NodeGui* n=_nodes[i];
-        
-        QPointF evpt=n->mapFromScene(_lastScenePosClick);
+    
+    NodeGui* selected = 0;
+    Edge* selectedEdge = 0;
+    for(U32 i = 0;i < _nodes.size();++i){
+        NodeGui* n = _nodes[i];
+        QPointF evpt = n->mapFromScene(_lastScenePosClick);
         if(n->isActive() && n->contains(evpt)){
-            
-            selectNode(n);
-            _evtState = NODE_DRAGGING;
-            _lastNodeDragStartPoint = n->pos();
+            selected = n;
             break;
         }else{
             Edge* edge = n->hasEdgeNearbyPoint(_lastScenePosClick);
             if(edge){
-                _arrowSelected = edge;
-                _evtState = ARROW_DRAGGING;
+                selectedEdge = edge;
                 break;
-            }else{
-                
-                deselect();
-                if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)) {
-                    _evtState = MOVING_AREA;
-                    QGraphicsView::mousePressEvent(event);
-                }
             }
-            
         }
+    }
+    if(!selected && !selectedEdge){
+        if(event->button() == Qt::RightButton){
+            showMenu(mapToGlobal(event->pos()));
+        }else if(event->button() == Qt::LeftButton){
+            deselect();
+        }else if(event->button() == Qt::MiddleButton || event->modifiers().testFlag(Qt::AltModifier)){
+            _evtState = MOVING_AREA;
+            QGraphicsView::mousePressEvent(event);
+        }
+        return;
+    }
+    
+    if(selected){
+        selectNode(selected);
+        _evtState = NODE_DRAGGING;
+        _lastNodeDragStartPoint = selected->pos();
+        if(event->button() == Qt::RightButton){
+            selected->showMenu(mapToGlobal(event->pos()));
+        }
+    }else if(selectedEdge){
+        _arrowSelected = selectedEdge;
+        _evtState = ARROW_DRAGGING;
     }
 }
 

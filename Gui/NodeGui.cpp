@@ -64,6 +64,7 @@ NodeGui::NodeGui(NodeGraph* dag,
 , _settingsPanel(0)
 , _selectedGradient(NULL)
 , _defaultGradient(NULL)
+, _menu(new QMenu(dag))
 {
     
     assert(node_);
@@ -140,6 +141,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     
     _boundingBox->setBrush(*_defaultGradient);
     
+    populateMenu();
 }
 
 void NodeGui::togglePreview(){
@@ -245,9 +247,7 @@ void NodeGui::updateChannelsTooltip(const Powiter::ChannelSet& chan){
 }
 
 void NodeGui::updatePreviewImage(int time){
-    if(_internalNode->makePreviewByDefault()){
-        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
-    }
+    QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
 }
 
 void NodeGui::computePreviewImage(int time){
@@ -592,4 +592,21 @@ QVBoxLayout* NodeGui::getDockContainer() const {
 
 void NodeGui::paint(QPainter* /*painter*/,const QStyleOptionGraphicsItem* /*options*/,QWidget* /*parent*/){
     //nothing special
+}
+void NodeGui::showMenu(const QPoint& pos){
+    _menu->exec(pos);
+}
+
+void NodeGui::populateMenu(){
+    _menu->clear();
+    QAction* togglePreviewAction = new QAction("Toggle preview image",this);
+    togglePreviewAction->setCheckable(true);
+    togglePreviewAction->setChecked(_internalNode->makePreviewByDefault());
+    QObject::connect(togglePreviewAction,SIGNAL(triggered()),this,SLOT(togglePreview()));
+    _menu->addAction(togglePreviewAction);
+    
+    QAction* deleteAction = new QAction("Delete",this);
+    QObject::connect(deleteAction,SIGNAL(triggered()),_graph,SLOT(deleteSelectedNode()));
+    _menu->addAction(deleteAction);
+
 }
