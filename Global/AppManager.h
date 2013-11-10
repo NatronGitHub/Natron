@@ -209,6 +209,11 @@ private:
 
 class PluginToolButton{
     
+    QString _name;
+    QString _iconPath;
+    std::vector<PluginToolButton*> _children;
+    PluginToolButton* _parent;
+    
 public:
     PluginToolButton(const QString& name,
                      const QString& iconPath)
@@ -221,12 +226,25 @@ public:
         
     }
     
+    
+    const QString& getName() const {return _name;}
+    
+    void setName(const QString& name) {_name = name;}
+    
+    const QString& getIconPath() const {return _iconPath;}
+    
+    void setIconPath(const QString& iconPath) {_iconPath = iconPath;}
+    
+    const std::vector<PluginToolButton*>& getChildren() const {return _children;}
+    
     void tryAddChild(PluginToolButton* plugin);
     
-    QString _name;
-    QString _iconPath;
-    std::vector<PluginToolButton*> _children;
-    PluginToolButton* _parent;
+    PluginToolButton* getParent() const {return _parent;}
+    
+    void setParent(PluginToolButton* parent) {_parent = parent;}
+    
+    bool hasParent() const {return _parent != NULL;}
+    
 };
 
 class AppManager : public QObject, public Singleton<AppManager>

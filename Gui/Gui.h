@@ -87,22 +87,37 @@ public:
     {
     }
     
-    void tryAddChild(ToolButton* child);
     
     virtual ~ToolButton(){}
 
     const QString& getName() const { return _name; };
+    
     const QIcon& getIcon() const { return _icon; };
+    
+    bool hasChildren() const { return !_children.empty(); }
 
+    QMenu* getMenu() const { assert(_menu); return _menu; }
+    
+    void setMenu(QMenu* menu ) { _menu = menu; }
+    
+    void tryAddChild(ToolButton* child);
+    
+    const std::vector<ToolButton*>& getChildren() const { return _children; }
+    
+    QAction* getAction() const { return _action; }
+    
+    void setAction(QAction* action) {_action = action;}
+    
+    PluginToolButton* getPluginToolButton() const { return _pluginToolButton; }
+    
 public slots:
+    
     void onTriggered();
 
 private:
     AppInstance* _app;
     QString _name;
     QIcon _icon;
-public:
-    // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;

@@ -1021,28 +1021,28 @@ ToolButton* Gui::findExistingToolButton(const QString& name) const{
 
 ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     for(U32 i = 0; i < _toolButtons.size();++i){
-        if(_toolButtons[i]->getName() == plugin->_name){
+        if(_toolButtons[i]->getName() == plugin->getName()){
             return _toolButtons[i];
         }
     }
     
     //first-off create the tool-button's parent, if any
     ToolButton* parentToolButton = NULL;
-    if(plugin->_parent)
-        parentToolButton = findOrCreateToolButton(plugin->_parent);
+    if(plugin->hasParent())
+        parentToolButton = findOrCreateToolButton(plugin->getParent());
     
     QIcon icon;
-    if(!plugin->_iconPath.isEmpty() && QFile::exists(plugin->_iconPath)){
-        icon.addFile(plugin->_iconPath);
+    if(!plugin->getIconPath().isEmpty() && QFile::exists(plugin->getIconPath())){
+        icon.addFile(plugin->getIconPath());
     }else{
         icon.addFile(PLUGIN_GROUP_DEFAULT_ICON_PATH);
     }
     //if the tool-button has no children, this is a leaf, we must create an action
     bool isLeaf = false;
-    if(plugin->_children.empty()){
+    if(plugin->getChildren().empty()){
         isLeaf = true;
         //if the plugin has no children and no parent, put it in the "others" group
-        if(!plugin->_parent){
+        if(!plugin->hasParent()){
             ToolButton* othersGroup = findExistingToolButton(PLUGIN_GROUP_DEFAULT);
             PluginToolButton* othersToolButton = appPTR->findPluginToolButtonOrCreate(PLUGIN_GROUP_DEFAULT, PLUGIN_GROUP_DEFAULT_ICON_PATH);
             othersToolButton->tryAddChild(plugin);
@@ -1054,17 +1054,19 @@ ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
             parentToolButton = othersGroup;
         }
     }
-    ToolButton* pluginsToolButton = new ToolButton(_appInstance,plugin,plugin->_name,icon);
+    ToolButton* pluginsToolButton = new ToolButton(_appInstance,plugin,plugin->getName(),icon);
     if(isLeaf){
         assert(parentToolButton);
-        pluginsToolButton->_action = new QAction(this);
-        pluginsToolButton->_action->setText(pluginsToolButton->getName());
-        pluginsToolButton->_action->setIcon(pluginsToolButton->getIcon());
-        QObject::connect(pluginsToolButton->_action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
+        QAction* action = new QAction(this);
+        action->setText(pluginsToolButton->getName());
+        action->setIcon(pluginsToolButton->getIcon());
+        QObject::connect(action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
+        pluginsToolButton->setAction(action);
     }else{
-        pluginsToolButton->_menu = new QMenu(this);
-        pluginsToolButton->_menu->setTitle(pluginsToolButton->getName());
-        pluginsToolButton->_action = pluginsToolButton->_menu->menuAction();
+        QMenu* menu = new QMenu(this);
+        menu->setTitle(pluginsToolButton->getName());
+        pluginsToolButton->setMenu(menu);
+        pluginsToolButton->setAction(menu->menuAction());
     }
     //if it has a parent, add the new tool button as a child
     if(parentToolButton){
@@ -1082,7 +1084,7 @@ void ToolButton::tryAddChild(ToolButton* child){
         }
     }
     _children.push_back(child);
-    _menu->addAction(child->_action);
+    _menu->addAction(child->getAction());
 }
 
 
@@ -1093,10 +1095,10 @@ void Gui::addToolButttonsToToolBar(){
     for (U32 i = 0; i < _toolButtons.size(); ++i) {
         
         //if the toolbutton is a root (no parent), add it in the toolbox
-        if(_toolButtons[i]->_menu && !_toolButtons[i]->_pluginToolButton->_parent){
+        if(_toolButtons[i]->hasChildren() && !_toolButtons[i]->getPluginToolButton()->hasParent()){
             QToolButton* button = new QToolButton(_toolBox);
             button->setIcon(_toolButtons[i]->getIcon());
-            button->setMenu(_toolButtons[i]->_menu);
+            button->setMenu(_toolButtons[i]->getMenu());
             button->setPopupMode(QToolButton::InstantPopup);
             button->setToolTip(_toolButtons[i]->getName());
             _toolBox->addWidget(button);

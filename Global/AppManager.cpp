@@ -961,7 +961,7 @@ void AppManager::addPluginToolButtons(const QStringList& groups,
         PluginToolButton* child = findPluginToolButtonOrCreate(groups.at(i),groupIconPath);
         if(parent){
             parent->tryAddChild(child);
-            child->_parent = parent;
+            child->setParent(parent);
         }
         parent = child;
         
@@ -969,14 +969,14 @@ void AppManager::addPluginToolButtons(const QStringList& groups,
     PluginToolButton* lastChild = findPluginToolButtonOrCreate(pluginName,pluginIconPath);
     if(parent){
         parent->tryAddChild(lastChild);
-        lastChild->_parent = parent;
+        lastChild->setParent(parent);
     }
 
     //_toolButtons.push_back(new PluginToolButton(groups,pluginName,pluginIconPath,groupIconPath));
 }
 PluginToolButton* AppManager::findPluginToolButtonOrCreate(const QString& name,const QString& iconPath){
     for(U32 i = 0 ; i < _toolButtons.size();++i){
-        if(_toolButtons[i]->_name == name)
+        if(_toolButtons[i]->getName() == name)
             return _toolButtons[i];
     }
     PluginToolButton* ret = new PluginToolButton(name,iconPath);
