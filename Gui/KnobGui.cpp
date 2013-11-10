@@ -178,7 +178,7 @@ void File_KnobGui::open_file(){
     
     QStringList oldList,filesList;
     oldList = SequenceFileDialog::filesListFromPattern(_lineEdit->text());
-    std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    std::vector<std::string> filters = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
     
     SequenceFileDialog dialog(_lineEdit->parentWidget(),filters,true,SequenceFileDialog::OPEN_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
@@ -269,7 +269,7 @@ void OutputFile_KnobGui::updateGUI(const Variant& variant){
     _lineEdit->setText(variant.toString());
 }
 void OutputFile_KnobGui::open_file(){
-    std::vector<std::string> filters = Settings::getPowiterCurrentSettings()->_readersSettings.supportedFileTypes();
+    std::vector<std::string> filters = appPTR->getCurrentSettings()._readersSettings.supportedFileTypes();
     SequenceFileDialog dialog(_lineEdit->parentWidget(),filters,true,SequenceFileDialog::SAVE_DIALOG,_lastOpened.toStdString());
     if(dialog.exec()){
         QString oldPattern = _knob->value<QString>();

@@ -128,7 +128,7 @@ public:
     
     void clearNodes();
     
-    void loadProject(const QString& path,const QString& name);
+    void loadProject(const QString& path,const QString& name,bool background);
     
     void saveProject(const QString& path,const QString& filename,bool autoSave = false);
     

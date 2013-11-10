@@ -176,7 +176,7 @@ int Project::lastFrame() const {
 }
 
 
-void Project::loadProject(const QString& path,const QString& name){
+void Project::loadProject(const QString& path,const QString& name,bool background){
     QString filePath = path+name;
     std::ifstream ifile(filePath.toStdString().c_str(),std::ifstream::in);
     boost::archive::xml_iarchive iArchive(ifile);
@@ -200,10 +200,22 @@ void Project::loadProject(const QString& path,const QString& name){
     _viewsCount->restoreFromString(viewsCount);
     ifile.close();
     
+    
+    bool hasProjectAWriter = false;
     /*first create all nodes and restore the knobs values*/
     for (std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it) {
         const NodeGui::SerializedState& state = *it;
+        
+        if (background && state.getClassName() == "Viewer") { //if the node is a viewer, don't try to load it in background mode
+            continue;
+        }
+        
         Node* n = getApp()->createNode(state.getClassName().c_str(),true);
+        
+        if(n->className() == "Writer" || (n->isOpenFXNode() && n->isOutputNode())){
+            hasProjectAWriter = true;
+        }
+        
         if(!n){
             clearNodes();
             QString text("Failed to restore the graph! \n The node ");
@@ -227,15 +239,26 @@ void Project::loadProject(const QString& path,const QString& name){
                     n->refreshPreviewImage(0);
                 }
             }
-        
+            
         }
-        NodeGui* nGui = getApp()->getNodeGui(n);
-        nGui->setPos(state.getX(),state.getY());
-        getApp()->deselectAllNodes();
+        if(!background){
+            NodeGui* nGui = getApp()->getNodeGui(n);
+            nGui->setPos(state.getX(),state.getY());
+            getApp()->deselectAllNodes();
+        }
+    }
+    
+    if(!hasProjectAWriter && background){
+        clearNodes();
+        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
     
     /*now that we have all nodes, just connect them*/
     for(std::list<NodeGui::SerializedState>::const_iterator it = nodeStates.begin() ; it!=nodeStates.end(); ++it){
+        
+        if(background && (*it).getClassName() == "Viewer")//ignore viewers on background mode
+           continue;
+        
         const std::map<int, std::string>& inputs = (*it).getInputs();
         Node* thisNode = NULL;
         for (U32 i = 0; i < _currentNodes.size(); ++i) {
@@ -263,8 +286,10 @@ void Project::loadProject(const QString& path,const QString& name){
     setProjectAgeSinceLastAutosaveSave(time);
     
     /*Refresh all viewers as it was*/
-    getApp()->notifyViewersProjectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
-    getApp()->checkViewersConnection();
+    if(!background){
+        getApp()->notifyViewersProjectFormatChanged(_availableFormats[_formatKnob->getActiveEntry()]);
+        getApp()->checkViewersConnection();
+    }
 }
 void Project::saveProject(const QString& path,const QString& filename,bool autoSave){
     QString filePath;

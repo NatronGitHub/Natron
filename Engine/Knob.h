@@ -73,7 +73,7 @@ class Knob : public QObject
     
 public:
     
-    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1};
+    enum ValueChangedReason{USER_EDITED = 0,PLUGIN_EDITED = 1,STARTUP_RESTORATION = 2};
 
     
     Knob(KnobHolder*  holder,const std::string& description,int dimension = 1);

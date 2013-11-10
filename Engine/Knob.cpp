@@ -188,7 +188,6 @@ Knob* KnobFactory::createKnob(const std::string& id,
                               KnobHolder*  holder,
                               const std::string& description,int dimension) const{
     
-    
     std::map<std::string,LibraryBinary*>::const_iterator it = _loadedKnobs.find(id);
     if(it == _loadedKnobs.end()){
         return NULL;
@@ -270,6 +269,7 @@ void Knob::restoreFromString(const std::string& str){
     if(!_isInsignificant)
         updateHash();
     processNewValue();
+    _holder->onValueChanged(this,Knob::STARTUP_RESTORATION);
     emit valueChanged(_value);
 }
 

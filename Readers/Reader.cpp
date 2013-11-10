@@ -97,16 +97,9 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
-    QString extension;
-    for (int i = fileName.size() - 1; i >= 0; --i) {
-        QChar c = fileName.at(i);
-        if(c != QChar('.'))
-            extension.prepend(c);
-        else
-            break;
-    }
-
-    Powiter::LibraryBinary* decoder = Settings::getPowiterCurrentSettings()->_readersSettings.decoderForFiletype(extension.toStdString());
+    QString fileNameCopy = fileName;
+    QString extension = SequenceFileDialog::removeFileExtension(fileNameCopy);
+    Powiter::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
         std::string err("Couldn't find an appropriate decoder for this filetype");
         err.append(extension.toStdString());

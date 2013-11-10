@@ -67,16 +67,6 @@ std::string Writer::description() const {
     return "The Writer node can render on disk the output of a node graph.";
 }
 
-bool Writer::validate() const{
-    /*Defaults writing range to readers range, but
-     the user may change it through GUI.*/
-    if(_filename.empty()){
-        return false;
-        
-    }
-    return true;
-}
-
 static QString viewToString(int view,int viewsCount){
     if(viewsCount == 1){
         return "";
@@ -92,7 +82,7 @@ static QString viewToString(int view,int viewsCount){
 }
 
 boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
-    Powiter::LibraryBinary* binary = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
     Encoder* encoder = NULL;
     if(!binary){
         std::string exc("Couldn't find an appropriate encoder for filetype: ");
@@ -154,7 +144,7 @@ void Writer::initializeKnobs(){
     
     std::string filetypeStr("File type");
     _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
-    const std::map<std::string,Powiter::LibraryBinary*>& _encoders = Settings::getPowiterCurrentSettings()->_writersSettings.getFileTypesMap();
+    const std::map<std::string,Powiter::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
     std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
         _allFileTypes.push_back(it->first.c_str());
@@ -231,7 +221,7 @@ void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
 
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/
-    Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+    Powiter::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
     if(!isValid) {
         return false;
     }
@@ -263,29 +253,23 @@ bool Writer::validInfosForRendering(){
     return true;
 }
 
-void Writer::getFirstFrameAndLastFrame(int* firstFrame,int *lastFrame){
+void Writer::getFrameRange(SequenceTime *first,SequenceTime *last){
     int index = _frameRangeChoosal->value<int>();
     if(index == 0){
-        getFrameRange(firstFrame, lastFrame);
+        getFrameRange(first, last);
     }else{
-        *firstFrame = _firstFrameKnob->value<int>();
-        *lastFrame = _lastFrameKnob->value<int>();
+        *first = _firstFrameKnob->value<int>();
+        *last = _lastFrameKnob->value<int>();
     }
-
 }
+
 void Writer::startRendering(){
     
     _fileType = _allFileTypes[_filetypeCombo->value<int>()];
     _filename = _fileKnob->value<QString>().toStdString();
-    int firstFrame,lastFrame;
-    getFirstFrameAndLastFrame(&firstFrame, &lastFrame);
-    if(firstFrame > lastFrame)
-        return;
     
     if(validInfosForRendering()){
-        getVideoEngine()->refreshTree();
-        getVideoEngine()->render(-1,true,false,true,false);
-        emit renderingOnDiskStarted(this,_filename.c_str(),firstFrame,lastFrame);
+        renderFullSequence();
     }
 }
 
@@ -299,7 +283,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             delete _writeOptions;
             _writeOptions = 0;
         }
-        Powiter::LibraryBinary* isValid = Settings::getPowiterCurrentSettings()->_writersSettings.encoderForFiletype(_fileType);
+        Powiter::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
         if(!isValid) return;
         
         QString file(_filename.c_str());

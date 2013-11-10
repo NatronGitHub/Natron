@@ -40,16 +40,16 @@
 class KnobFactory;
 class NodeGui;
 class ViewerInstance;
-class Writer;
 class ViewerTab;
 class TabWidget;
 class Gui;
 class VideoEngine;
 class QMutex;
-class OutputNodeInstance;
 class TimeLine;
+class Settings;
 
 namespace Powiter {
+class OutputEffectInstance;
 class LibraryBinary;
 class EffectInstance;
 class OfxHost;
@@ -63,7 +63,7 @@ class AppInstance : public QObject,public boost::noncopyable
 {
     Q_OBJECT
 public:
-    AppInstance(bool backgroundMode,int appID,const QString& projectName = QString());
+    AppInstance(bool backgroundMode,int appID,const QString& projectName = QString(),const QStringList& writers = QStringList());
     
     ~AppInstance();
     
@@ -102,7 +102,7 @@ public:
 
     const Format& getProjectFormat() const WARN_UNUSED_RETURN ;
 
-    void loadProject(const QString& path,const QString& name);
+    bool loadProject(const QString& path,const QString& name,bool background);
 
     void saveProject(const QString& path,const QString& name,bool autoSave);
 
@@ -173,7 +173,7 @@ public slots:
 
     void triggerAutoSave();
 
-    void onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    void onRenderingOnDiskStarted(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
 
 
 signals:
@@ -190,7 +190,8 @@ private:
  returns true,otherwise false.*/
     bool findAutoSave() WARN_UNUSED_RETURN;
 
-
+    /*Used in background mode only*/
+    void startWritersRendering(const QStringList& writers);
 
     Gui* _gui; // the view of the MVC pattern
 
@@ -245,7 +246,7 @@ public:
     
     const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
-    AppInstance* newAppInstance(bool background,const QString& projectName = QString());
+    AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
     void registerAppInstance(AppInstance* app){ _appInstances.insert(std::make_pair(app->getAppID(),app));}
 
@@ -285,7 +286,11 @@ public:
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
+    const Settings& getCurrentSettings() const {return *_settings;}
+
     PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
+
+    static void printUsage();
 
 public slots:
 
@@ -336,6 +341,7 @@ private:
 
     void printPluginsLoaded();
 
+    boost::scoped_ptr<Settings> _settings;
 
     std::map<int,AppInstance*> _appInstances;
 

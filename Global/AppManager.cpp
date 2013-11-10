@@ -64,12 +64,10 @@ using std::cout; using std::endl;
 using std::make_pair;
 
 
-static void printUsage(){
-    
-}
 
 
-AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName):
+
+AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers):
 _gui(NULL)
 , _currentProject(new Powiter::Project(this))
 , _appID(appID)
@@ -83,7 +81,8 @@ _gui(NULL)
 
     if(!_isBackground){
         _gui = new Gui(this);
-    }else{
+    }
+    if(_isBackground && projectName.isEmpty()){
         // cannot start a background process without a file
         throw std::invalid_argument("Project file name empty");
     }
@@ -98,15 +97,26 @@ _gui(NULL)
         }
         emit pluginsPopulated();
         _gui->show();
-    }
-    
-    /* Create auto-save dir if it does not exists*/
-    QDir dir = autoSavesDir();
-    dir.mkpath(".");
-    
-    /*If this is the first instance of the software*/
-    if(_appID == 0){
-        if(!findAutoSave()){
+        
+        /* Create auto-save dir if it does not exists*/
+        QDir dir = autoSavesDir();
+        dir.mkpath(".");
+        
+        /*If this is the first instance of the software*/
+        if(_appID == 0){
+            if(!findAutoSave()){
+                if(projectName.isEmpty()){
+                    QString text(QCoreApplication::applicationName() + " - ");
+                    text.append(_currentProject->getProjectName());
+                    _gui->setWindowTitle(text);
+                    createNode("Viewer");
+                }else{
+                    QString name = SequenceFileDialog::removePath(projectName);
+                    QString path = projectName.left(projectName.indexOf(name));
+                    loadProject(path,name,false);
+                }
+            }
+        }else{
             if(projectName.isEmpty()){
                 QString text(QCoreApplication::applicationName() + " - ");
                 text.append(_currentProject->getProjectName());
@@ -115,34 +125,23 @@ _gui(NULL)
             }else{
                 QString name = SequenceFileDialog::removePath(projectName);
                 QString path = projectName.left(projectName.indexOf(name));
-                try {
-                    loadProject(path,name);
-                } catch (const std::exception& e) {
-                    Powiter::errorDialog("Project loader",e.what());
-                    cout << e.what() << endl;
-                    createNode("Viewer");
-                }
+                loadProject(path,name,false);
             }
         }
+
     }else{
-        if(projectName.isEmpty()){
-            QString text(QCoreApplication::applicationName() + " - ");
-            text.append(_currentProject->getProjectName());
-            _gui->setWindowTitle(text);
-            createNode("Viewer");
-        }else{
-            QString name = SequenceFileDialog::removePath(projectName);
-            QString path = projectName.left(projectName.indexOf(name));
-            try {
-                loadProject(path,name);
-            } catch (const std::exception& e) {
-                Powiter::errorDialog("Project loader",e.what());
-                cout << e.what() << endl;
-                createNode("Viewer");
-            }
-            
+        QString name = SequenceFileDialog::removePath(projectName);
+        QString path = projectName.left(projectName.indexOf(name));
+        if(!loadProject(path,name,true)){
+            throw std::invalid_argument("Project file loading failed.");
+        }
+        try{
+            startWritersRendering(writers);
+        }catch(const std::exception& e){
+            throw e;
         }
     }
+    
     
 }
 
@@ -182,29 +181,31 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     QObject::connect(node, SIGNAL(deactivated()), this, SLOT(triggerAutoSave()));
     QObject::connect(node,SIGNAL(activated()),this,SLOT(checkViewersConnection()));
     QObject::connect(node, SIGNAL(activated()), this, SLOT(triggerAutoSave()));
-
     
     NodeGui* nodegui = 0;
-    nodegui = _gui->createNodeGUI(node);
-    _nodeMapping.insert(make_pair(node,nodegui));
+    if(!_isBackground){
+        nodegui = _gui->createNodeGUI(node);
+        _nodeMapping.insert(make_pair(node,nodegui));
+    }
     node->initializeKnobs();
     node->initializeInputs();
-   
+    
     _currentProject->initNodeCountersAndSetName(node);
-    if(node->className() == "Viewer"){
+    if(node->className() == "Viewer" && !_isBackground){
         _gui->createViewerGui(node);
     }
-    if(!requestedByLoad)
+    if(!requestedByLoad && !_isBackground)
         node->openFilesForAllFileKnobs();
-    if(node->makePreviewByDefault())
+    if(node->makePreviewByDefault() && !_isBackground)
         node->refreshPreviewImage(0);
     
-    if(_gui->getSelectedNode()){
-        Node* selected = _gui->getSelectedNode()->getNode();
-        autoConnect(selected, node);
+    if(!_isBackground){
+        if(_gui->getSelectedNode()){
+            Node* selected = _gui->getSelectedNode()->getNode();
+            autoConnect(selected, node);
+        }
+        _gui->selectNode(nodegui);
     }
-    _gui->selectNode(nodegui);
-
     return node;
 }
 
@@ -221,18 +222,21 @@ const std::vector<NodeGui*>& AppInstance::getAllActiveNodes() const{
     return  _gui->_nodeGraphTab->_nodeGraphArea->getAllActiveNodes();
     
 }
-void AppInstance::loadProject(const QString& path,const QString& name){
+bool AppInstance::loadProject(const QString& path,const QString& name,bool background){
     try{
-        _currentProject->loadProject(path,name);
+        _currentProject->loadProject(path,name,background);
     }catch(const std::exception& e){
         Powiter::errorDialog("Project loader",e.what());
-        cout << e.what() << endl;
-        createNode("Viewer");
-        return;
+        if(!background)
+            createNode("Viewer");
+        return false;
     }
-    QString text(QCoreApplication::applicationName() + " - ");
-    text.append(name);
-    _gui->setWindowTitle(text);
+    if(!background){
+        QString text(QCoreApplication::applicationName() + " - ");
+        text.append(name);
+        _gui->setWindowTitle(text);
+    }
+    return true;
 }
 void AppInstance::saveProject(const QString& path,const QString& name,bool autoSave){
     QDateTime time = QDateTime::currentDateTime();
@@ -351,7 +355,7 @@ bool AppInstance::findAutoSave() {
                 return false;
             } else {
                 try{
-                    _currentProject->loadProject(savesDir.path()+QDir::separator(), entry);
+                    _currentProject->loadProject(savesDir.path()+QDir::separator(), entry,false);
                 }catch(const std::exception& e){
                     Powiter::errorDialog("Project loader",e.what());
                     cout << e.what() << endl;
@@ -418,10 +422,10 @@ ViewerTab* AppInstance::addNewViewerTab(ViewerInstance* node,TabWidget* where){
     return  _gui->addNewViewerTab(node, where);
 }
 
-AppInstance* AppManager::newAppInstance(bool background,const QString& projectName){
+AppInstance* AppManager::newAppInstance(bool background,const QString& projectName,const QStringList& writers){
     AppInstance* instance = 0;
     try{
-        instance = new AppInstance(background,_availableID,projectName);
+        instance = new AppInstance(background,_availableID,projectName,writers);
     }catch(const std::exception& e){
         Powiter::errorDialog(POWITER_APPLICATION_NAME, e.what());
         printUsage();
@@ -591,6 +595,7 @@ AppInstance* AppManager::getTopLevelInstance () const{
 AppManager::AppManager()
 : QObject()
 , Singleton<AppManager>()
+, _settings(new Settings())
 , _appInstances()
 , _availableID(0)
 , _topLevelInstanceID(0)
@@ -601,10 +606,10 @@ AppManager::AppManager()
 , ofxHost(new Powiter::OfxHost())
 , _toolButtons()
 , _knobFactory(new KnobFactory())
-,_nodeCache(new Cache<Image>("NodeCache",0x1, (Settings::getPowiterCurrentSettings()->_cacheSettings.maxCacheMemoryPercent -
-                                               Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
-,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,Settings::getPowiterCurrentSettings()->_cacheSettings.maxDiskCache
-,Settings::getPowiterCurrentSettings()->_cacheSettings.maxPlayBackMemoryPercent))
+,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
+                                               _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
+,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
+,_settings->_cacheSettings.maxPlayBackMemoryPercent))
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -700,7 +705,7 @@ void AppManager::loadReadPlugins(){
             }
         }
     }
-    Settings::getPowiterCurrentSettings()->_readersSettings.fillMap(defaultMapping);
+    _settings->_readersSettings.fillMap(defaultMapping);
 }
 
 void AppManager::loadBuiltinReads(){
@@ -825,7 +830,7 @@ void AppManager::loadWritePlugins(){
             }
         }
     }
-    Settings::getPowiterCurrentSettings()->_writersSettings.fillMap(defaultMapping);
+    _settings->_writersSettings.fillMap(defaultMapping);
 }
 
 /*loads writes that are built-ins*/
@@ -986,13 +991,15 @@ void AppManager::setAsTopLevelInstance(int appID){
     _topLevelInstanceID = appID;
     for(std::map<int,AppInstance*>::iterator it = _appInstances.begin();it!=_appInstances.end();++it){
         if (it->first != _topLevelInstanceID) {
-            it->second->disconnectViewersFromViewerCache();
+            if(!it->second->isBackground())
+                it->second->disconnectViewersFromViewerCache();
         }else{
-            it->second->connectViewersToViewerCache();
+            if(!it->second->isBackground())
+                it->second->connectViewersToViewerCache();
         }
     }
 }
-void AppInstance::onRenderingOnDiskStarted(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+void AppInstance::onRenderingOnDiskStarted(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
     if(_gui){
         _gui->showProgressDialog(writer, sequenceName,firstFrame,lastFrame);
     }
@@ -1117,4 +1124,57 @@ int AppInstance::getKnobsAge() const{
 }
 void AppInstance::incrementKnobsAge(){
     _currentProject->incrementKnobsAge();
+}
+
+
+void AppInstance::startWritersRendering(const QStringList& writers){
+    assert(_isBackground);//< the instance must be background
+    
+    const std::vector<Node*>& projectNodes = _currentProject->getCurrentNodes();
+    
+    if(!writers.isEmpty()){
+        for (int i = 0; i < writers.size(); ++i) {
+            Node* node = 0;
+            for (U32 j = 0; j < projectNodes.size(); ++j) {
+                if(projectNodes[j]->getName() == writers.at(i).toStdString()){
+                    node = projectNodes[j];
+                    break;
+                }
+            }
+            if(!node){
+                std::string exc(writers.at(i).toStdString());
+                exc.append(" does not belong to the project file. Please enter a valid writer name.");
+                throw std::invalid_argument(exc);
+            }else{
+                if(!node->isOutputNode()){
+                    std::string exc(writers.at(i).toStdString());
+                    exc.append(" is not an output node! It cannot render anything.");
+                    throw std::invalid_argument(exc);
+                }
+                if(node->className() == "Viewer"){
+                    throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
+                }
+                dynamic_cast<OutputEffectInstance*>(node->getLiveInstance())->renderFullSequence();
+            }
+        }
+    }else{
+        //start rendering for all writers found in the project
+        for (U32 j = 0; j < projectNodes.size(); ++j) {
+            if(projectNodes[j]->isOutputNode() && projectNodes[j]->className() != "Viewer"){
+                dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance())->renderFullSequence();
+                break;
+            }
+        }
+
+    }
+}
+
+void AppManager::printUsage(){
+    std::cout << POWITER_APPLICATION_NAME << " usage: " << std::endl;
+    std::cout << "./" POWITER_APPLICATION_NAME "    <project file path>" << std::endl;
+    std::cout << "[--background] enables background mode rendering. No graphical interface will be built." << std::endl;
+    std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
+    " name following the --writer argument. If no such node exists in the project file, the process will abort."
+    "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
+
 }

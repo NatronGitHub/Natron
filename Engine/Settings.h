@@ -18,13 +18,8 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-#include "Engine/Singleton.h"
 
-/*The current settings of Powiter in the preferences menu. This class implements the singleton pattern,
- that means the powiter settings are unique and there cannot be 2 instances living at the same time.
- 
- 
- 
+/*The current settings of Powiter in the preferences menu.
  @todo Move this class to QSettings instead*/
 
 
@@ -32,11 +27,9 @@ namespace Powiter {
     class LibraryBinary;
 }
 
-class Settings : public Singleton<Settings>
+class Settings
 {
 public:
-
-	static Settings* getPowiterCurrentSettings(){return Settings::instance();}
 
     Settings():_cacheSettings(),_viewerSettings(),_generalSettings(),_readersSettings(){}
         
@@ -85,7 +78,7 @@ public:
         
         /*Returns a pluginID if it could find an encoder for the filetype,
          otherwise returns NULL.*/
-        Powiter::LibraryBinary* encoderForFiletype(const std::string& type);
+        Powiter::LibraryBinary* encoderForFiletype(const std::string& type) const;
         
         /*changes the encoder for files identified by the filetype*/
         void changeMapping(const std::string& filetype, Powiter::LibraryBinary* encoder);
@@ -93,7 +86,7 @@ public:
         /*use to initialise default mapping*/
         void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
         
-        const std::map<std::string,Powiter::LibraryBinary*>& getFileTypesMap(){return _fileTypesMap;}
+        const std::map<std::string,Powiter::LibraryBinary*>& getFileTypesMap() const {return _fileTypesMap;}
         
         
         int _maximumBufferSize;

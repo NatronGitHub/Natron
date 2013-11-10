@@ -474,6 +474,12 @@ public:
     virtual bool isOutput() const { return true; }
 
     boost::shared_ptr<VideoEngine> getVideoEngine() const {return _videoEngine;}
+    
+    /**
+     * @brief Starts rendering of all the sequence available, from start to end.
+     * This function is meant to be called for on-disk renderer only (i.e: not viewers).
+     **/
+    void renderFullSequence();
 
     void updateTreeAndRender(bool initViewer = false);
 

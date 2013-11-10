@@ -81,6 +81,10 @@ public:
     
     void ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const;
     
+    /*If the OpenFX effect is an output effect (a writer), this will return the pattern of
+     the output file sequence. */
+    std::string getOutputFileName() const;
+    
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
     virtual bool isGenerator() const OVERRIDE;
     

@@ -49,14 +49,9 @@ public:
     virtual std::string className() const OVERRIDE;
     
     virtual std::string description() const OVERRIDE;
-    
-    /*If doFullWork is true, it creates a new Write and set _writeHandle
-     to this newly created Write. It also calls Write::setupFile with 
-     the filename selected in the GUI. If the buffer is full, it appends
-     the Write task to the _queuedTasks vector. They will be launched
-     by the notifyWriterForCompletion() function.*/
-    virtual bool validate() const;
-        
+
+    virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
+
     Powiter::Status renderWriter(SequenceTime time);
 	
     /*Returns true if all parameters are OK to start the rendering.
@@ -71,16 +66,13 @@ public:
 
     void startRendering();
 
-    void getFirstFrameAndLastFrame(int* first,int *last);
-
     bool continueOnError() const;
+
+    const std::string& getOutputFileName() const {return _filename;}
 
 public slots:
     void onTimelineFrameRangeChanged(int,int);
 
-signals:
-    
-    void renderingOnDiskStarted(Writer*,QString,int,int);
     
 protected:
     
@@ -113,5 +105,4 @@ private:
     Button_Knob* _renderKnob;
     Bool_Knob* _continueOnError;
 };
-Q_DECLARE_METATYPE(Writer*);
 #endif /* defined(POWITER_WRITERS_WRITER_H_) */

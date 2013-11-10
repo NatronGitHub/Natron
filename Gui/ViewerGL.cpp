@@ -1705,7 +1705,7 @@ void ViewerGL::keyReleaseEvent(QKeyEvent* event){
 
 
 float ViewerGL::byteMode() const {
-    return Settings::getPowiterCurrentSettings()->_viewerSettings.byte_mode;
+    return appPTR->getCurrentSettings()._viewerSettings.byte_mode;
 }
 
 void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){

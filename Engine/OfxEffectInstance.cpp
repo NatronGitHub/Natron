@@ -98,7 +98,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
-            if(! stat == kOfxStatOK){
+            if(!(stat == kOfxStatOK)){
                 throw std::runtime_error("Error while populating the Ofx image effect");
             }
         } catch (const std::exception &e) {
@@ -663,4 +663,15 @@ void OfxEffectInstance::endKnobsValuesChanged(Knob::ValueChangedReason reason){
         OfxStatus stat = effectInstance()->endInstanceChangedAction(kOfxChangeUserEdited);
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     }
+}
+
+std::string OfxEffectInstance::getOutputFileName() const{
+    const std::vector<Knob*>& knobs = getKnobs();
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->typeName() == "OutputFile") {
+            OutputFile_Knob* knob = dynamic_cast<OutputFile_Knob*>(knobs[i]);
+            return knob->value<QString>().toStdString();
+        }
+    }
+    return "";
 }

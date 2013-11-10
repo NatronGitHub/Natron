@@ -64,8 +64,8 @@ Settings::WritersSettings::WritersSettings():_maximumBufferSize(2){}
 
 /*Returns a library if it could find an encoder for the filetype,
  otherwise returns NULL.*/
-LibraryBinary* Settings::WritersSettings::encoderForFiletype(const std::string& type){
-    for(std::map<std::string,LibraryBinary*>::iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
+LibraryBinary* Settings::WritersSettings::encoderForFiletype(const std::string& type) const{
+    for(std::map<std::string,LibraryBinary*>::const_iterator it = _fileTypesMap.begin();it!=_fileTypesMap.end();++it){
         QString sType(type.c_str());
         QString curType(it->first.c_str());
         sType = sType.toUpper();

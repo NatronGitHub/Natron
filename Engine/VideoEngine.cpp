@@ -290,10 +290,6 @@ void VideoEngine::getFrameRange(int *firstFrame,int *lastFrame) const {
         *firstFrame = _timeline->firstFrame();
         *lastFrame = _timeline->lastFrame();
     }
-    Writer* writer = _tree.outputAsWriter();
-    if(writer){
-        writer->getFirstFrameAndLastFrame(firstFrame, lastFrame);
-    }
 }
 
 void VideoEngine::run(){
@@ -636,7 +632,7 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
     _treeVersionValid = true;
     
     /*If the hash changed we clear the playback cache.*/
-    if(!oldVersionValid || (inputsHash.back() != oldVersion)){
+    if((!oldVersionValid || (inputsHash.back() != oldVersion)) && !_output->getApp()->isBackground()){
         appPTR->clearPlaybackCache();
     }
     

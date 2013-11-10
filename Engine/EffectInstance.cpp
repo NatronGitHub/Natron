@@ -19,6 +19,8 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Log.h"
 
+#include "Writers/Writer.h"
+
 using namespace Powiter;
 
 EffectInstance::EffectInstance(Node* node):
@@ -484,4 +486,20 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
     
 }
 
-
+void OutputEffectInstance::renderFullSequence(){
+    assert(className() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
+    
+    int firstFrame,lastFrame;
+    getFrameRange(&firstFrame, &lastFrame);
+    if(firstFrame > lastFrame)
+        return;
+    getVideoEngine()->refreshTree();
+    getVideoEngine()->render(-1, true,false,true,false);
+    std::string outputFileSequence;
+    if(isOpenFX()){
+        outputFileSequence = dynamic_cast<OfxEffectInstance*>(this)->getOutputFileName();
+    }else{
+        outputFileSequence = dynamic_cast<Writer*>(this)->getOutputFileName();
+    }
+    getApp()->onRenderingOnDiskStarted(this, outputFileSequence.c_str(), firstFrame, lastFrame);
+}

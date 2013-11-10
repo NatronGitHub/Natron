@@ -1125,7 +1125,7 @@ void Gui::openProject(){
             QString name = SequenceFileDialog::removePath(file);
             QString path = file.left(file.indexOf(name));
             
-            _appInstance->loadProject(path,name);
+            _appInstance->loadProject(path,name,false);
         }
     }
 }
@@ -1324,7 +1324,8 @@ void RenderingProgressDialog::onCancelation(){
     delete this;
     
 }
-RenderingProgressDialog::RenderingProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
+RenderingProgressDialog::RenderingProgressDialog(OutputEffectInstance* writer,
+                                                 const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
 QDialog(parent),
 _writer(writer),
 _sequenceName(sequenceName),
@@ -1377,7 +1378,7 @@ _lastFrame(lastFrame){
     QObject::connect(videoEngine, SIGNAL(engineStopped()), this, SLOT(onCancelation()));
     
 }
-void Gui::showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+void Gui::showProgressDialog(OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
     RenderingProgressDialog* dialog = new RenderingProgressDialog(writer,sequenceName,firstFrame,lastFrame,this);
     dialog->show();
 }

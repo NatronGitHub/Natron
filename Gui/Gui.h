@@ -56,7 +56,6 @@ class QProgressBar;
 class ViewerInstance;
 class Button;
 class QLabel;
-class Writer;
 class Gui;
 class SpinBox;
 class LineEdit;
@@ -65,6 +64,7 @@ class PluginToolButton;
 
 namespace Powiter{
     class Node;
+    class OutputEffectInstance;
 }
 
 
@@ -78,14 +78,14 @@ public:
     ToolButton(AppInstance* app,
                PluginToolButton* pluginToolButton,
                const QString& name,
-               QIcon icon = QIcon()):
-     _app(app)
-    , _pluginToolButton(pluginToolButton)
+               QIcon icon = QIcon())
+    : _app(app)
     , _name(name)
-    ,_icon(icon)
-    ,_menu(NULL)
-    ,_children()
-    ,_action(NULL)
+    , _icon(icon)
+    , _menu(NULL)
+    , _children()
+    , _action(NULL)
+    , _pluginToolButton(pluginToolButton)
     {
         
     }
@@ -135,13 +135,13 @@ class RenderingProgressDialog : public QDialog{
     QLabel* _perFrameLabel;
     QProgressBar* _perFrameProgress;
     Button* _cancelButton;
-    Writer* _writer;
+    Powiter::OutputEffectInstance* _writer;
     QString _sequenceName;
     int _firstFrame;
     int _lastFrame;
 public:
     
-    RenderingProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
+    RenderingProgressDialog(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
     
     virtual ~RenderingProgressDialog(){}
     
@@ -260,7 +260,7 @@ public:
     
     AppInstance* getApp() { return _appInstance; }
     
-    void showProgressDialog(Writer* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    void showProgressDialog(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
     
     void updateViewsActions(int viewsCount);
     
