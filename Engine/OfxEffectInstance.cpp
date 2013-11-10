@@ -98,7 +98,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
-            if(! stat == kOfxStatOK){
+            if (stat != kOfxStatOK) {
                 throw std::runtime_error("Error while populating the Ofx image effect");
             }
         } catch (const std::exception &e) {
