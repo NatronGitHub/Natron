@@ -1053,7 +1053,7 @@ void NodeGraph::populateMenu(){
     for(U32 i = 0; i < toolButtons.size();++i){
         //if the toolbutton is a root (no parent), add it in the toolbox
         if(toolButtons[i]->_menu && !toolButtons[i]->_pluginToolButton->_parent){
-            toolButtons[i]->_menu->setIcon(toolButtons[i]->_icon);
+            toolButtons[i]->_menu->setIcon(toolButtons[i]->getIcon());
             _menu->addAction(toolButtons[i]->_menu->menuAction());
         }
 

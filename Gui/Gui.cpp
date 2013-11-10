@@ -1012,7 +1012,7 @@ QWidget* Gui::findExistingTab(const std::string& name) const{
 }
 ToolButton* Gui::findExistingToolButton(const QString& name) const{
     for(U32 i = 0; i < _toolButtons.size();++i){
-        if(_toolButtons[i]->_name == name){
+        if(_toolButtons[i]->getName() == name){
             return _toolButtons[i];
         }
     }
@@ -1021,7 +1021,7 @@ ToolButton* Gui::findExistingToolButton(const QString& name) const{
 
 ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     for(U32 i = 0; i < _toolButtons.size();++i){
-        if(_toolButtons[i]->_name == plugin->_name){
+        if(_toolButtons[i]->getName() == plugin->_name){
             return _toolButtons[i];
         }
     }
@@ -1058,12 +1058,12 @@ ToolButton* Gui::findOrCreateToolButton(PluginToolButton* plugin){
     if(isLeaf){
         assert(parentToolButton);
         pluginsToolButton->_action = new QAction(this);
-        pluginsToolButton->_action->setText(pluginsToolButton->_name);
-        pluginsToolButton->_action->setIcon(pluginsToolButton->_icon);
+        pluginsToolButton->_action->setText(pluginsToolButton->getName());
+        pluginsToolButton->_action->setIcon(pluginsToolButton->getIcon());
         QObject::connect(pluginsToolButton->_action , SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()));
     }else{
         pluginsToolButton->_menu = new QMenu(this);
-        pluginsToolButton->_menu->setTitle(pluginsToolButton->_name);
+        pluginsToolButton->_menu->setTitle(pluginsToolButton->getName());
         pluginsToolButton->_action = pluginsToolButton->_menu->menuAction();
     }
     //if it has a parent, add the new tool button as a child
@@ -1095,10 +1095,10 @@ void Gui::addToolButttonsToToolBar(){
         //if the toolbutton is a root (no parent), add it in the toolbox
         if(_toolButtons[i]->_menu && !_toolButtons[i]->_pluginToolButton->_parent){
             QToolButton* button = new QToolButton(_toolBox);
-            button->setIcon(_toolButtons[i]->_icon);
+            button->setIcon(_toolButtons[i]->getIcon());
             button->setMenu(_toolButtons[i]->_menu);
             button->setPopupMode(QToolButton::InstantPopup);
-            button->setToolTip(_toolButtons[i]->_name);
+            button->setToolTip(_toolButtons[i]->getName());
             _toolBox->addWidget(button);
         }
     }

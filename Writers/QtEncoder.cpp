@@ -74,7 +74,8 @@ void QtEncoder::initializeColorSpace(){
 Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
     _rod = rod;
     size_t dataSize = 4 * rod.area();
-    _buf = (uchar*)calloc(dataSize,sizeof(char));
+    _buf = new uchar[dataSize];
+    std::fill(_buf, _buf+dataSize, 0); // is it really necessary?
     const ChannelSet& channels = _writer->requestedChannels();
     QImage::Format type;
     if (channels & Channel_alpha && _premult) {
@@ -92,7 +93,9 @@ void QtEncoder::finalizeFile(){
     
     _outputImage->save(filename());
     delete _outputImage;
-    free(_buf);
+    _outputImage = 0;
+    delete [] _buf;
+    _buf = 0;
 }
 
 void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {

@@ -98,7 +98,8 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
-            if(!(stat == kOfxStatOK)){
+
+            if (stat != kOfxStatOK) {
                 throw std::runtime_error("Error while populating the Ofx image effect");
             }
         } catch (const std::exception &e) {
@@ -285,20 +286,18 @@ void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){
 void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     /*If the rod is infinite clip it to the project's default*/
     const Format& projectDefault = getRenderFormat();
-    if(rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()
-       || rod->x1 == -std::numeric_limits<int>::infinity()){
+    // BE CAREFUL:
+    // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
+    if (rod->x1 == kOfxFlagInfiniteMin || rod->x1 == -std::numeric_limits<double>::infinity()) {
         rod->x1 = projectDefault.left();
     }
-    if(rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity()
-       || rod->y1 == -std::numeric_limits<int>::infinity()){
+    if (rod->y1 == kOfxFlagInfiniteMin || rod->y1 == -std::numeric_limits<double>::infinity()) {
         rod->y1 = projectDefault.bottom();
     }
-    if(rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()
-       || rod->x2 == std::numeric_limits<int>::infinity()){
+    if (rod->x2== kOfxFlagInfiniteMax || rod->x2 == std::numeric_limits<double>::infinity()) {
        rod->x2 = projectDefault.right();
     }
-    if(rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()
-       || rod->y2 == std::numeric_limits<int>::infinity()){
+    if (rod->y2 == kOfxFlagInfiniteMax || rod->y2  == std::numeric_limits<double>::infinity()) {
         rod->y2 = projectDefault.top();
     }
     
@@ -386,12 +385,14 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
                 if (!clip->isOptional() && !clip->isOutput()) {
                     double f,l;
                     clip->getFrameRange(f, l);
-                    if( i != 0){
-                        if(f < *first)
+                    if (i != 0) {
+                        if (f < *first) {
                             *first = f;
-                        if(l > *last)
+                        }
+                        if (l > *last) {
                             *last = l;
-                    }else{
+                        }
+                    } else {
                         *first = f;
                         *last = l;
                     }

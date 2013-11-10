@@ -71,8 +71,6 @@ namespace Powiter{
 class ToolButton : public QObject {
     Q_OBJECT
     
-    
-    AppInstance* _app;
 public:
     
     ToolButton(AppInstance* app,
@@ -87,31 +85,33 @@ public:
     , _action(NULL)
     , _pluginToolButton(pluginToolButton)
     {
-        
     }
     
     void tryAddChild(ToolButton* child);
     
     virtual ~ToolButton(){}
 
+    const QString& getName() const { return _name; };
+    const QIcon& getIcon() const { return _icon; };
+
+public slots:
+    void onTriggered();
+
+private:
+    AppInstance* _app;
     QString _name;
     QIcon _icon;
+public:
+    // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     QMenu* _menu;
     std::vector<ToolButton*> _children;
     QAction* _action;
     PluginToolButton* _pluginToolButton;
-    
-public slots:
-    void onTriggered();
-
 };
 
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget : public QWidget{
-    
-    QWidget* _embeddedWidget;
-    QVBoxLayout* _layout;
-    
+
 public:
     
     explicit FloatingWidget(QWidget* parent = 0);
@@ -122,23 +122,16 @@ public:
      by FloatingWidget. Once set, this function does nothing
      for subsequent calls..*/
     void setWidget(const QSize& widgetSize,QWidget* w);
+
+private:
+    QWidget* _embeddedWidget;
+    QVBoxLayout* _layout;
 };
 
 class RenderingProgressDialog : public QDialog{
     
     Q_OBJECT
     
-    QVBoxLayout* _mainLayout;
-    QLabel* _totalLabel;
-    QProgressBar* _totalProgress;
-    QFrame* _separator;
-    QLabel* _perFrameLabel;
-    QProgressBar* _perFrameProgress;
-    Button* _cancelButton;
-    Powiter::OutputEffectInstance* _writer;
-    QString _sequenceName;
-    int _firstFrame;
-    int _lastFrame;
 public:
     
     RenderingProgressDialog(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
@@ -152,6 +145,19 @@ public slots:
     void onCurrentFrameProgress(int);
 
     void onCancelation();
+
+private:
+    QVBoxLayout* _mainLayout;
+    QLabel* _totalLabel;
+    QProgressBar* _totalProgress;
+    QFrame* _separator;
+    QLabel* _perFrameLabel;
+    QProgressBar* _perFrameProgress;
+    Button* _cancelButton;
+    Writer* _writer;
+    QString _sequenceName;
+    int _firstFrame;
+    int _lastFrame;
 };
 
 /*This class encapsulate a nodegraph GUI*/
@@ -171,8 +177,6 @@ public:
 class Gui : public QMainWindow,public boost::noncopyable
 {
     Q_OBJECT
-    
-    ViewerTab* _lastSelectedViewer;
     
 public:
     explicit Gui(AppInstance* app,QWidget* parent=0);
@@ -330,14 +334,15 @@ public slots:
     void addToolButttonsToToolBar();
 
 private:
-    
+
+    ViewerTab* _lastSelectedViewer;
     AppInstance* _appInstance;
-    
     QWaitCondition _uiUsingMainThreadCond;
     bool _uiUsingMainThread;
     mutable QMutex _uiUsingMainThreadMutex;
     Powiter::StandardButton _lastQuestionDialogAnswer;
 public:
+    // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     /*TOOL BAR ACTIONS*/
     //======================
     QAction *actionNew_project;
@@ -435,8 +440,17 @@ public:
 
 class AddFormatDialog : public QDialog {
     
-    QVBoxLayout* _mainLayout;
+public:
     
+    AddFormatDialog(QWidget* parent = 0);
+    
+    virtual ~AddFormatDialog(){}
+    
+    Format getFormat() const ;
+
+private:
+    QVBoxLayout* _mainLayout;
+
     QWidget* _secondLine;
     QHBoxLayout* _secondLineLayout;
     QLabel* _widthLabel;
@@ -445,26 +459,17 @@ class AddFormatDialog : public QDialog {
     SpinBox* _heightSpinBox;
     QLabel* _pixelAspectLabel;
     SpinBox* _pixelAspectSpinBox;
-    
-    
+
+
     QWidget* _thirdLine;
     QHBoxLayout* _thirdLineLayout;
     QLabel* _nameLabel;
     LineEdit* _nameLineEdit;
-    
+
     QWidget* _fourthLine;
     QHBoxLayout* _fourthLineLayout;
     Button* _cancelButton;
     Button* _okButton;
-    
-public:
-    
-    AddFormatDialog(QWidget* parent = 0);
-    
-    virtual ~AddFormatDialog(){}
-    
-    Format getFormat() const ;
-    
 };
 
 
