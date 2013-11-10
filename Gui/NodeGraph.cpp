@@ -296,9 +296,11 @@ void NodeGraph::mousePressEvent(QMouseEvent *event) {
     
     if(selected){
         selectNode(selected);
-        _evtState = NODE_DRAGGING;
-        _lastNodeDragStartPoint = selected->pos();
-        if(event->button() == Qt::RightButton){
+        if(event->button() == Qt::LeftButton){
+            _evtState = NODE_DRAGGING;
+            _lastNodeDragStartPoint = selected->pos();
+        }
+        else if(event->button() == Qt::RightButton){
             selected->showMenu(mapToGlobal(event->pos()));
         }
     }else if(selectedEdge){
