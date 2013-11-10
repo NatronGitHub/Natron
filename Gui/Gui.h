@@ -154,7 +154,7 @@ private:
     QLabel* _perFrameLabel;
     QProgressBar* _perFrameProgress;
     Button* _cancelButton;
-    Writer* _writer;
+    Powiter::OutputEffectInstance* _writer;
     QString _sequenceName;
     int _firstFrame;
     int _lastFrame;
