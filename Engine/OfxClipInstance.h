@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@
 
 class OfxImage;
 class OfxEffectInstance;
-namespace Powiter {
+namespace Natron {
     class EffectInstance;
     class OfxImageEffectInstance;
     class Image;
@@ -41,7 +41,7 @@ class OfxClipInstance : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
     OfxClipInstance(OfxEffectInstance* node
-                    ,Powiter::OfxImageEffectInstance* effect
+                    ,Natron::OfxImageEffectInstance* effect
                     ,int index
                     , OFX::Host::ImageEffect::ClipDescriptor* desc);
     
@@ -144,14 +144,14 @@ public:
     virtual void setView(int view) OVERRIDE;
 
 
-    Powiter::EffectInstance* getAssociatedNode() const;
+    Natron::EffectInstance* getAssociatedNode() const;
 
 private:
     
     OFX::Host::ImageEffect::Image* getImageInternal(OfxTime time, int view, OfxRectD *optionalBounds);
     
     OfxEffectInstance* _nodeInstance;
-    Powiter::OfxImageEffectInstance* _effect;
+    Natron::OfxImageEffectInstance* _effect;
     QThreadStorage<int> _viewRendered; //< foreach render thread, what view is it rendering ?
 };
 
@@ -176,7 +176,7 @@ class OfxImage : public OFX::Host::ImageEffect::Image
     };
     
     
-    explicit OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip);
+    explicit OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip);
     
     virtual ~OfxImage(){}
     
@@ -184,12 +184,12 @@ class OfxImage : public OFX::Host::ImageEffect::Image
     
     OfxRGBAColourF* pixelF(int x, int y) const;
    
-    boost::shared_ptr<Powiter::Image> getInternalImageF() const {return _floatImage;}
+    boost::shared_ptr<Natron::Image> getInternalImageF() const {return _floatImage;}
 
 private :
     
     BitDepthEnum _bitDepth;
-    boost::shared_ptr<Powiter::Image> _floatImage;
+    boost::shared_ptr<Natron::Image> _floatImage;
 
 };
 

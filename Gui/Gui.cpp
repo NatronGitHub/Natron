@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -55,9 +55,9 @@ CLANG_DIAG_ON(unused-private-field);
 #include "Gui/DockablePanel.h"
 
 #define PLUGIN_GROUP_DEFAULT "Other"
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH POWITER_IMAGES_PATH"openeffects.png"
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH"openeffects.png"
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair;
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -74,7 +74,7 @@ _appInstance(app),
 _uiUsingMainThreadCond(),
 _uiUsingMainThread(false),
 _uiUsingMainThreadMutex(),
-_lastQuestionDialogAnswer(Powiter::No),
+_lastQuestionDialogAnswer(Natron::No),
 actionNew_project(0),
 actionOpen_project(0),
 actionSave_project(0),
@@ -120,8 +120,8 @@ viewerInputsMenu(0),
 cacheMenu(0),
 _projectGui(0)
 {
-    QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)),this,
-                     SLOT(onDoDialog(int,QString,QString,Powiter::StandardButtons,Powiter::StandardButton)));
+    QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,Natron::StandardButton)),this,
+                     SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,Natron::StandardButton)));
     QObject::connect(app,SIGNAL(pluginsPopulated()),this,SLOT(addToolButttonsToToolBar()));
 }
 
@@ -1115,7 +1115,7 @@ void Gui::newProject(){
 }
 void Gui::openProject(){
     std::vector<std::string> filters;
-    filters.push_back(POWITER_PROJECT_FILE_EXTENION);
+    filters.push_back(NATRON_PROJECT_FILE_EXTENION);
     SequenceFileDialog dialog(this,filters,false,
                               SequenceFileDialog::OPEN_DIALOG);
     if(dialog.exec()){
@@ -1140,15 +1140,15 @@ void Gui::saveProject(){
 }
 void Gui::saveProjectAs(){
     std::vector<std::string> filter;
-    filter.push_back(POWITER_PROJECT_FILE_EXTENION);
+    filter.push_back(NATRON_PROJECT_FILE_EXTENION);
     SequenceFileDialog dialog(this,filter,false,SequenceFileDialog::SAVE_DIALOG);
     QString outFile;
     if(dialog.exec()){
         outFile = dialog.filesToSave();
     }
     if (outFile.size() > 0) {
-        if (outFile.indexOf("." POWITER_PROJECT_FILE_EXTENION) == -1) {
-            outFile.append("." POWITER_PROJECT_FILE_EXTENION);
+        if (outFile.indexOf("." NATRON_PROJECT_FILE_EXTENION) == -1) {
+            outFile.append("." NATRON_PROJECT_FILE_EXTENION);
         }
         QString file = SequenceFileDialog::removePath(outFile);
         QString path = outFile.left(outFile.indexOf(file));
@@ -1183,47 +1183,47 @@ int Gui::saveWarning(){
 }
 
 void Gui::errorDialog(const std::string& title,const std::string& text){
-    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
     }
 }
 
 void Gui::warningDialog(const std::string& title,const std::string& text){
-    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
     }
 }
 
 void Gui::informationDialog(const std::string& title,const std::string& text){
-    Powiter::StandardButtons buttons(Powiter::Yes | Powiter::No);
+    Natron::StandardButtons buttons(Natron::Yes | Natron::No);
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Powiter::Yes);
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
     }
 }
-void Gui::onDoDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB){
+void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB){
     
     if(QThread::currentThread() != qApp->thread()){
         _uiUsingMainThreadMutex.lock();
@@ -1235,7 +1235,7 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Powite
     }else if(type == 2){
         QMessageBox::information(this, title,content);
     }else{
-        _lastQuestionDialogAnswer = (Powiter::StandardButton)QMessageBox::question(this,title,content,
+        _lastQuestionDialogAnswer = (Natron::StandardButton)QMessageBox::question(this,title,content,
                                                                                    (QMessageBox::StandardButtons)buttons,
                                                                                    (QMessageBox::StandardButtons)defaultB);
     }
@@ -1246,8 +1246,8 @@ void Gui::onDoDialog(int type,const QString& title,const QString& content,Powite
     }
 }
 
-Powiter::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
-                                            Powiter::StandardButton defaultButton) {
+Natron::StandardButton Gui::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
+                                            Natron::StandardButton defaultButton) {
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
@@ -1386,7 +1386,7 @@ void Gui::showProgressDialog(OutputEffectInstance* writer,const QString& sequenc
 }
 
 void Gui::restoreGuiGeometry(){
-    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.beginGroup("MainWindow");
     
     if(settings.contains("pos")){
@@ -1428,7 +1428,7 @@ void Gui::restoreGuiGeometry(){
 }
 
 void Gui::saveGuiGeometry(){
-    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     
     settings.beginGroup("MainWindow");
     settings.setValue("pos", pos());

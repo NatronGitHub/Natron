@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,11 +40,11 @@
 
 #include "Writers/Writer.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 
 Reader::Reader(Node* node)
-: Powiter::EffectInstance(node)
+: Natron::EffectInstance(node)
 , _buffer()
 , _fileKnob(0)
 {
@@ -65,11 +65,11 @@ std::string Reader::description() const {
 bool Reader::isInputOptional(int /*inputNb*/) const{
     return false;
 }
-Powiter::Status Reader::preProcessFrame(SequenceTime time){
+Natron::Status Reader::preProcessFrame(SequenceTime time){
     int missingFrameChoice = _missingFrameChoice->value<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && (missingFrameChoice == 1 || missingFrameChoice == 0)){
-        setPersistentMessage(Powiter::ERROR_MESSAGE,QString(" couldn't find a file for frame "+QString::number(time)).toStdString());
+        setPersistentMessage(Natron::ERROR_MESSAGE,QString(" couldn't find a file for frame "+QString::number(time)).toStdString());
         return StatFailed;
     }else{
         return StatOK;
@@ -99,7 +99,7 @@ void Reader::getFrameRange(SequenceTime *first,SequenceTime *last){
 boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     QString fileNameCopy = fileName;
     QString extension = SequenceFileDialog::removeFileExtension(fileNameCopy);
-    Powiter::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
+    Natron::LibraryBinary* decoder = appPTR->getCurrentSettings()._readersSettings.decoderForFiletype(extension.toStdString());
     if (!decoder) {
         std::string err("Couldn't find an appropriate decoder for this filetype");
         err.append(extension.toStdString());
@@ -118,7 +118,7 @@ boost::shared_ptr<Decoder> Reader::decoderForFileType(const QString& fileName){
     return boost::shared_ptr<Decoder>();
 }
 
-Powiter::Status Reader::getRegionOfDefinition(SequenceTime time,RectI* rod){
+Natron::Status Reader::getRegionOfDefinition(SequenceTime time,RectI* rod){
     QString filename = _fileKnob->getRandomFrameName(time,true);
     
     /*Locking any other thread: we want only 1 thread to create the descriptor*/
@@ -171,7 +171,7 @@ boost::shared_ptr<Decoder> Reader::decodeHeader(const QString& filename){
 
 
 
-Powiter::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Powiter::Image> output){
+Natron::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& roi,int /*view*/,boost::shared_ptr<Natron::Image> output){
     int missingFrameChoice = _missingFrameChoice->value<int>();
     QString filename = _fileKnob->getRandomFrameName(time,missingFrameChoice == 0);
     if(filename.isEmpty() && missingFrameChoice == 2){
@@ -188,7 +188,7 @@ Powiter::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& 
         QMutexLocker lock(&_lock);
         found = _buffer.get(filename.toStdString());
         if(!found){
-#ifdef POWITER_DEBUG
+#ifdef NATRON_DEBUG
             cout << "WARNING: Buffer does not contains the header for frame " << filename.toStdString()
             <<". re-decoding header...(" << getName() << "). It might indicate that the buffer of the reader is"
             " not big enough. You might want to change the maximum buffer size."<< endl;
@@ -196,7 +196,7 @@ Powiter::Status Reader::render(SequenceTime time,RenderScale scale,const RectI& 
             try{
                 found = decodeHeader(filename);
             }catch(const std::invalid_argument& e){
-                setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
+                setPersistentMessage(Natron::ERROR_MESSAGE, e.what());
                 return StatFailed;
             }
         }

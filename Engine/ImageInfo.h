@@ -1,5 +1,5 @@
 
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@
 
 class ImageInfo{
 public:
-    ImageInfo(Format displayWindow,Powiter::ChannelSet channels)
+    ImageInfo(Format displayWindow,Natron::ChannelSet channels)
     : _rod()
     , _displayWindow(displayWindow)
     , _channels(channels)
@@ -37,8 +37,8 @@ public:
     void setRoD(const RectI& win) { _rod = win; }
     const RectI& getRoD() const { return _rod; }
     
-    void setChannels(const Powiter::ChannelSet& mask) { _channels = mask; }
-    const Powiter::ChannelSet& getChannels() const { return _channels; }
+    void setChannels(const Natron::ChannelSet& mask) { _channels = mask; }
+    const Natron::ChannelSet& getChannels() const { return _channels; }
     
     bool operator==(const ImageInfo &other){
         return _rod == other._rod &&
@@ -55,7 +55,7 @@ private:
     
     RectI _rod;
     Format _displayWindow; // display window of the data
-    Powiter::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
+    Natron::ChannelSet _channels; // all channels defined by the current Node ( that are allocated)
 };
 
 #endif // IMAGEINFO_H

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ struct ExrEncoder::Implementation {
     Implementation();
     Imf_::OutputFile* _outputFile;
     int _depth;
-    Powiter::ChannelSet _channels;
+    Natron::ChannelSet _channels;
     Imath::Box2i _exrDataW;
     Imath::Box2i _exrDispW;
     QMutex _lock;
@@ -80,23 +80,23 @@ static int depthNameToInt(const std::string& name){
     }
 }
 
-static std::string toExrChannel(Powiter::Channel from){
-    if (from == Powiter::Channel_red) {
+static std::string toExrChannel(Natron::Channel from){
+    if (from == Natron::Channel_red) {
         return "R";
     }
-    if (from == Powiter::Channel_green) {
+    if (from == Natron::Channel_green) {
         return "G";
     }
-    if (from == Powiter::Channel_blue) {
+    if (from == Natron::Channel_blue) {
         return "B";
     }
-    if (from == Powiter::Channel_alpha) {
+    if (from == Natron::Channel_alpha) {
         return "A";
     }
-    if (from == Powiter::Channel_Z) {
+    if (from == Natron::Channel_Z) {
         return "Z";
     }
-    return Powiter::getChannelName(from);
+    return Natron::getChannelName(from);
 }
 
 #if 0 // unused functions
@@ -208,34 +208,34 @@ bool ExrEncoderKnobs::allValid(){
  the file type. You can initialize the _lut member by calling the
  function getLut(datatype) */
 void ExrEncoder::initializeColorSpace(){
-    _lut = Powiter::Color::getLut(Powiter::Color::LUT_DEFAULT_FLOAT);
+    _lut = Natron::Color::getLut(Natron::Color::LUT_DEFAULT_FLOAT);
 }
 
 /*This must be implemented to do the output colorspace conversion*/
-Powiter::Status ExrEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
+Natron::Status ExrEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
     
     try{
         for (int y = roi.bottom(); y < roi.top(); ++y) {
             if(_writer->aborted()){
-                return Powiter::StatFailed;
+                return Natron::StatFailed;
             }
             /*First we create a row that will serve as the output buffer.
              We copy the scan-line (with y inverted) in the inputImage to the row.*/
             int exrY = roi.top() - y - 1;
 
             const float* src_pixels = inputImage->pixelAt(roi.left(), exrY);
-            Powiter::Row row(roi.left(),y,roi.right(),Powiter::Mask_RGBA);
+            Natron::Row row(roi.left(),y,roi.right(),Natron::Mask_RGBA);
             foreachChannels(z, _imp->_channels){
                 float* to = row.begin(z);
                 for (int i = 0; i < roi.width(); ++i) {
                     to[i] = src_pixels[i*4 + z -1];
                 }
                 //colorspace conversion
-                to_float(z, to, to, row.begin(Powiter::Channel_alpha), row.width());
+                to_float(z, to, to, row.begin(Natron::Channel_alpha), row.width());
             }
             
             if(_writer->aborted()){
-                return Powiter::StatFailed;
+                return Natron::StatFailed;
             }
             
             /*we create the frame buffer*/
@@ -272,17 +272,17 @@ Powiter::Status ExrEncoder::render(boost::shared_ptr<const Powiter::Image> input
             _imp->_outputFile->writePixels(1);
         }
     }catch(const std::exception& e){
-        _writer->setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
-        return Powiter::StatFailed;
+        _writer->setPersistentMessage(Natron::ERROR_MESSAGE, e.what());
+        return Natron::StatFailed;
     }
-    return Powiter::StatOK;
+    return Natron::StatOK;
 
 }
 
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-Powiter::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) {
+Natron::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod) {
     try{
         ExrEncoderKnobs* knobs = dynamic_cast<ExrEncoderKnobs*>(_optionalKnobs);
         Imf_::Compression compression(EXR::stringToCompression(knobs->_compression));
@@ -317,7 +317,7 @@ Powiter::Status ExrEncoder::setupFile(const QString& filename, const RectI& rod)
         _imp->_exrDispW = exrDispW;
     }catch(const std::exception& e){
         cout << e.what() << endl;
-        return Powiter::StatFailed;
+        return Natron::StatFailed;
     }
-    return Powiter::StatOK;
+    return Natron::StatOK;
 }

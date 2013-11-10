@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,10 +27,10 @@ using std::make_pair;
 # define FLT_MAX 3.40282347e+38F
 #endif
 
-using namespace Powiter;
-using namespace Powiter::Color;
+using namespace Natron;
+using namespace Natron::Color;
 
-namespace Powiter
+namespace Natron
 {
 namespace Color
 {
@@ -236,7 +236,7 @@ void Lut::from_byte(float *to, const uchar *from, const uchar *alpha, int W, int
     }
 }
 
-void Lut::from_byteQt(float *to, const QRgb *from, Powiter::Channel z, bool premult, int W, int delta) const
+void Lut::from_byteQt(float *to, const QRgb *from, Natron::Channel z, bool premult, int W, int delta) const
 {
     assert(!linear());
     validate();
@@ -257,7 +257,7 @@ void Lut::from_byteQt(float *to, const QRgb *from, Powiter::Channel z, bool prem
     } else {
         lookup = qRed;
     }
-    if (z == Powiter::Channel_alpha) {
+    if (z == Natron::Channel_alpha) {
         linear_from_byteQt(to, from, z, W, delta);
     } else {
         if (premult) {
@@ -706,28 +706,28 @@ void linear_from_byte(float *to, const uchar *from, int W, int delta)
     }
 }
 
-void linear_from_byteQt(float *to, const QRgb *from, Powiter::Channel z, int W, int delta)
+void linear_from_byteQt(float *to, const QRgb *from, Natron::Channel z, int W, int delta)
 {
     typedef int(*ChannelLookup)(QRgb);
     ChannelLookup lookup;
     switch (z) {
-    case Powiter::Channel_alpha:
+    case Natron::Channel_alpha:
         lookup = qAlpha;
         break;
-    case Powiter::Channel_red:
+    case Natron::Channel_red:
         lookup = qRed;
         break;
-    case Powiter::Channel_green:
+    case Natron::Channel_green:
         lookup = qGreen;
         break;
-    case Powiter::Channel_blue:
+    case Natron::Channel_blue:
         lookup = qBlue;
         break;
     default:
         lookup = qRed;
         break;
     }
-    if (z == Powiter::Channel_alpha) {
+    if (z == Natron::Channel_alpha) {
         for (int i = 0 ; i < W ; i += delta) {
             const QRgb c = from[i];
             to[i] = (float)qAlpha(c) / 255.f;
@@ -1177,4 +1177,4 @@ void allocateLuts() {}
 void deallocateLuts() {}
 
 } // namespace Color
-} // namespace Powiter
+} // namespace Natron

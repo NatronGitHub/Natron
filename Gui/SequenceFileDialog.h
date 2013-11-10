@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ class SequenceItemDelegate;
 
 
 #if QT_VERSION < 0x050000
-namespace Powiter{
+namespace Natron{
     inline bool removeRecursively(const QString& dirName){
         bool result = false;
         QDir dir(dirName);

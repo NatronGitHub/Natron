@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/LRUHashTable.h"
 #include "Readers/Decoder.h"
-namespace Powiter{
+namespace Natron{
     class FrameEntry;
 }
 class File_Knob;
@@ -34,7 +34,7 @@ class ViewerCache;
 /** @class Reader is the node associated to all image format readers. The reader creates the appropriate Read
  *to decode a certain image format.
 **/
-class Reader : public Powiter::EffectInstance
+class Reader : public Natron::EffectInstance
 {
     
 public:
@@ -148,11 +148,11 @@ public:
         int _maximumBufferSize; /// maximum size of the buffer
     };
     
-    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n){
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
         return new Reader(n);
     }
     
-    Reader(Powiter::Node* node);
+    Reader(Natron::Node* node);
 
     virtual ~Reader();
   
@@ -177,7 +177,7 @@ public:
      */
     virtual std::string description() const OVERRIDE;
 
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
 	
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
@@ -203,14 +203,14 @@ public:
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE;
 
-    virtual Powiter::Status preProcessFrame(SequenceTime time) OVERRIDE;
+    virtual Natron::Status preProcessFrame(SequenceTime time) OVERRIDE;
 
-    virtual Powiter::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,
+                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 
-    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Powiter::EffectInstance::FULLY_SAFE;}
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
 
     virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
 

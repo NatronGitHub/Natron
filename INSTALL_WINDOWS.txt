@@ -1,7 +1,7 @@
 developer installation for windows
 ==================================
 
-This file is supposed to guide you step by step to have working (compiling) version of Powiter on windows. Right now, only a Visual studio 2010 solution file is proposed.
+This file is supposed to guide you step by step to have working (compiling) version of Natron on windows. Right now, only a Visual studio 2010 solution file is proposed.
 
 ##Note
 
@@ -11,7 +11,7 @@ If you're planning on writing a CMAKE based project file, and that you succeed i
 
 ##Install libraries
 
-In order to have Powiter compiling, first you need to install the required libraries.
+In order to have Natron compiling, first you need to install the required libraries.
 
 ###Qt 4.8.5
 
@@ -45,9 +45,9 @@ On windows,OpenGL API is not up to date to the features we need. You'll need to 
 
 ### OpenFX
 
-In the Powiter_Core directory, open a terminal and type
+In the Natron_Core directory, open a terminal and type
 	git submodule update -i
-This will properly fetch from github a fork of OpenFX into Powiter_Core/libs/OpenFX.
+This will properly fetch from github a fork of OpenFX into Natron_Core/libs/OpenFX.
 
 ###Expat
 
@@ -62,7 +62,7 @@ We're done here for libraries.
 
 You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries.
 
-- create the config.pri file next to the Powiter.pro file.
+- create the config.pri file next to the Natron.pro file.
 
 You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system. Note that for Qt you just need to specify where the include files are.
 For Eigen some issues might arise if it is already included in the system search path. Generally I left the eigen{} field blank in the config.pro to work around it.
@@ -98,14 +98,14 @@ glew{
 
 expat{
     INCLUDEPATH += $$PWD/libs/OpenFX/HostSupport/expat-2.0.1/lib
-    LIBS += -L$$quote(C:\\Users\\Lex\\Desktop\\Powiter\\Powiter_Core\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
+    LIBS += -L$$quote(C:\\Users\\Lex\\Desktop\\Natron\\Natron_Core\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\win32\\bin\\Release) -llibexpatMT
    # LIBS += shell32.lib
 }
 
 ###Copy the dll's over
 
 Copy all the required dll's to the executable directory.
-If Powiter launches that means you got it all right;)
+If Natron launches that means you got it all right;)
 
 ### Build:
 
@@ -114,12 +114,12 @@ The <srcPath> must be absolute and <buildPath> must not be a subdir of <srcPath>
 
 mkdir <buildPath>
 cd <buildfolder>
-qmake <srcPath>/Powiter.pro
+qmake <srcPath>/Natron.pro
 make
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-qmake CONFIG+=debug <srcPath>/Powiter.pro
+qmake CONFIG+=debug <srcPath>/Natron.pro
 
 You'll need to edit the file /etc/launchd.conf and add this line
 

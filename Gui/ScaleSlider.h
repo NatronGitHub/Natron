@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 
 
 
-using Powiter::Scale_Type;
+using Natron::Scale_Type;
 
 class ScaleSlider : public QWidget
 {
@@ -31,7 +31,7 @@ class ScaleSlider : public QWidget
     
     double _minimum,_maximum;
     int _nbValues;
-    Powiter::Scale_Type _type;
+    Natron::Scale_Type _type;
     double _position;
     std::vector<double> _values;
     std::vector<double> _displayedValues;
@@ -44,7 +44,7 @@ public:
                 double top, // the maximum value
                 int nbValues, // how many values you want in this interval
                 double initialPos, // the initial value
-                Powiter::Scale_Type type = Powiter::LINEAR_SCALE, // the type of scale
+                Natron::Scale_Type type = Natron::LINEAR_SCALE, // the type of scale
                 QWidget* parent=0);
     
     virtual ~ScaleSlider();
@@ -55,9 +55,9 @@ public:
     
     void setPrecision(int i){_nbValues=i;}
     
-    void changeScale(Powiter::Scale_Type type){_type = type;}
+    void changeScale(Natron::Scale_Type type){_type = type;}
     
-    Powiter::Scale_Type type() const {return _type;}
+    Natron::Scale_Type type() const {return _type;}
     
     double minimum() const {return _minimum;}
     

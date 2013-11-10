@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -48,7 +48,7 @@ class QMutex;
 class TimeLine;
 class Settings;
 
-namespace Powiter {
+namespace Natron {
 class OutputEffectInstance;
 class LibraryBinary;
 class EffectInstance;
@@ -75,7 +75,7 @@ public:
      The name passed in parameter must match a valid node name,
      otherwise an exception is thrown. You should encapsulate the call
      by a try-catch block.*/
-    Powiter::Node* createNode(const QString& name,bool requestedByLoad = false);
+    Natron::Node* createNode(const QString& name,bool requestedByLoad = false);
     
     /*Pointer to the GUI*/
     Gui* getGui() WARN_UNUSED_RETURN {return _gui;}
@@ -88,7 +88,7 @@ public:
 
     int getCurrentProjectViewsCount() const;
 
-    boost::shared_ptr<Powiter::Project> getProject() const { return _currentProject;}
+    boost::shared_ptr<Natron::Project> getProject() const { return _currentProject;}
 
     boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN ;
 
@@ -129,17 +129,17 @@ public:
     ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
 
 
-    bool connect(int inputNumber,const std::string& inputName,Powiter::Node* output);
+    bool connect(int inputNumber,const std::string& inputName,Natron::Node* output);
 
-    bool connect(int inputNumber,Powiter::Node* input,Powiter::Node* output);
+    bool connect(int inputNumber,Natron::Node* input,Natron::Node* output);
 
-    bool disconnect(Powiter::Node* input,Powiter::Node* output);
+    bool disconnect(Natron::Node* input,Natron::Node* output);
 
-    void autoConnect(Powiter::Node* target,Powiter::Node* created);
+    void autoConnect(Natron::Node* target,Natron::Node* created);
 
-    NodeGui* getNodeGui(Powiter::Node* n) const WARN_UNUSED_RETURN;
+    NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
 
-    Powiter::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
+    Natron::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
 
 
     void connectViewersToViewerCache();
@@ -154,9 +154,9 @@ public:
 
     void informationDialog(const std::string& title,const std::string& message) const;
 
-    Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
-            Powiter::StandardButtons(Powiter::Yes | Powiter::No),
-                                           Powiter::StandardButton defaultButton = Powiter::NoButton) const WARN_UNUSED_RETURN;
+    Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
+            Natron::StandardButtons(Natron::Yes | Natron::No),
+                                           Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
 
 
 
@@ -173,7 +173,7 @@ public slots:
 
     void triggerAutoSave();
 
-    void onRenderingOnDiskStarted(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    void onRenderingOnDiskStarted(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
 
 
 signals:
@@ -195,11 +195,11 @@ private:
 
     Gui* _gui; // the view of the MVC pattern
 
-    boost::shared_ptr<Powiter::Project> _currentProject;
+    boost::shared_ptr<Natron::Project> _currentProject;
 
     int _appID;
 
-    std::map<Powiter::Node*,NodeGui*> _nodeMapping;
+    std::map<Natron::Node*,NodeGui*> _nodeMapping;
 
     QMutex* _autoSaveMutex;
 
@@ -255,14 +255,14 @@ class AppManager : public QObject, public Singleton<AppManager>
 public:
     
     
-    typedef std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> >::iterator ReadPluginsIterator;
+    typedef std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> >::iterator ReadPluginsIterator;
     typedef ReadPluginsIterator WritePluginsIterator;
     
     AppManager();
     
     virtual ~AppManager();
     
-    const boost::scoped_ptr<Powiter::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
+    const boost::scoped_ptr<Natron::OfxHost>& getOfxHost() const WARN_UNUSED_RETURN {return ofxHost;}
 
     AppInstance* newAppInstance(bool background,const QString& projectName = QString(),const QStringList& writers = QStringList());
 
@@ -281,7 +281,7 @@ public:
 
     QMutex* getMutexForPlugin(const QString& pluginName) const;
 
-    Powiter::LibraryBinary* getPluginBinary(const QString& pluginName) const;
+    Natron::LibraryBinary* getPluginBinary(const QString& pluginName) const;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double pixel_aspect = 1.0) const WARN_UNUSED_RETURN;
@@ -291,16 +291,16 @@ public:
     const std::vector<PluginToolButton*>& getPluginsToolButtons() const WARN_UNUSED_RETURN {return _toolButtons;}
 
     /*Tries to load all plugins in directory "where"*/
-    static std::vector<Powiter::LibraryBinary*> loadPlugins (const QString& where) WARN_UNUSED_RETURN;
+    static std::vector<Natron::LibraryBinary*> loadPlugins (const QString& where) WARN_UNUSED_RETURN;
 
     /*Tries to load all plugins in directory "where" that contains all the functions described by
  their name in "functions".*/
-    static std::vector<Powiter::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
+    static std::vector<Natron::LibraryBinary*> loadPluginsAndFindFunctions(const QString& where,
                                                                             const std::vector<std::string>& functions) WARN_UNUSED_RETURN;
 
-    const Powiter::Cache<Powiter::FrameEntry>& getViewerCache() const WARN_UNUSED_RETURN {return *_viewerCache;}
+    const Natron::Cache<Natron::FrameEntry>& getViewerCache() const WARN_UNUSED_RETURN {return *_viewerCache;}
 
-    const Powiter::Cache<Powiter::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
+    const Natron::Cache<Natron::Image>& getNodeCache() const WARN_UNUSED_RETURN {return *_nodeCache;}
 
     const KnobFactory& getKnobFactory() const WARN_UNUSED_RETURN {return *_knobFactory;}
 
@@ -343,7 +343,7 @@ private:
     //// READ PLUGINS
     /*loads extra reader plug-ins */
     void loadReadPlugins();
-    /*loads reads that are incorporated to Powiter*/
+    /*loads reads that are built-in*/
     void loadBuiltinReads();
     //////////////////////////////
 
@@ -368,29 +368,29 @@ private:
     int _topLevelInstanceID;
 
     /*map< decoder name, pair< vector<file type decoded>, decoder library> >*/
-    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _readPluginsLoaded;
+    std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _readPluginsLoaded;
 
     /*map< encoder name, pair< vector<file type encoded>, encoder library> >*/
-    std::map< std::string,std::pair< std::vector<std::string> ,Powiter::LibraryBinary*> > _writePluginsLoaded;
+    std::map< std::string,std::pair< std::vector<std::string> ,Natron::LibraryBinary*> > _writePluginsLoaded;
 
     std::vector<Format*> _formats;
 
-    typedef std::map<QString,std::pair<Powiter::LibraryBinary*, QMutex*> > PluginsMap;
+    typedef std::map<QString,std::pair<Natron::LibraryBinary*, QMutex*> > PluginsMap;
     PluginsMap _plugins; /*!< map of all plug-ins loaded + a global mutex for each plug-in*/
 
-    boost::scoped_ptr<Powiter::OfxHost> ofxHost;
+    boost::scoped_ptr<Natron::OfxHost> ofxHost;
 
     std::vector<PluginToolButton*> _toolButtons;
 
     boost::scoped_ptr<KnobFactory> _knobFactory;
 
-    boost::scoped_ptr<Powiter::Cache<Powiter::Image> >  _nodeCache;
+    boost::scoped_ptr<Natron::Cache<Natron::Image> >  _nodeCache;
 
-    boost::scoped_ptr<Powiter::Cache<Powiter::FrameEntry> > _viewerCache;
+    boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
 
 };
 
-namespace Powiter{
+namespace Natron{
 
 inline void errorDialog(const std::string& title,const std::string& message){
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
@@ -423,9 +423,9 @@ inline void informationDialog(const std::string& title,const std::string& messag
     }
 }
 
-inline Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
-        Powiter::StandardButtons(Powiter::Yes | Powiter::No),
-                                              Powiter::StandardButton defaultButton = Powiter::NoButton){
+inline Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
+        Natron::StandardButtons(Natron::Yes | Natron::No),
+                                              Natron::StandardButton defaultButton = Natron::NoButton){
     
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
     assert(topLvlInstance);
@@ -433,11 +433,11 @@ inline Powiter::StandardButton questionDialog(const std::string& title,const std
         return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
     }else{
         std::cout << "QUESTION ASKED: " << message << std::endl;
-        std::cout << POWITER_APPLICATION_NAME " answered yes." << std::endl;
-        return Powiter::Yes;
+        std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
+        return Natron::Yes;
     }
 }
-} // namespace Powiter
+} // namespace Natron
 
 
 #endif // POWITER_GLOBAL_CONTROLER_H_

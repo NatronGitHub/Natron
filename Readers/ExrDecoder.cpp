@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 
 #include "ExrDecoder.h"
 
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
 #include <fstream>
 #endif
 #include <QtGui/QImage>
@@ -20,7 +20,7 @@
 #include <ImfPixelType.h>
 #include <ImfChannelList.h>
 #include <ImfInputFile.h>
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
 #include <ImfStdIO.h>
 #endif
 
@@ -44,10 +44,10 @@ struct ExrDecoder::Implementation {
     Implementation();
 
     Imf::InputFile* _inputfile;
-    std::map<Powiter::Channel, std::string> _channel_map;
+    std::map<Natron::Channel, std::string> _channel_map;
     std::vector<std::string> _views;
     int _dataOffset;
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
     std::ifstream* _inputStr;
     Imf::StdIFStream* _inputStdStream;
 #endif
@@ -56,7 +56,7 @@ struct ExrDecoder::Implementation {
 
 
 namespace EXR {
-static Powiter::Channel fromExrChannel(const std::string& from)
+static Natron::Channel fromExrChannel(const std::string& from)
 {
     if (from == "R" ||
         from == "r" ||
@@ -65,7 +65,7 @@ static Powiter::Channel fromExrChannel(const std::string& from)
         from == "red" ||
         from == "y" ||
         from == "Y") {
-        return Powiter::Channel_red;
+        return Natron::Channel_red;
     }
     if (from == "G" ||
         from == "g" ||
@@ -74,7 +74,7 @@ static Powiter::Channel fromExrChannel(const std::string& from)
         from == "green" ||
         from == "ry" ||
         from == "RY") {
-        return Powiter::Channel_green;
+        return Natron::Channel_green;
     }
     if (from == "B" ||
         from == "b" ||
@@ -83,37 +83,37 @@ static Powiter::Channel fromExrChannel(const std::string& from)
         from == "blue" ||
         from == "by" ||
         from == "BY") {
-        return Powiter::Channel_blue;
+        return Natron::Channel_blue;
     }
     if (from == "A" ||
         from == "a" ||
         from == "Alpha" ||
         from == "ALPHA" ||
         from == "alpha") {
-        return Powiter::Channel_alpha;
+        return Natron::Channel_alpha;
     }
     if (from == "Z" ||
         from == "z" ||
         from == "Depth" ||
         from == "DEPTH" ||
         from == "depth") {
-        return Powiter::Channel_Z;
+        return Natron::Channel_Z;
     }
     // The following may throw if from is not a channel name which begins with "Channel_"
-    return Powiter::getChannelByName(from);
+    return Natron::getChannelByName(from);
 }
 
 class ChannelExtractor
 {
 public:
     ChannelExtractor(const std::string& name, const std::vector<std::string>& views) :
-    _mappedChannel(Powiter::Channel_black),
+    _mappedChannel(Natron::Channel_black),
     _valid(false)
     {     _valid = extractExrChannelName(name.c_str(), views);  }
 
     ~ChannelExtractor() {}
 
-    Powiter::Channel _mappedChannel;
+    Natron::Channel _mappedChannel;
     bool _valid;
     std::string _chan;
     std::string _layer;
@@ -202,12 +202,12 @@ private:
 
 
 
-Powiter::Status ExrDecoder::readHeader(const QString& filename){
+Natron::Status ExrDecoder::readHeader(const QString& filename){
     
     _imp->_channel_map.clear();
     _imp->_views.clear();
     try {
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
         QByteArray ba = filename.toLocal8Bit();
         if(_imp->_inputStr){
             delete _imp->_inputStr;
@@ -218,7 +218,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         if(_imp->_inputfile){
             delete _imp->_inputfile;
         }
-        _imp->_inputStr = new std::ifstream(PowiterWindows::s2ws(ba.data()),std::ios_base::binary);
+        _imp->_inputStr = new std::ifstream(NatronWindows::s2ws(ba.data()),std::ios_base::binary);
         _imp->_inputStdStream = new Imf_::StdIFStream(*_inputStr,ba.data());
         _imp->_inputfile = new Imf_::InputFile(*_inputStdStream);
 #else
@@ -267,7 +267,7 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
 #endif // !OPENEXR_NO_MULTIVIEW
         std::map<Imf_::PixelType, int> pixelTypes;
         // convert exr channels to powiter channels
-        Powiter::ChannelSet mask;
+        Natron::ChannelSet mask;
         const Imf_::ChannelList& imfchannels = _imp->_inputfile->header().channels();
         Imf_::ChannelList::ConstIterator chan;
         for (chan = imfchannels.begin(); chan != imfchannels.end(); ++chan) {
@@ -276,13 +276,13 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
                 continue;
             pixelTypes[chan.channel().type]++;
             EXR::ChannelExtractor exrExctractor(chan.name(), _imp->_views);
-            std::set<Powiter::Channel> channels;
+            std::set<Natron::Channel> channels;
             if (exrExctractor.isValid()) {
                 channels.insert(exrExctractor._mappedChannel);
                 //cout << "size : "<< channels.size() << endl;
-                for (std::set<Powiter::Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
-                    Powiter::Channel channel = *it;
-                    //cout <<" channel_map[" << Powiter::getChannelName(channel) << "] = " << chan.name() << endl;
+                for (std::set<Natron::Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
+                    Natron::Channel channel = *it;
+                    //cout <<" channel_map[" << Natron::getChannelName(channel) << "] = " << chan.name() << endl;
                     bool writeChannelMapping = true;
                     ChannelsMap::const_iterator found = _imp->_channel_map.find(channel);
                     if(found != _imp->_channel_map.end()){
@@ -336,13 +336,13 @@ Powiter::Status ExrDecoder::readHeader(const QString& filename){
         rod.set(left, bottom, right+1, top+1);
         
         setReaderInfo(imageFormat, rod, mask);
-        return Powiter::StatOK;
+        return Natron::StatOK;
     }
     catch (const std::exception& exc) {
         cout << "OpenEXR error: " << exc.what() << endl;
         delete _imp->_inputfile;
         _imp->_inputfile = 0;
-        return Powiter::StatFailed;
+        return Natron::StatFailed;
     }
     
 }
@@ -357,7 +357,7 @@ ExrDecoder::ExrDecoder(Reader* op)
 ExrDecoder::Implementation::Implementation()
 : _inputfile(0)
 , _dataOffset(0)
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
 , _inputStr(NULL)
 , _inputStdStream(NULL)
 #endif
@@ -365,21 +365,21 @@ ExrDecoder::Implementation::Implementation()
 }
 
 void ExrDecoder::initializeColorSpace(){
-    _lut=Powiter::Color::getLut(Powiter::Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
+    _lut=Natron::Color::getLut(Natron::Color::LUT_DEFAULT_FLOAT); // linear color-space for exr files
 }
 
 ExrDecoder::~ExrDecoder(){
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
     delete _imp->_inputStr ;
     delete _imp->_inputStdStream ;
 #endif
     delete _imp->_inputfile;
 }
 
-Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
+Natron::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output){
     for (int y = roi.bottom(); y < roi.top(); ++y) {
-        Powiter::ChannelSet channels(Powiter::Mask_RGBA);
-        Powiter::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);
+        Natron::ChannelSet channels(Natron::Mask_RGBA);
+        Natron::Row row(output->getRoD().left(),y,output->getRoD().right(),channels);
         const Imath::Box2i& dispwin = _imp->_inputfile->header().displayWindow();
         const Imath::Box2i& datawin = _imp->_inputfile->header().dataWindow();
         int exrY = dispwin.max.y - row.y();
@@ -392,7 +392,7 @@ Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,c
         // if we're below or above the data window
         if(exrY < datawin.min.y || exrY > datawin.max.y || R <= X) {
             row.eraseAll();
-            return Powiter::StatOK;
+            return Natron::StatOK;
         }
         
         Imf_::FrameBuffer fbuf;
@@ -414,7 +414,7 @@ Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,c
                 //not found in the file, we zero it out
                 // we're responsible for filling all channels requested by the row
                 float fillValue = 0.f;
-                if (z == Powiter::Channel_alpha) {
+                if (z == Natron::Channel_alpha) {
                     fillValue = 1.f;
                 }
                 row.fill(z,fillValue);
@@ -426,13 +426,13 @@ Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,c
                 _imp->_inputfile->setFrameBuffer(fbuf);
                 _imp->_inputfile->readPixels(exrY);
             } catch (const std::exception& exc) {
-                _reader->setPersistentMessage(Powiter::ERROR_MESSAGE, exc.what());
-                return Powiter::StatFailed;
+                _reader->setPersistentMessage(Natron::ERROR_MESSAGE, exc.what());
+                return Natron::StatFailed;
             }
         }
         
         //  colorspace conversion
-        const float* alpha = row.begin(Powiter::Channel_alpha);
+        const float* alpha = row.begin(Natron::Channel_alpha);
         foreachChannels(z, channels){
             float* to = row.begin(z) - row.left();
             const float* from = row.begin(z) - row.left();
@@ -440,7 +440,7 @@ Powiter::Status ExrDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,c
                 from_float(z,to + X ,from + X,alpha, R-X,1);
             }
         }
-        Powiter::copyRowToImage(row, y, row.left(), output.get());
+        Natron::copyRowToImage(row, y, row.left(), output.get());
     }
-    return Powiter::StatOK;
+    return Natron::StatOK;
 }

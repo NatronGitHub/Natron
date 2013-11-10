@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 #include "Engine/VideoEngine.h"
 #include "Engine/ViewerInstance.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 static std::string getParamLabel(OFX::Host::Param::Instance* param){
     std::string label = param->getProperties().getStringProperty(kOfxPropLabel);

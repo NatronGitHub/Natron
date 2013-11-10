@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,20 +42,20 @@ public:
        
     /*Must implement it to initialize the appropriate colorspace  for
      the file type. You can initialize the _lut member by calling the
-     function Powiter::Color::getLut(datatype) */
+     function Natron::Color::getLut(datatype) */
     virtual void initializeColorSpace() OVERRIDE;
     
     /*This must be implemented to do the output colorspace conversion*/
-	virtual Powiter::Status render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) OVERRIDE;
+	virtual Natron::Status render(boost::shared_ptr<const Natron::Image> inputImage,int view,const RectI& roi) OVERRIDE;
     
     virtual void finalizeFile() OVERRIDE;
     
     /*This function initialises the output file/output storage structure and put necessary info in it, like
      meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
      otherwise it would stall the GUI.*/
-    virtual Powiter::Status setupFile(const QString& filename,const RectI& rod) OVERRIDE;
+    virtual Natron::Status setupFile(const QString& filename,const RectI& rod) OVERRIDE;
 
-    virtual void supportsChannelsForWriting(Powiter::ChannelSet& channels) const OVERRIDE;
+    virtual void supportsChannelsForWriting(Natron::ChannelSet& channels) const OVERRIDE;
     
 };
 

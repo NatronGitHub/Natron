@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,7 @@
 #include "Gui/KnobGui.h"
 #include "Gui/DockablePanel.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair; using std::pair;
 
 
@@ -51,7 +51,7 @@ KnobFactory::~KnobFactory(){
 }
 
 void KnobFactory::loadKnobPlugins(){
-    std::vector<LibraryBinary*> plugins = AppManager::loadPlugins(POWITER_KNOBS_PLUGINS_PATH);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPlugins(NATRON_KNOBS_PLUGINS_PATH);
     std::vector<std::string> functions;
     functions.push_back("BuildKnob");
     functions.push_back("BuildKnobGui");

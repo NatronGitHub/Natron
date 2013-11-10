@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,7 +9,7 @@
  *
  */
 #include "Log.h"
-#ifdef POWITER_LOG
+#ifdef NATRON_LOG
 
 
 #include <cassert>
@@ -25,7 +25,7 @@
 #include "Global/GlobalDefines.h"
 
 
-namespace Powiter{
+namespace Natron{
 
 class LogPrivate{
     
@@ -124,7 +124,7 @@ public:
     }
 };
 
-Log::Log(): Singleton<Powiter::Log>(),_imp(new LogPrivate()){}
+Log::Log(): Singleton<Natron::Log>(),_imp(new LogPrivate()){}
 
 Log::~Log(){ delete _imp; }
 
@@ -156,5 +156,5 @@ void Log::endFunction(const std::string& callerName,const std::string& function)
 }
 
 
-}//namespace Powiter
+}//namespace Natron
 #endif

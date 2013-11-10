@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,12 +29,12 @@
 
 #include "Writers/Encoder.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 using std::make_pair;
 
 Writer::Writer(Node* node):
-Powiter::OutputEffectInstance(node)
+Natron::OutputEffectInstance(node)
 , _requestedChannels(Mask_RGBA) // temporary
 , _premult(false)
 , _writeOptions(0)
@@ -82,7 +82,7 @@ static QString viewToString(int view,int viewsCount){
 }
 
 boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
-    Powiter::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
+    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
     Encoder* encoder = NULL;
     if(!binary){
         std::string exc("Couldn't find an appropriate encoder for filetype: ");
@@ -144,8 +144,8 @@ void Writer::initializeKnobs(){
     
     std::string filetypeStr("File type");
     _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
-    const std::map<std::string,Powiter::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
-    std::map<std::string,Powiter::LibraryBinary*>::const_iterator it = _encoders.begin();
+    const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
+    std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
     for(;it!=_encoders.end();++it) {
         _allFileTypes.push_back(it->first.c_str());
     }
@@ -168,7 +168,7 @@ bool Writer::continueOnError() const{
     return _continueOnError->getValue();
 }
 
-Powiter::Status Writer::renderWriter(SequenceTime time){
+Natron::Status Writer::renderWriter(SequenceTime time){
     const Format& renderFormat = getRenderFormat();
     int viewsCount = getRenderViewsCount();
     //null RoD for key because the key hash computation doesn't take into account the box
@@ -185,14 +185,14 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
         try{
             encoder = makeEncoder(time,i,viewsCount,renderFormat);
         }catch(const std::exception& e){
-            setPersistentMessage(Powiter::ERROR_MESSAGE, e.what());
+            setPersistentMessage(Natron::ERROR_MESSAGE, e.what());
             return StatFailed;
         }
         if(!encoder){
             return StatFailed;
         }
-        boost::shared_ptr<const Powiter::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
-        Powiter::Status st = encoder->render(inputImage, i, renderFormat);
+        boost::shared_ptr<const Natron::Image> inputImage = roi->first->renderRoI(time, scale,i,roi->second);
+        Natron::Status st = encoder->render(inputImage, i, renderFormat);
         if(st != StatOK){
             QFile::remove(encoder->filename());
             return st;
@@ -210,7 +210,7 @@ Powiter::Status Writer::renderWriter(SequenceTime time){
     return StatOK;
 }
 
-void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+void Writer::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
                            const RectI& roi,
                            int view,
                            boost::shared_ptr<Encoder> encoder){
@@ -221,7 +221,7 @@ void Writer::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
 
 bool Writer::validInfosForRendering(){
     /*check if filetype is valid*/
-    Powiter::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
+    Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
     if(!isValid) {
         return false;
     }
@@ -283,7 +283,7 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             delete _writeOptions;
             _writeOptions = 0;
         }
-        Powiter::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
+        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
         if(!isValid) return;
         
         QString file(_filename.c_str());

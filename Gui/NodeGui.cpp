@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -17,6 +17,7 @@
 #include <QAction> 
 #include <QtConcurrentRun>
 #include <QFontMetrics>
+#include <QMenu>
 
 #include "Gui/Edge.h"
 #include "Gui/DockablePanel.h"
@@ -36,7 +37,7 @@
 
 #include "Global/AppManager.h"
 
-#define POWITER_STATE_INDICATOR_OFFSET 5
+#define NATRON_STATE_INDICATOR_OFFSET 5
 
 using std::make_pair;
 
@@ -44,7 +45,7 @@ static const double pi=3.14159265358979323846264338327950288419717;
 
 NodeGui::NodeGui(NodeGraph* dag,
                  QVBoxLayout *dockContainer_,
-                 Powiter::Node *node_,
+                 Natron::Node *node_,
                  qreal x, qreal y,
                  QGraphicsItem *parent)
 : QObject()
@@ -90,7 +91,7 @@ NodeGui::NodeGui(NodeGraph* dag,
     _boundingBox = new QGraphicsRectItem(this);
     _boundingBox->setZValue(-1);
 	
-    QImage img(POWITER_IMAGES_PATH"RGBAchannels.png");
+    QImage img(NATRON_IMAGES_PATH"RGBAchannels.png");
     QPixmap pixmap = QPixmap::fromImage(img);
     pixmap = pixmap.scaled(10,10);
     _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
@@ -148,7 +149,7 @@ void NodeGui::togglePreview(){
     _internalNode->togglePreview();
     if(_internalNode->isPreviewEnabled()){
         if(!_previewPixmap){
-            QImage prev(POWITER_PREVIEW_WIDTH, POWITER_PREVIEW_HEIGHT, QImage::Format_ARGB32);
+            QImage prev(NATRON_PREVIEW_WIDTH, NATRON_PREVIEW_HEIGHT, QImage::Format_ARGB32);
             prev.fill(Qt::black);
             QPixmap prev_pixmap = QPixmap::fromImage(prev);
             _previewPixmap = new QGraphicsPixmapItem(prev_pixmap,this);
@@ -197,17 +198,17 @@ void NodeGui::updateShape(int width,int height){
     int pMWidth = metrics.width(persistentMessage);
     
     _persistentMessage->setPos(topLeft.x() + (width/2) - (pMWidth/2), topLeft.y() + height/2 - metrics.height()/2);
-    _stateIndicator->setRect(topLeft.x()-POWITER_STATE_INDICATOR_OFFSET,topLeft.y()-POWITER_STATE_INDICATOR_OFFSET,
-                             width+POWITER_STATE_INDICATOR_OFFSET*2,height+POWITER_STATE_INDICATOR_OFFSET*2);
+    _stateIndicator->setRect(topLeft.x()-NATRON_STATE_INDICATOR_OFFSET,topLeft.y()-NATRON_STATE_INDICATOR_OFFSET,
+                             width+NATRON_STATE_INDICATOR_OFFSET*2,height+NATRON_STATE_INDICATOR_OFFSET*2);
     if(_previewPixmap)
-        _previewPixmap->setPos(topLeft.x() + POWITER_PREVIEW_WIDTH/2,topLeft.y() + POWITER_PREVIEW_HEIGHT/2);
+        _previewPixmap->setPos(topLeft.x() + NATRON_PREVIEW_WIDTH/2,topLeft.y() + NATRON_PREVIEW_HEIGHT/2);
 
 }
 
 void NodeGui::refreshPosition(double x,double y){
     setPos(x, y);
     refreshEdges();
-    for (Powiter::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
+    for (Natron::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
@@ -215,8 +216,8 @@ void NodeGui::refreshPosition(double x,double y){
 }
 void NodeGui::refreshEdges(){
     for (NodeGui::InputEdgesMap::const_iterator i = _inputEdges.begin(); i!= _inputEdges.end(); ++i){
-        const Powiter::Node::InputMap& nodeInputs = _internalNode->getInputs();
-        Powiter::Node::InputMap::const_iterator it = nodeInputs.find(i->first);
+        const Natron::Node::InputMap& nodeInputs = _internalNode->getInputs();
+        Natron::Node::InputMap::const_iterator it = nodeInputs.find(i->first);
         assert(it!=nodeInputs.end());
         NodeGui *nodeInputGui = _graph->getGui()->getApp()->getNodeGui(it->second);
         i->second->setSource(nodeInputGui);
@@ -235,12 +236,12 @@ void NodeGui::markInputNull(Edge* e){
 
 
 
-void NodeGui::updateChannelsTooltip(const Powiter::ChannelSet& chan){
+void NodeGui::updateChannelsTooltip(const Natron::ChannelSet& chan){
     QString tooltip;
     tooltip.append("Channels in input: ");
     foreachChannels( z,chan){
         tooltip.append("\n");
-        tooltip.append(Powiter::getChannelName(z).c_str());
+        tooltip.append(Natron::getChannelName(z).c_str());
         
     }
     _channelsPixmap->setToolTip(tooltip);
@@ -251,8 +252,8 @@ void NodeGui::updatePreviewImage(int time){
 }
 
 void NodeGui::computePreviewImage(int time){
-    int w = POWITER_PREVIEW_WIDTH;
-    int h = POWITER_PREVIEW_HEIGHT;
+    int w = NATRON_PREVIEW_WIDTH;
+    int h = NATRON_PREVIEW_HEIGHT;
     size_t dataSize = 4*w*h;
     {
         boost::scoped_array<U32> buf(new U32[dataSize]);
@@ -408,7 +409,7 @@ Edge* NodeGui::findConnectedEdge(NodeGui* parent){
 }
 
 bool NodeGui::connectEdge(int edgeNumber){
-    Powiter::Node::InputMap::const_iterator it = _internalNode->getInputs().find(edgeNumber);
+    Natron::Node::InputMap::const_iterator it = _internalNode->getInputs().find(edgeNumber);
     if(it == _internalNode->getInputs().end()){
         return false;
     }
@@ -444,7 +445,7 @@ void NodeGui::activate(){
         it->second->setActive(true);
     }
     refreshEdges();
-    for (Powiter::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
+    for (Natron::Node::OutputMap::const_iterator it = _internalNode->getOutputs().begin(); it!=_internalNode->getOutputs().end(); ++it) {
         if(it->second){
             it->second->doRefreshEdgesGUI();
         }
@@ -528,8 +529,8 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     
     _className = _node->getNode()->className();
    
-    const Powiter::Node::InputMap& inputs = _node->getNode()->getInputs();
-    for(Powiter::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
+    const Natron::Node::InputMap& inputs = _node->getNode()->getInputs();
+    for(Natron::Node::InputMap::const_iterator it = inputs.begin();it!=inputs.end();++it){
         if(it->second){
             _inputs.insert(std::make_pair(it->first, it->second->getName()));
         }else{

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 #include "Readers/Decoder.h"
 
 class QImage;
-namespace Powiter{
+namespace Natron{
 class Row;
 }
 class QtDecoder : public Decoder {
@@ -37,11 +37,11 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "QImage (Qt)";}
     
-    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
     virtual bool supports_stereo() const OVERRIDE {return false;}
     
-    virtual Powiter::Status readHeader(const QString& filename) OVERRIDE;
+    virtual Natron::Status readHeader(const QString& filename) OVERRIDE;
         
     virtual void initializeColorSpace() OVERRIDE;
 };

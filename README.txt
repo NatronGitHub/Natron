@@ -3,7 +3,7 @@
 #OPEN-SOURCE,CROSSPLATFORM(OSX/LINUX/WINDOWS) , NODAL, COMPOSITING SOFTWARE UNDER
 MOZILLA PUBLIC LICENSE V2.0 (MPL) #
 
-Check out http://mrkepzie.github.io/Powiter/ for a full presentation on what is Powiter and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in november,before the 1st release)].
+Check out http://mrkepzie.github.io/Natron/ for a full presentation on what is Natron and the concepts.[This presentation is a bit outdated, a new one will be published soon (probably in november,before the 1st release)].
 
 The development is going very well and most of the features are not pushed on the master branch yet.
 

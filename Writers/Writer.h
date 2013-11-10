@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@
 #include "Engine/EffectInstance.h"
 
 class Encoder;
-namespace Powiter{
+namespace Natron{
     class Image;
 }
 class OutputFile_Knob;
@@ -30,17 +30,17 @@ class EncoderKnobs;
 class Bool_Knob;
 class Button_Knob;
 class Int_Knob;
-class Writer: public QObject,public Powiter::OutputEffectInstance {
+class Writer: public QObject,public Natron::OutputEffectInstance {
     
     Q_OBJECT
     
 public:
   
-    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n){
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n){
         return new Writer(n);
     }
     
-    Writer(Powiter::Node* node);
+    Writer(Natron::Node* node);
         
     virtual ~Writer();
     
@@ -52,13 +52,13 @@ public:
 
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
-    Powiter::Status renderWriter(SequenceTime time);
+    Natron::Status renderWriter(SequenceTime time);
 	
     /*Returns true if all parameters are OK to start the rendering.
      This is used to know whether it should start the engine or not.*/
     bool validInfosForRendering();
     
-    const Powiter::ChannelSet& requestedChannels() const {return _requestedChannels;}
+    const Natron::ChannelSet& requestedChannels() const {return _requestedChannels;}
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
 
@@ -79,18 +79,18 @@ protected:
     
 	virtual void initializeKnobs() OVERRIDE;
     
-    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Powiter::EffectInstance::FULLY_SAFE;}
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
     
 private:
     
-    void renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
                        const RectI& roi,
                        int view,
                        boost::shared_ptr<Encoder> encoder);
     
     boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod);
     
-    Powiter::ChannelSet _requestedChannels;
+    Natron::ChannelSet _requestedChannels;
     bool _premult;
     EncoderKnobs* _writeOptions;
     std::string _filename;

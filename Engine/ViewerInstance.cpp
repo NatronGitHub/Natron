@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,13 +39,13 @@
 #define POWITER_FPS_REFRESH_RATE 10
 
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair;
 using boost::shared_ptr;
 
 
 ViewerInstance::ViewerInstance(Node* node):
-Powiter::OutputEffectInstance(node)
+Natron::OutputEffectInstance(node)
 , _uiContext(NULL)
 , _pboIndex(0)
 ,_frameCount(1)
@@ -75,14 +75,14 @@ ViewerInstance::~ViewerInstance(){
 }
 
 void ViewerInstance::connectSlotsToViewerCache(){
-    Powiter::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
+    Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
     QObject::connect(emitter, SIGNAL(addedEntry()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(emitter, SIGNAL(removedEntry()), this, SLOT(onCachedFrameAdded()));
     QObject::connect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
 }
 
 void ViewerInstance::disconnectSlotsToViewerCache(){
-    Powiter::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
+    Natron::CacheSignalEmitter* emitter = appPTR->getViewerCache().activateSignalEmitter();
     QObject::disconnect(emitter, SIGNAL(addedEntry()), this, SLOT(onCachedFrameAdded()));
     QObject::disconnect(emitter, SIGNAL(removedEntry()), this, SLOT(onCachedFrameAdded()));
     QObject::disconnect(emitter, SIGNAL(clearedInMemoryPortion()), this, SLOT(onViewerCacheCleared()));
@@ -101,7 +101,7 @@ int ViewerInstance::activeInput() const{
     return dynamic_cast<InspectorNode*>(getNode())->activeInput();
 }
 
-Powiter::Status ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+Natron::Status ViewerInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
     EffectInstance* n = input(activeInput());
     if(n){
         return n->getRegionOfDefinition(time,rod);
@@ -130,10 +130,10 @@ void ViewerInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
 
 
-Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
-#ifdef POWITER_LOG
-    Powiter::Log::beginFunction(getName(),"renderViewer");
-    Powiter::Log::print(QString("Time "+QString::number(time)).toStdString());
+Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
+#ifdef NATRON_LOG
+    Natron::Log::beginFunction(getName(),"renderViewer");
+    Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
     
     ViewerGL *viewer = _uiContext->viewer;
@@ -143,9 +143,9 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     RectI rod;
     Status stat = getRegionOfDefinition(time, &rod);
     if(stat == StatFailed){
-#ifdef POWITER_LOG
-        Powiter::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
-        Powiter::Log::endFunction(getName(),"renderViewer");
+#ifdef NATRON_LOG
+        Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+        Natron::Log::endFunction(getName(),"renderViewer");
 #endif
         return stat;
     }
@@ -174,8 +174,8 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     std::pair<int,int> columnSpan = viewer->computeColumnSpan(left,right, &columns);
     
     TextureRect textureRect(columnSpan.first,rowSpan.first,columnSpan.second,rowSpan.second,columns.size(),rows.size());
-#ifdef POWITER_LOG
-    Powiter::Log::print(QString("Image rect is..."
+#ifdef NATRON_LOG
+    Natron::Log::print(QString("Image rect is..."
                                                          " xmin= "+QString::number(left)+
                                                          " ymin= "+QString::number(bottom)+
                                                          " xmax= "+QString::number(right)+
@@ -187,9 +187,9 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                                                          " ymax= "+QString::number(textureRect.t+1)).toStdString());
 #endif
     if(textureRect.w == 0 || textureRect.h == 0){
-#ifdef POWITER_LOG
-        Powiter::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
-        Powiter::Log::endFunction(getName(),"renderViewer");
+#ifdef NATRON_LOG
+        Natron::Log::print(QString("getRegionOfDefinition returned StatFailed.").toStdString());
+        Natron::Log::endFunction(getName(),"renderViewer");
 #endif
         return StatFailed;
     }
@@ -233,10 +233,10 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
                 _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
         }
-#ifdef POWITER_LOG
-        Powiter::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
+#ifdef NATRON_LOG
+        Natron::Log::print(QString("The image was found in the ViewerCache with the following hash key: "+
                                                              QString::number(key.getHash())).toStdString());
-        Powiter::Log::endFunction(getName(),"renderViewer");
+        Natron::Log::endFunction(getName(),"renderViewer");
 #endif
         return StatOK;
     }
@@ -267,7 +267,7 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
         EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
         int viewsCount = getApp()->getCurrentProjectViewsCount();
         for(int view = 0 ; view < viewsCount ; ++view){
-            boost::shared_ptr<const Powiter::Image> inputImage;
+            boost::shared_ptr<const Natron::Image> inputImage;
             try{
                 inputImage = it->first->renderRoI(time, scale,view,it->second);
             }catch(...){
@@ -315,14 +315,14 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     
     /*we copy the frame to the cache*/
     if(!aborted()){
-        assert(sizeof(Powiter::Cache<Powiter::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
+        assert(sizeof(Natron::Cache<Natron::FrameEntry>::data_t) == 1); // _dataSize is in bytes, so it has to be a byte cache
         size_t bytesToCopy = _interThreadInfos._pixelsCount;
         if(viewer->hasHardware() && !viewer->byteMode()){
             bytesToCopy *= sizeof(float);
         }
         boost::shared_ptr<FrameEntry> cachedFrame = appPTR->getViewerCache().newEntry(key,bytesToCopy, 1);
         if(!cachedFrame){
-            setPersistentMessage(Powiter::WARNING_MESSAGE, "Failed to cache the frame rendered by the viewer.");
+            setPersistentMessage(Natron::WARNING_MESSAGE, "Failed to cache the frame rendered by the viewer.");
             QMutexLocker locker(&_usingOpenGLMutex);
             _usingOpenGL = true;
             emit doUnmapPBO();
@@ -360,7 +360,7 @@ Powiter::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer)
     return StatOK;
 }
 
-void ViewerInstance::renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+void ViewerInstance::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
                                const std::vector<std::pair<int,int> >& rows,
                                const std::vector<int>& columns){
     if(aborted()){

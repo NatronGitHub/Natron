@@ -1,6 +1,6 @@
 
 
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,11 +44,11 @@
 #include "Global/AppManager.h"
 #include "Global/MemoryInfo.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair;
 using std::cout; using std::endl;
 
-VideoEngine::VideoEngine(Powiter::OutputEffectInstance* owner,QObject* parent)
+VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 : QThread(parent)
 , _tree(owner)
 , _threadStarted(false)
@@ -547,7 +547,7 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 }
 
 
-RenderTree::RenderTree(Powiter::OutputEffectInstance* output):
+RenderTree::RenderTree(Natron::OutputEffectInstance* output):
 _output(output)
 ,_isViewer(false)
 ,_isOutputOpenFXNode(false)
@@ -647,7 +647,7 @@ void RenderTree::refreshKnobsAndHashAndClearPersistentMessage(){
 
 }
 
-Powiter::EffectInstance* RenderTree::getEffectForNode(Powiter::Node* node) const{
+Natron::EffectInstance* RenderTree::getEffectForNode(Natron::Node* node) const{
     for(TreeIterator it = _sorted.begin();it!=_sorted.end();++it){
         if (it->first == node) {
             return it->second;
@@ -680,7 +680,7 @@ void RenderTree::debug() const{
     }
 }
 
-Powiter::Status RenderTree::preProcessFrame(SequenceTime time){
+Natron::Status RenderTree::preProcessFrame(SequenceTime time){
     /*Validating the Tree in topological order*/
     for (TreeIterator it = begin(); it != end(); ++it) {
         for (int i = 0; i < it->second->maximumInputs(); ++i) {
@@ -688,12 +688,12 @@ Powiter::Status RenderTree::preProcessFrame(SequenceTime time){
                 return StatFailed;
             }
         }
-        Powiter::Status st = it->second->preProcessFrame(time);
-        if(st == Powiter::StatFailed){
+        Natron::Status st = it->second->preProcessFrame(time);
+        if(st == Natron::StatFailed){
             return st;
         }
     }
-    return Powiter::StatOK;
+    return Natron::StatOK;
 }
 
 

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -34,7 +34,7 @@
 #include "Gui/ViewerGL.h"
 #include "Gui/Gui.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 using std::make_pair;
 
@@ -53,7 +53,7 @@ static QString generateStringFromFormat(const Format& f){
 
 Project::Project(AppInstance* appInstance):
 KnobHolder(appInstance)
-, _projectName("Untitled." POWITER_PROJECT_FILE_EXTENION)
+, _projectName("Untitled." NATRON_PROJECT_FILE_EXTENION)
 , _hasProjectBeenSavedByUser(false)
 , _ageSinceLastSave(QDateTime::currentDateTime())
 , _timeline(new TimeLine())

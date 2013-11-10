@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef POWITER_ENGINE_ABSTRACTCACHE_H_
-#define POWITER_ENGINE_ABSTRACTCACHE_H_
+#ifndef NATRON_ENGINE_ABSTRACTCACHE_H_
+#define NATRON_ENGINE_ABSTRACTCACHE_H_
 
 #include <vector>
 #include <sstream>
@@ -48,7 +48,7 @@
 #include "Engine/Hash64.h"
 
 
-namespace Powiter{
+namespace Natron{
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
          * of 1 or more parameters that represent a "unique" element in the cache.
@@ -168,7 +168,7 @@ public:
             _storageMode = DISK;
             _path = path;
             try {
-                _backingFile  = new MemoryFile(_path,Powiter::if_exists_keep_if_dont_exists_create);
+                _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
             } catch(const std::runtime_error& r) {
                 std::cout << r.what() << std::endl;
                 throw std::bad_alloc();
@@ -190,7 +190,7 @@ public:
             throw std::logic_error("Buffer<T>::allocate(...) must have been called once before calling reOpenFileMapping()!");
         }
         try{
-            _backingFile  = new MemoryFile(_path,Powiter::if_exists_keep_if_dont_exists_create);
+            _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& r){
             std::cout << r.what() << std::endl;
             throw std::bad_alloc();
@@ -199,7 +199,7 @@ public:
 
     void restoreBufferFromFile(const std::string& path)  {
         try{
-            _backingFile  = new MemoryFile(path,Powiter::if_exists_keep_if_dont_exists_create);
+            _backingFile  = new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& r){
             throw std::bad_alloc();
         }
@@ -905,4 +905,4 @@ private:
 }
 
 
-#endif /* defined(POWITER_ENGINE_ABSTRACTCACHE_H_) */
+#endif /*NATRON_ENGINE_ABSTRACTCACHE_H_ */

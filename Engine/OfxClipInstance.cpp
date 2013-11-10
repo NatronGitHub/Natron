@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,10 +23,10 @@
 #include "Global/AppManager.h"
 #include "Global/Macros.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance
-                                 ,Powiter::OfxImageEffectInstance* effect
+                                 ,Natron::OfxImageEffectInstance* effect
                                  ,int /*index*/
                                  , OFX::Host::ImageEffect::ClipDescriptor* desc)
 : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
@@ -188,7 +188,7 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImage(OfxTime time, OfxRectD 
 
 OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, int view, OfxRectD */*optionalBounds*/){
     if(isOutput()){
-        boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
+        boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
         assert(outputImage);
         return new OfxImage(outputImage,*this);
     }else{
@@ -198,10 +198,10 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
         EffectInstance* input = getAssociatedNode();
         if(isOptional() && !input) {
             //make an empty image
-            boost::shared_ptr<Powiter::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
+            boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
             assert(outputImage);
             const RectI& rod = outputImage->getRoD();
-            boost::shared_ptr<Powiter::Image> image(new Powiter::Image(rod,scale,time));
+            boost::shared_ptr<Natron::Image> image(new Natron::Image(rod,scale,time));
             image->defaultInitialize();
             return  new OfxImage(image,*this);
         }
@@ -214,12 +214,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
                 break;
             }
         }
-        return new OfxImage(boost::const_pointer_cast<Powiter::Image>(_nodeInstance->getImage(inputIndex,time, scale,view)),*this);
+        return new OfxImage(boost::const_pointer_cast<Natron::Image>(_nodeInstance->getImage(inputIndex,time, scale,view)),*this);
     }
 
 }
 
-OfxImage::OfxImage(boost::shared_ptr<Powiter::Image> internalImage,OfxClipInstance &clip):
+OfxImage::OfxImage(boost::shared_ptr<Natron::Image> internalImage,OfxClipInstance &clip):
 OFX::Host::ImageEffect::Image(clip)
 ,_bitDepth(OfxImage::eBitDepthFloat)
 ,_floatImage(internalImage)
@@ -254,7 +254,7 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     return 0;
 }
 
-Powiter::EffectInstance* OfxClipInstance::getAssociatedNode() const {
+Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const {
     if(_isOutput)
         return _nodeInstance;
     else{

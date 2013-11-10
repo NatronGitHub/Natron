@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 
 
 
-#ifndef PowiterOsX_shaders_h
-#define PowiterOsX_shaders_h
+#ifndef NatronOsX_shaders_h
+#define NatronOsX_shaders_h
 
 /*Contains the definitions of the display shaders*/
 

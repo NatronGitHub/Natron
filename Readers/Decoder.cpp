@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 #include "Readers/Reader.h"
 #include "Readers/ExrDecoder.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 Decoder::Decoder(Reader* op_):
 _premult(false)
@@ -78,7 +78,7 @@ void Decoder::from_float(Channel z, float* to, const float* from, const float* a
 
 void Decoder::from_byte_rect(float* to,const uchar* from,
                              const RectI& rect,const RectI& rod,
-                             Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+                             Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_byte_rect(to,from,rect,rod,invertY,_premult,inputPacking);
     }else{
@@ -88,7 +88,7 @@ void Decoder::from_byte_rect(float* to,const uchar* from,
 
 void Decoder::from_short_rect(float* to,const U16* from,
                               const RectI& rect,const RectI& rod,
-                              Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+                              Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_short_rect(to,from,rect,rod,invertY,_premult,inputPacking);
     }else{
@@ -97,7 +97,7 @@ void Decoder::from_short_rect(float* to,const U16* from,
 }
 void Decoder::from_float_rect(float* to,const float* from,
                               const RectI& rect,const RectI& rod,
-                              Powiter::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
+                              Natron::Color::Lut::PackedPixelsFormat inputPacking ,bool invertY ){
     if(!_lut->linear()){
         _lut->from_float_rect(to,from,rect,rod,invertY,_premult,inputPacking);
     }else{
@@ -111,7 +111,7 @@ void Decoder::createKnobDynamically(){
 
 void Decoder::setReaderInfo(Format dispW,
 	const RectI& dataW,
-    Powiter::ChannelSet channels) {
+    Natron::ChannelSet channels) {
     _readerInfo->setDisplayWindow(dispW);
     _readerInfo->setRoD(dataW);
     _readerInfo->setChannels(channels);

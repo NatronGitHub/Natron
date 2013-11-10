@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@
 #include "ofxhImageEffect.h"
 
 
-/*This file contains the classes that connect the Powiter knobs to the OpenFX params.
+/*This file contains the classes that connect the knobs to the OpenFX params.
  Note that all the get(...) and set(...) functions are called BY PLUGIN and you should
  never call them. When the user interact with a knob, the onInstanceChanged() slot
  is called. In turn, the plug-in will fetch the value that has changed by calling get(...).

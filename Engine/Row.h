@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 
 #define POWITER_MAX_BUFFERS_PER_ROW 10
 
-namespace Powiter{
+namespace Natron{
     
     class Image;
     
@@ -92,7 +92,7 @@ namespace boost {
     namespace serialization {
         
         template<class Archive>
-        void serialize(Archive & ar, Powiter::RowKey & r, const unsigned int version)
+        void serialize(Archive & ar, Natron::RowKey & r, const unsigned int version)
         {
             (void)version;
             ar & r._nodeHashKey;
@@ -104,7 +104,7 @@ namespace boost {
     }
 }
 
-namespace Powiter{
+namespace Natron{
     
     
     /* @brief The row defines 1 scan-line in an image.
@@ -129,16 +129,16 @@ namespace Powiter{
         
         virtual ~Row() {}
        
-        float* begin(Powiter::Channel c){return _planesOffset[(int)c];}
+        float* begin(Natron::Channel c){return _planesOffset[(int)c];}
         
-        const float* begin(Powiter::Channel c) const{return _planesOffset[(int)c];}
+        const float* begin(Natron::Channel c) const{return _planesOffset[(int)c];}
 
-        float* end(Powiter::Channel c) {return begin(c) + width();}
+        float* end(Natron::Channel c) {return begin(c) + width();}
         
-        const float* end(Powiter::Channel c) const {return begin(c) + width();}
+        const float* end(Natron::Channel c) const {return begin(c) + width();}
 
         /*set to 0s the entirety of the channel c*/
-        void erase(Powiter::Channel c){
+        void erase(Natron::Channel c){
             if (begin(c)) {
                 std::fill(begin(c), end(c), 0.);
             }
@@ -150,7 +150,7 @@ namespace Powiter{
             }
         }
         
-        void fill(Powiter::Channel c,float fillValue) {
+        void fill(Natron::Channel c,float fillValue) {
             std::fill(begin(c), end(c), fillValue);
         }
         
@@ -175,7 +175,7 @@ namespace Powiter{
         float* _planesOffset[POWITER_MAX_VALID_CHANNEL_INDEX+1];
     };
     
-    void copyRowToImage(const Powiter::Row& row,int y,int x,Powiter::Image* output);
+    void copyRowToImage(const Natron::Row& row,int y,int x,Natron::Image* output);
     
     //function to convert row to image
     

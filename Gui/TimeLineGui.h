@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,7 +92,7 @@ private:
     int _increment; // 5 or 10 (for displayed values)
     bool _alphaCursor;
     QPointF _Mouse;
-    Powiter::TIMELINE_STATE _state;
+    Natron::TIMELINE_STATE _state;
     std::list<int> _cached;
 
     boost::shared_ptr<TimeLine> _timeline;

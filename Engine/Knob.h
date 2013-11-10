@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ class holder;
 class DockablePanel;
 class AppInstance;
 
-namespace Powiter {
+namespace Natron {
     class LibraryBinary;
 }
 
@@ -44,14 +44,14 @@ class KnobGui;
 class KnobHolder;
 class KnobFactory{
     
-    std::map<std::string,Powiter::LibraryBinary*> _loadedKnobs;
+    std::map<std::string,Natron::LibraryBinary*> _loadedKnobs;
     
 public:
     KnobFactory();
     
     ~KnobFactory();
     
-    const std::map<std::string,Powiter::LibraryBinary*>& getLoadedKnobs() const {return _loadedKnobs;}
+    const std::map<std::string,Natron::LibraryBinary*>& getLoadedKnobs() const {return _loadedKnobs;}
     
     Knob* createKnob(const std::string& id, KnobHolder* holder, const std::string& description,int dimension = 1) const;
     

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,13 +12,13 @@
 #ifndef LOG_H
 #define LOG_H
 
-#ifdef POWITER_LOG
+#ifdef NATRON_LOG
 
 #include "Engine/Singleton.h"
-namespace Powiter{
+namespace Natron{
 
 class LogPrivate;
-class Log : public Singleton<Powiter::Log>
+class Log : public Singleton<Natron::Log>
 {
     LogPrivate* _imp;
 public:

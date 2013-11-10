@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/Variant.h"
 
-namespace Powiter{
+namespace Natron{
 class Row;
 class Image;
 class EffectInstance;
@@ -42,7 +42,7 @@ class ViewerInstance;
 class QKeyEvent;
 class RenderTree;
 
-namespace Powiter{
+namespace Natron{
 
 class Node : public QObject
 {
@@ -53,21 +53,21 @@ public:
     typedef std::map<int,Node*> InputMap;
     typedef std::multimap<int,Node*> OutputMap;
 
-    Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name);
+    Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name);
     
     virtual ~Node();
     
     /*Never call this yourself.*/
-    void setLiveInstance(Powiter::EffectInstance* liveInstance) {_liveInstance = liveInstance;}
+    void setLiveInstance(Natron::EffectInstance* liveInstance) {_liveInstance = liveInstance;}
     
-    Powiter::EffectInstance* getLiveInstance() const {return _liveInstance;}
+    Natron::EffectInstance* getLiveInstance() const {return _liveInstance;}
     
     /**
      * @brief Find or creates a clone of the live instance (i.e all the knobs etc...) for the given tree.
      * The effect instance returns is guaranteed to reflect exactly the state of the live instance at the
      * time at which it has been called.
      **/
-    Powiter::EffectInstance* findOrCreateLiveInstanceClone(RenderTree* tree);
+    Natron::EffectInstance* findOrCreateLiveInstanceClone(RenderTree* tree);
     
     /**
      * @brief Forwarded to the live effect instance
@@ -210,9 +210,9 @@ public:
     void activate();
     
 
-    const Format& getRenderFormatForEffect(const Powiter::EffectInstance* effect) const;
+    const Format& getRenderFormatForEffect(const Natron::EffectInstance* effect) const;
     
-    int getRenderViewsCountForEffect(const Powiter::EffectInstance* effect) const;
+    int getRenderViewsCountForEffect(const Natron::EffectInstance* effect) const;
     
     /**
      * @brief Forwarded to the live effect instance
@@ -283,15 +283,15 @@ public:
     bool isActivated() const {return _activated;}
 
     
-    boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
+    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const;
     
-    void addImageBeingRendered(boost::shared_ptr<Powiter::Image>,SequenceTime time,int view );
+    void addImageBeingRendered(boost::shared_ptr<Natron::Image>,SequenceTime time,int view );
     
     void removeImageBeingRendered(SequenceTime time,int view );
     
-    void abortRenderingForEffect(Powiter::EffectInstance* effect);
+    void abortRenderingForEffect(Natron::EffectInstance* effect);
 
-    Powiter::EffectInstance* findExistingEffect(RenderTree* tree) const;
+    Natron::EffectInstance* findExistingEffect(RenderTree* tree) const;
     
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
@@ -304,7 +304,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Powiter::MessageType type,const std::string& content) const;
+    bool message(Natron::MessageType type,const std::string& content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -314,7 +314,7 @@ public:
      * ERROR_MESSAGE : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Powiter::MessageType type,const std::string& content);
+    void setPersistentMessage(Natron::MessageType type,const std::string& content);
     
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
@@ -337,7 +337,7 @@ public slots:
         emit previewImageChanged(time);
     }
     
-    void notifyGuiChannelChanged(const Powiter::ChannelSet& c){
+    void notifyGuiChannelChanged(const Natron::ChannelSet& c){
         emit channelsChanged(c);
     }
 
@@ -374,7 +374,7 @@ signals:
 
     void previewImageChanged(int);
     
-    void channelsChanged(Powiter::ChannelSet);
+    void channelsChanged(Natron::ChannelSet);
 
     void knobUndoneChange();
     
@@ -385,7 +385,7 @@ protected:
     AppInstance* _app; // pointer to the model: needed to access the application's default-project's format
     std::multimap<int,Node*> _outputs; //multiple outputs per slot
     std::map<int,Node*> _inputs;//only 1 input per slot
-    Powiter::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
+    Natron::EffectInstance*  _liveInstance; //< the instance of the effect interacting with the GUI of this node.
     
 private:
     
@@ -433,13 +433,13 @@ private:
         }
     };
     
-    typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Powiter::Image> > ImagesMap;
+    typedef std::multimap<ImageBeingRenderedKey,boost::shared_ptr<Natron::Image> > ImagesMap;
     ImagesMap _imagesBeingRendered; //< a map storing the ongoing render for this node
-    Powiter::LibraryBinary* _plugin;
-    std::map<RenderTree*,Powiter::EffectInstance*> _renderInstances;
+    Natron::LibraryBinary* _plugin;
+    std::map<RenderTree*,Natron::EffectInstance*> _renderInstances;
 };
 
-} //namespace Powiter
+} //namespace Natron
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
  * Only 1 input is considered to be the "active" input of the InspectorNode, but several inputs
@@ -447,14 +447,14 @@ private:
  * This is used for example by the Viewer, to be able to switch quickly from several inputs
  * while still having 1 input active.
  **/
-class InspectorNode: public Powiter::Node
+class InspectorNode: public Natron::Node
 {
     int _inputsCount;
     int _activeInput;
     
 public:
     
-    InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name);
+    InspectorNode(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name);
     
     virtual ~InspectorNode();
     

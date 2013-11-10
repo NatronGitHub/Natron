@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,20 +31,20 @@ class QHBoxLayout;
 class QImage;
 class OfxClipInstance;
 class QKeyEvent;
-namespace Powiter {
+namespace Natron {
 class Node;
 class OfxImageEffectInstance;
 class OfxOverlayInteract;
 }
 
 
-class OfxEffectInstance : public Powiter::OutputEffectInstance {
+class OfxEffectInstance : public Natron::OutputEffectInstance {
     
-    Powiter::OfxImageEffectInstance* effect_;
+    Natron::OfxImageEffectInstance* effect_;
     bool _isOutput;//if the OfxNode can output a file somehow
 
     bool _penDown; // true when the overlay trapped a penDow action
-    boost::scoped_ptr<Powiter::OfxOverlayInteract> _overlayInteract; // ptr to the overlay interact if any
+    boost::scoped_ptr<Natron::OfxOverlayInteract> _overlayInteract; // ptr to the overlay interact if any
 
     Tab_Knob* _tabKnob; // for nuke tab extension: it creates all Group param as a tab and put it into this knob.
     QHBoxLayout* _lastKnobLayoutWithNoNewLine; // for nuke layout hint extension
@@ -52,16 +52,16 @@ class OfxEffectInstance : public Powiter::OutputEffectInstance {
 public:
     
     
-    OfxEffectInstance(Powiter::Node* node);
+    OfxEffectInstance(Natron::Node* node);
     
     virtual ~OfxEffectInstance();
     
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       const std::string& context);
     
-    Powiter::OfxImageEffectInstance* effectInstance(){ return effect_; }
+    Natron::OfxImageEffectInstance* effectInstance(){ return effect_; }
     
-    const Powiter::OfxImageEffectInstance* effectInstance() const{ return effect_; }
+    const Natron::OfxImageEffectInstance* effectInstance() const{ return effect_; }
 
     void setAsOutputNode() {_isOutput = true;}
 
@@ -106,13 +106,13 @@ public:
 
     virtual bool isInputOptional(int inputNb) const OVERRIDE;
 
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
 
-    virtual Powiter::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE;
+    virtual Natron::EffectInstance::RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE;
 
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
-    virtual Powiter::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE;
+    virtual Natron::Status preProcessFrame(SequenceTime /*time*/) OVERRIDE;
 
     virtual void drawOverlay() OVERRIDE;
 
@@ -138,10 +138,10 @@ public:
 
     virtual void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
 
-    virtual Powiter::Status render(SequenceTime time,RenderScale scale,
-                                   const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,
+                                   const RectI& roi,int view,boost::shared_ptr<Natron::Image> output) OVERRIDE;
 
-    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE;
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE;
 
 
     /*********OVERLAY INTERACT FUNCTIONS********/

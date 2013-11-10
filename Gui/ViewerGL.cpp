@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -55,7 +55,7 @@ GCC_DIAG_ON(unused-parameter);
 
 //using namespace Imf;
 //using namespace Imath;
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 
 static const double pi= 3.14159265358979323846264338327950288419717;
@@ -199,7 +199,7 @@ namespace
     
 }
 
-namespace Powiter{
+namespace Natron{
     
     
     struct TextRendererPrivate;
@@ -435,13 +435,13 @@ namespace Powiter{
         
     }
     
-} //namespace Powiter
+} //namespace Natron
 
 
 void ViewerGL::initConstructor(){
     
     _hasHW = true;
-    _blankViewerInfos.setChannels(Powiter::Mask_RGBA);
+    _blankViewerInfos.setChannels(Natron::Mask_RGBA);
     Format frmt(0, 0, 1920, 1080,"HD",1.0);
     _blankViewerInfos.setRoD(RectI(0, 0, 1920, 1080));
     _blankViewerInfos.setDisplayWindow(frmt);
@@ -984,7 +984,7 @@ void ViewerGL::initAndCheckGlExtensions() {
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Powiter::errorDialog("OpenGL/GLEW error",
+        Natron::errorDialog("OpenGL/GLEW error",
                              (const char*)glewGetErrorString(err));
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
@@ -998,14 +998,14 @@ void ViewerGL::initAndCheckGlExtensions() {
                          //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
                          //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
                          )) {
-        Powiter::errorDialog("Missing OpenGL requirements",
+        Natron::errorDialog("Missing OpenGL requirements",
                              "The viewer may not be fully functionnal. "
                              "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ");
     }
     if (!QGLShaderProgram::hasOpenGLShaderPrograms(context())) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
-        //Powiter::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
+        //Natron::errorDialog("Viewer error","The viewer is unable to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
         _hasHW = false;
     }
@@ -1419,9 +1419,9 @@ void ViewerGL::updateColorPicker(int x,int y){
 void ViewerGL::wheelEvent(QWheelEvent *event) {
     double newZoomFactor;
     if (event->delta() > 0) {
-        newZoomFactor = _zoomCtx._zoomFactor*std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());
+        newZoomFactor = _zoomCtx._zoomFactor*std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     } else {
-        newZoomFactor = _zoomCtx._zoomFactor/std::pow(POWITER_WHEEL_ZOOM_PER_DELTA, -event->delta());
+        newZoomFactor = _zoomCtx._zoomFactor/std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, -event->delta());
     }
     if (newZoomFactor <= 0.01) {
         newZoomFactor = 0.01;
@@ -1496,7 +1496,7 @@ QPoint ViewerGL::toWidgetCoordinates(int x, int y){
     double right = left +  w / _zoomCtx._zoomFactor;
     return QPoint((int)(((x - left)/(right - left))*w),(int)(((y - top)/(bottom - top))*h));
 }
-/*Returns coordinates with 0,0 at top left, Powiter inverts
+/*Returns coordinates with 0,0 at top left, Natron inverts
  y as such : y= displayWindow().height() - y  to get the coordinates
  with 0,0 at bottom left*/
 QVector3D ViewerGL::toImgCoordinates_slow(int x,int y){
@@ -1713,15 +1713,15 @@ void ViewerGL::setDisplayChannel(const ChannelSet& channels,bool yMode){
         _displayChannels = 5.f;
         
     }else{
-        if(channels == Powiter::Mask_RGB || channels == Powiter::Mask_RGBA)
+        if(channels == Natron::Mask_RGB || channels == Natron::Mask_RGBA)
             _displayChannels = 0.f;
-        else if((channels & Powiter::Channel_red) == Powiter::Channel_red)
+        else if((channels & Natron::Channel_red) == Natron::Channel_red)
             _displayChannels = 1.f;
-        else if((channels & Powiter::Channel_green) == Powiter::Channel_green)
+        else if((channels & Natron::Channel_green) == Natron::Channel_green)
             _displayChannels = 2.f;
-        else if((channels & Powiter::Channel_blue) == Powiter::Channel_blue)
+        else if((channels & Natron::Channel_blue) == Natron::Channel_blue)
             _displayChannels = 3.f;
-        else if((channels & Powiter::Channel_alpha) == Powiter::Channel_alpha)
+        else if((channels & Natron::Channel_alpha) == Natron::Channel_alpha)
             _displayChannels = 4.f;
         
     }

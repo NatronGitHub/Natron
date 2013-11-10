@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -64,13 +64,13 @@ _drawDropRect(false){
     _headerLayout->setContentsMargins(0, 0, 0, 0);
     _headerLayout->setSpacing(0);
     _header->setLayout(_headerLayout);
-    QImage imgC(POWITER_IMAGES_PATH"close.png");
+    QImage imgC(NATRON_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC.scaled(15,15);
-    QImage imgM(POWITER_IMAGES_PATH"maximize.png");
+    QImage imgM(NATRON_IMAGES_PATH"maximize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(15,15);
-    QImage imgL(POWITER_IMAGES_PATH"layout.png");
+    QImage imgL(NATRON_IMAGES_PATH"layout.png");
     QPixmap pixL=QPixmap::fromImage(imgL);
     pixL.scaled(15,15);
     
@@ -148,15 +148,15 @@ bool TabWidget::destroyTab(QWidget* tab) {
 
 void TabWidget::createMenu(){
     QMenu *menu = new QMenu(_gui);
-    QImage imgV(POWITER_IMAGES_PATH"splitVertically.png");
+    QImage imgV(NATRON_IMAGES_PATH"splitVertically.png");
     QPixmap pixV=QPixmap::fromImage(imgV);
     pixV.scaled(12,12);
-    QImage imgH(POWITER_IMAGES_PATH"splitHorizontally.png");
+    QImage imgH(NATRON_IMAGES_PATH"splitHorizontally.png");
     QPixmap pixH=QPixmap::fromImage(imgH);
-    QImage imgC(POWITER_IMAGES_PATH"close.png");
+    QImage imgC(NATRON_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC.scaled(12,12);
-    QImage imgM(POWITER_IMAGES_PATH"maximize.png");
+    QImage imgM(NATRON_IMAGES_PATH"maximize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM.scaled(12,12);
     pixH.scaled(12,12);

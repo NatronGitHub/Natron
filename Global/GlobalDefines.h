@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -40,8 +40,8 @@ typedef int SequenceTime;
 
 typedef OfxPointD RenderScale;
 
-#ifdef __POWITER_WIN32__
-namespace PowiterWindows{
+#ifdef __NATRON_WIN32__
+namespace NatronWindows{
     /*Converts a std::string to wide string*/
     inline std::wstring s2ws(const std::string& s)
     {

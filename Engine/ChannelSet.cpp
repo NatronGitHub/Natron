@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,7 @@
 
 using std::endl;
 
-namespace Powiter {
+namespace Natron {
 
 // variable-precision SWAR algorithm
 // see http://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer
@@ -381,4 +381,4 @@ bool hasAlpha(ChannelSet mask) {
     return ((mask & 1) || (mask & (1 << Channel_alpha)));
 }
 
-} // namespace Powiter
+} // namespace Natron

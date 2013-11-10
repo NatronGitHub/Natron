@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 #include "Engine/Lut.h"
 
 class Writer;
-namespace Powiter{
+namespace Natron{
     class Image;
     class Row;
 }
@@ -82,7 +82,7 @@ class Encoder {
     
 protected:
     bool _premult; /// on if the user wants to write alpha pre-multiplied images
-    const Powiter::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
+    const Natron::Color::Lut* _lut; /// the lut used by the Write to apply colorspace conversion
     Writer* _writer; /// a pointer to the Writer
     EncoderKnobs* _optionalKnobs; /// a pointer to the object holding per-type specific Knobs.
     QString _filename;
@@ -131,18 +131,18 @@ public:
     
     /** @brief This must be implemented to do the output colorspace conversion for the Row passed in parameters
     **/
-	virtual Powiter::Status render(boost::shared_ptr<const Powiter::Image> inputImage,int view,const RectI& roi) = 0;
+	virtual Natron::Status render(boost::shared_ptr<const Natron::Image> inputImage,int view,const RectI& roi) = 0;
     
     /*@brief can be overloaded to finalize the file. This is called after the last call to render() was made for the frame*/
     virtual void finalizeFile(){}
     
     /** @brief Must implement it to initialize the appropriate colorspace  for
     * the file type. You can initialize the _lut member by calling the
-    * function Powiter::Color::getLut(datatype)
+    * function Natron::Color::getLut(datatype)
     **/
     virtual void initializeColorSpace() = 0;
     
-    Powiter::Status _setupFile(const QString& filename,const RectI& rod){
+    Natron::Status _setupFile(const QString& filename,const RectI& rod){
         _filename = filename;
         return setupFile(filename,rod);
     }
@@ -152,10 +152,10 @@ public:
     * so it can be returned to the user.
     **/
     // FIXME: the above doc is obviously wrong.
-    virtual void supportsChannelsForWriting(Powiter::ChannelSet& channels) const = 0;
+    virtual void supportsChannelsForWriting(Natron::ChannelSet& channels) const = 0;
     
     /** @return Returns the reader colorspace*/
-    const Powiter::Color::Lut* lut() const {return _lut;}
+    const Natron::Color::Lut* lut() const {return _lut;}
     
     /** @brief Overload it if you need fileType specific knobs. See the
     * comment in WriteKnobs.
@@ -172,34 +172,34 @@ public:
      * @param W The length of the buffer
      * @param delta How far apart the values in output should be spaced.
      */
-    void to_byte(Powiter::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_byte(Natron::Channel z, uchar* to, const float* from, const float* alpha, int W, int delta = 1);
     
     /** @brief Same as to_byte but converts to shorts output buffer.**/
-    void to_short(Powiter::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
+    void to_short(Natron::Channel z, U16* to, const float* from, const float* alpha, int W, int bits = 16, int delta = 1);
     
     /** @brief Same as to_byte but converts to float output buffer**/
-    void to_float(Powiter::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
+    void to_float(Natron::Channel z, float* to, const float* from, const float* alpha, int W, int delta = 1);
     
     /**
      * @brief to_byte converts a RGBA packed-buffer of float to a RGBA packed-buffer of bytes to the output color-space.
      */
     void to_byte_rect(uchar* to, const float* from,
                       const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                      Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+                      Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to shorts output buffer.**/
     void to_short_rect(U16* to, const float* from,
                        const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+                       Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
 
     /** @brief Same as to_byte but converts to float output buffer**/
     void to_float_rect(float* to, const float* from,
                        const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                       Powiter::Color::Lut::PackedPixelsFormat outputPacking = Powiter::Color::Lut::RGBA,int invertY = false);
+                       Natron::Color::Lut::PackedPixelsFormat outputPacking = Natron::Color::Lut::RGBA,int invertY = false);
     
 protected:
     
-    virtual Powiter::Status setupFile(const QString& filename,const RectI& rod) = 0;
+    virtual Natron::Status setupFile(const QString& filename,const RectI& rod) = 0;
 };
 
 /** @typedef Classes deriving Write should implement a function named BuildWrite with the following signature:

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 #include "Engine/Row.h"
 #include "Engine/Image.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 QtEncoder::QtEncoder(Writer* writer)
 :Encoder(writer)
@@ -71,7 +71,7 @@ void QtEncoder::initializeColorSpace(){
 /*This function initialises the output file/output storage structure and put necessary info in it, like
  meta-data, channels, etc...This is called on the main thread so don't do any extra processing here,
  otherwise it would stall the GUI.*/
-Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
+Natron::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& rod){
     _rod = rod;
     size_t dataSize = 4 * rod.area();
     _buf = new uchar[dataSize];
@@ -86,7 +86,7 @@ Powiter::Status QtEncoder::setupFile(const QString& /*filename*/,const RectI& ro
         type = QImage::Format_RGB32;
     }
     _outputImage = new QImage(_buf,_rod.width(),_rod.height(),type);
-    return Powiter::StatOK;
+    return Natron::StatOK;
 }
 
 void QtEncoder::finalizeFile(){
@@ -110,8 +110,8 @@ void QtEncoder::supportsChannelsForWriting(ChannelSet& channels) const {
     }
 }
 
-Powiter::Status QtEncoder::render(boost::shared_ptr<const Powiter::Image> inputImage,int /*view*/,const RectI& roi){
-    to_byte_rect(_buf, inputImage->pixelAt(0, 0), inputImage->getRoD(),inputImage->getRoD(),roi,Powiter::Color::Lut::BGRA,true);
+Natron::Status QtEncoder::render(boost::shared_ptr<const Natron::Image> inputImage,int /*view*/,const RectI& roi){
+    to_byte_rect(_buf, inputImage->pixelAt(0, 0), inputImage->getRoD(),inputImage->getRoD(),roi,Natron::Color::Lut::BGRA,true);
     return StatOK;
 }
 

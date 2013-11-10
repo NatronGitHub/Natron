@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 class RenderTree;
 class VideoEngine;
 class RenderTree;
-namespace Powiter{
+namespace Natron{
 
 class Node;
 class Image;
@@ -53,7 +53,7 @@ private:
     
     
     
-    Powiter::Node* _node; //< the node holding this effect
+    Natron::Node* _node; //< the node holding this effect
 
     bool _renderAborted; //< was rendering aborted ?
     Hash64 _hashValue;//< The hash value of this effect
@@ -125,7 +125,7 @@ public:
     /**
      * @brief Returns input n. It might be NULL if the input is not connected.
      **/
-    Powiter::EffectInstance* input(int n) const;
+    Natron::EffectInstance* input(int n) const;
     
     /**
      * @brief Forwarded to the node holding the effect
@@ -187,7 +187,7 @@ public:
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * Pre-condition: preProcess must have been called.
      **/
-    boost::shared_ptr<const Powiter::Image> renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow);
+    boost::shared_ptr<const Natron::Image> renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow);
     
     
     /**
@@ -200,7 +200,7 @@ public:
     /**
      * @brief Returns a pointer to the image being rendered currently by renderRoI if any.
      **/
-    boost::shared_ptr<Powiter::Image> getImageBeingRendered(SequenceTime time,int view) const;
+    boost::shared_ptr<Natron::Image> getImageBeingRendered(SequenceTime time,int view) const;
     
     /**
      * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
@@ -210,13 +210,13 @@ public:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Powiter::Image> output){
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,int view,boost::shared_ptr<Natron::Image> output){
         (void)time;
         (void)scale;
         (void)roi;
         (void)view;
         (void)output;
-        return Powiter::StatOK;
+        return Natron::StatOK;
     }
     
     
@@ -248,7 +248,7 @@ public:
     
     /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
      */
-    boost::shared_ptr<const Powiter::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view);
+    boost::shared_ptr<const Natron::Image> getImage(int inputNb,SequenceTime time,RenderScale scale,int view);
     
     
     /**
@@ -257,7 +257,7 @@ public:
      * the render will stop.
      * If the status is StatFailed a message should be posted by the plugin.
      **/
-    virtual Powiter::Status preProcessFrame(SequenceTime time) { (void)time; return Powiter::StatReplyDefault; }
+    virtual Natron::Status preProcessFrame(SequenceTime time) { (void)time; return Natron::StatReplyDefault; }
     
     
     /**
@@ -266,7 +266,7 @@ public:
      * By default it returns in rod the union of all inputs RoD and StatReplyDefault is returned.
      * In case of failure the plugin should return StatFailed.
      **/
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod);
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod);
     
     
     /**
@@ -341,7 +341,7 @@ public:
      * You must call this in order to notify the GUI of any change (add/delete) for knobs not made during
      * initializeKnobs().
      * For example you may want to remove some knobs in response to a value changed of another knob.
-     * This is something that OpenFX does not provide but we make it possible for Powiter plugins.
+     * This is something that OpenFX does not provide but we make it possible for Natron plugins.
      * - To properly delete a knob just call the destructor of the knob.
      * - To properly delete
      **/
@@ -420,7 +420,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Powiter::MessageType type,const std::string& content) const;
+    bool message(Natron::MessageType type,const std::string& content) const;
     
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -430,7 +430,7 @@ public:
      * ERROR_MESSAGE : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Powiter::MessageType type,const std::string& content);
+    void setPersistentMessage(Natron::MessageType type,const std::string& content);
     
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
@@ -454,19 +454,19 @@ private:
     void evaluate(Knob* knob,bool isSignificant) OVERRIDE;
     
     
-    Powiter::Status tiledRenderingFunctor(RenderArgs args,
+    Natron::Status tiledRenderingFunctor(RenderArgs args,
                                const RectI& roi,
-                               boost::shared_ptr<Powiter::Image> output);
+                               boost::shared_ptr<Natron::Image> output);
 };
 
 /**
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Powiter::EffectInstance* (*EffectBuilder)(Powiter::Node*);
+typedef Natron::EffectInstance* (*EffectBuilder)(Natron::Node*);
 
 
-class OutputEffectInstance : public Powiter::EffectInstance {
+class OutputEffectInstance : public Natron::EffectInstance {
 
     
 
@@ -497,5 +497,5 @@ public:
 };
 
 
-} // Powiter
+} // Natron
 #endif // EFFECTINSTANCE_H

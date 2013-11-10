@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,7 +15,7 @@
 #include "Writers/Writer.h"
 #include "Gui/KnobGui.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 /*Constructors should initialize variables, but shouldn't do any heavy computations, as these objects
  are oftenly re-created. To initialize the input color-space , you can do so by overloading
@@ -65,7 +65,7 @@ void Encoder::to_float(Channel z, float* to, const float* from, const float* alp
 
 void Encoder::to_byte_rect(uchar* to, const float* from,
                            const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                           Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
+                           Natron::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_byte_rect(to, from, rect,srcRod,dstRod,invertY,_premult,outputPacking);
     else
@@ -74,7 +74,7 @@ void Encoder::to_byte_rect(uchar* to, const float* from,
 }
 void Encoder::to_short_rect(U16* to, const float* from,
                             const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                            Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
+                            Natron::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_short_rect(to, from, rect,srcRod,dstRod,invertY,_premult,outputPacking);
     else
@@ -83,7 +83,7 @@ void Encoder::to_short_rect(U16* to, const float* from,
 }
 void Encoder::to_float_rect(float* to, const float* from,
                             const RectI& rect,const RectI& srcRod,const RectI& dstRod,
-                            Powiter::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
+                            Natron::Color::Lut::PackedPixelsFormat outputPacking,int invertY){
     if(!_lut->linear())
         _lut->to_float_rect(to, from, rect,srcRod,dstRod,invertY,_premult,outputPacking);
     else

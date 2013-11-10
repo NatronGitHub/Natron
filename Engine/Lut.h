@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
-namespace Powiter {
+namespace Natron {
 namespace Color {
 
 /*This class implements : http://mysite.verizon.net/spitzak/conversion/algorithm.html*/
@@ -93,7 +93,7 @@ public:
     /*un-premultiply by alpha before color-space converting and re-multiply by alpha
      afterwards*/
     void from_byte(float* to, const uchar* from, const uchar* alpha, int W, int delta = 1) const;
-    void from_byteQt(float* to, const QRgb* from,Powiter::Channel z,bool premult,int W,int delta = 1) const;
+    void from_byteQt(float* to, const QRgb* from,Natron::Channel z,bool premult,int W,int delta = 1) const;
     
     void from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1) const;
     void from_short(float* to, const U16* from, const U16* alpha, int W, int bits = 16, int delta = 1) const;
@@ -261,7 +261,7 @@ inline float linearrgb_to_srgb(float c)
 }
     
 void linear_from_byte(float* to, const uchar* from, int W, int delta = 1);
-void linear_from_byteQt(float* to, const QRgb* from,Powiter::Channel z, int W, int delta = 1);
+void linear_from_byteQt(float* to, const QRgb* from,Natron::Channel z, int W, int delta = 1);
 void linear_from_short(float* to, const U16* from, int W, int bits = 16, int delta = 1);
 void linear_from_float(float* to, const float* from, int W, int delta = 1);
 
@@ -337,7 +337,7 @@ void linear_to_float_rect(float* to, const float* from,
                           bool invertY,bool premult,
                           Lut::PackedPixelsFormat format);
 
-} // namespace Powiter
+} // namespace Natron
 } // namespace Color
 
 #endif //POWITER_ENGINE_LUT_H_

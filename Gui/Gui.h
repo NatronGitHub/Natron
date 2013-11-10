@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ class LineEdit;
 class DockablePanel;
 class PluginToolButton;
 
-namespace Powiter{
+namespace Natron{
     class Node;
     class OutputEffectInstance;
 }
@@ -149,7 +149,7 @@ class RenderingProgressDialog : public QDialog{
     
 public:
     
-    RenderingProgressDialog(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
+    RenderingProgressDialog(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
     
     virtual ~RenderingProgressDialog(){}
     
@@ -169,7 +169,7 @@ private:
     QLabel* _perFrameLabel;
     QProgressBar* _perFrameProgress;
     Button* _cancelButton;
-    Powiter::OutputEffectInstance* _writer;
+    Natron::OutputEffectInstance* _writer;
     QString _sequenceName;
     int _firstFrame;
     int _lastFrame;
@@ -200,7 +200,7 @@ public:
     
     void createGui();
     
-    NodeGui* createNodeGUI(Powiter::Node *node);
+    NodeGui* createNodeGUI(Natron::Node *node);
     
     void autoConnect(NodeGui* target,NodeGui* created);
     
@@ -212,7 +212,7 @@ public:
     
     bool eventFilter(QObject *target, QEvent *event);
 
-    void createViewerGui(Powiter::Node* viewer);
+    void createViewerGui(Natron::Node* viewer);
     
     /*Called internally by the viewer node. It adds
      a new Viewer tab GUI and returns a pointer to it.*/
@@ -271,15 +271,15 @@ public:
     
     void informationDialog(const std::string& title,const std::string& text);
     
-    Powiter::StandardButton questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons =
-                                           Powiter::StandardButtons(Powiter::Yes | Powiter::No),
-                                           Powiter::StandardButton defaultButton = Powiter::NoButton);
+    Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
+                                           Natron::StandardButtons(Natron::Yes | Natron::No),
+                                           Natron::StandardButton defaultButton = Natron::NoButton);
     
     void selectNode(NodeGui* node);
     
     AppInstance* getApp() { return _appInstance; }
     
-    void showProgressDialog(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    void showProgressDialog(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
     
     void updateViewsActions(int viewsCount);
     
@@ -297,7 +297,7 @@ private:
 
 signals:
     
-    void doDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB);
+    void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB);
 
 public slots:
     
@@ -332,7 +332,7 @@ public slots:
     void showView8();
     void showView9();
     
-    void onDoDialog(int type,const QString& title,const QString& content,Powiter::StandardButtons buttons,Powiter::StandardButton defaultB);
+    void onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB);
     
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
@@ -355,7 +355,7 @@ private:
     QWaitCondition _uiUsingMainThreadCond;
     bool _uiUsingMainThread;
     mutable QMutex _uiUsingMainThreadMutex;
-    Powiter::StandardButton _lastQuestionDialogAnswer;
+    Natron::StandardButton _lastQuestionDialogAnswer;
 public:
     // FIXME: public pointer members are the sign of a serious design flaw!!! should at least be shared_ptr!
     /*TOOL BAR ACTIONS*/

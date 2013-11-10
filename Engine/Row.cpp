@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 /*Constructor used by the cache*/
 Row::Row(const RowKey& key, size_t count, int cost, std::string path )
@@ -48,14 +48,14 @@ void Row::initializePlanesOffset(){
     }
 }
 
-namespace Powiter{
+namespace Natron{
     
-void copyRowToImage(const Powiter::Row& row,int y,int x,Powiter::Image* output){
+void copyRowToImage(const Natron::Row& row,int y,int x,Natron::Image* output){
     float* dst = output->pixelAt(x, y);
-    const float* r = row.begin(Powiter::Channel_red);
-    const float* g = row.begin(Powiter::Channel_green);
-    const float* b = row.begin(Powiter::Channel_blue);
-    const float* a = row.begin(Powiter::Channel_alpha);
+    const float* r = row.begin(Natron::Channel_red);
+    const float* g = row.begin(Natron::Channel_green);
+    const float* b = row.begin(Natron::Channel_blue);
+    const float* a = row.begin(Natron::Channel_alpha);
     assert(r && g && b && a);//row must have r g b a allocated and default filled
     for (int i = 0; i < row.width(); ++i) {
         int col = i*4;

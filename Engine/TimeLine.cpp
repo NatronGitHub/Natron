@@ -1,6 +1,6 @@
 //
 //  TimeLine.cpp
-//  Powiter
+//  Natron
 //
 //  Created by Frédéric Devernay on 24/09/13.
 //

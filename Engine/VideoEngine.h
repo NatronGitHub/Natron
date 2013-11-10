@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 
-namespace Powiter{
+namespace Natron{
 class Row;
 class Node;
 class EffectInstance;
@@ -64,7 +64,7 @@ class RenderTree {
     
     
 public:
-    typedef std::vector<std::pair<Powiter::Node*,Powiter::EffectInstance*> > TreeContainer;
+    typedef std::vector<std::pair<Natron::Node*,Natron::EffectInstance*> > TreeContainer;
     typedef TreeContainer::const_iterator TreeIterator;
     typedef TreeContainer::const_reverse_iterator TreeReverseIterator;
     typedef TreeContainer::const_iterator InputsIterator;
@@ -75,7 +75,7 @@ public:
      *Once filled up, you can access the nodes in topological order with the iterators.
      *The reverse iterator will give you the opposite of the topological order.
      */
-    RenderTree(Powiter::OutputEffectInstance* output);
+    RenderTree(Natron::OutputEffectInstance* output);
     
     /**
      *@brief Clears the structure and fill it with a new tree, represented by the OutputNode.
@@ -116,7 +116,7 @@ public:
     /**
      *@brief Returns a pointer to the output node of the graph.
      */
-    Powiter::OutputEffectInstance* getOutput() const {return _output;}
+    Natron::OutputEffectInstance* getOutput() const {return _output;}
     
     
     /**
@@ -146,7 +146,7 @@ public:
     /**
      *@brief calls preProcessFrame(time) on each node in the graph in topological ordering
      */
-    Powiter::Status preProcessFrame(SequenceTime time);
+    Natron::Status preProcessFrame(SequenceTime time);
     
     SequenceTime firstFrame() const {return _firstFrame;}
     
@@ -160,21 +160,21 @@ public:
     
     int renderViewsCount() const {return _projectViewsCount;}
     
-    Powiter::EffectInstance* getEffectForNode(Powiter::Node* node) const;
+    Natron::EffectInstance* getEffectForNode(Natron::Node* node) const;
     
 private:
     /*called by resetAndSort(...) to fill the structure
      *upstream of the output given in parameter of resetAndSort(...)*/
-    void fillGraph(Powiter::Node* n);
+    void fillGraph(Natron::Node* n);
     /*clears out the structure*/
     void clearGraph();
     
     
     
-    U64 cloneKnobsAndcomputeTreeHash(Powiter::EffectInstance* effect,const std::vector<U64>& inputsHashs);
+    U64 cloneKnobsAndcomputeTreeHash(Natron::EffectInstance* effect,const std::vector<U64>& inputsHashs);
     
     
-    Powiter::OutputEffectInstance* _output; /*!<the output of the Tree*/
+    Natron::OutputEffectInstance* _output; /*!<the output of the Tree*/
     TreeContainer _sorted; /*!<the sorted Tree*/
     bool _isViewer; /*!< true if the outputNode is a viewer, it avoids many dynamic_casts*/
     bool _isOutputOpenFXNode; /*!< true if the outputNode is an OpenFX node*/
@@ -344,7 +344,7 @@ signals:
 public:
    
     
-    VideoEngine(Powiter::OutputEffectInstance* owner, QObject* parent = NULL);
+    VideoEngine(Natron::OutputEffectInstance* owner, QObject* parent = NULL);
     
     virtual ~VideoEngine();
     

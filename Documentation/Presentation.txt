@@ -1,8 +1,8 @@
-Powiter <a id="top"></a>
+Natron <a id="top"></a>
 =======
 
 1. [Preamble](#Preamble)
-    * Powiter, What is this ?
+    * Natron, What is this ?
     * Philosophy
     * History
     * For who?
@@ -43,30 +43,30 @@ Powiter <a id="top"></a>
 1. Preamble<a id="Preamble"></a>
 -----------
 
-####Powiter,what is it? 
+####Natron,what is it? 
 	
-Powiter is an open-source cross-platform (Windows,OsX,Linux) software designed for compositing and image processing. Compositing is the process of combining visual elements from separate sources into single images (wikipedia) .
+Natron is an open-source cross-platform (Windows,OsX,Linux) software designed for compositing and image processing. Compositing is the process of combining visual elements from separate sources into single images (wikipedia) .
 
 ####Philosophy 
 
-The  main goals when making decisions on the development of the software are response time of the new feature and intuitiveness. It is needless to say that today what is expensive in post-production is the time spent by CG compositors on visual effects softwares, the aim of Powiter is to optimise the learning curve necessary to enter a new post-production software, as well as provide a versatile, yet	top notch image processing set of tools. The same reasoning can be made for researchers and professionals that need to set up a new algorithm. e.g: An algorithm correcting the divergence of calibration of a  stereoscopic image pair. 
-One would actually need to dive into many libraries and provide some base API that allows the use of their algorithm. The idea here, is that Powiter will take care of everything for you : reading (images, meta-data...),rendering, via a well documented API. One would just then have to create the minimal code necessary that actually "does" the processing to have a new tool ready to use.
-Based on a node graph architecture, associating a node to a visual effect or a computation, Powiter allows its evolution and its use to be steady, most certainly thanks to the software development kit. The SDK will provide a clear API allowing anyone having C++ or Python skills to develop a new node. 
-The last and not least motivation for this project is actually to be entirely free and open-source. A dual-license system will be introduced to allow companies to develop proprietary plug-ins. The cutting edge core of the software and the community that will emerge along with plug-ins , will permit to Powiter to be a serious concurrent to proprietary softwares : namely Nuke and After Effects.
+The  main goals when making decisions on the development of the software are response time of the new feature and intuitiveness. It is needless to say that today what is expensive in post-production is the time spent by CG compositors on visual effects softwares, the aim of Natron is to optimise the learning curve necessary to enter a new post-production software, as well as provide a versatile, yet	top notch image processing set of tools. The same reasoning can be made for researchers and professionals that need to set up a new algorithm. e.g: An algorithm correcting the divergence of calibration of a  stereoscopic image pair. 
+One would actually need to dive into many libraries and provide some base API that allows the use of their algorithm. The idea here, is that Natron will take care of everything for you : reading (images, meta-data...),rendering, via a well documented API. One would just then have to create the minimal code necessary that actually "does" the processing to have a new tool ready to use.
+Based on a node graph architecture, associating a node to a visual effect or a computation, Natron allows its evolution and its use to be steady, most certainly thanks to the software development kit. The SDK will provide a clear API allowing anyone having C++ or Python skills to develop a new node. 
+The last and not least motivation for this project is actually to be entirely free and open-source. A dual-license system will be introduced to allow companies to develop proprietary plug-ins. The cutting edge core of the software and the community that will emerge along with plug-ins , will permit to Natron to be a serious concurrent to proprietary softwares : namely Nuke and After Effects.
 
 ####History 
 
-I'll take a little paragraph to express how the project Powiter started.
-Back when I was in university, studying computer graphics and computer vision,I actually noticed that when programming in these domain can be really long and painful, notably because of the lack of "swiss-army knife" tools that allow one to focus only on the processing and computing part. Imagine that : no more parser to write, no more GUI to write , no more basic operations to write over and over again. That's what Powiter aims to do. The necessity to have a standard  is emphasised using some of the most used C/C++ libraries in the world : Qt, boost , openFX ,openEXR , FFMPEG , openGL.. 
+I'll take a little paragraph to express how the project Natron started.
+Back when I was in university, studying computer graphics and computer vision,I actually noticed that when programming in these domain can be really long and painful, notably because of the lack of "swiss-army knife" tools that allow one to focus only on the processing and computing part. Imagine that : no more parser to write, no more GUI to write , no more basic operations to write over and over again. That's what Natron aims to do. The necessity to have a standard  is emphasised using some of the most used C/C++ libraries in the world : Qt, boost , openFX ,openEXR , FFMPEG , openGL.. 
 
 ####For who? 
 
-The software is dedicated to everyone doing compositing, image processing , and that wants a competitive, robust, cutting edge toolset to use. Powiter can be used in 2 ways: 
+The software is dedicated to everyone doing compositing, image processing , and that wants a competitive, robust, cutting edge toolset to use. Natron can be used in 2 ways: 
 either using all the tools offered by the code-base and the community, or by developing new C++ plug-ins.
 
 ####Licensing 
 
-Powiter will be released with a dual-license scheme : a GNU General Public License, allowing the growth of Powiter and the number of tools that come along, and another commercial license that will allow companies to develop their own proprietary plug-ins and sell it with some restrictions.
+Natron will be released with a dual-license scheme : a GNU General Public License, allowing the growth of Natron and the number of tools that come along, and another commercial license that will allow companies to develop their own proprietary plug-ins and sell it with some restrictions.
 
 [Go back to the top of the page](#top)
 
@@ -75,13 +75,13 @@ Powiter will be released with a dual-license scheme : a GNU General Public Licen
 
 ###Concepts
 
-Powiter is a visual effects software, that is, the main purpose of this software is to transform images. In order to do any mathematic operations correctly and to output quality results, Powiter is using internally a linear colour workflow. Everything read is transformed to linear, everything output is converted back to log.  Another main feature of Powiter is that it is using 32bit floating point precision values to encode all the channels of an image. This allows for heavy transformation applied to the colour values, with little approximation . But this has a cost : everything takes up to 4x the memory required for an 8bit image, and everything takes more computing time overall.
+Natron is a visual effects software, that is, the main purpose of this software is to transform images. In order to do any mathematic operations correctly and to output quality results, Natron is using internally a linear colour workflow. Everything read is transformed to linear, everything output is converted back to log.  Another main feature of Natron is that it is using 32bit floating point precision values to encode all the channels of an image. This allows for heavy transformation applied to the colour values, with little approximation . But this has a cost : everything takes up to 4x the memory required for an 8bit image, and everything takes more computing time overall.
 In order to reduce  the overhead produced by those data structures, all the drawing of the images is implemented directly in OpenGL.
-Thanks to an intuitive graphical user interface (QT), the main workspace of Powiter is its DAG (direct acyclic graph) : this architecture connects nodes representing transformations or actions and allows for smooth results. The GUI will allow the user to control directly the DAG via Python scripts to enable maximum customisation.
-One of the main idea of Powiter, is that it must be able to "connect" to the other related softwares : no more double disk space for the same frames, no more erroneous conversion from one file to another. 
+Thanks to an intuitive graphical user interface (QT), the main workspace of Natron is its DAG (direct acyclic graph) : this architecture connects nodes representing transformations or actions and allows for smooth results. The GUI will allow the user to control directly the DAG via Python scripts to enable maximum customisation.
+One of the main idea of Natron, is that it must be able to "connect" to the other related softwares : no more double disk space for the same frames, no more erroneous conversion from one file to another. 
 As said in the philosophy chapter, one of the main goal performance-wise is to have a responsive software, allowing the user to spend his time actually working. Every possible enhancement will be made to the core of the software to validate this point.
 This is also valid for the GUI, all the change will stem from an idea of "intuitiveness" and response time.
-Another feature that will be available in Powiter is its 3D mode, allowing the user to add deep informations directly into his scene.
+Another feature that will be available in Natron is its 3D mode, allowing the user to add deep informations directly into his scene.
 The most exciting feature presented here  will be the software development kit. It will aim to present a clear C++/python interface for creating new nodes/plug-ins.
 
 ###Architecture
@@ -90,28 +90,28 @@ For now, most of the development has been made on the 2D engine of the software,
     
 ####Scan-line based
 
-Powiter takes in input a sequence of images and make transformations/computations to/on them . Every frame is split into rows : this is the computing unit of reference of Powiter. You can see every node in the DAG as doing "Hello, can I have the Xth row please? I need to make transformations on this one". This architecture was chosen to allow maximum optimisation on computation and rendering algorithms. 
+Natron takes in input a sequence of images and make transformations/computations to/on them . Every frame is split into rows : this is the computing unit of reference of Natron. You can see every node in the DAG as doing "Hello, can I have the Xth row please? I need to make transformations on this one". This architecture was chosen to allow maximum optimisation on computation and rendering algorithms. 
 
 ####Multi-threading
 
-Powiter, as aforementioned is splitting images into rows. One of the main reason for that is the independence of the row : in most case one row doesn't need to know another row exists. This is perfect for multi-threading algorithms. Powiter will launch a certain number of threads that will compute asynchronously the rows. In some cases, a node needs to know the existence of other rows and must access them. Imagine a box blur node with a kernel of 3x3 : each row produced needs 3 rows in input. That means one thread will actually lock 3 rows upstream of the box blur. In order to re-use computations and to not waste resources, a system of internal caching is present.
+Natron, as aforementioned is splitting images into rows. One of the main reason for that is the independence of the row : in most case one row doesn't need to know another row exists. This is perfect for multi-threading algorithms. Natron will launch a certain number of threads that will compute asynchronously the rows. In some cases, a node needs to know the existence of other rows and must access them. Imagine a box blur node with a kernel of 3x3 : each row produced needs 3 rows in input. That means one thread will actually lock 3 rows upstream of the box blur. In order to re-use computations and to not waste resources, a system of internal caching is present.
 The same reasoning can be made for a frame that would need to access to another/several other frame(s).
 For some nodes, like readers, the architecture is a little bit different since multi-threaded seek on a disk file is generally not a good idea. For readers, the idea is to "read data whenever the CPU isn't doing anything and the stack of frames isn't full". This way, a stack with a customisable size is constantly being filled with a separate thread whenever the engine doesn't need all the resource to do the computations.
 
 ####Linear workflow
 
-Linear means that every mathematical operation that attempts to change the value of a pixel colour , will do it accurately and correctly. Since almost every image storing files today are stored with logarithmic colours, Powiter will linearise the colours when reading files, and convert the values back to logarithmic when the transformations are done.
+Linear means that every mathematical operation that attempts to change the value of a pixel colour , will do it accurately and correctly. Since almost every image storing files today are stored with logarithmic colours, Natron will linearise the colours when reading files, and convert the values back to logarithmic when the transformations are done.
 
 ####Node graph
 
-Powiter will combine images, produce images or transform images data using a node graph.
-All the nodes of the graph make a special transformation or effect on the rest of the graph downstream. Three kind of nodes can be used when using Powiter : input nodes , operator nodes and output nodes. 
+Natron will combine images, produce images or transform images data using a node graph.
+All the nodes of the graph make a special transformation or effect on the rest of the graph downstream. Three kind of nodes can be used when using Natron : input nodes , operator nodes and output nodes. 
 
 *Input nodes are the ones generating/reading image data, typically a Jpeg reader.
-*Output nodes are used to either view the results or write them on disk (Viewer/Writer nodes in Powiter). These nodes are know as "pullers" : if a node graph does not connect to any of these nodes, no processing is launched. That's only when you plug-in an output node that Powiter starts to evaluate the node graph upstream of the output node.
-*The last type of node is the operator node . 2 kind of node then can be distinguished among operators : the flow operators and the image operators. The flow operators are those who have an action on the layout of the graph or that just transport data but that do not do any processing task. The other kind of operator is the image operator :  this is the type node used to do processing everywhere in Powiter. If one would like to implement a new processing task, one would have to subclass the image operator class .
+*Output nodes are used to either view the results or write them on disk (Viewer/Writer nodes in Natron). These nodes are know as "pullers" : if a node graph does not connect to any of these nodes, no processing is launched. That's only when you plug-in an output node that Natron starts to evaluate the node graph upstream of the output node.
+*The last type of node is the operator node . 2 kind of node then can be distinguished among operators : the flow operators and the image operators. The flow operators are those who have an action on the layout of the graph or that just transport data but that do not do any processing task. The other kind of operator is the image operator :  this is the type node used to do processing everywhere in Natron. If one would like to implement a new processing task, one would have to subclass the image operator class .
 
-Powiter allows the user to configure the behaviour of each node with a settings panel. Every node has a settings panel associated to it, that can be docked into the graphical user interface.
+Natron allows the user to configure the behaviour of each node with a settings panel. Every node has a settings panel associated to it, that can be docked into the graphical user interface.
 The nodes define what is visible in their settings panel as well as many other parameters.
 Each setting visible in the settings panel of a node is called a knob.
 
@@ -119,39 +119,39 @@ Each setting visible in the settings panel of a node is called a knob.
 
 Knobs are the settings associated to a specific node. Knobs can have different mode: read-only/write-only or read-write. Typically for a reader node, a read-write knob would be a file knob that is used to indicate and choose what file will be open by the reader.
 Knobs also have another information internally : they have a unique hash key associated to them, and the value of this key depends on the value of the parameter held by the knob.
-2 same knobs across Powiter that have the same value will have the same key. This way whenever the settings of a node are exactly the same has another same node, Powiter is aware of it. Furthermore Powiter is able to know when one graph is similar to another one, this is important for the next part: the caching system.
+2 same knobs across Natron that have the same value will have the same key. This way whenever the settings of a node are exactly the same has another same node, Natron is aware of it. Furthermore Natron is able to know when one graph is similar to another one, this is important for the next part: the caching system.
 
 ####Caching & Hashing
 
 Following the last paragraph, every node has internally a hash key that is the result of the checksum of all the values stored by its knobs , the name of the node and the hash keys of all nodes upstream.
-Powiter can then compute the hash key of a node graph, or a "tree version" by recursively
+Natron can then compute the hash key of a node graph, or a "tree version" by recursively
 computing the hash keys of every node: the output of a node graph will then contain the hash key of the graph.
 
-This information is very important for Powiter. But before associating the notion of hash key to cache, let's present the different level of caching involved in Powiter.
+This information is very important for Natron. But before associating the notion of hash key to cache, let's present the different level of caching involved in Natron.
 Currently 3 caches operate at different levels. The buffer cache, the playback cache and the disk cache.
 
-1. The buffer cache is operating on rows  : each row computed is referenced into the buffer cache and when Powiter need to create a row, it first access the buffer cache to see whether it is present. This cache has a "frame scope" , i.e : the buffer cache is wiped between 2 frames. Actually it is not "really" wiped immediately after processing: in the case of a still-frame the cache is maintained to give the zoom functionality more responsiveness. But we will come back on this point later when describing the various optimisations.
+1. The buffer cache is operating on rows  : each row computed is referenced into the buffer cache and when Natron need to create a row, it first access the buffer cache to see whether it is present. This cache has a "frame scope" , i.e : the buffer cache is wiped between 2 frames. Actually it is not "really" wiped immediately after processing: in the case of a still-frame the cache is maintained to give the zoom functionality more responsiveness. But we will come back on this point later when describing the various optimisations.
 
-2. The playback cache is operating on frames : each frame computed by a node-graph is pushed to the playback cache along with the tree version with which it was computed. This way Powiter can later recognise the similarity between the current processing request for a frame and the frame present in the cache. If one frame is present in the cache, it is directly displayed on screen, no processing is done. Due to the various optimisations operating on the engine, several parameters define a frame stored into the playback cache:
-The tree version with which it was computed, the zoom-level , the exposure , the frame name, along with some other infos. Please bare in mind that the playback cache is a RAM cache : everything is held by the main memory and Powiter should avoid taking up all the RAM of the system only by the playback cache. You can find an option in the preferences to set the amount of RAM allocated to the playback cache : by default on a 8GiB system, Powiter will take up to ~700MiB of RAM of the playback cache. Setting this value near the limit of the system will drastically reduce Powiter performances due to the constant swapping of the operating system. 
+2. The playback cache is operating on frames : each frame computed by a node-graph is pushed to the playback cache along with the tree version with which it was computed. This way Natron can later recognise the similarity between the current processing request for a frame and the frame present in the cache. If one frame is present in the cache, it is directly displayed on screen, no processing is done. Due to the various optimisations operating on the engine, several parameters define a frame stored into the playback cache:
+The tree version with which it was computed, the zoom-level , the exposure , the frame name, along with some other infos. Please bare in mind that the playback cache is a RAM cache : everything is held by the main memory and Natron should avoid taking up all the RAM of the system only by the playback cache. You can find an option in the preferences to set the amount of RAM allocated to the playback cache : by default on a 8GiB system, Natron will take up to ~700MiB of RAM of the playback cache. Setting this value near the limit of the system will drastically reduce Natron performances due to the constant swapping of the operating system. 
 
-3. Finally the last cache is known as the disk-cache. This is an extension to the playback cache and works carefully with it. The disk cache stores ,as its name let's suppose, its data on the disk. That means that this cache is not volatile and the informations can survive 2 runs of Powiter. The data stored in this cache are the same than the ones stored in the playback cache, actually, this is more sophisticated than that. When the playback cache is full, Powiter will transfer some of the frame held by the RAM to the disk cache with a LRU priority rule. When Powiter exits, all the frames remaining into the playback cache are transferred to the disk cache via a process of memory mapping. Another setting can be found in the preferences panel holding the total amount of disk space allocated to the disk cache of Powiter.
+3. Finally the last cache is known as the disk-cache. This is an extension to the playback cache and works carefully with it. The disk cache stores ,as its name let's suppose, its data on the disk. That means that this cache is not volatile and the informations can survive 2 runs of Natron. The data stored in this cache are the same than the ones stored in the playback cache, actually, this is more sophisticated than that. When the playback cache is full, Natron will transfer some of the frame held by the RAM to the disk cache with a LRU priority rule. When Natron exits, all the frames remaining into the playback cache are transferred to the disk cache via a process of memory mapping. Another setting can be found in the preferences panel holding the total amount of disk space allocated to the disk cache of Natron.
 
 
 ####Readers & synchronisation
 
 Let's talk a bit about the engine design for readers nodes as they are working differently internally than other nodes. 
 Reader nodes are used to read data from disk and the task of reading one file from the disk cannot be multi-threaded in a scan-line manner as for the other nodes . The multi-thread behaviour will just create more seek operations that the operating system and the hardware will have to handle. 
-A workaround to this issue is to read files whenever the CPU isn't used intensively and store the data read into a stack. One thread in Powiter is always running in the background and is notified whenever there's frames to decode.
-Whenever the GPU is doing processing, the CPU is always ready to decode some frames, and Powiter should never be spending time reading a frame, or at least just for the first one.
+A workaround to this issue is to read files whenever the CPU isn't used intensively and store the data read into a stack. One thread in Natron is always running in the background and is notified whenever there's frames to decode.
+Whenever the GPU is doing processing, the CPU is always ready to decode some frames, and Natron should never be spending time reading a frame, or at least just for the first one.
 
 ####various optimisations
 
-Several optimisations have been made to the engine so it is effective and responsive, even when dealing with large resolution frame (a.k.a 4K). When the output of a node-graph is a viewer, Powiter will query the display resolution in order to know how many rows it needs to compute. When zooming in under 100% resolution of the frame, Powiter will try to load the fewest rows necessary to produce the image on the viewer. For example if the resolution wanted on screen is 20% of what the frame's resolution really is, Powiter will just keep 1 row out of 5 to approximate the result on the viewer. Coupled with the buffer cache, the zoom can be really fast en the image looks always smooth. 
+Several optimisations have been made to the engine so it is effective and responsive, even when dealing with large resolution frame (a.k.a 4K). When the output of a node-graph is a viewer, Natron will query the display resolution in order to know how many rows it needs to compute. When zooming in under 100% resolution of the frame, Natron will try to load the fewest rows necessary to produce the image on the viewer. For example if the resolution wanted on screen is 20% of what the frame's resolution really is, Natron will just keep 1 row out of 5 to approximate the result on the viewer. Coupled with the buffer cache, the zoom can be really fast en the image looks always smooth. 
 
 ####GPU acceleration
 
-Powiter is using GLSL along with OpenGL to have obtain quick results on the viewer. 
+Natron is using GLSL along with OpenGL to have obtain quick results on the viewer. 
 Several computations are entirely done with GLSL shaders. If the user doesn't have driver support for GLSL a CPU based fallback solution is available.
 Several nodes should be able to use CUDA/OpenCL (choice hasn't been made between the two yet) for full GPU computations.
 
@@ -160,7 +160,7 @@ Several nodes should be able to use CUDA/OpenCL (choice hasn't been made between
  3. Graphical user interface<a id="GUI"></a>
 ---------------------------
 
-Powiter aims to be intuitive and the learning curve when getting the software in hands  shouldn't be long. That is why the default GUI/names  look familiar to other compositing softwares.
+Natron aims to be intuitive and the learning curve when getting the software in hands  shouldn't be long. That is why the default GUI/names  look familiar to other compositing softwares.
 The main layout is divided in three big parts : a workspace, a viewer and a controls dock.
 Every big part aforementioned can be fullscreen to have a more detailed view.
 The workspace can have 2 roles : editing the node-graph, or editing key-frames for animation. This basically resemble Nuke, everything is made so the user can have fast interactions with the node graph.
@@ -173,8 +173,8 @@ Finally a last important GUI element is the timeline : the user can control whic
 4. Plug-in system<a id="Plugins"></a>
 ------------------
 
-Powiter main strength will be it's plug-in system. The community lying around the software will build a solid toolbox allowing Powiter to be very competitive and versatile.
-Currently Powiter automatically detects new plug-ins and incorporates them on launch, but in a feature version, Powiter will have the option to load a plug-in while active, especially for huge plug-ins that require a long initialisation. 
+Natron main strength will be it's plug-in system. The community lying around the software will build a solid toolbox allowing Natron to be very competitive and versatile.
+Currently Natron automatically detects new plug-ins and incorporates them on launch, but in a feature version, Natron will have the option to load a plug-in while active, especially for huge plug-ins that require a long initialisation. 
 A plug-in can be of two form : It can be a new node or it can simply be another GUI element. The SDK should offer a lot of functionalities and manoeuvre space to be enable a third party to create originals plug-ins.
 
 [Go back to the top of the page](#top)
@@ -185,44 +185,44 @@ A plug-in can be of two form : It can be a new node or it can simply be another 
 This one is obvious, one cannot imagine today a new high-end compositing software without stereo support. It will be available seamlessly for the user and the viewer will have a special layout option to display stereo/split-views etc. . .	
 
 ####Animation engine
-In order to be able to do complex special effects over time, it is necessary to have a smart tool dealing with animation problems. Powiter will add the notion of key-frame and a new key-frame editor will be available so the user can have motion-control.
+In order to be able to do complex special effects over time, it is necessary to have a smart tool dealing with animation problems. Natron will add the notion of key-frame and a new key-frame editor will be available so the user can have motion-control.
 
 ####Proxy mode
 This feature is maybe the most important and will be integrated before the first release. It will simply allow the user to run a node-graph on a smaller resolution than what the input frame really is, so the user experience remains smooth and fast.
 
 ####Region of interest
-It will be available as a viewer overlays : the user select a portion of the image on the viewer to be actually the region of interest. Powiter will then compute and refresh only the data that intersects the region of interest.
+It will be available as a viewer overlays : the user select a portion of the image on the viewer to be actually the region of interest. Natron will then compute and refresh only the data that intersects the region of interest.
 
 ####3D engine
 A 3D viewer mode will appear along with support for .fbx geometry files. A special scan-line rendering node will be able to render a 3D scene. This mode will also allow the user to do texture/painting projection mapping along with many other features.
 
 ####Painting engine
-A full painting engine will come into Powiter allowing the user to draw shapes and to use them to interact with the rest of the composite.
+A full painting engine will come into Natron allowing the user to draw shapes and to use them to interact with the rest of the composite.
 
 ####Deep compositing
-Thanks to the OpenEXR library, Powiter will support deep compositing and multiple samples per pixel.
+Thanks to the OpenEXR library, Natron will support deep compositing and multiple samples per pixel.
 
 ####Allow the user to add specific colour curves (lut)
 Specific camera manufacturers provide a custom colour-curve to convert their logarithmic stored files to linear. The GUI will add a special interactive menu allowing the user to add new Lut(s). 
 
 ####More flexibility granted to the SDK c++ interface
-Today the SDK interface is not final and far from what it should look like. No documentation is available yet. Everything will come on the release of Powiter (or sooner) 
-and a documentation featuring all possibilities will be created. Ideally the SDK should be partially API compatible with Nuke so someone who wrote a plug-in for Nuke could port it easily to Powiter. Maybe an auto-tool will come to do the conversion of Nuke plug-ins to Powiter, nothing official yet. Also, any OpenFX plug-in should be convertible to Powiter as it will implement the OpenFX API. 
+Today the SDK interface is not final and far from what it should look like. No documentation is available yet. Everything will come on the release of Natron (or sooner) 
+and a documentation featuring all possibilities will be created. Ideally the SDK should be partially API compatible with Nuke so someone who wrote a plug-in for Nuke could port it easily to Natron. Maybe an auto-tool will come to do the conversion of Nuke plug-ins to Natron, nothing official yet. Also, any OpenFX plug-in should be convertible to Natron as it will implement the OpenFX API. 
 
 ####Python scripting
-Powiter will have a basic Python script editor that will allow the user to write custom scripts to control the node-graph. 
+Natron will have a basic Python script editor that will allow the user to write custom scripts to control the node-graph. 
 
 ####Frame server API
-Powiter will most likely in a future version propose a cross platform frame server API . Any software implementing the API will be client of the frame server. Powiter should implement this as a reader Node, that will read from the frame server, as well as a write node, that will write back to the frame server.
+Natron will most likely in a future version propose a cross platform frame server API . Any software implementing the API will be client of the frame server. Natron should implement this as a reader Node, that will read from the frame server, as well as a write node, that will write back to the frame server.
 
 ####Ant mode, for render farm purpose.
-Powiter will propose a smaller version with only a rendering mode. Full management of the work parallelisation will be added to Powiter.
+Natron will propose a smaller version with only a rendering mode. Full management of the work parallelisation will be added to Natron.
 
 ####GUI customisation
-Powiter should offer on launch a way to customise entirely the GUI with QT, as long as the user give a valid behaviour to the necessary widgets.
+Natron should offer on launch a way to customise entirely the GUI with QT, as long as the user give a valid behaviour to the necessary widgets.
 
 ####Custom Meta-data handling
-Powiter will handle meta-data in several ways. It will provide a meta-data reader that will be able to connect to another node and pass down its informations. Powiter will also provide support for user defined meta-data, most likely via .exr files .
+Natron will handle meta-data in several ways. It will provide a meta-data reader that will be able to connect to another node and pass down its informations. Natron will also provide support for user defined meta-data, most likely via .exr files .
 
 [Go back to the top of the page](#top)
 
@@ -231,7 +231,7 @@ Powiter will handle meta-data in several ways. It will provide a meta-data reade
 
 ####Node
 
-A node is an element of a graph that represent an image transformation or a specific processing operation in Powiter. Some nodes may not do any processing in fact but they're still called nodes.
+A node is an element of a graph that represent an image transformation or a specific processing operation in Natron. Some nodes may not do any processing in fact but they're still called nodes.
 
 ####Knobs
 
@@ -239,10 +239,10 @@ These are the controls you can find in the settings panel of a node in the GUI.
 
 ####Channel
 
-A channel is one 2D plane. That is, it is a buffer of the size of the image, containing informations for each pixel. There's no support for sub-sampled channels currently in Powiter.
+A channel is one 2D plane. That is, it is a buffer of the size of the image, containing informations for each pixel. There's no support for sub-sampled channels currently in Natron.
 
 ####Display Format
-This is the resolution of the image. When reading images, display format is what Powiter reads from files headers, and when writing Display format is what the user chooses to output in the settings. The display format also refers to what is displayed on screen. In the case of exr files it is called "display window". This is the part of the data in the file that are visible on screen.
+This is the resolution of the image. When reading images, display format is what Natron reads from files headers, and when writing Display format is what the user chooses to output in the settings. The display format also refers to what is displayed on screen. In the case of exr files it is called "display window". This is the part of the data in the file that are visible on screen.
 
 ####BBOX(bounding box)
 

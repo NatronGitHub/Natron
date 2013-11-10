@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 
 class Hash64;
 
-namespace Powiter{
+namespace Natron{
     
     
     class FrameKey : public KeyHelper<U64>{
@@ -123,7 +123,7 @@ namespace boost {
     namespace serialization {
         
         template<class Archive>
-        void serialize(Archive & ar, Powiter::FrameKey & f, const unsigned int version)
+        void serialize(Archive & ar, Natron::FrameKey & f, const unsigned int version)
         {
             (void)version;
             ar & f._frameNb;
@@ -139,7 +139,7 @@ namespace boost {
     }
 }
 
-namespace Powiter{
+namespace Natron{
     class FrameEntry : public CacheEntryHelper<U8,FrameKey>
     {
         

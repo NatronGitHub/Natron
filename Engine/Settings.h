@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,11 +19,11 @@
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
-/*The current settings of Powiter in the preferences menu.
+/*The current settings in the preferences menu.
  @todo Move this class to QSettings instead*/
 
 
-namespace Powiter {
+namespace Natron {
     class LibraryBinary;
 }
 
@@ -58,18 +58,18 @@ public:
         
         /*Returns a pluginID if it could find a decoder for the filetype,
          otherwise returns NULL.*/
-        Powiter::LibraryBinary* decoderForFiletype(const std::string& type) const;
+        Natron::LibraryBinary* decoderForFiletype(const std::string& type) const;
         
         /*changes the decoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype,Powiter::LibraryBinary* decoder);
+        void changeMapping(const std::string& filetype,Natron::LibraryBinary* decoder);
         
         /*use to initialise default mapping*/
-        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
+        void fillMap(const std::map<std::string,Natron::LibraryBinary*>& defaultMap);
         
         std::vector<std::string> supportedFileTypes() const;
     private:
         
-        std::map<std::string,Powiter::LibraryBinary* > _fileTypesMap;
+        std::map<std::string,Natron::LibraryBinary* > _fileTypesMap;
     };
     
     class WritersSettings{
@@ -78,15 +78,15 @@ public:
         
         /*Returns a pluginID if it could find an encoder for the filetype,
          otherwise returns NULL.*/
-        Powiter::LibraryBinary* encoderForFiletype(const std::string& type) const;
+        Natron::LibraryBinary* encoderForFiletype(const std::string& type) const;
         
         /*changes the encoder for files identified by the filetype*/
-        void changeMapping(const std::string& filetype, Powiter::LibraryBinary* encoder);
+        void changeMapping(const std::string& filetype, Natron::LibraryBinary* encoder);
         
         /*use to initialise default mapping*/
-        void fillMap(const std::map<std::string,Powiter::LibraryBinary*>& defaultMap);
+        void fillMap(const std::map<std::string,Natron::LibraryBinary*>& defaultMap);
         
-        const std::map<std::string,Powiter::LibraryBinary*>& getFileTypesMap() const {return _fileTypesMap;}
+        const std::map<std::string,Natron::LibraryBinary*>& getFileTypesMap() const {return _fileTypesMap;}
         
         
         int _maximumBufferSize;
@@ -94,7 +94,7 @@ public:
     private:
         
         
-        std::map<std::string,Powiter::LibraryBinary*> _fileTypesMap;
+        std::map<std::string,Natron::LibraryBinary*> _fileTypesMap;
         
     };
     

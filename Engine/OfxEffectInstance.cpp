@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,11 +40,11 @@ CLANG_DIAG_ON(unused-private-field);
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 #if 0
 namespace {
-ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
+ChannelSet ofxComponentsToNatronChannels(const std::string& comp) {
     ChannelSet out;
     if(comp == kOfxImageComponentAlpha){
         out += Channel_alpha;
@@ -60,8 +60,8 @@ ChannelSet ofxComponentsToPowiterChannels(const std::string& comp) {
 }
 #endif
 
-OfxEffectInstance::OfxEffectInstance(Powiter::Node* node)
-    :Powiter::OutputEffectInstance(node)
+OfxEffectInstance::OfxEffectInstance(Natron::Node* node)
+    :Natron::OutputEffectInstance(node)
     , effect_()
     , _isOutput(false)
     , _penDown(false)
@@ -94,7 +94,7 @@ void OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::Ima
     }
     if (desc) {
         try {
-            effect_ = new Powiter::OfxImageEffectInstance(plugin,*desc,context,false);
+            effect_ = new Natron::OfxImageEffectInstance(plugin,*desc,context,false);
             assert(effect_);
             effect_->setOfxEffectInstancePointer(this);
             OfxStatus stat = effect_->populate();
@@ -303,7 +303,7 @@ void OfxEffectInstance::ifInfiniteclipRectToProjectDefault(OfxRectD* rod) const{
     
 }
 
-Powiter::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
+Natron::Status OfxEffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod){
     assert(effect_);
     OfxPointD rS;
     rS.x = rS.y = 1.0;
@@ -403,7 +403,7 @@ void OfxEffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
 }
     
 
-Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
+Natron::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
     //if(!isGenerator() && !isGeneratorAndFilter()){
         /*Checking if all mandatory inputs are connected!*/
         MappedInputV ofxInputs = inputClipsCopyWithoutOutput();
@@ -428,8 +428,8 @@ Powiter::Status OfxEffectInstance::preProcessFrame(SequenceTime /*time*/){
     return StatOK;
 }
 
-Powiter::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
-                                          const RectI& roi,int view,boost::shared_ptr<Powiter::Image>/* output*/){
+Natron::Status OfxEffectInstance::render(SequenceTime time,RenderScale scale,
+                                          const RectI& roi,int view,boost::shared_ptr<Natron::Image>/* output*/){
     OfxRectI ofxRoI;
     ofxRoI.x1 = roi.left();
     ofxRoI.x2 = roi.right();

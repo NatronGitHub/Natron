@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,70 +26,6 @@
 #include "Global/GlobalDefines.h"
 #include "Global/Enums.h"
 
-/*re-writing of the portable mapped-file implementation, as the boost::iostreams::mapped_file does not have the behaviour
-// desired in this case.*/
-//
-//class MMAPfile{
-//    static const size_t max_length = (size_t)-1;
-//    
-//    char* _data;
-//    size_t _size;
-//    size_t _capacity;
-//    Powiter_Enums::MMAPfile_mode _mode;
-//    bool _error;
-//#ifdef __POWITER_WIN32__
-//    HANDLE               _handle;
-//    HANDLE               _mapped_handle;
-//#else
-//    int _handle;
-//#endif
-//    std::string _path;
-//    
-//public:
-//    /*Constructs an empty MMAPfile object. No mapping has been done, you must call the 
-//     open function to actually create the mapping.*/
-//    MMAPfile();
-//    
-//    /*Constructs a MMAPfile object and create a mapping between a disk file and the virtual
-//     address space of the process. 
-//     @param : path : the file to be mapped (or created), depending on the mode
-//     @param: mode : the mode used to create the mapping (mostly regarding what to do
-//     if the file already exists).
-//    */
-//    MMAPfile(const std::string path,Powiter_Enums::MMAPfile_mode mode,size_t length,
-//              int offset=0,size_t newFileSize = 0,char* hint = 0 );
-//    
-//    void open(const std::string path,Powiter_Enums::MMAPfile_mode mode,size_t length,
-//              int offset=0,size_t newFileSize = 0,char* hint = 0);
-//
-//    char* data(){return _data;}
-//    
-//    void close();
-//    
-//    size_t size() const {return _size;}
-//    
-//    void resize(size_t new_size);
-//    
-//    void reserve(size_t new_capacity);
-//    
-//    size_t capacity() const { return _capacity; }
-//    
-//    bool flush();
-//    
-//    bool is_open() const { return _handle != 0; }
-//    
-//    static int alignment();
-//
-//    
-//private:
-//
-//
-//    void cleanup(const std::string& msg);
-//	void clear(bool);
-//};
-
-
-
 /*
  Read/write memory-mapped file wrapper.
  It handles only files that can be wholly loaded
@@ -113,7 +49,7 @@
  */
 class MemoryFile {
 public:
-    MemoryFile(const std::string& pathname, Powiter::MMAPfile_mode open_mode);
+    MemoryFile(const std::string& pathname, Natron::MMAPfile_mode open_mode);
     ~MemoryFile();
     char* data() const { return data_; }
     void resize(size_t new_size);
@@ -127,9 +63,9 @@ private:
     char* data_;
     size_t size_;
     size_t capacity_;
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     int file_handle_;
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     HANDLE file_handle_;
     HANDLE file_mapping_handle_;
 #else
@@ -157,7 +93,7 @@ public:
 private:
     const char* data_;
     size_t size_;
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     int file_handle_;
 #elif defined(_WIN32)
     HANDLE file_handle_;

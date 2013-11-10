@@ -1,6 +1,6 @@
 //
 //  OfxHost.h
-//  Powiter
+//  Natron
 //
 //  Created by Frédéric Devernay on 03/09/13.
 //
@@ -21,7 +21,7 @@
 class OfxEffectInstance;
 class AppInstance;
 class QMutex;
-namespace Powiter {
+namespace Natron {
 class Node;
     
 class OfxHost : public QObject,public OFX::Host::ImageEffect::Host {
@@ -100,6 +100,6 @@ private:
     OFXPluginsMap _ofxPlugins;
 };
 
-} // namespace Powiter
+} // namespace Natron
 
 #endif

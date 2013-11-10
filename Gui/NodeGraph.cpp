@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -56,7 +56,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #define POWITER_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 
 NodeGraph::NodeGraph(Gui* gui,QGraphicsScene* scene,QWidget *parent):
@@ -220,7 +220,7 @@ QRectF NodeGraph::visibleRect() {
     return mapToScene(viewport()->rect()).boundingRect();
 }
 
-NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Powiter::Node *node){
+NodeGui* NodeGraph::createNodeGUI(QVBoxLayout *dockContainer, Natron::Node *node){
     QPointF selectedPos;
     QRectF viewPos = visibleRect();
     double x,y;
@@ -496,7 +496,7 @@ void NodeGraph::leaveEvent(QEvent *event)
 
 void NodeGraph::wheelEvent(QWheelEvent *event){
     
-    double scaleFactor = pow(POWITER_WHEEL_ZOOM_PER_DELTA, event->delta());
+    double scaleFactor = pow(NATRON_WHEEL_ZOOM_PER_DELTA, event->delta());
     qreal factor = transform().scale(scaleFactor, scaleFactor).mapRect(QRectF(0, 0, 1, 1)).width();
     if(factor < 0.07 || factor > 10)
         return;
@@ -524,7 +524,7 @@ void NodeGraph::autoConnect(NodeGui* selected,NodeGui* created){
         /*check first if the node selected has outputs and connect the outputs to the new node*/
         if(!created->getNode()->isOutputNode()){
             while(selected->getNode()->hasOutputConnected()){
-                Powiter::Node* outputNode = selected->getNode()->getOutputs().begin()->second;
+                Natron::Node* outputNode = selected->getNode()->getOutputs().begin()->second;
                 assert(outputNode);
                 
                 /*Find which edge is connected to the selected node */
@@ -1109,7 +1109,7 @@ void NodeGraph::dropEvent(QDropEvent* event){
     for(U32 i = 0 ; i < files.size();++i){
         
         QStringList list = files[i];
-        Powiter::Node* reader = _gui->getApp()->createNode("Reader",true);
+        Natron::Node* reader = _gui->getApp()->createNode("Reader",true);
         const std::vector<Knob*>& knobs = reader->getKnobs();
         for(U32 j = 0 ; j < knobs.size();++j){
             if(knobs[j]->typeName() == "InputFile"){

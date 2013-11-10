@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ class QAction;
 class KnobGui;
 class Knob;
 class QMenu;
-namespace Powiter {
+namespace Natron {
 class ChannelSet;
 class Node;
 }
@@ -104,7 +104,7 @@ public:
     
     NodeGui(NodeGraph* dag,
             QVBoxLayout *dockContainer,
-            Powiter::Node *_internalNode,
+            Natron::Node *_internalNode,
             qreal x,qreal y ,
             QGraphicsItem *parent=0);
 
@@ -112,7 +112,7 @@ public:
     
     NodeGui::SerializedState serialize() const;
     
-    Powiter::Node* getNode() const {return _internalNode;}
+    Natron::Node* getNode() const {return _internalNode;}
     
     /*Returns a pointer to the dag gui*/
     NodeGraph* getDagGui(){return _graph;}
@@ -206,7 +206,7 @@ public slots:
     
     /*Updates the channels tooltip. This is called by Node::validate(),
      i.e, when the channel requested for the node change.*/
-    void updateChannelsTooltip(const Powiter::ChannelSet& _channelsPixmap);
+    void updateChannelsTooltip(const Natron::ChannelSet& _channelsPixmap);
     
     void setName(const QString& _nameItem);
     
@@ -250,7 +250,7 @@ private:
     NodeGraph* _graph;
     
     /*pointer to the internal node*/
-    Powiter::Node* _internalNode;
+    Natron::Node* _internalNode;
     
     /*true if the node is selected by the user*/
     bool _selected;

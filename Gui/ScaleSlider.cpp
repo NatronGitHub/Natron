@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -25,7 +25,7 @@ CLANG_DIAG_ON(unused-private-field);
 #define BORDER_OFFSET 4
 #define TICK_HEIGHT 7
 
-ScaleSlider::ScaleSlider(double bottom, double top, int nbValues, double initialPos, Powiter::Scale_Type type, QWidget* parent):
+ScaleSlider::ScaleSlider(double bottom, double top, int nbValues, double initialPos, Natron::Scale_Type type, QWidget* parent):
 QWidget(parent)
 , _minimum(bottom)
 , _maximum(top)
@@ -115,11 +115,11 @@ void ScaleSlider::updateScale(){
     _values.clear();
     _displayedValues.clear();
     _XValues.clear();
-    if (_type == Powiter::LINEAR_SCALE) {
+    if (_type == Natron::LINEAR_SCALE) {
         linearScale(_nbValues, _minimum, _maximum,&_values);
-    }else if(_type == Powiter::LOG_SCALE){
+    }else if(_type == Natron::LOG_SCALE){
         logScale(_nbValues, _minimum, _maximum,3.,&_values);
-    }else if(_type == Powiter::EXP_SCALE){
+    }else if(_type == Natron::EXP_SCALE){
         logScale(_nbValues, _minimum, _maximum,1./2.2,&_values);
     }
     fitInGui(size().width(),fontMetrics(),_values,&_displayedValues,&_XValues);

@@ -1,14 +1,14 @@
 developer installation for linux
 ==================================
 
-This file is supposed to guide you step by step to have working (compiling) version of Powiter on linux. 
+This file is supposed to guide you step by step to have working (compiling) version of Natron on linux. 
 
 ##Note
 If you're planning on writing a CMAKE based project file, and that you succeed in making it portable(windows/linux/osx), please send a mail at immarespond at gmail dot com.
 
 ##Install libraries
 
-In order to have Powiter compiling, first you need to install the required libraries.
+In order to have Natron compiling, first you need to install the required libraries.
 
 ###Qt 4.8.5
 
@@ -32,7 +32,7 @@ For now just boost serialisation is required.
 
 ### OpenFX
 
-Go under Powiter and type
+Go under Natron and type
 	git submodule update -i
 
 ###Expat
@@ -52,7 +52,7 @@ We're done here for libraries.
 You have to define the locations of the required libraries. This is done by creating a .pri file that will tell the .pro where to find those libraries. The only library to put in the config.pri file on unix systems is boost. For all other libraries are found with PKGConfig.
 
 
-- create the config.pri file next to the Powiter.pro file.
+- create the config.pri file next to the Natron.pro file.
 
 You can fill it with the following proposed code to point to the libraries. Of course you need to provide valid paths that are valid on your system.
 
@@ -74,12 +74,12 @@ The <srcPath> must be absolute and <buildPath> must not be a subdir of <srcPath>
 
 mkdir <buildPath>
 cd <buildfolder>
-qmake <srcPath>/Powiter.pro
+qmake <srcPath>/Natron.pro
 make
 
 If you want to build in DEBUG mode change the qmake call to this line:
 
-qmake CONFIG+=debug <srcPath>/Powiter.pro
+qmake CONFIG+=debug <srcPath>/Natron.pro
 
 
 

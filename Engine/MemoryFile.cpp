@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 
 #include "Engine/MemoryFile.h"
 
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
 # include <windows.h>
 #else // unix
       //# include <errno.h>
@@ -31,14 +31,14 @@
 InputMemoryFile::InputMemoryFile(const char *pathname):
 data_(0),
 size_(0),
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
 file_handle_(-1)
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
 file_handle_(INVALID_HANDLE_VALUE),
 file_mapping_handle_(INVALID_HANDLE_VALUE)
 #endif
 {
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     file_handle_ = ::open(pathname, O_RDONLY);
     if (file_handle_ == -1) return;
     struct stat sbuf;
@@ -47,7 +47,7 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
                                             0, sbuf.st_size, PROT_READ, MAP_SHARED, file_handle_, 0));
     if (data_ == MAP_FAILED) data_ = 0;
     else size_ = sbuf.st_size;
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     
     file_handle_ = ::CreateFile(pathname, GENERIC_READ,
                                 FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -63,44 +63,44 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
 
 
 InputMemoryFile::~InputMemoryFile() {
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     ::munmap(const_cast<char*>(data_), size_);
     ::close(file_handle_);
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     ::UnmapViewOfFile(data_);
     ::CloseHandle(file_mapping_handle_);
     ::CloseHandle(file_handle_);
 #endif
 }
 
-MemoryFile::MemoryFile(const std::string& pathname, Powiter::MMAPfile_mode open_mode):
+MemoryFile::MemoryFile(const std::string& pathname, Natron::MMAPfile_mode open_mode):
 _path(pathname),
 data_(0),
 size_(0),
 capacity_(0),
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
 file_handle_(-1)
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
 file_handle_(INVALID_HANDLE_VALUE),
 file_mapping_handle_(INVALID_HANDLE_VALUE)
 #endif
 {
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     int posix_open_mode = O_RDWR;
     switch (open_mode)
     {
-        case Powiter::if_exists_fail_if_not_exists_create:
+        case Natron::if_exists_fail_if_not_exists_create:
             posix_open_mode |= O_EXCL | O_CREAT;
             break;
-        case Powiter::if_exists_keep_if_dont_exists_fail:
+        case Natron::if_exists_keep_if_dont_exists_fail:
             break;
-        case Powiter::if_exists_keep_if_dont_exists_create:
+        case Natron::if_exists_keep_if_dont_exists_create:
             posix_open_mode |= O_CREAT;
             break;
-        case Powiter::if_exists_truncate_if_not_exists_fail:
+        case Natron::if_exists_truncate_if_not_exists_fail:
             posix_open_mode |= O_TRUNC;
             break;
-        case Powiter::if_exists_truncate_if_not_exists_create:
+        case Natron::if_exists_truncate_if_not_exists_create:
             posix_open_mode |= O_TRUNC | O_CREAT;
             break;
         default: return;
@@ -139,23 +139,23 @@ file_mapping_handle_(INVALID_HANDLE_VALUE)
         size_ = initial_file_size;
         capacity_ = adjusted_file_size;
     }
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     int windows_open_mode;
     switch (open_mode)
     {
-        case Powiter::if_exists_fail_if_not_exists_create:
+        case Natron::if_exists_fail_if_not_exists_create:
             windows_open_mode = CREATE_NEW;
             break;
-        case Powiter::if_exists_keep_if_dont_exists_fail:
+        case Natron::if_exists_keep_if_dont_exists_fail:
             windows_open_mode = OPEN_EXISTING;
             break;
-        case Powiter::if_exists_keep_if_dont_exists_create:
+        case Natron::if_exists_keep_if_dont_exists_create:
             windows_open_mode = OPEN_ALWAYS;
             break;
-        case Powiter::if_exists_truncate_if_not_exists_fail:
+        case Natron::if_exists_truncate_if_not_exists_fail:
             windows_open_mode = TRUNCATE_EXISTING;
             break;
-        case Powiter::if_exists_truncate_if_not_exists_create:
+        case Natron::if_exists_truncate_if_not_exists_create:
             windows_open_mode = CREATE_ALWAYS;
             break;
         default:
@@ -202,14 +202,14 @@ void MemoryFile::resize(size_t new_size) {
 
 void MemoryFile::reserve(size_t new_capacity) {
     if (new_capacity <= capacity_) return;
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     ::munmap(data_, size_);
     ::ftruncate(file_handle_, new_capacity);
     data_ = static_cast<char*>(::mmap(
                                       0, new_capacity, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle_, 0));
     if (data_ == MAP_FAILED) data_ = 0;
     capacity_ = new_capacity;
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     ::UnmapViewOfFile(data_);
     ::CloseHandle(file_mapping_handle_);
     file_mapping_handle_ = ::CreateFileMapping(
@@ -222,14 +222,14 @@ void MemoryFile::reserve(size_t new_capacity) {
 
 
 MemoryFile::~MemoryFile() {
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     ::munmap(data_, size_);
     if (size_ != capacity_)
     {
         ::ftruncate(file_handle_, size_);
     }
     ::close(file_handle_);
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     ::UnmapViewOfFile(data_);
     ::CloseHandle(file_mapping_handle_);
     if (size_ != capacity_)
@@ -242,9 +242,9 @@ MemoryFile::~MemoryFile() {
 }
 
 bool MemoryFile::flush() {
-#if defined(__POWITER_UNIX__)
+#if defined(__NATRON_UNIX__)
     return ::msync(data_, size_, MS_SYNC) == 0;
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     return ::FlushViewOfFile(data_, size_) != 0;
 #endif
 }

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -10,7 +10,7 @@
 
 #include "Gui/KnobGui.h"
 
-#ifdef __POWITER_UNIX__
+#ifdef __NATRON_UNIX__
 #include <dlfcn.h>
 #endif
 #include <climits>
@@ -59,7 +59,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Readers/Reader.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair;
 
 KnobGui::KnobGui(Knob* knob,DockablePanel* container):
@@ -151,7 +151,7 @@ void File_KnobGui::createWidget(QGridLayout* layout,int row){
 	
     _openFileButton = new Button(layout->parentWidget());
     
-    QImage img(POWITER_IMAGES_PATH"open-file.png");
+    QImage img(NATRON_IMAGES_PATH"open-file.png");
     QPixmap pix = QPixmap::fromImage(img);
     pix = pix.scaled(15,15);
     _openFileButton->setIcon(QIcon(pix));
@@ -244,7 +244,7 @@ void OutputFile_KnobGui::createWidget(QGridLayout *layout, int row){
 	_lineEdit->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
     _openFileButton = new Button(layout->parentWidget());
     
-    QImage img(POWITER_IMAGES_PATH"open-file.png");
+    QImage img(NATRON_IMAGES_PATH"open-file.png");
     QPixmap pix=QPixmap::fromImage(img);
     pix = pix.scaled(15,15);
     _openFileButton->setIcon(QIcon(pix));
@@ -936,7 +936,7 @@ void RGBA_KnobGui::createWidget(QGridLayout* layout,int row) {
     _colorLabel->setToolTip(_knob->getHintToolTip().c_str());
     colorLayout->addWidget(_colorLabel);
     
-    QImage buttonImg(POWITER_IMAGES_PATH"colorwheel.png");
+    QImage buttonImg(NATRON_IMAGES_PATH"colorwheel.png");
     QPixmap buttonPix = QPixmap::fromImage(buttonImg);
     buttonPix = buttonPix.scaled(25, 20);
     QIcon buttonIcon(buttonPix);
@@ -1137,12 +1137,12 @@ _checked(false){
 void GroupBoxLabel::setChecked(bool b){
     _checked = b;
     if(b){
-        QImage img(POWITER_IMAGES_PATH"groupbox_unfolded.png");
+        QImage img(NATRON_IMAGES_PATH"groupbox_unfolded.png");
         QPixmap pix = QPixmap::fromImage(img);
         pix = pix.scaled(20, 20);
         setPixmap(pix);
     }else{
-        QImage img(POWITER_IMAGES_PATH"groupbox_folded.png");
+        QImage img(NATRON_IMAGES_PATH"groupbox_folded.png");
         QPixmap pix = QPixmap::fromImage(img);
         pix = pix.scaled(20, 20);
         setPixmap(pix);

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ class QDropEvent;
 class QDragEnterEvent;
 
 
-namespace Powiter{
+namespace Natron{
     class Node;
 }
 
@@ -76,7 +76,7 @@ public:
  
     void setPropertyBinPtr(QScrollArea* propertyBin){_propertyBin = propertyBin;}
     
-    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Powiter::Node *node);
+    NodeGui* createNodeGUI(QVBoxLayout *dockContainer,Natron::Node *node);
     
     NodeGui* getSelectedNode() const {return _nodeSelected;}
     
@@ -239,8 +239,8 @@ public:
     virtual void redo();
     
 private:
-    std::multimap<int,Powiter::Node*> _outputs;
-    std::map<int,Powiter::Node*> _inputs;
+    std::multimap<int,Natron::Node*> _outputs;
+    std::map<int,Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
     bool _undoWasCalled;
@@ -254,8 +254,8 @@ public:
     virtual void redo();
     
 private:
-    std::multimap<int,Powiter::Node*> _outputs;
-    std::map<int,Powiter::Node*> _inputs;
+    std::multimap<int,Natron::Node*> _outputs;
+    std::map<int,Natron::Node*> _inputs;
     NodeGui* _node;
     NodeGraph* _graph;
 };

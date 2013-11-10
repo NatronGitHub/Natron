@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 
 #include "Global/AppManager.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                OFX::Host::ImageEffect::Descriptor& desc,
@@ -70,15 +70,15 @@ OfxStatus OfxImageEffectInstance::setPersistentMessage(const char* type,
     
     if(strcmp(type, kOfxMessageError) == 0) {
         
-        _node->setPersistentMessage(Powiter::ERROR_MESSAGE, message);
+        _node->setPersistentMessage(Natron::ERROR_MESSAGE, message);
         
     }else if(strcmp(type, kOfxMessageWarning)){
         
-        _node->setPersistentMessage(Powiter::WARNING_MESSAGE, message);
+        _node->setPersistentMessage(Natron::WARNING_MESSAGE, message);
         
     }else if(strcmp(type, kOfxMessageMessage)){
         
-        _node->setPersistentMessage(Powiter::INFO_MESSAGE, message);
+        _node->setPersistentMessage(Natron::INFO_MESSAGE, message);
         
     }
     return kOfxStatOK;
@@ -105,19 +105,19 @@ OfxStatus OfxImageEffectInstance::vmessage(const char* type,
     }else if(strcmp(type, kOfxMessageFatal) == 0 ||
             strcmp(type, kOfxMessageError) == 0) {
         
-        _node->message(Powiter::ERROR_MESSAGE, message);
+        _node->message(Natron::ERROR_MESSAGE, message);
         
     }else if(strcmp(type, kOfxMessageWarning)){
         
-        _node->message(Powiter::WARNING_MESSAGE, message);
+        _node->message(Natron::WARNING_MESSAGE, message);
         
     }else if(strcmp(type, kOfxMessageMessage)){
         
-        _node->message(Powiter::INFO_MESSAGE, message);
+        _node->message(Natron::INFO_MESSAGE, message);
         
     }else if(strcmp(type, kOfxMessageQuestion) == 0) {
         
-        if(_node->message(Powiter::QUESTION_MESSAGE, message)){
+        if(_node->message(Natron::QUESTION_MESSAGE, message)){
             return kOfxStatReplyYes;
         }else{
             return kOfxStatReplyNo;

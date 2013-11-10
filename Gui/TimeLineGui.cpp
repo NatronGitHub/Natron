@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -28,7 +28,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #define UNITS_PIXELS_SPACING 3
 
-using namespace Powiter;
+using namespace Natron;
 
 
 TimeLineGui::TimeLineGui(boost::shared_ptr<TimeLine> timeline,ViewerTab* parentTab):

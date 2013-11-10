@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@
 #include "Engine/Lut.h"
 #include "Engine/Row.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 
 QtDecoder::QtDecoder(Reader* op)
@@ -49,12 +49,12 @@ std::vector<std::string> QtDecoder::fileTypesDecoded() const {
 };
 
 
-Powiter::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Powiter::Image> output){
+Natron::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,const RectI& roi,boost::shared_ptr<Natron::Image> output){
     switch(_img->format()) {
         case QImage::Format_Invalid:
         {
             output->fill(roi,0.f,1.f);
-            _reader->setPersistentMessage(Powiter::ERROR_MESSAGE, "Invalid image format.");
+            _reader->setPersistentMessage(Natron::ERROR_MESSAGE, "Invalid image format.");
             return StatFailed;
         }
             break;
@@ -63,7 +63,7 @@ Powiter::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
         case QImage::Format_ARGB32_Premultiplied: // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         {
             //might have to invert y coordinates here
-            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Powiter::Color::Lut::BGRA,true);
+            from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
             break;
         case QImage::Format_Mono: // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
         case QImage::Format_MonoLSB: // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -79,7 +79,7 @@ Powiter::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
         case QImage::Format_ARGB4444_Premultiplied: // The image is stored using a premultiplied 16-bit ARGB format (4-4-4-4).
         default:
             {
-                from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Powiter::Color::Lut::BGRA,true);
+                from_byte_rect(output->pixelAt(0, 0),_img->bits(), roi, output->getRoD(),Natron::Color::Lut::BGRA,true);
             }
             break;
         }
@@ -87,7 +87,7 @@ Powiter::Status QtDecoder::render(SequenceTime /*time*/,RenderScale /*scale*/,co
     return StatOK;
 }
 
-Powiter::Status QtDecoder::readHeader(const QString& filename)
+Natron::Status QtDecoder::readHeader(const QString& filename)
 {
     /*load does actually loads the data too. And we must call it to read the header.
      That means in this case the readAllData function is useless*/

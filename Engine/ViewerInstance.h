@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,13 +25,13 @@ class TabWidget;
 class ViewerTab;
 class AppInstance;
 class Timer;
-namespace Powiter{
+namespace Natron{
 class FrameEntry;
 }
 
 class QKeyEvent;
 
-class ViewerInstance : public QObject, public Powiter::OutputEffectInstance {
+class ViewerInstance : public QObject, public Natron::OutputEffectInstance {
     
     Q_OBJECT
     
@@ -42,7 +42,7 @@ class ViewerInstance : public QObject, public Powiter::OutputEffectInstance {
           , _textureRect()
           ,_pixelsCount(0){}
         
-        boost::shared_ptr<const Powiter::FrameEntry> _cachedEntry;
+        boost::shared_ptr<const Natron::FrameEntry> _cachedEntry;
         TextureRect _textureRect;
         size_t _pixelsCount;
     };
@@ -70,9 +70,9 @@ public:
     
     
     
-    static Powiter::EffectInstance* BuildEffect(Powiter::Node* n) { return new ViewerInstance(n); }
+    static Natron::EffectInstance* BuildEffect(Natron::Node* n) { return new ViewerInstance(n); }
     
-    ViewerInstance(Powiter::Node* node);
+    ViewerInstance(Natron::Node* node);
     
     virtual ~ViewerInstance();
     
@@ -97,7 +97,7 @@ public:
     
     virtual std::string description() const OVERRIDE {return "The Viewer node can display the output of a node graph.";}
     
-    virtual Powiter::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
+    virtual Natron::Status getRegionOfDefinition(SequenceTime time,RectI* rod) OVERRIDE;
     
     virtual RoIMap getRegionOfInterest(SequenceTime time,RenderScale scale,const RectI& renderWindow) OVERRIDE;
     
@@ -106,7 +106,7 @@ public:
     virtual std::string setInputLabel(int inputNb) const OVERRIDE {
         return QString::number(inputNb+1).toStdString();
     }
-    virtual Powiter::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Powiter::EffectInstance::FULLY_SAFE;}
+    virtual Natron::EffectInstance::RenderSafety renderThreadSafety() const OVERRIDE {return Natron::EffectInstance::FULLY_SAFE;}
 
     /**
      * @brief This function renders the image at time 'time' on the viewer.
@@ -118,7 +118,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input and
      * and then render to the PBO.
      **/
-    Powiter::Status renderViewer(SequenceTime time,bool fitToViewer);
+    Natron::Status renderViewer(SequenceTime time,bool fitToViewer);
 
 
     /**
@@ -253,7 +253,7 @@ signals:
 
 private:
 
-    void renderFunctor(boost::shared_ptr<const Powiter::Image> inputImage,
+    void renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
                        const std::vector<std::pair<int,int> >& rows,
                        const std::vector<int>& columns);
 

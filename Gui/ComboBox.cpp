@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -36,7 +36,7 @@ ComboBox::ComboBox(QWidget* parent):QFrame(parent),_currentIndex(0),_maximumText
     _mainLayout->addWidget(_currentText);
         
     _dropDownIcon = new QLabel(this);
-    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
+    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -57,7 +57,7 @@ void ComboBox::paintEvent(QPaintEvent *e)
 }
 
 void ComboBox::mousePressEvent(QMouseEvent* e){
-    QImage imgC(POWITER_IMAGES_PATH"pressed_combobox.png");
+    QImage imgC(NATRON_IMAGES_PATH"pressed_combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -69,7 +69,7 @@ void ComboBox::mousePressEvent(QMouseEvent* e){
 }
 
 void ComboBox::mouseReleaseEvent(QMouseEvent* e){
-    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
+    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);
@@ -98,7 +98,7 @@ void ComboBox::createMenu(){
         }
     }
     
-    QImage imgC(POWITER_IMAGES_PATH"combobox.png");
+    QImage imgC(NATRON_IMAGES_PATH"combobox.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(10,10);
     _dropDownIcon->setPixmap(pixC);

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@
 
 #include "Writers/Writer.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 EffectInstance::EffectInstance(Node* node):
 KnobHolder(node ? node->getApp() : NULL)
@@ -102,7 +102,7 @@ bool EffectInstance::hasOutputConnected() const{
     return _node->hasOutputConnected();
 }
 
-Powiter::EffectInstance* EffectInstance::input(int n) const{
+Natron::EffectInstance* EffectInstance::input(int n) const{
     if(n < (int)_inputs.size()){
         return _inputs[n];
     }
@@ -115,10 +115,10 @@ std::string EffectInstance::setInputLabel(int inputNb) const {
     return out;
 }
 
-boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
-#ifdef POWITER_LOG
-    Powiter::Log::beginFunction(getName(),"getImage");
-    Powiter::Log::print(QString("Input "+QString::number(inputNb)+
+boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,SequenceTime time,RenderScale scale,int view){
+#ifdef NATRON_LOG
+    Natron::Log::beginFunction(getName(),"getImage");
+    Natron::Log::print(QString("Input "+QString::number(inputNb)+
                                                       " Scale ("+QString::number(scale.x)+
                                                       ","+QString::number(scale.y)+
                                                      ") Time " + QString::number(time)
@@ -126,17 +126,17 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
     
 #endif
     
-    const Powiter::Cache<Image>& cache = appPTR->getNodeCache();
+    const Natron::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
     EffectInstance* n  = input(inputNb);
     assert(n);
-    Powiter::ImageKey params = Powiter::Image::makeKey(n->hash().value(), time,scale,view,RectI());
+    Natron::ImageKey params = Natron::Image::makeKey(n->hash().value(), time,scale,view,RectI());
     boost::shared_ptr<const Image > entry = cache.get(params);
     
 
-#ifdef POWITER_LOG
-    Powiter::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
+#ifdef NATRON_LOG
+    Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
                                                          QString::number(params.getHash())).toStdString());
 #endif
     if(!entry){
@@ -149,13 +149,13 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::getImage(int inputNb,Seq
         }
         entry = n->renderRoI(time, scale, view,roi);
     }
-#ifdef POWITER_LOG
-    Powiter::Log::endFunction(getName(),"getImage");
+#ifdef NATRON_LOG
+    Natron::Log::endFunction(getName(),"getImage");
 #endif
     return entry;
 }
 
-Powiter::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
+Natron::Status EffectInstance::getRegionOfDefinition(SequenceTime time,RectI* rod) {
     for(Inputs::const_iterator it = _inputs.begin() ; it != _inputs.end() ; ++it){
         if (*it) {
             RectI inputRod;
@@ -203,10 +203,10 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     }
 }
 
-boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
-#ifdef POWITER_LOG
-    Powiter::Log::beginFunction(getName(),"renderRoI");
-    Powiter::Log::print(QString("Time "+QString::number(time)+
+boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
+#ifdef NATRON_LOG
+    Natron::Log::beginFunction(getName(),"renderRoI");
+    Natron::Log::print(QString("Time "+QString::number(time)+
                                                       " Scale ("+QString::number(scale.x)+
                                                       ","+QString::number(scale.y)
                         +") View " + QString::number(view) + " RoI: xmin= "+ QString::number(renderWindow.left()) +
@@ -215,7 +215,7 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
                         
 #endif
     
-    Powiter::ImageKey key = Powiter::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
+    Natron::ImageKey key = Natron::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
     /*look-up the cache for any existing image already rendered*/
     boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
     /*if not cached, we store the freshly allocated image in this member*/
@@ -230,9 +230,9 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
         /*allocate a new image*/
         image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
     }
-#ifdef POWITER_LOG
+#ifdef NATRON_LOG
     else{
-        Powiter::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
+        Natron::Log::print(QString("The image was found in the NodeCache with the following hash key: "+
                                                      QString::number(key.getHash())).toStdString());
     }
 #endif
@@ -245,8 +245,8 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
             
-#ifdef POWITER_LOG
-        Powiter::Log::print(QString("Rect left to render in the image... xmin= "+
+#ifdef NATRON_LOG
+        Natron::Log::print(QString("Rect left to render in the image... xmin= "+
                                                           QString::number((*it).left())+" ymin= "+
                                                           QString::number((*it).bottom())+ " xmax= "+
                                                           QString::number((*it).right())+ " ymax= "+
@@ -265,7 +265,7 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
             }
             
             RoIMap inputsRoi = getRegionOfInterest(time, scale, *it);
-            std::list<boost::shared_ptr<const Powiter::Image> > inputImages;
+            std::list<boost::shared_ptr<const Natron::Image> > inputImages;
             /*we render each input first and store away their image in the inputImages list
              in order to maintain a shared_ptr use_count > 1 so the cache doesn't attempt
              to remove them.*/
@@ -283,34 +283,34 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
                 QMutex* pluginLock = appPTR->getMutexForPlugin(className().c_str());
                 assert(pluginLock);
                 pluginLock->lock();
-                Powiter::Status st = render(time, scale, *it,view, image);
+                Natron::Status st = render(time, scale, *it,view, image);
                 pluginLock->unlock();
-                if(st != Powiter::StatOK){
+                if(st != Natron::StatOK){
                     throw std::runtime_error("");
                 }
                 image->markForRendered(*it);
             }else if(safety == INSTANCE_SAFE){
-                Powiter::Status st = render(time, scale, *it,view, image);
-                if(st != Powiter::StatOK){
+                Natron::Status st = render(time, scale, *it,view, image);
+                if(st != Natron::StatOK){
                     throw std::runtime_error("");
                 }
                 image->markForRendered(*it);
             }else{ // fully_safe, we do multi-threaded rendering on small tiles
                 std::vector<RectI> splitRects = RectI::splitRectIntoSmallerRect(*it, QThread::idealThreadCount());
-                QFuture<Powiter::Status> ret = QtConcurrent::mapped(splitRects,
+                QFuture<Natron::Status> ret = QtConcurrent::mapped(splitRects,
                                           boost::bind(&EffectInstance::tiledRenderingFunctor,this,args,_1,image));
                 ret.waitForFinished();
-                for (QFuture<Powiter::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
-                    if ((*it) == Powiter::StatFailed) {
+                for (QFuture<Natron::Status>::const_iterator it = ret.begin(); it!=ret.end(); ++it) {
+                    if ((*it) == Natron::StatFailed) {
                         throw std::runtime_error("");
                     }
                 }
             }
         }
     }
-#ifdef POWITER_LOG
+#ifdef NATRON_LOG
     else{
-        Powiter::Log::print(QString("Everything is already rendered in this image.").toStdString());
+        Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
     }
 #endif
     _node->removeImageBeingRendered(time, view);
@@ -318,24 +318,24 @@ boost::shared_ptr<const Powiter::Image> EffectInstance::renderRoI(SequenceTime t
     //we released the input images and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();
     
-#ifdef POWITER_LOG
-    Powiter::Log::endFunction(getName(),"renderRoI");
+#ifdef NATRON_LOG
+    Natron::Log::endFunction(getName(),"renderRoI");
 #endif
     return image;
 }
 
-boost::shared_ptr<Powiter::Image> EffectInstance::getImageBeingRendered(SequenceTime time,int view) const{
+boost::shared_ptr<Natron::Image> EffectInstance::getImageBeingRendered(SequenceTime time,int view) const{
     return _node->getImageBeingRendered(time, view);
 }
 
-Powiter::Status EffectInstance::tiledRenderingFunctor(RenderArgs args,
+Natron::Status EffectInstance::tiledRenderingFunctor(RenderArgs args,
                                  const RectI& roi,
-                                 boost::shared_ptr<Powiter::Image> output){
+                                 boost::shared_ptr<Natron::Image> output){
     
     if(_renderArgs){
         _renderArgs->setLocalData(args);
     }
-    Powiter::Status st = render(args._time, args._scale, roi,args._view, output);
+    Natron::Status st = render(args._time, args._scale, roi,args._view, output);
     if(st != StatOK){
         return st;
     }
@@ -436,11 +436,11 @@ Knob* EffectInstance::getKnobByDescription(const std::string& desc) const{
     return NULL;
 }
 
-bool EffectInstance::message(Powiter::MessageType type,const std::string& content) const{
+bool EffectInstance::message(Natron::MessageType type,const std::string& content) const{
     return _node->message(type,content);
 }
 
-void EffectInstance::setPersistentMessage(Powiter::MessageType type,const std::string& content){
+void EffectInstance::setPersistentMessage(Natron::MessageType type,const std::string& content){
     _node->setPersistentMessage(type, content);
 }
 
@@ -454,7 +454,7 @@ const EffectInstance::RenderArgs& EffectInstance::getArgsForLastRender() const{
 }
 
 OutputEffectInstance::OutputEffectInstance(Node* node):
-Powiter::EffectInstance(node)
+Natron::EffectInstance(node)
 , _videoEngine()
 {
     if(node){

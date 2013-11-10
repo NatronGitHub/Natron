@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 #include "Global/Macros.h"
 
 
-namespace Powiter{
+namespace Natron{
 class Row;
 }
 
@@ -47,15 +47,15 @@ public:
     /*Should return the name of the reader : "ffmpeg", "OpenEXR" ...*/
     virtual std::string decoderName() const OVERRIDE {return "OpenEXR";}
     
-    virtual Powiter::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Powiter::Image> output) OVERRIDE;
+    virtual Natron::Status render(SequenceTime time,RenderScale scale,const RectI& roi,boost::shared_ptr<Natron::Image> output) OVERRIDE;
     
-    virtual Powiter::Status readHeader(const QString& filename) OVERRIDE;
+    virtual Natron::Status readHeader(const QString& filename) OVERRIDE;
     
     virtual bool supports_stereo() const OVERRIDE {return true;}
         
     virtual void initializeColorSpace() OVERRIDE;
         
-    typedef std::map<Powiter::Channel, std::string> ChannelsMap;
+    typedef std::map<Natron::Channel, std::string> ChannelsMap;
     
 private:
     struct Implementation;

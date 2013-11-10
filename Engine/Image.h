@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 #include "Engine/Cache.h"
 #include "Engine/RectI.h"
 
-namespace Powiter{
+namespace Natron{
     
     class ImageKey :  public KeyHelper<U64>
     {
@@ -205,7 +205,7 @@ namespace Powiter{
     };
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
-    void debugImage(Powiter::Image* img);
+    void debugImage(Natron::Image* img);
     
-}//namespace Powiter
+}//namespace Natron
 #endif // IMAGE_H

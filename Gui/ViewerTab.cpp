@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -46,7 +46,7 @@ CLANG_DIAG_ON(unused-private-field);
 
 #include "Global/AppManager.h"
 
-using namespace Powiter;
+using namespace Natron;
 
 ViewerTab::ViewerTab(Gui* gui,ViewerInstance* node,QWidget* parent):QWidget(parent),
 _gui(gui),
@@ -139,7 +139,7 @@ _maximized(false)
     _secondRowLayout->addWidget(_gainBox);
     
     
-    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Powiter::LOG_SCALE,_secondSettingsRow);
+    _gainSlider=new ScaleSlider(0, 64, 100,1.0,Natron::LOG_SCALE,_secondSettingsRow);
     _gainSlider->setToolTip("<p></br><b>Gain: \n</b></p>"
                             "Multiplies the image by \nthis amount before display.");
     _secondRowLayout->addWidget(_gainSlider);
@@ -154,7 +154,7 @@ _maximized(false)
     _viewerColorSpace=new ComboBox(_secondSettingsRow);
     _viewerColorSpace->setToolTip("<p></br><b>Viewer color process: \n</b></p>"
                                   "The operation applied to the image before it is displayed\n"
-                                  "on screen. All the color pipeline in Powiter \n"
+                                  "on screen. All the color pipeline \n"
                                   "is linear,thus the process converts from linear\n"
                                   "to your monitor's colorspace.");
     _secondRowLayout->addWidget(_viewerColorSpace);
@@ -361,21 +361,21 @@ _maximized(false)
                        "Enter here the desired playback rate.");
     _playerLayout->addWidget(fpsBox);
     
-    QImage imgFirst(POWITER_IMAGES_PATH"firstFrame.png");
-    QImage imgPrevKF(POWITER_IMAGES_PATH"prevKF.png");
-    QImage imgRewind(POWITER_IMAGES_PATH"rewind.png");
-    QImage imgBack1(POWITER_IMAGES_PATH"back1.png");
-    QImage imgStop(POWITER_IMAGES_PATH"stop.png");
-    QImage imgForward1(POWITER_IMAGES_PATH"forward1.png");
-    QImage imgPlay(POWITER_IMAGES_PATH"play.png");
-    QImage imgNextKF(POWITER_IMAGES_PATH"nextKF.png");
-    QImage imgLast(POWITER_IMAGES_PATH"lastFrame.png");
-    QImage imgPrevINCR(POWITER_IMAGES_PATH"previousIncr.png");
-    QImage imgNextINCR(POWITER_IMAGES_PATH"nextIncr.png");
-    QImage imgRefresh(POWITER_IMAGES_PATH"refresh.png");
-    QImage imgCenterViewer(POWITER_IMAGES_PATH"centerViewer.png");
-    QImage imgLoopMode(POWITER_IMAGES_PATH"loopmode.png");
-    QImage imgClipToProject(POWITER_IMAGES_PATH"cliptoproject.png");
+    QImage imgFirst(NATRON_IMAGES_PATH"firstFrame.png");
+    QImage imgPrevKF(NATRON_IMAGES_PATH"prevKF.png");
+    QImage imgRewind(NATRON_IMAGES_PATH"rewind.png");
+    QImage imgBack1(NATRON_IMAGES_PATH"back1.png");
+    QImage imgStop(NATRON_IMAGES_PATH"stop.png");
+    QImage imgForward1(NATRON_IMAGES_PATH"forward1.png");
+    QImage imgPlay(NATRON_IMAGES_PATH"play.png");
+    QImage imgNextKF(NATRON_IMAGES_PATH"nextKF.png");
+    QImage imgLast(NATRON_IMAGES_PATH"lastFrame.png");
+    QImage imgPrevINCR(NATRON_IMAGES_PATH"previousIncr.png");
+    QImage imgNextINCR(NATRON_IMAGES_PATH"nextIncr.png");
+    QImage imgRefresh(NATRON_IMAGES_PATH"refresh.png");
+    QImage imgCenterViewer(NATRON_IMAGES_PATH"centerViewer.png");
+    QImage imgLoopMode(NATRON_IMAGES_PATH"loopmode.png");
+    QImage imgClipToProject(NATRON_IMAGES_PATH"cliptoproject.png");
     
     QPixmap pixFirst=QPixmap::fromImage(imgFirst);
     QPixmap pixPrevKF=QPixmap::fromImage(imgPrevKF);

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,13 +37,13 @@
 #include "Global/AppManager.h"
 #include "Global/LibraryBinary.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
 
-Powiter::Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
+Natron::Node::Node(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name)
 : QObject()
 , _app(app)
 , _outputs()
@@ -75,7 +75,7 @@ Powiter::Node::Node(AppInstance* app,Powiter::LibraryBinary* plugin,const std::s
 }
 
 
-Powiter::Node::~Node(){
+Natron::Node::~Node(){
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
         delete it->second;
     }
@@ -84,12 +84,12 @@ Powiter::Node::~Node(){
 }
 
 
-void Powiter::Node::initializeKnobs(){
+void Natron::Node::initializeKnobs(){
     _liveInstance->initializeKnobs();
     emit knobsInitialized();
 }
 
-Powiter::EffectInstance* Powiter::Node::findOrCreateLiveInstanceClone(RenderTree* tree){
+Natron::EffectInstance* Natron::Node::findOrCreateLiveInstanceClone(RenderTree* tree){
     if(isOutputNode()){
         _liveInstance->updateInputs(tree);
         return _liveInstance;
@@ -119,7 +119,7 @@ Powiter::EffectInstance* Powiter::Node::findOrCreateLiveInstanceClone(RenderTree
     return ret;
 
 }
-Powiter::EffectInstance* Powiter::Node::findExistingEffect(RenderTree* tree) const{
+Natron::EffectInstance* Natron::Node::findExistingEffect(RenderTree* tree) const{
     if(isOutputNode())
         return _liveInstance;
     std::map<RenderTree*,EffectInstance*>::const_iterator it = _renderInstances.find(tree);
@@ -130,12 +130,12 @@ Powiter::EffectInstance* Powiter::Node::findExistingEffect(RenderTree* tree) con
     }
 }
 
-void Powiter::Node::createKnobDynamically(){
+void Natron::Node::createKnobDynamically(){
     emit knobsInitialized();
 }
 
 
-void Powiter::Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const {
+void Natron::Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) const {
     if(className() == "Viewer"){
         ViewerInstance* thisViewer = dynamic_cast<ViewerInstance*>(_liveInstance);
         assert(thisViewer);
@@ -144,26 +144,26 @@ void Powiter::Node::hasViewersConnected(std::list<ViewerInstance*>* viewers) con
             viewers->push_back(thisViewer);
         }
     }else{
-        for (Powiter::Node::OutputMap::const_iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
+        for (Natron::Node::OutputMap::const_iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
             if(it->second)
                 it->second->hasViewersConnected(viewers);
         }
     }
 }
 
-void Powiter::Node::initializeInputs(){
+void Natron::Node::initializeInputs(){
     int inputCount = maximumInputs();
     for(int i = 0;i < inputCount;++i){
         if(_inputs.find(i) == _inputs.end()){
             _inputLabelsMap.insert(make_pair(i,_liveInstance->setInputLabel(i)));
-            _inputs.insert(make_pair(i,(Powiter::Node*)NULL));
+            _inputs.insert(make_pair(i,(Natron::Node*)NULL));
         }
     }
     _liveInstance->updateInputs(NULL);
     emit inputsInitialized();
 }
 
-Powiter::Node* Powiter::Node::input(int index) const{
+Natron::Node* Natron::Node::input(int index) const{
     InputMap::const_iterator it = _inputs.find(index);
     if(it == _inputs.end()){
         return NULL;
@@ -173,7 +173,7 @@ Powiter::Node* Powiter::Node::input(int index) const{
 }
 
 
-std::string Powiter::Node::getInputLabel(int inputNb) const{
+std::string Natron::Node::getInputLabel(int inputNb) const{
     std::map<int,std::string>::const_iterator it = _inputLabelsMap.find(inputNb);
     if(it == _inputLabelsMap.end()){
         return "";
@@ -183,7 +183,7 @@ std::string Powiter::Node::getInputLabel(int inputNb) const{
 }
 
 
-bool Powiter::Node::isInputConnected(int inputNb) const{
+bool Natron::Node::isInputConnected(int inputNb) const{
     InputMap::const_iterator it = _inputs.find(inputNb);
     if(it != _inputs.end()){
         return it->second != NULL;
@@ -193,11 +193,11 @@ bool Powiter::Node::isInputConnected(int inputNb) const{
     
 }
 
-bool Powiter::Node::hasOutputConnected() const{
+bool Natron::Node::hasOutputConnected() const{
     return _outputs.size() > 0;
 }
 
-bool Powiter::Node::connectInput(Powiter::Node* input,int inputNumber) {
+bool Natron::Node::connectInput(Natron::Node* input,int inputNumber) {
     assert(input);
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end()) {
@@ -215,26 +215,26 @@ bool Powiter::Node::connectInput(Powiter::Node* input,int inputNumber) {
     }
 }
 
-void Powiter::Node::connectOutput(Powiter::Node* output,int outputNumber ){
+void Natron::Node::connectOutput(Natron::Node* output,int outputNumber ){
     assert(output);
     _outputs.insert(make_pair(outputNumber,output));
     _liveInstance->updateInputs(NULL);
 }
 
-int Powiter::Node::disconnectInput(int inputNumber) {
+int Natron::Node::disconnectInput(int inputNumber) {
     InputMap::iterator it = _inputs.find(inputNumber);
     if (it == _inputs.end() || it->second == NULL) {
         return -1;
     } else {
         _inputs.erase(it);
-        _inputs.insert(make_pair(inputNumber, (Powiter::Node*)NULL));
+        _inputs.insert(make_pair(inputNumber, (Natron::Node*)NULL));
         emit inputChanged(inputNumber);
         _liveInstance->updateInputs(NULL);
         return inputNumber;
     }
 }
 
-int Powiter::Node::disconnectInput(Powiter::Node* input) {
+int Natron::Node::disconnectInput(Natron::Node* input) {
     assert(input);
     for (InputMap::iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if (it->second != input) {
@@ -242,7 +242,7 @@ int Powiter::Node::disconnectInput(Powiter::Node* input) {
         } else {
             int inputNumber = it->first;
             _inputs.erase(it);
-            _inputs.insert(make_pair(inputNumber, (Powiter::Node*)NULL));
+            _inputs.insert(make_pair(inputNumber, (Natron::Node*)NULL));
             emit inputChanged(inputNumber);
             _liveInstance->updateInputs(NULL);
             return inputNumber;
@@ -251,7 +251,7 @@ int Powiter::Node::disconnectInput(Powiter::Node* input) {
     return -1;
 }
 
-int Powiter::Node::disconnectOutput(Powiter::Node* output) {
+int Natron::Node::disconnectOutput(Natron::Node* output) {
     assert(output);
     for (OutputMap::iterator it = _outputs.begin(); it != _outputs.end(); ++it) {
         if (it->second == output) {
@@ -267,7 +267,7 @@ int Powiter::Node::disconnectOutput(Powiter::Node* output) {
 
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
-void Powiter::Node::deactivate(){
+void Natron::Node::deactivate(){
 
     //first tell the gui to clear any persistent message link to this node
     clearPersistentMessage();
@@ -293,7 +293,7 @@ void Powiter::Node::deactivate(){
     
 }
 
-void Powiter::Node::activate(){
+void Natron::Node::activate(){
     for (InputMap::const_iterator it = _inputs.begin(); it!=_inputs.end(); ++it) {
         if(!it->second)
             continue;
@@ -324,11 +324,11 @@ void Powiter::Node::activate(){
 
 
 
-const Format& Powiter::Node::getRenderFormatForEffect(const Powiter::EffectInstance* effect) const{
+const Format& Natron::Node::getRenderFormatForEffect(const Natron::EffectInstance* effect) const{
     if(effect == _liveInstance){
         return getApp()->getProjectFormat();
     }else{
-        for(std::map<RenderTree*,Powiter::EffectInstance*>::const_iterator it = _renderInstances.begin();
+        for(std::map<RenderTree*,Natron::EffectInstance*>::const_iterator it = _renderInstances.begin();
             it!=_renderInstances.end();++it){
             if(it->second == effect){
                 return it->first->getRenderFormat();
@@ -338,11 +338,11 @@ const Format& Powiter::Node::getRenderFormatForEffect(const Powiter::EffectInsta
     return getApp()->getProjectFormat();
 }
 
-int Powiter::Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* effect) const{
+int Natron::Node::getRenderViewsCountForEffect( const Natron::EffectInstance* effect) const{
     if(effect == _liveInstance){
         return getApp()->getCurrentProjectViewsCount();
     }else{
-        for(std::map<RenderTree*,Powiter::EffectInstance*>::const_iterator it = _renderInstances.begin();
+        for(std::map<RenderTree*,Natron::EffectInstance*>::const_iterator it = _renderInstances.begin();
             it!=_renderInstances.end();++it){
             if(it->second == effect){
                 return it->first->renderViewsCount();
@@ -353,17 +353,17 @@ int Powiter::Node::getRenderViewsCountForEffect( const Powiter::EffectInstance* 
 }
 
 
-Knob* Powiter::Node::getKnobByDescription(const std::string& desc) const{
+Knob* Natron::Node::getKnobByDescription(const std::string& desc) const{
     return _liveInstance->getKnobByDescription(desc);
 }
 
 
-boost::shared_ptr<Powiter::Image> Powiter::Node::getImageBeingRendered(SequenceTime time,int view) const{
+boost::shared_ptr<Natron::Image> Natron::Node::getImageBeingRendered(SequenceTime time,int view) const{
     ImagesMap::const_iterator it = _imagesBeingRendered.find(ImageBeingRenderedKey(time,view));
     if(it!=_imagesBeingRendered.end()){
         return it->second;
     }
-    return boost::shared_ptr<Powiter::Image>();
+    return boost::shared_ptr<Natron::Image>();
 }
 
 
@@ -374,14 +374,14 @@ static float clamp(float v, float min = 0.f, float max= 1.f){
     return v;
 }
 
-void Powiter::Node::addImageBeingRendered(boost::shared_ptr<Powiter::Image> image,SequenceTime time,int view ){
+void Natron::Node::addImageBeingRendered(boost::shared_ptr<Natron::Image> image,SequenceTime time,int view ){
     /*before rendering we add to the _imagesBeingRendered member the image*/
     ImageBeingRenderedKey renderedImageKey(time,view);
     QMutexLocker locker(&_nodeInstanceLock);
     _imagesBeingRendered.insert(std::make_pair(renderedImageKey, image));
 }
 
-void Powiter::Node::removeImageBeingRendered(SequenceTime time,int view ){
+void Natron::Node::removeImageBeingRendered(SequenceTime time,int view ){
     /*now that we rendered the image, remove it from the images being rendered*/
     
     QMutexLocker locker(&_nodeInstanceLock);
@@ -393,7 +393,7 @@ void Powiter::Node::removeImageBeingRendered(SequenceTime time,int view ){
     _imagesBeingRenderedNotEmpty.wakeOne(); // wake up any preview thread waiting for render to finish
 }
 
-void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
+void Natron::Node::makePreviewImage(SequenceTime time,int width,int height,unsigned int* buf){
     RectI rod;
     _liveInstance->getRegionOfDefinition(time, &rod);
     int h,w;
@@ -408,16 +408,16 @@ void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsi
         }
     }
 
-#ifdef POWITER_LOG
-    Powiter::Log::beginFunction(getName(),"makePreviewImage");
-    Powiter::Log::print(QString("Time "+QString::number(time)).toStdString());
+#ifdef NATRON_LOG
+    Natron::Log::beginFunction(getName(),"makePreviewImage");
+    Natron::Log::print(QString("Time "+QString::number(time)).toStdString());
 #endif
 
-    Powiter::Status stat =  _liveInstance->preProcessFrame(time);
+    Natron::Status stat =  _liveInstance->preProcessFrame(time);
     if(stat == StatFailed){
-#ifdef POWITER_LOG
-        Powiter::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
-        Powiter::Log::endFunction(getName(),"makePreviewImage");
+#ifdef NATRON_LOG
+        Natron::Log::print(QString("preProcessFrame returned StatFailed.").toStdString());
+        Natron::Log::endFunction(getName(),"makePreviewImage");
 #endif
         return;
     }
@@ -425,7 +425,7 @@ void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsi
     _liveInstance->computeHash(std::vector<U64>());
     RenderScale scale;
     scale.x = scale.y = 1.;
-    boost::shared_ptr<const Powiter::Image> img = _liveInstance->renderRoI(time, scale, 0,rod);
+    boost::shared_ptr<const Natron::Image> img = _liveInstance->renderRoI(time, scale, 0,rod);
     for (int i=0; i < h; ++i) {
         double y = (double)i/yZoomFactor;
         int nearestY = (int)(y+0.5);
@@ -444,16 +444,16 @@ void Powiter::Node::makePreviewImage(SequenceTime time,int width,int height,unsi
             
         }
     }
-#ifdef POWITER_LOG
-    Powiter::Log::endFunction(getName(),"makePreviewImage");
+#ifdef NATRON_LOG
+    Natron::Log::endFunction(getName(),"makePreviewImage");
 #endif
 }
 
-void Powiter::Node::openFilesForAllFileKnobs(){
+void Natron::Node::openFilesForAllFileKnobs(){
     _liveInstance->openFilesForAllFileKnobs();
 }
 
-void Powiter::Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
+void Natron::Node::abortRenderingForEffect(Natron::EffectInstance* effect){
     for (std::map<RenderTree*,EffectInstance*>::iterator it = _renderInstances.begin(); it!=_renderInstances.end(); ++it) {
         if(it->second == effect){
             dynamic_cast<OutputEffectInstance*>(it->first->getOutput())->getVideoEngine()->abortRendering();
@@ -462,120 +462,120 @@ void Powiter::Node::abortRenderingForEffect(Powiter::EffectInstance* effect){
 }
 
 
-bool Powiter::Node::isInputNode() const{
+bool Natron::Node::isInputNode() const{
     return _liveInstance->isGenerator();
 }
 
 
-bool Powiter::Node::isOutputNode() const{
+bool Natron::Node::isOutputNode() const{
     return _liveInstance->isOutput();
 }
 
 
-bool Powiter::Node::isInputAndProcessingNode() const{
+bool Natron::Node::isInputAndProcessingNode() const{
     return _liveInstance->isGeneratorAndFilter();
 }
 
 
-bool Powiter::Node::isOpenFXNode() const{
+bool Natron::Node::isOpenFXNode() const{
     return _liveInstance->isOpenFX();
 }
 
-const std::vector<Knob*>& Powiter::Node::getKnobs() const{
+const std::vector<Knob*>& Natron::Node::getKnobs() const{
     return _liveInstance->getKnobs();
 }
 
-std::string Powiter::Node::className() const{
+std::string Natron::Node::className() const{
     return _liveInstance->className();
 }
 
 
-std::string Powiter::Node::description() const{
+std::string Natron::Node::description() const{
     return _liveInstance->description();
 }
 
-int Powiter::Node::maximumInputs() const {
+int Natron::Node::maximumInputs() const {
     return _liveInstance->maximumInputs();
 }
 
-bool Powiter::Node::makePreviewByDefault() const{
+bool Natron::Node::makePreviewByDefault() const{
     return _liveInstance->makePreviewByDefault();
 }
-void Powiter::Node::togglePreview(){
+void Natron::Node::togglePreview(){
     _liveInstance->togglePreview();
 }
 
-bool Powiter::Node::isPreviewEnabled() const{
+bool Natron::Node::isPreviewEnabled() const{
     return _liveInstance->isPreviewEnabled();
 }
 
-bool Powiter::Node::aborted() const { return _liveInstance->aborted(); }
+bool Natron::Node::aborted() const { return _liveInstance->aborted(); }
 
-void Powiter::Node::setAborted(bool b){ _liveInstance->setAborted(b); }
+void Natron::Node::setAborted(bool b){ _liveInstance->setAborted(b); }
 
-void Powiter::Node::drawOverlay(){ _liveInstance->drawOverlay(); }
+void Natron::Node::drawOverlay(){ _liveInstance->drawOverlay(); }
 
-bool Powiter::Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
+bool Natron::Node::onOverlayPenDown(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenDown(viewportPos, pos);
 }
 
-bool Powiter::Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
+bool Natron::Node::onOverlayPenMotion(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenMotion(viewportPos, pos);
 }
 
-bool Powiter::Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
+bool Natron::Node::onOverlayPenUp(const QPointF& viewportPos,const QPointF& pos){
     return _liveInstance->onOverlayPenUp(viewportPos, pos);
 }
 
-void Powiter::Node::onOverlayKeyDown(QKeyEvent* e){
+void Natron::Node::onOverlayKeyDown(QKeyEvent* e){
     return _liveInstance->onOverlayKeyDown(e);
 }
 
-void Powiter::Node::onOverlayKeyUp(QKeyEvent* e){
+void Natron::Node::onOverlayKeyUp(QKeyEvent* e){
     return _liveInstance->onOverlayKeyUp(e);
 }
 
-void Powiter::Node::onOverlayKeyRepeat(QKeyEvent* e){
+void Natron::Node::onOverlayKeyRepeat(QKeyEvent* e){
     return _liveInstance->onOverlayKeyRepeat(e);
 }
 
-void Powiter::Node::onOverlayFocusGained(){
+void Natron::Node::onOverlayFocusGained(){
     return _liveInstance->onOverlayFocusGained();
 }
 
-void Powiter::Node::onOverlayFocusLost(){
+void Natron::Node::onOverlayFocusLost(){
     return _liveInstance->onOverlayFocusLost();
 }
 
 
-bool Powiter::Node::message(Powiter::MessageType type,const std::string& content) const{
-    if (type == Powiter::INFO_MESSAGE) {
-        Powiter::informationDialog(getName(), content);
+bool Natron::Node::message(Natron::MessageType type,const std::string& content) const{
+    if (type == Natron::INFO_MESSAGE) {
+        Natron::informationDialog(getName(), content);
         return true;
-    }else if(type == Powiter::WARNING_MESSAGE){
-        Powiter::warningDialog(getName(), content);
+    }else if(type == Natron::WARNING_MESSAGE){
+        Natron::warningDialog(getName(), content);
         return true;
-    }else if(type == Powiter::ERROR_MESSAGE){
-        Powiter::errorDialog(getName(), content);
+    }else if(type == Natron::ERROR_MESSAGE){
+        Natron::errorDialog(getName(), content);
         return true;
-    }else if(type == Powiter::QUESTION_MESSAGE){
-        return Powiter::questionDialog(getName(), content) == Powiter::Yes;
+    }else if(type == Natron::QUESTION_MESSAGE){
+        return Natron::questionDialog(getName(), content) == Natron::Yes;
     }
     return false;
 }
 
-void Powiter::Node::setPersistentMessage(Powiter::MessageType type,const std::string& content){
+void Natron::Node::setPersistentMessage(Natron::MessageType type,const std::string& content){
     if(!getApp()->isBackground()){
         //if the message is just an information, display a popup instead.
-        if(type == Powiter::INFO_MESSAGE){
+        if(type == Natron::INFO_MESSAGE){
             message(type,content);
             return;
         }
         QString message;
         message.append(getName().c_str());
-        if(type == Powiter::ERROR_MESSAGE){
+        if(type == Natron::ERROR_MESSAGE){
             message.append(" error: ");
-        }else if(type == Powiter::WARNING_MESSAGE){
+        }else if(type == Natron::WARNING_MESSAGE){
             message.append(" warning: ");
         }
         message.append(content.c_str());
@@ -586,13 +586,13 @@ void Powiter::Node::setPersistentMessage(Powiter::MessageType type,const std::st
     }
 }
 
-void Powiter::Node::clearPersistentMessage(){
+void Natron::Node::clearPersistentMessage(){
     if(!getApp()->isBackground()){
         emit persistentMessageCleared();
     }
 }
 
-InspectorNode::InspectorNode(AppInstance* app,Powiter::LibraryBinary* plugin,const std::string& name)
+InspectorNode::InspectorNode(AppInstance* app,Natron::LibraryBinary* plugin,const std::string& name)
 : Node(app,plugin,name)
 , _inputsCount(1)
 , _activeInput(0)

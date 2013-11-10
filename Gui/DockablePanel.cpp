@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -74,7 +74,7 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _headerLayout->setSpacing(0);
     _headerWidget->setLayout(_headerLayout);
     
-    QImage imgHelp(POWITER_IMAGES_PATH"help.png");
+    QImage imgHelp(NATRON_IMAGES_PATH"help.png");
     QPixmap pixHelp = QPixmap::fromImage(imgHelp);
     pixHelp = pixHelp.scaled(15, 15);
     _helpButton = new Button(QIcon(pixHelp),"",_headerWidget);
@@ -92,10 +92,10 @@ DockablePanel::DockablePanel(KnobHolder* holder
     QObject::connect(_helpButton, SIGNAL(clicked()), this, SLOT(showHelp()));
     
     
-    QImage imgM(POWITER_IMAGES_PATH"minimize.png");
+    QImage imgM(NATRON_IMAGES_PATH"minimize.png");
     QPixmap pixM=QPixmap::fromImage(imgM);
     pixM = pixM.scaled(15,15);
-    QImage imgC(POWITER_IMAGES_PATH"close.png");
+    QImage imgC(NATRON_IMAGES_PATH"close.png");
     QPixmap pixC=QPixmap::fromImage(imgC);
     pixC = pixC.scaled(15,15);
     _minimize=new Button(QIcon(pixM),"",_headerWidget);
@@ -106,10 +106,10 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _cross->setFixedSize(15,15);
     QObject::connect(_cross,SIGNAL(clicked()),this,SLOT(close()));
 
-    QImage imgUndo(POWITER_IMAGES_PATH"undo.png");
+    QImage imgUndo(NATRON_IMAGES_PATH"undo.png");
     QPixmap pixUndo = QPixmap::fromImage(imgUndo);
     pixUndo = pixUndo.scaled(15, 15);
-    QImage imgUndo_gray(POWITER_IMAGES_PATH"undo_grayscale.png");
+    QImage imgUndo_gray(NATRON_IMAGES_PATH"undo_grayscale.png");
     QPixmap pixUndo_gray = QPixmap::fromImage(imgUndo_gray);
     pixUndo_gray = pixUndo_gray.scaled(15, 15);
     QIcon icUndo;
@@ -119,10 +119,10 @@ DockablePanel::DockablePanel(KnobHolder* holder
     _undoButton->setToolTip("Undo the last change made to this operator");
     _undoButton->setEnabled(false);
     
-    QImage imgRedo(POWITER_IMAGES_PATH"redo.png");
+    QImage imgRedo(NATRON_IMAGES_PATH"redo.png");
     QPixmap pixRedo = QPixmap::fromImage(imgRedo);
     pixRedo = pixRedo.scaled(15, 15);
-    QImage imgRedo_gray(POWITER_IMAGES_PATH"redo_grayscale.png");
+    QImage imgRedo_gray(NATRON_IMAGES_PATH"redo_grayscale.png");
     QPixmap pixRedo_gray = QPixmap::fromImage(imgRedo_gray);
     pixRedo_gray = pixRedo_gray.scaled(15, 15);
     QIcon icRedo;
@@ -287,13 +287,13 @@ void DockablePanel::closePanel(){
 void DockablePanel::minimizeOrMaximize(bool toggled){
     _minimized=toggled;
     if(_minimized){
-        QImage imgM(POWITER_IMAGES_PATH"maximize.png");
+        QImage imgM(NATRON_IMAGES_PATH"maximize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));
         emit minimized();
     }else{
-        QImage imgM(POWITER_IMAGES_PATH"minimize.png");
+        QImage imgM(NATRON_IMAGES_PATH"minimize.png");
         QPixmap pixM=QPixmap::fromImage(imgM);
         pixM.scaled(15,15);
         _minimize->setIcon(QIcon(pixM));

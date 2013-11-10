@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -59,7 +59,7 @@
 #include "Writers/QtEncoder.h"
 #include "Writers/ExrEncoder.h"
 
-using namespace Powiter;
+using namespace Natron;
 using std::cout; using std::endl;
 using std::make_pair;
 
@@ -69,7 +69,7 @@ using std::make_pair;
 
 AppInstance::AppInstance(bool backgroundMode,int appID,const QString& projectName,const QStringList& writers):
 _gui(NULL)
-, _currentProject(new Powiter::Project(this))
+, _currentProject(new Natron::Project(this))
 , _appID(appID)
 , _nodeMapping()
 , _autoSaveMutex(new QMutex)
@@ -161,7 +161,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
         QString err("Reason:\n The plugin binary for ");
         err.append(name);
         err.append(" couldn't be located");
-        Powiter::errorDialog("Failed to create node",err.toStdString());
+        Natron::errorDialog("Failed to create node",err.toStdString());
         return NULL;
     }
     try{
@@ -224,7 +224,7 @@ bool AppInstance::loadProject(const QString& path,const QString& name,bool backg
     try{
         _currentProject->loadProject(path,name,background);
     }catch(const std::exception& e){
-        Powiter::errorDialog("Project loader",e.what());
+        Natron::errorDialog("Project loader",e.what());
         if(!background)
             createNode("Viewer");
         return false;
@@ -283,7 +283,7 @@ void AppInstance::removeAutoSaves() const{
     for(int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         QString searchStr('.');
-        searchStr.append(POWITER_PROJECT_FILE_EXTENION);
+        searchStr.append(NATRON_PROJECT_FILE_EXTENION);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
@@ -299,7 +299,7 @@ bool AppInstance::isSaveUpToDate() const{
 void AppInstance::resetCurrentProject(){
     _currentProject->setAutoSetProjectFormat(true);
     _currentProject->setHasProjectBeenSavedByUser(false);
-    _currentProject->setProjectName("Untitled." POWITER_PROJECT_FILE_EXTENION);
+    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXTENION);
     _currentProject->setProjectPath("");
     QString text(QCoreApplication::applicationName() + " - ");
     text.append(_currentProject->getProjectName());
@@ -312,7 +312,7 @@ bool AppInstance::findAutoSave() {
     for (int i = 0; i < entries.size();++i) {
         const QString& entry = entries.at(i);
         QString searchStr('.');
-        searchStr.append(POWITER_PROJECT_FILE_EXTENION);
+        searchStr.append(NATRON_PROJECT_FILE_EXTENION);
         searchStr.append('.');
         int suffixPos = entry.indexOf(searchStr);
         if (suffixPos != -1) {
@@ -355,7 +355,7 @@ bool AppInstance::findAutoSave() {
                 try{
                     _currentProject->loadProject(savesDir.path()+QDir::separator(), entry,false);
                 }catch(const std::exception& e){
-                    Powiter::errorDialog("Project loader",e.what());
+                    Natron::errorDialog("Project loader",e.what());
                     cout << e.what() << endl;
                     createNode("Viewer");
                 }
@@ -365,7 +365,7 @@ bool AppInstance::findAutoSave() {
                     _currentProject->setProjectPath(path);
                 } else {
                     _currentProject->setHasProjectBeenSavedByUser(false);
-                    _currentProject->setProjectName("Untitled." POWITER_PROJECT_FILE_EXTENION);
+                    _currentProject->setProjectName("Untitled." NATRON_PROJECT_FILE_EXTENION);
                     _currentProject->setProjectPath("");
                 }
                 
@@ -410,8 +410,8 @@ void AppInstance::informationDialog(const std::string& title,const std::string& 
     
 }
 
-Powiter::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Powiter::StandardButtons buttons,
-                                                    Powiter::StandardButton defaultButton) const{
+Natron::StandardButton AppInstance::questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
+                                                    Natron::StandardButton defaultButton) const{
     return _gui->questionDialog(title, message,buttons,defaultButton);
 }
 
@@ -425,7 +425,7 @@ AppInstance* AppManager::newAppInstance(bool background,const QString& projectNa
     try{
         instance = new AppInstance(background,_availableID,projectName,writers);
     }catch(const std::exception& e){
-        Powiter::errorDialog(POWITER_APPLICATION_NAME, e.what());
+        Natron::errorDialog(NATRON_APPLICATION_NAME, e.what());
         printUsage();
         return NULL;
     }
@@ -554,7 +554,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
                 QString className;
                 int index = filename.lastIndexOf("." POWITER_LIBRARY_EXT);
                 className = filename.left(index);
-                std::string binaryPath = POWITER_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
+                std::string binaryPath = NATRON_PLUGINS_PATH + className.toStdString() + "." + POWITER_LIBRARY_EXT;
                 LibraryBinary* plugin = new LibraryBinary(binaryPath);
                 if(!plugin->isValid()){
                     delete plugin;
@@ -569,7 +569,7 @@ std::vector<LibraryBinary*> AppManager::loadPlugins(const QString &where){
     return ret;
 }
 
-std::vector<Powiter::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
+std::vector<Natron::LibraryBinary*> AppManager::loadPluginsAndFindFunctions(const QString& where,
                                                                              const std::vector<std::string>& functions){
     std::vector<LibraryBinary*> ret;
     std::vector<LibraryBinary*> loadedLibraries = loadPlugins(where);
@@ -601,7 +601,7 @@ AppManager::AppManager()
 , _writePluginsLoaded()
 , _formats()
 , _plugins()
-, ofxHost(new Powiter::OfxHost())
+, ofxHost(new Natron::OfxHost())
 , _toolButtons()
 , _knobFactory(new KnobFactory())
 ,_nodeCache(new Cache<Image>("NodeCache",0x1, (_settings->_cacheSettings.maxCacheMemoryPercent -
@@ -669,7 +669,7 @@ void AppManager::loadAllPlugins() {
     
     for(std::map<QString,QMutex*>::iterator it = ofxPluginNames.begin();it!=ofxPluginNames.end();++it){
         std::map<std::string,void*> functions;
-        LibraryBinary *plugin = new Powiter::LibraryBinary(Powiter::LibraryBinary::BUILTIN);
+        LibraryBinary *plugin = new Natron::LibraryBinary(Natron::LibraryBinary::BUILTIN);
         _plugins.insert(std::make_pair(it->first, std::make_pair(plugin, it->second)));
     }
 }
@@ -677,7 +677,7 @@ void AppManager::loadAllPlugins() {
 void AppManager::loadReadPlugins(){
     std::vector<std::string> functions;
     functions.push_back("BuildRead");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_READERS_PLUGINS_PATH, functions);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_READERS_PLUGINS_PATH, functions);
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         std::pair<bool,ReadBuilder> func = plugins[i]->findFunction<ReadBuilder>("BuildRead");
         if(func.first){
@@ -742,14 +742,14 @@ void AppManager::loadBuiltinReads(){
 void AppManager::loadNodePlugins(){
     std::vector<std::string> functions;
     functions.push_back("BuildEffect");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_NODES_PLUGINS_PATH, functions);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_NODES_PLUGINS_PATH, functions);
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         std::pair<bool,EffectBuilder> func = plugins[i]->findFunction<EffectBuilder>("BuildEffect");
         if(func.first){
             EffectInstance* effect = func.second(NULL);
             assert(effect);
             QMutex* pluginMutex = NULL;
-            if(effect->renderThreadSafety() == Powiter::EffectInstance::UNSAFE){
+            if(effect->renderThreadSafety() == Natron::EffectInstance::UNSAFE){
                 pluginMutex = new QMutex;
             }
             _plugins.insert(make_pair(effect->className().c_str(),make_pair(plugins[i],pluginMutex)));
@@ -772,7 +772,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
         _plugins.insert(std::make_pair(reader->className().c_str(),std::make_pair(readerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,reader->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,reader->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete reader;
     }
     {
@@ -783,7 +783,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
         assert(viewerPlugin);
         _plugins.insert(std::make_pair(viewer->className().c_str(),std::make_pair(viewerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,viewer->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,viewer->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete viewer;
     }
     {
@@ -794,7 +794,7 @@ void AppManager::loadBuiltinNodePlugins(){
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
         _plugins.insert(std::make_pair(writer->className().c_str(),std::make_pair(writerPlugin,(QMutex*)NULL)));
-        addPluginToolButtons(grouping,writer->className().c_str(), "", POWITER_IMAGES_PATH "ioGroupingIcon.png");
+        addPluginToolButtons(grouping,writer->className().c_str(), "", NATRON_IMAGES_PATH "ioGroupingIcon.png");
         delete writer;
     }
 }
@@ -804,7 +804,7 @@ void AppManager::loadWritePlugins(){
     
     std::vector<std::string> functions;
     functions.push_back("BuildWrite");
-    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(POWITER_WRITERS_PLUGINS_PATH, functions);
+    std::vector<LibraryBinary*> plugins = AppManager::loadPluginsAndFindFunctions(NATRON_WRITERS_PLUGINS_PATH, functions);
     for (U32 i = 0 ; i < plugins.size(); ++i) {
         std::pair<bool,WriteBuilder> func = plugins[i]->findFunction<WriteBuilder>("BuildWrite");
         if(func.first){
@@ -997,7 +997,7 @@ void AppManager::setAsTopLevelInstance(int appID){
         }
     }
 }
-void AppInstance::onRenderingOnDiskStarted(Powiter::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
+void AppInstance::onRenderingOnDiskStarted(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
     if(_gui){
         _gui->showProgressDialog(writer, sequenceName,firstFrame,lastFrame);
     }
@@ -1109,7 +1109,7 @@ void AppManager::printPluginsLoaded(){
     }
 }
 
-Powiter::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) const{
+Natron::LibraryBinary* AppManager::getPluginBinary(const QString& pluginName) const{
     PluginsMap::const_iterator it = _plugins.find(pluginName);
     if(it != _plugins.end()){
         return it->second.first;
@@ -1168,8 +1168,8 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 }
 
 void AppManager::printUsage(){
-    std::cout << POWITER_APPLICATION_NAME << " usage: " << std::endl;
-    std::cout << "./" POWITER_APPLICATION_NAME "    <project file path>" << std::endl;
+    std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
+    std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
     std::cout << "[--background] enables background mode rendering. No graphical interface will be built." << std::endl;
     std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
     " name following the --writer argument. If no such node exists in the project file, the process will abort."

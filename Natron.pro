@@ -3,7 +3,7 @@
 #file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-TARGET = Powiter
+TARGET = Natron
 TEMPLATE = app
 CONFIG += app warn_on c++11
 CONFIG += moc rcc
@@ -21,7 +21,7 @@ win32{
 }
 
 log{
-    DEFINES += POWITER_LOG
+    DEFINES += NATRON_LOG
 }
 
 unix {
@@ -38,7 +38,7 @@ unix {
 
 CONFIG(debug, debug|release){
 warning("Compiling in DEBUG mode.")
-    DEFINES += POWITER_DEBUG
+    DEFINES += NATRON_DEBUG
 }
 
 

@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ class QEvent;
 class QMenu;
 class QGLShaderProgram;
 class FTTextureFont;
-namespace Powiter {
+namespace Natron {
     namespace Color {
         class Lut;
     }
@@ -46,7 +46,7 @@ class AppInstance;
 class ViewerInstance;
 class ViewerTab;
 
-#ifndef POWITER_DEBUG
+#ifndef NATRON_DEBUG
 #define checkGLErrors() ((void)0)
 #define assert_checkGLErrors() ((void)0)
 #else
@@ -195,7 +195,7 @@ class ViewerGL : public QGLWidget
     float _lut; /*!< a value coding the current color-space used to render.
                  0 = NONE , 1 = sRGB , 2 = Rec 709*/
     
-    const Powiter::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
+    const Natron::Color::Lut* _colorSpace;/*!< The lut used to do the viewer colorspace conversion when we can't use shaders*/
     
     QWaitCondition _usingColorSpaceCondition;
     QMutex _usingColorSpaceMutex;
@@ -532,7 +532,7 @@ public:
     /**
      *@brief set the channels the viewer should display
      **/
-    void setDisplayChannel(const Powiter::ChannelSet& channels,bool yMode = false);
+    void setDisplayChannel(const Natron::ChannelSet& channels,bool yMode = false);
     
     void stopDisplayingProgressBar() {_drawProgressBar = false;}
     

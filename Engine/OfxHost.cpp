@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,18 +28,18 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 
-using namespace Powiter;
+using namespace Natron;
 
-Powiter::OfxHost::OfxHost()
+Natron::OfxHost::OfxHost()
 :_imageEffectPluginCache(*this)
 {
-    _properties.setStringProperty(kOfxPropName, POWITER_APPLICATION_NAME "Host");
-    _properties.setStringProperty(kOfxPropLabel, POWITER_APPLICATION_NAME);
+    _properties.setStringProperty(kOfxPropName, NATRON_APPLICATION_NAME "Host");
+    _properties.setStringProperty(kOfxPropLabel, NATRON_APPLICATION_NAME);
     _properties.setIntProperty(kOfxPropAPIVersion, 1 , 0); //API v1.0
     _properties.setIntProperty(kOfxPropAPIVersion, 0 , 1);
-    _properties.setIntProperty(kOfxPropVersion, POWITER_VERSION_MAJOR , 0); //Software version v1.0
-    _properties.setIntProperty(kOfxPropVersion, POWITER_VERSION_MINOR , 1);
-    _properties.setStringProperty(kOfxPropVersionLabel, POWITER_VERSION_STRING);
+    _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MAJOR , 0); //Software version v1.0
+    _properties.setIntProperty(kOfxPropVersion, NATRON_VERSION_MINOR , 1);
+    _properties.setStringProperty(kOfxPropVersionLabel, NATRON_VERSION_STRING);
     _properties.setIntProperty(kOfxImageEffectHostPropIsBackground, 0);
     _properties.setIntProperty(kOfxImageEffectPropSupportsOverlays, 1);
     _properties.setIntProperty(kOfxImageEffectPropSupportsMultiResolution, 1);
@@ -69,12 +69,12 @@ Powiter::OfxHost::OfxHost()
     
 }
 
-Powiter::OfxHost::~OfxHost()
+Natron::OfxHost::~OfxHost()
 {
     writeOFXCache();
 }
 
-OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
+OFX::Host::ImageEffect::Instance* Natron::OfxHost::newInstance(void* ,
                                                                 OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                 OFX::Host::ImageEffect::Descriptor& desc,
                                                                 const std::string& context)
@@ -83,11 +83,11 @@ OFX::Host::ImageEffect::Instance* Powiter::OfxHost::newInstance(void* ,
     
     
     
-    return new Powiter::OfxImageEffectInstance(plugin,desc,context,false);
+    return new Natron::OfxImageEffectInstance(plugin,desc,context,false);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
-OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
+OFX::Host::ImageEffect::Descriptor *Natron::OfxHost::makeDescriptor(OFX::Host::ImageEffect::ImageEffectPlugin* plugin)
 {
     assert(plugin);
     OFX::Host::ImageEffect::Descriptor *desc = new OFX::Host::ImageEffect::Descriptor(plugin);
@@ -95,7 +95,7 @@ OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(OFX::Host::
 }
 
 /// used to construct a context description, rootContext is the main context
-OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
+OFX::Host::ImageEffect::Descriptor *Natron::OfxHost::makeDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
                                                                      OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
@@ -104,7 +104,7 @@ OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const OFX::
 }
 
 /// used to construct populate the cache
-OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const std::string &bundlePath,
+OFX::Host::ImageEffect::Descriptor *Natron::OfxHost::makeDescriptor(const std::string &bundlePath,
                                                                      OFX::Host::ImageEffect::ImageEffectPlugin *plugin)
 {
     assert(plugin);
@@ -115,7 +115,7 @@ OFX::Host::ImageEffect::Descriptor *Powiter::OfxHost::makeDescriptor(const std::
 
 
 /// message
-OfxStatus Powiter::OfxHost::vmessage(const char* type,
+OfxStatus Natron::OfxHost::vmessage(const char* type,
                                      const char* ,
                                      const char* format,
                                      va_list args)
@@ -151,7 +151,7 @@ OfxStatus Powiter::OfxHost::vmessage(const char* type,
     }
 }
 
-OfxStatus Powiter::OfxHost::setPersistentMessage(const char* type,
+OfxStatus Natron::OfxHost::setPersistentMessage(const char* type,
                                                  const char* id,
                                                  const char* format,
                                                  va_list args){
@@ -160,11 +160,11 @@ OfxStatus Powiter::OfxHost::setPersistentMessage(const char* type,
 }
 
 /// clearPersistentMessage
-OfxStatus Powiter::OfxHost::clearPersistentMessage(){
+OfxStatus Natron::OfxHost::clearPersistentMessage(){
     return kOfxStatOK;
 }
 
-OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Powiter::Node* node) {
+OfxEffectInstance* Natron::OfxHost::createOfxEffect(const std::string& name,Natron::Node* node) {
     OfxStatus stat;
     OFXPluginsIterator ofxPlugin = _ofxPlugins.find(name);
     if (ofxPlugin == _ofxPlugins.end()) {
@@ -224,7 +224,7 @@ OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Pow
         delete hostSideEffect;
         return NULL;
     }
-    Powiter::OfxImageEffectInstance* effect = hostSideEffect->effectInstance();
+    Natron::OfxImageEffectInstance* effect = hostSideEffect->effectInstance();
     if (effect) {
         stat = effect->createInstanceAction();
         if(stat != kOfxStatOK && stat != kOfxStatReplyDefault){
@@ -243,12 +243,12 @@ OfxEffectInstance* Powiter::OfxHost::createOfxEffect(const std::string& name,Pow
     return hostSideEffect;
 }
 
-std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
+std::map<QString,QMutex*> Natron::OfxHost::loadOFXPlugins() {
     std::map<QString,QMutex*> pluginNames;
     
     assert(OFX::Host::PluginCache::getPluginCache());
     /// set the version label in the global cache
-    OFX::Host::PluginCache::getPluginCache()->setCacheVersion(POWITER_APPLICATION_NAME "OFXCachev1");
+    OFX::Host::PluginCache::getPluginCache()->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
     
     /// make an image effect plugin cache
     
@@ -331,7 +331,7 @@ std::map<QString,QMutex*> Powiter::OfxHost::loadOFXPlugins() {
 
 
 
-void Powiter::OfxHost::writeOFXCache(){
+void Natron::OfxHost::writeOFXCache(){
     /// and write a new cache, long version with everything in there
 #if QT_VERSION < 0x050000
     QString ofxcachename = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);

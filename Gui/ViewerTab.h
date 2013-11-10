@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 //
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ class ViewerTab: public QWidget
     
     ViewerInstance* _viewerNode;// < pointer to the internal node
     
-    Powiter::ChannelSet _channelsToDraw;
+    Natron::ChannelSet _channelsToDraw;
     
     /*True if the viewer is currently fullscreen*/
 	bool _maximized;
@@ -107,7 +107,7 @@ public:
 	TimeLineGui* frameSeeker;
     
     /*these are the channels the viewer wants to display*/
-	const Powiter::ChannelSet& displayChannels(){return _channelsToDraw;}
+	const Natron::ChannelSet& displayChannels(){return _channelsToDraw;}
     
     Gui* getGui() const {return _gui;}
     

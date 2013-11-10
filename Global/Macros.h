@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -11,32 +11,32 @@
 #define POWITER_GLOBAL_MACROS_H
 
 #ifdef __APPLE__
-#define __POWITER_OSX__
-#define __POWITER_UNIX__
+#define __NATRON_OSX__
+#define __NATRON_UNIX__
 #elif  defined(_WIN32)
-#define __POWITER_WIN32__
+#define __NATRON_WIN32__
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-#define __POWITER_UNIX__
-#define __POWITER_LINUX__
+#define __NATRON_UNIX__
+#define __NATRON_LINUX__
 #endif
 
-#define POWITER_ORGANIZATION_NAME "INRIA"
-#define POWITER_ORGANIZATION_DOMAIN "inria.fr"
-#define POWITER_APPLICATION_NAME "Powiter"
-#define POWITER_PROJECT_FILE_EXTENION "ppj"
-#define POWITER_VERSION_MAJOR 1
-#define POWITER_VERSION_MINOR 0
-#define POWITER_VERSION_STRING "1.0"
-#define POWITER_ROOT "/"
-#define POWITER_IMAGES_PATH ":/Resources/Images/"
-#define POWITER_PLUGINS_PATH POWITER_ROOT"Plugins/"
-#define POWITER_KNOBS_PLUGINS_PATH POWITER_PLUGINS_PATH"Knobs/"
-#define POWITER_NODES_PLUGINS_PATH POWITER_PLUGINS_PATH"Nodes/"
-#define POWITER_READERS_PLUGINS_PATH POWITER_PLUGINS_PATH"Readers/"
-#define POWITER_WRITERS_PLUGINS_PATH POWITER_PLUGINS_PATH"Writers/"
-#define POWITER_PREVIEW_WIDTH 64
-#define POWITER_PREVIEW_HEIGHT 48
-#define POWITER_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
+#define NATRON_ORGANIZATION_NAME "INRIA"
+#define NATRON_ORGANIZATION_DOMAIN "inria.fr"
+#define NATRON_APPLICATION_NAME "Natron"
+#define NATRON_PROJECT_FILE_EXTENION "ntp"
+#define NATRON_VERSION_MAJOR 1
+#define NATRON_VERSION_MINOR 0
+#define NATRON_VERSION_STRING "1.0"
+#define NATRON_ROOT "/"
+#define NATRON_IMAGES_PATH ":/Resources/Images/"
+#define NATRON_PLUGINS_PATH  NATRON_ROOT"Plugins/"
+#define NATRON_KNOBS_PLUGINS_PATH NATRON_PLUGINS_PATH"Knobs/"
+#define NATRON_NODES_PLUGINS_PATH NATRON_PLUGINS_PATH"Nodes/"
+#define NATRON_READERS_PLUGINS_PATH NATRON_PLUGINS_PATH"Readers/"
+#define NATRON_WRITERS_PLUGINS_PATH NATRON_PLUGINS_PATH"Writers/"
+#define NATRON_PREVIEW_WIDTH 64
+#define NATRON_PREVIEW_HEIGHT 48
+#define NATRON_WHEEL_ZOOM_PER_DELTA 1.00152 // 120 wheel deltas (one click on a standard wheel mouse) is x1.2
 
 // The following was grabbed from WTF/wtf/Compiler.h (where WTF was replaced by POWITER)
 
@@ -53,7 +53,7 @@
 
 /* COMPILER(CLANG) - Clang */
 #if defined(__clang__)
-#define POWITER_COMPILER_CLANG 1
+#define NATRON_COMPILER_CLANG 1
 
 #ifndef __has_extension
 #define __has_extension __has_feature /* Compatibility with older versions of clang */
@@ -67,15 +67,15 @@
 /* There is a bug in clang that comes with Xcode 4.2 where AtomicStrings can't be implicitly converted to Strings
  in the presence of move constructors and/or move assignment operators. This bug has been fixed in Xcode 4.3 clang, so we
  check for both cxx_rvalue_references as well as the unrelated cxx_nonstatic_member_init feature which we know was added in 4.3 */
-#define POWITER_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES __has_extension(cxx_rvalue_references) && __has_extension(cxx_nonstatic_member_init)
+#define NATRON_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES __has_extension(cxx_rvalue_references) && __has_extension(cxx_nonstatic_member_init)
 
-#define POWITER_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS __has_extension(cxx_deleted_functions)
-#define POWITER_COMPILER_SUPPORTS_CXX_NULLPTR __has_feature(cxx_nullptr)
-#define POWITER_COMPILER_SUPPORTS_CXX_EXPLICIT_CONVERSIONS __has_feature(cxx_explicit_conversions)
-#define POWITER_COMPILER_SUPPORTS_BLOCKS __has_feature(blocks)
-#define POWITER_COMPILER_SUPPORTS_C_STATIC_ASSERT __has_extension(c_static_assert)
-#define POWITER_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL __has_extension(cxx_override_control)
-#define POWITER_COMPILER_SUPPORTS_HAS_TRIVIAL_DESTRUCTOR __has_extension(has_trivial_destructor)
+#define NATRON_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS __has_extension(cxx_deleted_functions)
+#define NATRON_SUPPORTS_CXX_NULLPTR __has_feature(cxx_nullptr)
+#define NATRON_COMPILER_SUPPORTS_CXX_EXPLICIT_CONVERSIONS __has_feature(cxx_explicit_conversions)
+#define NATRON_COMPILER_SUPPORTS_BLOCKS __has_feature(blocks)
+#define NATRON_COMPILER_SUPPORTS_C_STATIC_ASSERT __has_extension(c_static_assert)
+#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL __has_extension(cxx_override_control)
+#define NATRON_COMPILER_SUPPORTS_HAS_TRIVIAL_DESTRUCTOR __has_extension(has_trivial_destructor)
 
 #endif
 
@@ -87,21 +87,21 @@
 /* COMPILER(MSVC7_OR_LOWER) - Microsoft Visual C++ 2003 or lower*/
 /* COMPILER(MSVC9_OR_LOWER) - Microsoft Visual C++ 2008 or lower*/
 #if defined(_MSC_VER)
-#define POWITER_COMPILER_MSVC 1
+#define NATRON_COMPILER_MSVC 1
 #if _MSC_VER < 1400
-#define POWITER_COMPILER_MSVC7_OR_LOWER 1
+#define NATRON_COMPILER_MSVC7_OR_LOWER 1
 #elif _MSC_VER < 1600
-#define POWITER_COMPILER_MSVC9_OR_LOWER 1
+#define NATRON_COMPILER_MSVC9_OR_LOWER 1
 #endif
 
 /* Specific compiler features */
 #if !COMPILER(CLANG) && _MSC_VER >= 1600
-#define POWITER_COMPILER_SUPPORTS_CXX_NULLPTR 1
+#define NATRON_SUPPORTS_CXX_NULLPTR 1
 #endif
 
 #if !COMPILER(CLANG)
-#define POWITER_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
-#define POWITER_COMPILER_QUIRK_FINAL_IS_CALLED_SEALED 1
+#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
+#define NATRON_COMPILER_QUIRK_FINAL_IS_CALLED_SEALED 1
 #endif
 
 #endif
@@ -109,7 +109,7 @@
 /* COMPILER(RVCT) - ARM RealView Compilation Tools */
 /* COMPILER(RVCT4_OR_GREATER) - ARM RealView Compilation Tools 4.0 or greater */
 #if defined(__CC_ARM) || defined(__ARMCC__)
-#define POWITER_COMPILER_RVCT 1
+#define NATRON_COMPILER_RVCT 1
 #define RVCT_VERSION_AT_LEAST(major, minor, patch, build) (__ARMCC_VERSION >= (major * 100000 + minor * 10000 + patch * 1000 + build))
 #else
 /* Define this for !RVCT compilers, just so we can write things like RVCT_VERSION_AT_LEAST(3, 0, 0, 0). */
@@ -118,7 +118,7 @@
 
 /* COMPILER(GCCE) - GNU Compiler Collection for Embedded */
 #if defined(__GCCE__)
-#define POWITER_COMPILER_GCCE 1
+#define NATRON_COMPILER_GCCE 1
 #define GCCE_VERSION (__GCCE__ * 10000 + __GCCE_MINOR__ * 100 + __GCCE_PATCHLEVEL__)
 #define GCCE_VERSION_AT_LEAST(major, minor, patch) (GCCE_VERSION >= (major * 10000 + minor * 100 + patch))
 #endif
@@ -126,7 +126,7 @@
 /* COMPILER(GCC) - GNU Compiler Collection */
 /* --gnu option of the RVCT compiler also defines __GNUC__ */
 #if defined(__GNUC__) && !COMPILER(RVCT)
-#define POWITER_COMPILER_GCC 1
+#define NATRON_COMPILER_GCC 1
 #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #define GCC_VERSION_AT_LEAST(major, minor, patch) (GCC_VERSION >= (major * 10000 + minor * 100 + patch))
 #else
@@ -137,15 +137,15 @@
 /* Specific compiler features */
 #if COMPILER(GCC) && !COMPILER(CLANG)
 #if GCC_VERSION_AT_LEAST(4, 7, 0) && defined(__cplusplus) && __cplusplus >= 201103L
-#define POWITER_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES 1
-#define POWITER_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS 1
-#define POWITER_COMPILER_SUPPORTS_CXX_NULLPTR 1
-#define POWITER_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
-#define POWITER_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
+#define NATRON_COMPILER_SUPPORTS_CXX_RVALUE_REFERENCES 1
+#define NATRON_COMPILER_SUPPORTS_CXX_DELETED_FUNCTIONS 1
+#define NATRON_SUPPORTS_CXX_NULLPTR 1
+#define NATRON_COMPILER_SUPPORTS_CXX_OVERRIDE_CONTROL 1
+#define NATRON_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
 
 #elif GCC_VERSION_AT_LEAST(4, 6, 0) && defined(__GXX_EXPERIMENTAL_CXX0X__)
-#define POWITER_COMPILER_SUPPORTS_CXX_NULLPTR 1
-#define POWITER_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
+#define NATRON_SUPPORTS_CXX_NULLPTR 1
+#define NATRON_COMPILER_QUIRK_GCC11_GLOBAL_ISINF_ISNAN 1
 #endif
 
 #endif
@@ -153,21 +153,21 @@
 /* COMPILER(MINGW) - MinGW GCC */
 /* COMPILER(MINGW64) - mingw-w64 GCC - only used as additional check to exclude mingw.org specific functions */
 #if defined(__MINGW32__)
-#define POWITER_COMPILER_MINGW 1
+#define NATRON_COMPILER_MINGW 1
 #include <_mingw.h> /* private MinGW header */
 #if defined(__MINGW64_VERSION_MAJOR) /* best way to check for mingw-w64 vs mingw.org */
-#define POWITER_COMPILER_MINGW64 1
+#define NATRON_COMPILER_MINGW64 1
 #endif /* __MINGW64_VERSION_MAJOR */
 #endif /* __MINGW32__ */
 
 /* COMPILER(INTEL) - Intel C++ Compiler */
 #if defined(__INTEL_COMPILER)
-#define POWITER_COMPILER_INTEL 1
+#define NATRON_COMPILER_INTEL 1
 #endif
 
 /* COMPILER(SUNCC) */
 #if defined(__SUNPRO_CC) || defined(__SUNPRO_C)
-#define POWITER_COMPILER_SUNCC 1
+#define NATRON_COMPILER_SUNCC 1
 #endif
 
 /* ==== Compiler features ==== */
@@ -292,7 +292,7 @@
 
 /* ABI */
 #if defined(__ARM_EABI__) || defined(__EABI__)
-#define POWITER_COMPILER_SUPPORTS_EABI 1
+#define NATRON_COMPILER_SUPPORTS_EABI 1
 #endif
 
 // Warning control from https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines

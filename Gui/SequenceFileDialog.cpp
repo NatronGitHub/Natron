@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -309,7 +309,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
         _filterLineEdit = new LineEdit(_filterWidget);
         _filterLayout->addWidget(_filterLineEdit);
         _filterLineEdit->setText(filter);
-        QImage dropDownImg(POWITER_IMAGES_PATH"combobox.png");
+        QImage dropDownImg(NATRON_IMAGES_PATH"combobox.png");
         QPixmap pixDropDown = QPixmap::fromImage(dropDownImg);
         QSize buttonSize(15,_filterLineEdit->sizeHint().height());
         pixDropDown = pixDropDown.scaled(buttonSize);
@@ -344,7 +344,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     resize(900, 400);
     
     std::vector<QUrl> initialBookmarks;
-#ifndef __POWITER_WIN32__
+#ifndef __NATRON_WIN32__
     initialBookmarks.push_back(QUrl::fromLocalFile(QLatin1String("/")));
 #else
     
@@ -376,7 +376,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
             setWindowTitle("Save File");
     }
     
-    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     restoreState(settings.value(QLatin1String("FileDialog")).toByteArray());
     
     if(!currentDirectory.empty())
@@ -390,7 +390,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
     
 }
 SequenceFileDialog::~SequenceFileDialog(){
-    QSettings settings(POWITER_ORGANIZATION_NAME,POWITER_APPLICATION_NAME);
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.setValue(QLatin1String("FileDialog"), saveState());
     
     delete _model;
@@ -1220,7 +1220,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _pathLineEdit->setPlaceholderText("path...");
     _secondLineLayout->addWidget(_pathLineEdit);
     
-    QImage img(POWITER_IMAGES_PATH"open-file.png");
+    QImage img(NATRON_IMAGES_PATH"open-file.png");
     QPixmap pix = QPixmap::fromImage(img);
     pix = pix.scaled(15,15);
     
@@ -1310,7 +1310,7 @@ void SequenceFileDialog::openSelectedFiles(){
                 }else{
                     int dotPos = unpathed.lastIndexOf(".");
                     if(dotPos != pos+1){
-                        //powiter only supports padding character # before the . marking the file extension
+                        //natron only supports padding character # before the . marking the file extension
                         QMessageBox::critical(this, "Filename error", QCoreApplication::applicationName() + " only supports padding character"
                                               " (#) before the '.' marking the file extension.");
                         return;
@@ -1857,7 +1857,7 @@ void UrlModel::addUrls(const std::vector<QUrl> &list, int row, bool move)
         
         for (int j = 0; move && j < rowCount(); ++j) {
             //QString local = index(j, 0).data(UrlRole).toUrl().toLocalFile();
-            //#if defined(__POWITER_WIN32__)
+            //#if defined(__NATRON_WIN32__)
             //if (index(j, 0).data(UrlRole).toUrl().toLocalFile().toLower() == cleanUrl.toLower()) {
             //#else
             if (index(j, 0).data(UrlRole).toUrl().toLocalFile() == cleanUrl) {

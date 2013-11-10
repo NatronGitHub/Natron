@@ -1,4 +1,4 @@
-//  Powiter
+//  Natron
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -16,13 +16,13 @@
 #include <vector>
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
-namespace Powiter{
+namespace Natron{
 
-#ifdef __POWITER_OSX__
+#ifdef __NATRON_OSX__
     #define POWITER_LIBRARY_EXT "dylib"
-#elif defined(__POWITER_LINUX__)
+#elif defined(__NATRON_LINUX__)
     #define POWITER_LIBRARY_EXT "so"
-#elif defined(__POWITER_WIN32__)
+#elif defined(__NATRON_WIN32__)
     #define POWITER_LIBRARY_EXT "dll"
 #else
     #error "Operating system not supported by the library loader."
@@ -30,9 +30,9 @@ namespace Powiter{
     
 class LibraryBinary {
     
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
     typedef HINSTANCE value_type;
-#elif defined(__POWITER_UNIX__)
+#elif defined(__NATRON_UNIX__)
     typedef void* value_type;
 #endif
     
@@ -77,9 +77,9 @@ public:
 private:
     
     LibraryType _type;
-#ifdef __POWITER_WIN32__
+#ifdef __NATRON_WIN32__
     HINSTANCE _library;
-#elif defined(__POWITER_UNIX__)
+#elif defined(__NATRON_UNIX__)
     void* _library;
 #endif
     std::string _binaryPath;
@@ -87,5 +87,5 @@ private:
     std::map<std::string,value_type> _functions; // <function name, pointer>
 };
     
-} // namespace Powiter
+} // namespace Natron
 #endif
