@@ -240,7 +240,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
     /*now that we have our image, we check what is left to render. If the list contains only
      null rects then we already rendered it all*/
     RectI intersection;
-    renderWindow.intersect(key._rod, &intersection);
+    renderWindow.intersect(image->getRoD(), &intersection);
     std::list<RectI> rectsToRender = image->getRestToRender(intersection);
     if(rectsToRender.size() != 1 || !rectsToRender.begin()->isNull()){
         for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {

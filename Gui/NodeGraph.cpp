@@ -1060,6 +1060,10 @@ void NodeGraph::populateMenu(){
     QObject::connect(displayCacheInfoAction,SIGNAL(triggered()),this,SLOT(toggleCacheInfos()));
     _menu->addAction(displayCacheInfoAction);
     
+    QAction* turnOffPreviewAction = new QAction("Turn off all previews",this);
+    QObject::connect(turnOffPreviewAction,SIGNAL(triggered()),this,SLOT(turnOffPreviewForAllNodes()));
+    _menu->addAction(turnOffPreviewAction);
+    
     const std::vector<ToolButton*>& toolButtons = _gui->getToolButtons();
     for(U32 i = 0; i < toolButtons.size();++i){
         //if the toolbutton is a root (no parent), add it in the toolbox
@@ -1069,6 +1073,7 @@ void NodeGraph::populateMenu(){
         }
 
     }
+    
 }
 
 void NodeGraph::showMenu(const QPoint& pos){
@@ -1132,4 +1137,12 @@ void NodeGraph::dragLeaveEvent(QDragLeaveEvent* e){
 }
 void NodeGraph::dragMoveEvent(QDragMoveEvent* e){
     e->accept();
+}
+
+void NodeGraph::turnOffPreviewForAllNodes(){
+    for(U32 i = 0; i < _nodes.size() ; ++i){
+        if(_nodes[i]->getNode()->isPreviewEnabled()){
+            _nodes[i]->togglePreview();
+        }
+    }
 }

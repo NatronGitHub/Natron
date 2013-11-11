@@ -135,6 +135,8 @@ public slots:
     void populateMenu();
     
     void toggleCacheInfos();
+    
+    void turnOffPreviewForAllNodes();
 
 protected:
 
