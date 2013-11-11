@@ -524,7 +524,9 @@ void ViewerTab::updateViewsMenu(int count){
 void ViewerTab::setCurrentView(int view){
     _viewsComboBox->setCurrentIndex(view);
 }
-
+int ViewerTab::getCurrentView() const{
+    return _viewsComboBox->activeIndex();
+}
 
 void ViewerTab::toggleLoopMode(bool b){
     loopMode_Button->setDown(b);

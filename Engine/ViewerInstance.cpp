@@ -268,6 +268,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         //inputsRoi only contains 1 element
         EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
         int viewsCount = getApp()->getCurrentProjectViewsCount();
+        int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
         for(int view = 0 ; view < viewsCount ; ++view){
             boost::shared_ptr<const Natron::Image> inputImage;
             try{

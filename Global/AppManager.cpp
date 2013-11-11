@@ -17,6 +17,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
+#include <QProcess>
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -1180,8 +1181,14 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
     writer->getFrameRange(&firstFrame, &lastFrame);
     if(firstFrame > lastFrame)
         return;
+    //   std::cout << _currentProject->getProjectPath().toStdString() << std::endl;
+    // std::cout << _currentProject->getProjectName().toStdString() << std::endl;
+//    QStringList appArgs = QCoreApplication::arguments();
+//    QProcess* backgroundProcess = new QProcess(this);
+//    QStringList processArgs;
+//    processArgs << _currentProject->getProjectPath() << "--background" << "--writer" << writer->getName().c_str();
+//    backgroundProcess->start(appArgs.at(0),processArgs);
     writer->renderFullSequence();
-    
     std::string outputFileSequence;
     if(writer->isOpenFX()){
         outputFileSequence = dynamic_cast<OfxEffectInstance*>(writer)->getOutputFileName();

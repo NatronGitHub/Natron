@@ -116,6 +116,8 @@ public:
     
     void setCurrentView(int view);
     
+    int getCurrentView() const;
+    
 public slots:
     
     void startPause(bool);

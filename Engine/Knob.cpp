@@ -514,6 +514,9 @@ void OutputFile_Knob::_restoreFromString(const std::string& str){
     _value.setValue(str);
 }
 
+std::string OutputFile_Knob::getFileName() const{
+    return _value.toString().toStdString();
+}
 
 void OutputFile_Knob::fillHashVector(){
     _hashVector.clear();

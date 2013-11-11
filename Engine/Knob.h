@@ -417,7 +417,9 @@ public:
     {}
     
     virtual void fillHashVector();
-                                
+    
+    std::string getFileName() const;
+    
     virtual const std::string typeName(){return "OutputFile";}
     
     void openFile(){
@@ -883,6 +885,8 @@ public:
     const std::vector<std::string>& getEntries() const {return _entries;}
     
     int getActiveEntry() const {return _value.toInt();}
+    
+    const std::string& getActiveEntryText() const { return _entries[getActiveEntry()]; }
     
     virtual std::string serialize() const;
 protected:

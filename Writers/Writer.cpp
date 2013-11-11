@@ -36,7 +36,7 @@ using std::make_pair;
 Writer::Writer(Node* node):
 Natron::OutputEffectInstance(node)
 , _requestedChannels(Mask_RGBA) // temporary
-, _premult(false)
+, _premultKnob(0)
 , _writeOptions(0)
 , _frameRangeChoosal(0)
 , _firstFrameKnob(0)
@@ -80,11 +80,13 @@ static QString viewToString(int view,int viewsCount){
 }
 
 boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod){
-    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
+    const std::string& fileType = _filetypeCombo->getActiveEntryText();
+    const std::string& fileName = _fileKnob->getFileName();
+    Natron::LibraryBinary* binary = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(fileType);
     Encoder* encoder = NULL;
     if(!binary){
         std::string exc("Couldn't find an appropriate encoder for filetype: ");
-        exc.append(_fileType);
+        exc.append(fileType);
         exc.append(" (");
         exc.append(getName());
         exc.append(")");
@@ -98,16 +100,16 @@ boost::shared_ptr<Encoder> Writer::makeEncoder(SequenceTime time,int view,int to
         }
     }
     
-    encoder->premultiplyByAlpha(_premult);
+    encoder->premultiplyByAlpha(_premultKnob->getValue());
     /*check if the filename already contains the extension, otherwise appending it*/
-    QString filename(_filename.c_str());
+    QString filename(fileName.c_str());
     int i = filename.lastIndexOf(QChar('.'));
     if(i != -1){
         filename.truncate(i); // truncate the extension
     }
     filename.append(viewToString(view,totalViews));
     filename.append('.');
-    filename.append(_fileType.c_str());
+    filename.append(fileType.c_str());
     
     i = filename.lastIndexOf(QChar('#'));
     QString n = QString::number(time);
@@ -137,17 +139,18 @@ void Writer::initializeKnobs(){
     assert(_renderKnob);
     
     std::string premultString("Premultiply by alpha");
-    Bool_Knob* premult = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
-    premult->setValue(_premult);
+    _premultKnob = dynamic_cast<Bool_Knob*>(appPTR->getKnobFactory().createKnob("Bool", this, premultString));
+    _premultKnob->setValue(false);
     
     std::string filetypeStr("File type");
     _filetypeCombo = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, filetypeStr));
     const std::map<std::string,Natron::LibraryBinary*>& _encoders = appPTR->getCurrentSettings()._writersSettings.getFileTypesMap();
     std::map<std::string,Natron::LibraryBinary*>::const_iterator it = _encoders.begin();
+    std::vector<std::string> fileTypes;
     for(;it!=_encoders.end();++it) {
-        _allFileTypes.push_back(it->first.c_str());
+        fileTypes.push_back(it->first.c_str());
     }
-    _filetypeCombo->populate(_allFileTypes);
+    _filetypeCombo->populate(fileTypes);
     
     
     _frameRangeChoosal = dynamic_cast<ComboBox_Knob*>(appPTR->getKnobFactory().createKnob("ComboBox", this, "Frame range"));
@@ -216,78 +219,35 @@ void Writer::renderFunctor(boost::shared_ptr<const Natron::Image> inputImage,
 }
 
 
-
-bool Writer::validInfosForRendering(){
-    /*check if filetype is valid*/
-    Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
-    if(!isValid) {
-        return false;
-    }
-    /*checking if channels are supported*/
-    std::pair<bool,WriteBuilder> func = isValid->findFunction<WriteBuilder>("BuildWrite");
-    assert(func.second);
-    Encoder* write = func.second(this);
-    assert(write);
-    try {
-        write->supportsChannelsForWriting(_requestedChannels);
-    } catch (const std::exception &e) {
-        cout << "ERROR: " << e.what() << endl;
-    }
-    delete write;
-    
-    /*check if write specific knobs have valid values*/
-    if (_writeOptions) {
-        if (!_writeOptions->allValid()) {
-            return false;
-        }
-    }
-    if(_filename.empty()){
-        return false;
-    }
-    if (!input(0)) {
-        return false;
-    }
-    
-    return true;
-}
-
 void Writer::getFrameRange(SequenceTime *first,SequenceTime *last){
     int index = _frameRangeChoosal->value<int>();
     if(index == 0){
-        getFrameRange(first, last);
+        input(0)->getFrameRange(first, last);
     }else{
         *first = _firstFrameKnob->value<int>();
         *last = _lastFrameKnob->value<int>();
     }
 }
-
-void Writer::startRendering(){
-    
-    _fileType = _allFileTypes[_filetypeCombo->value<int>()];
-    _filename = _fileKnob->value<QString>().toStdString();
-    
-    if(validInfosForRendering()){
-        getApp()->startRenderingFullSequence(this);
-    }
+std::string Writer::getOutputFileName() const{
+    return _fileKnob->getFileName();
 }
 
 void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
     if(k == _filetypeCombo){
-        int index = _filetypeCombo->value<int>();
-        assert(index < (int)_allFileTypes.size());
-        _fileType = _allFileTypes[index];
+        const std::string& fileType = _filetypeCombo->getActiveEntryText();
+        const std::string& fileName = _fileKnob->getFileName();
         if(_writeOptions){
             _writeOptions->cleanUpKnobs();
             delete _writeOptions;
             _writeOptions = 0;
         }
-        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(_fileType);
+        Natron::LibraryBinary* isValid = appPTR->getCurrentSettings()._writersSettings.encoderForFiletype(fileType);
         if(!isValid) return;
         
-        QString file(_filename.c_str());
+        QString file(fileName.c_str());
         int pos = file.lastIndexOf(QChar('.'));
         ++pos;
-        file.replace(pos, file.size() - pos, _fileType.c_str());
+        file.replace(pos, file.size() - pos, fileName.c_str());
         _fileKnob->setValue(file);
         
         /*checking if channels are supported*/
@@ -296,12 +256,9 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             Encoder* write = func.second(this);
             _writeOptions = write->initSpecificKnobs();
             if(_writeOptions)
-                _writeOptions->initKnobs(_fileType);
+                _writeOptions->initKnobs(fileType);
             delete write;
         }
-
-    }else if(k == _fileKnob){
-        _filename = _fileKnob->getValueAsVariant().toString().toStdString();
 
     }else if(k == _frameRangeChoosal){
         int index = _frameRangeChoosal->value<int>();
@@ -338,8 +295,6 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
             createKnobDynamically();
         }
 
-    }else if(k == _renderKnob){
-        startRendering();
     }
 }
 

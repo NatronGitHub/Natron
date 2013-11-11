@@ -53,22 +53,16 @@ public:
     virtual void getFrameRange(SequenceTime *first,SequenceTime *last) OVERRIDE;
 
     Natron::Status renderWriter(SequenceTime time);
-	
-    /*Returns true if all parameters are OK to start the rendering.
-     This is used to know whether it should start the engine or not.*/
-    bool validInfosForRendering();
-    
+
     const Natron::ChannelSet& requestedChannels() const {return _requestedChannels;}
     
     virtual int maximumInputs() const OVERRIDE {return 1;}
 
     void onKnobValueChanged(Knob* k,Knob::ValueChangedReason reason) OVERRIDE;
 
-    void startRendering();
-
     bool continueOnError() const;
 
-    const std::string& getOutputFileName() const {return _filename;}
+    std::string getOutputFileName() const;
 
 public slots:
     void onTimelineFrameRangeChanged(int,int);
@@ -91,11 +85,8 @@ private:
     boost::shared_ptr<Encoder> makeEncoder(SequenceTime time,int view,int totalViews,const RectI& rod);
     
     Natron::ChannelSet _requestedChannels;
-    bool _premult;
+    Bool_Knob* _premultKnob;
     EncoderKnobs* _writeOptions;
-    std::string _filename;
-    std::string _fileType;
-    std::vector<std::string> _allFileTypes;
         
     OutputFile_Knob* _fileKnob;
     ComboBox_Knob* _filetypeCombo;
