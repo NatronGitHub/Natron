@@ -66,7 +66,8 @@ _evtState(DEFAULT),
 _nodeSelected(0),
 _maximized(false),
 _propertyBin(0),
-_refreshOverlays(true)
+_refreshOverlays(true),
+_previewsTurnedOff(false)
 {
     setAcceptDrops(true);
     
@@ -1061,6 +1062,8 @@ void NodeGraph::populateMenu(){
     _menu->addAction(displayCacheInfoAction);
     
     QAction* turnOffPreviewAction = new QAction("Turn off all previews",this);
+    turnOffPreviewAction->setCheckable(true);
+    turnOffPreviewAction->setChecked(false);
     QObject::connect(turnOffPreviewAction,SIGNAL(triggered()),this,SLOT(turnOffPreviewForAllNodes()));
     _menu->addAction(turnOffPreviewAction);
     
@@ -1140,9 +1143,18 @@ void NodeGraph::dragMoveEvent(QDragMoveEvent* e){
 }
 
 void NodeGraph::turnOffPreviewForAllNodes(){
-    for(U32 i = 0; i < _nodes.size() ; ++i){
-        if(_nodes[i]->getNode()->isPreviewEnabled()){
-            _nodes[i]->togglePreview();
+    _previewsTurnedOff = !_previewsTurnedOff;
+    if(_previewsTurnedOff){
+        for(U32 i = 0; i < _nodes.size() ; ++i){
+            if(_nodes[i]->getNode()->isPreviewEnabled()){
+                _nodes[i]->togglePreview();
+            }
+        }
+    }else{
+        for(U32 i = 0; i < _nodes.size() ; ++i){
+            if(!_nodes[i]->getNode()->isPreviewEnabled() && _nodes[i]->getNode()->makePreviewByDefault()){
+                _nodes[i]->togglePreview();
+            }
         }
     }
 }

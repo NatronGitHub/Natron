@@ -48,8 +48,6 @@ Natron::OutputEffectInstance(node)
                          SIGNAL(frameRangeChanged(int,int)),
                          this,
                          SLOT(onTimelineFrameRangeChanged(int, int)));
-        QObject::connect(this,SIGNAL(renderingOnDiskStarted(Writer*,QString,int,int)),getNode()->getApp(),
-                         SLOT(onRenderingOnDiskStarted(Writer*, QString, int, int)));
     }
 }
 
@@ -269,7 +267,7 @@ void Writer::startRendering(){
     _filename = _fileKnob->value<QString>().toStdString();
     
     if(validInfosForRendering()){
-        renderFullSequence();
+        getApp()->startRenderingFullSequence(this);
     }
 }
 

@@ -341,8 +341,8 @@ void VideoEngine::run(){
             
             /*if writing on disk and not a recursive call, move back the timeline cursor to the start*/
             if(!_tree.isOutputAViewer()){
-                _writerCurrentFrame = firstFrame;
-                currentFrame = _writerCurrentFrame;
+                _tree.getOutput()->setCurrentFrame(firstFrame);
+                currentFrame = firstFrame;
             }else{
                 currentFrame = _timeline->currentFrame();
             }
@@ -387,8 +387,8 @@ void VideoEngine::run(){
                     }
                 }
             }else{
-                ++_writerCurrentFrame;
-                currentFrame = _writerCurrentFrame;
+                _tree.getOutput()->setCurrentFrame(_tree.getOutput()->getCurrentFrame()+1);
+                currentFrame = _tree.getOutput()->getCurrentFrame();
                 if(currentFrame > lastFrame){
                     if(stopEngine())
                         return;

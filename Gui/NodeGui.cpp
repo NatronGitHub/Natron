@@ -203,6 +203,7 @@ void NodeGui::updateShape(int width,int height){
     if(_previewPixmap)
         _previewPixmap->setPos(topLeft.x() + NATRON_PREVIEW_WIDTH/2,topLeft.y() + NATRON_PREVIEW_HEIGHT/2);
 
+    refreshEdges();
 }
 
 void NodeGui::refreshPosition(double x,double y){

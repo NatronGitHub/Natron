@@ -473,7 +473,9 @@ class OutputEffectInstance : public Natron::EffectInstance {
     
 
     boost::shared_ptr<VideoEngine> _videoEngine;
-
+    int _writerCurrentFrame;/*!< for writers only: indicates the current frame
+                             It avoids snchronizing all viewers in the app to the render*/
+    
 public:
 
     OutputEffectInstance(Node* node);
@@ -496,6 +498,14 @@ public:
 
     void ifInfiniteclipRectToProjectDefault(RectI* rod) const;
 
+    /**
+     * @brief Returns the frame number this effect is currently rendering.
+     * Note that this function can be used only for Writers or OpenFX writers,
+     * it doesn't work with the Viewer.
+     **/
+    int getCurrentFrame() const { return _writerCurrentFrame; }
+    
+    void setCurrentFrame(int f) { _writerCurrentFrame = f; }
 };
 
 

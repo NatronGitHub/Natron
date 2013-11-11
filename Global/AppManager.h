@@ -173,7 +173,7 @@ public slots:
 
     void triggerAutoSave();
 
-    void onRenderingOnDiskStarted(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
+    void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 
 signals:

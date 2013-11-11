@@ -850,7 +850,7 @@ OfxStatus OfxStringInstance::get(std::string &str) {
         QString fileName =  _fileKnob->getRandomFrameName(currentFrame,true);
         str = fileName.toStdString();
     }else if(_outputFileKnob){
-        str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
+        str = filenameFromPattern((int)_node->getCurrentFrame());
     }else if(_stringKnob){
         str = _stringKnob->getString();
     }else if(_multiLineKnob){
@@ -863,7 +863,7 @@ OfxStatus OfxStringInstance::get(OfxTime time, std::string& str) {
     if(_fileKnob){
         str = _fileKnob->getRandomFrameName(time,true).toStdString();
     }else if(_outputFileKnob){
-        str = filenameFromPattern((int)_node->effectInstance()->timeLineGetTime());
+        str = filenameFromPattern((int)_node->getCurrentFrame());
     }else if(_stringKnob){
         str = _stringKnob->getString();
     }else if(_multiLineKnob){

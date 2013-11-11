@@ -361,14 +361,24 @@ void EffectInstance::createKnobDynamically(){
 
 void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     assert(_node);
-    std::list<ViewerInstance*> viewers;
-    _node->hasViewersConnected(&viewers);
-    bool fitToViewer = knob->typeName() == "InputFile";
-    for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
-        if(isSignificant){
-            (*it)->refreshAndContinueRender(fitToViewer);
-        }else{
-            (*it)->redrawViewer();
+    if(!isOutput()){
+        std::list<ViewerInstance*> viewers;
+        _node->hasViewersConnected(&viewers);
+        bool fitToViewer = knob->typeName() == "InputFile";
+        for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
+            if(isSignificant){
+                (*it)->refreshAndContinueRender(fitToViewer);
+            }else{
+                (*it)->redrawViewer();
+            }
+        }
+    }else{
+        /*if this is a writer (openfx or built-in writer)*/
+        if (className() != "Viewer") {
+            /*if this is a button,we're safe to assume the plug-ins wants to start rendering.*/
+            if(knob->typeName() == "Button"){
+                getApp()->startRenderingFullSequence(dynamic_cast<OutputEffectInstance*>(this));
+            }
         }
     }
 }
@@ -502,18 +512,7 @@ void OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectI* rod) const{
 
 void OutputEffectInstance::renderFullSequence(){
     assert(className() != "Viewer"); //< this function is not meant to be called for rendering on the viewer
-    
-    int firstFrame,lastFrame;
-    getFrameRange(&firstFrame, &lastFrame);
-    if(firstFrame > lastFrame)
-        return;
     getVideoEngine()->refreshTree();
     getVideoEngine()->render(-1, true,false,true,false);
-    std::string outputFileSequence;
-    if(isOpenFX()){
-        outputFileSequence = dynamic_cast<OfxEffectInstance*>(this)->getOutputFileName();
-    }else{
-        outputFileSequence = dynamic_cast<Writer*>(this)->getOutputFileName();
-    }
-    getApp()->onRenderingOnDiskStarted(this, outputFileSequence.c_str(), firstFrame, lastFrame);
+    
 }

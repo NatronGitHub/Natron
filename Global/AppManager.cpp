@@ -999,11 +999,7 @@ void AppManager::setAsTopLevelInstance(int appID){
         }
     }
 }
-void AppInstance::onRenderingOnDiskStarted(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
-    if(_gui){
-        _gui->showProgressDialog(writer, sequenceName,firstFrame,lastFrame);
-    }
-}
+
 
 void AppInstance::tryAddProjectFormat(const Format& frmt){
     _currentProject->tryAddProjectFormat(frmt);
@@ -1161,7 +1157,7 @@ void AppInstance::startWritersRendering(const QStringList& writers){
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
             if(projectNodes[j]->isOutputNode() && projectNodes[j]->className() != "Viewer"){
-                dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance())->renderFullSequence();
+                startRenderingFullSequence(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
                 break;
             }
         }
@@ -1172,9 +1168,28 @@ void AppInstance::startWritersRendering(const QStringList& writers){
 void AppManager::printUsage(){
     std::cout << NATRON_APPLICATION_NAME << " usage: " << std::endl;
     std::cout << "./" NATRON_APPLICATION_NAME "    <project file path>" << std::endl;
-    std::cout << "[--background] enables background mode rendering. No graphical interface will be built." << std::endl;
+    std::cout << "[--background] enables background mode rendering. No graphical interface will be shown." << std::endl;
     std::cout << "[--writer <Writer node name>] When in background mode, the renderer will only try to render with the node"
     " name following the --writer argument. If no such node exists in the project file, the process will abort."
     "Note that if you don't pass the --writer argument, it will try to start rendering with all the writers in the project's file."<< std::endl;
+
+}
+
+void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
+    int firstFrame,lastFrame;
+    writer->getFrameRange(&firstFrame, &lastFrame);
+    if(firstFrame > lastFrame)
+        return;
+    writer->renderFullSequence();
+    
+    std::string outputFileSequence;
+    if(writer->isOpenFX()){
+        outputFileSequence = dynamic_cast<OfxEffectInstance*>(writer)->getOutputFileName();
+    }else{
+        outputFileSequence = dynamic_cast<Writer*>(writer)->getOutputFileName();
+    }
+    if(_gui){
+        _gui->showProgressDialog(writer, outputFileSequence.c_str(),firstFrame,lastFrame);
+    }
 
 }

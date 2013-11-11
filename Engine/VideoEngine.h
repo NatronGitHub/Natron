@@ -273,8 +273,7 @@ private:
     
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
     
-    int _writerCurrentFrame;/*!< for writers only: indicates the current frame
-                             It avoids snchronizing all viewers in the app to the render*/
+    
 protected:
     
     /*The function doing all the processing, called by render()*/

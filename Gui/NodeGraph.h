@@ -215,6 +215,7 @@ private:
     
     bool _refreshOverlays;
     
+    bool _previewsTurnedOff;
 };
 
 
