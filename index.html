@@ -8,35 +8,39 @@
     <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 
-    <title>Powiter by MrKepzie</title>
+    <title>Natron by MrKepzie</title>
   </head>
 
   <body>
 
     <header>
       <div class="container">
-        <h1>Powiter</h1>
+        <h1>Natron</h1>
         <h2>Computer-vision Computer-graphics VFX visual effects compositing</h2>
 
         <section id="downloads">
-          <a href="https://github.com/MrKepzie/Powiter_Core/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/MrKepzie/Powiter_Core/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/MrKepzie/Powiter_Core" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+          <a href="https://github.com/MrKepzie/Natron/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/MrKepzie/Natron/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/MrKepzie/Natron" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
         </section>
       </div>
     </header>
 
     <div class="container">
       <section id="main_content">
-        <h1>Powiter <a></a>
+        <h1>
+<a name="natron-" class="anchor" href="#natron-"><span class="octicon octicon-link"></span></a>Natron <a></a>
 </h1>
+
+<h1>
+<a name="this-page-is-a-little-bit-outdated-a-totally-new-page-should-come-soon" class="anchor" href="#this-page-is-a-little-bit-outdated-a-totally-new-page-should-come-soon"><span class="octicon octicon-link"></span></a>This page is a little bit outdated. A totally new page should come soon.</h1>
 
 <ol>
 <li>
 <a href="#Preamble">Preamble</a>
 
 <ul>
-<li>Powiter, What is this ?</li>
+<li>Natron, What is this ?</li>
 <li>Philosophy</li>
 <li>History</li>
 <li>For who?</li>
@@ -87,69 +91,82 @@
 </ul>
 </li>
 <li><a href="#Terminology">Terminology</a></li>
-</ol><hr><h2>1. Preamble<a></a>
+</ol><hr><h2>
+<a name="1-preamble" class="anchor" href="#1-preamble"><span class="octicon octicon-link"></span></a>1. Preamble<a></a>
 </h2>
 
-<h4>Powiter,what is it?</h4>
+<h4>
+<a name="natronwhat-is-it" class="anchor" href="#natronwhat-is-it"><span class="octicon octicon-link"></span></a>Natron,what is it?</h4>
 
-<p>Powiter is an open-source cross-platform (Windows,OsX,Linux) software designed for compositing and image processing. Compositing is the process of combining visual elements from separate sources into single images (wikipedia) .</p>
+<p>Natron is an open-source cross-platform (Windows,OsX,Linux) software designed for compositing and image processing. Compositing is the process of combining visual elements from separate sources into single images (wikipedia) .</p>
 
-<h4>Philosophy</h4>
+<h4>
+<a name="philosophy" class="anchor" href="#philosophy"><span class="octicon octicon-link"></span></a>Philosophy</h4>
 
-<p>The  main goals when making decisions on the development of the software are response time of the new feature and intuitiveness. It is needless to say that today what is expensive in post-production is the time spent by CG compositors on visual effects softwares, the aim of Powiter is to optimise the learning curve necessary to enter a new post-production software, as well as provide a versatile, yet top notch image processing set of tools. The same reasoning can be made for researchers and professionals that need to set up a new algorithm. e.g: An algorithm correcting the divergence of calibration of a  stereoscopic image pair. 
-One would actually need to dive into many libraries and provide some base API that allows the use of their algorithm. The idea here, is that Powiter will take care of everything for you : reading (images, meta-data...),rendering, via a well documented API. One would just then have to create the minimal code necessary that actually "does" the processing to have a new tool ready to use.
-Based on a node graph architecture, associating a node to a visual effect or a computation, Powiter allows its evolution and its use to be steady, most certainly thanks to the software development kit. The SDK will provide a clear API allowing anyone having C++ or Python skills to develop a new node. 
-The last and not least motivation for this project is actually to be entirely free and open-source. A dual-license system will be introduced to allow companies to develop proprietary plug-ins. The cutting edge core of the software and the community that will emerge along with plug-ins , will permit to Powiter to be a serious concurrent to proprietary softwares : namely Nuke and After Effects.</p>
+<p>The  main goals when making decisions on the development of the software are response time of the new feature and intuitiveness. It is needless to say that today what is expensive in post-production is the time spent by CG compositors on visual effects softwares, the aim of Natron is to optimise the learning curve necessary to enter a new post-production software, as well as provide a versatile, yet  top notch image processing set of tools. The same reasoning can be made for researchers and professionals that need to set up a new algorithm. e.g: An algorithm correcting the divergence of calibration of a  stereoscopic image pair. 
+One would actually need to dive into many libraries and provide some base API that allows the use of their algorithm. The idea here, is that Natron will take care of everything for you : reading (images, meta-data...),rendering, via a well documented API. One would just then have to create the minimal code necessary that actually "does" the processing to have a new tool ready to use.
+Based on a node graph architecture, associating a node to a visual effect or a computation, Natron allows its evolution and its use to be steady, most certainly thanks to the software development kit. The SDK will provide a clear API allowing anyone having C++ or Python skills to develop a new node. 
+The last and not least motivation for this project is actually to be entirely free and open-source. A dual-license system will be introduced to allow companies to develop proprietary plug-ins. The cutting edge core of the software and the community that will emerge along with plug-ins , will permit to Natron to be a serious concurrent to proprietary softwares : namely Nuke and After Effects.</p>
 
-<h4>History</h4>
+<h4>
+<a name="history" class="anchor" href="#history"><span class="octicon octicon-link"></span></a>History</h4>
 
-<p>I'll take a little paragraph to express how the project Powiter started.
-Back when I was in university, studying computer graphics and computer vision,I actually noticed that when programming in these domain can be really long and painful, notably because of the lack of "swiss-army knife" tools that allow one to focus only on the processing and computing part. Imagine that : no more parser to write, no more GUI to write , no more basic operations to write over and over again. That's what Powiter aims to do. The necessity to have a standard  is emphasised using some of the most used C/C++ libraries in the world : Qt, boost , openFX ,openEXR , FFMPEG , openGL.. </p>
+<p>I'll take a little paragraph to express how the project Natron started.
+Back when I was in university, studying computer graphics and computer vision,I actually noticed that when programming in these domain can be really long and painful, notably because of the lack of "swiss-army knife" tools that allow one to focus only on the processing and computing part. Imagine that : no more parser to write, no more GUI to write , no more basic operations to write over and over again. That's what Natron aims to do. The necessity to have a standard  is emphasised using some of the most used C/C++ libraries in the world : Qt, boost , openFX ,openEXR , FFMPEG , openGL.. </p>
 
-<h4>For who?</h4>
+<h4>
+<a name="for-who" class="anchor" href="#for-who"><span class="octicon octicon-link"></span></a>For who?</h4>
 
-<p>The software is dedicated to everyone doing compositing, image processing , and that wants a competitive, robust, cutting edge toolset to use. Powiter can be used in 2 ways: 
+<p>The software is dedicated to everyone doing compositing, image processing , and that wants a competitive, robust, cutting edge toolset to use. Natron can be used in 2 ways: 
 either using all the tools offered by the code-base and the community, or by developing new C++ plug-ins.</p>
 
-<h4>Licensing</h4>
+<h4>
+<a name="licensing" class="anchor" href="#licensing"><span class="octicon octicon-link"></span></a>Licensing</h4>
 
-<p>Powiter will be released with a dual-license scheme : a GNU General Public License, allowing the growth of Powiter and the number of tools that come along, and another commercial license that will allow companies to develop their own proprietary plug-ins and sell it with some restrictions.</p>
+<p>Natron will be released with a dual-license scheme : a GNU General Public License, allowing the growth of Natron and the number of tools that come along, and another commercial license that will allow companies to develop their own proprietary plug-ins and sell it with some restrictions.</p>
 
 <p><a href="#top">Go back to the top of the page</a></p>
 
-<h2>2. Engine<a></a>
+<h2>
+<a name="2-engine" class="anchor" href="#2-engine"><span class="octicon octicon-link"></span></a>2. Engine<a></a>
 </h2>
 
-<h3>Concepts</h3>
+<h3>
+<a name="concepts" class="anchor" href="#concepts"><span class="octicon octicon-link"></span></a>Concepts</h3>
 
-<p>Powiter is a visual effects software, that is, the main purpose of this software is to transform images. In order to do any mathematic operations correctly and to output quality results, Powiter is using internally a linear colour workflow. Everything read is transformed to linear, everything output is converted back to log.  Another main feature of Powiter is that it is using 32bit floating point precision values to encode all the channels of an image. This allows for heavy transformation applied to the colour values, with little approximation . But this has a cost : everything takes up to 4x the memory required for an 8bit image, and everything takes more computing time overall.
+<p>Natron is a visual effects software, that is, the main purpose of this software is to transform images. In order to do any mathematic operations correctly and to output quality results, Natron is using internally a linear colour workflow. Everything read is transformed to linear, everything output is converted back to log.  Another main feature of Natron is that it is using 32bit floating point precision values to encode all the channels of an image. This allows for heavy transformation applied to the colour values, with little approximation . But this has a cost : everything takes up to 4x the memory required for an 8bit image, and everything takes more computing time overall.
 In order to reduce  the overhead produced by those data structures, all the drawing of the images is implemented directly in OpenGL.
-Thanks to an intuitive graphical user interface (QT), the main workspace of Powiter is its DAG (direct acyclic graph) : this architecture connects nodes representing transformations or actions and allows for smooth results. The GUI will allow the user to control directly the DAG via Python scripts to enable maximum customisation.
-One of the main idea of Powiter, is that it must be able to "connect" to the other related softwares : no more double disk space for the same frames, no more erroneous conversion from one file to another. 
+Thanks to an intuitive graphical user interface (QT), the main workspace of Natron is its DAG (direct acyclic graph) : this architecture connects nodes representing transformations or actions and allows for smooth results. The GUI will allow the user to control directly the DAG via Python scripts to enable maximum customisation.
+One of the main idea of Natron, is that it must be able to "connect" to the other related softwares : no more double disk space for the same frames, no more erroneous conversion from one file to another. 
 As said in the philosophy chapter, one of the main goal performance-wise is to have a responsive software, allowing the user to spend his time actually working. Every possible enhancement will be made to the core of the software to validate this point.
 This is also valid for the GUI, all the change will stem from an idea of "intuitiveness" and response time.
-Another feature that will be available in Powiter is its 3D mode, allowing the user to add deep informations directly into his scene.
+Another feature that will be available in Natron is its 3D mode, allowing the user to add deep informations directly into his scene.
 The most exciting feature presented here  will be the software development kit. It will aim to present a clear C++/python interface for creating new nodes/plug-ins.</p>
 
-<h3>Architecture</h3>
+<h3>
+<a name="architecture" class="anchor" href="#architecture"><span class="octicon octicon-link"></span></a>Architecture</h3>
 
 <p>For now, most of the development has been made on the 2D engine of the software, that's why it is more detailed here.</p>
 
-<h4>Scan-line based</h4>
+<h4>
+<a name="scan-line-based" class="anchor" href="#scan-line-based"><span class="octicon octicon-link"></span></a>Scan-line based</h4>
 
 <p>Powiter takes in input a sequence of images and make transformations/computations to/on them . Every frame is split into rows : this is the computing unit of reference of Powiter. You can see every node in the DAG as doing "Hello, can I have the Xth row please? I need to make transformations on this one". This architecture was chosen to allow maximum optimisation on computation and rendering algorithms. </p>
 
-<h4>Multi-threading</h4>
+<h4>
+<a name="multi-threading" class="anchor" href="#multi-threading"><span class="octicon octicon-link"></span></a>Multi-threading</h4>
 
 <p>Powiter, as aforementioned is splitting images into rows. One of the main reason for that is the independence of the row : in most case one row doesn't need to know another row exists. This is perfect for multi-threading algorithms. Powiter will launch a certain number of threads that will compute asynchronously the rows. In some cases, a node needs to know the existence of other rows and must access them. Imagine a box blur node with a kernel of 3x3 : each row produced needs 3 rows in input. That means one thread will actually lock 3 rows upstream of the box blur. In order to re-use computations and to not waste resources, a system of internal caching is present.
 The same reasoning can be made for a frame that would need to access to another/several other frame(s).
 For some nodes, like readers, the architecture is a little bit different since multi-threaded seek on a disk file is generally not a good idea. For readers, the idea is to "read data whenever the CPU isn't doing anything and the stack of frames isn't full". This way, a stack with a customisable size is constantly being filled with a separate thread whenever the engine doesn't need all the resource to do the computations.</p>
 
-<h4>Linear workflow</h4>
+<h4>
+<a name="linear-workflow" class="anchor" href="#linear-workflow"><span class="octicon octicon-link"></span></a>Linear workflow</h4>
 
 <p>Linear means that every mathematical operation that attempts to change the value of a pixel colour , will do it accurately and correctly. Since almost every image storing files today are stored with logarithmic colours, Powiter will linearise the colours when reading files, and convert the values back to logarithmic when the transformations are done.</p>
 
-<h4>Node graph</h4>
+<h4>
+<a name="node-graph" class="anchor" href="#node-graph"><span class="octicon octicon-link"></span></a>Node graph</h4>
 
 <p>Powiter will combine images, produce images or transform images data using a node graph.
 All the nodes of the graph make a special transformation or effect on the rest of the graph downstream. Three kind of nodes can be used when using Powiter : input nodes , operator nodes and output nodes. </p>
@@ -162,13 +179,15 @@ All the nodes of the graph make a special transformation or effect on the rest o
 The nodes define what is visible in their settings panel as well as many other parameters.
 Each setting visible in the settings panel of a node is called a knob.</p>
 
-<h4>Knobs</h4>
+<h4>
+<a name="knobs" class="anchor" href="#knobs"><span class="octicon octicon-link"></span></a>Knobs</h4>
 
 <p>Knobs are the settings associated to a specific node. Knobs can have different mode: read-only/write-only or read-write. Typically for a reader node, a read-write knob would be a file knob that is used to indicate and choose what file will be open by the reader.
 Knobs also have another information internally : they have a unique hash key associated to them, and the value of this key depends on the value of the parameter held by the knob.
 2 same knobs across Powiter that have the same value will have the same key. This way whenever the settings of a node are exactly the same has another same node, Powiter is aware of it. Furthermore Powiter is able to know when one graph is similar to another one, this is important for the next part: the caching system.</p>
 
-<h4>Caching &amp; Hashing</h4>
+<h4>
+<a name="caching--hashing" class="anchor" href="#caching--hashing"><span class="octicon octicon-link"></span></a>Caching &amp; Hashing</h4>
 
 <p>Following the last paragraph, every node has internally a hash key that is the result of the checksum of all the values stored by its knobs , the name of the node and the hash keys of all nodes upstream.
 Powiter can then compute the hash key of a node graph, or a "tree version" by recursively
@@ -182,18 +201,21 @@ Currently 3 caches operate at different levels. The buffer cache, the playback c
 <li><p>The playback cache is operating on frames : each frame computed by a node-graph is pushed to the playback cache along with the tree version with which it was computed. This way Powiter can later recognise the similarity between the current processing request for a frame and the frame present in the cache. If one frame is present in the cache, it is directly displayed on screen, no processing is done. Due to the various optimisations operating on the engine, several parameters define a frame stored into the playback cache:
 The tree version with which it was computed, the zoom-level , the exposure , the frame name, along with some other infos. Please bare in mind that the playback cache is a RAM cache : everything is held by the main memory and Powiter should avoid taking up all the RAM of the system only by the playback cache. You can find an option in the preferences to set the amount of RAM allocated to the playback cache : by default on a 8GiB system, Powiter will take up to ~700MiB of RAM of the playback cache. Setting this value near the limit of the system will drastically reduce Powiter performances due to the constant swapping of the operating system. </p></li>
 <li><p>Finally the last cache is known as the disk-cache. This is an extension to the playback cache and works carefully with it. The disk cache stores ,as its name let's suppose, its data on the disk. That means that this cache is not volatile and the informations can survive 2 runs of Powiter. The data stored in this cache are the same than the ones stored in the playback cache, actually, this is more sophisticated than that. When the playback cache is full, Powiter will transfer some of the frame held by the RAM to the disk cache with a LRU priority rule. When Powiter exits, all the frames remaining into the playback cache are transferred to the disk cache via a process of memory mapping. Another setting can be found in the preferences panel holding the total amount of disk space allocated to the disk cache of Powiter.</p></li>
-</ol><h4>Readers &amp; synchronisation</h4>
+</ol><h4>
+<a name="readers--synchronisation" class="anchor" href="#readers--synchronisation"><span class="octicon octicon-link"></span></a>Readers &amp; synchronisation</h4>
 
 <p>Let's talk a bit about the engine design for readers nodes as they are working differently internally than other nodes. 
 Reader nodes are used to read data from disk and the task of reading one file from the disk cannot be multi-threaded in a scan-line manner as for the other nodes . The multi-thread behaviour will just create more seek operations that the operating system and the hardware will have to handle. 
 A workaround to this issue is to read files whenever the CPU isn't used intensively and store the data read into a stack. One thread in Powiter is always running in the background and is notified whenever there's frames to decode.
 Whenever the GPU is doing processing, the CPU is always ready to decode some frames, and Powiter should never be spending time reading a frame, or at least just for the first one.</p>
 
-<h4>various optimisations</h4>
+<h4>
+<a name="various-optimisations" class="anchor" href="#various-optimisations"><span class="octicon octicon-link"></span></a>various optimisations</h4>
 
 <p>Several optimisations have been made to the engine so it is effective and responsive, even when dealing with large resolution frame (a.k.a 4K). When the output of a node-graph is a viewer, Powiter will query the display resolution in order to know how many rows it needs to compute. When zooming in under 100% resolution of the frame, Powiter will try to load the fewest rows necessary to produce the image on the viewer. For example if the resolution wanted on screen is 20% of what the frame's resolution really is, Powiter will just keep 1 row out of 5 to approximate the result on the viewer. Coupled with the buffer cache, the zoom can be really fast en the image looks always smooth. </p>
 
-<h4>GPU acceleration</h4>
+<h4>
+<a name="gpu-acceleration" class="anchor" href="#gpu-acceleration"><span class="octicon octicon-link"></span></a>GPU acceleration</h4>
 
 <p>Powiter is using GLSL along with OpenGL to have obtain quick results on the viewer. 
 Several computations are entirely done with GLSL shaders. If the user doesn't have driver support for GLSL a CPU based fallback solution is available.
@@ -201,7 +223,8 @@ Several nodes should be able to use CUDA/OpenCL (choice hasn't been made between
 
 <p><a href="#top">Go back to the top of the page</a></p>
 
-<h2> 3. Graphical user interface<a></a>
+<h2>
+<a name="-3-graphical-user-interface" class="anchor" href="#-3-graphical-user-interface"><span class="octicon octicon-link"></span></a> 3. Graphical user interface<a></a>
 </h2>
 
 <p>Powiter aims to be intuitive and the learning curve when getting the software in hands  shouldn't be long. That is why the default GUI/names  look familiar to other compositing softwares.
@@ -214,7 +237,8 @@ Finally a last important GUI element is the timeline : the user can control whic
 
 <p><a href="#top">Go back to the top of the page</a></p>
 
-<h2>4. Plug-in system<a></a>
+<h2>
+<a name="4-plug-in-system" class="anchor" href="#4-plug-in-system"><span class="octicon octicon-link"></span></a>4. Plug-in system<a></a>
 </h2>
 
 <p>Powiter main strength will be it's plug-in system. The community lying around the software will build a solid toolbox allowing Powiter to be very competitive and versatile.
@@ -223,92 +247,114 @@ A plug-in can be of two form : It can be a new node or it can simply be another 
 
 <p><a href="#top">Go back to the top of the page</a></p>
 
-<h2>5. Features to come<a></a>
+<h2>
+<a name="5-features-to-come" class="anchor" href="#5-features-to-come"><span class="octicon octicon-link"></span></a>5. Features to come<a></a>
 </h2>
 
-<h4>Stereovision support</h4>
+<h4>
+<a name="stereovision-support" class="anchor" href="#stereovision-support"><span class="octicon octicon-link"></span></a>Stereovision support</h4>
 
 <p>This one is obvious, one cannot imagine today a new high-end compositing software without stereo support. It will be available seamlessly for the user and the viewer will have a special layout option to display stereo/split-views etc. . .  </p>
 
-<h4>Animation engine</h4>
+<h4>
+<a name="animation-engine" class="anchor" href="#animation-engine"><span class="octicon octicon-link"></span></a>Animation engine</h4>
 
 <p>In order to be able to do complex special effects over time, it is necessary to have a smart tool dealing with animation problems. Powiter will add the notion of key-frame and a new key-frame editor will be available so the user can have motion-control.</p>
 
-<h4>Proxy mode</h4>
+<h4>
+<a name="proxy-mode" class="anchor" href="#proxy-mode"><span class="octicon octicon-link"></span></a>Proxy mode</h4>
 
 <p>This feature is maybe the most important and will be integrated before the first release. It will simply allow the user to run a node-graph on a smaller resolution than what the input frame really is, so the user experience remains smooth and fast.</p>
 
-<h4>Region of interest</h4>
+<h4>
+<a name="region-of-interest" class="anchor" href="#region-of-interest"><span class="octicon octicon-link"></span></a>Region of interest</h4>
 
 <p>It will be available as a viewer overlays : the user select a portion of the image on the viewer to be actually the region of interest. Powiter will then compute and refresh only the data that intersects the region of interest.</p>
 
-<h4>3D engine</h4>
+<h4>
+<a name="3d-engine" class="anchor" href="#3d-engine"><span class="octicon octicon-link"></span></a>3D engine</h4>
 
 <p>A 3D viewer mode will appear along with support for .fbx geometry files. A special scan-line rendering node will be able to render a 3D scene. This mode will also allow the user to do texture/painting projection mapping along with many other features.</p>
 
-<h4>Painting engine</h4>
+<h4>
+<a name="painting-engine" class="anchor" href="#painting-engine"><span class="octicon octicon-link"></span></a>Painting engine</h4>
 
 <p>A full painting engine will come into Powiter allowing the user to draw shapes and to use them to interact with the rest of the composite.</p>
 
-<h4>Deep compositing</h4>
+<h4>
+<a name="deep-compositing" class="anchor" href="#deep-compositing"><span class="octicon octicon-link"></span></a>Deep compositing</h4>
 
 <p>Thanks to the OpenEXR library, Powiter will support deep compositing and multiple samples per pixel.</p>
 
-<h4>Allow the user to add specific colour curves (lut)</h4>
+<h4>
+<a name="allow-the-user-to-add-specific-colour-curves-lut" class="anchor" href="#allow-the-user-to-add-specific-colour-curves-lut"><span class="octicon octicon-link"></span></a>Allow the user to add specific colour curves (lut)</h4>
 
 <p>Specific camera manufacturers provide a custom colour-curve to convert their logarithmic stored files to linear. The GUI will add a special interactive menu allowing the user to add new Lut(s). </p>
 
-<h4>More flexibility granted to the SDK c++ interface</h4>
+<h4>
+<a name="more-flexibility-granted-to-the-sdk-c-interface" class="anchor" href="#more-flexibility-granted-to-the-sdk-c-interface"><span class="octicon octicon-link"></span></a>More flexibility granted to the SDK c++ interface</h4>
 
 <p>Today the SDK interface is not final and far from what it should look like. No documentation is available yet. Everything will come on the release of Powiter (or sooner) 
 and a documentation featuring all possibilities will be created. Ideally the SDK should be partially API compatible with Nuke so someone who wrote a plug-in for Nuke could port it easily to Powiter. Maybe an auto-tool will come to do the conversion of Nuke plug-ins to Powiter, nothing official yet. Also, any OpenFX plug-in should be convertible to Powiter as it will implement the OpenFX API. </p>
 
-<h4>Python scripting</h4>
+<h4>
+<a name="python-scripting" class="anchor" href="#python-scripting"><span class="octicon octicon-link"></span></a>Python scripting</h4>
 
 <p>Powiter will have a basic Python script editor that will allow the user to write custom scripts to control the node-graph. </p>
 
-<h4>Frame server API</h4>
+<h4>
+<a name="frame-server-api" class="anchor" href="#frame-server-api"><span class="octicon octicon-link"></span></a>Frame server API</h4>
 
 <p>Powiter will most likely in a future version propose a cross platform frame server API . Any software implementing the API will be client of the frame server. Powiter should implement this as a reader Node, that will read from the frame server, as well as a write node, that will write back to the frame server.</p>
 
-<h4>Ant mode, for render farm purpose.</h4>
+<h4>
+<a name="ant-mode-for-render-farm-purpose" class="anchor" href="#ant-mode-for-render-farm-purpose"><span class="octicon octicon-link"></span></a>Ant mode, for render farm purpose.</h4>
 
 <p>Powiter will propose a smaller version with only a rendering mode. Full management of the work parallelisation will be added to Powiter.</p>
 
-<h4>GUI customisation</h4>
+<h4>
+<a name="gui-customisation" class="anchor" href="#gui-customisation"><span class="octicon octicon-link"></span></a>GUI customisation</h4>
 
 <p>Powiter should offer on launch a way to customise entirely the GUI with QT, as long as the user give a valid behaviour to the necessary widgets.</p>
 
-<h4>Custom Meta-data handling</h4>
+<h4>
+<a name="custom-meta-data-handling" class="anchor" href="#custom-meta-data-handling"><span class="octicon octicon-link"></span></a>Custom Meta-data handling</h4>
 
 <p>Powiter will handle meta-data in several ways. It will provide a meta-data reader that will be able to connect to another node and pass down its informations. Powiter will also provide support for user defined meta-data, most likely via .exr files .</p>
 
 <p><a href="#top">Go back to the top of the page</a></p>
 
-<h2>6. Terminology<a></a>
+<h2>
+<a name="6-terminology" class="anchor" href="#6-terminology"><span class="octicon octicon-link"></span></a>6. Terminology<a></a>
 </h2>
 
-<h4>Node</h4>
+<h4>
+<a name="node" class="anchor" href="#node"><span class="octicon octicon-link"></span></a>Node</h4>
 
 <p>A node is an element of a graph that represent an image transformation or a specific processing operation in Powiter. Some nodes may not do any processing in fact but they're still called nodes.</p>
 
-<h4>Knobs</h4>
+<h4>
+<a name="knobs-1" class="anchor" href="#knobs-1"><span class="octicon octicon-link"></span></a>Knobs</h4>
 
 <p>These are the controls you can find in the settings panel of a node in the GUI.</p>
 
-<h4>Channel</h4>
+<h4>
+<a name="channel" class="anchor" href="#channel"><span class="octicon octicon-link"></span></a>Channel</h4>
 
 <p>A channel is one 2D plane. That is, it is a buffer of the size of the image, containing informations for each pixel. There's no support for sub-sampled channels currently in Powiter.</p>
 
-<h4>Display Format</h4>
+<h4>
+<a name="display-format" class="anchor" href="#display-format"><span class="octicon octicon-link"></span></a>Display Format</h4>
 
 <p>This is the resolution of the image. When reading images, display format is what Powiter reads from files headers, and when writing Display format is what the user chooses to output in the settings. The display format also refers to what is displayed on screen. In the case of exr files it is called "display window". This is the part of the data in the file that are visible on screen.</p>
 
-<h4>BBOX(bounding box)</h4>
+<h4>
+<a name="bboxbounding-box" class="anchor" href="#bboxbounding-box"><span class="octicon octicon-link"></span></a>BBOX(bounding box)</h4>
 
 <p>The bounding box of an image is the size of its data window. The data window is generally the same as the display format but can sometimes vary : this is useful for all filters operations so they can produce correct results on the edges of the image. Imagine a box blur with a kernel 3x3 and that the data window of the image is 1 pixel larger on every edge than the display window. You can safely convolve once the image with the 3x3 kernel without incorporating artefacts or cutting the image.</p>
 
-<h4>Pixel</h4>
+<h4>
+<a name="pixel" class="anchor" href="#pixel"><span class="octicon octicon-link"></span></a>Pixel</h4>
 
 <p>A pixel is defined by the values of all the channels of an image at a specific location.</p>
 
