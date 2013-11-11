@@ -203,7 +203,9 @@ void EffectInstance::getFrameRange(SequenceTime *first,SequenceTime *last){
     }
 }
 
-boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow){
+boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime time,RenderScale scale,
+                                                                 int view,const RectI& renderWindow,
+                                                                 bool byPassCache){
 #ifdef NATRON_LOG
     Natron::Log::beginFunction(getName(),"renderRoI");
     Natron::Log::print(QString("Time "+QString::number(time)+
@@ -215,9 +217,12 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
                         
 #endif
     
-    Natron::ImageKey key = Natron::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
     /*look-up the cache for any existing image already rendered*/
-    boost::shared_ptr<Image> image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
+    boost::shared_ptr<Image> image;
+    Natron::ImageKey key = Natron::Image::makeKey(_hashValue.value(), time, scale,view,RectI());
+    if(!byPassCache){
+        image = boost::const_pointer_cast<Image>(appPTR->getNodeCache().get(key));
+    }
     /*if not cached, we store the freshly allocated image in this member*/
     if(!image){
         /*before allocating it we must fill the RoD of the image we want to render*/
@@ -228,7 +233,11 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
             cost = 1;
         }
         /*allocate a new image*/
-        image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
+        if(!byPassCache){
+            image = appPTR->getNodeCache().newEntry(key,key._rod.area()*4,cost);
+        }else{
+            image.reset(new Natron::Image(key._rod,scale,time));
+        }
     }
 #ifdef NATRON_LOG
     else{
@@ -271,7 +280,7 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
                 try{
-                    inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second));
+                    inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second,byPassCache));
                 }catch(const std::exception& e){
                     throw e;
                 }

@@ -187,7 +187,9 @@ public:
      * @brief Renders the image at the given time,scale and for the given view & render window.
      * Pre-condition: preProcess must have been called.
      **/
-    boost::shared_ptr<const Natron::Image> renderRoI(SequenceTime time,RenderScale scale,int view,const RectI& renderWindow);
+    boost::shared_ptr<const Natron::Image> renderRoI(SequenceTime time,RenderScale scale,
+                                                     int view,const RectI& renderWindow,
+                                                     bool byPassCache = false);
     
     
     /**

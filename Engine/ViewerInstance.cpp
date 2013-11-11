@@ -208,11 +208,13 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
     boost::shared_ptr<const FrameEntry> iscached;
     
     /*if we want to force a refresh, we by-pass the cache*/
+    bool byPassCache = false;
     {
         QMutexLocker forceRenderLocker(&_forceRenderMutex);
         if(!_forceRender){
             iscached = appPTR->getViewerCache().get(key);
         }else{
+            byPassCache = true;
             _forceRender = false;
         }
     }
@@ -269,7 +271,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         for(int view = 0 ; view < viewsCount ; ++view){
             boost::shared_ptr<const Natron::Image> inputImage;
             try{
-                inputImage = it->first->renderRoI(time, scale,view,it->second);
+                inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
             }catch(...){
                 //plugin should have posted a message
                 QMutexLocker locker(&_usingOpenGLMutex);
