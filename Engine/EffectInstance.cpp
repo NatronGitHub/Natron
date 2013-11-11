@@ -350,13 +350,14 @@ void EffectInstance::createKnobDynamically(){
     _node->createKnobDynamically();
 }
 
-void EffectInstance::evaluate(Knob* /*knob*/,bool isSignificant){
+void EffectInstance::evaluate(Knob* knob,bool isSignificant){
     assert(_node);
     std::list<ViewerInstance*> viewers;
     _node->hasViewersConnected(&viewers);
+    bool fitToViewer = knob->typeName() == "InputFile";
     for(std::list<ViewerInstance*>::iterator it = viewers.begin();it!=viewers.end();++it){
         if(isSignificant){
-            (*it)->refreshAndContinueRender();
+            (*it)->refreshAndContinueRender(fitToViewer);
         }else{
             (*it)->redrawViewer();
         }

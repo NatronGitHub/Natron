@@ -1531,7 +1531,7 @@ QVector4D ViewerGL::getColorUnderMouse(int x,int y){
         r |= (pixel >> 16);
         a |= (pixel >> 24);
         checkGLErrors();
-        return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);//U32toBGRA(pixel);
+        return QVector4D((float)r/255.f,(float)g/255.f,(float)b/255.f,(float)a/255.f);
     }else if(byteMode()==0 && _hasHW){
         GLfloat pixel[4];
         glReadPixels( x, height()-y, 1, 1, GL_RGBA, GL_FLOAT, pixel);

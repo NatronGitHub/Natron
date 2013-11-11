@@ -194,8 +194,7 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
     if(node->className() == "Viewer" && !_isBackground){
         _gui->createViewerGui(node);
     }
-    if(!requestedByLoad && !_isBackground)
-        node->openFilesForAllFileKnobs();
+    
 
     if(!_isBackground){
         if(_gui->getSelectedNode()){
@@ -203,7 +202,10 @@ Node* AppInstance::createNode(const QString& name,bool requestedByLoad ) {
             autoConnect(selected, node);
         }
         _gui->selectNode(nodegui);
+        if(!requestedByLoad)
+            node->openFilesForAllFileKnobs();
     }
+    
     return node;
 }
 
