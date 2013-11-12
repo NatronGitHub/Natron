@@ -523,7 +523,7 @@ NodeGui::SerializedState::SerializedState(const NodeGui* n):_node(n){
     for (U32 i  = 0; i < knobs.size(); ++i) {
         std::string serializedValue = knobs[i]->serialize();
         if(!serializedValue.empty()){
-            _knobsValues.insert(std::make_pair(knobs[i]->getDescription(), serializedValue));
+            _knobsValues.push_back(std::make_pair(knobs[i]->getDescription(), serializedValue));
         }
     }
     

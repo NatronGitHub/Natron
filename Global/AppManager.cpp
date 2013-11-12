@@ -1279,7 +1279,8 @@ void ProcessHandler::onStandardOutputBytesWritten(){
 
 void ProcessHandler::onProcessCanceled(){
     _dialog->hide();
-    if(_process->write(kAbortRenderingString, strnlen(kAbortRenderingString,200)) == -1){
+    QByteArray ba(kAbortRenderingString);
+    if(_process->write(ba) == -1){
         std::cout << "Error writing to the process standard input" << std::endl;
     }
     _process->waitForFinished();

@@ -231,9 +231,9 @@ void Project::loadProject(const QString& path,const QString& name,bool backgroun
             throw std::invalid_argument(text.toStdString());
         }
         n->setName(state.getName());
-        const std::map<std::string,std::string>& knobsValues = state.getKnobsValues();
+        const std::vector<std::pair<std::string,std::string> >& knobsValues = state.getKnobsValues();
         //begin changes to params
-        for (std::map<std::string,std::string>::const_iterator v = knobsValues.begin(); v!=knobsValues.end(); ++v) {
+        for (std::vector<std::pair<std::string,std::string> >::const_iterator v = knobsValues.begin(); v!=knobsValues.end(); ++v) {
             if(v->second.empty())
                 continue;
             Knob* knob = n->getKnobByDescription(v->first);
