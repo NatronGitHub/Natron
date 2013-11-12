@@ -1319,17 +1319,8 @@ void RenderingProgressDialog::onCurrentFrameProgress(int progress){
     _perFrameProgress->setValue(progress);
 }
 
-void RenderingProgressDialog::onCancelation(){
-    /*Maybe we should ask for user permission with another dialog ? */
-    _writer->abortRendering();
-    hide();
-    delete this;
-    
-}
-RenderingProgressDialog::RenderingProgressDialog(OutputEffectInstance* writer,
-                                                 const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
+RenderingProgressDialog::RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent):
 QDialog(parent),
-_writer(writer),
 _sequenceName(sequenceName),
 _firstFrame(firstFrame),
 _lastFrame(lastFrame){
@@ -1373,17 +1364,12 @@ _lastFrame(lastFrame){
     _cancelButton = new Button("Cancel",this);
     _cancelButton->setMaximumWidth(50);
     _mainLayout->addWidget(_cancelButton);
-    VideoEngine* videoEngine = writer->getVideoEngine().get();
-    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(onCancelation()));
-    QObject::connect(videoEngine, SIGNAL(frameRendered(int)), this, SLOT(onFrameRendered(int)));
-    QObject::connect(videoEngine, SIGNAL(progressChanged(int)),this,SLOT(onCurrentFrameProgress(int)));
-    QObject::connect(videoEngine, SIGNAL(engineStopped()), this, SLOT(onCancelation()));
+    
+    QObject::connect(_cancelButton, SIGNAL(clicked()), this, SIGNAL(canceled()));
+
     
 }
-void Gui::showProgressDialog(OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame){
-    RenderingProgressDialog* dialog = new RenderingProgressDialog(writer,sequenceName,firstFrame,lastFrame,this);
-    dialog->show();
-}
+
 
 void Gui::restoreGuiGeometry(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);

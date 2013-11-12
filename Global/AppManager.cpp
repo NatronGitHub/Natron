@@ -11,13 +11,15 @@
 #include "AppManager.h"
 
 #include <cassert>
-#include <QMessageBox>
+
 #include <boost/scoped_ptr.hpp>
+#include <boost/bind.hpp>
+
+#include <QMessageBox>
 #include <QLabel>
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
-#include <QProcess>
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
@@ -49,6 +51,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Log.h"
 
 #include "Readers/Reader.h"
 #include "Readers/Decoder.h"
@@ -1125,10 +1128,11 @@ void AppInstance::incrementKnobsAge(){
 
 
 void AppInstance::startWritersRendering(const QStringList& writers){
-    assert(_isBackground);//< the instance must be background
     
     const std::vector<Node*>& projectNodes = _currentProject->getCurrentNodes();
     
+    std::vector<Natron::OutputEffectInstance*> renderers;
+
     if(!writers.isEmpty()){
         for (int i = 0; i < writers.size(); ++i) {
             Node* node = 0;
@@ -1151,18 +1155,26 @@ void AppInstance::startWritersRendering(const QStringList& writers){
                 if(node->className() == "Viewer"){
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
-                dynamic_cast<OutputEffectInstance*>(node->getLiveInstance())->renderFullSequence();
+                renderers.push_back(dynamic_cast<OutputEffectInstance*>(node->getLiveInstance()));
             }
         }
     }else{
         //start rendering for all writers found in the project
         for (U32 j = 0; j < projectNodes.size(); ++j) {
             if(projectNodes[j]->isOutputNode() && projectNodes[j]->className() != "Viewer"){
-                startRenderingFullSequence(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
-                break;
+                renderers.push_back(dynamic_cast<OutputEffectInstance*>(projectNodes[j]->getLiveInstance()));
             }
         }
 
+    }
+    
+    if(_isBackground){
+    //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
+        QtConcurrent::blockingMap(renderers,boost::bind(&AppInstance::startRenderingFullSequence,this,_1));
+    }else{
+        for (U32 i = 0; i < renderers.size(); ++i) {
+            startRenderingFullSequence(renderers[i]);
+        }
     }
 }
 
@@ -1177,26 +1189,216 @@ void AppManager::printUsage(){
 }
 
 void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* writer){
+    if(!_isBackground){
+        /*Start the renderer in a background process.*/
+        autoSave(); //< takes a snapshot of the graph at this time, this will be the version loaded by the process
+        QStringList appArgs = QCoreApplication::arguments();
+        QStringList processArgs;
+        processArgs << _currentProject->getLastAutoSaveFilePath() << "--background" << "--writer" << writer->getName().c_str();
+        ProcessHandler* newProcess = 0;
+        
+        try{
+            newProcess = new ProcessHandler(this,appArgs.at(0),processArgs,writer); //< the process will delete itself
+        }catch(const std::exception& e){
+            Natron::errorDialog(writer->getName(),e.what());
+            delete newProcess;
+        }
+    }else{
+        _activeRenderersMutex.lock();
+        ActiveBackgroundRender* backgroundRender = new ActiveBackgroundRender(writer);
+        _activeRenderers.push_back(backgroundRender);
+        _activeRenderersMutex.unlock();
+        backgroundRender->blockingRender(); //< doesn't return before rendering is finished
+        
+        //remove the renderer from the list
+        _activeRenderersMutex.lock();
+        for (U32 i = 0; i < _activeRenderers.size(); ++i) {
+            if (_activeRenderers[i] == backgroundRender) {
+                _activeRenderers.erase(_activeRenderers.begin()+i);
+                break;
+            }
+        }
+        _activeRenderersMutex.unlock();
+    }
+}
+
+ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer)
+: _app(app)
+ ,_process(new QProcess)
+ ,_writer(writer)
+ ,_dialog(NULL)
+{
+    
+    
+    QObject::connect(_process.get(),SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
+    QObject::connect(_process.get(),SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
+    QObject::connect(_process.get(),SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
     int firstFrame,lastFrame;
     writer->getFrameRange(&firstFrame, &lastFrame);
     if(firstFrame > lastFrame)
-        return;
-    //   std::cout << _currentProject->getProjectPath().toStdString() << std::endl;
-    // std::cout << _currentProject->getProjectName().toStdString() << std::endl;
-//    QStringList appArgs = QCoreApplication::arguments();
-//    QProcess* backgroundProcess = new QProcess(this);
-//    QStringList processArgs;
-//    processArgs << _currentProject->getProjectPath() << "--background" << "--writer" << writer->getName().c_str();
-//    backgroundProcess->start(appArgs.at(0),processArgs);
-    writer->renderFullSequence();
+        throw std::invalid_argument("First frame in the sequence is greater than the last frame");
+    
+    _process->start(programPath,programArgs);
+
     std::string outputFileSequence;
     if(writer->isOpenFX()){
         outputFileSequence = dynamic_cast<OfxEffectInstance*>(writer)->getOutputFileName();
     }else{
         outputFileSequence = dynamic_cast<Writer*>(writer)->getOutputFileName();
     }
-    if(_gui){
-        _gui->showProgressDialog(writer, outputFileSequence.c_str(),firstFrame,lastFrame);
+    assert(app->getGui());
+    
+    _dialog = new RenderingProgressDialog(outputFileSequence.c_str(),firstFrame,lastFrame,app->getGui());
+    QObject::connect(_dialog,SIGNAL(canceled()),this,SLOT(onProcessCanceled()));
+    _dialog->show();
+    
+}
+
+void ProcessHandler::onStandardOutputBytesWritten(){
+    char buf[10000];
+    _process->readLine(buf, 10000);
+    QString str(buf);
+    if(str.contains(kFrameRenderedString)){
+        str = str.remove(kFrameRenderedString);
+        _dialog->onFrameRendered(str.toInt());
+    }else if(str.contains(kRenderingFinishedString)){
+        onProcessCanceled();
+    }else if(str.contains(kProgressChangedString)){
+        str = str.remove(kProgressChangedString);
+        _dialog->onCurrentFrameProgress(str.toInt());
+    }
+}
+
+void ProcessHandler::onProcessCanceled(){
+    _dialog->hide();
+    _process->write(kAbortRenderingString, strnlen(kAbortRenderingString,20));
+    _process->waitForFinished();
+    Natron::informationDialog(_writer->getName(),"Render finished!");
+    delete this;
+}
+
+void ProcessHandler::onProcessError(QProcess::ProcessError err){
+    if(err == QProcess::FailedToStart){
+        Natron::errorDialog(_writer->getName(),"The render process failed to start");
+    }else if(err == QProcess::Crashed){
+        Natron::errorDialog(_writer->getName(),"The render process crashed");
+        //@TODO: find out a way to get the backtrace
+    }
+    _process->kill();
+    delete this;
+}
+
+void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
+    if(stat == QProcess::CrashExit){
+        Natron::errorDialog(_writer->getName(),"The render process exited after a crash");
+    }else if(exitCode == 1){
+        Natron::errorDialog(_writer->getName(), "The process ended with a return code of 1, this indicates an undetermined problem occured.");
+    }else{
+        Natron::informationDialog(_writer->getName(),"Render finished!");
+    }
+    
+    _dialog->hide();
+    delete this;
+}
+
+AppInstance::ActiveBackgroundRender::ActiveBackgroundRender(Natron::OutputEffectInstance* writer)
+: _running(false)
+ ,_writer(writer)
+{
+    
+}
+
+void AppInstance::ActiveBackgroundRender::blockingRender(){
+    _writer->renderFullSequence();
+    {
+        QMutexLocker locker(&_runningMutex);
+        _running = true;
+        while (_running) {
+            _runningCond.wait(&_runningMutex);
+        }
     }
 
 }
+
+void AppInstance::ActiveBackgroundRender::notifyFinished(){
+    QMutexLocker locker(&_runningMutex);
+    _running = false;
+    _runningCond.wakeOne();
+}
+
+void AppInstance::notifyRenderFinished(Natron::OutputEffectInstance* writer){
+    for (U32 i = 0; i < _activeRenderers.size(); ++i) {
+        if(_activeRenderers[i]->getWriter() == writer){
+            _activeRenderers[i]->notifyFinished();
+        }
+    }
+}
+
+namespace Natron{
+
+void errorDialog(const std::string& title,const std::string& message){
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->errorDialog(title,message);
+    }else{
+        std::cout << "ERROR: " << message << std::endl;
+    }
+    
+#ifdef NATRON_LOG
+    Log::beginFunction(title,"ERROR");
+    Log::print(message);
+    Log::endFunction(title,"ERROR");
+#endif
+}
+
+void warningDialog(const std::string& title,const std::string& message){
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->warningDialog(title,message);
+    }else{
+        std::cout << "WARNING: "<< message << std::endl;
+    }
+#ifdef NATRON_LOG
+    Log::beginFunction(title,"WARNING");
+    Log::print(message);
+    Log::endFunction(title,"WARNING");
+#endif
+}
+
+void informationDialog(const std::string& title,const std::string& message){
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        topLvlInstance->informationDialog(title,message);
+    }else{
+        std::cout << "INFO: "<< message << std::endl;
+    }
+#ifdef NATRON_LOG
+    Log::beginFunction(title,"INFO");
+    Log::print(message);
+    Log::endFunction(title,"INFO");
+#endif
+}
+
+Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons,
+                                             Natron::StandardButton defaultButton){
+    
+    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    assert(topLvlInstance);
+    if(!topLvlInstance->isBackground()){
+        return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
+    }else{
+        std::cout << "QUESTION ASKED: " << message << std::endl;
+        std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
+        return Natron::Yes;
+    }
+#ifdef NATRON_LOG
+    Log::beginFunction(title,"QUESTION");
+    Log::print(message);
+    Log::endFunction(title,"QUESTION");
+#endif
+}
+    
+} //Namespace Natron

@@ -182,6 +182,7 @@ class ViewerGL : public QGLWidget
     GLuint _iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     
     Texture* _defaultDisplayTexture;/*!< A pointer to the current texture used to display.*/
+    QMutex _textureMutex;/*!< protects _defaultDisplayTexture*/
     
     Texture* _blackTex;/*!< the texture used to render a black screen when nothing is connected.*/
     
@@ -590,7 +591,6 @@ public:
     
     void onProjectFormatChanged(const Format& format);
     
-    void showView(int view);
     
 signals:
     /**

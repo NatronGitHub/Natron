@@ -178,28 +178,34 @@ int Project::lastFrame() const {
 
 void Project::loadProject(const QString& path,const QString& name,bool background){
     QString filePath = path+name;
-    std::ifstream ifile(filePath.toStdString().c_str(),std::ifstream::in);
-    boost::archive::xml_iarchive iArchive(ifile);
-    std::list<NodeGui::SerializedState> nodeStates;
-    iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
-    iArchive >> boost::serialization::make_nvp("Project_formats",_availableFormats);
-    
-    /*we must restore the entries in the combobox before restoring the value*/
-    std::vector<std::string> entries;
-    for (U32 i = 0; i < _availableFormats.size(); ++i) {
-        QString formatStr = generateStringFromFormat(_availableFormats[i]);
-        entries.push_back(formatStr.toStdString());
+    if(!QFile::exists(filePath)){
+        throw std::invalid_argument(QString(filePath + " : no such file.").toStdString());
     }
-    _formatKnob->populate(entries);
-    std::string currentFormat;
-    iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
-    setAutoSetProjectFormat(false);
-    _formatKnob->restoreFromString(currentFormat);
-    std::string viewsCount;
-    iArchive >> boost::serialization::make_nvp("Project_views_count",viewsCount);
-    _viewsCount->restoreFromString(viewsCount);
-    ifile.close();
-    
+    std::list<NodeGui::SerializedState> nodeStates;
+    std::ifstream ifile(filePath.toStdString().c_str(),std::ifstream::in);
+   
+    try{
+        boost::archive::xml_iarchive iArchive(ifile);
+        iArchive >> boost::serialization::make_nvp("Nodes",nodeStates);
+        iArchive >> boost::serialization::make_nvp("Project_formats",_availableFormats);
+        /*we must restore the entries in the combobox before restoring the value*/
+        std::vector<std::string> entries;
+        for (U32 i = 0; i < _availableFormats.size(); ++i) {
+            QString formatStr = generateStringFromFormat(_availableFormats[i]);
+            entries.push_back(formatStr.toStdString());
+        }
+        _formatKnob->populate(entries);
+        std::string currentFormat;
+        iArchive >> boost::serialization::make_nvp("Project_output_format",currentFormat);
+        setAutoSetProjectFormat(false);
+        _formatKnob->restoreFromString(currentFormat);
+        std::string viewsCount;
+        iArchive >> boost::serialization::make_nvp("Project_views_count",viewsCount);
+        _viewsCount->restoreFromString(viewsCount);
+        ifile.close();
+    }catch(const std::exception& e){
+        throw e;
+    }
     
     bool hasProjectAWriter = false;
     /*first create all nodes and restore the knobs values*/
@@ -295,6 +301,7 @@ void Project::saveProject(const QString& path,const QString& filename,bool autoS
     QString filePath;
     if(autoSave){
         filePath = AppInstance::autoSavesDir()+QDir::separator()+filename;
+        _lastAutoSaveFilePath = filePath;
     }else{
         filePath = path+filename;
     }

@@ -65,7 +65,7 @@ public:
 
     void beginFunction(const std::string& callerName,const std::string& function){
         if(!_file){
-            QString filename(POWITER_APPLICATION_NAME "_log.txt");
+            QString filename(NATRON_APPLICATION_NAME "_log.txt");
             open(filename.toStdString());
         }
         QMutexLocker locker(&_lock);
@@ -93,9 +93,10 @@ public:
             _stream->operator <<(str.at(i).toAscii());
             if (i%80 == 0 && i!=0) { // format to 80 columns
                 /*Find closest word end and insert a new line*/
+                ++i;
                 while(i < str.size() && str.at(i)!=QChar(' ')){
-                    ++i;
                     _stream->operator <<(str.at(i).toAscii());
+                    ++i;
                 }
                 _stream->operator <<('\n');
                 for(int i = 0 ; i < _beginsCount;++i){

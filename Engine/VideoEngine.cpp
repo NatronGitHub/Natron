@@ -48,6 +48,9 @@ using namespace Natron;
 using std::make_pair;
 using std::cout; using std::endl;
 
+
+#define NATRON_ABORT_CHECK_INTERVAL 1000 //timer interval for abort checking in milliseconds
+
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 : QThread(parent)
 , _tree(owner)
@@ -73,10 +76,15 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 , _currentRunArgs()
 , _startRenderFrameTime()
 , _timeline(owner->getNode()->getApp()->getTimeLine())
+, _backgroundProcessAbortTimer(new QTimer)
 {
+    if(owner->getApp()->isBackground()){
+        QObject::connect(_backgroundProcessAbortTimer,SIGNAL(timeout()),this,SLOT(checkIfAbortNeeded()));
+        _backgroundProcessAbortTimer->start(NATRON_ABORT_CHECK_INTERVAL);
+    }
 }
 
-VideoEngine::~VideoEngine() {   
+VideoEngine::~VideoEngine() {
     
 }
 
@@ -235,8 +243,13 @@ bool VideoEngine::stopEngine() {
             
             _abortedRequestedCondition.wakeOne();
         }
+        
+        if(_tree.getOutput()->getApp()->isBackground()){
+            std::cout << kRenderingFinishedString << std::endl;
+        }
 
         emit engineStopped();
+        
         _currentRunArgs._frameRequestsCount = 0;
         _restart = true;
         
@@ -273,6 +286,11 @@ bool VideoEngine::stopEngine() {
             return true;
         }
     }
+    if(_tree.getOutput()->getApp()->isBackground()){
+        _tree.getOutput()->getApp()->notifyRenderFinished(_tree.getOutput());
+        return true;
+    }
+    
     /*pause the thread if needed*/
     {
         QMutexLocker locker(&_startMutex);
@@ -479,6 +497,9 @@ void VideoEngine::run(){
          update viewers
          and appropriately increment counters for the next frame in the sequence.*/
         emit frameRendered(currentFrame);
+        if(_tree.getOutput()->getApp()->isBackground()){
+            std::cout << kFrameRenderedString << currentFrame << std::endl;
+        }
 
         if(_currentRunArgs._frameRequestIndex == 0 && _currentRunArgs._frameRequestsCount == 1 && !_currentRunArgs._sameFrame){
             _currentRunArgs._frameRequestsCount = 0;
@@ -707,6 +728,7 @@ bool VideoEngine::checkAndDisplayProgress(int /*y*/,int/* zoomedY*/){
 //            _tree.outputAsViewer()->getUiContext()->viewer->updateProgressOnViewer(_currentFrameInfos._textureRect, y,zoomedY);
 //        }else{
 //            emit progressChanged(floor(((double)y/(double)_currentFrameInfos._rows.size())*100));
+//            std::cout << kProgressChangedString << floor(((double)y/(double)_currentFrameInfos._rows.size())*100) << std::endl;
 //        }
 //        return true;
 //    }else{
@@ -728,4 +750,15 @@ bool VideoEngine::isWorking() const {
 bool VideoEngine::mustQuit() const{
     QMutexLocker locker(&_mustQuitMutex);
     return _mustQuit;
+}
+
+void VideoEngine::checkIfAbortNeeded(){
+    QTextStream qtin(stdin);
+    if(qtin.atEnd()){
+        return;
+    }
+    QString line = qtin.readLine();
+    if(line.contains(kAbortRenderingString)){
+        abortRendering();
+    }
 }

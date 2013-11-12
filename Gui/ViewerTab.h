@@ -154,6 +154,8 @@ public slots:
     
     void updateViewsMenu(int count);
     
+    void showView(int view);
+
 protected:
     
     bool eventFilter(QObject *target, QEvent *event);

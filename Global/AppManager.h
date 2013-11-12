@@ -18,7 +18,9 @@
 #include <QtCore/QObject>
 #include <QtCore/QDateTime>
 #include <QtCore/QStringList>
-
+#include <QtCore/QProcess>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 
 #ifndef Q_MOC_RUN
 #include <boost/scoped_ptr.hpp>
@@ -37,6 +39,7 @@
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
+class AppInstance;
 class KnobFactory;
 class NodeGui;
 class ViewerInstance;
@@ -46,8 +49,9 @@ class Gui;
 class VideoEngine;
 class QMutex;
 class TimeLine;
+class QProcess;
 class Settings;
-
+class RenderingProgressDialog;
 namespace Natron {
 class OutputEffectInstance;
 class LibraryBinary;
@@ -56,6 +60,32 @@ class OfxHost;
 class Node;
 class Project;
 }
+
+
+class ProcessHandler : public QObject {
+    
+    Q_OBJECT
+    
+    AppInstance* _app;//< pointer to the app executing this process
+    boost::scoped_ptr<QProcess> _process; //< the process executing the render
+    Natron::OutputEffectInstance* _writer;//< pointer to the writer actually rendering
+    RenderingProgressDialog* _dialog;//< a dialog to report progress and allow the user to cancel the process
+public:
+    
+    ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer);
+    
+    virtual ~ProcessHandler(){}
+    
+public slots:
+    
+    void onStandardOutputBytesWritten();
+    
+    void onProcessCanceled();
+    
+    void onProcessError(QProcess::ProcessError err);
+    
+    void onProcessEnd(int exitCode,QProcess::ExitStatus stat);
+};
 
 
 
@@ -128,7 +158,6 @@ public:
 
     ViewerTab* addNewViewerTab(ViewerInstance* node,TabWidget* where) WARN_UNUSED_RETURN;
 
-
     bool connect(int inputNumber,const std::string& inputName,Natron::Node* output);
 
     bool connect(int inputNumber,Natron::Node* input,Natron::Node* output);
@@ -140,7 +169,6 @@ public:
     NodeGui* getNodeGui(Natron::Node* n) const WARN_UNUSED_RETURN;
 
     Natron::Node* getNode(NodeGui* n) const WARN_UNUSED_RETURN;
-
 
     void connectViewersToViewerCache();
 
@@ -157,7 +185,7 @@ public:
     Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
             Natron::StandardButtons(Natron::Yes | Natron::No),
                                            Natron::StandardButton defaultButton = Natron::NoButton) const WARN_UNUSED_RETURN;
-
+    void notifyRenderFinished(Natron::OutputEffectInstance* writer);
 
 
 public slots:
@@ -173,14 +201,16 @@ public slots:
 
     void triggerAutoSave();
 
-    void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
-
+    /*Used in background mode only*/
+    void startWritersRendering(const QStringList& writers);
 
 signals:
 
     void pluginsPopulated();
 
 private:
+
+    void startRenderingFullSequence(Natron::OutputEffectInstance* writer);
 
 
     void removeAutoSaves() const;
@@ -189,9 +219,6 @@ private:
  whether he/she wants to load it. If something was loaded this function
  returns true,otherwise false.*/
     bool findAutoSave() WARN_UNUSED_RETURN;
-
-    /*Used in background mode only*/
-    void startWritersRendering(const QStringList& writers);
 
     Gui* _gui; // the view of the MVC pattern
 
@@ -204,6 +231,31 @@ private:
     QMutex* _autoSaveMutex;
 
     bool _isBackground;
+
+
+class ActiveBackgroundRender{
+    
+
+    bool _running;
+    QWaitCondition _runningCond;
+    QMutex _runningMutex;
+    Natron::OutputEffectInstance* _writer;
+public:
+    
+    ActiveBackgroundRender(Natron::OutputEffectInstance* writer);
+    
+    virtual ~ActiveBackgroundRender(){}
+    
+    Natron::OutputEffectInstance* getWriter() const {return _writer;}
+    
+    void notifyFinished();
+    
+    void blockingRender();
+    
+};
+    QMutex _activeRenderersMutex;
+    std::vector<ActiveBackgroundRender*> _activeRenderers;
+
 
 };
 
@@ -392,51 +444,16 @@ private:
 
 namespace Natron{
 
-inline void errorDialog(const std::string& title,const std::string& message){
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if(!topLvlInstance->isBackground()){
-        topLvlInstance->errorDialog(title,message);
-    }else{
-        std::cout << "ERROR: " << message << std::endl;
-    }
+void errorDialog(const std::string& title,const std::string& message);
+
+void warningDialog(const std::string& title,const std::string& message);
     
-}
-
-inline void warningDialog(const std::string& title,const std::string& message){
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if(!topLvlInstance->isBackground()){
-        topLvlInstance->warningDialog(title,message);
-    }else{
-        std::cout << "WARNING: "<< message << std::endl;
-    }
-}
-
-inline void informationDialog(const std::string& title,const std::string& message){
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if(!topLvlInstance->isBackground()){
-        topLvlInstance->informationDialog(title,message);
-    }else{
-        std::cout << "INFO: "<< message << std::endl;
-    }
-}
-
-inline Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
+void informationDialog(const std::string& title,const std::string& message);
+    
+Natron::StandardButton questionDialog(const std::string& title,const std::string& message,Natron::StandardButtons buttons =
         Natron::StandardButtons(Natron::Yes | Natron::No),
-                                              Natron::StandardButton defaultButton = Natron::NoButton){
-    
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
-    assert(topLvlInstance);
-    if(!topLvlInstance->isBackground()){
-        return topLvlInstance->questionDialog(title,message,buttons,defaultButton);
-    }else{
-        std::cout << "QUESTION ASKED: " << message << std::endl;
-        std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
-        return Natron::Yes;
-    }
-}
+                                      Natron::StandardButton defaultButton = Natron::NoButton);
+
 } // namespace Natron
 
 

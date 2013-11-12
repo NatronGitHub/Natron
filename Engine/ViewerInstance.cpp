@@ -267,49 +267,49 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
         //inputsRoi only contains 1 element
         EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
+        
         int viewsCount = getApp()->getCurrentProjectViewsCount();
         int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
-        for(int view = 0 ; view < viewsCount ; ++view){
-            boost::shared_ptr<const Natron::Image> inputImage;
-            try{
-                inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
-            }catch(...){
-                //plugin should have posted a message
-                QMutexLocker locker(&_usingOpenGLMutex);
-                _usingOpenGL = true;
-                emit doUnmapPBO();
-                while(_usingOpenGL){
-                    _usingOpenGLCond.wait(&_usingOpenGLMutex);
-                }
-                return StatFailed;
+        
+        boost::shared_ptr<const Natron::Image> inputImage;
+        try{
+            inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
+        }catch(...){
+            //plugin should have posted a message
+            QMutexLocker locker(&_usingOpenGLMutex);
+            _usingOpenGL = true;
+            emit doUnmapPBO();
+            while(_usingOpenGL){
+                _usingOpenGLCond.wait(&_usingOpenGLMutex);
             }
-            
-            int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
-            // group of group of rows where first is image coordinate, second is texture coordinate
-            std::vector< std::vector<std::pair<int,int> > > splitRows;
-            U32 k = 0;
-            while (k < rows.size()) {
-                std::vector<std::pair<int,int> > rowsForThread;
-                bool shouldBreak = false;
-                for (int i = 0; i < rowsPerThread; ++i) {
-                    if(k >= rows.size()){
-                        shouldBreak = true;
-                        break;
-                    }
-                    rowsForThread.push_back(make_pair(rows[k],k));
-                    ++k;
-                }
-                
-                splitRows.push_back(rowsForThread);
-                if(shouldBreak){
+            return StatFailed;
+        }
+        
+        int rowsPerThread = std::ceil((double)rows.size()/(double)QThread::idealThreadCount());
+        // group of group of rows where first is image coordinate, second is texture coordinate
+        std::vector< std::vector<std::pair<int,int> > > splitRows;
+        U32 k = 0;
+        while (k < rows.size()) {
+            std::vector<std::pair<int,int> > rowsForThread;
+            bool shouldBreak = false;
+            for (int i = 0; i < rowsPerThread; ++i) {
+                if(k >= rows.size()){
+                    shouldBreak = true;
                     break;
                 }
+                rowsForThread.push_back(make_pair(rows[k],k));
+                ++k;
             }
-#warning "Viewer rendering only a single view for now"
-            QFuture<void> future = QtConcurrent::map(splitRows,
-                                                     boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
-            future.waitForFinished();
+            
+            splitRows.push_back(rowsForThread);
+            if(shouldBreak){
+                break;
+            }
         }
+        QFuture<void> future = QtConcurrent::map(splitRows,
+                                                 boost::bind(&ViewerInstance::renderFunctor,this,inputImage,_1,columns));
+        future.waitForFinished();
+        
     }
     //we released the input image and force the cache to clear exceeding entries
     appPTR->clearExceedingEntriesFromNodeCache();

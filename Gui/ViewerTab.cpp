@@ -492,7 +492,7 @@ _maximized(false)
     
     QObject::connect(_clipToProjectFormatButton,SIGNAL(clicked(bool)),this,SLOT(onClipToProjectButtonToggle(bool)));
     
-    QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),viewer,SLOT(showView(int)));
+    QObject::connect(_viewsComboBox,SIGNAL(currentIndexChanged(int)),this,SLOT(showView(int)));
 
 }
 
@@ -730,3 +730,7 @@ void ViewerTab::leaveEvent(QEvent *event)
     QWidget::leaveEvent(event);
 }
 
+void ViewerTab::showView(int /*view*/){
+    abortRendering();
+    _viewerNode->refreshAndContinueRender();
+}

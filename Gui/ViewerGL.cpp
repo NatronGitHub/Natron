@@ -600,7 +600,7 @@ void ViewerGL::paintGL()
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
-    
+    QMutexLocker locker(&_textureMutex);
     glEnable (GL_TEXTURE_2D);
     if(_displayingImage){
         glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
@@ -1188,6 +1188,7 @@ void ViewerGL::unBindPBO(){
 
 void ViewerGL::copyPBOToRenderTexture(const TextureRect& region){
     assert(_pBOmapped);
+    QMutexLocker locker(&_textureMutex);
     unMapPBO();
     checkGLErrors();
     
@@ -1785,10 +1786,6 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     glLoadIdentity();
     glOrtho(_zoomCtx._lastOrthoLeft,_zoomCtx._lastOrthoRight,_zoomCtx._lastOrthoBottom,_zoomCtx._lastOrthoTop,-1,1);
     glMatrixMode(GL_MODELVIEW);
-}
-
-void ViewerGL::showView(int view){
-    std::cout << "showView not implemented yet." << std::endl;
 }
 
 void ViewerGL::setPersistentMessage(int type,const QString& message){

@@ -41,8 +41,8 @@ void printBackGroundWelcomeMessage(){
     std::cout << NATRON_APPLICATION_NAME << "    " << " version: " << NATRON_VERSION_STRING << std::endl;
     std::cout << ">>>Running in background mode (off-screen rendering only).<<<" << std::endl;
     std::cout << "Please note that the background mode is in early stage and accepts only project files "
-    "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME
-    ". If the background mode doesn't output any result, please adjust your project via the application interface "
+    "that would produce a valid output from the graphical version of " NATRON_APPLICATION_NAME << std::endl;
+    std::cout << "If the background mode doesn't output any result, please adjust your project via the application interface "
     "and then re-try using the background mode." << std::endl;
 }
 
@@ -116,12 +116,6 @@ int main(int argc, char *argv[])
         printBackGroundWelcomeMessage();
     }
     
-    if(isBackGround){
-        std::cout << "Background rendering feature is not fully implemented. Exiting." << std::endl;
-        delete manager;
-        return 1;
-    }
-    
     if(!manager->newAppInstance(isBackGround,projectFile,writers)){
         delete manager;
         return 1;
@@ -132,7 +126,6 @@ int main(int argc, char *argv[])
         delete splashScreen;
     }else{
         //in background mode, exit...
-        
         return 0;
     }
     

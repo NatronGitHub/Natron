@@ -36,6 +36,7 @@ class Project :  public KnobHolder {
     
     QString _projectName;
     QString _projectPath;
+    QString _lastAutoSaveFilePath;
     bool _hasProjectBeenSavedByUser;
     QDateTime _ageSinceLastSave;
     QDateTime _lastAutoSave;
@@ -77,6 +78,8 @@ public:
     const QString& getProjectName() const WARN_UNUSED_RETURN {return _projectName;}
     
     void setProjectName(const QString& name) {_projectName = name;}
+    
+    const QString& getLastAutoSaveFilePath() const {return _lastAutoSaveFilePath;}
     
     const QString& getProjectPath() const WARN_UNUSED_RETURN {return _projectPath;}
     

@@ -273,6 +273,7 @@ private:
     
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
     
+    QTimer* _backgroundProcessAbortTimer;
     
 protected:
     
@@ -280,10 +281,12 @@ protected:
     virtual void run();
     
 public slots:
-        /**
+    /**
      @brief Aborts all computations. This turns on the flag _abortRequested and will inform the engine that it needs to stop.
      **/
     void abortRendering();
+    
+    void checkIfAbortNeeded();
     
     /*
      *@brief Slot called internally by the render() function when it reports progress for the current frame.

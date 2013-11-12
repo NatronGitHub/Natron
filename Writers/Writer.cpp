@@ -246,8 +246,12 @@ void Writer::onKnobValueChanged(Knob* k,Knob::ValueChangedReason /*reason*/){
         
         QString file(fileName.c_str());
         int pos = file.lastIndexOf(QChar('.'));
-        ++pos;
-        file.replace(pos, file.size() - pos, fileName.c_str());
+        if(pos != -1){
+            //found an extension
+            file = file.left(file.lastIndexOf(QChar('.'))); // remove existing extension
+        }
+        file.append(".");
+        file.append(fileType.c_str());
         _fileKnob->setValue(file);
         
         /*checking if channels are supported*/

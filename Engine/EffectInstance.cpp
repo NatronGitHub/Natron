@@ -377,7 +377,9 @@ void EffectInstance::evaluate(Knob* knob,bool isSignificant){
         if (className() != "Viewer") {
             /*if this is a button,we're safe to assume the plug-ins wants to start rendering.*/
             if(knob->typeName() == "Button"){
-                getApp()->startRenderingFullSequence(dynamic_cast<OutputEffectInstance*>(this));
+                QStringList list;
+                list << getName().c_str();
+                getApp()->startWritersRendering(list);
             }
         }
     }

@@ -143,24 +143,24 @@ private:
     QVBoxLayout* _layout;
 };
 
-class RenderingProgressDialog : public QDialog{
+class RenderingProgressDialog : public QDialog {
     
     Q_OBJECT
     
 public:
     
-    RenderingProgressDialog(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
+    RenderingProgressDialog(const QString& sequenceName,int firstFrame,int lastFrame,QWidget* parent = 0);
     
     virtual ~RenderingProgressDialog(){}
     
-public slots:
-        
     void onFrameRendered(int);
     
     void onCurrentFrameProgress(int);
 
-    void onCancelation();
-
+signals:
+    
+    void canceled();
+    
 private:
     QVBoxLayout* _mainLayout;
     QLabel* _totalLabel;
@@ -169,7 +169,6 @@ private:
     QLabel* _perFrameLabel;
     QProgressBar* _perFrameProgress;
     Button* _cancelButton;
-    Natron::OutputEffectInstance* _writer;
     QString _sequenceName;
     int _firstFrame;
     int _lastFrame;
@@ -278,9 +277,7 @@ public:
     void selectNode(NodeGui* node);
     
     AppInstance* getApp() { return _appInstance; }
-    
-    void showProgressDialog(Natron::OutputEffectInstance* writer,const QString& sequenceName,int firstFrame,int lastFrame);
-    
+        
     void updateViewsActions(int viewsCount);
     
     static QKeySequence keySequenceForView(int v);
