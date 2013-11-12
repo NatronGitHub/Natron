@@ -80,7 +80,6 @@ _gui(NULL)
 , _autoSaveMutex(new QMutex)
 , _isBackground(backgroundMode)
 {
-    
     appPTR->registerAppInstance(this);
     appPTR->setAsTopLevelInstance(appID);
 

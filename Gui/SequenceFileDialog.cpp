@@ -2287,6 +2287,10 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         ++_size;
         return true;
     }
+    if(frameIndex < _firstFrame)
+        _firstFrame = frameIndex;
+    if(frameIndex > _lastFrame)
+        _lastFrame = frameIndex;
     int offset = frameIndex - _firstFrame -1; // assuming frameIndex is positive,offset is the index in the bits to look for (starting at 0)
     int bitsIndex = offset / 64; //accessing the proper variable containing the bit
     int bitsOffset = (offset+1) % (64+1);
@@ -2304,10 +2308,7 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         }
         ++_size;
         _isEmpty = false;
-        if(frameIndex < _firstFrame)
-            _firstFrame = frameIndex;
-        if(frameIndex > _lastFrame)
-            _lastFrame = frameIndex;
+
         return true;
     }
     return false;
