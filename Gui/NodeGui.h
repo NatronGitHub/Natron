@@ -57,7 +57,7 @@ public:
     class SerializedState {
         
         const NodeGui* _node;
-        std::map<std::string,std::string> _knobsValues;
+        std::vector<std::pair<std::string,std::string> > _knobsValues;
         std::string _name;
         std::string _className;
         
@@ -84,7 +84,7 @@ public:
         
         SerializedState(const NodeGui* n);
         
-        const std::map<std::string,std::string>& getKnobsValues() const {return _knobsValues;}
+        const std::vector<std::pair<std::string,std::string> >& getKnobsValues() const {return _knobsValues;}
         
         const std::string getName() const {return _name;}
         
