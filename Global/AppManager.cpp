@@ -1225,14 +1225,15 @@ void AppInstance::startRenderingFullSequence(Natron::OutputEffectInstance* write
 ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer)
 : _app(app)
  ,_process(new QProcess)
+ ,_hasProcessBeenDeleted(false)
  ,_writer(writer)
  ,_dialog(NULL)
 {
     
     
-    QObject::connect(_process.get(),SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
-    QObject::connect(_process.get(),SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
-    QObject::connect(_process.get(),SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
+    QObject::connect(_process,SIGNAL(readyReadStandardOutput()),this,SLOT(onStandardOutputBytesWritten()));
+    QObject::connect(_process,SIGNAL(error(QProcess::ProcessError)),this,SLOT(onProcessError(QProcess::ProcessError)));
+    QObject::connect(_process,SIGNAL(finished(int,QProcess::ExitStatus)),this,SLOT(onProcessEnd(int,QProcess::ExitStatus)));
     int firstFrame,lastFrame;
     writer->getFrameRange(&firstFrame, &lastFrame);
     if(firstFrame > lastFrame)
@@ -1254,6 +1255,12 @@ ProcessHandler::ProcessHandler(AppInstance* app,const QString& programPath,const
     
 }
 
+ProcessHandler::~ProcessHandler(){
+    if(!_hasProcessBeenDeleted)
+        delete _process;
+}
+
+
 void ProcessHandler::onStandardOutputBytesWritten(){
     char buf[10000];
     _process->readLine(buf, 10000);
@@ -1271,10 +1278,11 @@ void ProcessHandler::onStandardOutputBytesWritten(){
 
 void ProcessHandler::onProcessCanceled(){
     _dialog->hide();
-    _process->write(kAbortRenderingString, strnlen(kAbortRenderingString,20));
+    if(_process->write(kAbortRenderingString, strnlen(kAbortRenderingString,200)) == -1){
+        std::cout << "Error writing to the process standard input" << std::endl;
+    }
     _process->waitForFinished();
-    Natron::informationDialog(_writer->getName(),"Render finished!");
-    delete this;
+
 }
 
 void ProcessHandler::onProcessError(QProcess::ProcessError err){
@@ -1284,19 +1292,18 @@ void ProcessHandler::onProcessError(QProcess::ProcessError err){
         Natron::errorDialog(_writer->getName(),"The render process crashed");
         //@TODO: find out a way to get the backtrace
     }
-    _process->kill();
-    delete this;
 }
 
 void ProcessHandler::onProcessEnd(int exitCode,QProcess::ExitStatus stat){
     if(stat == QProcess::CrashExit){
         Natron::errorDialog(_writer->getName(),"The render process exited after a crash");
+        _hasProcessBeenDeleted = true;
+
     }else if(exitCode == 1){
         Natron::errorDialog(_writer->getName(), "The process ended with a return code of 1, this indicates an undetermined problem occured.");
     }else{
         Natron::informationDialog(_writer->getName(),"Render finished!");
     }
-    
     _dialog->hide();
     delete this;
 }

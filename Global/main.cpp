@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
         delete splashScreen;
     }else{
         //in background mode, exit...
+        delete manager;
         return 0;
     }
     

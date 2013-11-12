@@ -378,7 +378,14 @@ void ViewerInstance::wakeUpAnySleepingThread(){
     _usingOpenGL = false;
     _usingOpenGLCond.wakeAll();
 }
-
+void ViewerInstance::allocateFrameStorage(){
+    QMutexLocker locker(&_usingOpenGLMutex);
+    _interThreadInfos._pixelsCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
+    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._pixelsCount);
+    _usingOpenGL = false;
+    _usingOpenGLCond.wakeOne();
+    
+}
 void ViewerInstance::updateViewer(){
     QMutexLocker locker(&_usingOpenGLMutex);
     
@@ -450,14 +457,7 @@ void ViewerInstance::cachedEngine(){
     updateViewer();
 }
 
-void ViewerInstance::allocateFrameStorage(){
-    QMutexLocker locker(&_usingOpenGLMutex);
-    _interThreadInfos._pixelsCount = _interThreadInfos._textureRect.w * _interThreadInfos._textureRect.h * 4;
-    _uiContext->viewer->allocateFrameStorage(_interThreadInfos._pixelsCount);
-     _usingOpenGL = false;
-    _usingOpenGLCond.wakeOne();
-    
-}
+
 
 void ViewerInstance::setDesiredFPS(double d){
     QMutexLocker timerLocker(&_timerMutex);

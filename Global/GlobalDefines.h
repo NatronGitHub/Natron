@@ -43,7 +43,7 @@ typedef OfxPointD RenderScale;
 #define kFrameRenderedString "Frame rendered: "
 #define kProgressChangedString "Progress changed: "
 #define kRenderingFinishedString "Rendering finished"
-#define kAbortRenderingString "Abort rendering"
+#define kAbortRenderingString "Abort rendering\n"
 
 #ifdef __NATRON_WIN32__
 namespace NatronWindows{

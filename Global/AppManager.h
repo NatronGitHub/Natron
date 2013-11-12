@@ -67,14 +67,15 @@ class ProcessHandler : public QObject {
     Q_OBJECT
     
     AppInstance* _app;//< pointer to the app executing this process
-    boost::scoped_ptr<QProcess> _process; //< the process executing the render
+    QProcess* _process; //< the process executing the render
+    bool _hasProcessBeenDeleted;
     Natron::OutputEffectInstance* _writer;//< pointer to the writer actually rendering
     RenderingProgressDialog* _dialog;//< a dialog to report progress and allow the user to cancel the process
 public:
     
     ProcessHandler(AppInstance* app,const QString& programPath,const QStringList& programArgs,Natron::OutputEffectInstance* writer);
     
-    virtual ~ProcessHandler(){}
+    virtual ~ProcessHandler();
     
 public slots:
     

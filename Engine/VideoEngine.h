@@ -45,7 +45,32 @@ class ViewerInstance;
 class Writer;
 class OfxNode;
 class TimeLine;
+class QSocketNotifier;
 
+/**
+ * @brief For background process only: this is a separate thread that constantly check
+ * if stdin has some data available. If it has the kAbortRenderingString, it will abort
+ * the render.
+ **/
+class VideoEngine;
+class BackgroundProcessAborter : public QObject{
+    
+    Q_OBJECT
+    
+    VideoEngine* _engine;//< ptr to the engine to abort
+    boost::scoped_ptr<QSocketNotifier> _notifier;
+    
+public:
+    
+    BackgroundProcessAborter(VideoEngine* engine);
+    
+    virtual ~BackgroundProcessAborter();
+
+public slots:
+    
+    void onTextWritten();
+
+};
 
 
 /**
@@ -272,8 +297,8 @@ private:
     timeval _startRenderFrameTime;/*!< stores the time at which the QtConcurrent::map call was made*/
     
     boost::shared_ptr<TimeLine> _timeline;/*!< ptr to the timeline*/
-    
-    QTimer* _backgroundProcessAbortTimer;
+        
+    BackgroundProcessAborter* _processAborter;/*!< for background processes only,read the class description*/
     
 protected:
     
@@ -286,7 +311,6 @@ public slots:
      **/
     void abortRendering();
     
-    void checkIfAbortNeeded();
     
     /*
      *@brief Slot called internally by the render() function when it reports progress for the current frame.

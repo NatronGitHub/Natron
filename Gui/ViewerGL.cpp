@@ -600,31 +600,33 @@ void ViewerGL::paintGL()
     glMatrixMode (GL_MODELVIEW);
     glLoadIdentity();
     
-    QMutexLocker locker(&_textureMutex);
-    glEnable (GL_TEXTURE_2D);
-    if(_displayingImage){
-        glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
-        // debug (so the OpenGL debugger can make a breakpoint here)
-        // GLfloat d;
-        //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-        activateShaderRGB();
-        checkGLErrors();
-    }else{
-        glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
-        checkGLErrors();
-        if(_hasHW && !shaderBlack->bind()){
-            cout << qPrintable(shaderBlack->log()) << endl;
+    {
+        QMutexLocker locker(&_textureMutex);
+        glEnable (GL_TEXTURE_2D);
+        if(_displayingImage){
+            glBindTexture(GL_TEXTURE_2D, _defaultDisplayTexture->getTexID());
+            // debug (so the OpenGL debugger can make a breakpoint here)
+            // GLfloat d;
+            //  glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
+            activateShaderRGB();
             checkGLErrors();
+        }else{
+            glBindTexture(GL_TEXTURE_2D, _blackTex->getTexID());
+            checkGLErrors();
+            if(_hasHW && !shaderBlack->bind()){
+                cout << qPrintable(shaderBlack->log()) << endl;
+                checkGLErrors();
+            }
+            if(_hasHW)
+                shaderBlack->setUniformValue("Tex", 0);
+            checkGLErrors();
+            
         }
-        if(_hasHW)
-            shaderBlack->setUniformValue("Tex", 0);
         checkGLErrors();
-        
+        clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
+        checkGLErrors();
+        drawRenderingVAO();
     }
-    checkGLErrors();
-    clearColorBuffer(_clearColor.redF(),_clearColor.greenF(),_clearColor.blueF(),_clearColor.alphaF());
-    checkGLErrors();
-    drawRenderingVAO();
     glBindTexture(GL_TEXTURE_2D, 0);
     
     if(_displayingImage){

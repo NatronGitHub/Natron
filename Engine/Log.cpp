@@ -65,7 +65,7 @@ public:
 
     void beginFunction(const std::string& callerName,const std::string& function){
         if(!_file){
-            QString filename(NATRON_APPLICATION_NAME "_log.txt");
+            QString filename(NATRON_APPLICATION_NAME+QString("_log")+ QString::number(qApp->applicationPid()) +".txt");
             open(filename.toStdString());
         }
         QMutexLocker locker(&_lock);

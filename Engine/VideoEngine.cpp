@@ -9,6 +9,7 @@
 
 #include "VideoEngine.h"
 
+#include <unistd.h> //Provides STDIN_FILENO
 #include <iterator>
 #include <cassert>
 #include <QtCore/QMutex>
@@ -17,6 +18,7 @@
 #include <QtCore/QThread>
 #include <QtConcurrentMap>
 #include <QtConcurrentRun>
+#include <QtCore/QSocketNotifier>
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -30,6 +32,8 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/Log.h"
+
 #include "Engine/EffectInstance.h"
 #include "Writers/Writer.h"
 #include "Readers/Reader.h"
@@ -48,8 +52,6 @@ using namespace Natron;
 using std::make_pair;
 using std::cout; using std::endl;
 
-
-#define NATRON_ABORT_CHECK_INTERVAL 1000 //timer interval for abort checking in milliseconds
 
 VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 : QThread(parent)
@@ -76,16 +78,15 @@ VideoEngine::VideoEngine(Natron::OutputEffectInstance* owner,QObject* parent)
 , _currentRunArgs()
 , _startRenderFrameTime()
 , _timeline(owner->getNode()->getApp()->getTimeLine())
-, _backgroundProcessAbortTimer(new QTimer)
+, _processAborter(NULL)
 {
-    if(owner->getApp()->isBackground()){
-        QObject::connect(_backgroundProcessAbortTimer,SIGNAL(timeout()),this,SLOT(checkIfAbortNeeded()));
-        _backgroundProcessAbortTimer->start(NATRON_ABORT_CHECK_INTERVAL);
-    }
+    
 }
 
 VideoEngine::~VideoEngine() {
-    
+    if(_processAborter){
+        delete _processAborter;
+    }
 }
 
 void VideoEngine::quitEngineThread(){
@@ -116,6 +117,11 @@ void VideoEngine::render(int frameCount,
                          bool fitFrameToViewer,
                          bool forward,
                          bool sameFrame) {
+    
+    
+    if(_tree.getOutput()->getApp()->isBackground() && !_processAborter){
+        _processAborter = new BackgroundProcessAborter(this);
+    }
     
     /*If the Tree was never built and we don't want to update the Tree, force an update
      so there's no null pointers hanging around*/
@@ -277,7 +283,6 @@ bool VideoEngine::stopEngine() {
         }
     }
 
-    
     {
         QMutexLocker locker(&_mustQuitMutex);
         if (_mustQuit) {
@@ -752,13 +757,26 @@ bool VideoEngine::mustQuit() const{
     return _mustQuit;
 }
 
-void VideoEngine::checkIfAbortNeeded(){
-    QTextStream qtin(stdin);
-    if(qtin.atEnd()){
-        return;
-    }
-    QString line = qtin.readLine();
+BackgroundProcessAborter::BackgroundProcessAborter(VideoEngine* engine)
+:
+  _engine(engine)
+, _notifier(new QSocketNotifier(STDIN_FILENO,QSocketNotifier::Read))
+{
+    QObject::connect(_notifier.get(), SIGNAL(activated(int)), this, SLOT(onTextWritten()));
+}
+
+BackgroundProcessAborter::~BackgroundProcessAborter(){}
+
+
+void BackgroundProcessAborter::onTextWritten(){
+    QTextStream qstdin(stdin);
+    QString line = qstdin.readLine();
+#ifdef NATRON_LOG
+    Log::beginFunction("ProcessAborter","run");
+    Log::print(QString("Process received message "+line).toStdString());
+    Log::endFunction("ProcessAborter","run");
+#endif
     if(line.contains(kAbortRenderingString)){
-        abortRendering();
+        _engine->abortRendering();
     }
 }
