@@ -20,6 +20,7 @@
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
 #include <QtConcurrentRun>
+#include <QtConcurrentMap>
 #if QT_VERSION < 0x050000
 #include <QtGui/QDesktopServices>
 #else
