@@ -121,6 +121,8 @@ public:
     Gui* getGui() const {return _gui;}
     
     void refreshAllEdges();
+
+    bool areAllPreviewTurnedOff() const { return _previewsTurnedOff; }
     
 public slots:
     

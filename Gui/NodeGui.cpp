@@ -122,7 +122,7 @@ NodeGui::NodeGui(NodeGraph* dag,
         }
 	}
 
-    if(_internalNode->makePreviewByDefault()){
+    if(_internalNode->makePreviewByDefault() && !_graph->areAllPreviewTurnedOff()){
         togglePreview();
     }
     
