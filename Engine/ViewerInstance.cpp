@@ -195,12 +195,16 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
     }
     _interThreadInfos._textureRect = textureRect;
         
+    int viewsCount = getApp()->getCurrentProjectViewsCount();
+    int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
+
     FrameKey key(time,
                  hash().value(),
                  zoomFactor,
                  viewer->getExposure(),
                  viewer->lutType(),
                  viewer->byteMode(),
+                 view,
                  rod,
                  dispW,
                  textureRect);
@@ -267,10 +271,7 @@ Natron::Status ViewerInstance::renderViewer(SequenceTime time,bool fitToViewer){
         EffectInstance::RoIMap inputsRoi = getRegionOfInterest(time, scale, roi);
         //inputsRoi only contains 1 element
         EffectInstance::RoIMap::const_iterator it = inputsRoi.begin();
-        
-        int viewsCount = getApp()->getCurrentProjectViewsCount();
-        int view = viewsCount > 0 ? _uiContext->getCurrentView() : 0;
-        
+
         boost::shared_ptr<const Natron::Image> inputImage;
         try{
             inputImage = it->first->renderRoI(time, scale,view,it->second,byPassCache);
