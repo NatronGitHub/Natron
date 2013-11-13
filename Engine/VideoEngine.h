@@ -53,12 +53,10 @@ class QSocketNotifier;
  * the render.
  **/
 class VideoEngine;
-class BackgroundProcessAborter : public QObject{
+class BackgroundProcessAborter : public QThread{
     
-    Q_OBJECT
     
     VideoEngine* _engine;//< ptr to the engine to abort
-    boost::scoped_ptr<QSocketNotifier> _notifier;
     
 public:
     
@@ -66,10 +64,10 @@ public:
     
     virtual ~BackgroundProcessAborter();
 
-public slots:
+    virtual void run();
     
-    void onTextWritten();
-
+    void stopChecking();
+    
 };
 
 

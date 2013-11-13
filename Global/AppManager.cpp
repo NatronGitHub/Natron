@@ -614,6 +614,7 @@ AppManager::AppManager()
                                                _settings->_cacheSettings.maxPlayBackMemoryPercent)*getSystemTotalRAM(),1))
 ,_viewerCache(new Cache<FrameEntry>("ViewerCache",0x1,_settings->_cacheSettings.maxDiskCache
 ,_settings->_cacheSettings.maxPlayBackMemoryPercent))
+,_textRenderer(new TextRenderer)
 {
     connect(ofxHost.get(), SIGNAL(toolButtonAdded(QStringList,QString,QString,QString)),
             this, SLOT(addPluginToolButtons(QStringList,QString,QString,QString)));
@@ -1278,7 +1279,7 @@ void ProcessHandler::onStandardOutputBytesWritten(){
 
 void ProcessHandler::onProcessCanceled(){
     _dialog->hide();
-    QByteArray ba(kAbortRenderingString);
+    QByteArray ba(kAbortRenderingString"\n");
     if(_process->write(ba) == -1){
         std::cout << "Error writing to the process standard input" << std::endl;
     }

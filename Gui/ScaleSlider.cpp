@@ -36,6 +36,7 @@ QWidget(parent)
 , _displayedValues()
 , _XValues()
 , _dragging(false)
+, _font(new QFont("Times",8))
 {
 
     setContentsMargins(0, 0, 0, 0);
@@ -44,7 +45,7 @@ QWidget(parent)
 }
 
 ScaleSlider::~ScaleSlider(){
-    
+    delete _font;
 }
 
 static void fitInGui(double size,
@@ -122,11 +123,13 @@ void ScaleSlider::updateScale(){
     }else if(_type == Natron::EXP_SCALE){
         logScale(_nbValues, _minimum, _maximum,1./2.2,&_values);
     }
-    fitInGui(size().width(),fontMetrics(),_values,&_displayedValues,&_XValues);
+    QFontMetrics m(*_font);
+    fitInGui(size().width(),m,_values,&_displayedValues,&_XValues);
 }
 void ScaleSlider::paintEvent(QPaintEvent *e){
     updateScale();
-    int borderHeight = height() - fontMetrics().height();
+    QFontMetrics metrics(*_font);
+    int borderHeight = height() - metrics.height()*2;
     Q_UNUSED(e);
     QColor bg(50,50,50,255);
     int w = size().width();
@@ -139,11 +142,12 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     p.fillRect(0, 0, w, h, bg);
     
     p.setPen(scaleColor);
-    p.setFont(font());
+    p.setFont(*_font);
 
     p.drawLine(BORDER_OFFSET,borderHeight,w-BORDER_OFFSET,borderHeight); // horizontal line
     
-    int y = fontMetrics().height()+5;
+    
+    int y = height()-metrics.height();
 
     // drawing ticks & sub-ticks
     int precision = 0;
@@ -158,7 +162,7 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
         double coord = toWidgetCoords(_displayedValues[i]);
         double xPos = coord;
         if(i > 0){
-            int sizeOfStr = fontMetrics().width(numberStr);
+            int sizeOfStr = metrics.width(numberStr);
             if(i != _displayedValues.size() -1){
                 xPos = coord - sizeOfStr/2;
             }else{

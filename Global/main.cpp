@@ -74,21 +74,21 @@ int main(int argc, char *argv[])
         if(args.at(i).contains("." NATRON_PROJECT_FILE_EXTENION)){
             if(expectWriterNameOnNextArg){
                 manager->printUsage();
-                delete manager;
+                AppManager::quit();
                 return 1;
             }
             projectFile = args.at(i);
         }else if(args.at(i) == "--background"){
             if(expectWriterNameOnNextArg){
                 manager->printUsage();
-                delete manager;
+                AppManager::quit();
                 return 1;
             }
             isBackGround = true;
         }else if(args.at(i) == "--writer"){
             if(expectWriterNameOnNextArg){
                 manager->printUsage();
-                delete manager;
+                AppManager::quit();
                 return 1;
             }
             expectWriterNameOnNextArg = true;
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     }
     
     if(!manager->newAppInstance(isBackGround,projectFile,writers)){
-        delete manager;
+        AppManager::quit();
         return 1;
     }
 	  
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
         delete splashScreen;
     }else{
         //in background mode, exit...
-        delete manager;
+        AppManager::quit();
         return 0;
     }
     

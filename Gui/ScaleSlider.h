@@ -25,6 +25,7 @@
 
 using Natron::Scale_Type;
 
+class QFont;
 class ScaleSlider : public QWidget
 {
     Q_OBJECT
@@ -37,6 +38,7 @@ class ScaleSlider : public QWidget
     std::vector<double> _displayedValues;
     std::vector<double> _XValues; // lut where each values is the coordinates of the value mapped on the slider
     bool _dragging;
+    QFont* _font;
     
 public:
     

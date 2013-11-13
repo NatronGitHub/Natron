@@ -760,23 +760,32 @@ bool VideoEngine::mustQuit() const{
 BackgroundProcessAborter::BackgroundProcessAborter(VideoEngine* engine)
 :
   _engine(engine)
-, _notifier(new QSocketNotifier(STDIN_FILENO,QSocketNotifier::Read))
 {
-    QObject::connect(_notifier.get(), SIGNAL(activated(int)), this, SLOT(onTextWritten()));
+    setTerminationEnabled();
+}
+
+void BackgroundProcessAborter::run(){
+    for(;;){
+       
+        QTextStream qstdin(stdin);
+        QString line = qstdin.readLine();
+#ifdef NATRON_LOG
+        Log::beginFunction("ProcessAborter","run");
+        Log::print(QString("Process received message "+line).toStdString());
+        Log::endFunction("ProcessAborter","run");
+#endif
+        if(line.contains(kAbortRenderingString)){
+            _engine->abortRendering();
+        }
+
+        msleep(1000);
+    }
+}
+
+void BackgroundProcessAborter::stopChecking(){
+    
 }
 
 BackgroundProcessAborter::~BackgroundProcessAborter(){}
 
 
-void BackgroundProcessAborter::onTextWritten(){
-    QTextStream qstdin(stdin);
-    QString line = qstdin.readLine();
-#ifdef NATRON_LOG
-    Log::beginFunction("ProcessAborter","run");
-    Log::print(QString("Process received message "+line).toStdString());
-    Log::endFunction("ProcessAborter","run");
-#endif
-    if(line.contains(kAbortRenderingString)){
-        _engine->abortRendering();
-    }
-}

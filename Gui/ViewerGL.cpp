@@ -201,23 +201,6 @@ namespace
 
 namespace Natron{
     
-    
-    struct TextRendererPrivate;
-    class TextRenderer : public Singleton<TextRenderer> {
-        
-    public:
-        
-        TextRenderer();
-        
-        virtual ~TextRenderer();
-        
-        void renderText(float x, float y, const QString &text,const QColor& color,const QFont& font);
-        
-    private:
-        typedef std::vector<std::pair<QFont,TextRendererPrivate*> > FontRenderers;
-        FontRenderers _renderers;
-    };
-    
     struct TextRendererPrivate
     {
         TextRendererPrivate(const QFont& font);
@@ -370,8 +353,7 @@ namespace Natron{
     
     
     TextRenderer::TextRenderer() :
-    Singleton<TextRenderer>()
-    , _renderers()
+    _renderers()
     {
     }
     
@@ -1781,7 +1763,7 @@ void ViewerGL::renderText( int x, int y, const QString &string,const QColor& col
     glOrtho(0,w,0,h,-1,1);
     glMatrixMode(GL_MODELVIEW);
     QPointF pos = toWidgetCoordinates(x, y);
-    TextRenderer* t = TextRenderer::instance();
+    TextRenderer* t = appPTR->getTextRenderer();
     t->renderText(pos.x(),h-pos.y(),string,color,font);
     checkGLErrors();
     glMatrixMode (GL_PROJECTION);
