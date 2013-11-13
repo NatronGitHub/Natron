@@ -122,33 +122,37 @@ OfxStatus Natron::OfxHost::vmessage(const char* type,
 {
     assert(type);
     assert(format);
-    bool isQuestion = false;
-    const char *prefix = "Message : ";
+    char buf[10000];
+    sprintf(buf, format,args);
+    std::string message(buf);
+    
     if (strcmp(type, kOfxMessageLog) == 0) {
-        prefix = "Log : ";
+        
+        std::cout << message << std::endl;
+        
+    }else if(strcmp(type, kOfxMessageFatal) == 0 ||
+             strcmp(type, kOfxMessageError) == 0) {
+        
+        Natron::errorDialog(NATRON_APPLICATION_NAME, message);
+        
+    }else if(strcmp(type, kOfxMessageWarning)){
+        
+        Natron::warningDialog(NATRON_APPLICATION_NAME, message);
+        
+    }else if(strcmp(type, kOfxMessageMessage)){
+        
+        Natron::informationDialog(NATRON_APPLICATION_NAME, message);
+        
+    }else if(strcmp(type, kOfxMessageQuestion) == 0) {
+        
+        if(Natron::questionDialog(NATRON_APPLICATION_NAME, message) == Natron::Yes){
+            return kOfxStatReplyYes;
+        }else{
+            return kOfxStatReplyNo;
+        }
+        
     }
-    else if(strcmp(type, kOfxMessageFatal) == 0 ||
-            strcmp(type, kOfxMessageError) == 0) {
-        prefix = "Error : ";
-    }
-    else if(strcmp(type, kOfxMessageQuestion) == 0)  {
-        prefix = "Question : ";
-        isQuestion = true;
-    }
-    
-    // Just dump our message to stdout, should be done with a proper
-    // UI in a full ap, and post a dialogue for yes/no questions.
-    fputs(prefix, stdout);
-    vprintf(format, args);
-    printf("\n");
-    
-    if(isQuestion) {
-        /// cant do this properly inour example, as we need to raise a dialogue to ask a question, so just return yes
-        return kOfxStatReplyYes;
-    }
-    else {
-        return kOfxStatOK;
-    }
+    return kOfxStatReplyDefault;
 }
 
 OfxStatus Natron::OfxHost::setPersistentMessage(const char* type,

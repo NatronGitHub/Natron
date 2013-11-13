@@ -205,7 +205,7 @@ namespace Natron{
     };
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
-    void debugImage(Natron::Image* img);
+    void debugImage(Natron::Image* img,const QString& filename = QString());
     
 }//namespace Natron
 #endif // IMAGE_H
