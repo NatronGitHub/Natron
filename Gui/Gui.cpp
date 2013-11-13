@@ -130,6 +130,9 @@ Gui::~Gui()
     delete _nodeGraphTab;
     delete _appInstance;
     _viewerTabs.clear();
+    for(U32 i = 0; i < _toolButtons.size();++i){
+        delete _toolButtons[i];
+    }
 }
 
 bool Gui::exit(){
@@ -833,7 +836,7 @@ NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
 : _graphScene(0)
 , _nodeGraphArea(0)
 {
-    _graphScene = new QGraphicsScene;
+    _graphScene = new QGraphicsScene(gui);
 	_graphScene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(gui,_graphScene,parent);
     
@@ -841,7 +844,9 @@ NodeGraphTab::NodeGraphTab(Gui* gui,QWidget* parent)
 
 void Gui::splitPaneHorizontally(TabWidget* what){
     QSplitter* container = dynamic_cast<QSplitter*>(what->parentWidget());
-    if(!container) return;
+    if(!container){
+        return;
+    }
     
     /*We need to know the position in the container layout of the old tab widget*/
     int oldIndex = container->indexOf(what);

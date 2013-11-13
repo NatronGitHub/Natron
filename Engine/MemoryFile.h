@@ -28,20 +28,23 @@
 
 /*
  Read/write memory-mapped file wrapper.
+ A memory-mapped file is a disk file that is mapped into the process
+ virtual address space (i.e: RAM). Closing the mapped-file is equivalen
  It handles only files that can be wholly loaded
  into the address space of the process.
- The constructor opens the file, the destructor closes it.
+ The constructor attemps to create the file if the file
+ doesn't exist alredy  and opens the mapping of the (created) file into the RAM. the destructor closes it.
  The "data" function returns a pointer to the beginning of the file,
  if the file has been successfully opened, otherwise it returns 0.
  The "size" function returns the initial length of the file in bytes,
  if the file has been successfully opened, otherwise it returns 0.
- Afterwards it returns the size the physical file will get if it is closed now.
+ Afterwards it returns the size of the physical file if the mapping is closed.
  The "resize" function changes the number of bytes of the significant
  part of the file. The resulting size can be retrieved
  using the "size" function.
  The "reserve" grows the phisical file to the specified number of bytes.
  The size of the resulting file can be retrieved using "capacity".
- Memory mapped files cannot be shrinked;
+ The capacity  cannot be shrinked with reserve;
  a value smaller than the current capacity is ignored.
  The "capacity()" function return the size the physical file has at this time.
  The "flush" function ensure that the disk is updated

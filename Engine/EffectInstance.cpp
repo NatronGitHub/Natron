@@ -280,7 +280,8 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
              to remove them.*/
             for (RoIMap::const_iterator it2 = inputsRoi.begin(); it2!= inputsRoi.end(); ++it2) {
                 try{
-                    inputImages.push_back(it2->first->renderRoI(time, scale,view, it2->second,byPassCache));
+                    boost::shared_ptr<const Natron::Image> inputImg = it2->first->renderRoI(time, scale,view, it2->second,byPassCache);
+                    inputImages.push_back(inputImg);
                 }catch(const std::exception& e){
                     throw e;
                 }

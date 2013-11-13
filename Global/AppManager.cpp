@@ -432,6 +432,7 @@ AppInstance* AppManager::newAppInstance(bool background,const QString& projectNa
         instance = new AppInstance(background,_availableID,projectName,writers);
     }catch(const std::exception& e){
         Natron::errorDialog(NATRON_APPLICATION_NAME, e.what());
+        delete instance;
         printUsage();
         return NULL;
     }

@@ -579,11 +579,15 @@ void VideoEngine::updateTreeAndContinueRender(bool initViewer){
 
 RenderTree::RenderTree(Natron::OutputEffectInstance* output):
 _output(output)
+,_sorted()
 ,_isViewer(false)
 ,_isOutputOpenFXNode(false)
 ,_treeMutex(QMutex::Recursive) /*recursive lock*/
 ,_firstFrame(0)
 ,_lastFrame(0)
+,_treeVersionValid(false)
+,_renderOutputFormat()
+,_projectViewsCount(1)
 {
     assert(output);
 }

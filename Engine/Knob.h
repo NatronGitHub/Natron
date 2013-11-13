@@ -249,7 +249,10 @@ class KnobHolder {
 public:
     friend class Knob;
     
-    KnobHolder(AppInstance* appInstance):_app(appInstance),_knobs(){}
+    KnobHolder(AppInstance* appInstance):
+        _app(appInstance)
+      , _knobs()
+      , _betweenBeginEndParamChanged(false){}
     
     virtual ~KnobHolder(){
         for (unsigned int i = 0; i < _knobs.size(); ++i) {

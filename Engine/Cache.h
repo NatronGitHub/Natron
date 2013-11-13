@@ -155,12 +155,14 @@ public:
 
     enum StorageMode{RAM=0,DISK};
 
-    Buffer():_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM),_allocated(false){}
+    Buffer():path(),_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM){}
 
     ~Buffer(){deallocate();}
 
     void allocate(size_t count, int cost, std::string path = std::string()) {
-        if (_allocated) {
+        assert(_path.empty());
+        assert((!_buffer && !_backingFile) || (_buffer && !_backingFile) || (!_buffer && _backingFile));
+        if (_buffer || _backingFile) {
             return;
         }
 
@@ -182,16 +184,14 @@ public:
             _buffer = new DataType[count];
         }
         _size = count;
-        _allocated = true;
     }
 
     void reOpenFileMapping() const {
-        if(_allocated || _storageMode != DISK || _size == 0){
-            throw std::logic_error("Buffer<T>::allocate(...) must have been called once before calling reOpenFileMapping()!");
-        }
+        assert(!_backingFile && _storageMode == DISK && _size > 0);
         try{
             _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& r){
+            delete _backingFile;
             std::cout << r.what() << std::endl;
             throw std::bad_alloc();
         }
@@ -200,7 +200,8 @@ public:
     void restoreBufferFromFile(const std::string& path)  {
         try{
             _backingFile  = new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create);
-        }catch(const std::runtime_error& r){
+        }catch(const std::runtime_error& /*r*/){
+            delete _backingFile;
             throw std::bad_alloc();
         }
         _path = path;
@@ -209,18 +210,14 @@ public:
     }
 
     void deallocate() {
-        if(!_allocated) {
-            return;
-        }
-        _allocated = false;
+
         if (_storageMode == RAM) {
             delete [] _buffer;
-            _buffer = 0;
+            _buffer = NULL;
         } else {
             delete _backingFile;
             _backingFile = NULL;
         }
-        _allocated = false;
     }
 
     void removeAnyBackingFile() const{
@@ -267,7 +264,6 @@ private:
     mutable MemoryFile* _backingFile;
 
     StorageMode _storageMode;
-    bool _allocated;
 };
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
@@ -547,10 +543,11 @@ public:
              */
     boost::shared_ptr<ValueType> newEntry(const typename ValueType::key_type& params, size_t count, int cost) const {
         QMutexLocker locker(&_lock);
-        ValueType* value;
+        ValueType* value = 0;
         try{
             value = new ValueType(params, count, cost, QString(getCachePath()+QDir::separator()).toStdString());
-        } catch(const std::bad_alloc& e) {
+        } catch(const std::bad_alloc& /*e*/) {
+            delete value;
             return boost::shared_ptr<ValueType>();
         }
         boost::shared_ptr<ValueType> cachedValue(value);

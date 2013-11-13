@@ -180,6 +180,8 @@ NodeGui::~NodeGui(){
             delete e;
         }
     }
+    delete _selectedGradient;
+    delete _defaultGradient;
 }
 
 void NodeGui::updateShape(int width,int height){

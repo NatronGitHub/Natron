@@ -132,7 +132,7 @@ static U16 hipart(const float f)
         float f;
         unsigned short us[2];
     } tmp;
-
+    tmp.us[0] = tmp.us[1] = 0;
     tmp.f = f;
 
     if (O32_HOST_ORDER == O32_BIG_ENDIAN) {
@@ -322,16 +322,22 @@ void Lut::from_float(float *to, const float *from, const float *alpha, int W, in
 
 void getOffsetsForPacking(Lut::PackedPixelsFormat format, int *r, int *g, int *b, int *a)
 {
-    if (format == Lut::RGBA) {
-        *r = 0;
-        *g = 1;
-        *b = 2;
-        *a = 3;
-    } else if (format == Lut::BGRA) {
+    if (format == Lut::BGRA) {
         *b = 0;
         *g = 1;
         *r = 2;
         *a = 3;
+    }else if(format == Lut::RGBA){
+        *r = 0;
+        *g = 1;
+        *b = 2;
+        *a = 3;
+    }else{
+        *r = -1;
+        *g = -1;
+        *b = -1;
+        *a = -1;
+        assert(false);
     }
 }
 

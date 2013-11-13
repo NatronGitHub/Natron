@@ -66,7 +66,9 @@ sanitizer{
     QMAKE_CXXFLAGS += -fsanitize=address -fsanitize-undefined-trap-on-error -fno-omit-frame-pointer -fno-optimize-sibling-calls
     QMAKE_LFLAGS += -fsanitize=address -g
 }
+!sanitizer{
   QMAKE_CXXFLAGS_RELEASE += -O3
+}
   QMAKE_CXXFLAGS_WARN_ON += -Wextra -Wno-c++11-extensions
   QMAKE_CXXFLAGS += -std=c++11
 }
