@@ -97,7 +97,8 @@ NodeGui::NodeGui(NodeGraph* dag,
     _channelsPixmap= new QGraphicsPixmapItem(pixmap,this);
 	
     _nameItem = new QGraphicsTextItem(_internalNode->getName().c_str(),this);
-    
+    _nameItem->setDefaultTextColor(QColor(0,0,0,255));
+
     _persistentMessage = new QGraphicsTextItem("",this);
     _persistentMessage->setZValue(1);
     QFont f = _persistentMessage->font();
