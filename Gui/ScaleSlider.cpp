@@ -129,7 +129,7 @@ void ScaleSlider::updateScale(){
 void ScaleSlider::paintEvent(QPaintEvent *e){
     updateScale();
     QFontMetrics metrics(*_font);
-    int borderHeight = height() - metrics.height()*2;
+    int borderHeight = height() - metrics.height() - 4;
     Q_UNUSED(e);
     QColor bg(50,50,50,255);
     int w = size().width();
@@ -147,7 +147,7 @@ void ScaleSlider::paintEvent(QPaintEvent *e){
     p.drawLine(BORDER_OFFSET,borderHeight,w-BORDER_OFFSET,borderHeight); // horizontal line
     
     
-    int y = height()-metrics.height();
+    int y = height()-4;
 
     // drawing ticks & sub-ticks
     int precision = 0;
