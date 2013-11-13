@@ -283,6 +283,10 @@ bool VideoEngine::stopEngine() {
         }
     }
 
+    if(_processAborter){
+        _processAborter->stopChecking();
+    }
+
     {
         QMutexLocker locker(&_mustQuitMutex);
         if (_mustQuit) {
@@ -783,7 +787,7 @@ void BackgroundProcessAborter::run(){
 }
 
 void BackgroundProcessAborter::stopChecking(){
-    
+    terminate();
 }
 
 BackgroundProcessAborter::~BackgroundProcessAborter(){}
