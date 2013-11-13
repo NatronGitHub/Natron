@@ -155,7 +155,7 @@ public:
 
     enum StorageMode{RAM=0,DISK};
 
-    Buffer():path(),_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM){}
+    Buffer():_path(),_size(0),_buffer(NULL),_backingFile(NULL),_storageMode(RAM){}
 
     ~Buffer(){deallocate();}
 
