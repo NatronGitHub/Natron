@@ -16,6 +16,7 @@
 
 #include <QFlags>
 #include <QMessageBox>
+#include <QMetaType>
 
 namespace Natron{
     
@@ -93,8 +94,9 @@ namespace Natron{
 
     
     typedef QFlags<QMessageBox::StandardButton> StandardButtons;
-}
 
+}
+Q_DECLARE_METATYPE(Natron::StandardButtons)
 
 
 #endif // POWITER_GLOBAL_ENUMS_H_

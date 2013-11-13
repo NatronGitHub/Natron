@@ -17,6 +17,8 @@
 #include <map>
 #include <utility>
 
+#include <boost/shared_ptr.hpp>
+
 #include <QStyledItemDelegate>
 #include <QTreeView>
 #include <QDialog>
@@ -237,18 +239,57 @@ public:
     };
     
     
-    FileSequence(const std::string& filetype):_fileType(filetype),_totalSize(0){}
-    
+    FileSequence(const std::string& filetype):
+     _fileType(filetype)
+    ,_totalSize(0)
+    ,_lock()
+    {}
+
+    FileSequence(const FileSequence& other):
+        _fileType(other._fileType)
+      , _frameIndexes(other._frameIndexes)
+      , _totalSize(other._totalSize)
+      , _lock()
+    {
+    }
+
     ~FileSequence(){}
     
     /*Returns true if the frameIndex didn't exist when adding it*/
     void addToSequence(int frameIndex,const QString& path);
     
+    bool isInSequence(int frameIndex) const { QMutexLocker locker(&_lock); return _frameIndexes.isInSequence(frameIndex); }
+
+    int size() const { return _frameIndexes.size(); }
+
+    int firstFrame() const { return _frameIndexes.firstFrame(); }
+
+    int lastFrame() const { return _frameIndexes.lastFrame(); }
+
+    int isEmpty() const { return _frameIndexes.isEmpty(); }
+
+    const std::string& getFileType() const { return _fileType; }
+
+    qint64 getTotalSize() const { return _totalSize; }
     
+    void lock() const { _lock.lock(); }
+
+    void unlock() const { assert(!_lock.tryLock()); _lock.unlock(); }
+
+ private:
+
     std::string _fileType;
     FrameIndexes _frameIndexes;
     qint64 _totalSize;
+    mutable QMutex _lock;
 };
+
+namespace Natron{
+    typedef std::multimap<std::string, boost::shared_ptr<FileSequence> > FrameSequences;
+    typedef FrameSequences::iterator SequenceIterator;
+    typedef FrameSequences::const_iterator ConstSequenceIterator;
+
+}
 
 /**
  * @brief The SequenceDialogProxyModel class is a proxy that filters image sequences from the QFileSystemModel
@@ -258,19 +299,22 @@ class SequenceDialogProxyModel: public QSortFilterProxyModel{
      *Several sequences can have a same name but a different file extension within a same directory.
      */
     mutable QMutex _frameSequencesMutex; // protects _frameSequences
-    mutable std::multimap<std::string, FileSequence > _frameSequences;
+    mutable Natron::FrameSequences _frameSequences;
     SequenceFileDialog* _fd;
     QString _filter;
 
 public:
-    typedef std::multimap<std::string, FileSequence >::iterator SequenceIterator;
-    typedef std::multimap<std::string, FileSequence >::const_iterator ConstSequenceIterator;
-    
+
     explicit SequenceDialogProxyModel(SequenceFileDialog* fd) : QSortFilterProxyModel(),_fd(fd){}
+
+    virtual ~SequenceDialogProxyModel(){
+        clear();
+    }
+
     void clear(){_frameSequences.clear();}
     
     
-    std::multimap<std::string, FileSequence > getFrameSequenceCopy() const{return _frameSequences;}
+    const Natron::FrameSequences& getFrameSequence() const{return _frameSequences;}
     
     
     inline void setFilter(QString filter){ _filter = filter;}
@@ -319,13 +363,12 @@ class SequenceFileDialog: public QDialog
 public:
     enum FileDialogMode{OPEN_DIALOG = 0,SAVE_DIALOG = 1} ;
 
-    typedef std::multimap<std::string, FileSequence > FrameSequences;
     typedef std::pair<QString,std::pair<qint64,QString> > NameMappingElement;
     typedef std::vector<NameMappingElement> NameMapping;
     
 private:
     
-    FrameSequences _frameSequences;
+    Natron::FrameSequences _frameSequences;
     mutable QReadWriteLock _nameMappingMutex; // protects _nameMapping
     NameMapping _nameMapping; // the item whose names must be changed
     
@@ -387,9 +430,7 @@ private:
     FileDialogMode _dialogMode;
     
 public:
-    typedef SequenceDialogProxyModel::SequenceIterator SequenceIterator;
-    typedef SequenceDialogProxyModel::ConstSequenceIterator ConstSequenceIterator;
-    
+
     
     SequenceFileDialog(QWidget* parent, // necessary to transmit the stylesheet to the dialog
                        const std::vector<std::string>& filters, // the user accepted file types. Empty means it supports everything
@@ -401,9 +442,9 @@ public:
     
     void setRootIndex(const QModelIndex& index);
 
-    void setFrameSequence(FrameSequences frameSequences);
+    void setFrameSequence(const Natron::FrameSequences& frameSequences);
 
-    const FileSequence frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
+    boost::shared_ptr<FileSequence> frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const;
     
     bool isASupportedFileExtension(const std::string& ext) const;
     
@@ -461,7 +502,7 @@ public:
 
     inline QModelIndex mapFromSource(const QModelIndex& index){
         QModelIndex ret =  _proxy->mapFromSource(index);
-        setFrameSequence(_proxy->getFrameSequenceCopy());
+        setFrameSequence(_proxy->getFrameSequence());
         return ret;
     }
 

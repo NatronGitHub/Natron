@@ -294,7 +294,7 @@ private:
 
 signals:
     
-    void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB);
+    void doDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
 
 public slots:
     
@@ -329,7 +329,7 @@ public slots:
     void showView8();
     void showView9();
     
-    void onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB);
+    void onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB);
     
     /*Returns a code from the save dialog:
      * -1  = unrecognized code

@@ -33,6 +33,7 @@ void registerMetaTypes(){
     qRegisterMetaType<Natron::ChannelSet>();
     qRegisterMetaType<KnobGui*>();
     qRegisterMetaType<Format>();
+    qRegisterMetaType<Natron::StandardButtons>();
 
 }
 

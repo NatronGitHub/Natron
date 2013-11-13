@@ -392,7 +392,7 @@ SequenceFileDialog::SequenceFileDialog(QWidget* parent, // necessary to transmit
 SequenceFileDialog::~SequenceFileDialog(){
     QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
     settings.setValue(QLatin1String("FileDialog"), saveState());
-    
+      
     delete _model;
     delete _itemDelegate;
     delete _proxy;
@@ -684,6 +684,7 @@ bool SequenceDialogProxyModel::isAcceptedByUser(const QString &path) const{
     }
 }
 void FileSequence::addToSequence(int frameIndex,const QString& path){
+    QMutexLocker locker(&_lock);
     if(_frameIndexes.addToSequence(frameIndex)){
         QFile f(path);
         _totalSize += f.size();
@@ -726,13 +727,13 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
     
     /*Locking the access to the frame sequences multi-map*/
     QMutexLocker locker(&_frameSequencesMutex);
-    std::pair<SequenceIterator,SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
+    std::pair<Natron::SequenceIterator,Natron::SequenceIterator> it = _frameSequences.equal_range(pathCpy.toStdString());
     if(it.first != it.second){
         /*we found a matching sequence name, we need to figure out if it has the same file type*/
-        for(SequenceIterator it2 = it.first; it2!=it.second; ++it2) {
-            if(it2->second._fileType == extension.toStdString()){
-                it2->second.addToSequence(frameNumber,path);
-                if(frameNumber == it2->second._frameIndexes.firstFrame())
+        for(Natron::SequenceIterator it2 = it.first; it2!=it.second; ++it2) {
+            if(it2->second->getFileType() == extension.toStdString()){
+                it2->second->addToSequence(frameNumber,path);
+                if(frameNumber == it2->second->firstFrame())
                     return true;
                 return false;
             }
@@ -740,14 +741,14 @@ bool SequenceDialogProxyModel::filterAcceptsRow(int source_row, const QModelInde
         /*if it reaches here it means there's already a sequence with the same name but
          *with a different file type
          */
-        FileSequence _frames(extension.toStdString());
-        _frames.addToSequence(frameNumber,path);
+        boost::shared_ptr<FileSequence> _frames(new FileSequence(extension.toStdString()));
+        _frames->addToSequence(frameNumber,path);
         _frameSequences.insert(make_pair(pathCpy.toStdString(),_frames));
         return true;
         
     }else{ /*couldn't find a sequence with the same name, we create one*/
-        FileSequence _frames(extension.toStdString());
-        _frames.addToSequence(frameNumber,path);
+        boost::shared_ptr<FileSequence>  _frames(new FileSequence(extension.toStdString()));
+        _frames->addToSequence(frameNumber,path);
         _frameSequences.insert(make_pair(pathCpy.toStdString(),_frames));
         return true;
     }
@@ -795,25 +796,30 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
         if(frameNumber == -1){
             continue;
         }
-        const FileSequence frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
+        boost::shared_ptr<FileSequence> frameRanges = frameRangesForSequence(name.toStdString(),extension.toStdString());
+
+        if(!frameRanges){
+            continue;
+        }
+
         /*we don't display sequences with no frame contiguous like 10-13-15.
          *This is corner case and is not useful anyway, we rather display it as several files
          */
-        if(!frameRanges._frameIndexes.isEmpty()){
+        if(!frameRanges->isEmpty()){
             std::vector< std::pair<int,int> > chunks;
-            int first = frameRanges._frameIndexes.firstFrame();
-            while(first <= frameRanges._frameIndexes.lastFrame()){
+            int first = frameRanges->firstFrame();
+            while(first <= frameRanges->lastFrame()){
                 
-                while (!(frameRanges._frameIndexes.isInSequence(first))) {
+                while (!(frameRanges->isInSequence(first))) {
                     ++first;
                 }
                 
-                chunks.push_back(std::make_pair(first, frameRanges._frameIndexes.lastFrame()));
+                chunks.push_back(std::make_pair(first, frameRanges->lastFrame()));
                 int next = first + 1;
                 int prev = first;
                 int count = 1;
-                while((next <= frameRanges._frameIndexes.lastFrame())
-                      && frameRanges._frameIndexes.isInSequence(next)
+                while((next <= frameRanges->lastFrame())
+                      && frameRanges->isInSequence(next)
                       && (next == prev + 1) ){
                     prev = next;
                     ++next;
@@ -846,7 +852,7 @@ void SequenceFileDialog::itemsToSequence(const QModelIndex& parent){
                 NameMapping::const_iterator it = std::find_if(_nameMapping.begin(), _nameMapping.end(), NameMappingCompareFirst(originalName));
                 if (it == _nameMapping.end()) {
                     //        cout << "mapping: " << originalName.toStdString() << " TO " << name.toStdString() << endl;
-                    _nameMapping.push_back(make_pair(originalName,make_pair(frameRanges._totalSize,name)));
+                    _nameMapping.push_back(make_pair(originalName,make_pair(frameRanges->getTotalSize(),name)));
                 }
             }
         }
@@ -862,25 +868,19 @@ void SequenceFileDialog::setRootIndex(const QModelIndex& index){
 }
 
 
-void SequenceFileDialog::setFrameSequence(FrameSequences frameSequences){
+void SequenceFileDialog::setFrameSequence(const Natron::FrameSequences &frameSequences){
     /*Removing from the sequence any element with a sequence of 1 element*/
-    _frameSequences.clear();
-    for(SequenceDialogProxyModel::ConstSequenceIterator it = frameSequences.begin(); it!=frameSequences.end();++it) {
-        if(it->second._frameIndexes.size() > 1){
-            _frameSequences.insert(*it);
-        }
-    }
-    
+    _frameSequences = frameSequences;
 }
-const FileSequence SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
-    std::pair<ConstSequenceIterator,ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
-    for(SequenceDialogProxyModel::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
-        if(it->second._fileType == extension){
+boost::shared_ptr<FileSequence>  SequenceFileDialog::frameRangesForSequence(const std::string& sequenceName, const std::string& extension) const{
+    std::pair<Natron::ConstSequenceIterator,Natron::ConstSequenceIterator> found =  _frameSequences.equal_range(sequenceName);
+    for(Natron::ConstSequenceIterator it = found.first ;it!=found.second;++it) {
+        if(it->second->getFileType() == extension){
             return it->second;
             break;
         }
     }
-    return FileSequence("empty");
+    return boost::shared_ptr<FileSequence>();
 }
 
 
@@ -911,7 +911,7 @@ SequenceDialogView::SequenceDialogView(SequenceFileDialog* fd):QTreeView(fd),_fd
 void SequenceDialogView::dropEvent(QDropEvent* event){
     if(!event->mimeData()->hasUrls())
         return;
-    
+
     QStringList filesList;
     QList<QUrl> urls = event->mimeData()->urls();
     QString path;
@@ -1004,7 +1004,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
     QStyle *style = QApplication::style();
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
     // QRect geom = option.rect;
-    
+
     // FIXME: with the default delegate (QStyledItemDelegate), there is a margin
     // of a few more pixels between border and icon, and between icon and text, not with this one
     if (index.column() == 0) {
@@ -1021,7 +1021,7 @@ void SequenceItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         QIcon icon = _fd->getFileSystemModel()->iconProvider()->icon(fileInfo);
         QRect iconRect(geom.x(),geom.y(),iconWidth,geom.height());
         QSize iconSize = icon.actualSize(QSize(iconRect.width(),iconRect.height()));
-        
+
         QRect textRect(geom.x()+iconWidth,geom.y(),textSize,geom.height());
 
         painter->drawPixmap(iconRect,
@@ -1049,7 +1049,7 @@ void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
         int totalSize = option.rect.width();
         int iconSize = option.decorationSize.width();
         int textSize = totalSize - iconSize;
-        
+
         QRect iconRect(option.rect.x(),option.rect.y(),iconSize,option.rect.height());
         QRect textRect(option.rect.x()+iconSize,option.rect.y(),textSize,option.rect.height());
         QRect r;
@@ -1060,7 +1060,7 @@ void FavoriteItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem 
                             icon.pixmap(icon.actualSize(QSize(iconRect.width(),iconRect.height()))),
                             r);
         painter->drawText(textRect,Qt::TextSingleLine,str,&r);
-        
+
     }else{
         QStyledItemDelegate::paint(painter,option,index);
     }
@@ -1140,7 +1140,7 @@ void SequenceFileDialog::previousFolder(){
         QString previousHistory = _history.at(_currentHistoryLocation);
         setDirectory(previousHistory);
     }
-    
+
 }
 void SequenceFileDialog::nextFolder(){
     if(!_history.isEmpty() && _currentHistoryLocation < _history.size()-1){
@@ -1193,7 +1193,7 @@ void SequenceFileDialog::createDir(){
                     folderName = newFolderString + QString::number(suffix);
                     ++suffix;
                 }
-                
+
             }
             QModelIndex parent = mapToSource(_view->rootIndex());
             QModelIndex index = _model->mkdir(parent, folderName);
@@ -1209,43 +1209,43 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,QWidget* parent):QDi
     _mainLayout->setContentsMargins(5, 5, 0, 0);
     setLayout(_mainLayout);
     setWindowTitle("New favorite");
-    
+
     _descriptionLabel = new QLabel("",this);
     _mainLayout->addWidget(_descriptionLabel);
-    
+
     _secondLine = new QWidget(this);
     _secondLineLayout = new QHBoxLayout(_secondLine);
-    
+
     _pathLineEdit = new LineEdit(_secondLine);
     _pathLineEdit->setPlaceholderText("path...");
     _secondLineLayout->addWidget(_pathLineEdit);
-    
+
     QImage img(NATRON_IMAGES_PATH"open-file.png");
     QPixmap pix = QPixmap::fromImage(img);
     pix = pix.scaled(15,15);
-    
+
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon(QIcon(pix));
     _openDirButton->setFixedSize(20, 20);
     QObject::connect(_openDirButton, SIGNAL(clicked()), this, SLOT(openDir()));
     _secondLineLayout->addWidget(_openDirButton);
-    
+
     _mainLayout->addWidget(_secondLine);
-    
+
     _thirdLine = new QWidget(this);
     _thirdLineLayout = new QHBoxLayout(_thirdLine);
     _thirdLine->setLayout(_thirdLineLayout);
-    
+
     _cancelButton = new Button("Cancel",_thirdLine);
     QObject::connect(_cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     _thirdLineLayout->addWidget(_cancelButton);
-    
+
     _okButton = new Button("Ok",_thirdLine);
     QObject::connect(_okButton, SIGNAL(clicked()), this, SLOT(accept()));
     _thirdLineLayout->addWidget(_okButton);
-    
+
     _mainLayout->addWidget(_thirdLine);
-    
+
 }
 
 void AddFavoriteDialog::setLabelText(const QString& text){
@@ -1269,7 +1269,7 @@ void SequenceFileDialog::addFavorite(){
         newFavPath = dialog.textValue();
         addFavorite(newFavName,newFavPath);
     }
-    
+
 }
 
 void SequenceFileDialog::addFavorite(const QString& name,const QString& path){
@@ -1316,7 +1316,7 @@ void SequenceFileDialog::openSelectedFiles(){
                         return;
                     }
                 }
-                
+
             }
             pos = unpathed.lastIndexOf(".");
             if(pos == -1){
@@ -1341,7 +1341,7 @@ void SequenceFileDialog::openSelectedFiles(){
                 if(ret != QMessageBox::Yes){
                     return;
                 }
-                
+
             }
             QDialog::accept();
         }
@@ -1387,7 +1387,7 @@ static QString qt_tildeExpansion(const QString &path, bool *expanded = 0)
     } /*else {
        QString userName = tokens.first();
        userName.remove(0, 1);
-       
+
        const QString homePath = QString::fro#if defined(Q_OS_VXWORKS)
        const QString homePath = QDir::homePath();
        #elif defined(_POSIX_THREAD_SAFE_FUNCTIONS) && !defined(Q_OS_OPENBSD)
@@ -1489,7 +1489,7 @@ void SequenceFileDialog::goToDirectory(const QString& path){
     QDir dir(path2);
     if (!dir.exists())
         dir = getEnvironmentVariable(path2);
-    
+
     if (dir.exists() || path2.isEmpty() || path2 == _model->myComputer().toString()) {
         enterDirectory(index);
     }
@@ -1515,7 +1515,7 @@ void SequenceFileDialog::pathChanged(const QString &newPath)
     _upButton->setEnabled(dir.exists());
     _favoriteView->selectUrl(QUrl::fromLocalFile(newPath));
     setHistory(_lookInCombobox->history());
-    
+
     if (_currentHistoryLocation < 0 || _history.value(_currentHistoryLocation) != QDir::toNativeSeparators(newPath)) {
         while (_currentHistoryLocation >= 0 && _currentHistoryLocation + 1 < _history.count()) {
             _history.removeLast();
@@ -1558,8 +1558,8 @@ QStringList SequenceFileDialog::selectedFiles(){
         ++i;
         path = path.left(i);
         // FileSequence *sequence = 0;
-        std::pair<SequenceIterator,SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
-        
+        std::pair<Natron::SequenceIterator,Natron::SequenceIterator> range = _frameSequences.equal_range(path.toStdString());
+
         /*if this is not a registered sequence. i.e: this is a single image file*/
         if(range.first == range.second){
             //  cout << originalPath.toStdString() << endl;
@@ -1577,14 +1577,14 @@ QStringList SequenceFileDialog::selectedFiles(){
             for(int j = 0 ; j < dirEntries.size(); ++j) {
                 QString s = dirEntries.at(j);
                 s = prefix+s;
-                
+
                 if(QFile::exists(s) && s.contains(path) && s.contains(ext)){
                     out.append(s);
                     ++i;
                 }
                 //if(out.size() > (int)(sequence->_frameIndexes.size())) break; //number of files exceeding the sequence size...something is wrong
             }
-            
+
         }
     }else{
         //if nothing is selected, pick whatever the line edit tells us
@@ -1600,7 +1600,7 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
         QString firstInSequence = selected.at(0);
         QString ext = removeFileExtension(firstInSequence);
         ext.prepend(".");
-        
+
         QString lineEditText = _selectionLineEdit->text();
         int extPos = lineEditText.lastIndexOf(ext);
         if(extPos!=-1){
@@ -1609,7 +1609,7 @@ QString SequenceFileDialog::getSequencePatternFromLineEdit(){
         }else{
             return "";
         }
-        
+
     }else{
         return "";
     }
@@ -1620,7 +1620,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
     int indexOfCommonPart = pattern.indexOf(unpathed);
     QString path = pattern.left(indexOfCommonPart);
     assert(pattern == (path + unpathed));
-    
+
     QString commonPart;
     int i = 0;
     while (i < unpathed.size() && unpathed.at(i) != QChar('#') && unpathed.at(i) != QChar('.')) {
@@ -1628,8 +1628,8 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
         ++i;
     }
     if(i == unpathed.size()) return ret;
-    
-    
+
+
     QDir d(path);
     if(d.isReadable()) {
         QStringList files = d.entryList();
@@ -1640,7 +1640,7 @@ QStringList SequenceFileDialog::filesListFromPattern(const QString& pattern){
         }
     }
     return ret;
-    
+
 }
 QString SequenceFileDialog::patternFromFilesList(const QStringList& files){
     if(files.size() == 0)
@@ -1703,25 +1703,25 @@ void SequenceFileDialog::showFilterMenu(){
     QPoint position(_filterLineEdit->mapToGlobal(_filterLineEdit->pos()));
     position.ry() += _filterLineEdit->height();
     QList<QAction *> actions;
-    
-    
+
+
     QAction *defaultFilters = new QAction(generateStringFromFilters(),this);
     QObject::connect(defaultFilters, SIGNAL(triggered()), this, SLOT(defaultFiltersSlot()));
     actions.append(defaultFilters);
-    
+
     QAction *startSlash = new QAction("*/", this);
     QObject::connect(startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()));
     actions.append(startSlash);
-    
+
     QAction *empty = new QAction("*", this);
     QObject::connect(empty, SIGNAL(triggered()), this, SLOT(emptyFilterSlot()));
     actions.append(empty);
-    
+
     QAction *dotStar = new QAction(".*", this);
     QObject::connect(dotStar, SIGNAL(triggered()), this, SLOT(dotStarFilterSlot()));
     actions.append(dotStar);
-    
-    
+
+
     if (actions.count() > 0){
         QMenu menu(_filterLineEdit);
         menu.addActions(actions);
@@ -1772,7 +1772,7 @@ void SequenceFileDialog::applyFilter(QString filter){
 
 UrlModel::UrlModel(QObject *parent) : QStandardItemModel(parent), fileSystemModel(0)
 {
-    
+
 }
 
 
@@ -1781,7 +1781,7 @@ bool UrlModel::setData(const QModelIndex &index, const QVariant &value, int role
     if (value.type() == QVariant::Url) {
         QUrl url = value.toUrl();
         QModelIndex dirIndex = fileSystemModel->index(url.toLocalFile());
-        
+
         QStandardItemModel::setData(index, QDir::toNativeSeparators(fileSystemModel->data(dirIndex, QFileSystemModel::FilePathRole).toString()), Qt::ToolTipRole);
         //  QStandardItemModel::setData(index, fileSystemModel->data(dirIndex).toString());
         QStandardItemModel::setData(index, fileSystemModel->data(dirIndex, Qt::DecorationRole),Qt::DecorationRole);
@@ -1819,14 +1819,14 @@ void UrlModel::setUrl(const QModelIndex &index, const QUrl &url, const QModelInd
             //The bookmark is valid then we set to true the EnabledRole
             setData(index, true, EnabledRole);
         }
-        
+
         // Make sure that we have at least 32x32 images
         const QSize size = newIcon.actualSize(QSize(32,32));
         if (size.width() < 32) {
             QPixmap smallPixmap = newIcon.pixmap(QSize(32, 32));
             newIcon.addPixmap(smallPixmap.scaledToWidth(32, Qt::SmoothTransformation));
         }
-        
+
         if (index.data().toString() != newName)
             setData(index, newName);
         QIcon oldIcon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
@@ -1854,7 +1854,7 @@ void UrlModel::addUrls(const std::vector<QUrl> &list, int row, bool move)
         //this makes sure the url is clean
         const QString cleanUrl = QDir::cleanPath(url.toLocalFile());
         url = QUrl::fromLocalFile(cleanUrl);
-        
+
         for (int j = 0; move && j < rowCount(); ++j) {
             //QString local = index(j, 0).data(UrlRole).toUrl().toLocalFile();
             //#if defined(__NATRON_WIN32__)
@@ -1980,7 +1980,7 @@ void FavoriteView::setModelAndUrls(QFileSystemModel *model, const std::vector<QU
             this, SLOT(showMenu(QPoint)));
     urlModel->setUrls(newUrls);
     setCurrentIndex(this->model()->index(0,0));
-    
+
 }
 
 FavoriteView::~FavoriteView()
@@ -1999,7 +1999,7 @@ void FavoriteView::selectUrl(const QUrl &url)
 {
     disconnect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
                this, SLOT(clicked(QModelIndex)));
-    
+
     selectionModel()->clear();
     for (int i = 0; i < model()->rowCount(); ++i) {
         if (model()->index(i, 0).data(UrlModel::UrlRole).toUrl() == url) {
@@ -2007,7 +2007,7 @@ void FavoriteView::selectUrl(const QUrl &url)
             break;
         }
     }
-    
+
     connect(selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
             this, SLOT(clicked(QModelIndex)));
 }
@@ -2017,7 +2017,7 @@ void FavoriteView::removeEntry()
     QList<QPersistentModelIndex> indexes;
     for (int i = 0; i < idxs.count(); ++i)
         indexes.append(idxs.at(i));
-    
+
     for (int i = 0; i < indexes.count(); ++i)
         if (!indexes.at(i).data(UrlModel::UrlRole).toUrl().path().isEmpty())
             model()->removeRow(indexes.at(i).row());
@@ -2094,13 +2094,13 @@ void FavoriteView::showMenu(const QPoint &position)
             removeAction->setEnabled(false);
         connect(removeAction, SIGNAL(triggered()), this, SLOT(removeEntry()));
         actions.append(removeAction);
-        
+
         QAction *editAction = new QAction("Edit path", this);
         if (indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty())
             editAction->setEnabled(false);
         connect(editAction, SIGNAL(triggered()), this, SLOT(editUrl()));
         actions.append(editAction);
-        
+
     }
     if (actions.count() > 0){
         QMenu menu(this);
@@ -2127,10 +2127,10 @@ Qt::ItemFlags UrlModel::flags(const QModelIndex &index) const
         // ### some future version could support "moving" urls onto a folder
         flags &= ~Qt::ItemIsDropEnabled;
     }
-    
+
     if (index.data(Qt::DecorationRole).isNull())
         flags &= ~Qt::ItemIsEnabled;
-    
+
     return flags;
 }
 
@@ -2147,7 +2147,7 @@ QMimeData *UrlModel::mimeData(const QModelIndexList &indexes) const{
 bool UrlModel::canDrop(QDragEnterEvent *event){
     if (!event->mimeData()->formats().contains(mimeTypes().first()))
         return false;
-    
+
     const QList<QUrl> list = event->mimeData()->urls();
     for (int i = 0; i < list.count(); ++i) {
         QModelIndex idx = fileSystemModel->index(list.at(0).toLocalFile());
@@ -2183,7 +2183,7 @@ void FileDialogComboBox::setFileDialogPointer(SequenceFileDialog *p){
 void FileDialogComboBox::showPopup(){
     if (model()->rowCount() > 1)
         QComboBox::showPopup();
-    
+
     urlModel->setUrls(std::vector<QUrl>());
     std::vector<QUrl> list;
     QModelIndex idx = dialog->getFileSystemModel()->index(dialog->rootPath());
@@ -2197,7 +2197,7 @@ void FileDialogComboBox::showPopup(){
     list.push_back(QUrl::fromLocalFile(QLatin1String("")));
     urlModel->addUrls(list, 0);
     idx = model()->index(model()->rowCount() - 1, 0);
-    
+
     // append history
     QList<QUrl> urls;
     for (int i = 0; i < m_history.count(); ++i) {
@@ -2223,7 +2223,7 @@ void FileDialogComboBox::showPopup(){
         urlModel->addUrls(stdUrls, -1, false);
     }
     setCurrentIndex(0);
-    
+
     QComboBox::showPopup();
 }
 
@@ -2241,17 +2241,17 @@ void FileDialogComboBox::setHistory(const QStringList &paths){
 void FileDialogComboBox::paintEvent(QPaintEvent *){
     QStylePainter painter(this);
     painter.setPen(palette().color(QPalette::Text));
-    
+
     // draw the combobox frame, focusrect and selected etc.
     QStyleOptionComboBox opt;
     initStyleOption(&opt);
-    
+
     QRect editRect = style()->subControlRect(QStyle::CC_ComboBox, &opt,
                                              QStyle::SC_ComboBoxEditField, this);
     int size = editRect.width() - opt.iconSize.width() - 4;
     opt.currentText = opt.fontMetrics.elidedText(opt.currentText, Qt::ElideMiddle, size);
     painter.drawComplexControl(QStyle::CC_ComboBox, opt);
-    
+
     // draw the icon and text
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
@@ -2274,7 +2274,7 @@ bool FileSequence::FrameIndexes::isInSequence(int frameIndex) const{
     }else{
         return false;
     }
-    
+
 }
 bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
     if (frameIndex == _firstFrame || frameIndex == _lastFrame) {
@@ -2312,7 +2312,7 @@ bool FileSequence::FrameIndexes::addToSequence(int frameIndex){
         return true;
     }
     return false;
-    
+
 }
 
 std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QStringList& files,const QStringList& supportedFileTypes){
@@ -2325,7 +2325,7 @@ std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QS
         QString extension;
         int frameNumber;
         SequenceDialogProxyModel::parseFilename(file, &frameNumber, extension);
-        
+
         //if the extension is not supported, ignore the file
         bool foundMatch = false;
         for(int i = 0 ; i < supportedFileTypes.size() ; ++i) {
@@ -2337,8 +2337,8 @@ std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QS
         if(!foundMatch){
             continue;
         }
-        
-        
+
+
         //try to find an existing sequence with the same common name
         Sequences::iterator it = sequences.find(file);
         if(it != sequences.end()){
@@ -2352,7 +2352,7 @@ std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QS
                 list << rawFile;
                 it->second.insert(std::make_pair(extension, list));
             }
-            
+
         }else{
             //insert a new sequence
             QStringList list;
@@ -2362,7 +2362,7 @@ std::vector<QStringList> SequenceFileDialog::fileSequencesFromFilesList(const QS
             sequences.insert(std::make_pair(file, newMap));
         }
     }
-    
+
     //run through all the sequences and insert it into ret
     for (Sequences::iterator it = sequences.begin(); it!=sequences.end(); ++it) {
         QStringList list;
@@ -2380,20 +2380,20 @@ void SequenceFileDialog::appendFilesFromDirRecursively(QDir* currentDir,QStringL
     QStringList entries = currentDir->entryList();
     for (int i = 0; i < entries.size(); ++i) {
         const QString& e = entries.at(i);
-        
+
         //ignore dot and dotdot
         if(e == "." || e == "..")
             continue;
-        
+
         QString entryWithPath = currentDir->absoluteFilePath(e);
-        
+
         //if it is a file, recurse
         QDir d(entryWithPath);
         if(d.exists()){
             appendFilesFromDirRecursively(&d, files);
             continue;
         }
-        
+
         //else if it is a file, append it
         if(QFile::exists(entryWithPath)){
             files->append(entryWithPath);

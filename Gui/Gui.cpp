@@ -120,8 +120,8 @@ viewerInputsMenu(0),
 cacheMenu(0),
 _projectGui(0)
 {
-    QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,Natron::StandardButton)),this,
-                     SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,Natron::StandardButton)));
+    QObject::connect(this,SIGNAL(doDialog(int,QString,QString,Natron::StandardButtons,int)),this,
+                     SLOT(onDoDialog(int,QString,QString,Natron::StandardButtons,int)));
     QObject::connect(app,SIGNAL(pluginsPopulated()),this,SLOT(addToolButttonsToToolBar()));
 }
 
@@ -1187,12 +1187,12 @@ void Gui::errorDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(0,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
 
@@ -1201,12 +1201,12 @@ void Gui::warningDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(1,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
 
@@ -1215,15 +1215,15 @@ void Gui::informationDialog(const std::string& title,const std::string& text){
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,Natron::Yes);
+        emit doDialog(2,QString(title.c_str()),QString(text.c_str()),buttons,(int)Natron::Yes);
     }
 }
-void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,Natron::StandardButton defaultB){
+void Gui::onDoDialog(int type,const QString& title,const QString& content,Natron::StandardButtons buttons,int defaultB){
     
     if(QThread::currentThread() != qApp->thread()){
         _uiUsingMainThreadMutex.lock();
@@ -1251,12 +1251,12 @@ Natron::StandardButton Gui::questionDialog(const std::string& title,const std::s
     if(QThread::currentThread() != qApp->thread()){
         QMutexLocker locker(&_uiUsingMainThreadMutex);
         _uiUsingMainThread = true;
-        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
+        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,(int)defaultButton);
         while(_uiUsingMainThread){
             _uiUsingMainThreadCond.wait(&_uiUsingMainThreadMutex);
         }
     }else{
-        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,defaultButton);
+        emit doDialog(3,QString(title.c_str()),QString(message.c_str()),buttons,(int)defaultButton);
     }
     return _lastQuestionDialogAnswer;
 }
