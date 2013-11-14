@@ -308,7 +308,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node, OFX::Host::Param::
     _knob->setHintToolTip(hint);
     for (int i = 0 ; i < properties.getDimension(kOfxParamPropChoiceOption) ; ++i) {
         std::string str = properties.getStringProperty(kOfxParamPropChoiceOption,i);
-        // TODO: use kOfxParamPropChoiceLabelOption as a label if the property exists for that option
+        // TODO: use kOfxParamPropChoiceLabelOption as a help string (to be used as a tooltip) if the property exists for that option
         _entries.push_back(str);
     }
     _knob->populate(_entries);
