@@ -327,7 +327,7 @@ public:
         oss2 << std::hex << ((_hashKey << 8) >> 8);
         name.append("/");
         name.append(oss2.str());
-        name.append(".powc");
+        name.append("." NATRON_CACHE_FILE_EXT);
         return name;
     }
 
@@ -784,7 +784,7 @@ private:
         assert(!_lock.tryLock()); // must be locked
         QString newCachePath(getCachePath());
         newCachePath.append(QDir::separator());
-        newCachePath.append("restoreFile.powc");
+        newCachePath.append("restoreFile." NATRON_CACHE_FILE_EXT);
         std::ofstream ofile(newCachePath.toStdString().c_str(),std::ofstream::out);
         boost::archive::binary_oarchive oArchive(ofile);
         CacheTOC tableOfContents;
@@ -807,7 +807,7 @@ private:
     void restore() {
         try { // if anything throws an exception, just recreate the cache
             QString newCachePath(getCachePath());
-            QString settingsFilePath(newCachePath+QDir::separator()+"restoreFile.powc");
+            QString settingsFilePath(newCachePath+QDir::separator()+"restoreFile." NATRON_CACHE_FILE_EXT);
             if(!QFile::exists(settingsFilePath)) {
                 throw std::runtime_error("Cache does not exist");
             }
