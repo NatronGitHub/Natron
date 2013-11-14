@@ -267,9 +267,9 @@ int OfxEffectInstance::maximumInputs() const {
     
 }
 
-bool OfxEffectInstance::isInputOptional(int inpubNb) const {
+bool OfxEffectInstance::isInputOptional(int inputNb) const {
     MappedInputV inputs = inputClipsCopyWithoutOutput();
-    return inputs[inputs.size()-1-inpubNb]->isOptional();
+    return inputs[inputs.size()-1-inputNb]->isOptional();
 }
 
 void ofxRectDToRectI(const OfxRectD& ofxrect,RectI* box){

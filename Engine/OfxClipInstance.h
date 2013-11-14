@@ -143,7 +143,9 @@ public:
     /// except if thread-local storage is used.
     virtual void setView(int view) OVERRIDE;
 
-
+    //returns the index of this clip if it is an input clip, otherwise -1.
+    int getInputNb() const;
+    
     Natron::EffectInstance* getAssociatedNode() const;
 
 private:

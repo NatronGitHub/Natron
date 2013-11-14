@@ -18,6 +18,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/scoped_array.hpp>
 
+#include <QtCore/QHash>
 #include <QtCore/QMutex>
 
 #include "Engine/Cache.h"
@@ -186,26 +187,35 @@ namespace Natron{
             _bitmap.markForRendered(roi);
         }
         
-        void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f){
+        
+        
+        void fill(const RectI& rect,float r,float g,float b,float a){
             for(int i = rect.bottom(); i < rect.top();++i){
                 float* dst = pixelAt(rect.left(),i);
                 for(int j = 0; j < rect.width();++j){
-                    dst[j*4] = colorValue;
-                    dst[j*4+1] = colorValue;
-                    dst[j*4+2] = colorValue;
-                    dst[j*4+3] = alphaValue;
+                    dst[j*4] = r;
+                    dst[j*4+1] = g;
+                    dst[j*4+2] = b;
+                    dst[j*4+3] = a;
                 }
             }
         }
         
+        void fill(const RectI& rect,float colorValue = 0.f,float alphaValue = 1.f){
+            fill(rect,colorValue,colorValue,colorValue,alphaValue);
+        }
+
+        
         void defaultInitialize(float colorValue = 0.f,float alphaValue = 1.f){
             fill(_bitmap.getRoD(),colorValue,alphaValue);
         }
-        
+    
+    
     };
     /*Useful function that saves on disk the image in png format.
      The name of the image will be the hash key of the image.*/
     void debugImage(Natron::Image* img,const QString& filename = QString());
+    
     
 }//namespace Natron
 #endif // IMAGE_H

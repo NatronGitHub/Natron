@@ -192,30 +192,12 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
         RenderScale scale;
         scale.x = scale.y = 1.;
         // input has been rendered just find it in the cache
-        EffectInstance* input = getAssociatedNode();
-        if(isOptional() && !input) {
-            //make an empty image
-            boost::shared_ptr<Natron::Image> outputImage = _nodeInstance->getImageBeingRendered(time,view);
-            assert(outputImage);
-            const RectI& rod = outputImage->getRoD();
-            boost::shared_ptr<Natron::Image> image(new Natron::Image(rod,scale,time));
-            if(isMask()){
-                image->defaultInitialize(1.f,1.f);
-            }else{
-                image->defaultInitialize();
-            }
-            return  new OfxImage(image,*this);
+        boost::shared_ptr<const Natron::Image> image = _nodeInstance->getImage(getInputNb(),time, scale,view);
+        if(!image){
+            return NULL;
+        }else{
+            return new OfxImage(boost::const_pointer_cast<Natron::Image>(image),*this);
         }
-        assert(input);
-        int inputIndex = 0;
-        for (int i = 0; i < _nodeInstance->maximumInputs(); ++i) {
-            EffectInstance* n = _nodeInstance->input(i);
-            if (n == input) {
-                inputIndex = i;
-                break;
-            }
-        }
-        return new OfxImage(boost::const_pointer_cast<Natron::Image>(_nodeInstance->getImage(inputIndex,time, scale,view)),*this);
     }
 
 }
@@ -254,20 +236,26 @@ OfxRGBAColourF* OfxImage::pixelF(int x, int y) const{
     }
     return 0;
 }
+int OfxClipInstance::getInputNb() const{
+    if(_isOutput){
+        return -1;
+    }
+    int index = 0;
+    OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
+    for (U32 i = 0; i < inputs.size(); ++i) {
+        if (inputs[i]->getName() == getName()) {
+            index = i;
+            break;
+        }
+    }
+    return inputs.size()-1-index;
+}
 
 Natron::EffectInstance* OfxClipInstance::getAssociatedNode() const {
     if(_isOutput)
         return _nodeInstance;
     else{
-        int index = 0;
-        OfxEffectInstance::MappedInputV inputs = _nodeInstance->inputClipsCopyWithoutOutput();
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i]->getName() == getName()) {
-                index = i;
-                break;
-            }
-        }
-        return _nodeInstance->input(inputs.size()-1-index);
+        return _nodeInstance->input(getInputNb());
     }
 }
 OFX::Host::ImageEffect::Image* OfxClipInstance::getStereoscopicImage(OfxTime time, int view, OfxRectD *optionalBounds) {

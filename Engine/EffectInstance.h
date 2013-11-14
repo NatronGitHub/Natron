@@ -166,6 +166,7 @@ public:
      **/
     virtual bool isInputOptional(int inputNb) const = 0;
     
+    
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/

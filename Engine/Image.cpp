@@ -103,5 +103,6 @@ namespace Natron{
         QString realFileName = filename.isEmpty() ? QString(hashKeyStr+".png") : filename;
         output.save(realFileName);
     }
+    
 }
 

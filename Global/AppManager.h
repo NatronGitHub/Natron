@@ -365,6 +365,7 @@ public:
 
     PluginToolButton* findPluginToolButtonOrCreate(const QString& name,const QString& iconPath);
 
+
     static void printUsage();
 
 public slots:
@@ -446,6 +447,7 @@ private:
     boost::scoped_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache;
 
     boost::scoped_ptr<Natron::TextRenderer> _textRenderer;
+
 
 };
 

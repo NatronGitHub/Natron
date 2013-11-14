@@ -126,11 +126,17 @@ boost::shared_ptr<const Natron::Image> EffectInstance::getImage(int inputNb,Sequ
     
 #endif
     
+    
+    
     const Natron::Cache<Image>& cache = appPTR->getNodeCache();
     //making key with a null RoD since the hash key doesn't take the RoD into account
     //we'll get our image back without the RoD in the key
     EffectInstance* n  = input(inputNb);
-    assert(n);
+    
+    //if the node is not connected, return a NULL pointer!
+    if(!n){
+        return boost::shared_ptr<const Natron::Image>();
+    }
     Natron::ImageKey params = Natron::Image::makeKey(n->hash().value(), time,scale,view,RectI());
     boost::shared_ptr<const Image > entry = cache.get(params);
     
