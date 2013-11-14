@@ -616,7 +616,6 @@ void SequenceFileDialog::setDirectory(const QString &directory){
     }
     
     _selectionLineEdit->setText(newDirectory);
-    
 }
 
 /*This function is called when a directory has successfully been loaded (i.e

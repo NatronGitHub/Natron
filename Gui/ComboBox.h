@@ -17,6 +17,8 @@
 #include <QtGui/QKeySequence>
 #include <QtGui/QIcon>
 #include <QMenu>
+#include <QToolTip>
+#include <QHelpEvent>
 
 class QHBoxLayout;
 class QLabel;
