@@ -180,3 +180,5 @@ $RECYCLE.BIN/
 
 Makefile
 *.app
+
+*.pro.user.*
