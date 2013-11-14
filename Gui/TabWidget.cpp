@@ -437,12 +437,13 @@ void TabWidget::dropEvent(QDropEvent* event){
 
 TabBar::TabBar(TabWidget* tabWidget,QWidget* parent): QTabBar(parent) , _tabWidget(tabWidget) /* ,_currentIndex(-1)*/{
     setTabsClosable(true);
+    setMouseTracking(true);
     QObject::connect(this, SIGNAL(tabCloseRequested(int)), tabWidget, SLOT(closeTab(int)));
 }
 
 void TabBar::mousePressEvent(QMouseEvent* event){
     if (event->button() == Qt::LeftButton)
-        _dragPos = event->pos(); // m_dragStartPos is a QPoint defined in the header
+        _dragPos = event->pos();
     QTabBar::mousePressEvent(event);
 }
 
@@ -458,14 +459,21 @@ void TabBar::mouseMoveEvent(QMouseEvent* event){
     QDrag* drag = new QDrag(this);
     QMimeData* mimeData = new QMimeData;
     // a crude way to distinguish tab-reodering drags from other drags
-    QString text = _tabWidget->getTabName(_tabWidget->currentWidget());
-    mimeData->setData("Tab", text.toLatin1());
-    drag->setMimeData(mimeData);
+    QWidget* selectedTab = 0;
+    int selectedTabIndex = tabAt(event->pos());
+    if(selectedTabIndex != -1){
+        selectedTab = _tabWidget->tabAt(selectedTabIndex);
+        assert(selectedTab);
+        selectedTab->setParent(_tabWidget);
+        QString text = _tabWidget->getTabName(selectedTab);
+        mimeData->setData("Tab", text.toLatin1());
+        drag->setMimeData(mimeData);
 #if QT_VERSION < 0x050000
-    QPixmap pix = QPixmap::grabWidget(_tabWidget);
+        QPixmap pix = QPixmap::grabWidget(_tabWidget);
 #else
-    QPixmap pix = _tabWidget->grab();
+        QPixmap pix = _tabWidget->grab();
 #endif
-    drag->setPixmap(pix);
-    drag->exec();
+        drag->setPixmap(pix);
+        drag->exec();
+    }
 }

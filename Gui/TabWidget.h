@@ -186,7 +186,7 @@ public:
     
     int count() const {return _tabs.size();}
     
-    const QWidget* tabAt(int index) const {return _tabs[index];}
+    QWidget* tabAt(int index) const {return _tabs[index];}
     
     bool isFloating() const {return _isFloating;}
     
