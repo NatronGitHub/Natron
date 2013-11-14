@@ -119,10 +119,7 @@ const std::string &OfxClipInstance::getFieldOrder() const
 //  Says whether the clip is actually connected at the moment.
 bool OfxClipInstance::getConnected() const
 {
-    if(!_nodeInstance->isOutput())
-        return _nodeInstance->hasOutputConnected();
-    else
-        return true;
+    return getAssociatedNode() != NULL;
 }
 
 // Unmapped Frame Rate -
