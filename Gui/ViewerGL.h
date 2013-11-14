@@ -35,7 +35,6 @@ class QKeyEvent;
 class QEvent;
 class QMenu;
 class QGLShaderProgram;
-class FTTextureFont;
 namespace Natron {
     namespace Color {
         class Lut;

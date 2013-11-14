@@ -33,7 +33,8 @@
  It handles only files that can be wholly loaded
  into the address space of the process.
  The constructor attemps to create the file if the file
- doesn't exist alredy  and opens the mapping of the (created) file into the RAM. the destructor closes it.
+ doesn't exist alredy  and opens the mapping of the (created) file into the RAM.
+ The destructor closes the mapping, effectively removing the RAM portion but not the file.
  The "data" function returns a pointer to the beginning of the file,
  if the file has been successfully opened, otherwise it returns 0.
  The "size" function returns the initial length of the file in bytes,
