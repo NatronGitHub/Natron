@@ -323,10 +323,10 @@ boost::shared_ptr<const Natron::Image> EffectInstance::renderRoI(SequenceTime ti
         Natron::Log::print(QString("Everything is already rendered in this image.").toStdString());
     }
 #endif
-    QString filename(getName().c_str());
-    filename.append(QString::number(image->getHashKey()));
-    filename.append(".png");
-    Natron::debugImage(image.get(),filename);
+//    QString filename(getName().c_str());
+//    filename.append(QString::number(image->getHashKey()));
+//    filename.append(".png");
+//    Natron::debugImage(image.get(),filename);
 
     _node->removeImageBeingRendered(time, view);
     

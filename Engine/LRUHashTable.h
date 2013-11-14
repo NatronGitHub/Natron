@@ -38,8 +38,8 @@
 #endif
 
 //#define USE_VARIADIC_TEMPLATES
-#define POWITER_CACHE_USE_HASH
-#define POWITER_CACHE_USE_BOOST
+#define NATRON_CACHE_USE_HASH
+#define NATRON_CACHE_USE_BOOST
 
 
 /**@brief 4 types of LRU caches are defined here:
@@ -73,7 +73,7 @@
 
 #ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
 
-#  ifndef POWITER_CACHE_USE_BOOST
+#  ifndef NATRON_CACHE_USE_BOOST
 
 #include <unordered_map>
 
@@ -116,6 +116,11 @@ public:
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
         }
         return it;
+    }
+    
+    void erase(typename key_to_value_type::iterator it){
+        _key_tracker.erase(it->second.second);
+        _key_to_value.erase(it);
     }
     
     typename key_to_value_type::iterator end() { return _key_to_value.end(); }
@@ -176,7 +181,7 @@ private:
     key_to_value_type _key_to_value;
 };
 
-#  else // POWITER_CACHE_USE_BOOST
+#  else // NATRON_CACHE_USE_BOOST
         // Class providing fixed-size (by number of records)
         // LRU-replacement cache of a function with signature
         // V f(K).
@@ -202,6 +207,10 @@ public:
             _container.right.relocate(_container.right.end(),_container.project_right(it));
         }
         return it;
+    }
+    
+    void erase(typename container_type::left_iterator it){
+        _container.left.erase(it);
     }
     
     // return end of the iterator
@@ -260,13 +269,13 @@ public:
 private:
     container_type _container;
 };
-#  endif // POWITER_CACHE_USE_BOOST
+#  endif // NATRON_CACHE_USE_BOOST
 
 #else // !USE_VARIADIC_TEMPLATES
 
 // c++98 does not support stl unordered_map + variadic templates
 
-#  ifndef POWITER_CACHE_USE_BOOST
+#  ifndef NATRON_CACHE_USE_BOOST
 template <typename K,typename V>
 class StlLRUHashTable{
 public:
@@ -292,6 +301,11 @@ public:
             _key_tracker.splice(_key_tracker.end(),_key_tracker,(*it).second.second);
         }
         return it;
+    }
+    
+    void erase(typename key_to_value_type::iterator it){
+        _key_tracker.erase(it->second.second);
+        _key_to_value.erase(it);
     }
     
     
@@ -354,9 +368,9 @@ private:
     key_to_value_type _key_to_value;
 };
 
-#  else // POWITER_CACHE_USE_BOOST
+#  else // NATRON_CACHE_USE_BOOST
 
-#    ifdef POWITER_CACHE_USE_HASH
+#    ifdef NATRON_CACHE_USE_HASH
 template <typename K,typename V>
 class BoostLRUHashTable{
 public:
@@ -376,6 +390,11 @@ public:
         }
         return it;
     }
+    
+    void erase(typename container_type::left_iterator it){
+        _container.left.erase(it);
+    }
+
     
     // return end of the iterator
     typename container_type::left_iterator end() {
@@ -432,7 +451,7 @@ private:
     container_type _container;
 };
 
-#    else // !POWITER_CACHE_USE_HASH
+#    else // !NATRON_CACHE_USE_HASH
 
 template <typename K,typename V>
 class BoostLRUHashTable{
@@ -453,6 +472,11 @@ public:
         }
         return it;
     }
+    
+    void erase(typename container_type::left_iterator it){
+        _container.left.erase(it);
+    }
+    
     // return end of the iterator
     typename container_type::left_iterator end() {
         return _container.left.end();
@@ -506,8 +530,8 @@ public:
 private:
     container_type _container;
 };
-#    endif // !POWITER_CACHE_USE_HASH
-#  endif // POWITER_CACHE_USE_BOOST
+#    endif // !NATRON_CACHE_USE_HASH
+#  endif // NATRON_CACHE_USE_BOOST
 
 #endif // !USE_VARIADIC_TEMPLATES
 

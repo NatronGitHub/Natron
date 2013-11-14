@@ -172,7 +172,7 @@ namespace Natron{
         
         void initializePlanesOffset();
         
-        float* _planesOffset[POWITER_MAX_VALID_CHANNEL_INDEX+1];
+        float* _planesOffset[NATRON_MAX_VALID_CHANNEL_INDEX+1];
     };
     
     void copyRowToImage(const Natron::Row& row,int y,int x,Natron::Image* output);

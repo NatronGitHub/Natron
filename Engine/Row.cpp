@@ -37,7 +37,7 @@ Row::Row(int x,int y,int r,ChannelSet channels)
 
 void Row::initializePlanesOffset(){
     int count = 0;
-    for(int i = 0; i <= POWITER_MAX_VALID_CHANNEL_INDEX ; ++i){
+    for(int i = 0; i <= NATRON_MAX_VALID_CHANNEL_INDEX ; ++i){
         if(i!=0 && _params._channels.contains((Channel)i)){
             _planesOffset[i] = _data.writable() + (width() * count);
             ++count;

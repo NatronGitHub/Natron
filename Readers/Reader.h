@@ -53,8 +53,8 @@ public:
         
 #ifdef USE_VARIADIC_TEMPLATES
 
-#ifdef POWITER_CACHE_USE_BOOST
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_BOOST
+#ifdef NATRON_CACHE_USE_HASH
             typedef BoostLRUHashTable<hash_type, value_type>, boost::bimaps::unordered_set_of> CacheContainer;
 #else
             typedef BoostLRUHashTable<hash_type, value_type > , boost::bimaps::set_of> CacheContainer;
@@ -65,7 +65,7 @@ public:
 
 #else // cache use STL
 
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_HASH
             typedef StlLRUHashTable<hash_type,value_type >, std::unordered_map> CacheContainer;
 #else
             typedef StlLRUHashTable<hash_type,value_type >, std::map> CacheContainer;
@@ -77,8 +77,8 @@ public:
 
 #else // !USE_VARIADIC_TEMPLATES
 
-#ifdef POWITER_CACHE_USE_BOOST
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_BOOST
+#ifdef NATRON_CACHE_USE_HASH
             typedef BoostLRUHashTable<hash_type,value_type> CacheContainer;
 #else
             typedef BoostLRUHashTable<hash_type, value_type > CacheContainer;

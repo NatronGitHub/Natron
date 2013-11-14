@@ -192,6 +192,7 @@ public:
             _backingFile  = new MemoryFile(_path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& r){
             delete _backingFile;
+            _backingFile = NULL;
             std::cout << r.what() << std::endl;
             throw std::bad_alloc();
         }
@@ -202,6 +203,7 @@ public:
             _backingFile  = new MemoryFile(path,Natron::if_exists_keep_if_dont_exists_create);
         }catch(const std::runtime_error& /*r*/){
             delete _backingFile;
+            _backingFile = NULL;
             throw std::bad_alloc();
         }
         _path = path;
@@ -336,7 +338,7 @@ public:
     void reOpenFileMapping() const {
         try{
             _data.reOpenFileMapping();
-        }catch(const std::logic_error& e){
+        }catch(const std::exception& e){
             throw e;
         }
     }
@@ -435,8 +437,8 @@ public:
 
 #ifdef USE_VARIADIC_TEMPLATES
 
-#ifdef POWITER_CACHE_USE_BOOST
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_BOOST
+#ifdef NATRON_CACHE_USE_HASH
     typedef BoostLRUHashTable<hash_type, value_type>, boost::bimaps::unordered_set_of> CacheContainer;
 #else
     typedef BoostLRUHashTable<hash_type, value_type > , boost::bimaps::set_of> CacheContainer;
@@ -447,7 +449,7 @@ public:
 
 #else // cache use STL
 
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_HASH
     typedef StlLRUHashTable<hash_type,value_type >, std::unordered_map> CacheContainer;
 #else
     typedef StlLRUHashTable<hash_type,value_type >, std::map> CacheContainer;
@@ -459,8 +461,8 @@ public:
 
 #else // !USE_VARIADIC_TEMPLATES
 
-#ifdef POWITER_CACHE_USE_BOOST
-#ifdef POWITER_CACHE_USE_HASH
+#ifdef NATRON_CACHE_USE_BOOST
+#ifdef NATRON_CACHE_USE_HASH
     typedef BoostLRUHashTable<hash_type,value_type> CacheContainer;
 #else
     typedef BoostLRUHashTable<hash_type, value_type > CacheContainer;
@@ -582,21 +584,37 @@ public:
                 /*we found something with a matching hash key. There may be several entries linked to
                          this key, we need to find one with matching params*/
                 std::list<value_type>& ret = getValueFromIterator(diskCached);
-                for (typename std::list<value_type>::const_iterator it = ret.begin();
+                for (typename std::list<value_type>::iterator it = ret.begin();
                      it!=ret.end(); ++it) {
                     if ((*it)->getKey() == params) {
+                        /*If we found 1 entry in the list that has exactly the same key params,
+                         we re-open the mapping to the RAM put the entry
+                         back into the memoryCache.*/
+                        value_type entry = (*it);
+                        
+                        // remove it from the disk cache
+                        ret.erase(it);
+                        _diskCacheSize -= entry->size();
+                        
+                        if(ret.empty()){
+                            _diskCache.erase(diskCached);
+                        }
+                        
                         try{
-                            /*we try to reopen the mapping between disk & RAM*/
-                            (*it)->reOpenFileMapping();
+                            entry->reOpenFileMapping();
                         }catch(const std::exception& e){
                             std::cout << e.what() << std::endl;
                             return value_type();
                         }
+                        
+                        //put it back into the RAM
+                        _memoryCache.insert(entry->getHashKey(),entry);
+                        _memoryCacheSize += entry->size();
+                        
+                       
                         if(_signalEmitter)
                             _signalEmitter->emitAddedEntry();
-                        // maybe we should move back the disk cache entry (ret) to the memory portion since
-                        // we reallocated it in RAM?
-                        return (*it);
+                        return entry;
 
                     }
                 }

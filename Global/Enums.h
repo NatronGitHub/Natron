@@ -11,8 +11,8 @@
 #ifndef POWITER_GLOBAL_ENUMS_H_
 #define POWITER_GLOBAL_ENUMS_H_
 
-#define POWITER_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
-#define POWITER_MAX_VALID_CHANNEL_INDEX 6
+#define NATRON_MAX_CHANNEL_COUNT 31 // ChannelSet can handle channels 1..31, so it must be 31
+#define NATRON_MAX_VALID_CHANNEL_INDEX 6
 
 #include <QFlags>
 #include <QMessageBox>
