@@ -212,6 +212,7 @@ void TabWidget::addNewViewer(){
 
 void TabWidget::moveNodeGraphHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_nodeGraphArea);
+    what->setParent(this);
     _gui->moveTab(what,this);
 }
 /*Get the header name of the tab at index "index".*/
@@ -261,6 +262,7 @@ void TabWidget::closeTab(int index){
 
 void TabWidget::movePropertiesBinHere(){
     QWidget* what = dynamic_cast<QWidget*>(_gui->_propertiesScrollArea);
+    what->setParent(this);
     _gui->moveTab(what, this);
 }
 
