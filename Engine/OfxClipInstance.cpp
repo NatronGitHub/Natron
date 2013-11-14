@@ -199,7 +199,11 @@ OFX::Host::ImageEffect::Image* OfxClipInstance::getImageInternal(OfxTime time, i
             assert(outputImage);
             const RectI& rod = outputImage->getRoD();
             boost::shared_ptr<Natron::Image> image(new Natron::Image(rod,scale,time));
-            image->defaultInitialize();
+            if(isMask()){
+                image->defaultInitialize(1.f,1.f);
+            }else{
+                image->defaultInitialize();
+            }
             return  new OfxImage(image,*this);
         }
         assert(input);
